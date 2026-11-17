@@ -5,6 +5,44 @@ export const onRequestOptions: PagesFunction = async () => {
 };
 
 /**
+ * GET /api/vouchers/:id
+ */
+export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const { params, env } = context;
+  const id = params.id as string;
+
+  try {
+    if (!env.DB) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'D1 Database chưa được cấu hình.' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    const row = await env.DB.prepare(
+      'SELECT * FROM vouchers WHERE id = ? OR code = ? LIMIT 1'
+    ).bind(id, id).first<any>();
+
+    if (!row) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Không tìm thấy voucher' }),
+        { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    return new Response(JSON.stringify({ success: true, voucher: row }), {
+      status: 200,
+      headers: CORS_HEADERS,
+    });
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ success: false, message: err?.message || 'Lỗi truy vấn voucher' }),
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+};
+
+/**
  * PUT /api/vouchers/:id
  */
 export const onRequestPut: PagesFunction<Env> = async (context) => {

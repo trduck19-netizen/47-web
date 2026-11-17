@@ -65,9 +65,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
 
     if (search) {
-      conditions.push('(id LIKE ? OR buyer_email LIKE ? OR product_title LIKE ? OR sepay_transaction_id LIKE ?)');
+      conditions.push('(id LIKE ? OR order_code LIKE ? OR customer_email LIKE ? OR customer_name LIKE ? OR product_title LIKE ?)');
       const wild = `%${search}%`;
-      params.push(wild, wild, wild, wild);
+      params.push(wild, wild, wild, wild, wild);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -80,9 +80,11 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const dataSql = `
       SELECT 
-        id, member_id, buyer_email, product_id, product_title, total_amount,
-        original_price, price_paid, discount_type, discount_amount, price_rule,
-        payment_method, payment_status, status, expires_at, paid_at, sepay_transaction_id, created_at
+        id, order_code, user_id, product_id, product_title, product_type,
+        quantity, unit_price, subtotal_amount, shipping_fee, discount_amount, total_amount,
+        voucher_code, freeship_voucher_code, payment_method, payment_status,
+        shipping_status, shipping_carrier, tracking_code, customer_name, customer_email,
+        customer_phone, shipping_address, created_at
       FROM orders
       ${whereClause}
       ORDER BY created_at DESC
@@ -92,24 +94,28 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const orders = (rows?.results || []).map((o: any) => ({
       id: o.id,
-      memberId: o.member_id,
-      buyerName: o.buyer_email || 'Khách hàng',
-      buyerEmail: o.buyer_email || '',
+      orderCode: o.order_code,
+      memberId: o.user_id,
+      buyerName: o.customer_name || o.customer_email || 'Khách hàng',
+      buyerEmail: o.customer_email || '',
+      buyerPhone: o.customer_phone || '',
       productId: o.product_id,
       productTitle: o.product_title || '',
+      productType: o.product_type || 'physical',
+      quantity: Number(o.quantity || 1),
+      unitPrice: Number(o.unit_price || 0),
+      subtotalAmount: Number(o.subtotal_amount || 0),
+      shippingFee: Number(o.shipping_fee || 0),
+      discountAmount: Number(o.discount_amount || 0),
       amount: Number(o.total_amount || 0),
       totalAmount: Number(o.total_amount || 0),
-      originalPrice: o.original_price !== null && o.original_price !== undefined ? Number(o.original_price) : null,
-      pricePaid: o.price_paid !== null && o.price_paid !== undefined ? Number(o.price_paid) : Number(o.total_amount || 0),
-      discountType: o.discount_type || null,
-      discountAmount: Number(o.discount_amount || 0),
-      priceRule: o.price_rule || null,
-      paymentMethod: o.payment_method || 'WALLET',
-      paymentStatus: o.payment_status || 'PAID',
-      status: o.status || 'PAID',
-      expiresAt: o.expires_at || null,
-      paidAt: o.paid_at || null,
-      sepayTransactionId: o.sepay_transaction_id || null,
+      voucherCode: o.voucher_code || null,
+      paymentMethod: o.payment_method || 'vietqr',
+      paymentStatus: o.payment_status || 'PENDING',
+      shippingStatus: o.shipping_status || 'PENDING',
+      shippingCarrier: o.shipping_carrier || null,
+      trackingCode: o.tracking_code || null,
+      status: o.payment_status === 'PAID' ? 'COMPLETED' : (o.payment_status || 'PENDING'),
       createdAt: o.created_at,
     }));
 

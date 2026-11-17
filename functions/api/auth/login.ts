@@ -173,18 +173,33 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     // 3. Direct SQL query for user (O(1) Indexed Lookup, zero table scan)
     let member: any = null;
     if (isAdminLookup) {
-      member = await env.DB.prepare(`
-        SELECT * FROM members
-        WHERE id = 'usr_admin' OR username = 'admin290200' OR email = 'admin@codegame.store' OR role IN ('ADMIN', 'SUPER_ADMIN')
-        ORDER BY CASE WHEN id = 'usr_admin' THEN 0 WHEN role = 'SUPER_ADMIN' THEN 1 ELSE 2 END
-        LIMIT 1
-      `).first<any>();
+      try {
+        member = await env.DB.prepare(`
+          SELECT * FROM members
+          WHERE id = 'usr_admin' OR email = 'admin@codegame.store' OR role IN ('admin', 'SUPER_ADMIN', 'ADMIN')
+          ORDER BY CASE WHEN id = 'usr_admin' THEN 0 WHEN role = 'SUPER_ADMIN' OR role = 'admin' THEN 1 ELSE 2 END
+          LIMIT 1
+        `).first<any>();
+      } catch {}
+
+      // Auto-seed initial admin in D1 members table if not yet present
+      if (!member) {
+        try {
+          await env.DB.prepare(`
+            INSERT OR IGNORE INTO members (id, email, phone, full_name, password_hash, role, balance, email_verified, status)
+            VALUES ('usr_admin', 'admin@codegame.store', '0988888888', 'Super Admin', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac', 'admin', 0, 1, 'active')
+          `).run();
+          member = await env.DB.prepare("SELECT * FROM members WHERE id = 'usr_admin' LIMIT 1").first<any>();
+        } catch {}
+      }
     } else {
-      member = await env.DB.prepare(`
-        SELECT * FROM members
-        WHERE LOWER(TRIM(username)) = ? OR LOWER(TRIM(display_name)) = ? OR LOWER(TRIM(email)) = ? OR id = ?
-        LIMIT 1
-      `).bind(cleanIdentifier, cleanIdentifier, cleanIdentifier, cleanIdentifier).first<any>();
+      try {
+        member = await env.DB.prepare(`
+          SELECT * FROM members
+          WHERE LOWER(TRIM(email)) = ? OR id = ? OR phone = ?
+          LIMIT 1
+        `).bind(cleanIdentifier, cleanIdentifier, cleanIdentifier).first<any>();
+      } catch {}
     }
 
     if (!member) {

@@ -1746,6 +1746,49 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
   }
 
 
+    // Migration 0025: Align members and orders schema with D1 Universal Mall tables
+    try {
+      const alignCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0025_align_members_and_orders_v1' LIMIT 1").first().catch(() => null);
+      if (!alignCheck) {
+        // Safe column additions to members
+        const memberCols = ['username TEXT', 'display_name TEXT', 'salt TEXT', 'total_spent INTEGER DEFAULT 0', 'session_token TEXT', 'avatar_url TEXT'];
+        for (const col of memberCols) {
+          try {
+            await db.prepare(`ALTER TABLE members ADD COLUMN ${col};`).run();
+          } catch {}
+        }
+        try {
+          await db.prepare("UPDATE members SET display_name = full_name WHERE (display_name IS NULL OR display_name = '') AND full_name IS NOT NULL;").run();
+          await db.prepare("UPDATE members SET username = SUBSTR(email, 1, INSTR(email, '@') - 1) WHERE (username IS NULL OR username = '') AND email LIKE '%@%';").run();
+        } catch {}
+
+        // Safe column additions to orders
+        const orderCols = ['member_id TEXT', 'buyer_email TEXT', 'price_paid INTEGER', 'original_price INTEGER', 'discount_type TEXT', 'price_rule TEXT', 'paid_at TEXT', 'expires_at TEXT', 'sepay_transaction_id TEXT'];
+        for (const col of orderCols) {
+          try {
+            await db.prepare(`ALTER TABLE orders ADD COLUMN ${col};`).run();
+          } catch {}
+        }
+        try {
+          await db.prepare("UPDATE orders SET member_id = user_id WHERE (member_id IS NULL OR member_id = '') AND user_id IS NOT NULL;").run();
+          await db.prepare("UPDATE orders SET buyer_email = customer_email WHERE (buyer_email IS NULL OR buyer_email = '') AND customer_email IS NOT NULL;").run();
+        } catch {}
+
+        // Ensure super admin exists in members
+        const adminInDb = await db.prepare("SELECT id FROM members WHERE id = 'usr_admin' OR email = 'admin@codegame.store' LIMIT 1").first().catch(() => null);
+        if (!adminInDb) {
+          await db.prepare(`
+            INSERT OR IGNORE INTO members (id, email, phone, full_name, username, display_name, password_hash, role, balance, email_verified, status)
+            VALUES ('usr_admin', 'admin@codegame.store', '0988888888', 'Super Admin', 'admin290200', 'Super Admin', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac', 'SUPER_ADMIN', 0, 1, 'ACTIVE');
+          `).run().catch(() => {});
+        }
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0025_align_members_and_orders_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0025_align_members_and_orders_v1 error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);

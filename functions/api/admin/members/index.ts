@@ -65,9 +65,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
 
     if (search) {
-      conditions.push('(id = ? OR username LIKE ? OR display_name LIKE ? OR email LIKE ? OR phone LIKE ?)');
+      conditions.push('(id = ? OR full_name LIKE ? OR email LIKE ? OR phone LIKE ?)');
       const wild = `%${search}%`;
-      params.push(search, wild, wild, wild, wild);
+      params.push(search, wild, wild, wild);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -79,7 +79,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const offset = (page - 1) * limit;
 
     const dataSql = `
-      SELECT id, username, display_name, email, phone, role, balance, total_spent, status, email_verified, created_at
+      SELECT id, email, phone, full_name, role, balance, email_verified, status, created_at
       FROM members
       ${whereClause}
       ORDER BY created_at DESC
@@ -89,14 +89,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const members = (rows?.results || []).map((m: any) => ({
       id: m.id,
-      username: m.username || '',
-      displayName: m.display_name || m.username || 'Thành viên',
+      username: m.email ? m.email.split('@')[0] : m.id,
+      displayName: m.full_name || m.email || 'Thành viên',
       email: m.email || '',
       phone: m.phone || '',
-      role: m.role || 'MEMBER',
+      role: m.role || 'customer',
       balance: Number(m.balance || 0),
-      totalSpent: Number(m.total_spent || 0),
-      status: m.status || 'ACTIVE',
+      totalSpent: 0,
+      status: m.status ? m.status.toUpperCase() : 'ACTIVE',
       emailVerified: m.email_verified === 1 || m.email_verified === true,
       createdAt: m.created_at,
     }));

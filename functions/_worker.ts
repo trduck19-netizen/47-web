@@ -352,12 +352,22 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         try {
           const res = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all<any>();
           const tables = (res.results || []).map((r: any) => r.name);
+          const counts: Record<string, number> = {};
+          for (const t of tables) {
+            try {
+              const c = await env.DB.prepare(`SELECT COUNT(*) as cnt FROM "${t}"`).first<any>();
+              counts[t] = Number(c?.cnt ?? 0);
+            } catch {
+              counts[t] = -1;
+            }
+          }
           return new Response(JSON.stringify({
             success: true,
             connected: true,
             databaseId: 'f1c32d22-9ad3-41a7-93a4-e9025240c6b2',
             totalTables: tables.length,
             tables,
+            counts,
           }), {
             status: 200,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -876,22 +886,24 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'DELETE') return await categoriesIdApi.onRequestDelete(customContext);
       }
 
-      // Vouchers API (/api/vouchers, /api/vouchers/verify & /api/vouchers/:id)
-      if (pathname === '/api/vouchers/verify') {
+      // Vouchers API (/api/vouchers, /api/admin/vouchers, /api/vouchers/verify & /api/vouchers/:id)
+      if (pathname === '/api/vouchers/verify' || pathname === '/api/admin/vouchers/verify') {
         if (method === 'OPTIONS') return await vouchersVerifyApi.onRequestOptions(context);
         if (method === 'POST') return await vouchersVerifyApi.onRequestPost(context);
       }
-      if (pathname === '/api/vouchers') {
+      if (pathname === '/api/vouchers' || pathname === '/api/admin/vouchers') {
         if (method === 'OPTIONS') return await vouchersIndexApi.onRequestOptions(context);
         if (method === 'POST') return await vouchersIndexApi.onRequestPost(context);
         return await vouchersIndexApi.onRequestGet(context);
       }
-      if (pathname.startsWith('/api/vouchers/') && pathname !== '/api/vouchers') {
-        const voucherId = pathname.replace('/api/vouchers/', '').trim();
+      if ((pathname.startsWith('/api/vouchers/') && pathname !== '/api/vouchers') ||
+          (pathname.startsWith('/api/admin/vouchers/') && pathname !== '/api/admin/vouchers')) {
+        const voucherId = pathname.replace(/^\/api\/(?:admin\/)?vouchers\//, '').trim();
         const customContext = { ...context, params: { id: voucherId } };
         if (method === 'OPTIONS') return await vouchersIdApi.onRequestOptions(customContext);
         if (method === 'PUT' || method === 'PATCH') return await vouchersIdApi.onRequestPut(customContext);
         if (method === 'DELETE') return await vouchersIdApi.onRequestDelete(customContext);
+        return await vouchersIdApi.onRequestGet(customContext);
       }
 
       // Shipping Orders API (/api/shipping & /api/shipping/:id)
