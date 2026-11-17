@@ -5,6 +5,12 @@
   ],
   "exclude": [
     "/assets/*",
-    "/vite.svg"
+    "/game_banners/*",
+    "/data/*",
+    "/favicon.ico",
+    "/favicon.png",
+    "/logo.png",
+    "/manifest.json",
+    "/robots.txt"
   ]
 }

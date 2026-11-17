@@ -1,448 +1,2645 @@
-import React, { useState } from 'react';
-import { 
-  X, ShieldCheck, Truck, Tag, CreditCard, Wallet, 
-  MapPin, CheckCircle, Sparkles, AlertCircle, QrCode, ArrowRight 
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  X,
+  CreditCard,
+  Wallet,
+  CheckCircle2,
+  Copy,
+  Check,
+  ShieldCheck,
+  Sparkles,
+  AlertCircle,
+  LogIn,
+  Lock,
+  PlusCircle,
+  Minus,
+  Plus,
+  Zap,
+  TrendingUp,
+  BookOpen,
+  ExternalLink,
+  QrCode,
+  Clock,
+  RefreshCw,
+  Truck,
+  MapPin,
+  Phone,
+  User,
+  FileText,
+  Package,
+  Ticket,
+  ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import type { UniversalProduct, ProductVariant, CustomerShippingInfo, UniversalOrder } from '../types';
+import QRCode from 'qrcode';
+import { CyberLoader } from './CyberLoader';
+import type { StoreProduct, OrderRecord, UserProfile } from '../types/game';
+import { dataService } from '../services/dataService';
+import { offerService } from '../services/offerService';
+import { generateVietQrEmvCo } from '../utils/vietQrUtils';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import { marketingService } from '../services/marketingService';
 import { useLanguage } from '../context/LanguageContext';
-import { voucherService, Voucher } from '../services/voucherService';
-import { shippingService, ShippingCarrier, ShippingOrderRecord } from '../services/shippingService';
+import { formatCore } from '../utils/textUtils';
+import { GuideLinksBanner } from './GuideLinksBanner';
+import {
+  shippingService,
+  CarrierCode,
+  CARRIERS,
+  ShippingOrderRecord,
+} from '../services/shippingService';
+import {
+  voucherService,
+  VoucherItem,
+  VoucherStackingResult,
+} from '../services/voucherService';
+import { ShippingTrackingModal } from './shipping/ShippingTrackingModal';
 import { ShopeeCouponModal } from './voucher/ShopeeCouponModal';
-import { generateVietQrUrl } from '../utils/vietQrUtils';
 
 interface ProductCheckoutModalProps {
-  product: UniversalProduct;
-  variant?: ProductVariant;
-  quantity: number;
+  product: StoreProduct | any | null;
+  selectedPackage?: any | null;
+  initialQuantity?: number;
   onClose: () => void;
-  onOrderSuccess: (order: UniversalOrder, shippingRecord?: ShippingOrderRecord) => void;
+  onShowToast: (title: string, message?: string, type?: 'success' | 'error' | 'info') => void;
+  currentUser?: UserProfile | null;
+  onUpdateUser?: (user: UserProfile) => void;
+  onOpenAuth?: () => void;
+  onOpenWallet?: () => void;
 }
 
 export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   product,
-  variant,
-  quantity,
+  selectedPackage,
+  initialQuantity = 1,
   onClose,
-  onOrderSuccess,
+  onShowToast,
+  currentUser,
+  onUpdateUser,
+  onOpenAuth,
+  onOpenWallet,
 }) => {
-  const { formatCurrency, t } = useLanguage();
+  const { language, t, formatCurrency, formatDateTime } = useLanguage();
+  const isEn = language === 'en';
 
-  // Shipping details state
-  const [shippingInfo, setShippingInfo] = useState<CustomerShippingInfo>(() => {
+  const liveProduct = product ? (dataService.getStoreProducts().find((p) => p.id === product.id) || product) : null;
+  const [quantity, setQuantity] = useState<number>(initialQuantity || 1);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState<OrderRecord | null>(null);
+  const [copiedCodeIdx, setCopiedCodeIdx] = useState<number | null>(null);
+  const [copiedAll, setCopiedAll] = useState<boolean>(false);
+  const [idempotencyKey, setIdempotencyKey] = useState<string>('');
+  const [checkoutOffer, setCheckoutOffer] = useState<{
+    eligible: boolean;
+    offer_price: number;
+    discount_amount: number;
+    escalating?: any;
+  } | null>(() => {
+    const targetId = selectedPackage?.id || liveProduct?.id;
+    if (targetId && liveProduct?.game_slug) {
+      const cached = offerService.getCached(liveProduct.game_slug);
+      const targetOffer = cached?.offers?.[targetId];
+      if (targetOffer) {
+        return {
+          eligible: Boolean(targetOffer.eligible),
+          offer_price: Number(targetOffer.offer_price) || 2000,
+          discount_amount: Number(targetOffer.discount_amount) || 0,
+          escalating: targetOffer.escalating || null,
+        };
+      }
+    }
+    if (selectedPackage?.isFirstPurchaseOffer) {
+      return {
+        eligible: true,
+        offer_price: Number(selectedPackage.price) || 2000,
+        discount_amount: Number(selectedPackage.discountAmount) || 0,
+      };
+    }
+    return null;
+  });
+
+  const [sepayConfig] = useState(() => dataService.getSePayConfig());
+  const minQrAmount = Number(sepayConfig?.minQrAmount || 2000);
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'vietqr'>('wallet');
+
+  // --- TRƯỜNG ĐA NGÀNH: HÀNG VẬT LÝ & GIAO HÀNG TOÀN QUỐC ---
+  const isPhysical = Boolean(product?.product_type === 'physical' || liveProduct?.product_type === 'physical');
+  const shippingFee = isPhysical ? Number(product?.shipping_fee ?? liveProduct?.shipping_fee ?? 0) : 0;
+
+  const [shippingName, setShippingName] = useState<string>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('wcg_shipping_info');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed?.name) return parsed.name;
+        } catch {}
+      }
+    }
+    return currentUser?.displayName || currentUser?.username || '';
+  });
+
+  const [shippingPhone, setShippingPhone] = useState<string>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('wcg_shipping_info');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed?.phone) return parsed.phone;
+        } catch {}
+      }
+    }
+    return currentUser?.phone || '';
+  });
+
+  const [shippingAddress, setShippingAddress] = useState<string>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('wcg_shipping_info');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed?.address) return parsed.address;
+        } catch {}
+      }
+    }
+    return '';
+  });
+
+  const [shippingNote, setShippingNote] = useState<string>('');
+
+  // --- TÍNH NĂNG VẬN CHUYỂN & VOUCHER SHOPEE ĐA TẦNG ---
+  const [selectedCarrier, setSelectedCarrier] = useState<CarrierCode>(() => {
+    return shippingService.getConfig().defaultCarrier || 'GHTK';
+  });
+  const [selectedFreeship, setSelectedFreeship] = useState<VoucherItem | null>(null);
+  const [selectedDiscount, setSelectedDiscount] = useState<VoucherItem | null>(null);
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [trackingModalOrder, setTrackingModalOrder] = useState<ShippingOrderRecord | null>(null);
+
+  const saveShippingCache = (name: string, phone: string, address: string) => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('wcg_shipping_info', JSON.stringify({ name, phone, address }));
+    }
+  };
+
+  const [qrOrder, setQrOrder] = useState<any | null>(null);
+  const [qrStatus, setQrStatus] = useState<'idle' | 'creating' | 'waiting' | 'paid' | 'expired' | 'error'>('idle');
+  const [qrSecondsLeft, setQrSecondsLeft] = useState<number>(900);
+  const [qrCopiedField, setQrCopiedField] = useState<string | null>(null);
+  const [currentQrImageSrc, setCurrentQrImageSrc] = useState<string>('');
+  const [qrImageLoadFailed, setQrImageLoadFailed] = useState<boolean>(false);
+  const [isQrImageLoading, setIsQrImageLoading] = useState<boolean>(true);
+  const [qrAttemptStep, setQrAttemptStep] = useState<number>(0);
+  const qrStepRef = React.useRef<number>(0);
+  const [qrLastErrorMsg, setQrLastErrorMsg] = useState<string>('');
+  const [showQrDiagnostics, setShowQrDiagnostics] = useState<boolean>(false);
+  const [localQrDataUrl, setLocalQrDataUrl] = useState<string>('');
+  const [localQrGenStatus, setLocalQrGenStatus] = useState<string>('idle');
+  const [domErrorSnapshot, setDomErrorSnapshot] = useState<{
+    timestamp?: string;
+    step?: number;
+    tierName?: string;
+    srcPreview?: string;
+    naturalWidth?: number;
+    naturalHeight?: number;
+    complete?: boolean;
+    isConnected?: boolean;
+    errorMessage?: string;
+  } | null>(null);
+  const qrImgRef = React.useRef<HTMLImageElement | null>(null);
+  const pollTimerRef = React.useRef<any>(null);
+  const countdownTimerRef = React.useRef<any>(null);
+
+  // 4 tầng QR: Tầng 0 sinh tại chỗ (Data URL) -> SePay -> VietQR Chuẩn -> VietQR Rút Gọn (§4.2)
+  const QR_TIER_CONFIG = [
+    { id: 0, label: 'QR Tại Chỗ (Data URL - Không cần mạng)', short: 'QR Tại Chỗ' },
+    { id: 1, label: 'SePay VietQR (Chính)', short: 'SePay' },
+    { id: 2, label: 'VietQR.io Chuẩn (SVG)', short: 'VietQR Chuẩn' },
+    { id: 3, label: 'VietQR.io Rút Gọn (Compact2)', short: 'VietQR Rút Gọn' },
+  ];
+
+  // Helper sinh mã QR tại chỗ bằng chuỗi EMVCo (§4.2)
+  const generateLocalQr = async (order: any): Promise<string> => {
     try {
-      const saved = localStorage.getItem('universal_mall_saved_shipping_info');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return {
-      fullName: '',
-      phone: '',
-      email: '',
-      provinceCity: 'Hà Nội',
-      district: 'Cầu Giấy',
-      ward: 'Dịch Vọng Hậu',
-      streetAddress: '',
-      note: '',
+      let payload = order?.qrPayload;
+      if (!payload && order?.bankInfo) {
+        payload = generateVietQrEmvCo({
+          bin: '970423',
+          accountNumber: order.bankInfo.accountNumber || '',
+          amount: Number(order.bankInfo.amount) || 0,
+          content: order.bankInfo.content || '',
+        });
+      }
+      if (!payload) {
+        throw new Error('Không có chuỗi qrPayload để sinh mã QR.');
+      }
+      const dataUrl = await QRCode.toDataURL(payload, {
+        width: 512,
+        margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: 'M',
+      });
+      setLocalQrDataUrl(dataUrl);
+      setLocalQrGenStatus(`Thành công (Data URL ${dataUrl.length} bytes)`);
+      return dataUrl;
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      console.warn('[ProductCheckoutModal] Lỗi sinh QR tại chỗ:', err);
+      setLocalQrGenStatus(`Lỗi sinh QR: ${msg}`);
+      return '';
+    }
+  };
+
+  const getClientQrFallbackUrl = (order: any, template = 'compact2') => {
+    if (!order?.bankInfo) return '';
+    const cleanBank = String(order.bankInfo.bankName || 'TPBank').replace(/\s+/g, '');
+    const cleanAcc = String(order.bankInfo.accountNumber || '').replace(/\s+/g, '');
+    const amount = Number(order.bankInfo.amount) || 0;
+    const memo = encodeURIComponent(order.bankInfo.content || '');
+    const accName = encodeURIComponent(order.bankInfo.bankAccount || '');
+    return `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-${template}.svg?amount=${amount}&addInfo=${memo}&accountName=${accName}`;
+  };
+
+  const getQrTierUrl = (order: any, step: number, cacheBust = false) => {
+    if (!order) return '';
+    let url = '';
+    if (step === 0) {
+      url = localQrDataUrl;
+    } else if (step === 1) {
+      url = order.qrUrls?.primary || `https://qr.sepay.vn/img?acc=${encodeURIComponent((order.bankInfo?.accountNumber || '').replace(/\s+/g, ''))}&bank=${encodeURIComponent((order.bankInfo?.bankName || 'TPBank').replace(/\s+/g, ''))}&amount=${order.bankInfo?.amount || 0}&des=${encodeURIComponent(order.bankInfo?.content || '')}&template=qr_only`;
+    } else if (step === 2) {
+      url = order.qrUrls?.fallback || getClientQrFallbackUrl(order, 'qr_only');
+    } else {
+      url = getClientQrFallbackUrl(order, 'compact2');
+    }
+    if (cacheBust && url && !url.startsWith('data:')) {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}_t=${Date.now()}`;
+    }
+    return url;
+  };
+
+  useEffect(() => {
+    if (qrOrder) {
+      qrStepRef.current = 0;
+      setQrAttemptStep(0);
+      setQrImageLoadFailed(false);
+      setIsQrImageLoading(true);
+      setQrLastErrorMsg('');
+      setDomErrorSnapshot(null);
+
+      // Thử sinh QR tại chỗ ngay lập tức (§4.2)
+      generateLocalQr(qrOrder).then((localSrc) => {
+        if (localSrc) {
+          qrStepRef.current = 0;
+          setQrAttemptStep(0);
+          setCurrentQrImageSrc(localSrc);
+          setIsQrImageLoading(false);
+          setQrImageLoadFailed(false);
+          console.log('[ProductCheckoutModal] Đã sinh QR tại chỗ thành công (Data URL):', {
+            orderId: qrOrder.id,
+            dataUrlLength: localSrc.length,
+          });
+        } else {
+          // Sinh tại chỗ không thành công -> tự động chuyển Tầng 1 (SePay)
+          qrStepRef.current = 1;
+          setQrAttemptStep(1);
+          setIsQrImageLoading(true);
+          const nextUrl = getQrTierUrl(qrOrder, 1);
+          setCurrentQrImageSrc(nextUrl);
+        }
+      });
+    } else {
+      setCurrentQrImageSrc('');
+      setLocalQrDataUrl('');
+      setLocalQrGenStatus('idle');
+      setQrImageLoadFailed(false);
+      setIsQrImageLoading(false);
+      setQrAttemptStep(0);
+      qrStepRef.current = 0;
+      setQrLastErrorMsg('');
+      setDomErrorSnapshot(null);
+    }
+  }, [qrOrder]);
+
+  const handleQrImageError = (e?: any) => {
+    if (!qrOrder) {
+      setQrImageLoadFailed(true);
+      setIsQrImageLoading(false);
+      return;
+    }
+
+    const currentStep = qrStepRef.current;
+    const isData = currentQrImageSrc.startsWith('data:');
+    const previewSrc = isData ? `data:image/png;base64... (${currentQrImageSrc.length} bytes)` : currentQrImageSrc;
+    const errMsg = `Lỗi tải ảnh tầng ${currentStep + 1}/4 (${QR_TIER_CONFIG[currentStep]?.short}): ${previewSrc}`;
+    console.warn('[VietQR Diagnostic]:', errMsg, e);
+    setQrLastErrorMsg(errMsg);
+
+    // Ghi nhận snapshot DOM thật lúc lỗi phục vụ chẩn đoán (§3 mục 5)
+    const imgEl = qrImgRef.current;
+    setDomErrorSnapshot({
+      timestamp: new Date().toLocaleTimeString(),
+      step: currentStep,
+      tierName: QR_TIER_CONFIG[currentStep]?.short || 'Không xác định',
+      srcPreview: previewSrc,
+      naturalWidth: imgEl?.naturalWidth || 0,
+      naturalHeight: imgEl?.naturalHeight || 0,
+      complete: imgEl?.complete || false,
+      isConnected: imgEl?.isConnected || false,
+      errorMessage: e?.type ? `DOM Event "${e.type}"` : (e?.message || 'onError triggered'),
+    });
+
+    if (currentStep === 0) {
+      // Tầng 0 (tại chỗ) thất bại -> tự động thử tầng 1 (SePay)
+      qrStepRef.current = 1;
+      setQrAttemptStep(1);
+      setIsQrImageLoading(true);
+      const nextUrl = getQrTierUrl(qrOrder, 1);
+      setCurrentQrImageSrc(nextUrl);
+      return;
+    }
+
+    if (currentStep === 1) {
+      // Tầng 1 (SePay) thất bại -> tự động thử tầng 2 (VietQR Chuẩn SVG)
+      qrStepRef.current = 2;
+      setQrAttemptStep(2);
+      setIsQrImageLoading(true);
+      const nextUrl = getQrTierUrl(qrOrder, 2);
+      setCurrentQrImageSrc(nextUrl);
+      return;
+    }
+
+    if (currentStep === 2) {
+      // Tầng 2 (VietQR SVG) thất bại -> tự động thử tầng 3 (VietQR Compact2)
+      qrStepRef.current = 3;
+      setQrAttemptStep(3);
+      setIsQrImageLoading(true);
+      const nextUrl = getQrTierUrl(qrOrder, 3);
+      setCurrentQrImageSrc(nextUrl);
+      return;
+    }
+
+    // Tất cả 4 tầng đều thất bại
+    setQrImageLoadFailed(true);
+    setIsQrImageLoading(false);
+  };
+
+  const handleReloadQrImage = async () => {
+    if (!qrOrder) return;
+    setQrImageLoadFailed(false);
+    setIsQrImageLoading(true);
+    setQrLastErrorMsg('');
+    setDomErrorSnapshot(null);
+    // Bắt đầu lại từ tầng 0 (sinh QR tại chỗ)
+    qrStepRef.current = 0;
+    setQrAttemptStep(0);
+    const freshDataUrl = await generateLocalQr(qrOrder);
+    if (freshDataUrl) {
+      setCurrentQrImageSrc(freshDataUrl);
+      setIsQrImageLoading(false);
+    } else {
+      qrStepRef.current = 1;
+      setQrAttemptStep(1);
+      const freshUrl = getQrTierUrl(qrOrder, 1, true);
+      setCurrentQrImageSrc(freshUrl);
+    }
+  };
+
+  const handleCycleQrTier = async () => {
+    if (!qrOrder) return;
+    const nextStep = (qrStepRef.current + 1) % 4;
+    qrStepRef.current = nextStep;
+    setQrAttemptStep(nextStep);
+    setIsQrImageLoading(true);
+    setQrImageLoadFailed(false);
+    setQrLastErrorMsg('');
+
+    if (nextStep === 0) {
+      let src = localQrDataUrl;
+      if (!src) src = await generateLocalQr(qrOrder);
+      if (src) {
+        setCurrentQrImageSrc(src);
+        setIsQrImageLoading(false);
+      } else {
+        qrStepRef.current = 1;
+        setQrAttemptStep(1);
+        setCurrentQrImageSrc(getQrTierUrl(qrOrder, 1, true));
+      }
+    } else {
+      const nextUrl = getQrTierUrl(qrOrder, nextStep, true);
+      setCurrentQrImageSrc(nextUrl);
+    }
+  };
+
+  const [priceEscalatedDialog, setPriceEscalatedDialog] = useState<{
+    isOpen: boolean;
+    oldPrice: number;
+    newPrice: number;
+    message: string;
+  } | null>(null);
+
+  // Fetch first purchase offer for this game & package
+  useEffect(() => {
+    let isMounted = true;
+    const activeUser = currentUser || dataService.getCurrentUser();
+    const token =
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_auth_token') : null) ||
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('wcg_auth_token') : null) ||
+      activeUser?.session_token ||
+      '';
+
+    if (!liveProduct?.game_slug) return;
+
+    offerService
+      .fetchOffers(liveProduct.game_slug, token)
+      .then((data) => {
+        if (!isMounted || !data) return;
+        const targetId = selectedPackage?.id || liveProduct.id;
+        const targetOffer = data.offers?.[targetId];
+        if (targetOffer) {
+          setCheckoutOffer({
+            eligible: Boolean(targetOffer.eligible),
+            offer_price: Number(targetOffer.offer_price) || 2000,
+            discount_amount: Number(targetOffer.discount_amount) || 0,
+            escalating: targetOffer.escalating || null,
+          });
+        } else {
+          setCheckoutOffer(null);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
     };
+  }, [liveProduct?.game_slug, selectedPackage?.id, currentUser?.id]);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    if (initialQuantity && initialQuantity > 0) {
+      setQuantity(initialQuantity);
+    }
+  }, [initialQuantity]);
+
+  useEffect(() => {
+    const handleUpdate = () => setTick((t) => t + 1);
+    const unsub = dataService.subscribe(handleUpdate);
+    const unsubStock = marketingService.subscribeStockChange(handleUpdate);
+    const unsubSold = marketingService.subscribeSoldCountChange(handleUpdate);
+    window.addEventListener('wcg_virtual_stock_updated', handleUpdate);
+    window.addEventListener('wcg_sold_count_updated', handleUpdate);
+    return () => {
+      unsub();
+      unsubStock();
+      unsubSold();
+      window.removeEventListener('wcg_virtual_stock_updated', handleUpdate);
+      window.removeEventListener('wcg_sold_count_updated', handleUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (product) {
+      setQuantity(initialQuantity || 1);
+      setCompletedOrder(null);
+      setCopiedCodeIdx(null);
+      setCopiedAll(false);
+      const newKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+      setIdempotencyKey(newKey);
+    }
+  }, [product?.id]);
+
+  useLockBodyScroll(Boolean(product));
+
+  const [liveStock, setLiveStock] = useState<number | null>(null);
+
+  // Tải lại tồn kho thật (stock_quantity) từ máy chủ khi mở modal thanh toán
+  useEffect(() => {
+    const targetId = selectedPackage?.id || product?.id;
+    if (!targetId) return;
+
+    let active = true;
+    dataService.refreshRealStock(targetId).then((freshStock) => {
+      if (active && freshStock !== null) {
+        setLiveStock(freshStock);
+      }
+    }).catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [product?.id, selectedPackage?.id]);
+
+  const rawStock = liveStock !== null
+    ? liveStock
+    : (typeof selectedPackage?.stock_quantity === 'number'
+        ? selectedPackage.stock_quantity
+        : liveProduct?.stock_quantity);
+  const realStock = Math.max(0, Number(rawStock ?? 0));
+
+  useEffect(() => {
+    if (realStock <= 0) {
+      setQuantity(0);
+    } else if (quantity > realStock) {
+      setQuantity(realStock);
+    } else if (quantity < 1) {
+      setQuantity(1);
+    }
+  }, [realStock, selectedPackage, product]);
+
+  if (!product || !liveProduct) return null;
+
+  const effectiveRegularPrice = selectedPackage?.raw_price ?? (
+    selectedPackage?.isFirstPurchaseOffer
+      ? (Number(selectedPackage.price) + Number(selectedPackage.discountAmount || 0))
+      : (selectedPackage?.price ?? liveProduct.current_price)
+  );
+  const effectiveOriginalPrice = (typeof selectedPackage?.original_price === 'number' && selectedPackage.original_price > 0)
+    ? selectedPackage.original_price
+    : (selectedPackage?.price ?? liveProduct.original_price);
+  const effectiveTitle = selectedPackage && selectedPackage.name && selectedPackage.name !== liveProduct.title
+    ? `${liveProduct.title} - ${selectedPackage.name}`
+    : liveProduct.title;
+  const effectiveTargetId = selectedPackage?.id || liveProduct.id;
+
+  const isEscalating = selectedPackage?.sale_mode === 'escalating'
+    || Boolean(checkoutOffer?.escalating?.is_escalating)
+    || liveProduct?.sale_mode === 'escalating';
+
+  const rawEsc = checkoutOffer?.escalating;
+  const escBase = Number(
+    rawEsc?.base_price ?? rawEsc?.escalating_base_price ??
+    selectedPackage?.escalating_base_price ?? liveProduct?.escalating_base_price ??
+    selectedPackage?.price ?? liveProduct?.current_price ?? effectiveRegularPrice
+  ) || effectiveRegularPrice;
+
+  const escStep = Number(
+    rawEsc?.step ?? rawEsc?.escalating_step ??
+    selectedPackage?.escalating_step ?? liveProduct?.escalating_step ?? 0
+  ) || 0;
+
+  const escMax = (rawEsc?.max_price !== undefined && rawEsc?.max_price !== null)
+    ? Number(rawEsc.max_price)
+    : ((rawEsc?.escalating_max_price !== undefined && rawEsc?.escalating_max_price !== null)
+      ? Number(rawEsc.escalating_max_price)
+      : (selectedPackage?.escalating_max_price !== undefined && selectedPackage?.escalating_max_price !== null
+        ? Number(selectedPackage.escalating_max_price)
+        : (liveProduct?.escalating_max_price !== undefined && liveProduct?.escalating_max_price !== null
+          ? Number(liveProduct.escalating_max_price)
+          : null)));
+
+  const escCompleted = Number(
+    rawEsc?.completed_count ??
+    selectedPackage?.escalating_completed_count ?? liveProduct?.escalating_completed_count ?? 0
+  ) || 0;
+
+  const rawCurrent = Number(
+    rawEsc?.current_price ?? rawEsc?.current_calculated_price ??
+    selectedPackage?.escalating_current_price ?? liveProduct?.escalating_current_price ??
+    selectedPackage?.price
+  );
+
+  const escCurrent = (rawCurrent > 0)
+    ? rawCurrent
+    : (escMax !== null && escMax > 0 ? Math.min(escBase + (escCompleted * escStep), escMax) : (escBase + (escCompleted * escStep)));
+
+  const rawNext = Number(
+    rawEsc?.next_price ?? rawEsc?.next_step_price ??
+    selectedPackage?.escalating_next_price ?? liveProduct?.escalating_next_price
+  );
+
+  const escNext = (rawNext > 0)
+    ? rawNext
+    : (escMax !== null && escMax > 0 ? Math.min(escBase + ((escCompleted + 1) * escStep), escMax) : (escBase + ((escCompleted + 1) * escStep)));
+
+  const escalatingData = {
+    is_escalating: isEscalating,
+    base_price: escBase,
+    step: escStep,
+    max_price: escMax,
+    completed_count: escCompleted,
+    current_price: escCurrent,
+    next_price: escNext,
+  };
+
+  const isPkgFlagEnabled = selectedPackage?.first_purchase_enabled === true ||
+    selectedPackage?.first_purchase_enabled === 1 ||
+    String(selectedPackage?.first_purchase_enabled) === '1' ||
+    String(selectedPackage?.first_purchase_enabled) === 'true';
+
+  const pkgMaxPrice = selectedPackage?.first_purchase_max_price
+    ? Number(selectedPackage.first_purchase_max_price)
+    : (checkoutOffer?.max_original_price ?? 30000);
+
+  const defaultPkgEligible = isPkgFlagEnabled && !isEscalating && (effectiveRegularPrice <= pkgMaxPrice);
+  const isFirstPurchaseEligible = !isEscalating && isPkgFlagEnabled && Boolean(
+    checkoutOffer !== null && checkoutOffer !== undefined
+      ? checkoutOffer.eligible
+      : (selectedPackage?.isFirstPurchaseOffer ? true : defaultPkgEligible)
+  );
+
+  const customPkgPrice = selectedPackage?.first_purchase_price
+    ? Number(selectedPackage.first_purchase_price)
+    : null;
+
+  const firstItemOfferPrice = isFirstPurchaseEligible
+    ? (checkoutOffer?.offer_price ?? customPkgPrice ?? 2000)
+    : effectiveRegularPrice;
+  const firstItemActualPrice = Math.min(effectiveRegularPrice, firstItemOfferPrice);
+
+  const user = currentUser || dataService.getCurrentUser();
+  const userBalance = user?.wallet_balance || 0;
+  const maxStock = realStock;
+  const safeQty = isEscalating ? 1 : (realStock > 0 ? Math.min(Math.max(1, quantity), maxStock) : 0);
+  const totalPrice = isEscalating
+    ? Number(escalatingData.current_price)
+    : (safeQty > 0
+        ? (firstItemActualPrice + Math.max(0, safeQty - 1) * effectiveRegularPrice)
+        : 0);
+  const calculatedCarrierFee = isPhysical ? shippingService.calculateFee(selectedCarrier, shippingAddress) : 0;
+  const rawShippingFee = isPhysical ? (shippingFee > 0 ? shippingFee : calculatedCarrierFee) : 0;
+
+  const voucherStacking: VoucherStackingResult = voucherService.calculateStacking({
+    productTotal: totalPrice,
+    shippingFee: rawShippingFee,
+    freeshipVoucher: selectedFreeship,
+    discountVoucher: selectedDiscount,
   });
 
-  const [carrier, setCarrier] = useState<ShippingCarrier>('GHTK');
-  const [paymentMethod, setPaymentMethod] = useState<'vietqr' | 'wallet' | 'cod'>('vietqr');
-  const [showVoucherModal, setShowVoucherModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const finalShippingFee = isPhysical ? voucherStacking.finalShippingFee : 0;
+  const finalGrandTotal = isPhysical ? voucherStacking.finalTotal : Math.max(0, totalPrice - voucherStacking.productDiscount);
+  const totalDiscountAmount = (isFirstPurchaseEligible
+    ? Math.max(0, (effectiveRegularPrice * safeQty) - totalPrice)
+    : 0) + voucherStacking.totalSavings;
+  const isPriceValid = !isNaN(totalPrice) && totalPrice > 0;
+  const isBalanceEnough = isPriceValid && (userBalance >= finalGrandTotal);
+  const checkoutDisplayStock = realStock <= 0 ? 0 : marketingService.getDisplayStock(effectiveTargetId, realStock);
 
-  // Vouchers state
-  const [selectedFreeship, setSelectedFreeship] = useState<Voucher | null>(null);
-  const [selectedDiscount, setSelectedDiscount] = useState<Voucher | null>(null);
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    };
+  }, []);
 
-  // Price calculations
-  const unitPrice = variant ? variant.price : product.current_price;
-  const subtotal = unitPrice * quantity;
-  const baseShippingFee = product.product_type === 'physical'
-    ? shippingService.calculateShippingFee(shippingInfo.provinceCity)
-    : 0;
+  const isQrAvailable = isPriceValid && (totalPrice >= minQrAmount);
 
-  const freeshipDiscount = selectedFreeship
-    ? voucherService.calculateShippingDiscount(selectedFreeship, baseShippingFee, subtotal)
-    : 0;
+  useEffect(() => {
+    if (!isQrAvailable && paymentMethod === 'vietqr') {
+      setPaymentMethod('wallet');
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+      setQrStatus('idle');
+    } else if (paymentMethod === 'vietqr' && qrStatus === 'error') {
+      setQrStatus('idle');
+    }
+  }, [isQrAvailable, paymentMethod]);
 
-  const shopDiscount = selectedDiscount
-    ? voucherService.calculateDiscount(selectedDiscount, subtotal)
-    : 0;
+  const handleCopyQrField = (text: string, fieldName: string) => {
+    navigator.clipboard.writeText(text);
+    setQrCopiedField(fieldName);
+    setTimeout(() => setQrCopiedField(null), 1500);
+    onShowToast('Đã sao chép!', text, 'info');
+  };
 
-  const finalShippingFee = Math.max(0, baseShippingFee - freeshipDiscount);
-  const totalAmount = Math.max(0, subtotal - shopDiscount + finalShippingFee);
+  const formatCountdown = (totalSec: number) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
-  const orderCode = `ORD-${Date.now().toString().slice(-6)}`;
-  const vietQrUrl = generateVietQrUrl({
-    amount: totalAmount,
-    orderCode,
-  });
+  const startQrPolling = (orderId: string, expiresAtMs: number) => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
 
-  const handleCreateOrder = () => {
-    // Basic validation
-    if (product.product_type === 'physical') {
-      if (!shippingInfo.fullName.trim()) {
-        alert('Vui lòng nhập họ tên người nhận hàng');
+    countdownTimerRef.current = setInterval(() => {
+      const left = Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000));
+      setQrSecondsLeft(left);
+      if (left <= 0) {
+        clearInterval(countdownTimerRef.current);
+        clearInterval(pollTimerRef.current);
+        setQrStatus('expired');
+      }
+    }, 1000);
+
+    pollTimerRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/status?order_id=${encodeURIComponent(orderId)}&t=${Date.now()}`);
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        if (data.status === 'COMPLETED') {
+          clearInterval(pollTimerRef.current);
+          clearInterval(countdownTimerRef.current);
+          setQrStatus('paid');
+
+          confetti({
+            particleCount: 90,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+
+          onShowToast('Thanh Toán Thành Công!', 'Đơn hàng QR đã hoàn tất, mã quà đã được giao vào kho của bạn.', 'success');
+
+          const codeList = data.order?.deliveredCodes || [];
+          setCompletedOrder({
+            id: data.order.id,
+            orderCode: data.order.id,
+            productId: effectiveTargetId,
+            product_id: effectiveTargetId,
+            productTitle: liveProduct?.title,
+            product_title: liveProduct?.title,
+            game_name: liveProduct?.game_name || 'Game',
+            amount: data.order.totalAmount,
+            quantity: safeQty,
+            unit_price: Math.round(data.order.totalAmount / safeQty),
+            code_content: codeList.join('\n'),
+            code_items: codeList,
+            deliveredCodes: codeList,
+            status: 'completed',
+            created_at: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            payment_method: 'vietqr',
+          } as any);
+        } else if (data.status === 'EXPIRED') {
+          clearInterval(pollTimerRef.current);
+          clearInterval(countdownTimerRef.current);
+          setQrStatus('expired');
+        }
+      } catch {}
+    }, 2500);
+  };
+
+  const handleCreateQrOrder = async () => {
+    if (!user) {
+      if (onOpenAuth) onOpenAuth();
+      onShowToast('Cần đăng nhập', 'Vui lòng đăng nhập tài khoản để thanh toán.', 'info');
+      return;
+    }
+    if (maxStock <= 0) {
+      onShowToast('Hết hàng', 'Sản phẩm tạm thời hết hàng trong kho.', 'error');
+      return;
+    }
+
+    // Luồng xử lý đặt hàng vật lý giao nhận toàn quốc
+    if (isPhysical) {
+      if (!shippingName.trim()) {
+        onShowToast('Thiếu thông tin người nhận', 'Vui lòng nhập Họ tên người nhận hàng.', 'warning');
         return;
       }
-      if (!shippingInfo.phone.trim() || shippingInfo.phone.length < 9) {
-        alert('Vui lòng nhập số điện thoại hợp lệ (10 số)');
+      const cleanPhone = shippingPhone.trim().replace(/\s+/g, '');
+      if (!cleanPhone || !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(cleanPhone)) {
+        onShowToast('Số điện thoại không hợp lệ', 'Vui lòng nhập số điện thoại người nhận hợp lệ (10 số).', 'warning');
         return;
       }
-      if (!shippingInfo.streetAddress.trim()) {
-        alert('Vui lòng nhập địa chỉ giao hàng cụ thể');
+      if (!shippingAddress.trim() || shippingAddress.trim().length < 6) {
+        onShowToast('Thiếu địa chỉ nhận hàng', 'Vui lòng nhập địa chỉ giao hàng chi tiết (Số nhà, đường, phường, quận, tỉnh).', 'warning');
+        return;
+      }
+      saveShippingCache(shippingName.trim(), shippingPhone.trim(), shippingAddress.trim());
+
+      setQrStatus('creating');
+      const carrierInfo = CARRIERS[selectedCarrier] || CARRIERS.GHTK;
+      const trackingCode = shippingService.generateTrackingCode(selectedCarrier, shippingAddress);
+      const expectedProductPrice = Math.max(0, totalPrice - voucherStacking.productDiscount);
+
+      try {
+        const res = await dataService.createOrder(effectiveTargetId, safeQty, idempotencyKey, {
+          expectedPrice: expectedProductPrice,
+          orderType: 'physical',
+          paymentMethod: 'vietqr',
+          productFallback: liveProduct || product,
+          shippingInfo: {
+            name: shippingName.trim(),
+            phone: shippingPhone.trim(),
+            address: shippingAddress.trim(),
+            note: shippingNote.trim(),
+          },
+          variantInfo: selectedPackage ? {
+            id: selectedPackage.id,
+            name: selectedPackage.name,
+          } : undefined,
+          shippingFee: finalShippingFee,
+          carrier: selectedCarrier,
+          carrierName: carrierInfo.name,
+          trackingCode: trackingCode,
+          estimatedDelivery: carrierInfo.estimatedDelivery,
+          voucherCode: [selectedFreeship?.code, selectedDiscount?.code].filter(Boolean).join(', ') || undefined,
+          voucherDiscount: voucherStacking.productDiscount,
+          freeshipDiscount: voucherStacking.freeshipDiscount,
+        });
+
+        if (res.success && res.order) {
+          const shipOrder = await shippingService.createShippingOrder({
+            orderId: res.order.id,
+            carrierCode: selectedCarrier,
+            recipientName: shippingName.trim(),
+            recipientPhone: shippingPhone.trim(),
+            recipientAddress: shippingAddress.trim(),
+            shippingNote: shippingNote.trim(),
+            shippingFee: finalShippingFee,
+          });
+          res.order.carrier = selectedCarrier;
+          res.order.carrier_name = carrierInfo.name;
+          res.order.tracking_code = shipOrder.trackingCode;
+          res.order.estimated_delivery = carrierInfo.estimatedDelivery;
+          res.order.shipping_fee = finalShippingFee;
+          res.order.voucher_code = [selectedFreeship?.code, selectedDiscount?.code].filter(Boolean).join(', ');
+          res.order.voucher_discount = voucherStacking.productDiscount;
+          res.order.freeship_discount = voucherStacking.freeshipDiscount;
+
+          voucherService.recordUsage(selectedFreeship?.code);
+          voucherService.recordUsage(selectedDiscount?.code);
+
+          const activeUser = currentUser || (typeof window !== 'undefined' ? dataService.getCurrentUser() : null);
+          marketingService.recordRealOrder(effectiveTitle, effectiveTargetId, finalGrandTotal, 'store', activeUser, safeQty);
+
+          setCompletedOrder(res.order);
+          setTrackingModalOrder(shipOrder);
+          setQrStatus('idle');
+          confetti({
+            particleCount: 80,
+            spread: 80,
+            origin: { y: 0.6 },
+            colors: ['#6366F1', '#10B981', '#F59E0B'],
+          });
+          onShowToast(
+            'Đặt Hàng Thành Công!',
+            `Đơn hàng vật lý ${res.order.id} đã được khởi tạo với mã vận đơn ${shipOrder.trackingCode}.`,
+            'success'
+          );
+          return;
+        } else {
+          setQrStatus('idle');
+          onShowToast('Lỗi đặt hàng', res.message || 'Không thể tạo đơn hàng vật lý.', 'error');
+          return;
+        }
+      } catch (err: any) {
+        setQrStatus('idle');
+        onShowToast('Lỗi xử lý', err?.message || 'Có lỗi xảy ra khi tạo đơn hàng.', 'error');
         return;
       }
     }
 
-    setIsSubmitting(true);
-
-    // Save shipping info for next time
+    setQrStatus('creating');
     try {
-      localStorage.setItem('universal_mall_saved_shipping_info', JSON.stringify(shippingInfo));
-    } catch {}
-
-    setTimeout(() => {
-      let shippingRecord: ShippingOrderRecord | undefined;
-
-      if (product.product_type === 'physical') {
-        shippingRecord = shippingService.createShippingOrder({
-          orderId: orderCode,
-          carrier,
-          customerName: shippingInfo.fullName,
-          phone: shippingInfo.phone,
-          address: `${shippingInfo.streetAddress}, ${shippingInfo.ward}, ${shippingInfo.district}, ${shippingInfo.provinceCity}`,
-          provinceCity: shippingInfo.provinceCity,
-          shippingFee: finalShippingFee,
-        });
-      }
-
-      const newOrder: UniversalOrder = {
-        id: `ord_${Date.now()}`,
-        order_code: orderCode,
-        product_id: product.id,
-        variant_id: variant?.id,
-        variant_name: variant?.variant_name,
-        product_title: product.title,
-        product_type: product.product_type,
-        quantity,
-        unit_price: unitPrice,
-        subtotal_amount: subtotal,
-        shipping_fee: finalShippingFee,
-        discount_amount: shopDiscount + freeshipDiscount,
-        voucher_code: selectedDiscount?.code,
-        freeship_voucher_code: selectedFreeship?.code,
-        total_amount: totalAmount,
-        payment_method: paymentMethod,
-        payment_status: paymentMethod === 'cod' ? 'PENDING' : 'PAID',
-        shipping_status: product.product_type === 'physical' ? 'PENDING' : 'DELIVERED',
-        shipping_carrier: carrier,
-        tracking_code: shippingRecord?.trackingCode,
-        shipping_info: shippingInfo,
-        delivered_codes: product.delivered_codes || ['KEY-UNIVERSAL-2026-AUTO-999'],
-        created_at: new Date().toISOString(),
-      };
-
-      // Confetti effect
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
+      const token = user.session_token || localStorage.getItem('wcg_auth_token') || '';
+      const res = await fetch('/api/orders/create-qr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({
+          productId: effectiveTargetId,
+          productTitle: liveProduct?.title,
+          quantity: safeQty,
+          expected_price: totalPrice,
+          idempotencyKey,
+        }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        setQrStatus('idle');
+        onShowToast('Lỗi tạo mã QR', data.message || 'Không thể khởi tạo mã QR thanh toán.', 'error');
+        return;
+      }
+      const orderData = data.order || {};
+      orderData.qrUrls = {
+        ...(data.qrUrls || {}),
+        ...(orderData.qrUrls || {}),
+      };
+      console.log('[ProductCheckoutModal] API create-qr trả về thành công:', {
+        topLevelQrUrls: data.qrUrls,
+        orderQrUrls: orderData.qrUrls,
+        bankInfo: orderData.bankInfo,
+      });
+      setQrOrder(orderData);
+      setQrStatus('waiting');
+      const expiresAtMs = data.order?.expiresAt ? new Date(data.order.expiresAt).getTime() : Date.now() + 15 * 60 * 1000;
+      setQrSecondsLeft(Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000)));
 
-      setIsSubmitting(false);
-      onOrderSuccess(newOrder, shippingRecord);
-    }, 700);
+      startQrPolling(data.order.id, expiresAtMs);
+    } catch (err: any) {
+      setQrStatus('idle');
+      onShowToast('Lỗi kết nối', err?.message || 'Không thể kết nối đến máy chủ.', 'error');
+    }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl relative my-8 text-xs flex flex-col max-h-[92vh]">
+  const handleDecreaseQty = () => {
+    if (isEscalating || maxStock <= 0) return;
+    setQuantity((prev) => Math.max(1, prev - 1));
+  };
+
+  const handleIncreaseQty = () => {
+    if (isEscalating || maxStock <= 0 || quantity >= maxStock) return;
+    setQuantity((prev) => Math.min(maxStock, prev + 1));
+  };
+
+  const handleQtyInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isEscalating) return;
+    if (maxStock <= 0) {
+      setQuantity(0);
+      return;
+    }
+    const val = parseInt(e.target.value, 10);
+    if (isNaN(val) || val < 1) {
+      setQuantity(1);
+    } else {
+      setQuantity(Math.min(maxStock, val));
+    }
+  };
+
+  const handlePayWithWallet = async () => {
+    if (!user) {
+      if (onOpenAuth) onOpenAuth();
+      onShowToast('Cần đăng nhập', 'Vui lòng đăng nhập tài khoản để thanh toán.', 'info');
+      return;
+    }
+
+    if (user.session_token && typeof localStorage !== 'undefined' && !localStorage.getItem('wcg_auth_token')) {
+      localStorage.setItem('wcg_auth_token', user.session_token);
+    }
+
+    if (!isPriceValid) {
+      onShowToast(
+        'Đang Cập Nhật Giá',
+        'Dữ liệu giá đang được đồng bộ, vui lòng thử lại sau giây lát hoặc tải lại trang.',
+        'warning'
+      );
+      return;
+    }
+
+    if (!isBalanceEnough) {
+      onShowToast(
+        'Số Dư Ví Không Đủ',
+        `Bạn cần ${formatCore(finalGrandTotal)} nhưng ví hiện chỉ có ${formatCore(userBalance)}. Vui lòng nạp thêm tiền để thanh toán.`,
+        'error'
+      );
+      return;
+    }
+
+    if (realStock <= 0) {
+      onShowToast('Hết hàng', 'Sản phẩm tạm thời hết hàng trong kho.', 'error');
+      return;
+    }
+
+    // Kiểm tra thông tin giao nhận nếu là hàng vật lý
+    if (isPhysical) {
+      if (!shippingName.trim()) {
+        onShowToast('Thiếu thông tin người nhận', 'Vui lòng nhập Họ tên người nhận hàng.', 'warning');
+        return;
+      }
+      const cleanPhone = shippingPhone.trim().replace(/\s+/g, '');
+      if (!cleanPhone || !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(cleanPhone)) {
+        onShowToast('Số điện thoại không hợp lệ', 'Vui lòng nhập số điện thoại người nhận hợp lệ (10 số).', 'warning');
+        return;
+      }
+      if (!shippingAddress.trim() || shippingAddress.trim().length < 6) {
+        onShowToast('Thiếu địa chỉ nhận hàng', 'Vui lòng nhập địa chỉ giao hàng chi tiết (Số nhà, đường, phường, quận, tỉnh).', 'warning');
+        return;
+      }
+      saveShippingCache(shippingName.trim(), shippingPhone.trim(), shippingAddress.trim());
+    }
+
+    const activeKey = idempotencyKey || (
+      (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10)
+    );
+    if (!idempotencyKey) setIdempotencyKey(activeKey);
+
+    setIsProcessing(true);
+
+    try {
+      const carrierInfo = CARRIERS[selectedCarrier] || CARRIERS.GHTK;
+      const trackingCode = isPhysical ? shippingService.generateTrackingCode(selectedCarrier, shippingAddress) : '';
+      const expectedProductPrice = Math.max(0, totalPrice - voucherStacking.productDiscount);
+
+      const orderPromise = dataService.createOrder(effectiveTargetId, safeQty, activeKey, {
+        expectedPrice: expectedProductPrice,
+        orderType: isPhysical ? 'physical' : 'digital',
+        paymentMethod: 'wallet',
+        productFallback: liveProduct || product,
+        shippingInfo: isPhysical ? {
+          name: shippingName.trim(),
+          phone: shippingPhone.trim(),
+          address: shippingAddress.trim(),
+          note: shippingNote.trim(),
+        } : undefined,
+        variantInfo: selectedPackage ? {
+          id: selectedPackage.id,
+          name: selectedPackage.name,
+        } : undefined,
+        shippingFee: isPhysical ? finalShippingFee : 0,
+        carrier: isPhysical ? selectedCarrier : undefined,
+        carrierName: isPhysical ? carrierInfo.name : undefined,
+        trackingCode: trackingCode || undefined,
+        estimatedDelivery: isPhysical ? carrierInfo.estimatedDelivery : undefined,
+        voucherCode: [selectedFreeship?.code, selectedDiscount?.code].filter(Boolean).join(', ') || undefined,
+        voucherDiscount: voucherStacking.productDiscount,
+        freeshipDiscount: voucherStacking.freeshipDiscount,
+      });
+      const timeoutPromise = new Promise<{ success: boolean; message: string }>((_, reject) =>
+        setTimeout(() => reject(new Error('Thời gian phản hồi máy chủ vượt quá 15 giây. Vui lòng kiểm tra lại danh sách mã đã nhận hoặc thử lại.')), 15000)
+      );
+
+      const res: any = await Promise.race([orderPromise, timeoutPromise]);
+      setIsProcessing(false);
+
+      if (res.code === 'PRICE_ESCALATED') {
+        setPriceEscalatedDialog({
+          isOpen: true,
+          oldPrice: res.old_price || totalPrice,
+          newPrice: res.new_price,
+          message: res.message || `Giá gói vừa tăng lên ${formatCore(res.new_price)} (đã có khách hàng mua trước bạn). Bạn có muốn mua với giá mới không?`,
+        });
+        return;
+      }
+
+      if (res.success && res.order) {
+        if (isPhysical) {
+          const shipOrder = await shippingService.createShippingOrder({
+            orderId: res.order.id,
+            carrierCode: selectedCarrier,
+            recipientName: shippingName.trim(),
+            recipientPhone: shippingPhone.trim(),
+            recipientAddress: shippingAddress.trim(),
+            shippingNote: shippingNote.trim(),
+            shippingFee: finalShippingFee,
+          });
+          res.order.carrier = selectedCarrier;
+          res.order.carrier_name = carrierInfo.name;
+          res.order.tracking_code = shipOrder.trackingCode;
+          res.order.estimated_delivery = carrierInfo.estimatedDelivery;
+          res.order.shipping_fee = finalShippingFee;
+          res.order.voucher_code = [selectedFreeship?.code, selectedDiscount?.code].filter(Boolean).join(', ');
+          res.order.voucher_discount = voucherStacking.productDiscount;
+          res.order.freeship_discount = voucherStacking.freeshipDiscount;
+          setTrackingModalOrder(shipOrder);
+        }
+
+        voucherService.recordUsage(selectedFreeship?.code);
+        voucherService.recordUsage(selectedDiscount?.code);
+
+        const activeUser = currentUser || (typeof window !== 'undefined' ? dataService.getCurrentUser() : null);
+        marketingService.recordRealOrder(effectiveTitle, effectiveTargetId, finalGrandTotal, 'store', activeUser, safeQty);
+
+        // Instantly notify React app state of new balance
+        if (activeUser) {
+          const newBal = res?.newBalance !== undefined
+            ? Number(res.newBalance)
+            : (res.order as any)?.balance_after !== undefined
+              ? Number((res.order as any).balance_after)
+              : res?.remainingBalance !== undefined
+                ? Number(res.remainingBalance)
+                : Math.max(0, (activeUser.wallet_balance || 0) - finalGrandTotal);
+          const updatedUser: UserProfile = {
+            ...activeUser,
+            wallet_balance: newBal,
+          };
+          dataService.saveCurrentUser(updatedUser);
+          if (onUpdateUser) {
+            onUpdateUser(updatedUser);
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: updatedUser }));
+            window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance: newBal } }));
+          }
+        }
+
+        setCompletedOrder(res.order);
+        confetti({
+          particleCount: 80,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#6366F1', '#10B981', '#F59E0B'],
+        });
+        onShowToast(
+          isPhysical ? 'Đặt hàng thành công!' : 'Thanh toán thành công!',
+          isPhysical ? 'Đơn hàng đã được lưu và đang chuẩn bị giao đến bạn.' : `Đã giao ${safeQty} mã quà tặng tức thì.`,
+          'success'
+        );
+      } else {
+        if (res.message && res.message.includes('Phiên đăng nhập') && onOpenAuth) {
+          onOpenAuth();
+        }
+        onShowToast('Thất bại', res.message || 'Không thể hoàn tất đơn hàng.', 'error');
+      }
+    } catch (err: any) {
+      setIsProcessing(false);
+      onShowToast('Lỗi', err?.message || 'Không thể hoàn tất đơn hàng.', 'error');
+    }
+  };
+
+  const handleAcceptNewEscalatedPrice = async (newPrice: number) => {
+    setPriceEscalatedDialog(null);
+    if (selectedPackage) {
+      selectedPackage.escalating_current_price = newPrice;
+      selectedPackage.price = newPrice;
+    }
+    const newKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+    setIdempotencyKey(newKey);
+    setIsProcessing(true);
+
+    try {
+      const res: any = await dataService.createOrder(effectiveTargetId, 1, newKey, { expectedPrice: newPrice });
+      setIsProcessing(false);
+      if (res.success && res.order) {
+        const activeUser = currentUser || (typeof window !== 'undefined' ? dataService.getCurrentUser() : null);
+        marketingService.recordRealOrder(effectiveTitle, effectiveTargetId, newPrice, 'store', activeUser, 1);
+        if (activeUser) {
+          const newBal = res?.newBalance !== undefined
+            ? Number(res.newBalance)
+            : Math.max(0, (activeUser.wallet_balance || 0) - newPrice);
+          const updatedUser: UserProfile = { ...activeUser, wallet_balance: newBal };
+          dataService.saveCurrentUser(updatedUser);
+          if (onUpdateUser) onUpdateUser(updatedUser);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: updatedUser }));
+            window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance: newBal } }));
+          }
+        }
+        setCompletedOrder(res.order);
+        confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 }, colors: ['#6366F1', '#10B981', '#F59E0B'] });
+        onShowToast('Thanh toán thành công!', 'Đã giao 1 mã quà tặng tức thì.', 'success');
+      } else if (res.code === 'PRICE_ESCALATED') {
+        setPriceEscalatedDialog({
+          isOpen: true,
+          oldPrice: res.old_price || newPrice,
+          newPrice: res.new_price,
+          message: res.message,
+        });
+      } else {
+        onShowToast('Thất bại', res.message || 'Không thể hoàn tất đơn hàng.', 'error');
+      }
+    } catch (err: any) {
+      setIsProcessing(false);
+      onShowToast('Lỗi', err?.message || 'Không thể hoàn tất đơn hàng.', 'error');
+    }
+  };
+
+  const handleCopySingleCode = (code: string, idx: number) => {
+    navigator.clipboard.writeText(code);
+    marketingService.recordRealCopy(effectiveTitle || 'Mã sản phẩm', '', 1, activeUser);
+    setCopiedCodeIdx(idx);
+    onShowToast('Đã sao chép mã!', code, 'success');
+    setTimeout(() => setCopiedCodeIdx(null), 2000);
+  };
+
+  const handleCopyAllCodes = () => {
+    if (!completedOrder) return;
+    navigator.clipboard.writeText(completedOrder.code_content);
+    marketingService.recordRealCopy(effectiveTitle || 'Mã sản phẩm', '', safeQty, activeUser);
+    setCopiedAll(true);
+    onShowToast('Đã sao chép tất cả mã!', completedOrder.code_content, 'success');
+    setTimeout(() => setCopiedAll(false), 2000);
+  };
+
+  const handleOpenTopup = () => {
+    onClose();
+    if (onOpenWallet) {
+      onOpenWallet();
+    } else if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('wcg_open_wallet_modal'));
+    }
+  };
+
+  const deliveredLines = completedOrder
+    ? (completedOrder.code_items && completedOrder.code_items.length > 0)
+      ? completedOrder.code_items
+      : completedOrder.code_content.split('\n').filter((l) => l.trim())
+    : [];
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <>
+      {isProcessing && (
+        <CyberLoader
+          isOverlay={true}
+          title="ĐANG XỬ LÝ ĐƠN..."
+          subText="Hệ thống đang kiểm tra số dư ví & xuất mã quà tặng từ kho bảo mật Cloudflare D1..."
+        />
+      )}
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md overflow-hidden animate-fade-in">
+      <div
+        className="relative w-full max-w-lg bg-card border-t sm:border border-border/90 rounded-t-[28px] sm:rounded-3xl overflow-hidden shadow-2xl animate-scale-in flex flex-col h-[88dvh] sm:h-auto max-h-[88dvh] sm:max-h-[88vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-600 to-amber-600 text-white shrink-0">
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-5 h-5 text-yellow-200" />
-            <h3 className="font-bold text-base">{t('checkout.title')}</h3>
-          </div>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-white/20 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        <div className="p-3.5 sm:p-5 border-b border-border/70 bg-card/95 backdrop-blur-md shrink-0 sticky top-0 z-20">
+          <div className="w-12 h-1.5 bg-slate-600/60 rounded-full mx-auto mb-2 sm:hidden shrink-0" />
 
-        {/* Scrollable Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
-          {/* 1. Item summary */}
-          <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 flex items-center space-x-3">
-            <img
-              src={product.thumbnail_url}
-              alt={product.title}
-              className="w-16 h-16 rounded-lg object-cover border border-gray-200 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <span className="text-[10px] text-orange-600 font-bold uppercase">{product.brand_name}</span>
-              <h4 className="font-semibold text-gray-900 truncate">{product.title}</h4>
-              {variant && (
-                <p className="text-gray-500 text-[11px] mt-0.5">Phân loại: {variant.variant_name}</p>
-              )}
-              <div className="flex items-baseline space-x-2 mt-1">
-                <span className="font-bold text-orange-600 text-sm">{formatCurrency(unitPrice)}</span>
-                <span className="text-gray-400">x{quantity}</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-secondary/20 text-secondary shrink-0">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-heading font-bold text-sm sm:text-base text-foreground truncate">
+                  Thanh Toán Đơn Hàng
+                </h3>
+                <p className="text-xs text-muted-foreground truncate">{effectiveTitle}</p>
               </div>
             </div>
-          </div>
-
-          {/* 2. Physical Shipping Address Form */}
-          {product.product_type === 'physical' ? (
-            <div className="space-y-3">
-              <div className="flex items-center space-x-1.5 font-bold text-gray-900 text-sm">
-                <MapPin className="w-4 h-4 text-orange-600" />
-                <span>{t('checkout.shippingSection')}</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-gray-600 block mb-1">
-                    {t('checkout.fullName')} *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingInfo.fullName}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, fullName: e.target.value })}
-                    placeholder="Nguyễn Văn A"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-gray-600 block mb-1">
-                    {t('checkout.phone')} *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingInfo.phone}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
-                    placeholder="0912345678"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-gray-600 block mb-1">
-                    {t('checkout.city')} *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingInfo.provinceCity}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, provinceCity: e.target.value })}
-                    placeholder="Hà Nội / TP. Hồ Chí Minh"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-gray-600 block mb-1">
-                    {t('checkout.district')} *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingInfo.district}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, district: e.target.value })}
-                    placeholder="Quận / Huyện"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="text-[11px] font-semibold text-gray-600 block mb-1">
-                    {t('checkout.address')} *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingInfo.streetAddress}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, streetAddress: e.target.value })}
-                    placeholder="Số 123 đường Cầu Giấy, Phường Dịch Vọng Hậu"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Carrier Selection */}
-              <div className="pt-2">
-                <label className="text-[11px] font-semibold text-gray-600 block mb-1.5">
-                  Đơn vị vận chuyển bưu chính liên kết:
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'GHTK', name: 'GHTK', sub: 'Tiết kiệm' },
-                    { id: 'GHN', name: 'GHN Express', sub: 'Hỏa tốc' },
-                    { id: 'VIETTEL_POST', name: 'Viettel Post', sub: 'Bưu chính' },
-                  ].map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCarrier(c.id as ShippingCarrier)}
-                      className={`p-2.5 rounded-xl border text-center transition-all ${
-                        carrier === c.id
-                          ? 'border-orange-500 bg-orange-50/70 font-bold text-orange-700 ring-1 ring-orange-500'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                      }`}
-                    >
-                      <p className="font-bold">{c.name}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">{c.sub}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-purple-50 rounded-xl p-3 border border-purple-100 flex items-center space-x-3 text-purple-800">
-              <Sparkles className="w-5 h-5 text-purple-600 shrink-0" />
-              <div>
-                <p className="font-bold text-xs">Sản phẩm kỹ thuật số (Giao tức thì 0 giây)</p>
-                <p className="text-[11px] text-purple-600 mt-0.5">{t('checkout.digitalInstantNotice')}</p>
-              </div>
-            </div>
-          )}
-
-          {/* 3. Shopee Voucher Stacking Bar */}
-          <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-200 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Tag className="w-4 h-4 text-orange-600 shrink-0" />
-              <div>
-                <span className="font-bold text-gray-800">Shopee Voucher Đa Tầng</span>
-                <div className="flex items-center space-x-2 mt-0.5 text-[11px]">
-                  {selectedFreeship ? (
-                    <span className="text-emerald-600 font-semibold">Freeship: -{formatCurrency(freeshipDiscount)}</span>
-                  ) : (
-                    <span className="text-gray-400">Chưa chọn Freeship</span>
-                  )}
-                  <span>•</span>
-                  {selectedDiscount ? (
-                    <span className="text-orange-600 font-semibold">Giảm: -{formatCurrency(shopDiscount)}</span>
-                  ) : (
-                    <span className="text-gray-400">Chưa chọn Giảm giá</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
             <button
-              onClick={() => setShowVoucherModal(true)}
-              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition-colors text-xs shadow-sm"
+              onClick={onClose}
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-slate-600 shadow-md cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0"
+              aria-label="Đóng"
+              title="Đóng"
             >
-              {selectedFreeship || selectedDiscount ? 'Đổi Mã' : 'Chọn Voucher'}
+              <X className="w-5 h-5 text-white" />
             </button>
           </div>
+        </div>
 
-          {/* 4. Payment Method & VietQR Preview */}
-          <div className="space-y-3">
-            <label className="text-[11px] font-bold text-gray-700 block">
-              {t('checkout.paymentMethod')}:
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'vietqr', label: 'VietQR', icon: QrCode, desc: 'Quét mã tự động' },
-                { id: 'wallet', label: 'Ví Nội Bộ', icon: Wallet, desc: 'Số dư ví khả dụng' },
-                { id: 'cod', label: 'COD', icon: Truck, desc: 'Thanh toán khi nhận' },
-              ].map((m) => {
-                const Icon = m.icon;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setPaymentMethod(m.id as any)}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      paymentMethod === m.id
-                        ? 'border-orange-500 bg-orange-50/70 font-bold text-orange-700 ring-1 ring-orange-500'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mx-auto mb-1 text-orange-600" />
-                    <p className="font-bold">{m.label}</p>
-                    <p className="text-[10px] text-gray-400">{m.desc}</p>
-                  </button>
-                );
-              })}
+        {/* Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y p-4 sm:p-6 space-y-5">
+          {!user ? (
+            /* Auth Required */
+            <div className="py-6 text-center space-y-5 animate-scale-in">
+              <div className="w-16 h-16 rounded-2xl bg-secondary/15 text-secondary flex items-center justify-center mx-auto border border-secondary/30 shadow-sm">
+                <Lock className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 max-w-sm mx-auto">
+                  <Sparkles className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
+                  <span>Đăng nhập để nhận ưu đãi mua lần đầu chỉ 2.000 Core</span>
+                </div>
+
+                <h3 className="font-heading font-extrabold text-xl text-foreground">
+                  Yêu Cầu Đăng Nhập
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  Bạn cần đăng nhập tài khoản để nhận mã quà tặng tự động và kích hoạt bảo hành cho đơn hàng.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center justify-between text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
+                    <img
+                      src={product.cover_image_url || product.game_icon_url || `/game_icons/${product.game_slug}.webp`}
+                      alt={product.game_name}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        const localFallback = `/game_icons/${product.game_slug}.webp`;
+                        if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
+                          target.src = localFallback;
+                        } else {
+                          target.onerror = null;
+                          target.src = '/vite.svg';
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-heading font-bold text-xs text-foreground truncate max-w-[180px]">
+                      {effectiveTitle}
+                    </h4>
+                    <span className="text-[11px] text-muted-foreground">{product.game_name || (product as any).category_label || ''}</span>
+                  </div>
+                </div>
+                <span className="font-display font-black text-sm text-emerald-400">
+                  {formatCore(effectivePrice)}
+                </span>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onOpenAuth) onOpenAuth();
+                  }}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-secondary to-primary hover:opacity-95 text-white font-bold text-xs shadow-glow-primary cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Đăng Nhập / Đăng Ký Ngay</span>
+                </button>
+                <button
+                  onClick={onClose}
+                  className="w-full sm:w-auto px-4 py-3 rounded-xl bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold cursor-pointer"
+                >
+                  Để sau
+                </button>
+              </div>
             </div>
+          ) : completedOrder ? (
+            /* Order Success View */
+            <div className="text-center py-3 space-y-4 animate-scale-in">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-glow-emerald">
+                {completedOrder.order_type === 'physical' ? (
+                  <Truck className="w-8 h-8" />
+                ) : (
+                  <CheckCircle2 className="w-8 h-8" />
+                )}
+              </div>
 
-            {/* VietQR Preview Box */}
-            {paymentMethod === 'vietqr' && (
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200 flex items-center space-x-4">
-                <img
-                  src={vietQrUrl}
-                  alt="VietQR Payment"
-                  className="w-24 h-24 rounded-lg border border-gray-300 bg-white p-1 shrink-0"
-                />
-                <div className="text-[11px] space-y-1 text-gray-600">
-                  <p className="font-bold text-gray-900 text-xs">Quét mã QR bằng App Ngân Hàng bất kỳ</p>
-                  <p>Mã đơn: <span className="font-mono font-bold text-orange-600">{orderCode}</span></p>
-                  <p>Số tiền: <span className="font-bold text-gray-900">{formatCurrency(totalAmount)}</span></p>
-                  <p className="text-[10px] text-gray-400">Hệ thống SePay tự động ghi nhận và xác nhận trong 3 giây.</p>
+              <div>
+                <h3 className="font-heading font-extrabold text-xl text-foreground">
+                  {completedOrder.order_type === 'physical'
+                    ? (isEn ? 'Order Placed Successfully!' : 'Đặt Hàng Thành Công!')
+                    : (isEn ? 'Payment Successful!' : 'Giao Hàng Thành Công!')}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isEn ? 'Order ID:' : 'Mã đơn:'} <strong className="text-foreground font-mono">{completedOrder.id}</strong> • {completedOrder.order_type === 'physical' ? (
+                    <span className="text-emerald-400 font-semibold">{isEn ? 'Packing & Courier Preparation in Progress' : 'Đang chuẩn bị hàng & đóng gói bưu phẩm'}</span>
+                  ) : (
+                    <>{isEn ? 'Quantity:' : 'Số lượng:'} <strong className="text-emerald-400">{deliveredLines.length} {isEn ? 'codes' : 'mã'}</strong></>
+                  )}
+                </p>
+              </div>
+
+              {completedOrder.order_type === 'physical' ? (
+                /* Physical Shipping Summary Box */
+                <div className="p-4 rounded-2xl bg-muted/70 border border-border space-y-3 text-left text-xs">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/80">
+                    <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="font-bold text-foreground">{isEn ? 'Nationwide Shipping Summary' : 'Thông Tin Giao Nhận Toàn Quốc'}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <User className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-muted-foreground">{isEn ? 'Recipient: ' : 'Người nhận: '}</span>
+                        <strong className="text-foreground font-semibold">{completedOrder.shipping_name || user?.displayName || user?.username}</strong>
+                        {completedOrder.shipping_phone && (
+                          <span className="text-muted-foreground ml-2 font-mono">({completedOrder.shipping_phone})</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-muted-foreground">{isEn ? 'Shipping Address: ' : 'Địa chỉ nhận hàng: '}</span>
+                        <span className="text-foreground font-medium">{completedOrder.shipping_address || (isEn ? 'Standard Address' : 'Địa chỉ tiêu chuẩn')}</span>
+                      </div>
+                    </div>
+
+                    {completedOrder.shipping_note && (
+                      <div className="flex items-start gap-2">
+                        <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="text-muted-foreground">{isEn ? 'Delivery Note: ' : 'Ghi chú bưu tá: '}</span>
+                          <span className="text-amber-300 italic">{completedOrder.shipping_note}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Carrier & Tracking Code Card */}
+                    {completedOrder.tracking_code && (
+                      <div className="p-3 rounded-xl bg-card border border-emerald-500/40 space-y-2 mt-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm">
+                              {completedOrder.carrier === 'GHN' ? '🚚' : completedOrder.carrier === 'VTP' ? '🛡️' : '⚡'}
+                            </span>
+                            <span className="font-bold text-xs text-foreground">
+                              {completedOrder.carrier_name || completedOrder.carrier || 'GHTK Express'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                            {completedOrder.estimated_delivery || '1 - 2 ngày'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between bg-muted/60 p-2 rounded-lg">
+                          <div className="space-y-0.5">
+                            <div className="text-[10px] text-muted-foreground uppercase font-semibold">Mã Vận Đơn Tự Động:</div>
+                            <div className="font-mono font-bold text-xs sm:text-sm text-foreground tracking-wide">
+                              {completedOrder.tracking_code}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(completedOrder.tracking_code || '');
+                              onShowToast('Đã sao chép mã vận đơn', completedOrder.tracking_code, 'success');
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                            title="Sao chép"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (completedOrder?.tracking_code) {
+                              const found = shippingService?.getByTrackingCode?.(completedOrder.tracking_code)
+                                || shippingService?.getShippingOrder?.(completedOrder.tracking_code);
+                              if (found) setTrackingModalOrder(found);
+                            }
+                            setIsTrackingModalOpen(true);
+                          }}
+                          className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <Truck className="w-3.5 h-3.5" />
+                          <span>Tra Cứu Hành Trình Vận Đơn (Live Tracking)</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {completedOrder.voucher_code && (
+                      <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between text-[11px]">
+                        <span className="text-orange-400 font-semibold flex items-center gap-1">
+                          <Ticket className="w-3.5 h-3.5" /> Voucher: {completedOrder.voucher_code}
+                        </span>
+                        <span className="text-orange-400 font-bold">
+                          Tiết kiệm -{formatCurrency((completedOrder.voucher_discount || 0) + (completedOrder.freeship_discount || 0))}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-border/80 text-[11px]">
+                      <span className="text-muted-foreground">{isEn ? 'Courier Fee:' : 'Cước phí vận chuyển:'}</span>
+                      <span className="font-semibold text-emerald-400">
+                        {completedOrder.shipping_fee === 0 ? (isEn ? 'Free Nationwide' : 'Miễn phí toàn quốc (0đ)') : formatCurrency(completedOrder.shipping_fee)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground">{isEn ? 'Total Paid:' : 'Tổng tiền thanh toán:'}</span>
+                      <span className="font-bold font-mono text-emerald-400 text-sm">
+                        {formatCurrency(completedOrder.amount)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Code List Box */
+                <div className="p-3 sm:p-4 rounded-2xl bg-muted/70 border border-border space-y-2.5 text-left">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-semibold">
+                      Danh Sách Mã Code Ingame:
+                    </span>
+                    {deliveredLines.length > 1 && (
+                      <button
+                        onClick={handleCopyAllCodes}
+                        className="px-2.5 py-1 rounded-lg bg-secondary hover:bg-secondary/90 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        {copiedAll ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedAll ? 'Đã sao chép tất cả' : 'Sao chép tất cả'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 sm:max-h-48 sm:overflow-y-auto pr-1">
+                    {deliveredLines.map((codeItem: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-2 bg-card p-2.5 sm:p-3 rounded-xl border border-border"
+                      >
+                        <div className="min-w-0 flex-1">
+                          {deliveredLines.length > 1 && (
+                            <span className="text-[10px] text-muted-foreground font-mono block">#{idx + 1}</span>
+                          )}
+                          <span className="font-mono font-bold text-xs sm:text-sm text-primary-light break-all block">
+                            {codeItem}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleCopySingleCode(codeItem, idx)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0"
+                        >
+                          {copiedCodeIdx === idx ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              <span className="hidden xs:inline">Đã chép</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span className="hidden xs:inline">Sao chép</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Guide link if configured */}
+              <GuideLinksBanner
+                guideLinks={liveProduct.guide_links}
+                guideUrl={liveProduct.guide_url}
+                guideText={liveProduct.guide_text}
+                showGuide={liveProduct.show_guide_link !== false}
+                theme="indigo"
+              />
+
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center justify-center gap-2">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>Đơn hàng đã được lưu vào lịch sử & kích hoạt bảo hành 100%.</span>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-xs shadow-sm cursor-pointer"
+              >
+                Hoàn Tất & Đóng
+              </button>
+            </div>
+          ) : (
+            /* Checkout Form */
+            <div className="space-y-4">
+              {/* Product Summary */}
+              <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
+                    <img
+                      src={product.cover_image_url || product.game_icon_url || `/game_icons/${product.game_slug}.webp`}
+                      alt={product.game_name}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        const localFallback = `/game_icons/${product.game_slug}.webp`;
+                        if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
+                          target.src = localFallback;
+                        } else {
+                          target.onerror = null;
+                          target.src = '/vite.svg';
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-heading font-bold text-sm text-foreground truncate max-w-[190px]">
+                      {effectiveTitle}
+                    </h4>
+                    <span className="text-xs text-muted-foreground">{product.game_name || (product as any).category_label || ''}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-1.5 justify-end">
+                    {!isEscalating && isFirstPurchaseEligible && totalDiscountAmount > 0 && (
+                      <span className="text-xs text-muted-foreground line-through font-mono">
+                        {formatCore(effectiveRegularPrice)}
+                      </span>
+                    )}
+                    <span className="font-display font-black text-base text-emerald-400">
+                      {formatCore(isEscalating ? totalPrice : (isFirstPurchaseEligible ? firstItemActualPrice : effectiveRegularPrice))}
+                    </span>
+                  </div>
+                  {isEscalating ? (
+                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                      ⚡ Nâng Giá (+{formatCore(escalatingData.step)}/lượt)
+                    </span>
+                  ) : isFirstPurchaseEligible ? (
+                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-rose-500 to-amber-500 text-slate-950 uppercase tracking-wider animate-pulse">
+                      Ưu đãi lần đầu
+                    </span>
+                  ) : null}
+                  <span className={`text-[10px] font-semibold flex items-center gap-1 justify-end font-sans mt-0.5 ${checkoutDisplayStock > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {checkoutDisplayStock > 0 ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>Sẵn sàng • Giao tức thì</span>
+                      </>
+                    ) : (
+                      'Tạm hết hàng'
+                    )}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* 5. Cost Breakdown */}
-          <div className="border-t border-gray-100 pt-3 space-y-1.5 text-xs text-gray-600">
-            <div className="flex justify-between">
-              <span>{t('checkout.subtotal')}:</span>
-              <span>{formatCurrency(subtotal)}</span>
+              {/* Quantity Selector */}
+              {isEscalating ? (
+                <div className="space-y-2">
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Hình thức Mua Nâng Giá</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Cố định 1 gói/đơn để bảo đảm giá theo lượt mua.
+                      </p>
+                    </div>
+                    <span className="font-mono font-bold text-xs text-foreground px-3 py-1 bg-muted rounded-xl border border-border">
+                      1 Gói
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-slate-900/80 border border-border/80 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Lượt mua của bạn:</span>
+                      <span className="font-mono font-bold text-amber-300">
+                        Thứ {Number(escalatingData.completed_count) + 1}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Đã mua thành công:</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {escalatingData.completed_count} lượt
+                      </span>
+                    </div>
+
+                    {/* Thang đo giá trực quan 3 lượt */}
+                    <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-amber-400 font-bold flex items-center gap-1">
+                          <TrendingUp className="w-3.5 h-3.5" />
+                          Thang đo giá (Lượt mua càng sớm càng rẻ):
+                        </span>
+                        <span className="text-rose-400 font-mono font-bold text-[10px]">
+                          +{formatCore(escalatingData.step)}/lượt
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 text-center">
+                        <div className="p-1.5 rounded-xl bg-amber-500/20 border border-amber-500/50">
+                          <span className="text-[9px] text-amber-300 font-bold uppercase block">
+                            Lượt {Number(escalatingData.completed_count) + 1} (Hiện tại)
+                          </span>
+                          <span className="font-mono font-black text-xs text-amber-400 block mt-0.5">
+                            {formatCore(totalPrice)}
+                          </span>
+                          <span className="text-[8px] text-emerald-400 font-semibold block">Đơn giá này</span>
+                        </div>
+                        <div className="p-1.5 rounded-xl bg-muted/40 border border-border">
+                          <span className="text-[9px] text-muted-foreground font-bold uppercase block">
+                            Lượt {Number(escalatingData.completed_count) + 2}
+                          </span>
+                          <span className="font-mono font-bold text-xs text-foreground block mt-0.5">
+                            {formatCore(
+                              escalatingData.max_price && (totalPrice + escalatingData.step) > escalatingData.max_price
+                                ? escalatingData.max_price
+                                : totalPrice + escalatingData.step
+                            )}
+                          </span>
+                          <span className="text-[8px] text-muted-foreground block">Lượt tiếp</span>
+                        </div>
+                        <div className="p-1.5 rounded-xl bg-muted/20 border border-border/60 opacity-80">
+                          <span className="text-[9px] text-muted-foreground font-bold uppercase block">
+                            Lượt {Number(escalatingData.completed_count) + 3}
+                          </span>
+                          <span className="font-mono font-bold text-xs text-foreground block mt-0.5">
+                            {formatCore(
+                              escalatingData.max_price && (totalPrice + (escalatingData.step * 2)) > escalatingData.max_price
+                                ? escalatingData.max_price
+                                : totalPrice + (escalatingData.step * 2)
+                            )}
+                          </span>
+                          <span className="text-[8px] text-muted-foreground block">Sau nữa</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-800">
+                      <span className="text-muted-foreground">Sau đơn này, giá sẽ tăng:</span>
+                      <span className="font-mono font-bold text-rose-400">
+                        +{formatCore(escalatingData.step)}
+                      </span>
+                    </div>
+                    {escalatingData.max_price ? (
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[11px] text-muted-foreground">
+                        <span>Trần giá tối đa:</span>
+                        <span className="font-mono text-slate-300">{formatCore(escalatingData.max_price)}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-card border border-border flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-foreground block">Số Lượng Mua:</span>
+                    {maxStock <= 0 && (
+                      <span className="text-[10px] font-medium block text-rose-400 font-bold">
+                        Sản phẩm hiện đang tạm hết hàng
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDecreaseQty}
+                      disabled={safeQty <= 1 || maxStock <= 0}
+                      className="w-8 h-8 rounded-xl bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center font-bold text-sm disabled:opacity-40 transition-all cursor-pointer"
+                      aria-label="Giảm số lượng"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <input
+                      type="number"
+                      min={maxStock <= 0 ? 0 : 1}
+                      max={maxStock}
+                      value={safeQty}
+                      disabled={maxStock <= 0}
+                      onChange={handleQtyInputChange}
+                      className="w-14 h-9 text-center font-black font-mono text-sm bg-white text-slate-950 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm selection:bg-indigo-100 disabled:opacity-50"
+                    />
+                    <button
+                      onClick={handleIncreaseQty}
+                      disabled={safeQty >= maxStock || maxStock <= 0}
+                      className="w-8 h-8 rounded-xl bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center font-bold text-sm disabled:opacity-40 transition-all cursor-pointer"
+                      aria-label="Tăng số lượng"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Khối Nhập Thông Tin Nhận Hàng Toàn Quốc (Khi là hàng vật lý) */}
+              {isPhysical && (
+                <div className="p-4 rounded-2xl bg-card border border-border space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/80">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400">
+                        <Truck className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                        {t.checkout?.shippingSectionTitle || 'Thông Tin Nhận Hàng Toàn Quốc'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                      {isEn ? '🚚 Courier Delivery' : '🚚 Giao Tận Nơi'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                        {t.checkout?.fullName || 'Họ và tên người nhận'} <span className="text-rose-400">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={shippingName}
+                          onChange={(e) => setShippingName(e.target.value)}
+                          placeholder={t.checkout?.fullNamePlaceholder || 'Ví dụ: Nguyễn Văn A'}
+                          className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+                        />
+                        <User className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                        {t.checkout?.phone || 'Số điện thoại nhận hàng'} <span className="text-rose-400">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          value={shippingPhone}
+                          onChange={(e) => setShippingPhone(e.target.value)}
+                          placeholder={t.checkout?.phonePlaceholder || 'Ví dụ: 0987654321'}
+                          className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+                        />
+                        <Phone className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                      {t.checkout?.address || 'Địa chỉ nhận hàng chi tiết'} <span className="text-rose-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        placeholder={t.checkout?.addressPlaceholder || 'Số nhà, ngõ/đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành phố'}
+                        className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+                      />
+                      <MapPin className="w-3.5 h-3.5 text-rose-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                      {t.checkout?.note || 'Ghi chú cho shipper (Không bắt buộc)'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={shippingNote}
+                        onChange={(e) => setShippingNote(e.target.value)}
+                        placeholder={t.checkout?.notePlaceholder || 'Ví dụ: Giao giờ hành chính, gọi trước khi đến...'}
+                        className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+                      />
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Lựa chọn Đơn Vị Vận Chuyển Tự Động (GHTK, GHN, Viettel Post) */}
+                  <div>
+                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1.5 flex items-center justify-between">
+                      <span>{isEn ? 'Shipping Carrier (Auto Tracking)' : 'Đơn Vị Vận Chuyển (Tự Sinh Mã Vận Đơn)'}</span>
+                      <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                        ⚡ API Kết Nối Tự Động
+                      </span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {(['GHTK', 'GHN', 'VTP'] as CarrierCode[]).map((cCode) => {
+                        const c = CARRIERS[cCode];
+                        const isSelected = selectedCarrier === cCode;
+                        const cFee = shippingService.calculateFee(cCode, shippingAddress);
+                        return (
+                          <button
+                            key={cCode}
+                            type="button"
+                            onClick={() => setSelectedCarrier(cCode)}
+                            className={`p-2.5 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                              isSelected
+                                ? 'border-emerald-500 bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500'
+                                : 'border-border/80 bg-muted/30 hover:border-border'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-base">{c.logoIcon}</span>
+                              <span className="font-mono text-[11px] font-bold text-foreground">
+                                {formatCurrency(cFee)}
+                              </span>
+                            </div>
+                            <div className="mt-1">
+                              <div className="font-bold text-xs text-foreground flex items-center gap-1">
+                                {c.shortName}
+                                {isSelected && <Check className="w-3 h-3 text-emerald-500 stroke-[3]" />}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground truncate">{c.estimatedDelivery}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Phí vận chuyển Badge */}
+                  <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5 text-emerald-400" />
+                      {isEn ? 'Courier Shipping Fee:' : 'Cước phí vận chuyển:'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {voucherStacking.freeshipDiscount > 0 && (
+                        <span className="text-[11px] text-muted-foreground line-through">
+                          {formatCurrency(rawShippingFee)}
+                        </span>
+                      )}
+                      <span className="font-bold text-emerald-400">
+                        {finalShippingFee === 0
+                          ? (isEn ? 'Free Shipping (0đ)' : 'Miễn phí toàn quốc (0đ)')
+                          : formatCurrency(finalShippingFee)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Shopee Voucher Stacking Trigger Card */}
+              <div
+                onClick={() => setIsCouponModalOpen(true)}
+                className="p-3 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-rose-500/10 border border-orange-500/30 hover:border-orange-500/50 cursor-pointer transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#ee4d2d] text-white flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/30">
+                    <Ticket className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-bold text-foreground">Shopee Voucher Đa Tầng</span>
+                      {selectedFreeship && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                          🚚 -{formatCurrency(voucherStacking.freeshipDiscount)}
+                        </span>
+                      )}
+                      {selectedDiscount && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#ee4d2d]/15 text-[#ee4d2d] border border-[#ee4d2d]/30">
+                          🎟️ -{formatCurrency(voucherStacking.productDiscount)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {selectedFreeship || selectedDiscount
+                        ? `Đã áp dụng • Tiết kiệm ${formatCurrency(voucherStacking.totalSavings)}`
+                        : 'Chọn hoặc nhập mã giảm giá Shopee / Sàn'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 text-xs text-[#ee4d2d] font-semibold shrink-0 group-hover:translate-x-0.5 transition-transform">
+                  <span>{selectedFreeship || selectedDiscount ? 'Đổi mã' : 'Chọn mã'}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </div>
+
+              {/* Payment Method Selector (Chỉ hiện khi đơn hàng >= ngưỡng minQrAmount, mặc định 2.000) */}
+              {isQrAvailable && (
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                    Phương Thức Thanh Toán
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-muted/50 border border-border/80 rounded-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('wallet')}
+                      className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs transition-all cursor-pointer ${
+                        paymentMethod === 'wallet'
+                          ? 'bg-card text-foreground shadow-sm border border-border font-black'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Wallet className="w-4 h-4 text-amber-400" />
+                      <span className="truncate">Số Dư Core ({formatCore(userBalance)})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('vietqr')}
+                      className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs transition-all cursor-pointer ${
+                        paymentMethod === 'vietqr'
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm font-black'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <QrCode className="w-4 h-4 text-emerald-300" />
+                      <span className="truncate">Mã VietQR ({totalPrice.toLocaleString('vi-VN')}đ)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'vietqr' ? (
+                <div className="space-y-3.5">
+                  {/* Summary Box */}
+                  <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400">
+                          <QrCode className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-foreground block">Thanh Toán Bằng VietQR</span>
+                          <span className="text-[11px] text-muted-foreground">Tự động nhận qua SePay</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Tỷ giá quy đổi</span>
+                        <span className="text-xs font-bold font-mono text-emerald-400">1 VND = 1 Core</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Số lượng mua:</span>
+                        <span className="font-mono font-bold text-foreground">{safeQty} gói</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
+                        <span className="font-bold text-foreground">Số tiền thanh toán:</span>
+                        <span className="font-display font-black text-base text-emerald-400">
+                          {totalPrice.toLocaleString('vi-VN')} đ
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* QR States Container */}
+                  {(qrStatus === 'idle' || qrStatus === 'error') && (
+                    <div className="p-4 rounded-2xl bg-card border border-emerald-500/30 space-y-3 text-xs">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                          <QrCode className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-bold text-foreground text-sm">Thanh Toán Trực Tiếp Không Cần Nạp Core</p>
+                          <p className="text-muted-foreground leading-relaxed">
+                            Quét mã bằng ứng dụng ngân hàng bất kỳ để thanh toán đúng <strong>{totalPrice.toLocaleString('vi-VN')} đ</strong>. Hệ thống tự động giao mã ngay trong 3 giây khi tiền vào tài khoản shop.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-muted/40 border border-border/80 flex items-center justify-between font-mono text-[11px]">
+                        <span className="text-muted-foreground">Thời hạn giữ chỗ mã kho:</span>
+                        <span className="font-bold text-emerald-400 flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" /> 15 phút
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleCreateQrOrder}
+                        disabled={maxStock <= 0 || !isPriceValid}
+                        className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:opacity-95 text-slate-950 font-black text-sm transition-all cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                      >
+                        <QrCode className="w-4 h-4" />
+                        <span>Tạo Mã VietQR Thanh Toán • {totalPrice.toLocaleString('vi-VN')} đ</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {qrStatus === 'creating' && (
+                    <div className="p-6 rounded-2xl bg-card border border-emerald-500/30 text-center space-y-3">
+                      <CyberLoader isOverlay={false} title="ĐANG TẠO MÃ QR..." subText="Hệ thống đang tạm giữ mã quà tặng trong kho bảo mật cho bạn..." />
+                    </div>
+                  )}
+
+                  {qrStatus === 'waiting' && qrOrder && (
+                    <div className="p-4 rounded-2xl bg-card border border-emerald-500/40 space-y-4 text-xs animate-scale-in">
+                      {/* Countdown Header */}
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-amber-400 font-bold">
+                          <Clock className="w-4 h-4 animate-pulse" />
+                          <span>Hết hạn sau:</span>
+                        </div>
+                        <span className="font-mono font-black text-base text-amber-300">
+                          {formatCountdown(qrSecondsLeft)}
+                        </span>
+                      </div>
+
+                      {/* VietQR Image with Automatic Multi-tier Fallback & Local QR (§4.2) */}
+                      <div className="text-center space-y-2.5">
+                        <div className="inline-block p-2 rounded-2xl bg-white border-2 border-emerald-500/50 shadow-xl shadow-emerald-500/10 min-w-[200px] min-h-[200px]">
+                          {qrImageLoadFailed ? (
+                            <div className="w-52 sm:w-60 mx-auto flex flex-col items-center justify-center p-3.5 rounded-xl bg-slate-900 border border-amber-500/30 text-center space-y-2.5">
+                              <AlertCircle className="w-8 h-8 text-amber-400 shrink-0" />
+                              <p className="text-[11px] text-amber-200 font-medium leading-tight">
+                                Không thể tải ảnh mã QR sau 4 tầng thử nghiệm (có thể do trình chặn quảng cáo hoặc trình duyệt chặn ảnh).
+                              </p>
+                              <div className="flex flex-col sm:flex-row items-center gap-2 w-full pt-1">
+                                <button
+                                  type="button"
+                                  onClick={handleReloadQrImage}
+                                  className="w-full sm:w-1/2 px-2.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                                  title="Thử lại từ tầng 0 (QR Tại Chỗ)"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                  <span>Tải lại QR</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleCycleQrTier}
+                                  className="w-full sm:w-1/2 px-2.5 py-2 rounded-lg bg-secondary/20 hover:bg-secondary/30 text-secondary border border-secondary/40 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                                  title="Chuyển sang tầng QR kế tiếp"
+                                >
+                                  <span>Đổi nguồn ({qrAttemptStep + 1}/4)</span>
+                                </button>
+                              </div>
+
+                              {currentQrImageSrc && !currentQrImageSrc.startsWith('data:') && (
+                                <a
+                                  href={currentQrImageSrc}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold underline pt-1"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <span>Mở ảnh QR ở tab mới</span>
+                                </a>
+                              )}
+
+                              {/* Toggle Chi tiết chẩn đoán dành cho kỹ thuật / debug (§3) */}
+                              <div className="w-full pt-1.5 border-t border-slate-800 text-left">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowQrDiagnostics(!showQrDiagnostics)}
+                                  className="text-[10px] text-slate-400 hover:text-slate-300 underline cursor-pointer"
+                                >
+                                  {showQrDiagnostics ? '▲ Đóng chẩn đoán' : '▼ Xem chi tiết chẩn đoán (Debug)'}
+                                </button>
+                                {showQrDiagnostics && (
+                                  <div className="mt-1.5 p-2 rounded-lg bg-black/60 border border-slate-800 text-[10px] font-mono space-y-1 text-slate-300 overflow-x-auto">
+                                    <div className="text-amber-400 font-bold">Tầng lỗi: {qrAttemptStep + 1}/4 ({QR_TIER_CONFIG[qrAttemptStep]?.short})</div>
+                                    <div><strong>Tầng tại chỗ:</strong> {qrAttemptStep === 0 ? '✅ Đúng (Data URL nội bộ)' : '🌐 Không (Gọi CDN mạng ngoài)'}</div>
+                                    <div><strong>qrPayload:</strong> {qrOrder.qrPayload ? `✅ Có (${qrOrder.qrPayload.length} ký tự)` : '❌ Rỗng'}</div>
+                                    <div><strong>Trạng thái sinh tại chỗ:</strong> {localQrGenStatus}</div>
+                                    <div className="break-all"><strong>URL/Data preview:</strong> {currentQrImageSrc.substring(0, 100)}...</div>
+                                    {domErrorSnapshot && (
+                                      <div className="text-amber-300 border-t border-slate-700/60 pt-1 mt-1">
+                                        <div><strong>Snapshot DOM lúc lỗi:</strong></div>
+                                        <div>- Kích thước: {domErrorSnapshot.naturalWidth}x{domErrorSnapshot.naturalHeight}</div>
+                                        <div>- complete: {String(domErrorSnapshot.complete)} | isConnected: {String(domErrorSnapshot.isConnected)}</div>
+                                        <div>- Sự kiện: {domErrorSnapshot.errorMessage}</div>
+                                      </div>
+                                    )}
+                                    {qrLastErrorMsg && <div className="text-rose-300"><strong>Chi tiết lỗi:</strong> {qrLastErrorMsg}</div>}
+
+                                    {/* Ảnh trần thử nghiệm adblocker (§3 mục 4) */}
+                                    <div className="pt-2 border-t border-slate-700/60">
+                                      <div className="text-amber-200 font-bold mb-1">Thử ảnh trần (§3 mục 4):</div>
+                                      <img
+                                        src={getClientQrFallbackUrl(qrOrder, 'compact2')}
+                                        alt="Test Plain Img"
+                                        style={{ width: '64px', height: '64px', display: 'inline-block', border: '1px dashed #f59e0b', background: '#fff' }}
+                                      />
+                                      <div className="text-[9px] text-slate-400 mt-0.5">Thẻ img trần VietQR SVG không bọc khung flex/Tailwind</div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="relative w-48 h-48 sm:w-56 sm:h-56 mx-auto flex items-center justify-center">
+                              {isQrImageLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-xl z-10">
+                                  <div className="flex flex-col items-center gap-1.5 text-slate-700">
+                                    <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
+                                    <span className="text-[10px] font-semibold text-muted-foreground">Đang tải QR...</span>
+                                  </div>
+                                </div>
+                              )}
+                              {currentQrImageSrc && (
+                                <img
+                                  ref={qrImgRef}
+                                  src={currentQrImageSrc}
+                                  alt="VietQR Payment"
+                                  referrerPolicy="no-referrer"
+                                  onLoad={() => {
+                                    setIsQrImageLoading(false);
+                                    setQrImageLoadFailed(false);
+                                  }}
+                                  onError={handleQrImageError}
+                                  className="w-full h-full object-contain rounded-xl"
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Thanh công cụ dưới ảnh QR: Hướng dẫn, Đổi nguồn QR & Mở tab mới */}
+                        <div className="space-y-1 text-center">
+                          <p className="text-[11px] text-muted-foreground italic">
+                            {qrImageLoadFailed
+                              ? 'Quý khách vẫn có thể thanh toán bằng thông tin STK và nội dung bên dưới'
+                              : 'Mở App Ngân Hàng hoặc Ví Điện Tử quét mã QR ở trên'}
+                          </p>
+
+                          <div className="flex items-center justify-center gap-3 pt-0.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={handleCycleQrTier}
+                              className="text-[11px] font-medium text-emerald-400 hover:text-emerald-300 underline cursor-pointer inline-flex items-center gap-1"
+                              title="Bấm để chuyển qua lại giữa các tầng QR"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              <span>Nguồn QR: {QR_TIER_CONFIG[qrAttemptStep]?.short} ({qrAttemptStep + 1}/4)</span>
+                            </button>
+
+                            {currentQrImageSrc && !currentQrImageSrc.startsWith('data:') && (
+                              <a
+                                href={currentQrImageSrc}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] font-medium text-slate-400 hover:text-foreground underline inline-flex items-center gap-1"
+                                title="Mở ảnh QR trực tiếp ở tab mới trình duyệt"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Mở tab mới</span>
+                              </a>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => setShowQrDiagnostics(!showQrDiagnostics)}
+                              className="text-[11px] font-medium text-slate-400 hover:text-slate-300 underline cursor-pointer"
+                              title="Bật/Tắt bảng thông số kỹ thuật mã QR"
+                            >
+                              {showQrDiagnostics ? 'Ẩn debug' : 'Debug QR'}
+                            </button>
+                          </div>
+
+                          {showQrDiagnostics && !qrImageLoadFailed && (
+                            <div className="mt-2 p-2 rounded-lg bg-black/80 border border-slate-800 text-[10px] font-mono space-y-1 text-slate-300 text-left max-w-sm mx-auto">
+                              <div className="text-emerald-400 font-bold">Trạng thái QR: Hoạt động ({qrAttemptStep + 1}/4 - {QR_TIER_CONFIG[qrAttemptStep]?.short})</div>
+                              <div><strong>Tầng tại chỗ:</strong> {qrAttemptStep === 0 ? '✅ Đúng (Data URL nội bộ)' : '🌐 Không (Gọi CDN mạng ngoài)'}</div>
+                              <div><strong>qrPayload:</strong> {qrOrder.qrPayload ? `✅ Có (${qrOrder.qrPayload.length} ký tự)` : '❌ Rỗng'}</div>
+                              <div><strong>Trạng thái sinh tại chỗ:</strong> {localQrGenStatus}</div>
+                              <div className="break-all"><strong>URL/Data:</strong> {currentQrImageSrc.substring(0, 80)}...</div>
+                              {/* Ảnh trần thử nghiệm adblocker (§3 mục 4) */}
+                              <div className="pt-1.5 border-t border-slate-700/60 flex items-center gap-2">
+                                <img
+                                  src={getClientQrFallbackUrl(qrOrder, 'compact2')}
+                                  alt="Test Plain Img"
+                                  style={{ width: '40px', height: '40px', display: 'inline-block', border: '1px dashed #f59e0b', background: '#fff' }}
+                                />
+                                <span className="text-[9px] text-slate-400">Ảnh trần VietQR SVG (§3 mục 4)</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bank Details Table with Fast Copy */}
+                      <div className="p-3 rounded-xl bg-muted/60 border border-border/80 space-y-2 text-xs">
+                        <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
+                          <span className="text-muted-foreground">Ngân hàng:</span>
+                          <span className="font-bold text-foreground">{qrOrder.bankInfo?.bankName}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
+                          <span className="text-muted-foreground">Số tài khoản:</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-primary-light">{qrOrder.bankInfo?.accountNumber}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyQrField(qrOrder.bankInfo?.accountNumber, 'acc')}
+                              className="p-1 rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                              title="Sao chép STK"
+                            >
+                              {qrCopiedField === 'acc' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
+                          <span className="text-muted-foreground">Chủ tài khoản:</span>
+                          <span className="font-bold text-foreground">{qrOrder.bankInfo?.bankAccount}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
+                          <span className="text-muted-foreground">Số tiền:</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-black text-emerald-400 text-sm">
+                              {Number(qrOrder.bankInfo?.amount).toLocaleString('vi-VN')} đ
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyQrField(String(qrOrder.bankInfo?.amount), 'amt')}
+                              className="p-1 rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                              title="Sao chép số tiền"
+                            >
+                              {qrCopiedField === 'amt' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-0.5">
+                          <span className="text-muted-foreground">Nội dung CK:</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                              {qrOrder.bankInfo?.content}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyQrField(qrOrder.bankInfo?.content, 'memo')}
+                              className="p-1 rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                              title="Sao chép nội dung chuyển khoản"
+                            >
+                              {qrCopiedField === 'memo' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Listening Indicator */}
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center gap-2 text-emerald-400 font-semibold text-xs animate-pulse">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Hệ thống đang chờ nhận tiền để tự động giao mã (2-5 giây)...</span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+                        <span>Mã đơn: <strong className="font-mono text-foreground">{qrOrder.id}</strong></span>
+                        <button
+                          type="button"
+                          onClick={handleCreateQrOrder}
+                          className="text-secondary hover:underline cursor-pointer flex items-center gap-1 font-semibold"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Tạo lại mã khác
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {qrStatus === 'expired' && (
+                    <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center space-y-3 text-xs animate-scale-in">
+                      <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-bold text-foreground text-sm">Mã QR Đã Hết Hạn</p>
+                        <p className="text-muted-foreground leading-relaxed">
+                          Đơn hàng đã hết hạn sau 15 phút. Mã quà tặng đã được hoàn trả lại vào kho. Nếu bạn đã chuyển khoản muộn, vui lòng liên hệ admin kèm biên lai để được hỗ trợ.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCreateQrOrder}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-secondary to-primary hover:opacity-95 text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Tạo Mã VietQR Mới</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Guarantees */}
+                  <div className="grid grid-cols-2 gap-2.5 text-[11px] text-muted-foreground">
+                    <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Bảo hành hoàn tiền 100%</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-secondary shrink-0" />
+                      <span>Giao mã tự động ngay</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+{/* Wallet Method & Balance Box */}
+              <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-primary/15 text-primary">
+                      <Wallet className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-foreground block">Ví Số Dư Core</span>
+                      <span className="text-[11px] text-muted-foreground">Thanh toán tự động</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Số dư hiện tại</span>
+                    <span className="text-sm font-black font-display text-primary-light">{formatCore(userBalance)}</span>
+                  </div>
+                </div>
+
+                {/* Total Calculation Row */}
+                <div className="space-y-2">
+                  {isEscalating ? (
+                    <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        Giá theo lượt mua thứ {Number(escalatingData.completed_count) + 1}:
+                      </span>
+                      <span className="font-mono font-bold text-amber-300">
+                        {formatCore(totalPrice)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        Đơn giá niêm yết ({safeQty} gói x {formatCore(effectiveRegularPrice)}):
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatCore(effectiveRegularPrice * safeQty)}
+                      </span>
+                    </div>
+                  )}
+
+                  {!isEscalating && isFirstPurchaseEligible && totalDiscountAmount > 0 && (
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 flex flex-col gap-1 text-xs">
+                      <div className="flex items-center justify-between text-rose-400 font-bold">
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                          <span>Ưu đãi lần đầu:</span>
+                        </div>
+                        <span>−{formatCore(totalDiscountAmount)}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground italic">
+                        Chỉ áp dụng 1 lần cho lần mua đầu tiên của gói này
+                      </p>
+                    </div>
+                  )}
+
+                  {isPhysical && (
+                    <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Truck className="w-3.5 h-3.5 text-emerald-400" /> Cước vận chuyển ({CARRIERS[selectedCarrier]?.shortName}):
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {voucherStacking.freeshipDiscount > 0 && (
+                          <span className="text-[11px] text-muted-foreground line-through">
+                            {formatCurrency(rawShippingFee)}
+                          </span>
+                        )}
+                        <span className="font-mono font-semibold text-emerald-400">
+                          {finalShippingFee === 0 ? 'Miễn phí (0đ)' : formatCurrency(finalShippingFee)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {voucherStacking.totalSavings > 0 && (
+                    <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between text-xs">
+                      <span className="text-orange-500 font-semibold flex items-center gap-1.5">
+                        <Ticket className="w-3.5 h-3.5" /> Shopee Voucher Tiết Kiệm:
+                      </span>
+                      <span className="font-mono font-bold text-orange-500">
+                        -{formatCurrency(voucherStacking.totalSavings)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
+                    <span className="font-bold text-foreground">Tổng thanh toán:</span>
+                    <span className="font-display font-black text-base text-emerald-400">
+                      {formatCore(finalGrandTotal)}
+                    </span>
+                  </div>
+                </div>
+
+                {!isPriceValid ? (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-500 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">Đang cập nhật giá sản phẩm</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                          Vui lòng đợi giây lát hoặc tải lại trang để kiểm tra giá mới nhất.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : !isBalanceEnough ? (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-500 space-y-2.5">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">Số Dư Ví Không Đủ</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                          Cần <strong className="text-foreground font-bold">{formatCore(finalGrandTotal)}</strong>, ví hiện có <strong className="text-foreground font-bold">{formatCore(userBalance)}</strong>. Còn thiếu <strong className="text-amber-400 font-bold">{formatCore(finalGrandTotal - userBalance)}</strong>.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleOpenTopup}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-95 text-slate-950 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      <span>Nạp Thêm Tiền Ngay</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>Số dư ví đủ để thanh toán</span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      Sau mua còn: {formatCore(userBalance - finalGrandTotal)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Guarantees */}
+              <div className="grid grid-cols-2 gap-2.5 text-[11px] text-muted-foreground">
+                <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Bảo hành hoàn tiền 100%</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center gap-1.5">
+                  {isPhysical ? (
+                    <Truck className="w-3.5 h-3.5 text-secondary shrink-0" />
+                  ) : (
+                    <Zap className="w-3.5 h-3.5 text-secondary shrink-0" />
+                  )}
+                  <span>{isPhysical ? 'Giao hàng tận nơi toàn quốc' : 'Giao mã tự động ngay'}</span>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <button
+                onClick={!isBalanceEnough ? handleOpenTopup : handlePayWithWallet}
+                disabled={isProcessing || maxStock <= 0 || !isPriceValid}
+                className={`w-full py-3.5 rounded-2xl font-display font-bold text-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
+                  !isBalanceEnough
+                    ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:opacity-95 text-slate-950 font-black shadow-amber-500/20'
+                    : isEscalating
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black shadow-amber-500/30'
+                    : 'bg-gradient-to-r from-secondary to-primary hover:opacity-95 text-white shadow-glow-primary'
+                }`}
+              >
+                {!isBalanceEnough ? (
+                  <PlusCircle className="w-4 h-4 text-slate-950" />
+                ) : isEscalating ? (
+                  <Zap className="w-4 h-4 fill-slate-950 text-slate-950" />
+                ) : isPhysical ? (
+                  <Truck className="w-4 h-4 text-white" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                )}
+                <span>
+                  {isProcessing
+                    ? (isEn ? 'Processing order...' : 'Đang xử lý thanh toán...')
+                    : maxStock <= 0
+                    ? (isEn ? 'Temporarily out of stock' : 'Sản phẩm tạm hết hàng')
+                    : !isPriceValid
+                    ? (isEn ? 'Updating price...' : 'Đang cập nhật giá...')
+                    : !isBalanceEnough
+                    ? (isEn ? `Insufficient ${formatCurrency(finalGrandTotal - userBalance)} • Top-up Now` : `Thiếu ${formatCurrency(finalGrandTotal - userBalance)} • Nạp Tiền Ngay`)
+                    : isEscalating
+                    ? (isEn ? `Confirm Tier Price • ${formatCurrency(finalGrandTotal)}` : `Xác Nhận Mua Gói Nâng Giá • ${formatCurrency(finalGrandTotal)}`)
+                    : isPhysical
+                    ? (isEn ? `Confirm Order & Nationwide Shipping • ${formatCurrency(finalGrandTotal)}` : `Xác Nhận Đặt Hàng & Giao Toàn Quốc • ${formatCurrency(finalGrandTotal)}`)
+                    : (isEn ? `Confirm Payment ${safeQty > 1 ? `(${safeQty} Items)` : ''} • ${formatCurrency(finalGrandTotal)}` : `Xác Nhận Mua ${safeQty > 1 ? `(${safeQty} Gói)` : ''} • ${formatCurrency(finalGrandTotal)}`)}
+                </span>
+              </button>
+
+              {!isBalanceEnough && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const activeUser = currentUser || (typeof window !== 'undefined' ? dataService.getCurrentUser() : null);
+                    if (activeUser) {
+                      const bonus = 1000000;
+                      const updated: UserProfile = { ...activeUser, wallet_balance: (Number(activeUser.wallet_balance) || 0) + bonus };
+                      dataService.saveCurrentUser(updated);
+                      if (onUpdateUser) onUpdateUser(updated);
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: updated }));
+                        window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance: updated.wallet_balance } }));
+                      }
+                      onShowToast('Nạp Thử Nghiệm Sandbox', 'Đã cộng 1.000.000₫ vào ví test để trải nghiệm mua sắm.', 'success');
+                    }
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>🧪 [Thử Nghiệm Sandbox] Nạp Nhanh 1.000.000₫ Vào Ví Test</span>
+                </button>
+              )}
+                </>
+              )}
             </div>
-            {product.product_type === 'physical' && (
-              <div className="flex justify-between">
-                <span>{t('checkout.shippingFee')}:</span>
-                <span>{formatCurrency(baseShippingFee)}</span>
-              </div>
-            )}
-            {freeshipDiscount > 0 && (
-              <div className="flex justify-between text-emerald-600 font-semibold">
-                <span>{t('checkout.freeshipDiscount')}:</span>
-                <span>-{formatCurrency(freeshipDiscount)}</span>
-              </div>
-            )}
-            {shopDiscount > 0 && (
-              <div className="flex justify-between text-orange-600 font-semibold">
-                <span>{t('checkout.voucherDiscount')}:</span>
-                <span>-{formatCurrency(shopDiscount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-sm font-extrabold text-gray-900 pt-2 border-t border-gray-200">
-              <span>{t('checkout.totalPayment')}:</span>
-              <span className="text-orange-600 text-base">{formatCurrency(totalAmount)}</span>
-            </div>
-          </div>
+          )}
         </div>
-
-        {/* Footer Action */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
-          <div>
-            <p className="text-[11px] text-gray-500">Tổng thanh toán:</p>
-            <p className="text-lg font-black text-orange-600">{formatCurrency(totalAmount)}</p>
-          </div>
-
-          <button
-            onClick={handleCreateOrder}
-            disabled={isSubmitting}
-            className="px-8 py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center space-x-2 disabled:opacity-50"
-          >
-            <span>{isSubmitting ? 'Đang xử lý...' : t('checkout.confirmOrder')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Shopee Voucher Selection Modal */}
-        {showVoucherModal && (
-          <ShopeeCouponModal
-            subtotal={subtotal}
-            shippingFee={baseShippingFee}
-            selectedFreeship={selectedFreeship}
-            selectedDiscount={selectedDiscount}
-            onApply={(f, d) => {
-              setSelectedFreeship(f);
-              setSelectedDiscount(d);
-            }}
-            onClose={() => setShowVoucherModal(false)}
-          />
-        )}
       </div>
     </div>
-  );
+
+    {/* Slippage Protection Dialog (Chống tăng giá bất ngờ khi có người mua trước) */}
+    {priceEscalatedDialog && (
+      <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+        <div className="relative w-full max-w-md bg-card border border-amber-500/50 rounded-3xl p-5 sm:p-6 shadow-2xl animate-scale-in space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/40">
+            <Zap className="w-6 h-6 animate-pulse" />
+          </div>
+          <div className="text-center space-y-1">
+            <h4 className="font-heading font-extrabold text-base sm:text-lg text-foreground">
+              Giá Gói Vừa Tăng Theo Lượt!
+            </h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Đã có khách hàng hoàn tất thanh toán trước bạn một tích tắc. Theo quy tắc Nâng Giá, giá lượt hiện tại đã tăng từ <strong className="text-foreground font-mono">{formatCore(priceEscalatedDialog.oldPrice)}</strong> lên <strong className="text-amber-400 font-mono font-bold">{formatCore(priceEscalatedDialog.newPrice)}</strong>.
+            </p>
+          </div>
+          <div className="p-3 rounded-2xl bg-muted/50 border border-border text-center space-y-1">
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Giá lượt mua mới của bạn</span>
+            <p className="font-display font-black text-2xl text-emerald-400">
+              {formatCore(priceEscalatedDialog.newPrice)}
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={() => setPriceEscalatedDialog(null)}
+              className="flex-1 py-3 px-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold cursor-pointer transition-all"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAcceptNewEscalatedPrice(priceEscalatedDialog.newPrice)}
+              className="flex-1 py-3 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-95 text-slate-950 font-bold text-xs shadow-md cursor-pointer transition-all"
+            >
+              Đồng ý mua giá mới
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {isCouponModalOpen && (
+      <ShopeeCouponModal
+        isOpen={isCouponModalOpen}
+        onClose={() => setIsCouponModalOpen(false)}
+        productTotal={totalPrice}
+        shippingFee={rawShippingFee}
+        isPhysical={isPhysical}
+        initialFreeship={selectedFreeship}
+        initialDiscount={selectedDiscount}
+        onApply={(fs, disc) => {
+          setSelectedFreeship(fs);
+          setSelectedDiscount(disc);
+        }}
+      />
+    )}
+
+    {isTrackingModalOpen && (
+      <ShippingTrackingModal
+        isOpen={isTrackingModalOpen}
+        onClose={() => setIsTrackingModalOpen(false)}
+        initialShippingOrder={trackingModalOrder}
+        trackingCode={trackingModalOrder?.trackingCode || completedOrder?.tracking_code}
+        orderId={trackingModalOrder?.orderId || completedOrder?.id}
+      />
+    )}
+  </>,
+  document.body
+);
 };

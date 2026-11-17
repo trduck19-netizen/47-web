@@ -1,0 +1,1044 @@
+import { getRealEventsHub, saveRealEventsHub } from '../../services/realEventsHub';
+import {
+  ensureSchemaUpgrades,
+  completeQrOrderD1,
+  recordSepayExceptionD1,
+  checkAndExpireOrdersD1,
+  ensureMarketplaceSchema,
+  checkAndExpireSellerOrdersD1,
+  logAdminAudit,
+} from '../../services/d1_service';
+import {
+  decryptCode,
+  recordLedgerTransaction,
+  getMarketplaceConfig,
+} from '../../services/marketplace_service';
+
+interface Env {
+  DB: D1Database;
+  SEPAY_API_KEY?: string;
+  MARKETPLACE_CODE_KEY?: string;
+  ADMIN_SYNC_SECRET?: string;
+}
+
+const CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Apikey, apikey, x-api-key',
+};
+
+/**
+ * Constant-time string comparison preventing timing attacks on API keys
+ */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length === 0 || b.length === 0) return false;
+  const enc = new TextEncoder();
+  const aBuf = enc.encode(a);
+  const bBuf = enc.encode(b);
+  if (aBuf.byteLength !== bBuf.byteLength) {
+    return false;
+  }
+  let c = 0;
+  for (let i = 0; i < aBuf.byteLength; i++) {
+    c |= aBuf[i] ^ bBuf[i];
+  }
+  return c === 0;
+}
+
+export const onRequestOptions: PagesFunction = async () => {
+  return new Response(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+};
+
+export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const { env } = context;
+  const isDbReady = Boolean(env.DB);
+
+  let hasConfiguredApiKey = false;
+  try {
+    if (env.SEPAY_API_KEY && env.SEPAY_API_KEY.trim()) {
+      hasConfiguredApiKey = true;
+    } else if (env.DB) {
+      const priv = await env.DB.prepare("SELECT value FROM system_settings WHERE key = 'wcg_admin_sepay_private_v1' LIMIT 1").first<any>();
+      if (priv?.value && JSON.parse(priv.value)?.apiKey) {
+        hasConfiguredApiKey = true;
+      } else {
+        const standard = await env.DB.prepare("SELECT value FROM system_settings WHERE key = 'wcg_admin_sepay_v4' LIMIT 1").first<any>();
+        if (standard?.value && JSON.parse(standard.value)?.apiKey) {
+          hasConfiguredApiKey = true;
+        }
+      }
+    }
+  } catch {}
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      status: 'ONLINE',
+      endpoint: 'SePay Webhook Receiver (Cloudflare D1 Production-Ready)',
+      service: 'CodeGame.Shop & Admin Shop',
+      currencyRule: '1 VND = 1 Core',
+      database: 'Cloudflare D1 (Edge SQLite)',
+      idempotency: 'UNIQUE constraint (sepay_transactions.transaction_id)',
+      dbReady: isDbReady,
+      hasConfiguredApiKey,
+      timestamp: new Date().toISOString(),
+    }),
+    { headers: CORS_HEADERS }
+  );
+};
+
+async function broadcastRealDepositToHub(env: Env, member: any, amount: number, creditedCore: number): Promise<void> {
+  try {
+    const hub = await getRealEventsHub(env);
+    const rawMemberName = member?.display_name || member?.username || member?.displayName || 'Thành viên';
+    const maskedName = rawMemberName.length > 3
+      ? `${rawMemberName.slice(0, 2)}***${rawMemberName.slice(-1)}`
+      : `${rawMemberName.slice(0, 1)}**`;
+    hub.events.unshift({
+      id: `dep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      type: 'DEPOSIT_WALLET',
+      title: 'Nạp tiền ví thành công',
+      message: `${maskedName} vừa nạp thành công ${amount.toLocaleString('vi-VN')}đ (+${creditedCore} Core)`,
+      timeAgo: 'vừa xong',
+      userName: maskedName,
+      depositAmount: amount,
+      isRealUser: true,
+      timestamp: Date.now(),
+      scheduledFireTime: Date.now(),
+    });
+    await saveRealEventsHub(env, hub);
+  } catch (e) {
+    console.warn('[SePay] Hub broadcast error:', e);
+  }
+}
+
+export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const { env, request } = context;
+
+  try {
+    if (!env.DB) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Database Cloudflare D1 (env.DB) chưa được kích hoạt.' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    await ensureSchemaUpgrades(env.DB);
+
+    let payload: any = {};
+    try {
+      payload = await request.json();
+    } catch {
+      payload = {};
+    }
+
+    // 1. Phân tích tham số chuẩn của SePay Webhook
+    const transactionId = String(
+      payload.id || payload.transactionId || payload.transaction_id || payload.referenceCode || payload.code || ''
+    ).trim();
+    const amount = Math.round(Number(payload.transferAmount || payload.transfer_amount || payload.amount || payload.amount_in || 0));
+    const content = String(payload.content || payload.transaction_content || payload.description || payload.memo || '').trim();
+    const gateway = String(payload.gateway || payload.bank_brand_name || payload.bank || 'Bank-Auto').trim();
+    const accountNumber = String(payload.accountNumber || payload.account_number || payload.subAccount || payload.sub_account || '').trim();
+    const transferType = String(payload.transferType || payload.transfer_type || 'in').toLowerCase();
+
+    // 2. Xác thực API Key 2 tầng bảo mật (Cloudflare Environment Variable hoặc D1 System Settings)
+    let configuredApiKey = (env.SEPAY_API_KEY || '').trim();
+    let configuredPrefix = 'WCG';
+    let autoCreditRatio = 1;
+    let configuredAccountNumber = '';
+    let configuredBankName = '';
+    try {
+      const sepaySetting = await env.DB.prepare(
+        "SELECT value FROM system_settings WHERE key = 'wcg_admin_sepay_v4' LIMIT 1"
+      ).first<any>();
+      if (sepaySetting?.value) {
+        const parsed = typeof sepaySetting.value === 'string' ? JSON.parse(sepaySetting.value) : sepaySetting.value;
+        if (!configuredApiKey && parsed?.apiKey && typeof parsed.apiKey === 'string') {
+          configuredApiKey = parsed.apiKey.trim();
+        }
+        if (parsed?.paymentPrefix && typeof parsed.paymentPrefix === 'string') {
+          configuredPrefix = parsed.paymentPrefix.trim().toUpperCase() || 'WCG';
+        }
+        if (parsed?.accountNumber && typeof parsed.accountNumber === 'string') {
+          configuredAccountNumber = parsed.accountNumber.trim();
+        }
+        if (parsed?.bankName && typeof parsed.bankName === 'string') {
+          configuredBankName = parsed.bankName.trim();
+        }
+        if (parsed?.autoCreditCoreRatio && Number(parsed.autoCreditCoreRatio) > 0) {
+          autoCreditRatio = Number(parsed.autoCreditCoreRatio);
+        }
+      }
+
+      // Tra cứu thêm bảng bảo mật riêng wcg_admin_sepay_private_v1 (chống ghi đè bởi client sync)
+      if (!configuredApiKey) {
+        const privSetting = await env.DB.prepare(
+          "SELECT value FROM system_settings WHERE key = 'wcg_admin_sepay_private_v1' LIMIT 1"
+        ).first<any>();
+        if (privSetting?.value) {
+          const parsedPriv = typeof privSetting.value === 'string' ? JSON.parse(privSetting.value) : privSetting.value;
+          if (parsedPriv?.apiKey && typeof parsedPriv.apiKey === 'string') {
+            configuredApiKey = parsedPriv.apiKey.trim();
+          }
+        }
+      }
+    } catch {}
+
+    const url = new URL(request.url);
+    const incomingApiKey = (
+      request.headers.get('Authorization') ||
+      request.headers.get('apikey') ||
+      request.headers.get('x-api-key') ||
+      request.headers.get('Apikey') ||
+      request.headers.get('X-Api-Key') ||
+      request.headers.get('x-sepay-key') ||
+      request.headers.get('x-sepay-api-key') ||
+      request.headers.get('x-webhook-secret') ||
+      url.searchParams.get('api_key') ||
+      url.searchParams.get('apiKey') ||
+      url.searchParams.get('key') ||
+      url.searchParams.get('token') ||
+      payload?.apiKey ||
+      payload?.api_key ||
+      ''
+    ).trim().replace(/^Bearer\s+/i, '').replace(/^Apikey\s+/i, '').trim();
+
+    // Xác thực an toàn tuyệt đối: Webhook bắt buộc phải có API Key chính xác từ cấu hình SePay hoặc ADMIN_SYNC_SECRET
+    const isAuthorized = Boolean(
+      (configuredApiKey && incomingApiKey && (incomingApiKey === configuredApiKey || timingSafeEqualStr(incomingApiKey, configuredApiKey))) ||
+      (env.ADMIN_SYNC_SECRET && incomingApiKey && (incomingApiKey === env.ADMIN_SYNC_SECRET || timingSafeEqualStr(incomingApiKey, env.ADMIN_SYNC_SECRET)))
+    );
+
+    if (!isAuthorized) {
+      // Ghi log giao dịch lỗi xác thực vào D1 để phục vụ kiểm toán và phát hiện gian lận
+      if (transactionId) {
+        const authNote = `UNAUTHORIZED: Sai hoặc thiếu API Key (incomingKey='${incomingApiKey ? incomingApiKey.slice(0, 4) + '...' : 'none'}', serverKeyConfigured=${Boolean(configuredApiKey)})`;
+        try {
+          const existingTx = await env.DB.prepare(
+            "SELECT id FROM sepay_transactions WHERE transaction_id = ? LIMIT 1"
+          ).bind(transactionId).first<any>();
+
+          if (existingTx) {
+            await env.DB.prepare(`
+              UPDATE sepay_transactions
+              SET status = 'FAILED', amount_in = ?, transaction_content = ?, gateway = ?, account_number = ?, note = ?
+              WHERE transaction_id = ?
+            `).bind(amount, content, gateway, accountNumber, authNote, transactionId).run();
+          } else {
+            await env.DB.prepare(`
+              INSERT INTO sepay_transactions (
+                transaction_id, gateway, account_number, amount_in, transaction_content, member_id, status, note, created_at
+              ) VALUES (?, ?, ?, ?, ?, NULL, 'FAILED', ?, datetime('now'))
+            `).bind(transactionId, gateway, accountNumber, amount, content, authNote).run();
+          }
+
+          // Trường hợp 7 (§5): Cảnh báo khi webhook nhận liên tiếp >= 3 giao dịch UNAUTHORIZED
+          const recentUnauth = await env.DB.prepare(`
+            SELECT COUNT(*) as unauth_count 
+            FROM sepay_transactions 
+            WHERE status = 'FAILED' 
+              AND note LIKE 'UNAUTHORIZED%' 
+              AND created_at >= datetime('now', '-1 hour')
+          `).first<{ unauth_count: number }>();
+
+          const unauthCount = Number(recentUnauth?.unauth_count || 0);
+          if (unauthCount >= 3) {
+            await logAdminAudit(env.DB, {
+              actorName: 'SePay Webhook',
+              actorEmail: 'system@codegame.shop',
+              action: 'SEPAY_UNAUTHORIZED_ALERT',
+              targetId: 'sepay_config',
+              details: `Phát hiện ${unauthCount} giao dịch SePay liên tiếp bị từ chối xác thực (UNAUTHORIZED) trong 1 giờ qua. Cần kiểm tra khóa API SePay trên máy chủ.`,
+            }).catch(() => {});
+
+            await env.DB.prepare(`
+              INSERT INTO system_settings (key, value, updated_at)
+              VALUES ('wcg_sepay_unauthorized_alert', ?, datetime('now'))
+              ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+            `).bind(JSON.stringify({
+              active: true,
+              count: unauthCount,
+              last_alert_at: new Date().toISOString(),
+              message: `CẢNH BÁO: Phát hiện ${unauthCount} giao dịch SePay liên tiếp bị từ chối xác thực (UNAUTHORIZED). Vui lòng kiểm tra lại cấu hình API Key SePay của sàn ngay lập tức!`
+            })).run().catch(() => {});
+          }
+        } catch (e) {
+          console.warn('[SePay Webhook] Failed to log unauthorized tx:', e);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Unauthorized: SePay Webhook yêu cầu API Key chính xác. Truy cập bị từ chối.',
+          transactionId,
+        }),
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+
+    // 3. Chỉ nhận tiền vào (transferType == 'in') và amount > 0
+    if (transferType !== 'in' || amount <= 0) {
+      return new Response(
+        JSON.stringify({ success: true, message: 'Bỏ qua giao dịch tiền ra hoặc số tiền bằng 0.' }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
+    if (!transactionId) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Thiếu mã định danh giao dịch (transaction_id).' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    // 4. Kiểm tra Idempotency trước khi xử lý (nếu transaction_id đã tồn tại)
+    const existingTx = await env.DB.prepare(`
+      SELECT id, status, member_id FROM sepay_transactions WHERE transaction_id = ? LIMIT 1
+    `).bind(transactionId).first<any>();
+
+    if (existingTx && existingTx.status === 'SUCCESS') {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: 'DUPLICATE_IDEMPOTENT',
+          message: `Giao dịch ${transactionId} đã được xử lý trước đó. Bỏ qua cộng tiền lần 2 để đảm bảo Idempotency.`,
+          transactionId,
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
+    const cleanContent = content.replace(/\u00a0/g, ' ').trim();
+
+    // 4b. Kiểm tra xem giao dịch có phải là thanh toán ĐƠN HÀNG TRỰC TIẾP (Direct QR Order) hay không
+    // Cú pháp: WCG ORD-QR-... hoặc ORD-QR-... hoặc WCG ORD-... hoặc CGM-...
+    const orderIdMatch = cleanContent.match(/\b(ORD(?:-QR)?-[A-Za-z0-9_-]+)\b/i) ||
+      cleanContent.match(/\b(CGM-[A-Za-z0-9_-]+)\b/i) ||
+      cleanContent.match(/(?:WCG|COD)\s*[:\-\s]?\s*(ORD[A-Za-z0-9_-]+)/i) ||
+      cleanContent.match(/(?:WCG|COD)\s*[:\-\s]?\s*(CGM-[A-Za-z0-9_-]+)/i);
+
+    if (orderIdMatch) {
+      const orderId = orderIdMatch[1].trim();
+      const matchedOrder = await env.DB.prepare(
+        "SELECT * FROM orders WHERE id = ? COLLATE NOCASE LIMIT 1"
+      ).bind(orderId).first<any>();
+
+      if (matchedOrder) {
+        // TÌNH HUỐNG 1: Đơn hàng đã hoàn tất trước đó (Khách chuyển trùng / chuyển lần 2)
+        // Quy tắc: 1 lần thanh toán chỉ giao 1 mã. Không giao mã lần 2, ghi nhận FAILED/DUPLICATE_PAYMENT để admin xử lý thủ công.
+        if (matchedOrder.status === 'COMPLETED' || matchedOrder.payment_status === 'PAID') {
+          await recordSepayExceptionD1(env.DB, {
+            transactionId,
+            gateway,
+            accountNumber,
+            amount,
+            content,
+            orderId: matchedOrder.id,
+            memberId: matchedOrder.member_id,
+            status: 'FAILED',
+            note: `DUPLICATE_PAYMENT: Đơn hàng ${matchedOrder.id} đã hoàn tất trước đó, khách chuyển tiền lần 2 (+${amount.toLocaleString('vi-VN')}đ). Không giao thêm mã. Chờ admin xử lý.`,
+            action: 'SEPAY_DUPLICATE_PAYMENT',
+          });
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: 'DUPLICATE_PAYMENT',
+              message: `Đơn hàng ${matchedOrder.id} đã hoàn tất trước đó. Không giao thêm mã. Ghi nhận giao dịch lần 2 để quản trị viên xử lý thủ công.`,
+              transactionId,
+              orderId: matchedOrder.id,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+
+        // TÌNH HUỐNG 2: Đơn hàng đã hết hạn (> 15 phút) hoặc đã bị hủy
+        // Quy tắc: Không giao mã (vì mã đã được trả về kho hoặc bán cho người khác), ghi nhận EXPIRED_PAYMENT để admin xử lý thủ công.
+        const isOrderExpired = matchedOrder.status === 'CANCELLED' ||
+          matchedOrder.payment_status === 'EXPIRED' ||
+          (matchedOrder.expires_at && new Date(matchedOrder.expires_at).getTime() <= Date.now());
+
+        if (isOrderExpired) {
+          await checkAndExpireOrdersD1(env.DB, matchedOrder.id);
+          await recordSepayExceptionD1(env.DB, {
+            transactionId,
+            gateway,
+            accountNumber,
+            amount,
+            content,
+            orderId: matchedOrder.id,
+            memberId: matchedOrder.member_id,
+            status: 'FAILED',
+            note: `EXPIRED_PAYMENT: Khách chuyển tiền (+${amount.toLocaleString('vi-VN')}đ) sau khi đơn hàng ${matchedOrder.id} đã hết hạn 15 phút (mã đã trả về kho). Không giao mã. Chờ admin xử lý.`,
+            action: 'SEPAY_EXPIRED_PAYMENT',
+          });
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: 'EXPIRED_PAYMENT',
+              message: `Đơn hàng ${matchedOrder.id} đã hết hạn (quá 15 phút). Không giao mã. Đã ghi nhận khoản tiền để quản trị viên xử lý thủ công.`,
+              transactionId,
+              orderId: matchedOrder.id,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+
+        // TÌNH HUỐNG 3: Chuyển thiếu tiền
+        // Quy tắc: Không hoàn tất đơn, không giao mã, ghi nhận UNDERPAID để quản trị viên xử lý thủ công.
+        const requiredAmount = Number(matchedOrder.total_amount || 0);
+        if (amount < requiredAmount) {
+          await recordSepayExceptionD1(env.DB, {
+            transactionId,
+            gateway,
+            accountNumber,
+            amount,
+            content,
+            orderId: matchedOrder.id,
+            memberId: matchedOrder.member_id,
+            status: 'FAILED',
+            note: `UNDERPAID: Chuyển thiếu tiền cho đơn ${matchedOrder.id} (nhận ${amount.toLocaleString('vi-VN')}đ, cần ${requiredAmount.toLocaleString('vi-VN')}đ). Không giao mã. Chờ admin xử lý.`,
+            action: 'SEPAY_UNDERPAID',
+          });
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: 'UNDERPAID',
+              message: `Số tiền chuyển (${amount.toLocaleString('vi-VN')}đ) không đủ đơn hàng (${requiredAmount.toLocaleString('vi-VN')}đ). Đã ghi nhận để quản trị viên xử lý thủ công.`,
+              transactionId,
+              orderId: matchedOrder.id,
+              received: amount,
+              required: requiredAmount,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+
+        // TÌNH HUỐNG 4: Chuyển đúng tiền, đúng hạn
+        // Quy tắc: Hoàn tất đơn, giao mã ngay vào kho khách, số dư Core không đổi.
+        const completeResult = await completeQrOrderD1(env.DB, {
+          orderId: matchedOrder.id,
+          sepayTxId: transactionId,
+          amount,
+          gateway,
+          accountNumber,
+          content,
+        });
+
+        if (completeResult.success) {
+          const buyer = await env.DB.prepare("SELECT * FROM members WHERE id = ?").bind(matchedOrder.member_id).first<any>();
+          if (buyer) {
+            await broadcastRealDepositToHub(env, buyer, amount, amount);
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: 'COMPLETED',
+              message: `Thanh toán đơn hàng QR thành công! Đã giao ${completeResult.deliveredCodes?.length || 1} mã quà tặng cho khách.`,
+              transactionId,
+              orderId: matchedOrder.id,
+              deliveredCodes: completeResult.deliveredCodes,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        } else {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              status: completeResult.reason || 'FAILED',
+              message: `Không thể hoàn tất đơn hàng QR: ${completeResult.reason}`,
+              transactionId,
+              orderId: matchedOrder.id,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+      }
+    }
+
+    // 4c. Kiểm tra xem giao dịch có phải là thanh toán ĐƠN HÀNG SÀN TMĐT (Seller Child Order)
+    if (orderIdMatch) {
+      const orderCandidate = orderIdMatch[1].trim();
+      const matchedSellerOrder = await env.DB.prepare(
+        "SELECT * FROM seller_orders WHERE (id = ? OR order_code = ?) COLLATE NOCASE LIMIT 1"
+      ).bind(orderCandidate, orderCandidate).first<any>();
+
+      if (matchedSellerOrder) {
+        const orderCode = matchedSellerOrder.order_code || matchedSellerOrder.id;
+        const buyerId = matchedSellerOrder.buyer_member_id;
+
+        // TÌNH HUỐNG 1 (Trùng thanh toán): Đơn hàng sàn đã hoàn tất trước đó
+        if (matchedSellerOrder.status === 'PAID' || matchedSellerOrder.status === 'COMPLETED' || matchedSellerOrder.status === 'DELIVERED') {
+          const dupNote = `DUPLICATE_PAYMENT: Đơn hàng sàn ${orderCode} đã hoàn tất trước đó, khách chuyển tiền lần 2 (+${amount.toLocaleString('vi-VN')}đ). Không giao thêm mã. Chờ admin xử lý.`;
+          await recordSepayExceptionD1(env.DB, {
+            transactionId,
+            gateway,
+            accountNumber,
+            amount,
+            content,
+            orderId: matchedSellerOrder.id,
+            memberId: buyerId,
+            status: 'FAILED',
+            note: dupNote,
+            action: 'SEPAY_DUPLICATE_PAYMENT',
+          });
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: 'DUPLICATE_PAYMENT',
+              message: `Đơn hàng sàn ${orderCode} đã hoàn tất trước đó. Không giao thêm mã. Ghi nhận giao dịch lần 2 để quản trị viên xử lý thủ công.`,
+              transactionId,
+              orderId: matchedSellerOrder.id,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+
+        // TÌNH HUỐNG 2: Đơn hàng sàn đã hết hạn (> 15 phút) hoặc đã bị hủy
+        const isOrderExpired = matchedSellerOrder.status === 'CANCELLED' ||
+          matchedSellerOrder.status === 'EXPIRED' ||
+          (matchedSellerOrder.expires_at && new Date(matchedSellerOrder.expires_at).getTime() <= Date.now());
+
+        if (isOrderExpired) {
+          await checkAndExpireSellerOrdersD1(env.DB, matchedSellerOrder.id);
+          const expNote = `EXPIRED_PAYMENT: Khách chuyển tiền (+${amount.toLocaleString('vi-VN')}đ) sau khi đơn sàn ${orderCode} đã hết hạn 15 phút (mã đã trả về kho). Không giao mã. Chờ admin xử lý.`;
+          await recordSepayExceptionD1(env.DB, {
+            transactionId,
+            gateway,
+            accountNumber,
+            amount,
+            content,
+            orderId: matchedSellerOrder.id,
+            memberId: buyerId,
+            status: 'FAILED',
+            note: expNote,
+            action: 'SEPAY_EXPIRED_PAYMENT',
+          });
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: 'EXPIRED_PAYMENT',
+              message: `Đơn hàng sàn ${orderCode} đã hết hạn (quá 15 phút). Không giao mã. Đã ghi nhận khoản tiền để quản trị viên xử lý thủ công.`,
+              transactionId,
+              orderId: matchedSellerOrder.id,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+
+        // TÌNH HUỐNG 3: Chuyển thiếu tiền
+        const requiredAmount = Number(matchedSellerOrder.price_core || 0);
+        if (amount < requiredAmount) {
+          const underNote = `UNDERPAID: Chuyển thiếu tiền cho đơn sàn ${orderCode} (nhận ${amount.toLocaleString('vi-VN')}đ, cần ${requiredAmount.toLocaleString('vi-VN')}đ). Không giao mã. Chờ admin xử lý.`;
+          await recordSepayExceptionD1(env.DB, {
+            transactionId,
+            gateway,
+            accountNumber,
+            amount,
+            content,
+            orderId: matchedSellerOrder.id,
+            memberId: buyerId,
+            status: 'FAILED',
+            note: underNote,
+            action: 'SEPAY_UNDERPAID',
+          });
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: 'UNDERPAID',
+              message: `Số tiền chuyển (${amount.toLocaleString('vi-VN')}đ) không đủ đơn hàng sàn (${requiredAmount.toLocaleString('vi-VN')}đ). Đã ghi nhận để quản trị viên xử lý thủ công.`,
+              transactionId,
+              orderId: matchedSellerOrder.id,
+              received: amount,
+              required: requiredAmount,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+
+        // TÌNH HUỐNG 4: Chuyển đúng tiền hoặc thừa tiền, còn hạn
+        const isOverpaid = amount > requiredAmount;
+        const excessAmount = isOverpaid ? (amount - requiredAmount) : 0;
+        const nowIso = new Date().toISOString();
+
+        let reservedCode = null;
+        if (matchedSellerOrder.code_id) {
+          reservedCode = await env.DB.prepare("SELECT * FROM seller_codes WHERE id = ? LIMIT 1")
+            .bind(matchedSellerOrder.code_id).first<any>();
+        }
+        if (!reservedCode) {
+          reservedCode = await env.DB.prepare("SELECT * FROM seller_codes WHERE order_id = ? AND status = 'RESERVED' LIMIT 1")
+            .bind(matchedSellerOrder.id).first<any>();
+        }
+
+        // Thử giải mã mã code
+        let plainDeliveredCode = '';
+        let keyMissingOrFailed = false;
+
+        if (!env.MARKETPLACE_CODE_KEY || !env.MARKETPLACE_CODE_KEY.trim()) {
+          keyMissingOrFailed = true;
+        } else if (reservedCode?.code_encrypted) {
+          try {
+            plainDeliveredCode = await decryptCode(reservedCode.code_encrypted, env.MARKETPLACE_CODE_KEY);
+          } catch {
+            keyMissingOrFailed = true;
+          }
+        } else {
+          keyMissingOrFailed = true;
+        }
+
+        // 1. Luôn ghi nhận dòng tiền HOLD vào sổ cái của gian hàng
+        await recordLedgerTransaction(env.DB, {
+          sellerId: matchedSellerOrder.seller_id,
+          orderId: matchedSellerOrder.id,
+          type: 'HOLD',
+          amountCore: requiredAmount,
+          actor: 'sepay_webhook',
+          reason: `Nhận thanh toán tiền thật qua QR SePay (Đơn sàn ${orderCode})${keyMissingOrFailed ? ' - Chờ giải mã thủ công do thiếu key' : ''}`,
+        });
+
+        const mConfig = await getMarketplaceConfig(env.DB);
+        const holdHours = mConfig.hold_hours || 168;
+        const holdUntil = new Date(Date.now() + holdHours * 3600 * 1000).toISOString();
+
+        if (keyMissingOrFailed) {
+          // Trường hợp thiếu key hoặc giải mã thất bại:
+          // Đơn con chuyển sang trạng thái PENDING_PAYMENT kèm cờ pending_manual_code = 1 (§4.5).
+          // Tiền vẫn giữ trong sổ cái, không tự hoàn tiền, quản trị xử lý tay.
+          await env.DB.prepare(`
+            UPDATE seller_orders
+            SET sepay_transaction_id = ?,
+                pending_manual_code = 1,
+                updated_at = ?
+            WHERE id = ?
+          `).bind(transactionId, nowIso, matchedSellerOrder.id).run();
+
+          const manualNote = `PAID_WAITING_MANUAL_CODE: Đã nhận ${amount}đ cho đơn sàn ${orderCode}. Chưa có khóa MARKETPLACE_CODE_KEY để giải mã tự động. Tiền đã vào ngăn đang giữ, quản trị cần giao mã thủ công.`;
+          await env.DB.prepare(`
+            INSERT INTO sepay_transactions (
+              transaction_id, gateway, account_number, amount_in, transaction_content, member_id, status, note, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'SUCCESS', ?, datetime('now'))
+          `).bind(transactionId, gateway, accountNumber, amount, content, buyerId, manualNote).run();
+
+          // Mở 1 ngoại lệ đối soát để quản trị giao mã thủ công
+          await env.DB.prepare(`
+            INSERT INTO reconciliation_exceptions (
+              id, run_id, source, reference_id, expected_amount, actual_amount, suggested_cause, status, created_at, updated_at
+            ) VALUES (?, ?, 'ORDERS', ?, ?, ?, ?, 'OPEN', datetime('now'), datetime('now'))
+          `).bind(
+            `ex_manual_${transactionId}`,
+            `rec_adhoc_${transactionId}`,
+            orderCode,
+            requiredAmount,
+            amount,
+            `Đơn sàn ${orderCode} đã thanh toán thành công nhưng thiếu MARKETPLACE_CODE_KEY để giải mã. Quản trị cần giao mã thủ công.`
+          ).run().catch(() => {});
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: 'PENDING_MANUAL_CODE',
+              message: `Thanh toán đơn hàng sàn ${orderCode} thành công. Mã đang chờ quản trị viên giao thủ công do hệ thống chưa nạp khóa giải mã.`,
+              transactionId,
+              orderId: matchedSellerOrder.id,
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+
+        // Nếu giải mã thành công: Hoàn tất đơn con, đổi mã sang SOLD, cập nhật PAID
+        const batchStatements = [
+          env.DB.prepare(`
+            UPDATE seller_orders
+            SET status = 'PAID',
+                code_id = ?,
+                delivered_code = ?,
+                sepay_transaction_id = ?,
+                payment_method = 'QR_SEPAY',
+                hold_until = ?,
+                updated_at = ?
+            WHERE id = ?
+          `).bind(
+            reservedCode?.id || matchedSellerOrder.code_id,
+            plainDeliveredCode,
+            transactionId,
+            holdUntil,
+            nowIso,
+            matchedSellerOrder.id
+          ),
+        ];
+
+        if (reservedCode?.id) {
+          batchStatements.push(
+            env.DB.prepare(`
+              UPDATE seller_codes
+              SET status = 'SOLD',
+                  order_id = ?,
+                  sold_at = ?,
+                  updated_at = ?
+              WHERE id = ?
+            `).bind(matchedSellerOrder.id, nowIso, nowIso, reservedCode.id)
+          );
+        }
+
+        await env.DB.batch(batchStatements);
+
+        // Ghi transaction SePay
+        const successNote = isOverpaid
+          ? `OVERPAID: Đã nhận ${amount}đ (thừa ${excessAmount}đ) cho đơn sàn ${orderCode}. Đã giao mã, mở ngoại lệ để admin xử lý số tiền thừa.`
+          : `COMPLETED: Đã nhận đủ ${amount}đ cho đơn sàn ${orderCode}. Đã giao mã cho khách, tiền vào ngăn đang giữ ${holdHours}h.`;
+
+        await env.DB.prepare(`
+          INSERT INTO sepay_transactions (
+            transaction_id, gateway, account_number, amount_in, transaction_content, member_id, status, note, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, 'SUCCESS', ?, datetime('now'))
+        `).bind(transactionId, gateway, accountNumber, amount, content, buyerId, successNote).run();
+
+        // Nếu thừa tiền, mở ngoại lệ đối soát để admin xử lý số tiền thừa (§5 tình huống 3)
+        if (isOverpaid) {
+          await env.DB.prepare(`
+            INSERT INTO reconciliation_exceptions (
+              id, run_id, source, reference_id, expected_amount, actual_amount, suggested_cause, status, created_at, updated_at
+            ) VALUES (?, ?, 'SEPAY', ?, ?, ?, ?, 'OPEN', datetime('now'), datetime('now'))
+          `).bind(
+            `ex_overpaid_${transactionId}`,
+            `rec_adhoc_${transactionId}`,
+            transactionId,
+            requiredAmount,
+            amount,
+            `Khách chuyển thừa ${excessAmount.toLocaleString('vi-VN')}đ cho đơn con ${orderCode}. Quản trị viên cần hoàn thừa hoặc cộng ví Core cho khách.`
+          ).run().catch(() => {});
+        }
+
+        // Cập nhật trạng thái đơn cha (nếu có)
+        if (matchedSellerOrder.parent_order_id) {
+          const siblingsRes = await env.DB.prepare(`
+            SELECT status FROM seller_orders WHERE parent_order_id = ?
+          `).bind(matchedSellerOrder.parent_order_id).all<any>();
+
+          const siblings = siblingsRes?.results || [];
+          const allPaid = siblings.length > 0 && siblings.every((s: any) =>
+            s.status === 'PAID' || s.status === 'COMPLETED' || s.status === 'DELIVERED'
+          );
+
+          await env.DB.prepare(`
+            UPDATE seller_parent_orders
+            SET status = ?, updated_at = ?
+            WHERE id = ?
+          `).bind(
+            allPaid ? 'PAID' : 'PARTIALLY_PAID',
+            nowIso,
+            matchedSellerOrder.parent_order_id
+          ).run().catch(() => {});
+        }
+
+        const buyer = await env.DB.prepare("SELECT * FROM members WHERE id = ?").bind(buyerId).first<any>();
+        if (buyer) {
+          await broadcastRealDepositToHub(env, buyer, amount, requiredAmount);
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            status: 'COMPLETED',
+            message: `Thanh toán đơn hàng sàn ${orderCode} thành công! Đã giao mã quà tặng cho khách.`,
+            transactionId,
+            orderId: matchedSellerOrder.id,
+            deliveredCode: plainDeliveredCode,
+            holdUntil,
+          }),
+          { status: 200, headers: CORS_HEADERS }
+        );
+      }
+    }
+
+    // 5. Trích xuất tài khoản thành viên từ nội dung chuyển khoản (Luồng nạp Core ví truyền thống)
+    // Cú pháp chuẩn: WCG <mã thành viên>
+    const escapedPrefix = configuredPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const prefixRegex = new RegExp(`(?:^|\\s|[^A-Za-z0-9])${escapedPrefix}\\s+([A-Za-z0-9_\\-\\.\\@]+)`, 'i');
+    const fallbackPrefixRegex = new RegExp(`(?:^|\\s|[^A-Za-z0-9])${escapedPrefix}\\s*([A-Za-z0-9_\\-\\.\\@]+)`, 'i');
+    const prefixMatch = cleanContent.match(prefixRegex) || cleanContent.match(fallbackPrefixRegex);
+    let rawTarget = prefixMatch ? prefixMatch[1].trim() : '';
+
+    // Dự phòng 1: Nếu người dùng ghi trực tiếp mã người dùng usr... mà quên tiền tố WCG
+    if (!rawTarget) {
+      const directIdMatch = cleanContent.match(/\b(usr[A-Za-z0-9_-]+)\b/i);
+      if (directIdMatch) {
+        rawTarget = directIdMatch[1].trim();
+      }
+    }
+
+    // Loại bỏ dấu câu ở cuối nếu app ngân hàng tự đính kèm
+    rawTarget = rawTarget.replace(/[.,;:!?]+$/, '').trim();
+
+    let matchedMember: any = null;
+
+    if (rawTarget) {
+      // Tra cứu trực tiếp trên các cột có index (id PRIMARY KEY, username, email)
+      matchedMember = await env.DB.prepare(`
+        SELECT id, username, display_name, email, role, balance, status
+        FROM members
+        WHERE id = ? COLLATE NOCASE OR username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE
+        LIMIT 1
+      `).bind(rawTarget, rawTarget, rawTarget).first<any>();
+
+      // Hỗ trợ trường hợp app ngân hàng lọc bỏ ký tự đặc biệt / dấu gạch dưới / gạch ngang
+      // (VD: TPBank, Vietcombank chuyển "usr_1790773913476_ne01" thành "usr1790773913476ne01")
+      if (!matchedMember) {
+        const cleanRawTarget = rawTarget.replace(/[^a-zA-Z0-9]/g, '');
+        if (cleanRawTarget) {
+          matchedMember = await env.DB.prepare(`
+            SELECT id, username, display_name, email, role, balance, status
+            FROM members
+            WHERE REPLACE(REPLACE(REPLACE(id, '_', ''), '-', ''), ' ', '') = ? COLLATE NOCASE
+               OR REPLACE(REPLACE(REPLACE(username, '_', ''), '-', ''), ' ', '') = ? COLLATE NOCASE
+            LIMIT 1
+          `).bind(cleanRawTarget, cleanRawTarget).first<any>();
+        }
+      }
+    }
+
+    // Dự phòng 2: Quét thông minh qua danh sách thành viên trong DB
+    if (!matchedMember) {
+      try {
+        const allMembersRes = await env.DB.prepare(`
+          SELECT id, username, display_name, email, role, balance, status
+          FROM members
+        `).all<any>();
+        if (allMembersRes?.results) {
+          const lowerContent = cleanContent.toLowerCase();
+          const cleanAlphaContent = lowerContent.replace(/[^a-z0-9]/g, '');
+          const cleanAlphaTarget = (rawTarget || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+          for (const m of allMembersRes.results) {
+            if (!m) continue;
+            const mId = (m.id || '').trim().toLowerCase();
+            const uName = (m.username || '').trim().toLowerCase();
+            const mEmail = (m.email || '').trim().toLowerCase();
+
+            const mIdAlpha = mId.replace(/[^a-z0-9]/g, '');
+            const uNameAlpha = uName.replace(/[^a-z0-9]/g, '');
+            const mEmailAlpha = mEmail.replace(/[^a-z0-9]/g, '');
+
+            // 1. So khớp trực tiếp target đã chuẩn hóa bỏ dấu gạch dưới / gạch ngang
+            if (cleanAlphaTarget) {
+              if (mIdAlpha && cleanAlphaTarget === mIdAlpha) {
+                matchedMember = m;
+                break;
+              }
+              if (uNameAlpha && uNameAlpha.length >= 3 && cleanAlphaTarget === uNameAlpha) {
+                matchedMember = m;
+                break;
+              }
+              if (mEmailAlpha && mEmailAlpha.length >= 4 && cleanAlphaTarget === mEmailAlpha) {
+                matchedMember = m;
+                break;
+              }
+            }
+
+            // 2. So khớp chuỗi ID người dùng có trong nội dung chuyển khoản
+            if (mId && lowerContent.includes(mId)) {
+              matchedMember = m;
+              break;
+            }
+            if (mIdAlpha && mIdAlpha.length >= 6 && cleanAlphaContent.includes(mIdAlpha)) {
+              matchedMember = m;
+              break;
+            }
+
+            // 3. So khớp tên người dùng (username) trong nội dung
+            // Tránh nhận diện nhầm các từ khóa phổ biến trong giao dịch ngân hàng nếu thành viên vô tình trùng tên
+            const GENERIC_BANK_WORDS = new Set(['bank', 'tien', 'chuyen', 'thanh', 'toan', 'nap', 'core', 'code', 'game', 'shop', 'user', 'viet', 'tpbank', 'mbbank', 'vcb', 'techcombank']);
+            const isGenericWord = GENERIC_BANK_WORDS.has(uNameAlpha);
+
+            if (uName && uName.length >= 3 && !isGenericWord) {
+              const uRegex = new RegExp(`(?:^|\\s|[^A-Za-z0-9])${uName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[^A-Za-z0-9])`, 'i');
+              if (uRegex.test(cleanContent)) {
+                matchedMember = m;
+                break;
+              }
+            }
+            // Chỉ cho phép khớp dạng chuỗi liền nếu có tiền tố WCG đi kèm (VD: wcgusername hoặc wcgadmin290200)
+            const cleanPrefix = (configuredPrefix || 'WCG').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (uNameAlpha && uNameAlpha.length >= 3 && cleanAlphaContent.includes(cleanPrefix + uNameAlpha)) {
+              matchedMember = m;
+              break;
+            }
+
+            // 4. So khớp email
+            if (mEmail && lowerContent.includes(mEmail)) {
+              matchedMember = m;
+              break;
+            }
+          }
+        }
+      } catch (scanErr) {
+        console.warn('[SePay Webhook] Member scan error:', scanErr);
+      }
+    }
+
+    // Không khớp chính xác mã thành viên -> Lưu trạng thái FAILED (đối soát chưa khớp) vào D1 và trả về HTTP 200 an toàn để SePay xác nhận
+    if (!matchedMember) {
+      const unmatchedNote = `UNMATCHED: Không khớp tài khoản thành viên từ nội dung "${content}" (rawTarget="${rawTarget}")`;
+      try {
+        const existingTx = await env.DB.prepare(
+          "SELECT id FROM sepay_transactions WHERE transaction_id = ? LIMIT 1"
+        ).bind(transactionId).first<any>();
+
+        if (existingTx) {
+          await env.DB.prepare(`
+            UPDATE sepay_transactions
+            SET status = 'FAILED', amount_in = ?, transaction_content = ?, gateway = ?, account_number = ?, note = ?
+            WHERE transaction_id = ?
+          `).bind(amount, content, gateway, accountNumber, unmatchedNote, transactionId).run();
+        } else {
+          await env.DB.prepare(`
+            INSERT INTO sepay_transactions (
+              transaction_id, gateway, account_number, amount_in, transaction_content, member_id, status, note, created_at
+            ) VALUES (?, ?, ?, ?, ?, NULL, 'FAILED', ?, datetime('now'))
+          `).bind(transactionId, gateway, accountNumber, amount, content, unmatchedNote).run();
+        }
+      } catch (insertErr: any) {
+        console.warn('[SePay Webhook] Unmatched log error:', insertErr);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: 'UNMATCHED',
+          message: `Giao dịch ${transactionId} đã được ghi nhận nhưng không khớp cú pháp "WCG <mã thành viên>" hoặc không tìm thấy tài khoản (nội dung: "${content}"). Đã lưu vào hệ thống để admin duyệt nạp thủ công.`,
+          transactionId,
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
+    if (matchedMember.status === 'BANNED') {
+      await env.DB.prepare(`
+        INSERT OR IGNORE INTO sepay_transactions (
+          transaction_id, gateway, account_number, amount_in, transaction_content, member_id, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'IGNORED', datetime('now'))
+      `).bind(transactionId, gateway, accountNumber, amount, content, matchedMember.id).run().catch(() => {});
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: 'ACCOUNT_BANNED',
+          message: 'Tài khoản người dùng đã bị khóa. Không thể tự động cộng tiền.',
+          transactionId,
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
+    // 6. Tính toán số tiền quy đổi (1 VND = 1 Core hoặc theo tỷ lệ cấu hình admin)
+    const creditedCore = Math.round(amount * autoCreditRatio);
+    const txId = `TX-DEP-${transactionId}`;
+    const balanceBefore = Math.max(0, Number(matchedMember.balance) || 0);
+    const balanceAfter = balanceBefore + creditedCore;
+
+    // 7. Thực thi ACID Transaction Batch trên Cloudflare D1
+    try {
+      const existingTx = await env.DB.prepare(
+        "SELECT id FROM sepay_transactions WHERE transaction_id = ? LIMIT 1"
+      ).bind(transactionId).first<any>();
+
+      const stmt1 = existingTx
+        ? env.DB.prepare(`
+            UPDATE sepay_transactions
+            SET status = 'SUCCESS', member_id = ?, amount_in = ?, transaction_content = ?, gateway = ?, account_number = ?, note = NULL
+            WHERE transaction_id = ? AND status != 'SUCCESS'
+          `).bind(matchedMember.id, amount, content, gateway, accountNumber, transactionId)
+        : env.DB.prepare(`
+            INSERT INTO sepay_transactions (
+              transaction_id, gateway, account_number, amount_in, transaction_content, member_id, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'SUCCESS', datetime('now'))
+          `).bind(transactionId, gateway, accountNumber, amount, content, matchedMember.id);
+
+      const stmt2 = env.DB.prepare(`
+        UPDATE members
+        SET balance = balance + ?
+        WHERE id = ?
+      `).bind(creditedCore, matchedMember.id);
+
+      const stmt3 = env.DB.prepare(`
+        INSERT INTO wallet_transactions (
+          id, member_id, member_email, type, amount,
+          balance_before, balance_after, description, status, order_id, created_at
+        ) VALUES (?, ?, ?, 'DEPOSIT', ?, ?, ?, ?, 'COMPLETED', NULL, datetime('now'))
+      `).bind(
+        txId,
+        matchedMember.id,
+        matchedMember.email || `${matchedMember.id}@webcodegame.vn`,
+        creditedCore,
+        balanceBefore,
+        balanceAfter,
+        `Nạp tiền tự động SePay #${transactionId}`
+      );
+
+      await env.DB.batch([stmt1, stmt2, stmt3]);
+
+      // Lấy số dư mới sau khi cộng
+      const updatedMem = await env.DB.prepare('SELECT balance FROM members WHERE id = ?').bind(matchedMember.id).first<any>();
+      const newBalance = updatedMem ? Number(updatedMem.balance) : Number(matchedMember.balance || 0) + creditedCore;
+
+      // Broadcast sự kiện người dùng thật cho Marketing FOMO Toast (không ghi tốn quota KV)
+      await broadcastRealDepositToHub(env, matchedMember, amount, creditedCore);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: 'SUCCESS',
+          message: `Nạp tiền thành công! Đã cộng +${creditedCore.toLocaleString('vi-VN')} Core cho ${matchedMember.display_name || matchedMember.username}.`,
+          transactionId,
+          creditedCore,
+          newBalance,
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    } catch (batchErr: any) {
+      const msg = batchErr?.message || String(batchErr);
+
+      // Bắt chính xác mã lỗi UNIQUE constraint để đảm bảo Idempotency chuẩn cấp sản xuất
+      if (
+        msg.includes('UNIQUE constraint failed: sepay_transactions.transaction_id') ||
+        msg.includes('SQLITE_CONSTRAINT_UNIQUE') ||
+        (msg.includes('UNIQUE') && msg.includes('sepay_transactions'))
+      ) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            status: 'DUPLICATE_IDEMPOTENT',
+            message: `Giao dịch ${transactionId} đã được xử lý trước đó. Bỏ qua cộng tiền lần 2 để đảm bảo Idempotency.`,
+            transactionId,
+          }),
+          { status: 200, headers: CORS_HEADERS }
+        );
+      }
+
+      throw batchErr;
+    }
+  } catch (err: any) {
+    console.error('[SePay Webhook Production Error]:', err);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'Lỗi máy chủ khi xử lý webhook: ' + (err?.message || String(err)),
+      }),
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+};
