@@ -181,6 +181,18 @@ import * as adminNotificationsBroadcastApi from './api/admin/notifications/broad
 import * as adminNotificationsSettingsApi from './api/admin/notifications/settings';
 import * as adminSecurityLogsIndexApi from './api/admin/security-logs/index';
 import * as adminSettingsIndexApi from './api/admin/settings/index';
+// Universal Commerce Platform RESTful APIs
+import * as productsIndexApi from './api/products/index';
+import * as productsIdApi from './api/products/[id]';
+import * as categoriesIndexApi from './api/categories/index';
+import * as categoriesIdApi from './api/categories/[id]';
+import * as vouchersIndexApi from './api/vouchers/index';
+import * as vouchersVerifyApi from './api/vouchers/verify';
+import * as vouchersIdApi from './api/vouchers/[id]';
+import * as shippingIndexApi from './api/shipping/index';
+import * as shippingIdApi from './api/shipping/[id]';
+import * as platformLeadsIndexApi from './api/platform-leads/index';
+import * as platformLeadsIdApi from './api/platform-leads/[id]';
 import { getMultipleSettingsD1 } from './services/d1_service';
 import { invalidateCatalogEdgeCache } from './services/cache_service';
 import fallbackGiveawaysData from '../src/data/giveaways.json';
@@ -832,6 +844,82 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       if (pathname === '/api/store/escalating') {
         if (method === 'OPTIONS') return await escalatingApi.onRequestOptions();
         return await escalatingApi.onRequestGet(context);
+      }
+
+      // 7h. Universal Mall Commerce Platform RESTful APIs
+      // Products API (/api/products & /api/products/:id)
+      if (pathname === '/api/products') {
+        if (method === 'OPTIONS') return await productsIndexApi.onRequestOptions(context);
+        if (method === 'POST') return await productsIndexApi.onRequestPost(context);
+        return await productsIndexApi.onRequestGet(context);
+      }
+      if (pathname.startsWith('/api/products/') && pathname !== '/api/products') {
+        const prodId = pathname.replace('/api/products/', '').trim();
+        const customContext = { ...context, params: { id: prodId } };
+        if (method === 'OPTIONS') return await productsIdApi.onRequestOptions(customContext);
+        if (method === 'PUT' || method === 'PATCH') return await productsIdApi.onRequestPut(customContext);
+        if (method === 'DELETE') return await productsIdApi.onRequestDelete(customContext);
+        return await productsIdApi.onRequestGet(customContext);
+      }
+
+      // Categories API (/api/categories & /api/categories/:id)
+      if (pathname === '/api/categories') {
+        if (method === 'OPTIONS') return await categoriesIndexApi.onRequestOptions(context);
+        if (method === 'POST') return await categoriesIndexApi.onRequestPost(context);
+        return await categoriesIndexApi.onRequestGet(context);
+      }
+      if (pathname.startsWith('/api/categories/') && pathname !== '/api/categories') {
+        const catId = pathname.replace('/api/categories/', '').trim();
+        const customContext = { ...context, params: { id: catId } };
+        if (method === 'OPTIONS') return await categoriesIdApi.onRequestOptions(customContext);
+        if (method === 'PUT' || method === 'PATCH') return await categoriesIdApi.onRequestPut(customContext);
+        if (method === 'DELETE') return await categoriesIdApi.onRequestDelete(customContext);
+      }
+
+      // Vouchers API (/api/vouchers, /api/vouchers/verify & /api/vouchers/:id)
+      if (pathname === '/api/vouchers/verify') {
+        if (method === 'OPTIONS') return await vouchersVerifyApi.onRequestOptions(context);
+        if (method === 'POST') return await vouchersVerifyApi.onRequestPost(context);
+      }
+      if (pathname === '/api/vouchers') {
+        if (method === 'OPTIONS') return await vouchersIndexApi.onRequestOptions(context);
+        if (method === 'POST') return await vouchersIndexApi.onRequestPost(context);
+        return await vouchersIndexApi.onRequestGet(context);
+      }
+      if (pathname.startsWith('/api/vouchers/') && pathname !== '/api/vouchers') {
+        const voucherId = pathname.replace('/api/vouchers/', '').trim();
+        const customContext = { ...context, params: { id: voucherId } };
+        if (method === 'OPTIONS') return await vouchersIdApi.onRequestOptions(customContext);
+        if (method === 'PUT' || method === 'PATCH') return await vouchersIdApi.onRequestPut(customContext);
+        if (method === 'DELETE') return await vouchersIdApi.onRequestDelete(customContext);
+      }
+
+      // Shipping Orders API (/api/shipping & /api/shipping/:id)
+      if (pathname === '/api/shipping') {
+        if (method === 'OPTIONS') return await shippingIndexApi.onRequestOptions(context);
+        if (method === 'POST') return await shippingIndexApi.onRequestPost(context);
+        return await shippingIndexApi.onRequestGet(context);
+      }
+      if (pathname.startsWith('/api/shipping/') && pathname !== '/api/shipping') {
+        const shipId = pathname.replace('/api/shipping/', '').trim();
+        const customContext = { ...context, params: { id: shipId } };
+        if (method === 'OPTIONS') return await shippingIdApi.onRequestOptions(customContext);
+        if (method === 'DELETE') return await shippingIdApi.onRequestDelete(customContext);
+        if (method === 'PATCH' || method === 'PUT') return await shippingIdApi.onRequestPatch(customContext);
+        return await shippingIdApi.onRequestGet(customContext);
+      }
+
+      // Platform Leads API (/api/platform-leads, /api/tenant-leads & /api/platform-leads/:id)
+      if (pathname === '/api/platform-leads' || pathname === '/api/tenant-leads') {
+        if (method === 'OPTIONS') return await platformLeadsIndexApi.onRequestOptions(context);
+        if (method === 'POST') return await platformLeadsIndexApi.onRequestPost(context);
+        return await platformLeadsIndexApi.onRequestGet(context);
+      }
+      if ((pathname.startsWith('/api/platform-leads/') || pathname.startsWith('/api/tenant-leads/')) && pathname !== '/api/platform-leads' && pathname !== '/api/tenant-leads') {
+        const leadId = pathname.replace(/^\/api\/(platform-leads|tenant-leads)\//, '').trim();
+        const customContext = { ...context, params: { id: leadId } };
+        if (method === 'OPTIONS') return await platformLeadsIdApi.onRequestOptions(customContext);
+        if (method === 'PATCH' || method === 'PUT') return await platformLeadsIdApi.onRequestPatch(customContext);
       }
 
       // Passive Tick: Tự động chạy quét mô phỏng mỗi 5 phút một cách nhẹ nhàng

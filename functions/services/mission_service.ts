@@ -143,8 +143,12 @@ export function hasScope(scopeStr: string | undefined | null, requiredScope: str
   // Cấp MEMBERS_FULL, WALLET_MANAGE, SEPAY_FULL cho khóa có MEMBERS_FULL, STORE_FULL hoặc ADMIN_FULL
   if ((target === 'MEMBERS_FULL' || target === 'MEMBERS_MANAGE' || target === 'WALLET_MANAGE' || target === 'SEPAY_FULL') && (scopes.includes('MEMBERS_FULL') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL'))) return true;
   if ((target === 'GROWTH_FULL' || target === 'GROWTH_MANAGE') && (scopes.includes('GROWTH_FULL') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL'))) return true;
-  if ((target === 'SHIPPING_MANAGE' || target === 'SHIPPING_FULL' || target === 'CARRIER_API_MANAGE') && (scopes.includes('SHIPPING_MANAGE') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL'))) return true;
-  if ((target === 'VOUCHERS_MANAGE' || target === 'VOUCHERS_FULL' || target === 'DISCOUNT_MANAGE') && (scopes.includes('VOUCHERS_MANAGE') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL'))) return true;
+  if ((target === 'SHIPPING_MANAGE' || target === 'SHIPPING_FULL' || target === 'CARRIER_API_MANAGE') && (scopes.includes('SHIPPING_MANAGE') || scopes.includes('SHIPPING_FULL') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
+  if ((target === 'VOUCHERS_MANAGE' || target === 'VOUCHERS_FULL' || target === 'DISCOUNT_MANAGE') && (scopes.includes('VOUCHERS_MANAGE') || scopes.includes('VOUCHERS_FULL') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
+  if ((target === 'PRODUCTS_FULL' || target === 'PRODUCTS_MANAGE') && (scopes.includes('PRODUCTS_FULL') || scopes.includes('PRODUCTS_MANAGE') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
+  if ((target === 'CATEGORIES_FULL' || target === 'CATEGORIES_MANAGE') && (scopes.includes('CATEGORIES_FULL') || scopes.includes('CATEGORIES_MANAGE') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
+  if ((target === 'PLATFORM_LEADS_FULL' || target === 'PLATFORM_LEADS_MANAGE') && (scopes.includes('PLATFORM_LEADS_FULL') || scopes.includes('PLATFORM_LEADS_MANAGE') || scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
+  if (target === 'UNIVERSAL_MALL_FULL' && (scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
   return scopes.includes(target);
 }
 
