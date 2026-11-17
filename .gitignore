@@ -1,6 +1,30 @@
-node_modules
-dist
-.wrangler
+# Dependencies
+node_modules/
+
+# Production build output
+dist/
+
+# Cloudflare local configs & states
+.wrangler/
+.cf/
+
+# Environment Variables & Secrets
 .env
-.DS_Store
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.pfx
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
