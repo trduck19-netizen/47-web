@@ -4,5 +4,5 @@ pages_build_output_dir = "dist"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "universal-commerce-db"
-database_id = "PLACEHOLDER_D1_UUID"
+database_name = "47webdanganh"
+database_id = "f1c32d22-9ad3-41a7-93a4-e9025240c6b2"
