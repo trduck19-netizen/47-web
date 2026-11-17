@@ -4887,17 +4887,17 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       console.warn('Failed to read tenant leads from localStorage:', e);
     }
 
-    // Default sample leads for initial showcase
+    // Default sample leads for initial showcase (strictly synthetic dummy data)
     const defaultLeads: TenantLeadRecord[] = [
       {
         id: 'LEAD-20261116-001',
-        full_name: 'Nguyễn Văn Minh',
-        phone: '0988123456',
-        email: 'minh.nguyen@vintagestore.vn',
-        shop_name: 'Vintage Streetwear & Sneaker',
+        full_name: 'Khách Hàng Mẫu 1 (Demo)',
+        phone: '0900000001',
+        email: 'sample.lead1@example.com',
+        shop_name: 'Demo Fashion Store',
         industry: 'fashion',
         plan_type: 'rental_business',
-        expected_domain: 'vintagestreet.vn',
+        expected_domain: 'sample-fashion.example.com',
         budget_range: 'Dưới 10 triệu',
         note: 'Muốn mở shop thời trang tích hợp giao hàng GHTK và thanh toán QR tự động.',
         status: 'NEW',
@@ -4906,13 +4906,13 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       },
       {
         id: 'LEAD-20261115-002',
-        full_name: 'Trần Thị Mỹ Duyên',
-        phone: '0912345678',
-        email: 'duyen.tran@cosmeticsglow.com',
-        shop_name: 'Glow Skin Cosmetics',
+        full_name: 'Khách Hàng Mẫu 2 (Demo)',
+        phone: '0900000002',
+        email: 'sample.lead2@example.com',
+        shop_name: 'Demo Cosmetics Shop',
         industry: 'beauty',
         plan_type: 'buyout_full',
-        expected_domain: 'glowskin.vn',
+        expected_domain: 'sample-beauty.example.com',
         budget_range: '15 - 25 triệu',
         note: 'Cần mua đứt mã nguồn để tự host và quản lý độc lập cho chuỗi 3 cửa hàng mỹ phẩm.',
         status: 'QUALIFIED',
@@ -4921,13 +4921,13 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       },
       {
         id: 'LEAD-20261114-003',
-        full_name: 'Lê Hoàng Long',
-        phone: '0977654321',
-        email: 'longlh@esportgaming.net',
-        shop_name: 'CyberZone Gaming Gear',
+        full_name: 'Khách Hàng Mẫu 3 (Demo)',
+        phone: '0900000003',
+        email: 'sample.lead3@example.com',
+        shop_name: 'Demo Gaming Gear',
         industry: 'tech',
         plan_type: 'rental_starter',
-        expected_domain: 'cyberzonegear.com',
+        expected_domain: 'sample-gaming.example.com',
         budget_range: 'Dưới 5 triệu',
         note: 'Shop bán phụ kiện gaming và acc game, cần giao code số tự động 0s.',
         status: 'CLOSED_WON',

@@ -43,10 +43,10 @@ export const PRESET_VIRTUAL_ACCOUNTS: string[] = [
   'Nguyễn Hữu Đạt', 'Trần Văn Kiên', 'Lê Đình Trọng', 'Phạm Ngọc Ánh', 'Hoàng Thùy Dung',
   'Đinh Văn Mạnh', 'Lâm Quốc Bảo', 'Vương Đình Nam', 'Tạ Quốc Cường', 'Châu Thanh Tuyền',
 
-  // 2. Masked Vietnamese Phone Numbers (15 numbers)
-  '0984562189', '0912389472', '0978912345', '0905671234', '0934129876',
-  '0868123987', '0898765432', '0967894561', '0943216789', '0923456781',
-  '0778912340', '0701234568', '0834567890', '0856789123', '0812345679',
+  // 2. Masked Vietnamese Phone Numbers (15 dummy numbers: 0900000001 - 0900000015)
+  '0900000001', '0900000002', '0900000003', '0900000004', '0900000005',
+  '0900000006', '0900000007', '0900000008', '0900000009', '0900000010',
+  '0900000011', '0900000012', '0900000013', '0900000014', '0900000015',
 
   // 3. Gamer Usernames (15 names)
   'shadow_hunter', 'pro_sniper_99', 'nobita_gaming', 'phong_ba_game', 'than_kiem_9x',
@@ -5143,7 +5143,7 @@ class MarketingService {
 
     if (!this.config.isNameMasked) return name;
 
-    // Email masking: e.g. "tuannguyen92@gmail.com" -> "tuan***@gmail.com"
+    // Email masking: e.g. "sample.user@example.com" -> "sam***@example.com"
     if (trimmed.includes('@')) {
       const [localPart, domain] = trimmed.split('@');
       if (!domain) return trimmed;
@@ -5156,7 +5156,7 @@ class MarketingService {
       }
     }
 
-    // Vietnamese phone number masking: e.g. "0984562189" -> "0984***189"
+    // Vietnamese phone number masking: e.g. "0900000001" -> "0900***001"
     if (/^\d{9,11}$/.test(trimmed)) {
       return `${trimmed.slice(0, 4)}***${trimmed.slice(-3)}`;
     }

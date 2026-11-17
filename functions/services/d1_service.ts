@@ -609,7 +609,6 @@ export async function ensureMissionSchema(db: D1Database): Promise<void> {
     await db.prepare("ALTER TABLE mission_ai_api_keys ADD COLUMN scope TEXT NOT NULL DEFAULT 'FULL';").run().catch(() => {});
     await db.prepare("ALTER TABLE mission_ai_api_keys ADD COLUMN description TEXT DEFAULT '';").run().catch(() => {});
     await db.prepare("ALTER TABLE mission_ai_api_keys ADD COLUMN expires_at TEXT DEFAULT '';").run().catch(() => {});
-    await db.prepare("ALTER TABLE mission_ai_api_keys ADD COLUMN raw_key TEXT DEFAULT '';").run().catch(() => {});
 
     await db.prepare('CREATE INDEX IF NOT EXISTS idx_ai_keys_hash ON mission_ai_api_keys(api_key_hash);').run().catch(() => {});
 
@@ -1411,8 +1410,8 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
           const tgHash = '9f00a569215e630f12af6bf8f7df04299df099b861a6bbbd7109a64eca84d348';
           const tgPrefix = 'wcg_tg_1c7f6••••••••••••••••••••007d';
           await db.prepare(`
-            INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-            VALUES ('ak_preset_telegram_full', 'Toàn Quyền Telegram (Telegram Full & Management)', ?, ?, 'TELEGRAM_FULL', 'Toàn quyền điều hành bot và nhóm Telegram qua POST /api/telegram/manage và đăng thông báo tự động.', '', '', 1, '', datetime('now'))
+            INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, is_active, last_used_at, created_at)
+            VALUES ('ak_preset_telegram_full', 'Toàn Quyền Telegram (Telegram Full & Management)', ?, ?, 'TELEGRAM_FULL', 'Toàn quyền điều hành bot và nhóm Telegram qua POST /api/telegram/manage và đăng thông báo tự động.', '', 1, '', datetime('now'))
           `).bind(tgHash, tgPrefix).run().catch(() => {});
         }
 
@@ -1806,7 +1805,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       if (!museCheck) {
         await db.prepare(`
           INSERT OR REPLACE INTO mission_ai_api_keys (
-            id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at
+            id, key_name, api_key_hash, key_prefix, scope, description, expires_at, is_active, last_used_at, created_at
           ) VALUES (
             'ak_muse_full_admin',
             'Muse Full Admin',
@@ -1814,7 +1813,6 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
             'wcg_muse_67b••••••••••••••••••••087a',
             'ADMIN_FULL,UNIVERSAL_MALL_FULL,STORE_FULL,STORE_PRODUCTS_FULL,MEMBERS_FULL,ORDERS_FULL,GIVEAWAYS_FULL,NEWS_FULL,VOUCHERS_FULL,SHIPPING_FULL,PLATFORM_LEADS_FULL',
             'Khóa API quản trị toàn quyền dành riêng cho thẩm định viên Muse kiểm toán live hệ thống.',
-            '',
             '',
             1,
             datetime('now'),
