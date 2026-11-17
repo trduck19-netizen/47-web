@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "Home",
+    "fashion": "Fashion",
+    "beauty": "Beauty",
+    "tech": "Tech Gear",
+    "services": "Digital Services",
+    "solutions": "Platform Solutions",
+    "trackOrder": "Track Order",
+    "cart": "Shopping Cart",
+    "admin": "Admin Portal",
+    "searchPlaceholder": "Search for hoodie, sunscreen, gaming mouse, masterclasses..."
+  },
+  "home": {
+    "flashSale": "FLASH SALE DEALS",
+    "endsIn": "Ends in",
+    "mallBadge": "OFFICIAL STORE MALL",
+    "allProducts": "DAILY DISCOVERIES",
+    "buyNow": "Buy Now",
+    "addToCart": "Add to Cart",
+    "sold": "Sold",
+    "reviews": "reviews",
+    "freeShipping": "Free Nationwide Shipping",
+    "officialWarranty": "100% Genuine Warranty",
+    "returnPolicy": "7-Day Free Returns"
+  },
+  "checkout": {
+    "title": "Order Checkout",
+    "shippingSection": "Shipping Details (Nationwide Delivery Across Vietnam)",
+    "fullName": "Recipient Full Name",
+    "phone": "Recipient Phone Number",
+    "city": "Province / City",
+    "district": "District",
+    "ward": "Ward",
+    "address": "Detailed Street Address",
+    "note": "Delivery Note",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "shippingFee": "Postal Shipping Fee",
+    "voucherDiscount": "Shop Voucher Discount",
+    "freeshipDiscount": "Shipping Discount",
+    "totalPayment": "Total Payment",
+    "selectVoucher": "Select Shopee Voucher",
+    "paymentMethod": "Payment Method",
+    "vietqr": "VietQR Bank Transfer (Instant Verification)",
+    "wallet": "Internal Wallet Balance",
+    "cod": "Cash on Delivery (COD)",
+    "confirmOrder": "Place Order Now",
+    "digitalInstantNotice": "Digital items will be delivered immediately on screen upon successful payment."
+  },
+  "shipping": {
+    "trackingTitle": "Real-time Order Tracking",
+    "carrier": "Courier Service",
+    "trackingCode": "Tracking Number",
+    "step1": "Order Created",
+    "step2": "Courier Picked Up Package",
+    "step3": "In Transit Through Hubs",
+    "step4": "Out for Delivery",
+    "step5": "Delivered Successfully"
+  }
+}

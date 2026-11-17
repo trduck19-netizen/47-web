@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "Trang Chủ",
+    "fashion": "Thời Trang",
+    "beauty": "Mỹ Phẩm",
+    "tech": "Công Nghệ",
+    "services": "Dịch Vụ Số",
+    "solutions": "Giải Pháp Sàn",
+    "trackOrder": "Tra Cứu Đơn Hàng",
+    "cart": "Giỏ Hàng",
+    "admin": "Quản Trị",
+    "searchPlaceholder": "Tìm kiếm áo hoodie, kem chống nắng, chuột gaming, khóa học..."
+  },
+  "home": {
+    "flashSale": "GIỜ VÀNG GIÁ SỐC",
+    "endsIn": "Kết thúc trong",
+    "mallBadge": "SHOPEE MALL CHÍNH HÃNG",
+    "allProducts": "GỢI Ý HÔM NAY",
+    "buyNow": "Mua Ngay",
+    "addToCart": "Thêm Vào Giỏ",
+    "sold": "Đã bán",
+    "reviews": "đánh giá",
+    "freeShipping": "Miễn Phí Vận Chuyển",
+    "officialWarranty": "Bảo Hành Chính Hãng",
+    "returnPolicy": "Đổi Trả 7 Ngày Miễn Phí"
+  },
+  "checkout": {
+    "title": "Thanh Toán Đơn Hàng",
+    "shippingSection": "Thông Tin Nhận Hàng (Giao Toàn Quốc 63 Tỉnh Thành)",
+    "fullName": "Họ và tên người nhận",
+    "phone": "Số điện thoại nhận hàng",
+    "city": "Tỉnh / Thành Phố",
+    "district": "Quận / Huyện",
+    "ward": "Phường / Xã",
+    "address": "Địa chỉ chi tiết (Số nhà, tên đường...)",
+    "note": "Ghi chú giao hàng",
+    "orderSummary": "Tóm Tắt Đơn Hàng",
+    "subtotal": "Tiền hàng",
+    "shippingFee": "Phí vận chuyển bưu chính",
+    "voucherDiscount": "Giảm giá Voucher",
+    "freeshipDiscount": "Giảm phí vận chuyển",
+    "totalPayment": "Tổng thanh toán",
+    "selectVoucher": "Chọn Shopee Voucher",
+    "paymentMethod": "Phương thức thanh toán",
+    "vietqr": "Chuyển khoản VietQR (Tự động kích hoạt)",
+    "wallet": "Ví Số Dư Nội Bộ",
+    "cod": "Thanh toán khi nhận hàng (COD)",
+    "confirmOrder": "Đặt Hàng Ngay",
+    "digitalInstantNotice": "Sản phẩm số sẽ tự động giao mã trên màn hình ngay sau khi thanh toán."
+  },
+  "shipping": {
+    "trackingTitle": "Theo Dõi Vận Đơn Trực Tiếp",
+    "carrier": "Hãng vận chuyển",
+    "trackingCode": "Mã vận đơn",
+    "step1": "Đã tạo đơn hàng",
+    "step2": "Bưu tá đã lấy hàng",
+    "step3": "Đang luân chuyển qua kho",
+    "step4": "Đang giao hàng tới người nhận",
+    "step5": "Giao hàng thành công"
+  }
+}
