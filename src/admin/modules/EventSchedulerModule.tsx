@@ -437,7 +437,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
         setSchedulerApiKeys(filtered);
         if (!testApiKey && filtered.length > 0) {
           const firstWithRaw = filtered.find((k: any) => k.raw_key);
-          setTestApiKey(firstWithRaw?.raw_key || filtered[0].key_prefix || 'wcg_ev_8392••••••••••••••••••••2b8fea602b8f');
+          setTestApiKey(firstWithRaw?.raw_key || filtered[0].key_prefix || '');
         }
       }
     } catch (err: any) {
@@ -915,7 +915,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
               <div className="py-8 text-center space-y-2">
                 <p className="text-xs text-neutral-400">Chưa có khóa API tùy chỉnh nào được tạo riêng cho Lịch Sự Kiện.</p>
                 <p className="text-[11px] text-amber-400 font-mono">
-                  Khóa mặc định toàn sàn: <strong>wcg_ev_8392••••••••••••••••••••2b8fea602b8f</strong>
+                  Khóa mặc định toàn sàn: <strong>wcg_ev_••••••••••••••••••••</strong>
                 </p>
               </div>
             ) : (
@@ -980,7 +980,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
                                   if (keyItem.raw_key) {
                                     setTestApiKey(keyItem.raw_key);
                                   } else {
-                                    setTestApiKey(keyItem.key_prefix || 'wcg_ev_8392••••••••••••••••••••2b8fea602b8f');
+                                    setTestApiKey(keyItem.key_prefix || '');
                                   }
                                   onShowToast('Đã chọn khóa này', 'Đã điền khóa vào Trình Thử Nghiệm API', 'info');
                                 }}

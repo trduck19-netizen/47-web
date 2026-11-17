@@ -1408,16 +1408,12 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
         // Tạo preset key TELEGRAM_FULL nếu chưa có
         const hasTg = await db.prepare("SELECT 1 FROM mission_ai_api_keys WHERE id = 'ak_preset_telegram_full' LIMIT 1").first().catch(() => null);
         if (!hasTg) {
-          const tgRawKey = 'wcg_tg_9210••••••••••••••••••••2a3d83f12a3d';
-          const msgUint8 = new TextEncoder().encode(tgRawKey);
-          const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          const tgHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-          const tgPrefix = 'wcg_tg_9210••••••••••••••••••••2a3d';
+          const tgHash = '9f00a569215e630f12af6bf8f7df04299df099b861a6bbbd7109a64eca84d348';
+          const tgPrefix = 'wcg_tg_1c7f6••••••••••••••••••••007d';
           await db.prepare(`
             INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-            VALUES ('ak_preset_telegram_full', 'Toàn Quyền Telegram (Telegram Full & Management)', ?, ?, 'TELEGRAM_FULL', 'Toàn quyền điều hành bot và nhóm Telegram qua POST /api/telegram/manage và đăng thông báo tự động.', '', ?, 1, '', datetime('now'))
-          `).bind(tgHash, tgPrefix, tgRawKey).run().catch(() => {});
+            VALUES ('ak_preset_telegram_full', 'Toàn Quyền Telegram (Telegram Full & Management)', ?, ?, 'TELEGRAM_FULL', 'Toàn quyền điều hành bot và nhóm Telegram qua POST /api/telegram/manage và đăng thông báo tự động.', '', '', 1, '', datetime('now'))
+          `).bind(tgHash, tgPrefix).run().catch(() => {});
         }
 
         await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('admin_scope_and_telegram_full_v1');").run().catch(() => {});
@@ -1829,6 +1825,63 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       }
     } catch (e) {
       console.warn('[Migration 0027_seed_muse_full_admin_key_v1 error]', e);
+    }
+
+    // Migration 0028: Rotate compromised preset keys and purge raw_key from D1
+    try {
+      const rotCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0028_rotate_compromised_keys_and_purge_raw_keys_v1' LIMIT 1").first().catch(() => null);
+      if (!rotCheck) {
+        // 1. Rotate ak_preset_giveaways_full
+        await db.prepare(`
+          UPDATE mission_ai_api_keys 
+          SET api_key_hash = '6e0b2cc413304e7b93a37bb6d39cc0d2dc2a09c2af8f69d69d35866a40ff0a7e',
+              key_prefix = 'wcg_gw_b3f4b••••••••••••••••••••48e0',
+              scope = 'GIVEAWAYS_FULL',
+              raw_key = '',
+              is_active = 1
+          WHERE id = 'ak_preset_giveaways_full'
+        `).run().catch(() => {});
+
+        // 2. Rotate ak_preset_multi_versatile
+        await db.prepare(`
+          UPDATE mission_ai_api_keys 
+          SET api_key_hash = '135e5715b19774e3f5344efa6a5f207cbe850cb6353d1c7b0d47d4332bdfdc00',
+              key_prefix = 'wcg_multi_d2••••••••••••••••••••1781',
+              scope = 'ADMIN_FULL,UNIVERSAL_MALL_FULL,STORE_FULL,STORE_PRODUCTS_FULL,MEMBERS_FULL,ORDERS_FULL,GIVEAWAYS_FULL,NEWS_FULL,VOUCHERS_FULL,SHIPPING_FULL,PLATFORM_LEADS_FULL',
+              raw_key = '',
+              is_active = 1
+          WHERE id = 'ak_preset_multi_versatile'
+        `).run().catch(() => {});
+
+        // 3. Rotate ak_preset_telegram_full
+        await db.prepare(`
+          UPDATE mission_ai_api_keys 
+          SET api_key_hash = '9f00a569215e630f12af6bf8f7df04299df099b861a6bbbd7109a64eca84d348',
+              key_prefix = 'wcg_tg_1c7f6••••••••••••••••••••007d',
+              scope = 'TELEGRAM_FULL',
+              raw_key = '',
+              is_active = 1
+          WHERE id = 'ak_preset_telegram_full'
+        `).run().catch(() => {});
+
+        // 4. Rotate ak_preset_event_scheduler_full
+        await db.prepare(`
+          UPDATE mission_ai_api_keys 
+          SET api_key_hash = '3ed47ee28fb79180bdf95679fed87d8c145abdfae6f9096e912678235f0b1910',
+              key_prefix = 'wcg_ev_2b5cd••••••••••••••••••••ca17',
+              scope = 'EVENT_SCHEDULER_FULL',
+              raw_key = '',
+              is_active = 1
+          WHERE id = 'ak_preset_event_scheduler_full'
+        `).run().catch(() => {});
+
+        // 5. Purge all raw_key strings across the entire table
+        await db.prepare("UPDATE mission_ai_api_keys SET raw_key = ''").run().catch(() => {});
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0028_rotate_compromised_keys_and_purge_raw_keys_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0028_rotate_compromised_keys_and_purge_raw_keys_v1 error]', e);
     }
 
     try {

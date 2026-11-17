@@ -82,10 +82,7 @@ async function authenticateRequest(request: Request, env: Env): Promise<CrawlerA
     return { authorized: true, botName: 'Admin Sync Secret', role: 'admin' };
   }
 
-  // 2. Kiểm tra Muse Master Bot / Pine Keys & Active Authorized Key
-  if (token === 'wcg_muse_f7d2••••••••••••••••••••6a7a') {
-    return { authorized: true, botName: 'Trợ lý Pine & Muse Bot', role: 'crawler_writer' };
-  }
+  // 2. Kiểm tra Muse Master Bot / Pine Keys qua Environment Secrets
   if (env.MUSE_API_KEY && token === env.MUSE_API_KEY) {
     return { authorized: true, botName: 'Muse Master Bot', role: 'crawler_writer' };
   }

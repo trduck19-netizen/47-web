@@ -207,7 +207,6 @@ export async function authenticateMarketingAuditor(request: Request, env: any): 
 
   // 2.5. Kiểm tra Muse Master Bot / Pine Keys (Crawler keys được cấp quyền đọc kiểm toán)
   if (
-    token === 'wcg_muse_f7d2••••••••••••••••••••6a7a' ||
     (env.MUSE_API_KEY && token === env.MUSE_API_KEY) ||
     (env.PINE_API_KEY && token === env.PINE_API_KEY)
   ) {

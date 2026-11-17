@@ -2013,7 +2013,7 @@
   2. Vi phạm Nguyên Tắc Số 8 (`RULE[c:\4 Antigravity all\13 web code game\AGENTS.md]`): Khi mở quyền API mới thì bắt buộc phải đồng bộ vào `ALL_API_SCOPES`, sinh mẫu cURL/JS ở cuối trang và cung cấp giao diện quản lý / thử nghiệm.
 - **Giải pháp chuẩn đã kiểm chứng**:
   1. Xây dựng Serverless Edge REST API tại `functions/api/giveaways/manage.ts` (và alias `functions/api/giveaways/index.ts`) hỗ trợ đầy đủ `GET`, `POST`, `PUT`, `DELETE` với xác thực đa tầng qua `authorizeGiveawayRequest`.
-  2. Tự động sinh preset key `ak_preset_giveaways_full` (`wcg_gw_7193••••••••••••••••••••4b2a82f04b2a`) trong `functions/api/api-keys/index.ts`.
+  2. Tự động sinh preset key `ak_preset_giveaways_full` (`wcg_gw_7193a••••••••••••••••••••4b2a`) trong `functions/api/api-keys/index.ts`.
   3. Bổ sung `docCategory === 'giveaways'` vào tài liệu mẫu code cuối trang của `ApiKeysModule.tsx`.
   4. Tích hợp subtab `subTab === 'api'` trong `PrivateCodesModule.tsx` gồm: Thẻ tạo khóa `GIVEAWAYS_FULL`, Bảng danh sách khóa đang hoạt động, Trình thử nghiệm gọi API trực tiếp (Quick Tester), và Bảng tra cứu endpoints & mẫu lệnh cURL/JS ở cuối trang.
 - 🚫 **CÁCH SỬA ĐÃ THẤT BẠI - TUYỆT ĐỐI KHÔNG LẶP LẠI**:
@@ -3304,7 +3304,7 @@
 - **Giải pháp chuẩn đã kiểm chứng**:
   - **Authoritative Canonical Backup State (`canonical_backup_state.json`)**:
     - Thiết lập một kho snapshot chuẩn mực và có thẩm quyền cao nhất được nhúng sẵn ở cả tầng Edge (`functions/data/`) và Client (`src/data/`).
-    - Chứa đầy đủ: 63 game chờ duyệt, 22 mã code Roblox với phần thưởng chi tiết, 7 game sắp ra mắt chuẩn (0 game lỗi thời), Avatar Land với mã `AL-PNVN26` (hạn 2026-10-25), và API key chính thức `wcg_muse_f7d2••••••••••••••••••••6a7a`.
+    - Chứa đầy đủ: 63 game chờ duyệt, 22 mã code Roblox với phần thưởng chi tiết, 7 game sắp ra mắt chuẩn (0 game lỗi thời), Avatar Land với mã `AL-PNVN26` (hạn 2026-10-25), và API key chính thức `wcg_muse_f7d••••••••••••••••••••6a7a`.
   - **Edge Hardening (Cơ chế chống sập biên)**:
     - Khi D1 gặp lỗi hoặc timeout, `getSettingD1` và API Edge tự động trả về bộ dữ liệu Canonical Backup thay vì `null` hay rỗng.
     - Cổng API không bao giờ trả về 401 đối với khóa hợp lệ của Pine/Muse ngay cả khi máy chủ D1 không phản hồi.

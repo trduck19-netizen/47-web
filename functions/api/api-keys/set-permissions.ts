@@ -82,9 +82,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       ).bind(targetKeyId).first<any>();
     }
     if (!existing && targetKeyCode) {
+      const codeHash = await computeSha256(targetKeyCode);
       existing = await env.DB.prepare(
-        'SELECT * FROM mission_ai_api_keys WHERE raw_key = ? OR key_prefix LIKE ? LIMIT 1'
-      ).bind(targetKeyCode, `%${targetKeyCode.slice(-6)}`).first<any>();
+        'SELECT * FROM mission_ai_api_keys WHERE api_key_hash = ? OR key_prefix LIKE ? LIMIT 1'
+      ).bind(codeHash, `%${targetKeyCode.slice(-6)}`).first<any>();
     }
 
     if (!existing) {

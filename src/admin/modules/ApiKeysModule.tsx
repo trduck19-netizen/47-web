@@ -1397,21 +1397,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                   <div className="flex items-center gap-2 bg-background/80 border border-border px-3 py-2 rounded-xl font-mono text-xs max-w-full overflow-hidden shadow-inner">
                     <span className="text-muted-foreground select-none shrink-0 font-bold">KEY:</span>
                     <span className="text-foreground select-all font-semibold truncate flex-1">
-                      {visibleKeys['master'] ? masterKey.raw_key : masterKey.key_prefix}
+                      {masterKey.key_prefix}
                     </span>
                     <button
-                      onClick={() => toggleVisibility('master')}
-                      className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                      title={visibleKeys['master'] ? 'Ẩn mã' : 'Hiện đầy đủ mã'}
-                    >
-                      {visibleKeys['master'] ? (
-                        <EyeOff className="w-3.5 h-3.5 text-amber-500" />
-                      ) : (
-                        <Eye className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleCopy(masterKey.raw_key || '', 'master')}
+                      onClick={() => handleCopy(masterKey.key_prefix || '', 'master')}
                       className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 border border-amber-500/30"
                       title="Sao chép nhanh khóa này"
                     >
@@ -1461,21 +1450,8 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                   <div className="flex items-center gap-2 bg-background/80 border border-border px-3 py-2 rounded-xl font-mono text-xs max-w-full overflow-hidden shadow-inner">
                     <span className="text-purple-400 select-none shrink-0 font-bold">KEY:</span>
                     <span className="text-foreground select-all font-semibold truncate flex-1">
-                      {visibleKeys[versatileKey.id] ? versatileKey.raw_key : versatileKey.key_prefix}
+                      {versatileKey.key_prefix}
                     </span>
-                    {versatileKey.raw_key && (
-                      <button
-                        onClick={() => toggleVisibility(versatileKey.id)}
-                        className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                        title={visibleKeys[versatileKey.id] ? 'Ẩn mã' : 'Hiện đầy đủ mã'}
-                      >
-                        {visibleKeys[versatileKey.id] ? (
-                          <EyeOff className="w-3.5 h-3.5 text-purple-400" />
-                        ) : (
-                          <Eye className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    )}
                     <button
                       onClick={() => handleRotateKey(versatileKey)}
                       disabled={rotatingKeyId === versatileKey.id}
@@ -1486,7 +1462,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                       <span>{rotatingKeyId === versatileKey.id ? 'Đang đổi...' : 'Đổi Khóa'}</span>
                     </button>
                     <button
-                      onClick={() => handleCopy(versatileKey.raw_key || versatileKey.key_prefix, versatileKey.id)}
+                      onClick={() => handleCopy(versatileKey.key_prefix, versatileKey.id)}
                       className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 border border-purple-500/30"
                       title="Sao chép nhanh khóa này"
                     >
@@ -1675,22 +1651,12 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                         {/* Col 3: Key Display, Eye, Quick Copy & Instant Rotate */}
                         <td className="py-2.5 px-2.5 align-middle">
                           <div className="inline-flex items-center gap-1 bg-background/80 border border-border/80 px-2 py-1 rounded-xl font-mono text-xs shadow-inner max-w-full">
-                            <span className="text-foreground select-all font-semibold max-w-[90px] xl:max-w-[110px] truncate text-[11px]" title={isRevealed ? item.raw_key : item.key_prefix}>
-                              {isRevealed ? item.raw_key : item.key_prefix}
+                            <span className="text-foreground select-all font-semibold max-w-[120px] truncate text-[11px]" title={item.key_prefix}>
+                              {item.key_prefix}
                             </span>
 
-                            {item.raw_key && (
-                              <button
-                                onClick={() => toggleVisibility(item.id)}
-                                className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
-                                title={isRevealed ? 'Ẩn mã' : 'Hiện mã đầy đủ'}
-                              >
-                                {isRevealed ? <EyeOff className="w-3.5 h-3.5 text-amber-500" /> : <Eye className="w-3.5 h-3.5" />}
-                              </button>
-                            )}
-
                             <button
-                              onClick={() => handleCopy(keyToCopy, item.id)}
+                              onClick={() => handleCopy(item.key_prefix, item.id)}
                               className="px-1.5 py-0.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[11px] flex items-center gap-1 transition-all shrink-0 border border-primary/20 cursor-pointer"
                               title="Sao chép mã API này"
                             >
@@ -1842,23 +1808,13 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
 
                       {/* Key Display Pill with Eye, Copy, Rotate */}
                       <div className="my-3 flex items-center justify-between gap-2 bg-background border border-border/80 px-2.5 py-1.5 rounded-xl font-mono text-xs shadow-inner">
-                        <span className="text-foreground select-all font-semibold truncate text-xs" title={isRevealed ? item.raw_key : item.key_prefix}>
-                          {isRevealed ? item.raw_key : item.key_prefix}
+                        <span className="text-foreground select-all font-semibold truncate text-xs" title={item.key_prefix}>
+                          {item.key_prefix}
                         </span>
 
                         <div className="flex items-center gap-1 shrink-0">
-                          {item.raw_key && (
-                            <button
-                              onClick={() => toggleVisibility(item.id)}
-                              className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                              title={isRevealed ? 'Ẩn mã' : 'Hiện mã đầy đủ'}
-                            >
-                              {isRevealed ? <EyeOff className="w-3.5 h-3.5 text-amber-500" /> : <Eye className="w-3.5 h-3.5" />}
-                            </button>
-                          )}
-
                           <button
-                            onClick={() => handleCopy(keyToCopy, item.id)}
+                            onClick={() => handleCopy(item.key_prefix, item.id)}
                             className="px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs flex items-center gap-1 transition-all cursor-pointer border border-primary/20"
                             title="Sao chép mã API này"
                           >
@@ -3646,14 +3602,14 @@ curl -X PUT "https://codegame.shop/api/admin/settings" \
                   <Key className="w-4 h-4 text-purple-400 shrink-0" />
                   <span className="text-muted-foreground shrink-0 font-medium">Mã Khóa:</span>
                   <span className="font-mono font-semibold text-foreground truncate">
-                    {permissionModalKey.raw_key || permissionModalKey.key_prefix}
+                    {permissionModalKey.key_prefix}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() =>
                     handleCopy(
-                      permissionModalKey.raw_key || permissionModalKey.key_prefix,
+                      permissionModalKey.key_prefix,
                       'modal_perm_copy'
                     )
                   }

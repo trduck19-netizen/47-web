@@ -549,10 +549,7 @@ async function authenticateRequest(request: Request, env: Env, bodyApiKey?: stri
     return { authorized: false, botName: '', error: 'Thiếu API Key xác thực (Bearer Token, header X-API-Key hoặc trường apiKey trong JSON payload)' };
   }
 
-  // 1. Kiểm tra với ADMIN_SYNC_SECRET hoặc MUSE_API_KEY hoặc PINE_API_KEY hoặc khóa crawler hoạt động
-  if (token === 'wcg_muse_f7d2••••••••••••••••••••6a7a') {
-    return { authorized: true, botName: 'Trợ lý Pine & Muse Bot' };
-  }
+  // 1. Kiểm tra với ADMIN_SYNC_SECRET hoặc MUSE_API_KEY hoặc PINE_API_KEY
   if ((env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) || (env.JWT_SECRET && token === env.JWT_SECRET)) {
     return { authorized: true, botName: 'Admin Sync Secret' };
   }

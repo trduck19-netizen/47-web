@@ -4876,7 +4876,7 @@ pm run deploy:test:all vào package.json.
      - Định tuyến `/api/event-scheduler` và alias `/api/events/schedule` vào bundle single-entrypoint của Cloudflare Worker.
   3. *Tự động đồng bộ quyền API mới theo Rule 8*:
      - Bổ sung `EVENT_SCHEDULER_FULL` vào `ALL_API_SCOPES` trong `src/admin/modules/ApiKeysModule.tsx` với màu amber, danh mục "Vận Hành".
-     - Thêm preset key `ak_preset_event_scheduler_full` (`wcg_ev_8392••••••••••••••••••••2b8fea602b8f`) và tiền tố định danh `wcg_ev_` trong `functions/api/api-keys/index.ts`.
+     - Thêm preset key `ak_preset_event_scheduler_full` (`wcg_ev_8392c••••••••••••••••••••2b8f`) và tiền tố định danh `wcg_ev_` trong `functions/api/api-keys/index.ts`.
      - Thêm danh mục tài liệu `docCategory === "events"` ở cuối trang `ApiKeysModule.tsx` kèm mẫu code cURL và JavaScript Fetch chi tiết.
   4. *Tích hợp Subtab "🔑 Kết Nối API Quản Lý" vào `EventSchedulerModule.tsx`*:
      - Bổ sung thanh chuyển đổi subtab: Tab 1 "Lịch Đếm Ngược & Sự Kiện" và Tab 2 "🔑 Kết Nối API Quản Lý".
@@ -4943,7 +4943,7 @@ pm run deploy:test:all vào package.json.
      - `PUT`: Thao tác nhanh với `action`: `ADD_CODES` (nạp thêm mã vào kho), `TOGGLE_ACTIVE` (bật/tắt sự kiện), `RESET_COOLDOWN` (xóa thời gian chờ giật mã), `ADJUST_METRICS`.
      - `DELETE`: Xóa vĩnh viễn đợt phát giveaway với Tombstone Deletion Pattern chống hồi sinh dữ liệu trên cả KV và D1.
   2. Bổ sung Preset API Key & Tiền tố định danh (`functions/api/api-keys/index.ts`):
-     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193••••••••••••••••••••4b2a82f04b2a`).
+     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193a••••••••••••••••••••4b2a`).
      - Tự động gán tiền tố `wcg_gw_` khi tạo khóa API mới có quyền `GIVEAWAYS_FULL`.
   3. Bổ sung Tài Liệu Giveaway API ở cuối trang Quản Lý API (`src/admin/modules/ApiKeysModule.tsx`):
      - Thêm danh mục `docCategory === 'giveaways'` vào tài liệu mẫu code ở cuối trang với 4 mẫu lệnh chi tiết (tra cứu, nạp mã kho, tạo mới, bật tắt/reset).
@@ -5044,7 +5044,7 @@ pm run deploy:test:all vào package.json.
      - `PUT`: Thao tác nhanh với `action`: `ADD_CODES` (nạp thêm mã vào kho), `TOGGLE_ACTIVE` (bật/tắt sự kiện), `RESET_COOLDOWN` (xóa thời gian chờ giật mã), `ADJUST_METRICS`.
      - `DELETE`: Xóa vĩnh viễn đợt phát giveaway với Tombstone Deletion Pattern chống hồi sinh dữ liệu trên cả KV và D1.
   2. Bổ sung Preset API Key & Tiền tố định danh (`functions/api/api-keys/index.ts`):
-     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193••••••••••••••••••••4b2a82f04b2a`).
+     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193a••••••••••••••••••••4b2a`).
      - Tự động gán tiền tố `wcg_gw_` khi tạo khóa API mới có quyền `GIVEAWAYS_FULL`.
   3. Bổ sung Tài Liệu Giveaway API ở cuối trang Quản Lý API (`src/admin/modules/ApiKeysModule.tsx`):
      - Thêm danh mục `docCategory === 'giveaways'` vào tài liệu mẫu code ở cuối trang với 4 mẫu lệnh chi tiết (tra cứu, nạp mã kho, tạo mới, bật tắt/reset).
@@ -5139,7 +5139,7 @@ pm run deploy:test:all vào package.json.
      - `PUT`: Thao tác nhanh với `action`: `ADD_CODES` (nạp thêm mã vào kho), `TOGGLE_ACTIVE` (bật/tắt sự kiện), `RESET_COOLDOWN` (xóa thời gian chờ giật mã), `ADJUST_METRICS`.
      - `DELETE`: Xóa vĩnh viễn đợt phát giveaway với Tombstone Deletion Pattern chống hồi sinh dữ liệu trên cả KV và D1.
   2. Bổ sung Preset API Key & Tiền tố định danh (`functions/api/api-keys/index.ts`):
-     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193••••••••••••••••••••4b2a82f04b2a`).
+     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193a••••••••••••••••••••4b2a`).
      - Tự động gán tiền tố `wcg_gw_` khi tạo khóa API mới có quyền `GIVEAWAYS_FULL`.
   3. Bổ sung Tài Liệu Giveaway API ở cuối trang Quản Lý API (`src/admin/modules/ApiKeysModule.tsx`):
      - Thêm danh mục `docCategory === 'giveaways'` vào tài liệu mẫu code ở cuối trang với 4 mẫu lệnh chi tiết (tra cứu, nạp mã kho, tạo mới, bật tắt/reset).
@@ -5234,7 +5234,7 @@ pm run deploy:test:all vào package.json.
      - `PUT`: Thao tác nhanh với `action`: `ADD_CODES` (nạp thêm mã vào kho), `TOGGLE_ACTIVE` (bật/tắt sự kiện), `RESET_COOLDOWN` (xóa thời gian chờ giật mã), `ADJUST_METRICS`.
      - `DELETE`: Xóa vĩnh viễn đợt phát giveaway với Tombstone Deletion Pattern chống hồi sinh dữ liệu trên cả KV và D1.
   2. Bổ sung Preset API Key & Tiền tố định danh (`functions/api/api-keys/index.ts`):
-     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193••••••••••••••••••••4b2a82f04b2a`).
+     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193a••••••••••••••••••••4b2a`).
      - Tự động gán tiền tố `wcg_gw_` khi tạo khóa API mới có quyền `GIVEAWAYS_FULL`.
   3. Bổ sung Tài Liệu Giveaway API ở cuối trang Quản Lý API (`src/admin/modules/ApiKeysModule.tsx`):
      - Thêm danh mục `docCategory === 'giveaways'` vào tài liệu mẫu code ở cuối trang với 4 mẫu lệnh chi tiết (tra cứu, nạp mã kho, tạo mới, bật tắt/reset).
@@ -5329,7 +5329,7 @@ pm run deploy:test:all vào package.json.
      - `PUT`: Thao tác nhanh với `action`: `ADD_CODES` (nạp thêm mã vào kho), `TOGGLE_ACTIVE` (bật/tắt sự kiện), `RESET_COOLDOWN` (xóa thời gian chờ giật mã), `ADJUST_METRICS`.
      - `DELETE`: Xóa vĩnh viễn đợt phát giveaway với Tombstone Deletion Pattern chống hồi sinh dữ liệu trên cả KV và D1.
   2. Bổ sung Preset API Key & Tiền tố định danh (`functions/api/api-keys/index.ts`):
-     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193••••••••••••••••••••4b2a82f04b2a`).
+     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193a••••••••••••••••••••4b2a`).
      - Tự động gán tiền tố `wcg_gw_` khi tạo khóa API mới có quyền `GIVEAWAYS_FULL`.
   3. Bổ sung Tài Liệu Giveaway API ở cuối trang Quản Lý API (`src/admin/modules/ApiKeysModule.tsx`):
      - Thêm danh mục `docCategory === 'giveaways'` vào tài liệu mẫu code ở cuối trang với 4 mẫu lệnh chi tiết (tra cứu, nạp mã kho, tạo mới, bật tắt/reset).
@@ -5431,7 +5431,7 @@ pm run deploy:test:all vào package.json.
      - `PUT`: Thao tác nhanh với `action`: `ADD_CODES` (nạp thêm mã vào kho), `TOGGLE_ACTIVE` (bật/tắt sự kiện), `RESET_COOLDOWN` (xóa thời gian chờ giật mã), `ADJUST_METRICS`.
      - `DELETE`: Xóa vĩnh viễn đợt phát giveaway với Tombstone Deletion Pattern chống hồi sinh dữ liệu trên cả KV và D1.
   2. Bổ sung Preset API Key & Tiền tố định danh (`functions/api/api-keys/index.ts`):
-     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193••••••••••••••••••••4b2a82f04b2a`).
+     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193a••••••••••••••••••••4b2a`).
      - Tự động gán tiền tố `wcg_gw_` khi tạo khóa API mới có quyền `GIVEAWAYS_FULL`.
   3. Bổ sung Tài Liệu Giveaway API ở cuối trang Quản Lý API (`src/admin/modules/ApiKeysModule.tsx`):
      - Thêm danh mục `docCategory === 'giveaways'` vào tài liệu mẫu code ở cuối trang với 4 mẫu lệnh chi tiết (tra cứu, nạp mã kho, tạo mới, bật tắt/reset).
@@ -5526,7 +5526,7 @@ pm run deploy:test:all vào package.json.
      - `PUT`: Thao tác nhanh với `action`: `ADD_CODES` (nạp thêm mã vào kho), `TOGGLE_ACTIVE` (bật/tắt sự kiện), `RESET_COOLDOWN` (xóa thời gian chờ giật mã), `ADJUST_METRICS`.
      - `DELETE`: Xóa vĩnh viễn đợt phát giveaway với Tombstone Deletion Pattern chống hồi sinh dữ liệu trên cả KV và D1.
   2. Bổ sung Preset API Key & Tiền tố định danh (`functions/api/api-keys/index.ts`):
-     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193••••••••••••••••••••4b2a82f04b2a`).
+     - Tự động sinh preset key `ak_preset_giveaways_full` (`GIVEAWAYS_FULL` - `wcg_gw_7193a••••••••••••••••••••4b2a`).
      - Tự động gán tiền tố `wcg_gw_` khi tạo khóa API mới có quyền `GIVEAWAYS_FULL`.
   3. Bổ sung Tài Liệu Giveaway API ở cuối trang Quản Lý API (`src/admin/modules/ApiKeysModule.tsx`):
      - Thêm danh mục `docCategory === 'giveaways'` vào tài liệu mẫu code ở cuối trang với 4 mẫu lệnh chi tiết (tra cứu, nạp mã kho, tạo mới, bật tắt/reset).
@@ -5768,7 +5768,7 @@ pm run deploy:test:all vào package.json.
 
 ### 251. Khai Thông API Cập Nhật Giờ Ra Mắt Game Sắp Ra Mắt & Bổ Sung Action `set_release_date`
 - **Bối cảnh & Yêu cầu từ Người dùng**:
-  - Bot cập nhật bảng game sắp ra mắt qua `POST /api/crawler/ingest-upcoming-games` bằng khóa API hiện tại (`wcg_muse_f7d2••••••••••••••••••••6a7a`), gửi toàn bộ bản ghi kèm `directPublish: true`.
+  - Bot cập nhật bảng game sắp ra mắt qua `POST /api/crawler/ingest-upcoming-games` bằng khóa API hiện tại (`wcg_muse_f7d••••••••••••••••••••6a7a`), gửi toàn bộ bản ghi kèm `directPublish: true`.
   - Các trường khác (như `expectedCodes`) cập nhật thành công, nhưng riêng trường `releaseDate` không thể đổi được (ví dụ đổi Monster Hunter Outlanders sang `2026-10-29T05:00:00+07:00` thì máy chủ trả 200, nhưng đọc lại bằng GET vẫn là `2026-10-29T10:00:00+07:00`).
   - Yêu cầu:
     1. Sửa đường upsert để khi bot gửi bản ghi kèm `releaseDate` mới thì giờ mới được ghi đè, đúng định dạng ISO 8601 kèm múi giờ (+07:00), áp dụng cho cả UPCOMING và LAUNCHED.
@@ -5909,7 +5909,7 @@ pm run deploy:test:all vào package.json.
      - Cho phép caller (sở hữu quyền API_KEYS_FULL hoặc ADMIN_FULL) dùng 1 mã API gửi payload JSON để cấu hình lại danh sách quyền của bất kỳ mã API nào trong cơ sở dữ liệu D1.
      - Đồng thời nâng cấp PATCH /api/api-keys/:id hỗ trợ mảng `scopes: string[]` hoặc `scope: string`.
   3. *Khởi Tạo Khóa API Đa Năng Mặc Định (ak_preset_multi_versatile)*:
-     - Tự động nạp khóa mẫu `wcg_multi_5a82••••••••••••••••••••041ac9e5041a` với đầy đủ 8 nhóm quyền thông dụng, sẵn sàng sử dụng và tùy biến ngay.
+     - Tự động nạp khóa mẫu `wcg_multi_5a••••••••••••••••••••041a` với đầy đủ 8 nhóm quyền thông dụng, sẵn sàng sử dụng và tùy biến ngay.
   4. *Giao Diện Quản Trị Trực Quan & Modal Set Quyền 1-Click (src/admin/modules/ApiKeysModule.tsx)*:
      - Card VIP Spotlight "Khóa API Đa Năng": hiển thị mã che kèm nút copy nhanh và nút "Set Quyền Cho Khóa Này".
      - Huy hiệu đa quyền (Multi-Badge): hiển thị chi tiết từng quyền mà khóa sở hữu (`[Tin Tức]`, `[Nhiệm Vụ]`, `[Giftcode]`, `[Giveaway]`, `[Cửa Hàng]`, `[Thành Viên]`, `[Đồng Bộ]`, v.v.).
@@ -7715,7 +7715,7 @@ pm run deploy:test:all vào package.json.
   1. *Thao tác mở quyền trong Admin của người dùng*:
      - Nếu người dùng bấm "Cấp Khóa Kiểm Toán (2FA)" trong Admin: Khóa này có role `auditor` (Read-only 100%), chỉ dùng cho Marketing Audit (`GET /api/crawler/marketing`), bị cấm ghi và không dùng cho upload icon.
      - Nếu người dùng tích "Kích hoạt Cổng Tiếp Nhận API" trong Crawler Module (Tab 6): Đó là cấu hình tiếp nhận Giftcode (`POST /api/crawler/ingest-codes`).
-     - Trong Admin hiện không có màn hình phân quyền upload icon riêng, vì quyền upload icon đã được tích hợp trực tiếp và cấp quyền ghi 100% cho key hệ thống của Muse `wcg_muse_f7d2••••••••••••••••••••6a7a`.
+     - Trong Admin hiện không có màn hình phân quyền upload icon riêng, vì quyền upload icon đã được tích hợp trực tiếp và cấp quyền ghi 100% cho key hệ thống của Muse `wcg_muse_f7d••••••••••••••••••••6a7a`.
   2. *Điểm nghẽn khi kiểm thử slug test*:
      - Ban đầu, `upload_icon` chỉ nhận slug khớp với game trong upcoming/catalog. Khi upload slug test tự do như `test-kiem-tra-quyen` sẽ bị từ chối với lỗi 400.
      - Chưa có action `delete_icon` để client dọn dẹp file test sau khi thử nghiệm.
@@ -8286,7 +8286,7 @@ pm run deploy:test:all vào package.json.
      - Script prerender tại commit `7a6c46a` chỉ đọc `src/data/games188.json` (khi đó có 529 game, chưa kịp bổ sung Avatar Land vào static file trước khi deploy) $\rightarrow$ Trang tĩnh `/game/avatar-land` bị thiếu trong thư mục `dist/`, gây ra lỗi HTTP 404.
 - **Giải pháp đã triển khai (Solution)**:
   1. **Khôi phục Key API Crawler & Cơ Chế Xác Thực Kiên Cố (`functions/api/crawler/ingest-codes.ts`)**:
-     - Key chính thức của trợ lý Pine & bot Muse `wcg_muse_f7d2••••••••••••••••••••6a7a` được xác thực kiên cố, không bao giờ bị vô hiệu hóa khi D1 chạm trần đọc.
+     - Key chính thức của trợ lý Pine & bot Muse `wcg_muse_f7d••••••••••••••••••••6a7a` được xác thực kiên cố, không bao giờ bị vô hiệu hóa khi D1 chạm trần đọc.
      - Thêm action `info` phản hồi metadata bot name `Trợ lý Pine & Muse Bot`.
   2. **Bộ Dữ Liệu Chuẩn Mực Tuyệt Đối (Authoritative Canonical Dataset)**:
      - Khởi tạo [`canonical_backup_state.json`](file:///c:/4%20Antigravity%20all/13%20web%20code%20game/functions/data/canonical_backup_state.json):

@@ -22,7 +22,7 @@ function generateSecureRandomKey(prefix: string): string {
 async function ensureDefaultPresetKeys(env: Env) {
   if (!env.DB) return;
 
-  const existingRows = await env.DB.prepare('SELECT id, scope, raw_key FROM mission_ai_api_keys').all<any>();
+  const existingRows = await env.DB.prepare('SELECT id, scope FROM mission_ai_api_keys').all<any>();
   const list = existingRows?.results || [];
 
   const nowIso = new Date().toISOString();
@@ -38,8 +38,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_news_full', 'Toàn Quyền Tin Tức (News Full Access)', ?, ?, 'NEWS_FULL', 'Toàn quyền viết bài, sửa nội dung, xóa bài vĩnh viễn và đặt lịch hẹn đăng bài chuẩn SEO.', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_news_full', 'Toàn Quyền Tin Tức (News Full Access)', ?, ?, 'NEWS_FULL', 'Toàn quyền viết bài, sửa nội dung, xóa bài vĩnh viễn và đặt lịch hẹn đăng bài chuẩn SEO.', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, nowIso).run().catch(() => {});
   }
 
   // 2. Preset Missions Full Key
@@ -50,8 +50,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_missions_full', 'Toàn Quyền Nhiệm Vụ (Missions Full Access)', ?, ?, 'MISSIONS_FULL', 'Toàn quyền tạo chiến dịch nhiệm vụ, nạp kho code thưởng, duyệt và từ chối bài nộp.', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_missions_full', 'Toàn Quyền Nhiệm Vụ (Missions Full Access)', ?, ?, 'MISSIONS_FULL', 'Toàn quyền tạo chiến dịch nhiệm vụ, nạp kho code thưởng, duyệt và từ chối bài nộp.', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, nowIso).run().catch(() => {});
   }
 
   // 3. Preset AI Pine Review Key
@@ -62,8 +62,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_missions_review', 'Thẩm Định Nhiệm Vụ Pine AI (Missions Reviewer)', ?, ?, 'MISSIONS_REVIEW', 'Dành riêng cho AI Pine tra cứu danh sách nộp chờ duyệt và gửi kết quả thẩm định tự động.', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires30d, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_missions_review', 'Thẩm Định Nhiệm Vụ Pine AI (Missions Reviewer)', ?, ?, 'MISSIONS_REVIEW', 'Dành riêng cho AI Pine tra cứu danh sách nộp chờ duyệt và gửi kết quả thẩm định tự động.', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires30d, nowIso).run().catch(() => {});
   }
 
   // 4. Preset Admin Full Key
@@ -74,8 +74,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_admin_full', 'Toàn Quyền Quản Trị & Đồng Bộ (Master Admin Full)', ?, ?, 'ADMIN_FULL', 'Toàn quyền quản trị cấp cao, gọi được mọi API admin và đồng bộ dữ liệu hai chiều.', '', ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_admin_full', 'Toàn Quyền Quản Trị & Đồng Bộ (Master Admin Full)', ?, ?, 'ADMIN_FULL', 'Toàn quyền quản trị cấp cao, gọi được mọi API admin và đồng bộ dữ liệu hai chiều.', '', '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, nowIso).run().catch(() => {});
   }
 
   // 5. Preset Versatile Multi-Scope Key (Khóa API Đa Năng - 1 mã set mọi quyền)
@@ -87,8 +87,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const multiScope = 'NEWS_FULL,MISSIONS_FULL,GAMES_FULL,GIVEAWAYS_FULL,EVENT_SCHEDULER_FULL,STORE_FULL,MEMBERS_FULL,SYNC_FULL,API_KEYS_FULL';
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_multi_versatile', 'Khóa API Đa Năng (Universal Versatile Key)', ?, ?, ?, 'Khóa API Đa Năng cho phép Quản trị viên dùng 1 mã duy nhất để cấu hình và set linh hoạt mọi quyền trên web.', '', ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, multiScope, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_multi_versatile', 'Khóa API Đa Năng (Universal Versatile Key)', ?, ?, ?, 'Khóa API Đa Năng cho phép Quản trị viên dùng 1 mã duy nhất để cấu hình và set linh hoạt mọi quyền trên web.', '', '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, multiScope, nowIso).run().catch(() => {});
   }
 
   // 6. Preset Giveaways Full Key (Toàn Quyền Quản Lý Giveaway)
@@ -99,8 +99,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_giveaways_full', 'Toàn Quyền Giveaway (Giveaways Full Access)', ?, ?, 'GIVEAWAYS_FULL', 'Toàn quyền quản trị chiến dịch Giveaway, thêm/sửa/xóa đợt phát, nạp kho mã giftcode, bật tắt sự kiện và reset thời gian hồi chiêu.', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_giveaways_full', 'Toàn Quyền Giveaway (Giveaways Full Access)', ?, ?, 'GIVEAWAYS_FULL', 'Toàn quyền quản trị chiến dịch Giveaway, thêm/sửa/xóa đợt phát, nạp kho mã giftcode, bật tắt sự kiện và reset thời gian hồi chiêu.', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, nowIso).run().catch(() => {});
   }
 
   // 7. Preset Event Scheduler Full Key (Toàn Quyền Lịch Sự Kiện & Đếm Ngược)
@@ -111,8 +111,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_event_scheduler_full', 'Toàn Quyền Lịch Sự Kiện & Đếm Ngược (Event Scheduler Full)', ?, ?, 'EVENT_SCHEDULER_FULL', 'Toàn quyền tạo lịch đếm ngược tự động, lên lịch phát code/flash sale, bật tắt trạng thái và ghim banner.', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_event_scheduler_full', 'Toàn Quyền Lịch Sự Kiện & Đếm Ngược (Event Scheduler Full)', ?, ?, 'EVENT_SCHEDULER_FULL', 'Toàn quyền tạo lịch đếm ngược tự động, lên lịch phát code/flash sale, bật tắt trạng thái và ghim banner.', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, nowIso).run().catch(() => {});
   }
 
   // 8. Preset Telegram Full Key (Toàn Quyền Quản Lý & Điều Hành Telegram)
@@ -123,8 +123,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_telegram_full', 'Toàn Quyền Telegram (Telegram Full & Management)', ?, ?, 'TELEGRAM_FULL', 'Toàn quyền điều hành bot và nhóm Telegram qua POST /api/telegram/manage và đăng thông báo tự động.', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_telegram_full', 'Toàn Quyền Telegram (Telegram Full & Management)', ?, ?, 'TELEGRAM_FULL', 'Toàn quyền điều hành bot và nhóm Telegram qua POST /api/telegram/manage và đăng thông báo tự động.', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, nowIso).run().catch(() => {});
   }
 
   // 9. Preset Universal Mall Master Key (Toàn Quyền Sàn TMĐT Đa Ngành)
@@ -136,8 +136,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const mallScopes = 'UNIVERSAL_MALL_FULL,ADMIN_FULL,PRODUCTS_FULL,CATEGORIES_FULL,VOUCHERS_FULL,SHIPPING_FULL,PLATFORM_LEADS_FULL,ORDERS_FULL,MEMBERS_FULL,WALLET_MANAGE,SEPAY_FULL,MARKETPLACE_MANAGE,STORE_FULL,SYNC_FULL';
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_universal_admin_master', 'Toàn Quyền Nền Tảng Sàn Đa Ngành (Universal Mall Platform Master)', ?, ?, ?, 'Toàn quyền điều hành toàn bộ Sàn TMĐT Đa Ngành: Sản phẩm, Danh mục, Vouchers, Vận chuyển bưu chính, Khách hàng B2B, Đơn hàng, Ví tiền và Cổng SePay.', '', ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, mallScopes, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_universal_admin_master', 'Toàn Quyền Nền Tảng Sàn Đa Ngành (Universal Mall Platform Master)', ?, ?, ?, 'Toàn quyền điều hành toàn bộ Sàn TMĐT Đa Ngành: Sản phẩm, Danh mục, Vouchers, Vận chuyển bưu chính, Khách hàng B2B, Đơn hàng, Ví tiền và Cổng SePay.', '', '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, mallScopes, nowIso).run().catch(() => {});
   }
 
   // 10. Preset Products & Categories Key (Toàn Quyền Sản Phẩm & Danh Mục Đa Ngành)
@@ -148,8 +148,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_products_manage', 'Toàn Quyền Sản Phẩm & Danh Mục (Products & Categories Full)', ?, ?, 'PRODUCTS_FULL,CATEGORIES_FULL,STORE_FULL', 'Toàn quyền thêm/sửa/xóa sản phẩm đa ngành (vật lý & số), quản lý biến thể SKU, hình ảnh, thông số kỹ thuật và cấu trúc ngành hàng.', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_products_manage', 'Toàn Quyền Sản Phẩm & Danh Mục (Products & Categories Full)', ?, ?, 'PRODUCTS_FULL,CATEGORIES_FULL,STORE_FULL', 'Toàn quyền thêm/sửa/xóa sản phẩm đa ngành (vật lý & số), quản lý biến thể SKU, hình ảnh, thông số kỹ thuật và cấu trúc ngành hàng.', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, nowIso).run().catch(() => {});
   }
 
   // 11. Preset Vouchers & Shipping Key (Toàn Quyền Voucher & Vận Chuyển Bưu Chính)
@@ -160,8 +160,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_vouchers_shipping', 'Toàn Quyền Voucher & Vận Chuyển (Vouchers & Shipping Full)', ?, ?, 'VOUCHERS_FULL,SHIPPING_FULL,ORDERS_FULL', 'Toàn quyền quản trị mã giảm giá/freeship đa tầng, tạo và tra cứu vận đơn bưu chính tự động (GHTK, GHN, Viettel Post).', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+      VALUES ('ak_preset_vouchers_shipping', 'Toàn Quyền Voucher & Vận Chuyển (Vouchers & Shipping Full)', ?, ?, 'VOUCHERS_FULL,SHIPPING_FULL,ORDERS_FULL', 'Toàn quyền quản trị mã giảm giá/freeship đa tầng, tạo và tra cứu vận đơn bưu chính tự động (GHTK, GHN, Viettel Post).', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, nowIso).run().catch(() => {});
   }
 
   // 12. Preset Platform Leads Key (Toàn Quyền Khách Hàng Nền Tảng B2B)
@@ -172,18 +172,8 @@ async function ensureDefaultPresetKeys(env: Env) {
     const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES ('ak_preset_platform_leads', 'Toàn Quyền Khách Hàng Nền Tảng B2B (Platform Leads Full)', ?, ?, 'PLATFORM_LEADS_FULL', 'Toàn quyền tra cứu, tiếp nhận và xử lý danh sách khách hàng doanh nghiệp đăng ký thuê sàn TMĐT đa ngành (Platform Solutions).', ?, ?, 1, '', ?)
-    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
-  }
-
-  // Update existing key if missing raw_key for easy copy
-  const existingVjxp = list.find((r) => r.id === 'ak_1793169536801_vjxp');
-  if (existingVjxp && !existingVjxp.raw_key) {
-    const sampleRaw = generateSecureRandomKey('wcg_ai');
-    const sampleHash = await computeSha256(sampleRaw);
-    await env.DB.prepare(
-      "UPDATE mission_ai_api_keys SET raw_key = ?, api_key_hash = ?, description = 'Khóa khởi tạo nhiệm vụ ban đầu' WHERE id = 'ak_1793169536801_vjxp'"
-    ).bind(sampleRaw, sampleHash).run().catch(() => {});
+      VALUES ('ak_preset_platform_leads', 'Toàn Quyền Khách Hàng Nền Tảng B2B (Platform Leads Full)', ?, ?, 'PLATFORM_LEADS_FULL', 'Toàn quyền tra cứu, tiếp nhận và xử lý danh sách khách hàng doanh nghiệp đăng ký thuê sàn TMĐT đa ngành (Platform Solutions).', ?, '', 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, nowIso).run().catch(() => {});
   }
 }
 
@@ -214,7 +204,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     await ensureDefaultPresetKeys(env);
 
     const result = await env.DB.prepare(
-      `SELECT id, key_name, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at 
+      `SELECT id, key_name, key_prefix, scope, description, expires_at, is_active, last_used_at, created_at 
        FROM mission_ai_api_keys 
        ORDER BY created_at ASC`
     ).all<any>();
@@ -230,7 +220,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       scope: 'ADMIN_FULL',
       description: 'Quyền tối cao: Toàn quyền đồng bộ hệ thống, quản lý cơ sở dữ liệu D1/KV, truy cập mọi API admin.',
       key_prefix: masterPrefix,
-      raw_key: masterSecret,
       is_master: true,
       is_active: 1,
       expires_at: '', // Permanent
@@ -332,7 +321,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, '', ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, '', 1, '', ?)
     `).bind(
       id,
       key_name.trim(),
@@ -341,7 +330,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       validScope,
       description?.trim() || '',
       finalExpiresAt,
-      rawKey,
       nowIso
     ).run();
 
