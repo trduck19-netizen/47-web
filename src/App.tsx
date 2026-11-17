@@ -549,7 +549,7 @@ export const App: React.FC = () => {
         const hash = window.location.hash;
         const hashLower = hash.toLowerCase();
         const host = window.location.hostname;
-        const isTestClientDomain = host.toLowerCase().includes('test-code-game-shop') || host.toLowerCase().includes('test-shopee');
+        const isTestClientDomain = host.toLowerCase().includes('universal-mall') || host.toLowerCase().includes('test-code-game-shop') || host.toLowerCase().includes('test-shopee');
         const urlParams = new URLSearchParams(window.location.search);
 
         // Check for cross-origin sync_data payload in URL hash (from Admin "Xem Web Khách")
@@ -682,7 +682,7 @@ export const App: React.FC = () => {
           setCurrentTab('utilities');
           return;
         } else if (hashLower === '#catalog' || hashLower.startsWith('#catalog')) {
-          setCurrentTab(isTestClientDomain ? 'shopee-test' : 'catalog');
+          setCurrentTab('catalog');
           return;
         } else if (hashLower.includes('g=') || urlParams.get('g') || urlParams.get('game')) {
           const slug = urlParams.get('g') || urlParams.get('game') || hash.split(/g=/i)[1]?.split('&')[0];
@@ -791,8 +791,10 @@ export const App: React.FC = () => {
           setSelectedGame(null);
           setCurrentTab('shopee-test');
           return;
-        } else if (!hash || hash === '#' || hash === '#catalog') {
+        } else if (!hash || hash === '#') {
           setCurrentTab(isTestClientDomain ? 'shopee-test' : 'catalog');
+        } else if (hash === '#catalog' || hashLower.startsWith('#catalog')) {
+          setCurrentTab('catalog');
         }
       };
 
@@ -897,7 +899,7 @@ export const App: React.FC = () => {
         : (selectedGame.codes_count || selectedGame.codes?.filter((c: any) => !isCodeExpired(c))?.length || 0);
       const countSuffix = codeCount > 0 ? `Nhận ${codeCount} Mã Code ` : '';
       document.title = `Giftcode ${selectedGame.name || effectiveSlug} Mới Nhất 2026 - ${countSuffix}| CodeGame.shop`;
-      const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
+      const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
       const inTest1 = currentTab === 'shopee-test' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/test1')) || isTestClientDomain;
       if (inTest1) {
         const targetPath = isTestClientDomain ? `/game/${effectiveSlug}` : `/test1/game/${effectiveSlug}`;
@@ -911,7 +913,7 @@ export const App: React.FC = () => {
       // Do not wipe pathname if initial deep-link routing is still parsing
       if (!isInitialLoadDone) return;
 
-      const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
+      const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
       const inTest1 = currentTab === 'shopee-test' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/test1')) || isTestClientDomain;
       if (inTest1) {
         if (window.location.pathname.startsWith('/test1/game/') || window.location.pathname.startsWith('/test1/g/') || (isTestClientDomain && window.location.pathname.startsWith('/game/'))) {
@@ -1002,7 +1004,7 @@ export const App: React.FC = () => {
           window.history.replaceState(null, '', `/gian-hang/${currentStoreSlug}`);
         }
       } else if (currentTab === 'shopee-test') {
-        const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
+        const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
         document.title = isTestClientDomain
           ? 'Sàn Thương Mại Điện Tử & Tiện Ích Game | Bản Mẫu Trực Tuyến'
           : 'Giao Diện Thử Nghiệm Phong Cách Shopee Game (Test 1) | CodeGame.shop';
@@ -1128,7 +1130,7 @@ export const App: React.FC = () => {
           dataService.getGameBySlug(pathSlug).then((g) => {
             if (g) {
               setSelectedGame(g);
-              const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
+              const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
               setCurrentTab(isTestClient ? 'shopee-test' : 'catalog');
             }
           });
@@ -1225,7 +1227,7 @@ export const App: React.FC = () => {
         setCurrentTab('shopee-test');
       } else if (path === '/' || path === '') {
         setSelectedGame(null);
-        const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
+        const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
         setCurrentTab(isTestClient ? 'shopee-test' : 'catalog');
       }
     };
@@ -2208,7 +2210,7 @@ export const App: React.FC = () => {
             {currentTab === 'platform-solutions' && (
               <PlatformSolutionsView
                 onNavigateBack={() => {
-                  const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
+                  const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
                   setCurrentTab(isTestClient ? 'shopee-test' : 'catalog');
                 }}
                 onOpenStoreDemo={(ind) => {
