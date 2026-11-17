@@ -140,7 +140,7 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
 
   // --- QUICK API TESTER ---
   const [testAction, setTestAction] = useState<'GET_LIST' | 'GET_DETAIL' | 'ADD_CODES' | 'TOGGLE_ACTIVE' | 'RESET_COOLDOWN' | 'OPEN_NOW'>('GET_LIST');
-  const [testApiKey, setTestApiKey] = useState('wcg_gw_7193••••••••••••••••••••4b2a82f04b2a');
+  const [testApiKey, setTestApiKey] = useState('');
   const [testSelectedGwId, setTestSelectedGwId] = useState('');
   const [testCodesInput, setTestCodesInput] = useState('');
   const [testActiveState, setTestActiveState] = useState(true);
@@ -270,7 +270,7 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
     const syncKey =
       sessionStorage.getItem('wcg_admin_sync_key') ||
       localStorage.getItem('wcg_admin_sync_key') ||
-      'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef';
+      '';
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -1503,7 +1503,7 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
               <div className="py-8 text-center space-y-2">
                 <p className="text-xs text-slate-400">Chưa có khóa API tùy chỉnh nào được tạo riêng cho Giveaway.</p>
                 <p className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">
-                  Khóa mặc định toàn sàn: <strong>wcg_gw_7193••••••••••••••••••••4b2a82f04b2a</strong>
+                  Khóa mặc định toàn sàn: <em>(Tạo trong tab Khóa API Quản Trị)</em>
                 </p>
               </div>
             ) : (
@@ -1568,7 +1568,7 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
                                   if (keyItem.raw_key) {
                                     setTestApiKey(keyItem.raw_key);
                                   } else {
-                                    setTestApiKey(keyItem.key_prefix || 'wcg_gw_7193••••••••••••••••••••4b2a82f04b2a');
+                                    setTestApiKey(keyItem.key_prefix || '');
                                   }
                                   onShowToast('Đã chọn khóa này', `Đã điền khóa vào Trình Thử Nghiệm API`, 'info');
                                 }}
@@ -1952,15 +1952,15 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
                   onClick={() => {
                     let snippet = '';
                     if (apiDocCategory === 'curl_get') {
-                      snippet = `curl -X GET "https://codegame.shop/api/giveaways/manage"\n  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a"`;
+                      snippet = `curl -X GET "https://codegame.shop/api/giveaways/manage"\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY"`;
                     } else if (apiDocCategory === 'curl_add_codes') {
-                      snippet = `curl -X PUT "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a" \\\n  -d '{\n    "action": "ADD_CODES",\n    "id": "gw_genshin_impact",\n    "codes": ["GENSHIN_VIP_01", "GENSHIN_VIP_02", "GENSHIN_VIP_03"]\n  }'`;
+                      snippet = `curl -X PUT "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "action": "ADD_CODES",\n    "id": "gw_genshin_impact",\n    "codes": ["GENSHIN_VIP_01", "GENSHIN_VIP_02", "GENSHIN_VIP_03"]\n  }'`;
                     } else if (apiDocCategory === 'curl_open_now') {
-                      snippet = `curl -X PUT "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a" \\\n  -d '{\n    "action": "OPEN_NOW",\n    "id": "gw_hiep-khach-hanh_mvuj5a5m"\n  }'`;
+                      snippet = `curl -X PUT "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "action": "OPEN_NOW",\n    "id": "gw_hiep-khach-hanh_mvuj5a5m"\n  }'`;
                     } else if (apiDocCategory === 'curl_create') {
-                      snippet = `curl -X POST "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a" \\\n  -d '{\n    "title": "Code riêng Honkai: Star Rail Mới Nhất",\n    "game_slug": "honkai-star-rail",\n    "game_name": "Honkai: Star Rail",\n    "description": "Code độc quyền dành cho tân thủ tham gia sự kiện.",\n    "rewards": "Vé Tinh Cầu Đặc Biệt x10 + 1600 Ngọc Ánh Sao",\n    "codes": ["HSR_NEWBIE_01", "HSR_NEWBIE_02"],\n    "max_per_user": 1,\n    "max_per_ip": 1,\n    "cooldown_hours": 1,\n    "is_active": true\n  }'`;
+                      snippet = `curl -X POST "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "title": "Code riêng Honkai: Star Rail Mới Nhất",\n    "game_slug": "honkai-star-rail",\n    "game_name": "Honkai: Star Rail",\n    "description": "Code độc quyền dành cho tân thủ tham gia sự kiện.",\n    "rewards": "Vé Tinh Cầu Đặc Biệt x10 + 1600 Ngọc Ánh Sao",\n    "codes": ["HSR_NEWBIE_01", "HSR_NEWBIE_02"],\n    "max_per_user": 1,\n    "max_per_ip": 1,\n    "cooldown_hours": 1,\n    "is_active": true\n  }'`;
                     } else {
-                      snippet = `// Thư viện mẫu gọi API Quản Lý Giveaway (Node.js / Browser)\nconst API_KEY = 'wcg_gw_7193••••••••••••••••••••4b2a82f04b2a';\nconst BASE_URL = 'https://codegame.shop';\n\n// 1. Lấy danh sách chiến dịch & kho mã D1\nasync function getGiveaways() {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    headers: { 'X-Api-Key': API_KEY }\n  });\n  return await res.json();\n}\n\n// 2. Nạp thêm giftcode mới vào kho D1\nasync function addGiveawayCodes(giveawayId, codesArray) {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Api-Key': API_KEY\n    },\n    body: JSON.stringify({\n      action: 'ADD_CODES',\n      id: giveawayId,\n      codes: codesArray\n    })\n  });\n  return await res.json();\n}\n\n// 3. Mở giật mã ngay lập tức (Bỏ khóa hẹn giờ tương lai)\nasync function openGiveawayNow(giveawayId) {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Api-Key': API_KEY\n    },\n    body: JSON.stringify({\n      action: 'OPEN_NOW',\n      id: giveawayId\n    })\n  });\n  return await res.json();\n}`;
+                      snippet = `// Thư viện mẫu gọi API Quản Lý Giveaway (Node.js / Browser)\nconst API_KEY = 'YOUR_GIVEAWAYS_API_KEY';\nconst BASE_URL = 'https://codegame.shop';\n\n// 1. Lấy danh sách chiến dịch & kho mã D1\nasync function getGiveaways() {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    headers: { 'X-Api-Key': API_KEY }\n  });\n  return await res.json();\n}\n\n// 2. Nạp thêm giftcode mới vào kho D1\nasync function addGiveawayCodes(giveawayId, codesArray) {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Api-Key': API_KEY\n    },\n    body: JSON.stringify({\n      action: 'ADD_CODES',\n      id: giveawayId,\n      codes: codesArray\n    })\n  });\n  return await res.json();\n}\n\n// 3. Mở giật mã ngay lập tức (Bỏ khóa hẹn giờ tương lai)\nasync function openGiveawayNow(giveawayId) {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Api-Key': API_KEY\n    },\n    body: JSON.stringify({\n      action: 'OPEN_NOW',\n      id: giveawayId\n    })\n  });\n  return await res.json();\n}`;
                     }
                     handleCopyText(snippet, 'Mẫu Lệnh');
                   }}
@@ -1977,11 +1977,11 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
                   <pre className="text-emerald-400">
 {`# 1. Tra cứu danh sách toàn bộ chiến dịch kèm kho mã chi tiết
 curl -X GET "https://codegame.shop/api/giveaways/manage" \\
-  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a"
+  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY"
 
 # 2. Hoặc tra cứu 1 chiến dịch cụ thể theo ID
 curl -X GET "https://codegame.shop/api/giveaways/manage?id=gw_genshin_impact" \\
-  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a"`}
+  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY"`}
                   </pre>
                 )}
 
@@ -1990,7 +1990,7 @@ curl -X GET "https://codegame.shop/api/giveaways/manage?id=gw_genshin_impact" \\
 {`# Nạp thêm danh sách giftcode mới vào kho D1 cho đợt phát
 curl -X PUT "https://codegame.shop/api/giveaways/manage" \\
   -H "Content-Type: application/json" \\
-  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a" \\
+  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\
   -d '{
     "action": "ADD_CODES",
     "id": "gw_genshin_impact",
@@ -2008,7 +2008,7 @@ curl -X PUT "https://codegame.shop/api/giveaways/manage" \\
 {`# Mở giật mã ngay lập tức (Bỏ khóa hẹn giờ tương lai, đặt start_time = hôm nay, ACTIVE)
 curl -X PUT "https://codegame.shop/api/giveaways/manage" \\
   -H "Content-Type: application/json" \\
-  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a" \\
+  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\
   -d '{
     "action": "OPEN_NOW",
     "id": "gw_hiep-khach-hanh_mvuj5a5m"
@@ -2021,7 +2021,7 @@ curl -X PUT "https://codegame.shop/api/giveaways/manage" \\
 {`# Tạo mới một chiến dịch giveaway hoàn chỉnh kèm kho mã ban đầu
 curl -X POST "https://codegame.shop/api/giveaways/manage" \\
   -H "Content-Type: application/json" \\
-  -H "X-Api-Key: wcg_gw_7193••••••••••••••••••••4b2a82f04b2a" \\
+  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\
   -d '{
     "title": "Code riêng Honkai: Star Rail Mới Nhất",
     "game_slug": "honkai-star-rail",
@@ -2040,7 +2040,7 @@ curl -X POST "https://codegame.shop/api/giveaways/manage" \\
                 {apiDocCategory === 'js_client' && (
                   <pre className="text-emerald-400">
 {`// Thư viện mẫu gọi API Quản Lý Giveaway (Node.js / Browser)
-const API_KEY = 'wcg_gw_7193••••••••••••••••••••4b2a82f04b2a';
+const API_KEY = 'YOUR_GIVEAWAYS_API_KEY';
 const BASE_URL = 'https://codegame.shop';
 
 // 1. Lấy danh sách chiến dịch & kho mã D1

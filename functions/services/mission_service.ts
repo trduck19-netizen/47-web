@@ -74,12 +74,9 @@ export function validateProofLink(
 }
 
 /**
- * Master Fallback Secrets & Keys
+ * Master Fallback Secrets & Keys (Loaded strictly from runtime Cloudflare environment secrets)
  */
-const MASTER_SYSTEM_KEYS = [
-  'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef',
-  'wcg_admin_sync_master_key_2026_secured',
-];
+const MASTER_SYSTEM_KEYS: string[] = [];
 
 /**
  * Parse scopes string (comma-separated, whitespace, or JSON) into array of normalized strings

@@ -692,7 +692,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
     const syncKey =
       sessionStorage.getItem('wcg_admin_sync_key') ||
       localStorage.getItem('wcg_admin_sync_key') ||
-      'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef';
+      '';
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

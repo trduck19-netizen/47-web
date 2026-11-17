@@ -75,7 +75,7 @@ async function authenticateRequest(request: Request, env: Env): Promise<CrawlerA
   }
 
   // 1. Kiểm tra Admin Master Key (toàn quyền)
-  if (token === 'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef') {
+  if ((env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) || (env.JWT_SECRET && token === env.JWT_SECRET)) {
     return { authorized: true, botName: 'Admin Master Key', role: 'admin' };
   }
   if (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) {

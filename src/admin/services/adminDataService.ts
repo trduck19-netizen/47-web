@@ -1020,7 +1020,7 @@ class AdminDataService {
         ? localStorage.getItem('wcg_admin_sync_key') || sessionStorage.getItem('wcg_admin_sync_key')
         : '') || '';
 
-    const ADMIN_SYNC_KEY = 'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef';
+    const ADMIN_SYNC_KEY = (typeof window !== 'undefined' ? (localStorage.getItem('wcg_admin_sync_key') || localStorage.getItem('wcg_admin_token')) : '') || '';
     const isDedicatedAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-code-game-shop');
     const isTestAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-test-code-game-shop');
     const isAdminUser = typeof window !== 'undefined' && (

@@ -11,6 +11,13 @@ export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 };
 
+function generateSecureRandomKey(prefix: string): string {
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `${prefix}_${hex}`;
+}
+
 // Seed initial default keys if not present
 async function ensureDefaultPresetKeys(env: Env) {
   if (!env.DB) return;
@@ -26,9 +33,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 1. Preset News Full Key
   const hasNews = list.some((r) => String(r.scope).toUpperCase() === 'NEWS_FULL');
   if (!hasNews) {
-    const rawKey = 'wcg_news_9f8••••••••••••••••••••ad4e';
+    const rawKey = generateSecureRandomKey('wcg_news');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_news_9f81••••••••••••••••••••ad4e';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_news_full', 'Toàn Quyền Tin Tức (News Full Access)', ?, ?, 'NEWS_FULL', 'Toàn quyền viết bài, sửa nội dung, xóa bài vĩnh viễn và đặt lịch hẹn đăng bài chuẩn SEO.', ?, ?, 1, '', ?)
@@ -38,9 +45,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 2. Preset Missions Full Key
   const hasMissions = list.some((r) => String(r.scope).toUpperCase() === 'MISSIONS_FULL');
   if (!hasMissions) {
-    const rawKey = 'wcg_mis_4718••••••••••••••••••••4b2c';
+    const rawKey = generateSecureRandomKey('wcg_mis');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_mis_4718••••••••••••••••••••4b2c';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_missions_full', 'Toàn Quyền Nhiệm Vụ (Missions Full Access)', ?, ?, 'MISSIONS_FULL', 'Toàn quyền tạo chiến dịch nhiệm vụ, nạp kho code thưởng, duyệt và từ chối bài nộp.', ?, ?, 1, '', ?)
@@ -50,9 +57,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 3. Preset AI Pine Review Key
   const hasReview = list.some((r) => ['MISSIONS_REVIEW', 'REVIEW_ONLY'].includes(String(r.scope).toUpperCase()));
   if (!hasReview) {
-    const rawKey = 'wcg_ai_b729a••••••••••••••••••••4d1a';
+    const rawKey = generateSecureRandomKey('wcg_ai');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_ai_b729••••••••••••••••••••4d1a';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_missions_review', 'Thẩm Định Nhiệm Vụ Pine AI (Missions Reviewer)', ?, ?, 'MISSIONS_REVIEW', 'Dành riêng cho AI Pine tra cứu danh sách nộp chờ duyệt và gửi kết quả thẩm định tự động.', ?, ?, 1, '', ?)
@@ -62,9 +69,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 4. Preset Admin Full Key
   const hasAdmin = list.some((r) => ['ADMIN_FULL', 'FULL'].includes(String(r.scope).toUpperCase()) && r.id !== 'ak_1793169536801_vjxp');
   if (!hasAdmin) {
-    const rawKey = 'wcg_adm_c830••••••••••••••••••••7d10';
+    const rawKey = generateSecureRandomKey('wcg_adm');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_adm_c830••••••••••••••••••••7d10';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_admin_full', 'Toàn Quyền Quản Trị & Đồng Bộ (Master Admin Full)', ?, ?, 'ADMIN_FULL', 'Toàn quyền quản trị cấp cao, gọi được mọi API admin và đồng bộ dữ liệu hai chiều.', '', ?, 1, '', ?)
@@ -74,9 +81,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 5. Preset Versatile Multi-Scope Key (Khóa API Đa Năng - 1 mã set mọi quyền)
   const hasMulti = list.some((r) => r.id === 'ak_preset_multi_versatile');
   if (!hasMulti) {
-    const rawKey = 'wcg_multi_5a82••••••••••••••••••••041ac9e5041a';
+    const rawKey = generateSecureRandomKey('wcg_multi');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_multi_5a82••••••••••••••••••••041a';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     const multiScope = 'NEWS_FULL,MISSIONS_FULL,GAMES_FULL,GIVEAWAYS_FULL,EVENT_SCHEDULER_FULL,STORE_FULL,MEMBERS_FULL,SYNC_FULL,API_KEYS_FULL';
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
@@ -87,9 +94,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 6. Preset Giveaways Full Key (Toàn Quyền Quản Lý Giveaway)
   const hasGiveaways = list.some((r) => String(r.scope).toUpperCase() === 'GIVEAWAYS_FULL' || r.id === 'ak_preset_giveaways_full');
   if (!hasGiveaways) {
-    const rawKey = 'wcg_gw_7193••••••••••••••••••••4b2a82f04b2a';
+    const rawKey = generateSecureRandomKey('wcg_gw');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_gw_7193••••••••••••••••••••4b2a';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_giveaways_full', 'Toàn Quyền Giveaway (Giveaways Full Access)', ?, ?, 'GIVEAWAYS_FULL', 'Toàn quyền quản trị chiến dịch Giveaway, thêm/sửa/xóa đợt phát, nạp kho mã giftcode, bật tắt sự kiện và reset thời gian hồi chiêu.', ?, ?, 1, '', ?)
@@ -99,9 +106,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 7. Preset Event Scheduler Full Key (Toàn Quyền Lịch Sự Kiện & Đếm Ngược)
   const hasEventScheduler = list.some((r) => String(r.scope).toUpperCase() === 'EVENT_SCHEDULER_FULL' || r.id === 'ak_preset_event_scheduler_full');
   if (!hasEventScheduler) {
-    const rawKey = 'wcg_ev_8392••••••••••••••••••••2b8fea602b8f';
+    const rawKey = generateSecureRandomKey('wcg_ev');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_ev_8392••••••••••••••••••••2b8f';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_event_scheduler_full', 'Toàn Quyền Lịch Sự Kiện & Đếm Ngược (Event Scheduler Full)', ?, ?, 'EVENT_SCHEDULER_FULL', 'Toàn quyền tạo lịch đếm ngược tự động, lên lịch phát code/flash sale, bật tắt trạng thái và ghim banner.', ?, ?, 1, '', ?)
@@ -111,9 +118,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 8. Preset Telegram Full Key (Toàn Quyền Quản Lý & Điều Hành Telegram)
   const hasTelegram = list.some((r) => String(r.scope).toUpperCase() === 'TELEGRAM_FULL' || r.id === 'ak_preset_telegram_full');
   if (!hasTelegram) {
-    const rawKey = 'wcg_tg_9210••••••••••••••••••••2a3d83f12a3d';
+    const rawKey = generateSecureRandomKey('wcg_tg');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_tg_9210••••••••••••••••••••2a3d';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_telegram_full', 'Toàn Quyền Telegram (Telegram Full & Management)', ?, ?, 'TELEGRAM_FULL', 'Toàn quyền điều hành bot và nhóm Telegram qua POST /api/telegram/manage và đăng thông báo tự động.', ?, ?, 1, '', ?)
@@ -123,9 +130,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 9. Preset Universal Mall Master Key (Toàn Quyền Sàn TMĐT Đa Ngành)
   const hasUniversalMall = list.some((r) => r.id === 'ak_preset_universal_admin_master');
   if (!hasUniversalMall) {
-    const rawKey = 'wcg_mall_9e4••••••••••••••••••••4f99';
+    const rawKey = generateSecureRandomKey('wcg_mall');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_mall_9e47••••••••••••••••••••4f99';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     const mallScopes = 'UNIVERSAL_MALL_FULL,ADMIN_FULL,PRODUCTS_FULL,CATEGORIES_FULL,VOUCHERS_FULL,SHIPPING_FULL,PLATFORM_LEADS_FULL,ORDERS_FULL,MEMBERS_FULL,WALLET_MANAGE,SEPAY_FULL,MARKETPLACE_MANAGE,STORE_FULL,SYNC_FULL';
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
@@ -136,9 +143,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 10. Preset Products & Categories Key (Toàn Quyền Sản Phẩm & Danh Mục Đa Ngành)
   const hasProductsManage = list.some((r) => r.id === 'ak_preset_products_manage');
   if (!hasProductsManage) {
-    const rawKey = 'wcg_prd_8301••••••••••••••••••••7d88';
+    const rawKey = generateSecureRandomKey('wcg_prd');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_prd_8301••••••••••••••••••••7d88';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_products_manage', 'Toàn Quyền Sản Phẩm & Danh Mục (Products & Categories Full)', ?, ?, 'PRODUCTS_FULL,CATEGORIES_FULL,STORE_FULL', 'Toàn quyền thêm/sửa/xóa sản phẩm đa ngành (vật lý & số), quản lý biến thể SKU, hình ảnh, thông số kỹ thuật và cấu trúc ngành hàng.', ?, ?, 1, '', ?)
@@ -148,9 +155,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 11. Preset Vouchers & Shipping Key (Toàn Quyền Voucher & Vận Chuyển Bưu Chính)
   const hasVouchersShipping = list.some((r) => r.id === 'ak_preset_vouchers_shipping');
   if (!hasVouchersShipping) {
-    const rawKey = 'wcg_shp_6193••••••••••••••••••••4c77';
+    const rawKey = generateSecureRandomKey('wcg_shp');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_shp_6193••••••••••••••••••••4c77';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_vouchers_shipping', 'Toàn Quyền Voucher & Vận Chuyển (Vouchers & Shipping Full)', ?, ?, 'VOUCHERS_FULL,SHIPPING_FULL,ORDERS_FULL', 'Toàn quyền quản trị mã giảm giá/freeship đa tầng, tạo và tra cứu vận đơn bưu chính tự động (GHTK, GHN, Viettel Post).', ?, ?, 1, '', ?)
@@ -160,9 +167,9 @@ async function ensureDefaultPresetKeys(env: Env) {
   // 12. Preset Platform Leads Key (Toàn Quyền Khách Hàng Nền Tảng B2B)
   const hasPlatformLeads = list.some((r) => r.id === 'ak_preset_platform_leads');
   if (!hasPlatformLeads) {
-    const rawKey = 'wcg_lead_5a8••••••••••••••••••••5033';
+    const rawKey = generateSecureRandomKey('wcg_lead');
     const keyHash = await computeSha256(rawKey);
-    const keyPrefix = 'wcg_lead_5a82••••••••••••••••••••5033';
+    const keyPrefix = `${rawKey.slice(0, 12)}••••••••••••••••••••${rawKey.slice(-4)}`;
     await env.DB.prepare(`
       INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
       VALUES ('ak_preset_platform_leads', 'Toàn Quyền Khách Hàng Nền Tảng B2B (Platform Leads Full)', ?, ?, 'PLATFORM_LEADS_FULL', 'Toàn quyền tra cứu, tiếp nhận và xử lý danh sách khách hàng doanh nghiệp đăng ký thuê sàn TMĐT đa ngành (Platform Solutions).', ?, ?, 1, '', ?)
@@ -172,7 +179,7 @@ async function ensureDefaultPresetKeys(env: Env) {
   // Update existing key if missing raw_key for easy copy
   const existingVjxp = list.find((r) => r.id === 'ak_1793169536801_vjxp');
   if (existingVjxp && !existingVjxp.raw_key) {
-    const sampleRaw = 'wcg_ai_a213b••••••••••••••••••••508f';
+    const sampleRaw = generateSecureRandomKey('wcg_ai');
     const sampleHash = await computeSha256(sampleRaw);
     await env.DB.prepare(
       "UPDATE mission_ai_api_keys SET raw_key = ?, api_key_hash = ?, description = 'Khóa khởi tạo nhiệm vụ ban đầu' WHERE id = 'ak_1793169536801_vjxp'"
@@ -212,10 +219,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
        ORDER BY created_at ASC`
     ).all<any>();
 
-    const masterSecret = env.ADMIN_SYNC_SECRET || 'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef';
+    const masterSecret = env.ADMIN_SYNC_SECRET || env.JWT_SECRET || 'wcg_master_key_configured_in_env';
     const masterPrefix = masterSecret.length > 10 
-      ? `${masterSecret.slice(0, 6)}••••••••••••••••••••••••••••••••••••••••••••••••••••••${masterSecret.slice(-5)}`
-      : 'b4e084••••••2faef';
+      ? `${masterSecret.slice(0, 6)}••••••••••••••••••••••••••••••••••••••••••••••••••••••${masterSecret.slice(-4)}`
+      : 'wcg_master••••key';
 
     const masterKeyInfo = {
       id: 'key_system_master',

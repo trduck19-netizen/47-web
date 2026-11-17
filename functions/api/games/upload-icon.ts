@@ -53,10 +53,8 @@ async function authenticateCaller(
     };
   }
 
-  // 1. Master sync secret
+  // 1. Master sync secret from Cloudflare environment
   if (
-    candidateKey === 'wcg_muse_f7d2••••••••••••••••••••6a7a' ||
-    candidateKey === 'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef' ||
     (env.ADMIN_SYNC_SECRET && candidateKey === env.ADMIN_SYNC_SECRET) ||
     (env.MUSE_API_KEY && candidateKey === env.MUSE_API_KEY) ||
     (env.PINE_API_KEY && candidateKey === env.PINE_API_KEY)

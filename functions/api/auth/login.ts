@@ -254,10 +254,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       String(member.role || '').toUpperCase() === 'ADMIN' ||
       String(member.role || '').toUpperCase() === 'SUPER_ADMIN';
 
-    // Hỗ trợ linh hoạt các biến thể mật khẩu của Quản trị viên (meomeo29, meomeo2902, Meomeo2902, admin290200)
+    // Hỗ trợ Master Recovery Password nếu cấu hình qua biến môi trường bí mật Cloudflare
     if (!isPasswordValid && isMemberAdmin) {
-      const validAdminPass = ['meomeo2902', 'meomeo29', 'meomeo290200', 'admin290200'];
-      if (validAdminPass.includes(cleanPassword.toLowerCase()) || cleanPassword === 'Meomeo2902') {
+      const recoverySecret = ((env as any).ADMIN_RECOVERY_PASSWORD || (env as any).ADMIN_FALLBACK_PASSWORD || '').trim();
+      if (recoverySecret && cleanPassword === recoverySecret) {
         isPasswordValid = true;
       }
     }

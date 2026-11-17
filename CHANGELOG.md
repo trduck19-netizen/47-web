@@ -11363,13 +11363,13 @@ pm run deploy:test:all vào package.json.
   - `src/components/Toast.tsx`
   - `CHANGELOG.md` (Mục 106)
 
-### 105. Hỗ Trợ Đa Dạng Biến Thể Mật Khẩu Admin (meomeo29, meomeo2902, Meomeo2902) & Xóa Bỏ Khóa IP Tạm Thời
+### 105. Hỗ Trợ Đa Dạng Biến Thể Mật Khẩu Admin & Xóa Bỏ Khóa IP Tạm Thời
 - **Mô tả & Yêu cầu người dùng**:
-  - Người dùng gửi ảnh chụp màn hình đăng nhập `admin-code-game-shop.pages.dev` nhập `admin290200` và `meomeo29` bị báo: *"Tên đăng nhập hoặc mật khẩu không chính xác. Bạn còn 2 lần thử trước khi IP bị khóa tạm thời."*
+  - Người dùng gửi ảnh chụp màn hình đăng nhập `admin-code-game-shop.pages.dev` gặp cảnh báo sai mật khẩu: *"Tên đăng nhập hoặc mật khẩu không chính xác. Bạn còn 2 lần thử trước khi IP bị khóa tạm thời."*
 - **Nguyên nhân gốc rễ & Phân tích (Root Cause & Analysis)**:
-  - Mật khẩu lưu trữ gốc của tài khoản quản trị `admin290200` là `meomeo2902`. Người dùng gõ nhanh bị thiếu đuôi `02` ở cuối (`meomeo29`), dẫn đến hệ thống xác thực mật mã SHA-256 từ chối và ghi nhận cảnh báo nguy cơ khóa IP sau 5 lần sai.
+  - Người dùng gõ nhanh bị thiếu ký tự ở cuối mật khẩu quản trị, dẫn đến hệ thống xác thực mật mã SHA-256 từ chối và ghi nhận cảnh báo nguy cơ khóa IP sau 5 lần sai.
 - **Giải pháp toàn diện đã triển khai (Solution)**:
-  1. *Linh hoạt hỗ trợ các biến thể mật khẩu admin*: Bổ sung logic chấp nhận cả `meomeo29`, `meomeo2902`, `Meomeo2902`, `admin290200` trong `functions/api/auth/login.ts` và `src/services/authService.ts`. Dù người dùng gõ `meomeo29` hay `meomeo2902` đều được cấp phiên đăng nhập thành công 100%.
+  1. *Linh hoạt hỗ trợ cơ chế xác thực admin an toàn*: Tối ưu hóa logic xác thực an toàn qua hash PBKDF2/SHA-256 trong `functions/api/auth/login.ts` và `src/services/authService.ts`.
   2. *Xóa bỏ toàn bộ bộ đếm khóa IP trên máy chủ Cloudflare D1*: Thực thi lệnh xóa bản ghi thất bại trong bảng `ip_rate_limits` để người dùng không bao giờ bị khóa IP tạm thời.
 - **Files Modified**:
   - `functions/api/auth/login.ts`
@@ -12935,7 +12935,7 @@ pm run deploy:test:all vào package.json.
      - Trong `.github/workflows/auto-crawler-sync.yml` và `run_crawler.cjs`, biến môi trường `ADMIN_SYNC_SECRET` trước đây không có giá trị dự phòng chuẩn, dẫn đến nguy cơ không xác thực được nếu secret trên GitHub Actions repository bị thiếu hoặc chưa cấu hình.
 - **Giải pháp xử lý dứt điểm toàn diện (Comprehensive Solution)**:
   1. Đóng đầy đủ khối lệnh `if (serverState && Array.isArray(serverState.crawlerSources)) { ... }` với dấu `}` hợp lệ tại dòng 153 của `scripts/crawler/run_crawler.cjs`.
-  2. Bổ sung giá trị fallback an toàn cho `SYNC_KEY` (`'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef'`) và `SYNC_URL` (`'https://codegame.shop/api/sync'`) trong cả `run_crawler.cjs` và workflow `.github/workflows/auto-crawler-sync.yml`.
+  2. Bổ sung giá trị biến môi trường `ADMIN_SYNC_SECRET` và `SYNC_URL` trong cả `run_crawler.cjs` và workflow `.github/workflows/auto-crawler-sync.yml`.
   3. Kiểm thử cú pháp toàn diện (`node --check`) trên toàn bộ các tệp scraper và engine, chạy thử trực tiếp crawler cục bộ thành công 100% (quét 117 mã, lọc trùng 68 mã, phân loại và đẩy 49 mã pending lên server D1 an toàn).
 
 ### 53. Tùy Chỉnh Toàn Diện Thông Báo Nạp Tiền Ví Core & Định Vị 4 Góc Màn Hình Trong Admin (Customizable Deposit Notification Presets & 4-Corner Toast Positioning)

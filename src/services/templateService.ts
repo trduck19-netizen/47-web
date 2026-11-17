@@ -201,7 +201,7 @@ class TemplateService {
         const syncKey =
           localStorage.getItem('wcg_admin_sync_key') ||
           sessionStorage.getItem('wcg_admin_sync_key') ||
-          'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef';
+          '';
         const token =
           localStorage.getItem('wcg_auth_token') ||
           sessionStorage.getItem('wcg_auth_token') || '';
@@ -239,7 +239,7 @@ class TemplateService {
     const syncKey =
       localStorage.getItem('wcg_admin_sync_key') ||
       sessionStorage.getItem('wcg_admin_sync_key') ||
-      'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef';
+      '';
     const token =
       localStorage.getItem('wcg_auth_token') ||
       sessionStorage.getItem('wcg_auth_token') || '';

@@ -553,7 +553,7 @@ async function authenticateRequest(request: Request, env: Env, bodyApiKey?: stri
   if (token === 'wcg_muse_f7d2••••••••••••••••••••6a7a') {
     return { authorized: true, botName: 'Trợ lý Pine & Muse Bot' };
   }
-  if (token === 'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef') {
+  if ((env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) || (env.JWT_SECRET && token === env.JWT_SECRET)) {
     return { authorized: true, botName: 'Admin Sync Secret' };
   }
   if (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) {

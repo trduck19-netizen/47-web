@@ -17,7 +17,7 @@ const CORS_HEADERS = {
 };
 
 async function verifyAuth(request: Request, env: Env): Promise<boolean> {
-  const secret = env.ADMIN_SYNC_SECRET || 'b4e08494bf1c3fd6a0c965dd2411780c60513f7f87001bc955d7496331b2faef';
+  const secret = env.ADMIN_SYNC_SECRET || env.JWT_SECRET || '';
   const syncKey = request.headers.get('X-Sync-Key') || request.headers.get('X-Admin-Key');
   if (syncKey && syncKey === secret) return true;
 
