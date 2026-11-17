@@ -1,180 +1,901 @@
-import React, { useState } from 'react';
-import { 
-  ShoppingBag, Search, Truck, ShieldCheck, 
-  Globe, Sparkles, LayoutDashboard, ShoppingCart 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Bookmark,
+  PlusCircle,
+  Moon,
+  Sun,
+  Gift,
+  ShoppingBag,
+  Sparkles,
+  ShieldAlert,
+  Wallet,
+  Package,
+  User,
+  LogOut,
+  Wrench,
+  Newspaper,
+  Smartphone,
+  Bell,
+  Award,
+  Globe,
+  Send,
+  Store,
+  ShoppingCart,
+  Rocket,
 } from 'lucide-react';
+import type { GameItem, UserProfile } from '../types/game';
+import { formatCore } from '../utils/textUtils';
 import { useLanguage } from '../context/LanguageContext';
+import { LanguageSelector } from './LanguageSelector';
+import { growthService } from '../services/growthService';
+import { telegramService } from '../services/telegramService';
+import { cartService } from '../services/cartService';
 
 interface HeaderProps {
-  currentIndustry: string;
-  onSelectIndustry: (ind: string) => void;
-  onOpenTracking: () => void;
-  onOpenSolutions: () => void;
-  onOpenAdmin: () => void;
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
+  currentTab: 'catalog' | 'news' | 'giveaways' | 'store' | 'utilities' | 'missions' | 'telegram' | 'today-codes' | 'seller-center' | 'store-detail';
+  onSelectTab: (tab: 'catalog' | 'news' | 'giveaways' | 'store' | 'utilities' | 'missions' | 'telegram' | 'today-codes' | 'seller-center' | 'store-detail') => void;
+  searchQuery?: string;
+  onSearchChange?: (q: string) => void;
+  bookmarkCount: number;
+  onOpenBookmarks: () => void;
+  onOpenSubmitCode: () => void;
+  onOpenPlayground: () => void;
+  onOpenDownloadApp?: () => void;
+  onOpenNotificationModal?: () => void;
+  onOpenCart?: () => void;
+  onOpenAuth: () => void;
+  onOpenWallet: () => void;
+  onOpenReceivedCodes: (initialTab?: 'giveaways' | 'orders' | 'privates' | 'missions') => void;
+  onOpenProfile?: () => void;
+  currentUser: UserProfile | null;
+  onLogout: () => void;
+  isDarkMode?: boolean;
+  onToggleTheme: () => void;
+  allGames?: GameItem[];
+  onSelectGame?: (game: GameItem) => void;
+  branding?: {
+    logoUrl?: string;
+    avatarUrl?: string;
+    backgroundUrl?: string;
+    backgroundStyle?: string;
+    backgroundOpacity?: number;
+    siteTitle?: string;
+    portalSubtitle?: string;
+  };
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  currentIndustry,
-  onSelectIndustry,
-  onOpenTracking,
-  onOpenSolutions,
-  onOpenAdmin,
-  searchQuery,
-  onSearchChange,
+  currentTab,
+  onSelectTab,
+  bookmarkCount,
+  onOpenBookmarks,
+  onOpenSubmitCode,
+  onOpenPlayground,
+  onOpenDownloadApp,
+  onOpenNotificationModal,
+  onOpenCart,
+  onOpenAuth,
+  onOpenWallet,
+  onOpenReceivedCodes,
+  onOpenProfile,
+  currentUser,
+  onLogout,
+  isDarkMode,
+  onToggleTheme,
+  branding,
 }) => {
-  const { language, setLanguage, t } = useLanguage();
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const { t } = useLanguage();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [cartCount, setCartCount] = useState<number>(() => cartService.getCartCount());
+
+  useEffect(() => {
+    const handleCartUpdate = (e: any) => {
+      setCartCount(Number(e?.detail?.count ?? cartService.getCartCount()));
+    };
+    window.addEventListener('wcg_cart_updated', handleCartUpdate);
+    return () => window.removeEventListener('wcg_cart_updated', handleCartUpdate);
+  }, []);
+
+  const [isGrowthEnabled, setIsGrowthEnabled] = useState(() => {
+    try {
+      return Boolean(growthService.getConfig().isEnabled);
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleConfigUpdate = (e?: any) => {
+      try {
+        const cfg = e?.detail || growthService.getConfig();
+        setIsGrowthEnabled(Boolean(cfg?.isEnabled));
+      } catch {
+        setIsGrowthEnabled(false);
+      }
+    };
+
+    // Eagerly sync latest growth config from server KV/D1
+    growthService.fetchFreshConfigFromServer()
+      .then((cfg) => {
+        setIsGrowthEnabled(Boolean(cfg?.isEnabled));
+      })
+      .catch(() => {});
+
+    window.addEventListener('wcg_growth_config_updated', handleConfigUpdate);
+    window.addEventListener('storage', handleConfigUpdate);
+    return () => {
+      window.removeEventListener('wcg_growth_config_updated', handleConfigUpdate);
+      window.removeEventListener('storage', handleConfigUpdate);
+    };
+  }, []);
+
+  // Click outside listener for User dropdown (supports mouse and touch)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
-      {/* Top micro bar */}
-      <div className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white text-xs py-1.5 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1 font-medium">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{t('home.mallBadge')}</span>
-            </span>
-            <span className="hidden md:inline text-orange-100">|</span>
-            <span className="hidden md:flex items-center space-x-1 text-orange-50">
-              <Truck className="w-3.5 h-3.5" />
-              <span>{t('home.freeShipping')}</span>
-            </span>
+    <header
+      className="sticky top-0 z-50 w-full max-w-full box-border bg-background/95 backdrop-blur-md border-b border-border shadow-md shadow-black/10 transition-all overflow-visible"
+      style={{ position: 'sticky', top: 0, zIndex: 50, overflow: 'visible' }}
+    >
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3">
+          {/* 1. Brand Logo */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelectTab('catalog')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelectTab('catalog');
+              }
+            }}
+            className="flex items-center gap-1.5 sm:gap-2 group shrink-0 cursor-pointer select-none"
+            aria-label="Về trang chủ tra cứu code"
+          >
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary via-primary-hover to-accent flex items-center justify-center shadow-glow-primary group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+              {branding?.logoUrl ? (
+                <img
+                  src={branding.logoUrl}
+                  alt="Logo"
+                  width={40}
+                  height={40}
+                  loading="eager"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== window.location.origin + '/logo.png') {
+                      target.src = '/logo.png';
+                    }
+                  }}
+                />
+              ) : (
+                <img
+                  src="/logo.webp"
+                  alt="Logo"
+                  width={40}
+                  height={40}
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== window.location.origin + '/logo.png') {
+                      target.src = '/logo.png';
+                    }
+                  }}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="font-display font-bold text-xs sm:text-base tracking-normal sm:tracking-wider text-foreground group-hover:text-primary-light transition-colors whitespace-nowrap">
+                  {branding?.siteTitle && branding.siteTitle.toUpperCase() !== 'WEB CODE GAME' && branding.siteTitle.toUpperCase() !== 'WEB CODE'
+                    ? branding.siteTitle
+                    : 'CodeGame.Shop'}
+                </span>
+                {branding?.siteTitle === 'WEB CODE' && (
+                  <span className="text-[9px] sm:text-xs px-1 sm:px-1.5 py-0.2 rounded-md bg-accent/20 text-accent font-mono font-bold tracking-tight border border-accent/30">
+                    GAME
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-muted-foreground font-sans hidden sm:block">
+                {branding?.portalSubtitle || t.header.portalSubtitle}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            {/* Platform solutions */}
-            <button 
-              onClick={onOpenSolutions}
-              className="flex items-center space-x-1 hover:text-orange-200 transition-colors font-semibold"
+          {/* 2. Desktop Navigation Tabs - Always visible on PC / Tablet (md+) and pinned on scroll */}
+          <nav className="hidden md:flex items-center gap-1 bg-muted/60 p-1 sm:p-1.2 rounded-xl border border-border/80 flex-nowrap whitespace-nowrap shrink-0 shadow-sm">
+            <button
+              type="button"
+              onClick={() => onSelectTab('catalog')}
+              className={`cg-btn cg-btn--small !text-xs !py-1.5 !px-2.5 sm:!px-3 !rounded-xl ${
+                currentTab === 'catalog' ? 'ring-2 ring-primary/80 shadow-glow-primary' : ''
+              }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-              <span>{t('nav.solutions')}</span>
+              <Gift className="w-4 h-4" />
+              <span>{t.nav.catalog}</span>
             </button>
 
-            {/* Live Order Tracking */}
-            <button 
-              onClick={onOpenTracking}
-              className="flex items-center space-x-1 hover:text-orange-200 transition-colors"
+            <button
+              type="button"
+              onClick={() => onSelectTab('news')}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                currentTab === 'news'
+                  ? 'bg-primary text-white shadow-glow-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card'
+              }`}
             >
-              <Truck className="w-3.5 h-3.5" />
-              <span>{t('nav.trackOrder')}</span>
+              <Newspaper className="w-4 h-4" />
+              <span>{t.nav.news || 'Tin Tức'}</span>
             </button>
 
-            {/* Language Switcher */}
-            <div className="relative">
-              <button 
-                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                className="flex items-center space-x-1 bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded transition-colors"
+            <button
+              type="button"
+              onClick={() => onSelectTab('giveaways')}
+              className={`cg-btn cg-btn--small !text-xs !py-1.5 !px-2.5 sm:!px-3 !rounded-xl ${
+                currentTab === 'giveaways' ? 'ring-2 ring-amber-400/90 shadow-glow-accent' : ''
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>{t.nav.giveaways}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onSelectTab('store')}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                currentTab === 'store'
+                  ? 'bg-secondary text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4 text-secondary" />
+              <span>{t.nav.store}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onSelectTab('utilities')}
+              className={`cg-btn cg-btn--small !text-xs !py-1.5 !px-2.5 sm:!px-3 !rounded-xl ${
+                currentTab === 'utilities' ? 'ring-2 ring-teal-400/90 shadow-sm' : ''
+              }`}
+            >
+              <Wrench className="w-4 h-4 text-teal-400" />
+              <span>{t.nav.utilities}</span>
+            </button>
+
+            <a
+              href="#giai-phap-san"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:border-amber-500/60"
+              title="Giải pháp bán đứt hoặc cho thuê sàn TMĐT chuyên nghiệp"
+            >
+              <Rocket className="w-3.5 h-3.5 text-amber-400" />
+              <span>Thuê / Mua Sàn</span>
+              <span className="text-[9px] px-1 rounded bg-amber-500 text-neutral-950 font-black">HOT</span>
+            </a>
+
+
+          </nav>
+
+          {/* 3. Actions Toolbar: Tải App, Bookmark, Account (Compact & responsive on mobile) */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Săn Quà & Vòng Quay Button (Desktop only; on mobile, available via bottom nav & user menu) */}
+            {isGrowthEnabled && (
+              <button
+                onClick={onOpenPlayground}
+                className="hidden sm:flex relative items-center gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 hover:from-amber-500/25 hover:to-rose-500/25 border border-amber-500/40 text-amber-300 font-extrabold text-xs transition-all active:scale-95 shadow-sm cursor-pointer group"
+                title="Săn Quà Tân Thủ, Vòng Quay May Mắn & Mời Bạn Nhận Hoa Hồng"
               >
-                <Globe className="w-3.5 h-3.5" />
-                <span className="font-bold uppercase">{language}</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform animate-pulse" />
+                <span className="hidden xs:inline">Săn Quà</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-sm">
+                  FREE
+                </span>
               </button>
+            )}
 
-              {isLangMenuOpen && (
-                <div className="absolute right-0 mt-1 w-36 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-100 py-1 z-50">
+            {/* Tải App Button */}
+            <button
+              type="button"
+              onClick={onOpenDownloadApp}
+              className="relative flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-2 rounded-xl bg-gradient-to-r from-primary/15 via-purple-500/15 to-accent/15 hover:from-primary/25 hover:to-accent/25 border border-primary/40 text-primary-light font-extrabold text-xs transition-all active:scale-95 shadow-sm cursor-pointer group shrink-0"
+              title="Cài đặt App CodeGame lên điện thoại (Nhận code mới & Quà tặng tức thì)"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-primary-light group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline">Tải App</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm">
+                APP
+              </span>
+            </button>
+
+            {/* Giỏ Hàng Đa Gian Hàng */}
+            {onOpenCart && (
+              <button
+                type="button"
+                onClick={onOpenCart}
+                className="relative p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border text-muted-foreground hover:text-foreground transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
+                title="Giỏ hàng đa gian hàng"
+                aria-label="Giỏ hàng đa gian hàng"
+              >
+                <ShoppingCart className="w-4 h-4 text-primary" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-black flex items-center justify-center shadow-sm">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* Language Selector (Always Visible in Header) */}
+            <LanguageSelector variant="compact" />
+
+            {/* Bookmark Button (Desktop & Mobile) - Chỉ hiển thị cho khách vãng lai chưa đăng nhập */}
+            {!currentUser && (
+              <button
+                onClick={onOpenBookmarks}
+                className="relative p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border text-muted-foreground hover:text-foreground transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
+                title={t.header.bookmarksTitle}
+                aria-label={t.header.bookmarksTitle}
+              >
+                <Bookmark className="w-4 h-4 text-amber-400" />
+                {bookmarkCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+                    {bookmarkCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* User Account / Wallet Menu / Thông Tin Nhân Vật */}
+            <div ref={userMenuRef} className="relative shrink-0">
+              {currentUser ? (
+                <>
                   <button
-                    onClick={() => { setLanguage('vi'); setIsLangMenuOpen(false); }}
-                    className={`w-full text-left px-3 py-1.5 text-xs flex items-center space-x-2 hover:bg-orange-50 ${language === 'vi' ? 'font-bold text-orange-600' : ''}`}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsUserMenuOpen((prev) => !prev);
+                    }}
+                    className="relative flex items-center gap-1.5 p-1 sm:p-1.5 rounded-xl bg-card hover:bg-card-hover border border-border text-xs transition-all cursor-pointer shadow-sm active:scale-95 group shrink-0"
+                    title={`${currentUser.displayName || currentUser.username} • ${formatCore(currentUser.wallet_balance)}`}
+                    aria-label="Thông tin nhân vật"
                   >
-                    <span>🇻🇳</span>
-                    <span>Tiếng Việt</span>
+                    <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-primary/20 text-primary-light flex items-center justify-center overflow-hidden border border-border shrink-0">
+                      {currentUser.avatar_url ? (
+                        <img
+                          src={currentUser.avatar_url}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-muted-foreground" />
+                      )}
+                      <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-card" />
+                    </div>
+                    {bookmarkCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent text-white text-[9px] font-bold flex items-center justify-center shadow-sm pointer-events-none">
+                        {bookmarkCount}
+                      </span>
+                    )}
                   </button>
+
+                  {isUserMenuOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-64 max-h-[calc(100vh-5rem)] max-w-[calc(100vw-1rem)] overflow-y-auto bg-card border border-border/90 rounded-2xl shadow-2xl p-2 z-[100] animate-scale-in text-xs space-y-1 scrollbar-thin"
+                    >
+                      {/* User Info Header - Clickable to open Profile */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          if (onOpenProfile) onOpenProfile();
+                        }}
+                        className="w-full p-2.5 border-b border-border/60 flex items-start gap-2.5 rounded-xl hover:bg-primary/10 transition-colors text-left cursor-pointer group"
+                        title="Xem & Chỉnh sửa thông tin nhân vật"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden border border-border shrink-0 mt-0.5 group-hover:border-primary/50 transition-colors">
+                          {currentUser.avatar_url ? (
+                            <img src={currentUser.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-5 h-5 m-2.5 text-muted-foreground group-hover:text-primary-light" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-foreground truncate block text-xs group-hover:text-primary-light transition-colors">
+                              {currentUser.displayName || currentUser.username}
+                            </span>
+                            <span className="text-[10px] text-primary-light font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                              Sửa ↗
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground truncate block mb-1">
+                            {currentUser.email}
+                          </span>
+                          {/* Số dư ngay dưới mail */}
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
+                            <span className="text-[10px] text-muted-foreground">Số dư:</span>
+                            <span className="font-mono font-bold text-emerald-400 text-xs">
+                              {formatCore(currentUser.wallet_balance)}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* 0. Thông Tin Nhân Vật & Hồ Sơ */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          if (onOpenProfile) onOpenProfile();
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-primary-light group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">Thông Tin Nhân Vật</span>
+                        </span>
+                        <span className="text-[10px] text-primary-light font-bold">
+                          Hồ sơ ↗
+                        </span>
+                      </button>
+
+                      {/* 1. Nạp Core và Lịch Sử */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          onOpenWallet();
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Wallet className="w-4 h-4 text-primary-light group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">{t.header.wallet}</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          Nạp ngay
+                        </span>
+                      </button>
+
+                      {/* 2. Kho mã của tôi */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          onOpenReceivedCodes();
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                          <span>{t.header.myCodes}</span>
+                        </span>
+                        <span className="text-[10px] text-primary-light font-bold">
+                          Mã quà đã nhận ↗
+                        </span>
+                      </button>
+
+                      {/* 2.04 Giỏ Hàng Đa Gian Hàng */}
+                      {onOpenCart && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsUserMenuOpen(false);
+                            onOpenCart();
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
+                        >
+                          <span className="flex items-center gap-2">
+                            <ShoppingCart className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                            <span className="font-medium">Giỏ Hàng Đa Gian Hàng</span>
+                          </span>
+                          {cartCount > 0 ? (
+                            <span className="text-[10px] text-primary font-bold bg-primary/20 px-2 py-0.5 rounded-full">
+                              {cartCount} món
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground font-medium">0 món</span>
+                          )}
+                        </button>
+                      )}
+
+                      {/* 2.05 Kênh Người Bán / Sàn TMĐT */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          onSelectTab('seller-center');
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-purple-500/10 text-foreground cursor-pointer text-left group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Store className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                          <span className="font-bold text-purple-300">Kênh Người Bán</span>
+                        </span>
+                        <span className="text-[10px] text-purple-300 font-bold bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30">
+                          Gian Hàng
+                        </span>
+                      </button>
+
+                      {/* 2.1 Nhiệm Vụ Nhận Quà (Chuyển vào Thông Tin Nhân Vật) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          if (onOpenProfile) (onOpenProfile as any)('missions');
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-amber-500/10 text-foreground cursor-pointer text-left group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Award className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                          <span className="font-bold text-amber-300">Nhiệm Vụ Nhận Quà</span>
+                        </span>
+                        <span className="text-[10px] text-amber-400 font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
+                          HOT
+                        </span>
+                      </button>
+
+                      {/* 2.2 Thông Báo Telegram (Chuyển vào Thông Tin Nhân Vật) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          if (onOpenProfile) (onOpenProfile as any)('telegram');
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-[#229ED9]/15 text-[#229ED9] cursor-pointer text-left group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Send className="w-4 h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
+                          <span className="font-bold text-foreground">Thông Báo Telegram</span>
+                        </span>
+                        <span className="text-[10px] text-[#229ED9] font-bold bg-[#229ED9]/20 px-2 py-0.5 rounded-full border border-[#229ED9]/40">
+                          BOT
+                        </span>
+                      </button>
+
+                      {/* 2.1 Tủ Game Thông Tin Đã Lưu */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          onOpenBookmarks();
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
+                        title="Xem danh sách game đã lưu và theo dõi"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Bookmark className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">Tủ Game Đã Lưu</span>
+                        </span>
+                        {bookmarkCount > 0 ? (
+                          <span className="text-[10px] text-amber-300 font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            {bookmarkCount} game
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground font-medium">Trống</span>
+                        )}
+                      </button>
+
+                      {/* 2.1 Cài Đặt Thông Báo Email */}
+                      {onOpenNotificationModal && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsUserMenuOpen(false);
+                            onOpenNotificationModal();
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Bell className="w-4 h-4 text-secondary group-hover:scale-110 transition-transform" />
+                            <span className="font-medium">Thông Báo Email</span>
+                          </span>
+                          <span className="text-[10px] text-secondary font-bold bg-secondary/15 px-2 py-0.5 rounded-full border border-secondary/30">
+                            Cài đặt
+                          </span>
+                        </button>
+                      )}
+
+                      {/* 3. Vòng Quay Quà */}
+                      {isGrowthEnabled && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsUserMenuOpen(false);
+                            onOpenPlayground();
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-amber-400" />
+                            <span>{t.header.luckyWheel}</span>
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-semibold border border-amber-500/30">
+                            HOT
+                          </span>
+                        </button>
+                      )}
+
+                      {/* 4. Đóng Góp Code */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          onOpenSubmitCode();
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left"
+                      >
+                        <span className="flex items-center gap-2">
+                          <PlusCircle className="w-4 h-4 text-primary-light" />
+                          <span>{t.header.submitCode}</span>
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-primary/20 text-primary-light font-semibold border border-primary/30">
+                          +Core
+                        </span>
+                      </button>
+
+                      {/* 5. Trang Quản Trị Admin */}
+                      {(currentUser.role === 'admin' || currentUser.role === 'SUPER_ADMIN') && (
+                        <a
+                          href="https://admin-code-game-shop.pages.dev"
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-primary/15 text-primary-light font-bold cursor-pointer text-left"
+                        >
+                          <span className="flex items-center gap-2">
+                            <ShieldAlert className="w-4 h-4 text-amber-400" />
+                            <span>{t.header.adminPortal}</span>
+                          </span>
+                          <span className="text-[10px] text-primary-light">↗</span>
+                        </a>
+                      )}
+
+                      {/* Cộng Đồng & Bot Telegram */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          onSelectTab('telegram');
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-[#229ED9]/15 text-[#229ED9] cursor-pointer text-left group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Send className="w-4 h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
+                          <span className="font-bold text-foreground">Cộng Đồng & Bot Telegram</span>
+                        </span>
+                        <span className="text-[10px] text-[#229ED9] font-bold bg-[#229ED9]/20 px-2 py-0.5 rounded-full border border-[#229ED9]/40">
+                          BOT
+                        </span>
+                      </button>
+
+                      {/* Shared: Giao Diện & Ngôn Ngữ */}
+                      <div className="pt-2 pb-1 border-t border-border/60 space-y-2">
+                        <div className="px-2 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                          <span>Giao Diện & Ngôn Ngữ</span>
+                        </div>
+
+                        {/* Sáng / Tối Theme Toggle */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleTheme();
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            {isDarkMode ? (
+                              <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+                            ) : (
+                              <Moon className="w-4 h-4 text-muted-foreground shrink-0" />
+                            )}
+                            <span className="font-medium">{isDarkMode ? 'Chế độ Sáng' : 'Chế độ Tối'}</span>
+                          </span>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted border border-border/60 text-muted-foreground">
+                            {isDarkMode ? 'Sáng' : 'Tối'}
+                          </span>
+                        </button>
+
+                        {/* Ngôn ngữ hệ thống */}
+                        <div className="p-1.5 rounded-xl bg-muted/40 border border-border/50 flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pl-1">
+                            <Globe className="w-3.5 h-3.5 text-primary-light shrink-0" />
+                            <span>Ngôn ngữ:</span>
+                          </span>
+                          <LanguageSelector variant="pill" />
+                        </div>
+                      </div>
+
+                      {/* 6. Đăng Xuất */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsUserMenuOpen(false);
+                          onLogout();
+                        }}
+                        className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-rose-500/15 text-rose-400 cursor-pointer text-left pt-1 border-t border-border/40"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>{t.header.logout}</span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
                   <button
-                    onClick={() => { setLanguage('en'); setIsLangMenuOpen(false); }}
-                    className={`w-full text-left px-3 py-1.5 text-xs flex items-center space-x-2 hover:bg-orange-50 ${language === 'en' ? 'font-bold text-orange-600' : ''}`}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsUserMenuOpen((prev) => !prev);
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 min-h-[32px] sm:min-h-[38px] rounded-xl text-xs font-bold bg-primary/20 hover:bg-primary/30 text-primary-light border border-primary/40 transition-all cursor-pointer active:scale-95 shrink-0"
+                    aria-label="Tài khoản & Cài đặt"
                   >
-                    <span>🇺🇸</span>
-                    <span>English</span>
+                    <User className="w-3.5 h-3.5 text-primary-light shrink-0" />
+                    <span>{t.header.account}</span>
                   </button>
-                </div>
+
+                  {isUserMenuOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-64 max-h-[calc(100vh-5rem)] max-w-[calc(100vw-1rem)] overflow-y-auto bg-card border border-border/90 rounded-2xl shadow-2xl p-2 z-[100] animate-scale-in text-xs space-y-1.5 scrollbar-thin"
+                    >
+                      <div className="p-1 space-y-2">
+                        <div className="p-3 rounded-xl bg-gradient-to-br from-primary/15 via-accent/10 to-muted/40 border border-primary/25 text-center space-y-2">
+                          <div className="w-9 h-9 mx-auto rounded-xl bg-primary/20 text-primary-light flex items-center justify-center border border-primary/30 shadow-sm">
+                            <User className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-foreground text-xs">Tài Khoản Khách</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                              Đăng nhập để nhận Giftcode riêng & tích lũy điểm Core
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              onOpenAuth();
+                            }}
+                            className="w-full py-2 px-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-extrabold text-xs shadow-glow-primary transition-all cursor-pointer active:scale-95"
+                          >
+                            Đăng Nhập / Đăng Ký
+                          </button>
+                        </div>
+
+                        {/* Guest Bookmarks shortcut */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsUserMenuOpen(false);
+                            onSelectTab('telegram');
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-[#229ED9]/15 text-[#229ED9] cursor-pointer text-left group"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Send className="w-4 h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
+                            <span className="font-bold text-foreground">Cộng Đồng & Bot Telegram</span>
+                          </span>
+                          <span className="text-[10px] text-[#229ED9] font-bold bg-[#229ED9]/20 px-2 py-0.5 rounded-full border border-[#229ED9]/40">
+                            BOT
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Shared: Giao Diện & Ngôn Ngữ */}
+                      <div className="pt-2 pb-1 border-t border-border/60 space-y-2">
+                        <div className="px-2 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                          <span>Giao Diện & Ngôn Ngữ</span>
+                        </div>
+
+                        {/* Sáng / Tối Theme Toggle */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleTheme();
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            {isDarkMode ? (
+                              <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+                            ) : (
+                              <Moon className="w-4 h-4 text-muted-foreground shrink-0" />
+                            )}
+                            <span className="font-medium">{isDarkMode ? 'Chế độ Sáng' : 'Chế độ Tối'}</span>
+                          </span>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted border border-border/60 text-muted-foreground">
+                            {isDarkMode ? 'Sáng' : 'Tối'}
+                          </span>
+                        </button>
+
+                        {/* Ngôn ngữ hệ thống */}
+                        <div className="p-1.5 rounded-xl bg-muted/40 border border-border/50 flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pl-1">
+                            <Globe className="w-3.5 h-3.5 text-primary-light shrink-0" />
+                            <span>Ngôn ngữ:</span>
+                          </span>
+                          <LanguageSelector variant="pill" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
-            {/* Admin entry */}
-            <button 
-              onClick={onOpenAdmin}
-              className="flex items-center space-x-1 text-orange-100 hover:text-white transition-colors"
-              title="Truy cập Trang Quản Trị"
-            >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>{t('nav.admin')}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main navigation header */}
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        {/* Brand Logo */}
-        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => onSelectIndustry('fashion')}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
-            <ShoppingBag className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-1.5">
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                Universal Mall
-              </span>
-              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                MALL
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500 hidden sm:block">Sàn Thương Mại Điện Tử Đa Ngành</p>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="flex-1 max-w-2xl relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={t('nav.searchPlaceholder')}
-            className="w-full pl-10 pr-24 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all shadow-inner"
-          />
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-          <button className="absolute right-1.5 top-1.5 bottom-1.5 bg-orange-600 hover:bg-orange-700 text-white px-4 rounded-full text-xs font-semibold shadow-sm transition-colors flex items-center space-x-1">
-            <span>Tìm</span>
-          </button>
-        </div>
-
-        {/* Quick Cart */}
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={onOpenTracking}
-            className="relative p-2.5 rounded-full hover:bg-gray-100 text-gray-700 transition-colors"
-            title="Đơn hàng của tôi"
-          >
-            <Truck className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Industries quick tabs bar */}
-      <div className="border-t border-gray-100 bg-white">
-        <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 overflow-x-auto py-2 scrollbar-none text-xs font-semibold">
-          {[
-            { id: 'fashion', label: t('nav.fashion'), icon: '👕' },
-            { id: 'beauty', label: t('nav.beauty'), icon: '💄' },
-            { id: 'tech', label: t('nav.tech'), icon: '📱' },
-            { id: 'services', label: t('nav.services'), icon: '📚' },
-          ].map((item) => (
+            {/* Telegram Community & Alerts Button */}
             <button
-              key={item.id}
-              onClick={() => onSelectIndustry(item.id)}
-              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all ${
-                currentIndustry === item.id
-                  ? 'bg-orange-600 text-white shadow-sm shadow-orange-500/30'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`}
+              type="button"
+              onClick={() => {
+                if (currentUser && onOpenProfile) {
+                  (onOpenProfile as any)('telegram');
+                } else {
+                  window.open('https://t.me/webcodegame_vn', '_blank', 'noopener,noreferrer');
+                }
+              }}
+              className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 relative group bg-card hover:bg-[#229ED9]/15 border border-border/80 hover:border-[#229ED9]/40 text-muted-foreground hover:text-[#229ED9]"
+              title="Cộng đồng Telegram & Bot nhận code riêng"
+              aria-label="Cộng đồng Telegram"
             >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
+              <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
             </button>
-          ))}
+
+            {/* Email Notifications Subscription Button */}
+            {onOpenNotificationModal && (
+              <button
+                onClick={onOpenNotificationModal}
+                className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border/80 hover:border-secondary/40 text-muted-foreground hover:text-secondary transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 relative group"
+                title="Đăng ký nhận mã code & sự kiện qua Email"
+                aria-label="Nhận thông báo email"
+              >
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary group-hover:scale-110 transition-transform" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-secondary rounded-full border border-card animate-pulse" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </header>

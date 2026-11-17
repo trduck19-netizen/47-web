@@ -1,0 +1,135 @@
+import { ensureSchemaUpgrades, getSettingD1, setSettingD1, logAdminAudit } from '../../../../services/d1_service';
+import { verifyAdminAuth } from '../../../../services/mission_service';
+import { isJunkCode, SQL_JUNK_CODE_CONDITION } from '../../../games';
+
+interface Env {
+  DB: D1Database;
+  ADMIN_SYNC_SECRET?: string;
+  PINE_API_KEY?: string;
+  MUSE_API_KEY?: string;
+}
+
+const CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Key, X-Admin-Key, X-Api-Key, x-admin-sync-key, X-Requested-With',
+};
+
+export const onRequestOptions: PagesFunction = async () => {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+};
+
+/**
+ * POST /api/admin/submissions/:id/approve
+ */
+export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const { env, request, params } = context;
+
+  try {
+    if (!env.DB) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Database not available' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    const auth = await verifyAdminAuth(request, env as any, 'GAMES_FULL');
+    if (!auth.authorized) {
+      return new Response(
+        JSON.stringify({ success: false, error: auth.error || 'Unauthorized' }),
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+
+    await ensureSchemaUpgrades(env.DB);
+
+    const url = new URL(request.url);
+    let targetId = String(params?.id || '').trim();
+    if (!targetId) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      const appIdx = parts.lastIndexOf('approve');
+      if (appIdx > 0) {
+        targetId = parts[appIdx - 1];
+      }
+    }
+
+    if (!targetId) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Thiếu mã đóng góp (:id).' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    const rawSubs = await getSettingD1<any[]>(env.DB, 'wcg_admin_submissions_v4').catch(() => []);
+    const list: any[] = Array.isArray(rawSubs) ? rawSubs : [];
+
+    const idx = list.findIndex((s) => String(s?.id) === targetId);
+    if (idx === -1) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Không tìm thấy mã đóng góp "${targetId}".` }),
+        { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    const sub = list[idx];
+    sub.status = 'APPROVED';
+    sub.approvedAt = new Date().toISOString();
+    sub.approvedBy = auth.adminName || 'Admin';
+
+    list[idx] = sub;
+    await setSettingD1(env.DB, 'wcg_admin_submissions_v4', list);
+
+    // Tự động đẩy mã vào bảng codes
+    const codeValue = String(sub.codeValue || sub.code || '').trim();
+    const gameSlug = String(sub.gameSlug || sub.game_slug || '').trim();
+    const rewards = String(sub.rewards || 'Mã quà tặng do thành viên đóng góp').trim();
+
+    if (codeValue && gameSlug) {
+      if (isJunkCode(codeValue)) {
+        console.warn(`[Junk Code Filter] Bỏ qua mã rác submission "${codeValue}" cho game "${gameSlug}"`);
+      } else {
+        const codeId = `code_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        await env.DB.prepare(`
+          INSERT INTO codes (id, game_slug, code, rewards, status, expires_at, source, created_at)
+          VALUES (?, ?, ?, ?, 'active', NULL, 'submission', datetime('now'))
+        `).bind(codeId, gameSlug, codeValue, rewards).run().catch(() => {});
+      }
+
+      // Tự động recompute active_codes_count, total_codes_count, last_code_at trên bảng games D1 (loại trừ mã rác)
+      await env.DB.prepare(`
+        UPDATE games
+        SET active_codes_count = (SELECT COUNT(*) FROM codes WHERE codes.game_slug = games.slug AND (codes.status = 'active' OR codes.status = 'verified') AND (codes.expires_at IS NULL OR codes.expires_at = '' OR codes.expires_at >= date('now', '+7 hours')) AND ${SQL_JUNK_CODE_CONDITION}),
+            total_codes_count = (SELECT COUNT(*) FROM codes WHERE codes.game_slug = games.slug AND ${SQL_JUNK_CODE_CONDITION}),
+            last_code_at = datetime('now'),
+            updated_at = datetime('now')
+        WHERE slug = ?
+      `).bind(gameSlug).run().catch(() => {});
+    }
+
+    await logAdminAudit(env.DB, {
+      actorName: auth.adminName || 'Admin',
+      action: 'APPROVE_GIFTCODE_SUBMISSION',
+      targetId,
+      details: {
+        code: codeValue,
+        gameSlug,
+        submitter: sub.submitterEmail || sub.submitterName,
+      },
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Đã phê duyệt mã giftcode "${codeValue}" và tự động phát hành vào kho mã thành công.`,
+        submission: sub,
+      }),
+      { status: 200, headers: CORS_HEADERS }
+    );
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Lỗi máy chủ khi duyệt mã đóng góp: ' + (err?.message || String(err)) }),
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+};

@@ -1,18 +1,221 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark w-full max-w-full">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Universal Mall — Sàn Thương Mại Điện Tử Đa Ngành</title>
-    <meta name="description" content="Sàn thương mại điện tử đa ngành phong cách Shopee Mall: Thời trang, Mỹ phẩm, Thiết bị số, Dịch vụ số với giao hàng bưu chính toàn quốc và giao mã tức thì 0s." />
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0B0D19" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B0D19" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CodeGame" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- Anti-FOUC & Instant Canvas Background Initialization -->
+    <script>
+      (function() {
+        var host = window.location.hostname.toLowerCase();
+        var pathname = window.location.pathname.toLowerCase();
+        var hash = window.location.hash.toLowerCase();
+        if (host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.startsWith('admin.')) {
+          document.title = 'Quản Trị Hệ Thống | Universal Mall';
+          if (window.location.pathname === '/' || window.location.pathname === '') {
+            window.location.replace('/admin' + (window.location.hash || '#/dashboard'));
+            return;
+          }
+        }
+        var isShopee = pathname === '/' || pathname.startsWith('/test1') || hash.includes('test1') || !pathname.startsWith('/game');
+        var savedTheme = isShopee ? 'light' : 'dark';
+        try {
+          if (isShopee) {
+            var st = localStorage.getItem('wcg_shopee_theme');
+            if (st === 'dark') savedTheme = 'dark';
+            else savedTheme = 'light';
+          } else {
+            var t = localStorage.getItem('wcg_theme');
+            if (t === 'light') savedTheme = 'light';
+          }
+        } catch(e) {}
+        var metaCs = document.querySelector('meta[name="color-scheme"]');
+        if (savedTheme === 'light') {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.add('light');
+          document.documentElement.style.backgroundColor = '#FFFFFF';
+          document.documentElement.style.colorScheme = 'light';
+          if (metaCs) metaCs.setAttribute('content', 'light');
+          if (document.body) {
+            document.body.style.backgroundColor = '#FFFFFF';
+          }
+        } else {
+          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('light');
+          document.documentElement.style.backgroundColor = '#0B0D19';
+          document.documentElement.style.colorScheme = 'dark';
+          if (metaCs) metaCs.setAttribute('content', 'dark');
+          if (document.body) {
+            document.body.style.backgroundColor = '#0B0D19';
+          }
+        }
+      })();
+    </script>
+
+    <!-- Official Brand Icons & App Representation -->
+    <link rel="icon" type="image/webp" href="/logo.webp" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+    <link rel="apple-touch-icon-precomposed" href="/favicon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Preload Official Brand Logo for Instant First Paint & Splash Screen -->
+    <link rel="preload" as="image" href="/logo.webp" fetchpriority="high" type="image/webp" />
+    <link rel="preload" as="image" href="/brand_loader_logo.jpg" fetchpriority="high" type="image/jpeg" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <title>CodeGame.shop - Săn Giftcode Miễn Phí & Giao Dịch Mã Game Uy Tín</title>
+    <meta name="description" content="Kho tổng hợp hơn 14.739+ giftcode game mobile và webgame mới nhất 2026 của 595 tựa game chuẩn. Cập nhật liên tục 24/7 từ các NPH VNG, Garena, VTC, SohaGame, Funtap." />
+    <meta name="keywords" content="giftcode game, code game moi nhat, ma qua tang, giftcode g1, code delta force, code genshin impact, nap game gia re, shop acc game, codegame" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <link rel="canonical" href="https://codegame.shop/" />
+    <link rel="alternate" hreflang="vi" href="https://codegame.shop/" />
+    <link rel="alternate" hreflang="x-default" href="https://codegame.shop/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:site_name" content="CodeGame.shop" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://codegame.shop/" />
+    <meta property="og:title" content="CodeGame.shop - Săn Giftcode Miễn Phí & Giao Dịch Mã Game Uy Tín" />
+    <meta property="og:description" content="Kho tổng hợp hơn 14.739+ giftcode game mobile và webgame mới nhất 2026 của 595 tựa game chuẩn. Cập nhật liên tục 24/7 từ các NPH VNG, Garena, VTC, SohaGame, Funtap." />
+    <meta property="og:image" content="https://codegame.shop/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="vi_VN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:domain" content="codegame.shop" />
+    <meta name="twitter:url" content="https://codegame.shop/" />
+    <meta name="twitter:title" content="CodeGame.shop - Săn Giftcode Miễn Phí & Giao Dịch Mã Game Uy Tín" />
+    <meta name="twitter:description" content="Kho tổng hợp hơn 14.739+ giftcode game mobile và webgame mới nhất 2026 của 595 tựa game chuẩn. Cập nhật liên tục 24/7 từ các NPH VNG, Garena, VTC, SohaGame, Funtap." />
+    <meta name="twitter:image" content="https://codegame.shop/og-image.jpg" />
+
+    <!-- Schema.org JSON-LD Structured Data for Google Rich Snippets -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://codegame.shop/#website",
+            "url": "https://codegame.shop/",
+            "name": "CodeGame.shop",
+            "description": "Cổng tra cứu giftcode game mobile và webgame số 1 Việt Nam",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://codegame.shop/?search={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            },
+            "inLanguage": "vi-VN"
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://codegame.shop/#organization",
+            "name": "CodeGame.shop",
+            "url": "https://codegame.shop/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://codegame.shop/logo.webp",
+              "width": 512,
+              "height": 512
+            },
+            "sameAs": [
+              "https://t.me/webcodegame_vn",
+              "https://zalo.me/g/qdtlmj2tebfa0baraedg",
+              "https://zalo.me/0386767888"
+            ],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+84-386-767-888",
+              "contactType": "customer service",
+              "availableLanguage": ["Vietnamese", "English"]
+            }
+          }
+        ]
+      }
+    </script>
+
+    <!-- Typography: Inter + Noto Sans Thai (Hỗ trợ tiếng Việt, English, 中文, ไทย) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Thai:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Thai:wght@400;600;700&display=swap" />
+    </noscript>
+
+    
   </head>
-  <body class="bg-gray-50 text-gray-900 antialiased selection:bg-orange-500 selection:text-white">
+  <body class="bg-background text-foreground min-h-screen font-sans antialiased selection:bg-primary selection:text-white w-full max-w-full relative">
+    <!-- Persistent Splash Preloader Overlay covering entire screen until React hydrates -->
+    <div id="app-preloader">
+      <div class="loader-wrapper">
+        <div class="loader"></div>
+        <div class="loader-center-avatar">
+          <img
+            src="/logo.webp"
+            alt="Code Game Logo"
+            width="102"
+            height="102"
+            fetchpriority="high"
+            loading="eager"
+            decoding="async"
+            onerror="this.onerror=null;this.src='/brand_loader_logo.jpg';"
+          />
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <span class="loader-letter" style="animation-delay:0s">C</span>
+        <span class="loader-letter" style="animation-delay:0.1s">O</span>
+        <span class="loader-letter" style="animation-delay:0.2s">D</span>
+        <span class="loader-letter" style="animation-delay:0.3s">E</span>
+        <span class="loader-letter" style="animation-delay:0.4s">&nbsp;</span>
+        <span class="loader-letter" style="animation-delay:0.5s">G</span>
+        <span class="loader-letter" style="animation-delay:0.6s">A</span>
+        <span class="loader-letter" style="animation-delay:0.7s">M</span>
+        <span class="loader-letter" style="animation-delay:0.8s">E</span>
+      </div>
+    </div>
+
     <div id="root"></div>
+    <script>
+      (function() {
+        var timer = setTimeout(function() {
+          var p = document.getElementById('app-preloader');
+          if (p) {
+            p.style.opacity = '0';
+            p.style.pointerEvents = 'none';
+            setTimeout(function() { if (p.parentNode) p.parentNode.removeChild(p); }, 360);
+          }
+        }, 2200);
+        window.addEventListener('load', function() {
+          setTimeout(function() {
+            var p = document.getElementById('app-preloader');
+            if (p) {
+              p.style.opacity = '0';
+              p.style.pointerEvents = 'none';
+              setTimeout(function() { if (p.parentNode) p.parentNode.removeChild(p); }, 360);
+            }
+          }, 600);
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
