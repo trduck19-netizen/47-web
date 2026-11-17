@@ -48,3 +48,14 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, AI Agent
   2. Rút gọn hoặc gom nhóm các cột thông tin bổ trợ (như kết hợp Tên + Trạng thái Bật/Tắt + Dấu thời gian lần dùng vào Cột 1).
   3. Cắt tỉa văn bản dài bằng `truncate` kèm thuộc tính `title` để hiển thị tooltip khi rê chuột.
   4. Các nút thao tác phải thiết kế tinh gọn, có icon và nhãn văn bản súc tích, độ rộng vừa khít khung nhìn.
+
+### 🛡️ 10. QUY TẮC BẢO MẬT TUYỆT ĐỐI CHO PUBLIC REPOSITORY (ZERO SECRETS IN CODE & GIT HISTORY)
+- **Mọi khóa API, token, secret, mật khẩu CHỈ ĐƯỢC PHÉP lưu ở 2 nơi**: Cloudflare Environment Variables và D1 table `mission_ai_api_keys` (dưới dạng mã băm SHA-256 `api_key_hash`).
+- **TUYỆT ĐỐI KHÔNG** ghi cứng bất kỳ chuỗi khóa nào trong code (`token === 'wcg_...'`), tài liệu markdown (`CHANGELOG.md`, `KNOWN_ISSUES.md`), ghi chú, hay commit message. Giao diện và API chỉ được hiển thị tiền tố rút gọn (`key_prefix` dạng `wcg_gw_7193••••••••••••••••••••4b2a`).
+- **Cột `raw_key`**: Không bao giờ được lưu chuỗi khóa thô trong D1 hay trả về qua API.
+- **Dữ liệu mẫu**: Bắt buộc phải giả rõ ràng (ví dụ: `0900000001`, `sample.lead@example.com`, `sample-shop.example.com`). Khóa mẫu chỉ dùng dạng `wcg_sample_00000000000000000000000000000000` hoặc `CHANGE_ME`.
+- **Lệnh kiểm tra bắt buộc trước khi push**:
+  1. `git grep -nE "wcg_[a-z]+_[0-9a-f]{32}" -- functions/ src/` (Kết quả = 0).
+  2. `git grep -nE "[0-9]{8,10}:[A-Za-z0-9_-]{35}" -- functions/ src/` (Kết quả = 0).
+  3. `git grep -nE "BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY"` (Kết quả = 0).
+- **Giữ `.gitignore`**: Không bao giờ commit file `.env`, `*.secret`, `.muse_admin_key.secret`.
