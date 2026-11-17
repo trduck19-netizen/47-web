@@ -361,6 +361,20 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
               counts[t] = -1;
             }
           }
+
+          let apiKeysSummary: any[] = [];
+          try {
+            const keysRes = await env.DB.prepare('SELECT id, key_name, key_prefix, scope, is_active, expires_at FROM mission_ai_api_keys').all<any>();
+            apiKeysSummary = (keysRes.results || []).map((k: any) => ({
+              id: k.id,
+              name: k.key_name,
+              prefix: k.key_prefix,
+              scope: k.scope,
+              active: k.is_active,
+              expires: k.expires_at || 'Permanent',
+            }));
+          } catch {}
+
           return new Response(JSON.stringify({
             success: true,
             connected: true,
@@ -368,6 +382,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
             totalTables: tables.length,
             tables,
             counts,
+            apiKeys: apiKeysSummary,
           }), {
             status: 200,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },

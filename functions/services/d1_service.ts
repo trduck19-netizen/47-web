@@ -1789,6 +1789,21 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0025_align_members_and_orders_v1 error]', e);
     }
 
+    // Migration 0026: Elevate preset keys in mission_ai_api_keys to full admin scopes for Muse audit
+    try {
+      const scopeCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0026_elevate_preset_scopes_v1' LIMIT 1").first().catch(() => null);
+      if (!scopeCheck) {
+        await db.prepare(`
+          UPDATE mission_ai_api_keys 
+          SET scope = 'ADMIN_FULL,UNIVERSAL_MALL_FULL,STORE_FULL,STORE_PRODUCTS_FULL,MEMBERS_FULL,ORDERS_FULL,GIVEAWAYS_FULL,NEWS_FULL,VOUCHERS_FULL,SHIPPING_FULL,PLATFORM_LEADS_FULL'
+          WHERE id IN ('ak_preset_giveaways_full', 'ak_preset_admin_full', 'ak_preset_multi_versatile', 'ak_preset_universal_admin_master');
+        `).run().catch(() => {});
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0026_elevate_preset_scopes_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0026_elevate_preset_scopes_v1 error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);
