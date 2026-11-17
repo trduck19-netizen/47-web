@@ -1804,6 +1804,33 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0026_elevate_preset_scopes_v1 error]', e);
     }
 
+    // Migration 0027: Register dedicated Muse Full Admin key in mission_ai_api_keys
+    try {
+      const museCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0027_seed_muse_full_admin_key_v1' LIMIT 1").first().catch(() => null);
+      if (!museCheck) {
+        await db.prepare(`
+          INSERT OR REPLACE INTO mission_ai_api_keys (
+            id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at
+          ) VALUES (
+            'ak_muse_full_admin',
+            'Muse Full Admin',
+            '7274741db785cbc56b409eadcdcd7218da7dd402cb66ec2d049c1838b029034c',
+            'wcg_muse_67b••••••••••••••••••••087a',
+            'ADMIN_FULL,UNIVERSAL_MALL_FULL,STORE_FULL,STORE_PRODUCTS_FULL,MEMBERS_FULL,ORDERS_FULL,GIVEAWAYS_FULL,NEWS_FULL,VOUCHERS_FULL,SHIPPING_FULL,PLATFORM_LEADS_FULL',
+            'Khóa API quản trị toàn quyền dành riêng cho thẩm định viên Muse kiểm toán live hệ thống.',
+            '',
+            '',
+            1,
+            datetime('now'),
+            datetime('now')
+          );
+        `).run().catch(() => {});
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0027_seed_muse_full_admin_key_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0027_seed_muse_full_admin_key_v1 error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);

@@ -350,6 +350,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           });
         }
         try {
+          await ensureSchemaUpgrades(env.DB);
           const res = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all<any>();
           const tables = (res.results || []).map((r: any) => r.name);
           const counts: Record<string, number> = {};

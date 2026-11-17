@@ -14,6 +14,8 @@ dist/
 !.env.example
 *.pem
 *.key
+*.secret
+.muse_admin_key.secret
 *.cert
 *.pfx
 
