@@ -120,6 +120,55 @@ async function ensureDefaultPresetKeys(env: Env) {
     `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
   }
 
+  // 9. Preset Universal Mall Master Key (Toàn Quyền Sàn TMĐT Đa Ngành)
+  const hasUniversalMall = list.some((r) => r.id === 'ak_preset_universal_admin_master');
+  if (!hasUniversalMall) {
+    const rawKey = 'wcg_mall_9e47af82c019bd3e74a81520e18c645091d84f99';
+    const keyHash = await computeSha256(rawKey);
+    const keyPrefix = 'wcg_mall_9e47••••••••••••••••••••4f99';
+    const mallScopes = 'UNIVERSAL_MALL_FULL,ADMIN_FULL,PRODUCTS_FULL,CATEGORIES_FULL,VOUCHERS_FULL,SHIPPING_FULL,PLATFORM_LEADS_FULL,ORDERS_FULL,MEMBERS_FULL,WALLET_MANAGE,SEPAY_FULL,MARKETPLACE_MANAGE,STORE_FULL,SYNC_FULL';
+    await env.DB.prepare(`
+      INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
+      VALUES ('ak_preset_universal_admin_master', 'Toàn Quyền Nền Tảng Sàn Đa Ngành (Universal Mall Platform Master)', ?, ?, ?, 'Toàn quyền điều hành toàn bộ Sàn TMĐT Đa Ngành: Sản phẩm, Danh mục, Vouchers, Vận chuyển bưu chính, Khách hàng B2B, Đơn hàng, Ví tiền và Cổng SePay.', '', ?, 1, '', ?)
+    `).bind(keyHash, keyPrefix, mallScopes, rawKey, nowIso).run().catch(() => {});
+  }
+
+  // 10. Preset Products & Categories Key (Toàn Quyền Sản Phẩm & Danh Mục Đa Ngành)
+  const hasProductsManage = list.some((r) => r.id === 'ak_preset_products_manage');
+  if (!hasProductsManage) {
+    const rawKey = 'wcg_prd_8301fa9e4210d73b5a192847c501e3b6a947d88';
+    const keyHash = await computeSha256(rawKey);
+    const keyPrefix = 'wcg_prd_8301••••••••••••••••••••7d88';
+    await env.DB.prepare(`
+      INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
+      VALUES ('ak_preset_products_manage', 'Toàn Quyền Sản Phẩm & Danh Mục (Products & Categories Full)', ?, ?, 'PRODUCTS_FULL,CATEGORIES_FULL,STORE_FULL', 'Toàn quyền thêm/sửa/xóa sản phẩm đa ngành (vật lý & số), quản lý biến thể SKU, hình ảnh, thông số kỹ thuật và cấu trúc ngành hàng.', ?, ?, 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+  }
+
+  // 11. Preset Vouchers & Shipping Key (Toàn Quyền Voucher & Vận Chuyển Bưu Chính)
+  const hasVouchersShipping = list.some((r) => r.id === 'ak_preset_vouchers_shipping');
+  if (!hasVouchersShipping) {
+    const rawKey = 'wcg_shp_6193ab4028cf51d9e27b140685e93c1482f04c77';
+    const keyHash = await computeSha256(rawKey);
+    const keyPrefix = 'wcg_shp_6193••••••••••••••••••••4c77';
+    await env.DB.prepare(`
+      INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
+      VALUES ('ak_preset_vouchers_shipping', 'Toàn Quyền Voucher & Vận Chuyển (Vouchers & Shipping Full)', ?, ?, 'VOUCHERS_FULL,SHIPPING_FULL,ORDERS_FULL', 'Toàn quyền quản trị mã giảm giá/freeship đa tầng, tạo và tra cứu vận đơn bưu chính tự động (GHTK, GHN, Viettel Post).', ?, ?, 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+  }
+
+  // 12. Preset Platform Leads Key (Toàn Quyền Khách Hàng Nền Tảng B2B)
+  const hasPlatformLeads = list.some((r) => r.id === 'ak_preset_platform_leads');
+  if (!hasPlatformLeads) {
+    const rawKey = 'wcg_lead_5a82ef419b027c4d18e3902f6a7d1b82c9e5033';
+    const keyHash = await computeSha256(rawKey);
+    const keyPrefix = 'wcg_lead_5a82••••••••••••••••••••5033';
+    await env.DB.prepare(`
+      INSERT INTO mission_ai_api_keys (id, key_name, api_key_hash, key_prefix, scope, description, expires_at, raw_key, is_active, last_used_at, created_at)
+      VALUES ('ak_preset_platform_leads', 'Toàn Quyền Khách Hàng Nền Tảng B2B (Platform Leads Full)', ?, ?, 'PLATFORM_LEADS_FULL', 'Toàn quyền tra cứu, tiếp nhận và xử lý danh sách khách hàng doanh nghiệp đăng ký thuê sàn TMĐT đa ngành (Platform Solutions).', ?, ?, 1, '', ?)
+    `).bind(keyHash, keyPrefix, expires90d, rawKey, nowIso).run().catch(() => {});
+  }
+
   // Update existing key if missing raw_key for easy copy
   const existingVjxp = list.find((r) => r.id === 'ak_1793169536801_vjxp');
   if (existingVjxp && !existingVjxp.raw_key) {

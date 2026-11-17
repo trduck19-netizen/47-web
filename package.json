@@ -7,9 +7,9 @@
     "dev": "vite",
     "build": "node scripts/build.cjs",
     "preview": "vite preview",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name=universal-mall-shop",
-    "deploy:admin": "npm run build && wrangler pages deploy dist --project-name=admin-universal-mall",
-    "deploy:all": "npm run build && wrangler pages deploy dist --project-name=universal-mall-shop && wrangler pages deploy dist --project-name=admin-universal-mall"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=universal-mall-shop --branch=main",
+    "deploy:admin": "npm run build && wrangler pages deploy dist --project-name=admin-universal-mall --branch=main",
+    "deploy:all": "npm run build && wrangler pages deploy dist --project-name=universal-mall-shop --branch=main && wrangler pages deploy dist --project-name=admin-universal-mall --branch=main"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",

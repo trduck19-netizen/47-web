@@ -82,6 +82,10 @@ export type ApiKeyScope =
   | 'MEMBERS_FULL'
   | 'SHIPPING_MANAGE'
   | 'VOUCHERS_MANAGE'
+  | 'PRODUCTS_FULL'
+  | 'CATEGORIES_FULL'
+  | 'PLATFORM_LEADS_FULL'
+  | 'UNIVERSAL_MALL_FULL'
   | 'WALLET_MANAGE'
   | 'ORDERS_FULL'
   | 'SEPAY_FULL'
@@ -544,6 +548,50 @@ export const ALL_API_SCOPES: ScopeOption[] = [
     badgeText: 'text-orange-500',
     badgeBorder: 'border-orange-500/20',
     icon: Ticket,
+  },
+  {
+    id: 'PRODUCTS_FULL',
+    name: 'Quản Lý Sản Phẩm & Biến Thể Đa Ngành (Products & Variants API)',
+    category: 'Sản Phẩm',
+    description: 'Thêm, sửa, xóa sản phẩm đa ngành (vật lý & số), quản lý biến thể màu sắc/size/SKU, cập nhật kho hàng và giá bán.',
+    color: 'sky',
+    badgeBg: 'bg-sky-500/10',
+    badgeText: 'text-sky-500',
+    badgeBorder: 'border-sky-500/20',
+    icon: ShoppingBag,
+  },
+  {
+    id: 'CATEGORIES_FULL',
+    name: 'Quản Lý Ngành Hàng & Danh Mục (Categories API)',
+    category: 'Sản Phẩm',
+    description: 'Quản lý cấu trúc ngành hàng (Thời trang, Mỹ phẩm, Công nghệ, Dịch vụ số, Gaming) và danh mục sản phẩm.',
+    color: 'indigo',
+    badgeBg: 'bg-indigo-500/10',
+    badgeText: 'text-indigo-500',
+    badgeBorder: 'border-indigo-500/20',
+    icon: Layers,
+  },
+  {
+    id: 'PLATFORM_LEADS_FULL',
+    name: 'Quản Lý Khách Hàng Nền Tảng B2B (Platform Solutions Leads API)',
+    category: 'Doanh Nghiệp',
+    description: 'Tra cứu, phân loại và cập nhật tiến trình liên hệ khách hàng doanh nghiệp đăng ký thuê sàn / mở nền tảng riêng.',
+    color: 'purple',
+    badgeBg: 'bg-purple-500/10',
+    badgeText: 'text-purple-500',
+    badgeBorder: 'border-purple-500/20',
+    icon: Globe,
+  },
+  {
+    id: 'UNIVERSAL_MALL_FULL',
+    name: 'Toàn Quyền Nền Tảng Sàn TMĐT Đa Ngành (Universal Mall Platform Full)',
+    category: 'Tối Cao',
+    description: 'Toàn quyền điều hành toàn bộ Sàn: Sản phẩm, Danh mục, Voucher đa tầng, Vận chuyển bưu chính và Khách hàng B2B.',
+    color: 'amber',
+    badgeBg: 'bg-amber-500/10',
+    badgeText: 'text-amber-500',
+    badgeBorder: 'border-amber-500/20',
+    icon: Sparkles,
   },
   {
     id: 'ADMIN_FULL',
