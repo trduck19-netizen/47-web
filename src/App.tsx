@@ -1031,8 +1031,9 @@ export const App: React.FC = () => {
           if (isTestClientDomain) {
             const path = window.location.pathname.toLowerCase();
             const isLangPath = path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/';
-            if (!isLangPath && (window.location.pathname !== '/' || window.location.hash)) {
-              window.history.replaceState(null, '', '/');
+            const expectedPath = language === 'en' ? '/en/' : '/';
+            if ((isLangPath || path === '/' || path === '') && path !== expectedPath) {
+              window.history.replaceState(null, '', expectedPath);
             }
           } else if (window.location.pathname !== '/test1' || window.location.hash) {
             window.history.replaceState(null, '', '/test1');
@@ -1554,13 +1555,21 @@ export const App: React.FC = () => {
       }
       link.href = branding.avatarUrl;
     }
+    const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
+    if (isTestClientDomain || currentTab === 'shopee-test') {
+      document.title = language === 'en'
+        ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace'
+        : 'Universal Mall - Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng';
+      return;
+    }
+
     const rawTitle = branding.siteTitle?.trim();
     const cleanTitle =
       rawTitle && rawTitle.toUpperCase() !== 'WEB CODE GAME' && rawTitle.toUpperCase() !== 'WEB CODE'
         ? rawTitle
         : 'CodeGame.Shop';
     document.title = `${cleanTitle} - Cổng Tra Cứu Giftcode & Tiện Ích Game`;
-  }, [branding.avatarUrl, branding.siteTitle]);
+  }, [branding.avatarUrl, branding.siteTitle, language, currentTab]);
 
   // Real-time listener for CMS content changes (Events, Storage & BroadcastChannel)
   useEffect(() => {

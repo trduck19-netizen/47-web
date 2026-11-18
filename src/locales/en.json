@@ -12,7 +12,7 @@
     "sellerCenter": "Seller Center"
   },
   "header": {
-    "portalSubtitle": "#1 Giftcode & E-commerce Hub",
+    "portalSubtitle": "#1 Giftcode Search Portal",
     "bookmarksTitle": "Saved Bookmarks",
     "account": "Account",
     "wallet": "Wallet & History",
@@ -294,6 +294,11 @@
     "search": {
       "placeholder": "Search games, giftcodes, accounts, VIP utilities...",
       "suggestionsTitle": "Suggestions:",
+      "suggestionPolo": "Men's polo t-shirt",
+      "suggestionSerum": "B5 hydrating serum",
+      "suggestionCharger": "65W GaN fast charger",
+      "suggestionCanvaPro": "Canva Pro account",
+      "suggestionGarena": "Garena game top-up card",
       "suggestionHoodie": "Hoodie",
       "suggestionSunscreen": "Sunscreen",
       "suggestionGanCharger": "GaN Fast Charger",
@@ -301,6 +306,7 @@
       "suggestionEarbuds": "Bluetooth Earbuds",
       "allProductsCount": "All ({count} products)"
     },
+    "slogan": "Official Multi-Industry E-Commerce & Digital Utility Marketplace",
     "subnav": {
       "home": "Marketplace",
       "store": "Multi-Industry Store",

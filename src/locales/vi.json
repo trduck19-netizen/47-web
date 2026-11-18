@@ -294,6 +294,11 @@
     "search": {
       "placeholder": "Tìm tựa game, thẻ nạp, gói code, tiện ích VIP...",
       "suggestionsTitle": "Gợi ý:",
+      "suggestionPolo": "Áo thun polo nam",
+      "suggestionSerum": "Serum cấp ẩm B5",
+      "suggestionCharger": "Củ sạc nhanh GaN 65W",
+      "suggestionCanvaPro": "Tài khoản Canva Pro",
+      "suggestionGarena": "Thẻ nạp game Garena",
       "suggestionHoodie": "Áo Hoodie",
       "suggestionSunscreen": "Kem chống nắng",
       "suggestionGanCharger": "Củ sạc GaN",
@@ -301,6 +306,7 @@
       "suggestionEarbuds": "Tai nghe Bluetooth",
       "allProductsCount": "Tất Cả ({count} sản phẩm)"
     },
+    "slogan": "Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số",
     "subnav": {
       "home": "Trang Chủ Sàn",
       "store": "Cửa Hàng Đa Ngành",

@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   branding,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [cartCount, setCartCount] = useState<number>(() => cartService.getCartCount());
@@ -218,7 +218,9 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </div>
               <span className="text-[10px] text-muted-foreground font-sans hidden sm:block">
-                {branding?.portalSubtitle || t.header.portalSubtitle}
+                {language === 'en'
+                  ? (t.header?.portalSubtitle || '#1 Giftcode Search Portal')
+                  : (branding?.portalSubtitle || t.header?.portalSubtitle || 'Cổng Tra Cứu Giftcode #1')}
               </span>
             </div>
           </div>

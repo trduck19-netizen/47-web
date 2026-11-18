@@ -970,7 +970,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 <span className={`bg-white ${currentAccent.badgeBg} font-bold text-[9px] px-1.5 py-0.2 rounded uppercase`}>Mall</span>
               </div>
               <div className="text-[10px] text-white/80 font-medium leading-none mt-1 hidden sm:block">
-                {shopBrand.slogan}
+                {language === 'en'
+                  ? (shopBrand.slogan?.toLowerCase().includes('cổng tra cứu')
+                      ? (t.header?.portalSubtitle || '#1 Giftcode Search Portal')
+                      : (t.mall?.slogan || 'Official Multi-Industry E-Commerce & Digital Utility Marketplace'))
+                  : (shopBrand.slogan || 'Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số')}
               </div>
             </div>
           </div>
@@ -1000,32 +1004,54 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               </button>
             </div>
 
-            {/* Từ khóa gợi ý */}
+            {/* Từ khóa gợi ý song ngữ VI/EN */}
             <div className="hidden sm:flex items-center gap-3 text-[11px] text-white/80 mt-1.5 overflow-hidden whitespace-nowrap">
-              {categoriesConfig.searchSuggestions && categoriesConfig.searchSuggestions.length > 0 ? (
-                categoriesConfig.searchSuggestions.slice(0, 5).map((kw, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSearchKeyword(kw);
-                      setSelectedProductType('all');
-                    }}
-                    className="hover:text-amber-200 transition"
-                  >
-                    {kw}
-                  </button>
-                ))
-              ) : (
-                <>
-                  <button onClick={() => { setSearchKeyword(t.mall?.search?.suggestionHoodie || (language === 'en' ? 'Hoodie' : 'Áo Hoodie')); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">{t.mall?.search?.suggestionHoodie || (language === 'en' ? 'Hoodie' : 'Áo Hoodie')}</button>
-                  <button onClick={() => { setSearchKeyword(t.mall?.search?.suggestionSunscreen || (language === 'en' ? 'Sunscreen' : 'Kem chống nắng')); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">{t.mall?.search?.suggestionSunscreen || (language === 'en' ? 'Sunscreen' : 'Kem chống nắng')}</button>
-                  <button onClick={() => { setSearchKeyword(t.mall?.search?.suggestionGanCharger || (language === 'en' ? 'GaN Fast Charger' : 'Củ sạc GaN')); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">{t.mall?.search?.suggestionGanCharger || (language === 'en' ? 'GaN Fast Charger' : 'Củ sạc GaN')}</button>
-                  <button onClick={() => { setSearchKeyword('Canva Pro'); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">Canva Pro</button>
-                  <button onClick={() => { setSearchKeyword(t.mall?.search?.suggestionEarbuds || (language === 'en' ? 'Bluetooth Earbuds' : 'Tai nghe Bluetooth')); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">{t.mall?.search?.suggestionEarbuds || (language === 'en' ? 'Bluetooth Earbuds' : 'Tai nghe Bluetooth')}</button>
-                </>
-              )}
-              <button onClick={() => { setSearchKeyword(''); setSelectedProductType('all'); }} className="hover:text-amber-200 transition font-bold text-amber-300">
-                {t('mall.search.allProductsCount', { count: storeProducts?.length || 0 })}
+              {(() => {
+                const rawList = (categoriesConfig.searchSuggestions && categoriesConfig.searchSuggestions.length > 0)
+                  ? categoriesConfig.searchSuggestions.slice(0, 5)
+                  : ['Áo thun polo nam', 'Serum cấp ẩm B5', 'Củ sạc nhanh GaN 65W', 'Tài khoản Canva Pro', 'Thẻ nạp game Garena'];
+
+                return rawList.map((kw, i) => {
+                  let displayLabel = kw;
+                  let searchTarget = kw;
+                  const kwLower = kw.toLowerCase();
+
+                  if (kwLower.includes('polo')) {
+                    displayLabel = t.mall?.search?.suggestionPolo || (language === 'en' ? "Men's polo t-shirt" : 'Áo thun polo nam');
+                    searchTarget = language === 'en' ? 'polo' : kw;
+                  } else if (kwLower.includes('serum') || kwLower.includes('b5')) {
+                    displayLabel = t.mall?.search?.suggestionSerum || (language === 'en' ? 'B5 hydrating serum' : 'Serum cấp ẩm B5');
+                    searchTarget = language === 'en' ? 'B5' : kw;
+                  } else if (kwLower.includes('sạc') || kwLower.includes('gan')) {
+                    displayLabel = t.mall?.search?.suggestionCharger || (language === 'en' ? '65W GaN fast charger' : 'Củ sạc nhanh GaN 65W');
+                    searchTarget = language === 'en' ? 'GaN' : kw;
+                  } else if (kwLower.includes('canva')) {
+                    displayLabel = t.mall?.search?.suggestionCanvaPro || (language === 'en' ? 'Canva Pro account' : 'Tài khoản Canva Pro');
+                    searchTarget = language === 'en' ? 'Canva' : kw;
+                  } else if (kwLower.includes('garena') || kwLower.includes('thẻ nạp')) {
+                    displayLabel = t.mall?.search?.suggestionGarena || (language === 'en' ? 'Garena game top-up card' : 'Thẻ nạp game Garena');
+                    searchTarget = language === 'en' ? 'Garena' : kw;
+                  } else if (kwLower.includes('hoodie')) {
+                    displayLabel = t.mall?.search?.suggestionHoodie || (language === 'en' ? 'Hoodie' : 'Áo Hoodie');
+                    searchTarget = language === 'en' ? 'hoodie' : kw;
+                  }
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setSearchKeyword(searchTarget);
+                        setSelectedProductType('all');
+                      }}
+                      className="hover:text-amber-200 transition cursor-pointer"
+                    >
+                      {displayLabel}
+                    </button>
+                  );
+                });
+              })()}
+              <button onClick={() => { setSearchKeyword(''); setSelectedProductType('all'); }} className="hover:text-amber-200 transition font-bold text-amber-300 cursor-pointer">
+                {t('mall.search.allProductsCount', { count: currentStoreProducts?.length || storeProducts?.length || 0 })}
               </button>
             </div>
           </div>

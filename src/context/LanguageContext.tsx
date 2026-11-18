@@ -114,6 +114,42 @@ function detectInitialLanguage(): string {
   return DEFAULT_LANGUAGE;
 }
 
+/**
+ * Chuẩn hóa URL đồng bộ với ngôn ngữ hiển thị:
+ * - Tiếng Anh: luôn có tiền tố /en/ (hoặc /en/subpath), loại bỏ sạch tham số ?lang=...
+ * - Tiếng Việt: luôn chuẩn hóa về / (hoặc subpath không tiền tố), loại bỏ sạch tham số ?lang=...
+ */
+function syncUrlWithLanguage(targetLang: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const url = new URL(window.location.href);
+
+    // 1. Loại bỏ tham số ?lang=...
+    url.searchParams.delete('lang');
+
+    // 2. Chuẩn hóa path sạch không có tiền tố ngôn ngữ cũ
+    let cleanPath = url.pathname;
+    cleanPath = cleanPath.replace(/^\/(en|vi)(\/|$)/i, '/');
+    if (!cleanPath.startsWith('/')) cleanPath = '/' + cleanPath;
+
+    // 3. Gán tiền tố chuẩn theo ngôn ngữ mục tiêu
+    if (targetLang === 'en') {
+      url.pathname = cleanPath === '/' ? '/en/' : `/en${cleanPath}`;
+    } else {
+      url.pathname = cleanPath; // Tiếng Việt mặc định là / hoặc path gốc
+    }
+
+    const newUrl = url.pathname + (url.search ? url.search : '') + (url.hash ? url.hash : '');
+    const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+
+    if (newUrl !== currentUrl) {
+      window.history.replaceState(null, '', newUrl);
+    }
+  } catch (e) {
+    console.warn('[syncUrlWithLanguage error]', e);
+  }
+}
+
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<string>(detectInitialLanguage);
 
@@ -129,25 +165,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         document.documentElement.lang = targetLang;
       }
 
-      // Cập nhật tiền tố URL mà không reload trang
-      if (typeof window !== 'undefined') {
-        const path = window.location.pathname;
-        const search = window.location.search;
-        const hash = window.location.hash;
-
-        if (targetLang === 'en') {
-          if (!path.startsWith('/en/') && path !== '/en') {
-            const cleanPath = path.replace(/^\/vi\/?/i, '/');
-            const newPath = cleanPath === '/' ? '/en/' : `/en${cleanPath}`;
-            window.history.replaceState(null, '', newPath + search + hash);
-          }
-        } else if (targetLang === 'vi') {
-          if (path.startsWith('/en/') || path === '/en') {
-            const cleanPath = path.replace(/^\/en\/?/i, '/');
-            window.history.replaceState(null, '', (cleanPath || '/') + search + hash);
-          }
-        }
-      }
+      // Chuẩn hóa và đồng bộ URL tức thì mà không reload trang (Việc 2)
+      syncUrlWithLanguage(targetLang);
 
       window.dispatchEvent(new CustomEvent('wcg_language_changed', { detail: targetLang }));
     } catch {}
@@ -158,10 +177,14 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       document.documentElement.lang = language;
     }
 
+    // Chuẩn hóa URL ban đầu (xử lý ?lang=en thành /en/, ?lang=vi thành /)
+    syncUrlWithLanguage(language);
+
     const handleStorage = (e: StorageEvent) => {
       if (e.key === LANGUAGE_STORAGE_KEY && e.newValue) {
         if (ACTIVE_LANGUAGES.some((l) => l.code === e.newValue)) {
           setLanguageState(e.newValue);
+          syncUrlWithLanguage(e.newValue);
         }
       }
     };
