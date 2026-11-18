@@ -111,14 +111,6 @@ const tabTitlesEn: Record<AdminModuleTab, string> = {
 const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
   const { language } = useLanguage();
 
-  // Dynamic Browser Tab Title based on active language and current tab
-  useEffect(() => {
-    const isEn = language === 'en';
-    const tabName = isEn ? (tabTitlesEn[currentTab] || 'Dashboard') : (tabTitlesVi[currentTab] || 'Bảng Điều Khiển');
-    document.title = isEn
-      ? `${tabName} - Admin Console | Universal Mall`
-      : `${tabName} - Trang Quản Trị Admin | Universal Mall`;
-  }, [language, currentTab]);
   // Navigation State
   const [currentTab, setCurrentTab] = useState<AdminModuleTab>(() => {
     const raw = window.location.hash.replace(/^#\/?/, '');
@@ -157,6 +149,15 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
     ];
     return validTabs.includes(hash as AdminModuleTab) ? (hash as AdminModuleTab) : 'dashboard';
   });
+
+  // Dynamic Browser Tab Title based on active language and current tab
+  useEffect(() => {
+    const isEn = language === 'en';
+    const tabName = isEn ? (tabTitlesEn[currentTab] || 'Dashboard') : (tabTitlesVi[currentTab] || 'Bảng Điều Khiển');
+    document.title = isEn
+      ? `${tabName} - Admin Console | Universal Mall`
+      : `${tabName} - Trang Quản Trị Admin | Universal Mall`;
+  }, [language, currentTab]);
 
   // Selected game for code deep-linking
   const [filteredGameSlug, setFilteredGameSlug] = useState<string | undefined>(undefined);
