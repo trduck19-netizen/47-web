@@ -789,56 +789,116 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
   // Dynamic message localization (Song ngữ VI / EN) - Pure computation, zero hooks
   const getDisplayMessage = () => {
     if (!notification?.message) return '';
-    if (language !== 'en') return notification.message;
-
     const raw = notification.message;
 
-    // Pattern 1: "... vừa sao chép 1 Giftcode game ..."
-    if (raw.includes('vừa sao chép')) {
-      const copyMatch = raw.match(/^(.*?)\s+vừa sao chép\s+(?:tất cả\s+(\d+)|(\d+))\s*(?:mã code cho|Giftcode game|Giftcode)?\s*(.*)$/i);
-      if (copyMatch) {
-        const user = copyMatch[1] || notification.userName || 'User';
-        const count = copyMatch[2] || copyMatch[3] || '1';
-        const game = copyMatch[4]?.trim() || notification.gameName || 'Game';
-        const countNum = parseInt(count, 10) || 1;
-        return countNum > 1
-          ? `${user} just copied all ${countNum} giftcodes for ${game}`
-          : `${user} just copied 1 giftcode for ${game}`;
+    if (language === 'en') {
+      // Pattern 1: STATS_COPY ("Hệ thống vừa ghi nhận 109.203 lượt sao chép giftcode hôm nay!" or "Hôm nay đã có ...")
+      if (raw.includes('lượt sao chép giftcode') || raw.includes('giftcode copies today')) {
+        const statsMatch = raw.match(/^(?:Hệ thống vừa ghi nhận|Hôm nay đã có)\s+([\d.,]+)\s+lượt sao chép giftcode(?:\s+hôm nay!?)?$/i);
+        const count = statsMatch ? statsMatch[1] : (raw.match(/([\d.,]+)\s+lượt sao chép/i)?.[1] || '');
+        if (count) {
+          if (typeof t === 'function') {
+            return t('marketing.trendingMessage', { count }) || `System just recorded ${count} giftcode copies today!`;
+          }
+          return `System just recorded ${count} giftcode copies today!`;
+        }
+        return 'System just recorded giftcode copies today!';
       }
-      return raw
-        .replace(/vừa sao chép/g, 'just copied')
-        .replace(/tất cả\s+(\d+)\s+mã code cho/gi, 'all $1 giftcodes for')
-        .replace(/1\s+Giftcode game/gi, '1 giftcode for')
-        .replace(/Giftcode game/gi, 'giftcode for')
-        .replace(/mã code cho/gi, 'giftcodes for');
+
+      // Pattern 2: COPY_CODE ("... vừa sao chép 1 Giftcode game ..." or "... vừa sao chép tất cả X mã code cho ...")
+      if (raw.includes('vừa sao chép') || raw.includes('just copied')) {
+        const copyMatch = raw.match(/^(.*?)\s+vừa sao chép\s+(?:tất cả\s+(\d+)|(\d+))\s*(?:mã code cho|Giftcode game|Giftcode)?\s*(.*)$/i);
+        if (copyMatch) {
+          const user = copyMatch[1] || notification.userName || 'User';
+          const count = copyMatch[2] || copyMatch[3] || '1';
+          const game = copyMatch[4]?.trim() || notification.gameName || 'Game';
+          const countNum = parseInt(count, 10) || 1;
+          return countNum > 1
+            ? `${user} just copied all ${countNum} giftcodes for ${game}`
+            : `${user} just copied 1 giftcode for ${game}`;
+        }
+        return raw
+          .replace(/vừa sao chép/g, 'just copied')
+          .replace(/tất cả\s+(\d+)\s+mã code cho/gi, 'all $1 giftcodes for')
+          .replace(/1\s+Giftcode game/gi, '1 giftcode for')
+          .replace(/Giftcode game/gi, 'giftcode for')
+          .replace(/mã code cho/gi, 'giftcodes for');
+      }
+
+      // Pattern 3: BUY_PRODUCT ("... vừa mua thành công 2x Áo thun..." or "... vừa mua Áo...")
+      if (raw.includes('vừa mua thành công') || raw.includes('vừa mua')) {
+        const buyMatch = raw.match(/^(.*?)\s+vừa mua(?: thành công)?\s+(?:(\d+x)\s+)?(.*)$/i);
+        if (buyMatch) {
+          const user = buyMatch[1] || notification.userName || 'User';
+          const qty = buyMatch[2] ? `${buyMatch[2]} ` : '';
+          const item = buyMatch[3]?.trim() || notification.productName || 'Product';
+          return `${user} just purchased ${qty}${item}`;
+        }
+        return raw.replace(/vừa mua thành công/g, 'just purchased').replace(/vừa mua/g, 'just purchased');
+      }
+
+      // Pattern 4: DEPOSIT_WALLET ("... vừa nạp thành công 50.000đ qua SePay" or "... vừa nạp thành công 50.000đ vào ví Core")
+      if (raw.includes('vừa nạp thành công') || raw.includes('vừa nạp')) {
+        const depositMatch = raw.match(/^(.*?)\s+vừa nạp(?: thành công)?\s+([\d.,]+đ?)\s*(?:(qua SePay|vào ví Core))?(.*)$/i);
+        if (depositMatch) {
+          const user = depositMatch[1] || notification.userName || 'User';
+          const amount = depositMatch[2] || '';
+          let channel = depositMatch[3] || '';
+          if (channel === 'qua SePay') channel = 'via SePay';
+          else if (channel === 'vào ví Core') channel = 'into Core wallet';
+          const suffix = depositMatch[4]?.trim() || '';
+          return `${user} just topped up ${amount}${channel ? ` ${channel}` : ''}${suffix ? ` ${suffix}` : ''}`.trim();
+        }
+        return raw
+          .replace(/vừa nạp thành công/g, 'just topped up')
+          .replace(/vừa nạp/g, 'just topped up')
+          .replace(/qua SePay/g, 'via SePay')
+          .replace(/vào ví Core/g, 'into Core wallet');
+      }
+
+      // Pattern 5: CLAIM_GIVEAWAY ("... vừa nhận mã quà tặng sự kiện ..." or "... vừa nhận thành công ...")
+      if (raw.includes('vừa nhận')) {
+        const claimMatch = raw.match(/^(.*?)\s+vừa nhận(?: mã quà tặng sự kiện| thành công)?\s+(.*)$/i);
+        if (claimMatch) {
+          const user = claimMatch[1] || notification.userName || 'User';
+          const campaign = claimMatch[2]?.trim() || notification.giveawayTitle || 'Gift';
+          return `${user} just claimed event giftcode for ${campaign}`;
+        }
+        return raw
+          .replace(/vừa nhận mã quà tặng sự kiện/g, 'just claimed event giftcode for')
+          .replace(/vừa nhận thành công/g, 'just claimed')
+          .replace(/vừa nhận/g, 'just claimed');
+      }
+
+      // Pattern 6: RESTOCK_PRODUCT ("Sự kiện ... vừa được nạp thêm +10 mã quà tặng mới!" or "Kho hàng vừa bổ sung thêm +5 Áo thun!")
+      if (raw.includes('vừa được nạp thêm') || raw.includes('vừa bổ sung thêm') || raw.includes('Kho hàng') || raw.includes('Sự kiện')) {
+        const restockGwMatch = raw.match(/^Sự kiện\s+(.*?)\s+vừa được nạp thêm\s+\+(\d+)\s+mã quà tặng mới!?$/i);
+        if (restockGwMatch) {
+          const title = restockGwMatch[1];
+          const amt = restockGwMatch[2];
+          return `Event ${title} just added +${amt} new giftcodes!`;
+        }
+        const restockProdMatch = raw.match(/^Kho hàng vừa bổ sung thêm\s+\+(\d+)\s+(.*)!?$/i);
+        if (restockProdMatch) {
+          const amt = restockProdMatch[1];
+          const title = restockProdMatch[2];
+          return `Stock just added +${amt} ${title}!`;
+        }
+        return raw
+          .replace(/^Sự kiện/i, 'Event')
+          .replace(/vừa được nạp thêm/gi, 'just added')
+          .replace(/mã quà tặng mới!?/gi, 'new giftcodes!')
+          .replace(/^Kho hàng vừa bổ sung thêm/i, 'Stock just added');
+      }
+
+      return raw;
     }
 
-    // Pattern 2: "... vừa mua ..."
-    if (raw.includes('vừa mua')) {
-      return raw.replace(/vừa mua/g, 'just purchased');
-    }
-
-    // Pattern 3: "... vừa nhận thành công ..." / "... vừa nhận ..."
-    if (raw.includes('vừa nhận')) {
-      return raw.replace(/vừa nhận thành công/g, 'just claimed').replace(/vừa nhận/g, 'just claimed');
-    }
-
-    // Pattern 4: "... vừa nạp thành công ..."
-    if (raw.includes('vừa nạp')) {
-      return raw.replace(/vừa nạp thành công/g, 'just topped up').replace(/vừa nạp/g, 'just topped up');
-    }
-
-    // Pattern 5: "Kho hàng ... vừa được bổ sung ... mã mới"
-    if (raw.includes('Kho hàng') || raw.includes('bổ sung')) {
-      return raw
-        .replace(/Kho hàng/g, 'Stock for')
-        .replace(/vừa được bổ sung/g, 'just added')
-        .replace(/mã mới/g, 'new codes');
-    }
-
-    // Pattern 6: "Hôm nay đã có ... lượt sao chép giftcode"
-    if (raw.includes('Hôm nay đã có')) {
-      return raw.replace(/Hôm nay đã có\s+(\d+)\s+lượt sao chép giftcode/gi, '$1 giftcodes copied today');
+    // Language === 'vi'
+    const statsEnMatch = raw.match(/^System just recorded\s+([\d.,]+)\s+giftcode copies today!?$/i);
+    if (statsEnMatch) {
+      const count = statsEnMatch[1];
+      return typeof t === 'function' ? t('marketing.trendingMessage', { count }) : `Hệ thống vừa ghi nhận ${count} lượt sao chép giftcode hôm nay!`;
     }
 
     return raw;
@@ -846,39 +906,63 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
 
   const getDisplayTitle = () => {
     if (!notification?.title) return '';
-    if (language !== 'en') return notification.title;
+    if (language === 'en') {
+      if (notification.type === 'COPY_CODE' || notification.title.includes('Sao chép')) {
+        return t.marketing?.copyCodeTitle || 'Giftcode Copied';
+      }
+      if (notification.type === 'BUY_PRODUCT' || notification.title.includes('Đơn hàng')) {
+        return t.marketing?.orderTitle || 'New Order';
+      }
+      if (notification.type === 'CLAIM_GIVEAWAY' || notification.title.includes('Nhận quà')) {
+        return t.marketing?.claimTitle || 'Gift Claimed';
+      }
+      if (notification.type === 'DEPOSIT_WALLET' || notification.title.includes('Nạp ví')) {
+        return t.marketing?.depositTitle || 'Wallet Top-up';
+      }
+      if (notification.type === 'RESTOCK_PRODUCT' || notification.title.includes('cập nhật kho') || notification.title.includes('Nạp thêm') || notification.title.includes('Bổ sung')) {
+        return t.marketing?.restockTitle || 'Restocked';
+      }
+      if (notification.type === 'STATS_COPY' || notification.title.includes('Sôi động') || notification.title.includes('Thống kê')) {
+        return t.marketing?.trendingTitle || 'Trending Today';
+      }
+      return notification.title;
+    }
 
-    if (notification.type === 'COPY_CODE' || notification.title.includes('Sao chép')) {
-      return t.marketing?.copyCodeTitle || 'Giftcode Copied';
-    }
-    if (notification.type === 'BUY_PRODUCT' || notification.title.includes('Đơn hàng')) {
-      return t.marketing?.orderTitle || 'New Order';
-    }
-    if (notification.type === 'CLAIM_GIVEAWAY' || notification.title.includes('Nhận quà')) {
-      return t.marketing?.claimTitle || 'Gift Claimed';
-    }
-    if (notification.type === 'DEPOSIT_WALLET' || notification.title.includes('Nạp ví')) {
-      return t.marketing?.depositTitle || 'Wallet Top-up';
-    }
-    if (notification.type === 'RESTOCK_PRODUCT' || notification.title.includes('cập nhật kho')) {
-      return t.marketing?.restockTitle || 'Restocked';
-    }
-    if (notification.type === 'STATS_COPY' || notification.title.includes('Sôi động')) {
-      return t.marketing?.trendingTitle || 'Trending Today';
-    }
+    // Language === 'vi'
+    if (notification.type === 'COPY_CODE') return t.marketing?.copyCodeTitle || 'Sao chép mã Giftcode';
+    if (notification.type === 'BUY_PRODUCT') return t.marketing?.orderTitle || 'Đơn hàng mới';
+    if (notification.type === 'CLAIM_GIVEAWAY') return t.marketing?.claimTitle || 'Nhận quà thành công';
+    if (notification.type === 'DEPOSIT_WALLET') return t.marketing?.depositTitle || 'Nạp ví thành công';
+    if (notification.type === 'RESTOCK_PRODUCT') return t.marketing?.restockTitle || 'Vừa cập nhật kho';
+    if (notification.type === 'STATS_COPY') return t.marketing?.trendingTitle || 'Sôi động hôm nay';
+
     return notification.title;
   };
 
   const getDisplayTimeAgo = () => {
     if (!notification?.timeAgo) return '';
-    if (language !== 'en') return notification.timeAgo;
-
     const raw = notification.timeAgo.trim();
-    if (raw === 'vừa xong' || raw === 'vừa nãy') return t.marketing?.justNow || 'just now';
+
+    if (language === 'en') {
+      const lower = raw.toLowerCase();
+      if (lower === 'vừa xong' || lower === 'vừa nãy' || lower === 'just now') {
+        return t.marketing?.justNow || 'Just now';
+      }
+      return raw
+        .replace(/(\d+)\s*(?:phút trước|m ago)/gi, '$1m ago')
+        .replace(/(\d+)\s*(?:giờ trước|h ago)/gi, '$1h ago')
+        .replace(/(\d+)\s*(?:giây trước|s trước|s ago)/gi, '$1s ago');
+    }
+
+    // Language === 'vi'
+    const lower = raw.toLowerCase();
+    if (lower === 'vừa xong' || lower === 'vừa nãy' || lower === 'just now') {
+      return t.marketing?.justNow || 'Vừa xong';
+    }
     return raw
-      .replace(/(\d+)\s*phút trước/gi, '$1m ago')
-      .replace(/(\d+)\s*giờ trước/gi, '$1h ago')
-      .replace(/(\d+)\s*giây trước/gi, '$1s ago');
+      .replace(/(\d+)\s*m ago/gi, '$1 phút trước')
+      .replace(/(\d+)\s*h ago/gi, '$1 giờ trước')
+      .replace(/(\d+)\s*s ago/gi, '$1s trước');
   };
 
   const displayMessage = getDisplayMessage();

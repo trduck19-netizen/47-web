@@ -442,7 +442,8 @@
     "mute1hShort": "Mute 1h",
     "muteTooltip": "Mute screen popups for 1 hour",
     "close": "Close notification",
-    "justNow": "just now"
+    "justNow": "Just now",
+    "trendingMessage": "System just recorded {count} giftcode copies today!"
   },
   "common": {
     "loading": "Loading data...",

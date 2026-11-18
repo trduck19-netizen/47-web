@@ -442,7 +442,8 @@
     "mute1hShort": "Tắt 1h",
     "muteTooltip": "Tắt thông báo nổi trên màn hình trong 1 giờ",
     "close": "Đóng thông báo",
-    "justNow": "vừa xong"
+    "justNow": "Vừa xong",
+    "trendingMessage": "Hệ thống vừa ghi nhận {count} lượt sao chép giftcode hôm nay!"
   },
   "common": {
     "loading": "Đang tải dữ liệu...",
