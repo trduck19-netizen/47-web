@@ -59,3 +59,25 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, AI Agent
   2. `git grep -nE "[0-9]{8,10}:[A-Za-z0-9_-]{35}" -- functions/ src/` (Kết quả = 0).
   3. `git grep -nE "BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY"` (Kết quả = 0).
 - **Giữ `.gitignore`**: Không bao giờ commit file `.env`, `*.secret`, `.muse_admin_key.secret`.
+
+### ⏳ 11. NGUYÊN TẮC CHỐNG TREO MÁY & CHỐNG TÁC VỤ LẶP LẠI VÔ HẠN (STRICT TIMEOUT, ANTI-HANG & ZERO INFINITE LOOPS)
+- **1. Bắt buộc Timeout cho mọi lệnh terminal & mạng (Strict Timeout)**:
+  - Mọi lệnh kiểm tra mạng qua PowerShell (`Invoke-WebRequest`, `Invoke-RestMethod`) **BẮT BUỘC** kèm `-TimeoutSec 10` (tối đa 15 giây). Tuyệt đối không dùng cờ `-Method Head` mà không có `-TimeoutSec` vì HTTP HEAD có thể giữ kết nối mở gây treo tiến trình.
+  - Mọi lệnh gọi `curl` **BẮT BUỘC** kèm `--max-time 10 --connect-timeout 5`.
+  - Mọi lệnh terminal (`run_command`) tiềm ẩn thời gian chạy lâu phải đặt `WaitMsBeforeAsync: 10000` (10 giây) và có cơ chế timeout xác định.
+- **2. Giám sát tác vụ ngầm chủ động (Active Background Task Watchdog)**:
+  - Bất cứ khi nào khởi chạy background task (`run_command`), nếu sau 45–60 giây task chưa xong hoặc không sinh output mới, tác nhân **BẮT BUỘC** chủ động gọi `manage_task kill` để hủy task ngay lập tức.
+  - Tuyệt đối không để task chạy ngầm vô hạn khiến người dùng phải chờ đợi hoặc hỏi "Sao lâu vậy bạn?".
+  - Sau khi hủy task, lập tức báo cáo nguyên nhân và chuyển ngay sang phương án kỹ thuật thay thế (ví dụ: dùng GET thay HEAD, tăng timeout hoặc đọc trực tiếp mã nguồn).
+- **3. Quy tắc dập tắt vòng lặp vô hạn (Loop Breaker & Max 2 Retries)**:
+  - **Tối đa 2 lần thử (Max 2 Attempts)**: Khi một lệnh terminal, truy vấn API, hoặc thao tác sửa code gặp lỗi hoặc không đạt kết quả mong muốn, tác nhân chỉ được phép thử lại tối đa 1 lần duy nhất với phương pháp khác.
+  - **Cấm gọi lại cùng một lệnh với cùng tham số (Zero Exact Retry Spam)**: Nếu lần 1 thất bại, lần 2 bắt buộc phải thay đổi phương pháp (đổi cờ, đổi lệnh, kiểm tra nguyên nhân gốc rễ). Tuyệt đối không chạy 3 lần liên tiếp cùng một thao tác.
+  - **Dừng lại khi chạm ngưỡng**: Nếu sau 2 lần thử vẫn thất bại, **BẮT BUỘC DỪNG LẠI NGAY LẬP TỨC**, báo cáo nguyên nhân gốc rễ và hỏi ý kiến người dùng thay vì tiếp tục lặp vô hạn.
+- **4. Chạy tự động hoàn toàn không tương tác (Non-Interactive Execution)**:
+  - Mọi lệnh CLI phải luôn chạy ở chế độ tự động hoàn toàn: `npx`, `npm` thêm `-y`, `--yes`, `--no-fund`, `--no-audit`.
+  - Trên Windows, luôn gọi `cmd /c npx ...` thay vì gọi trực tiếp `npx` trong PowerShell để tránh bị chặn bởi PowerShell ExecutionPolicy.
+  - Git: Luôn kèm `-m "..."` trong lệnh commit, không chạy `git rebase -i` hay các lệnh mở editor chờ người dùng nhập.
+- **5. Phản hồi nhanh & rõ ràng cho người dùng (Fast Feedback & Transparency)**:
+  - Tuyệt đối không kết thúc lượt (end turn) trong im lặng khi tác vụ có nguy cơ kéo dài.
+  - Luôn cập nhật tiến độ ngắn gọn, thông báo rõ tác nhân đang làm gì và dự kiến mất bao lâu.
+
