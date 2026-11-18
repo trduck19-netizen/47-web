@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Gift,
   ShoppingBag,
@@ -786,8 +786,8 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
   const IconComponent = meta.icon;
   const posStyle = getPositionStyles(toastPosition);
 
-  // Dynamic message localization (Song ngữ VI / EN)
-  const displayMessage = useMemo(() => {
+  // Dynamic message localization (Song ngữ VI / EN) - Pure computation, zero hooks
+  const getDisplayMessage = () => {
     if (!notification?.message) return '';
     if (language !== 'en') return notification.message;
 
@@ -842,9 +842,9 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
     }
 
     return raw;
-  }, [notification?.message, notification?.userName, notification?.gameName, language]);
+  };
 
-  const displayTitle = useMemo(() => {
+  const getDisplayTitle = () => {
     if (!notification?.title) return '';
     if (language !== 'en') return notification.title;
 
@@ -867,9 +867,9 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
       return t.marketing?.trendingTitle || 'Trending Today';
     }
     return notification.title;
-  }, [notification?.title, notification?.type, language, t.marketing]);
+  };
 
-  const displayTimeAgo = useMemo(() => {
+  const getDisplayTimeAgo = () => {
     if (!notification?.timeAgo) return '';
     if (language !== 'en') return notification.timeAgo;
 
@@ -879,7 +879,11 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
       .replace(/(\d+)\s*phút trước/gi, '$1m ago')
       .replace(/(\d+)\s*giờ trước/gi, '$1h ago')
       .replace(/(\d+)\s*giây trước/gi, '$1s ago');
-  }, [notification?.timeAgo, language, t.marketing]);
+  };
+
+  const displayMessage = getDisplayMessage();
+  const displayTitle = getDisplayTitle();
+  const displayTimeAgo = getDisplayTimeAgo();
 
   return (
     <div
