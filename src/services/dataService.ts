@@ -2947,7 +2947,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       window.location.pathname.startsWith('/test1')
     );
 
-    const activePreset = customPresetId || this.getProductCategoriesConfig().activePresetId || 'gaming';
+    const activePreset = customPresetId || this.getProductCategoriesConfig().activePresetId || 'universal';
 
     // Nếu chọn preset đa ngành mẫu (Thời trang, Mỹ phẩm, Công nghệ, Dịch vụ):
     if (activePreset && activePreset !== 'gaming') {
@@ -4277,8 +4277,12 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.categories) && parsed.categories.length > 0) {
+            // Nếu là preset gaming cũ (kiếm hiệp, tiên hiệp...), tự động chuyển sang universal đa ngành
+            if (parsed.activePresetId === 'gaming' || parsed.categories.some((c: any) => c.id === 'kiem-hiep-tien-hiep')) {
+              return getDefaultCategoriesConfig('universal');
+            }
             return {
-              activePresetId: parsed.activePresetId || 'gaming',
+              activePresetId: parsed.activePresetId || 'universal',
               categories: parsed.categories,
               searchSuggestions: Array.isArray(parsed.searchSuggestions) ? parsed.searchSuggestions : [],
               footerCategoryTitle: parsed.footerCategoryTitle || 'Chuyên Mục Hàng Đầu',
@@ -4294,8 +4298,11 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           if (Array.isArray(items)) {
             const catItem = items.find((i: any) => i.key === 'product_categories_config');
             if (catItem && catItem.extraData && Array.isArray(catItem.extraData.categories)) {
+              if (catItem.extraData.activePresetId === 'gaming' || catItem.extraData.categories.some((c: any) => c.id === 'kiem-hiep-tien-hiep')) {
+                return getDefaultCategoriesConfig('universal');
+              }
               return {
-                activePresetId: catItem.extraData.activePresetId || 'gaming',
+                activePresetId: catItem.extraData.activePresetId || 'universal',
                 categories: catItem.extraData.categories,
                 searchSuggestions: Array.isArray(catItem.extraData.searchSuggestions) ? catItem.extraData.searchSuggestions : [],
                 footerCategoryTitle: catItem.extraData.footerCategoryTitle || 'Chuyên Mục Hàng Đầu',
@@ -4306,7 +4313,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         }
       }
     } catch {}
-    return getDefaultCategoriesConfig('gaming');
+    return getDefaultCategoriesConfig('universal');
   }
 
   saveProductCategoriesConfig(config: ProductCategoriesConfig): void {

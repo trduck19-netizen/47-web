@@ -180,6 +180,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       WHERE id = ? OR order_code = ?
     `).bind(trackingCode, cleanCarrier, nowIso, order_id, order_id).run().catch(() => {});
 
+    let trackingLookupUrl = '';
+    if (cleanCarrier === 'GHN') {
+      trackingLookupUrl = `https://tracking.ghn.vn/?order_code=${trackingCode}`;
+    } else if (cleanCarrier === 'VIETTEL_POST' || cleanCarrier === 'VTP') {
+      trackingLookupUrl = `https://viettelpost.vn/tra-cuu-hanh-trinh-don-hang?id=${trackingCode}`;
+    } else {
+      trackingLookupUrl = `https://giaohangtietkiem.vn/tra-cuu-van-don?order=${trackingCode}`;
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -189,6 +198,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           order_id,
           carrier: cleanCarrier,
           tracking_code: trackingCode,
+          tracking_lookup_url: trackingLookupUrl,
           shipping_fee,
           status: 'CREATED',
         },

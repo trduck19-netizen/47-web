@@ -1106,7 +1106,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === ('game-zone' as any) ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{language === 'en' ? 'Game Zone' : 'Khu Vực Game & Code'}</span>
+              <span>Game Zone</span>
             </button>
 
             <button
@@ -1983,7 +1983,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🎮
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {language === 'en' ? 'Game Zone' : 'Cổng Game'}
+                    Game Zone
                   </span>
                 </button>
 
@@ -2037,7 +2037,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               </div>
 
               {/* Dynamic Universal Category Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-800 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-800 text-center">
                 {categoriesConfig.categories.map((cat) => (
                   <button 
                     key={cat.id}
@@ -2379,9 +2379,9 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-xs mb-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Khu Vực Game & Giftcode Khảo Sát</span>
+                  <span>Khu Vực Game Zone</span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black">CỔNG TIỆN ÍCH GAME & GIFTCODE 0Đ</h2>
+                <h2 className="text-xl sm:text-2xl font-black">GAME ZONE — TIỆN ÍCH GAME & GIFTCODE</h2>
                 <p className="text-xs text-white/80 mt-0.5">
                   Tổng hợp {allGames.length} tựa game có giấy phép ABEI G1/G234, nhận mã miễn phí và tiện ích game.
                 </p>

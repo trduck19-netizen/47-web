@@ -10,6 +10,18 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-303: Xóa Vật Lý Sản Phẩm Test (Hard Delete vs Soft Delete), Deploy Sạch commit_dirty=false & Chuẩn Hóa Danh Mục Đa Ngành
+- **Triệu chứng & Rủi ro**:
+  - Khi xóa sản phẩm bằng lệnh `UPDATE products SET is_active = 0` (soft delete), các dòng dữ liệu thử nghiệm vẫn tồn tại trong CSDL D1. Báo cáo "đã xóa" sẽ bị kiểm toán độc lập đánh giá là chưa xóa vì số dòng trong bảng `products` không về 0.
+  - Chạy lệnh triển khai Cloudflare Pages (`wrangler pages deploy`) khi trong thư mục dự án còn file sửa đổi chưa commit sẽ khiến bản build mang cờ `commit_dirty: True`, gây khó khăn cho việc truy vết phiên bản mã nguồn chính xác.
+  - Cấu hình danh mục mặc định nếu fallback về `'gaming'` hoặc giữ cache `localStorage` cũ sẽ khiến trang chủ sàn TMĐT hiển thị các tab thể loại game (Kiếm Hiệp, Tiên Hiệp...) thay vì các ngành hàng đa ngành.
+  - Tính phí ship bằng công thức ước lượng nội bộ mà không có endpoint backend gọi API mạng của hãng bưu chính (GHTK, GHN) hoặc ghi cứng token giả vào mã nguồn vi phạm bảo mật Rule 10.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Áp dụng lệnh vật lý `DELETE FROM products WHERE id = ?` trong `functions/api/products/[id].ts` và Migration 0031 trong `functions/services/d1_service.ts` để xóa sạch 100% dòng sản phẩm test trong D1 về đúng 0 dòng.
+  - Tuân thủ quy trình Git chuyên nghiệp: Commit toàn bộ thay đổi với working tree sạch sẽ trước khi build và deploy với cờ `--commit-dirty=false`.
+  - Thiết lập preset danh mục mặc định là `'universal'` với 6 ngành hàng đa ngành (`all`, `fashion`, `beauty`, `tech`, `services`, `gaming`), tự động ghi đè preset gaming cũ nếu phát hiện trong bộ nhớ trình duyệt.
+  - Xây dựng endpoint backend `/api/shipping/calculate-fee` kết nối mạng trực tiếp tới bưu cục GHTK và GHN, quản lý token qua biến môi trường Cloudflare (`GHTK_API_TOKEN`, `GHN_API_TOKEN`), trả hướng dẫn rõ ràng khi chưa có token.
+
 ### ISSUE-302: Căn Chỉnh Schema Đơn Hàng D1 (orders table), Định Tuyến DELETE Edge Worker & Phân Tách Kho Hàng Đa Ngành
 - **Triệu chứng & Rủi ro**:
   - Khi tạo đơn VietQR qua `POST /api/orders/create-qr` cho sản phẩm đa ngành (vật lý), nếu hàm xử lý giả định mọi sản phẩm đều có mã trong bảng `inventory_codes` sẽ dẫn đến lỗi trả về `400 OUT_OF_STOCK` hoặc lỗi máy chủ `500 table orders has no column named status: SQLITE_ERROR`.

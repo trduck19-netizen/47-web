@@ -81,7 +81,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       status: 'ONLINE',
       endpoint: 'SePay Webhook Receiver (Cloudflare D1 Production-Ready)',
       service: 'Universal Mall & Admin Portal',
-      currencyRule: '1 VND = 1 Core',
+      currencyRule: '1 VND = 1 VND (Trực tiếp tiền VNĐ Sàn Universal Mall)',
       database: 'Cloudflare D1 (Edge SQLite)',
       idempotency: 'UNIQUE constraint (sepay_transactions.transaction_id)',
       dbReady: isDbReady,
@@ -919,7 +919,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         JSON.stringify({
           success: true,
           status: 'UNMATCHED',
-          message: `Giao dịch ${transactionId} đã được ghi nhận nhưng không khớp cú pháp "WCG <mã thành viên>" hoặc không tìm thấy tài khoản (nội dung: "${content}"). Đã lưu vào hệ thống để admin duyệt nạp thủ công.`,
+          message: `Giao dịch ${transactionId} đã được ghi nhận nhưng không khớp cú pháp "${configuredPrefix} <mã thành viên>" hoặc không tìm thấy tài khoản (nội dung: "${content}"). Đã lưu vào hệ thống để admin duyệt nạp thủ công.`,
           transactionId,
         }),
         { status: 200, headers: CORS_HEADERS }

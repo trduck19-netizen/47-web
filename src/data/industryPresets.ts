@@ -1,6 +1,35 @@
 import type { IndustryPreset, ProductCategoriesConfig, ProductCategoryItem } from '../types/game';
 
 export const INDUSTRY_PRESETS: Record<string, IndustryPreset> = {
+  universal: {
+    id: 'universal',
+    name: 'Sàn Thương Mại Điện Tử Đa Ngành',
+    icon: '🛍️',
+    badge: 'Mặc định',
+    defaultShopName: 'Universal Mall',
+    defaultSlogan: 'Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số',
+    defaultHotline: '0987.654.321',
+    defaultCurrency: 'VND',
+    defaultAccent: 'orange',
+    footerCategoryTitle: 'Ngành Hàng Bán Chạy',
+    headerCategoryTitle: 'Danh Mục Ngành Hàng Toàn Sàn',
+    searchSuggestions: [
+      'Áo thun polo nam',
+      'Serum cấp ẩm B5',
+      'Củ sạc nhanh GaN 65W',
+      'Tài khoản Canva Pro',
+      'Thẻ nạp game Garena',
+    ],
+    categories: [
+      { id: 'all', label: 'Tất Cả Sản Phẩm', icon: '🛍️', description: 'Toàn bộ ngành hàng trên sàn Universal Mall', isSystem: true },
+      { id: 'fashion', label: 'Thời Trang & Phụ Kiện', icon: '👕', description: 'Áo nam nữ, quần jeans, váy đầm, giày dép, túi xách' },
+      { id: 'beauty', label: 'Mỹ Phẩm & Sắc Đẹp', icon: '💄', description: 'Chăm sóc da mặt, son môi, nước hoa, body & tóc' },
+      { id: 'tech', label: 'Thiết Bị Số & Công Nghệ', icon: '📱', description: 'Điện thoại, cáp sạc, tai nghe Bluetooth, gaming gear' },
+      { id: 'services', label: 'Khóa Học & Dịch Vụ', icon: '🎓', description: 'Khóa học online, tài khoản VIP, thiết kế, marketing' },
+      { id: 'gaming', label: 'Gaming & Thẻ Nạp', icon: '🎮', description: 'Thẻ game, tài khoản VIP, giftcode & tiện ích' },
+    ],
+  },
+
   gaming: {
     id: 'gaming',
     name: 'Game & Tiện Ích Số',
@@ -155,10 +184,10 @@ export const INDUSTRY_PRESETS: Record<string, IndustryPreset> = {
 export const INDUSTRY_PRESETS_LIST: IndustryPreset[] = Object.values(INDUSTRY_PRESETS);
 
 export function getIndustryPreset(presetId: string): IndustryPreset {
-  return INDUSTRY_PRESETS[presetId] || INDUSTRY_PRESETS.gaming;
+  return INDUSTRY_PRESETS[presetId] || INDUSTRY_PRESETS.universal;
 }
 
-export function getDefaultCategoriesConfig(presetId: string = 'gaming'): ProductCategoriesConfig {
+export function getDefaultCategoriesConfig(presetId: string = 'universal'): ProductCategoriesConfig {
   const p = getIndustryPreset(presetId);
   return {
     activePresetId: p.id,

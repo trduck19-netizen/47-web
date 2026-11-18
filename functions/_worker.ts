@@ -191,6 +191,7 @@ import * as vouchersVerifyApi from './api/vouchers/verify';
 import * as vouchersRedeemApi from './api/vouchers/redeem';
 import * as vouchersIdApi from './api/vouchers/[id]';
 import * as shippingIndexApi from './api/shipping/index';
+import * as shippingCalculateFeeApi from './api/shipping/calculate-fee';
 import * as shippingIdApi from './api/shipping/[id]';
 import * as platformLeadsIndexApi from './api/platform-leads/index';
 import * as platformLeadsIdApi from './api/platform-leads/[id]';
@@ -925,6 +926,13 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'PUT' || method === 'PATCH') return await vouchersIdApi.onRequestPut(customContext);
         if (method === 'DELETE') return await vouchersIdApi.onRequestDelete(customContext);
         return await vouchersIdApi.onRequestGet(customContext);
+      }
+
+      // Shipping Fee Calculation API (/api/shipping/calculate-fee)
+      if (pathname === '/api/shipping/calculate-fee') {
+        if (method === 'OPTIONS') return await shippingCalculateFeeApi.onRequestOptions(context);
+        if (method === 'POST') return await shippingCalculateFeeApi.onRequestPost(context);
+        return await shippingCalculateFeeApi.onRequestGet(context);
       }
 
       // Shipping Orders API (/api/shipping & /api/shipping/:id)

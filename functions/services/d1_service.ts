@@ -2019,6 +2019,17 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0029_seed_multi_industry_categories_v1 error]', e);
     }
 
+    // Migration 0031: Purge all 7 test products permanently from products table per Owner Order
+    try {
+      const pCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0031_purge_test_products_v1' LIMIT 1").first().catch(() => null);
+      if (!pCheck) {
+        await db.prepare("DELETE FROM products WHERE title LIKE '%[TEST]%' OR title LIKE '%Temporary%' OR is_active = 0;").run().catch(() => {});
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0031_purge_test_products_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0031_purge_test_products_v1 error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);

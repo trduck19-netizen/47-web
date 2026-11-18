@@ -1,4 +1,5 @@
 import { CORS_HEADERS, Env, verifyAdminAuth, verifyAiKeyAuth, hasScope } from '../../services/mission_service';
+import { ensureSchemaUpgrades } from '../../services/d1_service';
 
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -18,6 +19,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         { status: 500, headers: CORS_HEADERS }
       );
     }
+
+    await ensureSchemaUpgrades(env.DB);
 
     const url = new URL(request.url);
     const industryId = url.searchParams.get('industry_id') || url.searchParams.get('industry') || '';
@@ -65,6 +68,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const totalRow = await env.DB.prepare(countQuery).bind(...params).first<any>();
     const total = Number(totalRow?.total || 0);
 
+    const rawTotalRow = await env.DB.prepare('SELECT COUNT(*) as total FROM products').first<any>().catch(() => ({ total: 0 }));
+    const rawTotal = Number(rawTotalRow?.total || 0);
+
     const query = `
       SELECT id, title, slug, industry_id, category_id, product_type,
              original_price, current_price, discount_percent, stock_quantity,
@@ -99,6 +105,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           page,
           limit,
           total,
+          raw_total_rows: rawTotal,
           totalPages: Math.ceil(total / limit),
         },
       }),

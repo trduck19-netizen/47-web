@@ -190,10 +190,10 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       );
     }
 
-    await env.DB.prepare('UPDATE products SET is_active = 0, updated_at = datetime(\'now\') WHERE id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM products WHERE id = ?').bind(id).run();
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Đã ẩn/xóa sản phẩm thành công!' }),
+      JSON.stringify({ success: true, message: 'Đã xóa hoàn toàn sản phẩm khỏi hệ thống!' }),
       { status: 200, headers: CORS_HEADERS }
     );
   } catch (error: any) {

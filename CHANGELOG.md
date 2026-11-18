@@ -7,6 +7,24 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-18]
 
+### 420. Xử Lý Triệt Để 5 Việc Còn Sót Sau Báo Cáo Kiểm Toán Sàn 18/11 (18/11/2026)
+- **Bối cảnh & Yêu cầu của Muse Audit 18/11 (11:40–11:45)**:
+  1. *Việc 1 (Xóa hẳn 7 sản phẩm test trong kho)*: Bảng `products` trong D1 còn 7 dòng test có `is_active = 0`. Yêu cầu xóa vật lý (hard delete) sạch 100% về 0 dòng, không dùng soft-delete.
+  2. *Việc 2 (Deploy sạch bản mới lên live)*: Đảm bảo working tree hoàn toàn sạch (`commit_dirty: False`), build và deploy lại cả 2 dự án Pages `universal-mall-shop` và `admin-universal-mall`, đồng bộ nhánh `main`.
+  3. *Việc 3 (Nối API hãng vận chuyển thật)*: Nối API mạng thật tới bưu cục (GHTK & GHN) qua backend endpoint (`/api/shipping/calculate-fee`), bảo mật token qua biến môi trường Cloudflare (`GHTK_API_TOKEN`, `GHN_API_TOKEN`), sinh định dạng tracking chuẩn hãng và đường dẫn tra cứu bưu chính.
+  4. *Việc 4 (Cấu hình SePay và cập nhật luật tiền tệ)*: Cập nhật luật tiền tệ webhook SePay từ `1 VND = 1 Core` thành `1 VND = 1 VND (Trực tiếp tiền VNĐ Sàn Universal Mall)`, nhận diện thanh toán trực tiếp đơn hàng qua mã `UM <MÃ_ĐƠN>`.
+  5. *Việc 5 (Dọn nốt nội dung game khỏi trang chủ sàn)*: Thay thế hoàn toàn 7 tab thể loại game cũ thành 6 danh mục chuẩn Sàn Universal Mall đa ngành (Tất Cả, Thời Trang & Phụ Kiện, Mỹ Phẩm & Sắc Đẹp, Thiết Bị Số & Công Nghệ, Khóa Học & Dịch Vụ, Gaming & Thẻ Nạp). Tắt modal popup giftcode chào mừng trên trang chủ. Chuẩn hóa tên phân vùng sang `Game Zone`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Hard Delete & Migration 0031 (`functions/services/d1_service.ts`, `functions/api/products/[id].ts`)*: Thêm Migration 0031 chạy câu lệnh `DELETE FROM products WHERE title LIKE '%[TEST]%' OR title LIKE '%Temporary%' OR is_active = 0;`. Sửa API `DELETE /api/products/:id` thành câu lệnh vật lý `DELETE FROM products WHERE id = ?`. Trả thêm `raw_total_rows` trong pagination của `/api/products` để kiểm toán độc lập.
+  2. *Triển khai Pages sạch (`scripts/build.cjs`, wrangler pages deploy)*: Giữ working tree sạch sẽ, biên dịch Edge Worker bundle nhúng đúng mã commit mới, triển khai với cờ `--commit-dirty=false`.
+  3. *Endpoint tính cước bưu cục & tra cứu vận đơn (`functions/api/shipping/calculate-fee.ts`, `functions/api/shipping/index.ts`, `functions/_worker.ts`)*: Xây dựng endpoint backend `/api/shipping/calculate-fee` kết nối mạng trực tiếp tới API bưu cục GHTK (`https://services.giaohangtietkiem.vn/services/shipment/fee`) và GHN (`https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee`). Trả thông báo rõ ràng kèm hướng dẫn cấu hình khi chưa có token đối tác. Sinh URL tra cứu hành trình chính thức theo từng hãng.
+  4. *Cập nhật luật tiền tệ SePay (`functions/api/webhooks/sepay.ts`)*: Chuyển trường `currencyRule` sang `'1 VND = 1 VND (Trực tiếp tiền VNĐ Sàn Universal Mall)'`, định dạng nội dung thanh toán `UM <mã thành viên / mã đơn hàng>`.
+  5. *Chuẩn hóa danh mục đa ngành & Tách Game Zone (`src/data/industryPresets.ts`, `src/services/dataService.ts`, `src/types/floatingNotification.ts`, `src/components/shopee/ShopeeTestView.tsx`, `src/App.tsx`)*: Đặt preset mặc định `universal` gồm 6 danh mục đa ngành. Thêm cơ chế tự động chuyển đổi sang đa ngành nếu localStorage còn lưu preset gaming cũ. Tắt `DEFAULT_FLOATING_NOTIFICATION.enabled = false` và chặn hiển thị trên tab sàn. Chuẩn hóa nhãn `Game Zone`.
+- **Kiểm thử & Nghiệm thu**:
+  - Quét an toàn bảo mật Rule 10: 0 secret rò rỉ.
+  - Build Edge Worker bundle: thành công với Injected Build ID.
+  - Zero test artifacts on production: Kho hàng đa ngành sẵn sàng chờ danh sách sản phẩm thật từ người dùng.
+
 ### 419. Hoàn Thiện Web Thành Sàn Bán Hàng Đa Ngành Universal Mall Thật & Tách Biệt Phân Vùng Game (18/11/2026)
 - **Bối cảnh & Yêu cầu của Chủ sở hữu / Muse Audit**:
   1. *Nạp danh mục & sản phẩm*: Tạo 20 danh mục con cho 5 ngành (thời trang, làm đẹp, công nghệ, dịch vụ, game) trong D1. Xây dựng CRUD sản phẩm trong trang Admin chuẩn Rule 9, trạng thái sản phẩm chờ user cung cấp danh sách hàng thật, không tự bịa sản phẩm ảo.

@@ -6,6 +6,12 @@ export interface Env {
   ADMIN_SYNC_SECRET?: string;
   PINE_API_KEY?: string;
   MUSE_API_KEY?: string;
+  SEPAY_API_KEY?: string;
+  GHTK_API_TOKEN?: string;
+  GHN_API_TOKEN?: string;
+  GHN_SHOP_ID?: string;
+  VIETTEL_POST_TOKEN?: string;
+  MARKETPLACE_CODE_KEY?: string;
 }
 
 export const CORS_HEADERS = {

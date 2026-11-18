@@ -83,9 +83,9 @@ export interface FloatingNotificationConfig {
 }
 
 export const DEFAULT_FLOATING_NOTIFICATION: FloatingNotificationConfig = {
-  enabled: true,
-  title: '🎁 Chào Mừng Đến Với CodeGame.Shop',
-  message: 'Cập nhật hàng ngàn Giftcode VIP và mã bản quyền chính hãng mỗi ngày. Chia sẻ trang để mọi người cùng biết nhé.',
+  enabled: false,
+  title: '🛍️ Chào Mừng Đến Với Universal Mall',
+  message: 'Sàn thương mại điện tử đa ngành chính hãng. Miễn phí vận chuyển toàn quốc và giao mã tự động 0s.',
   iconType: 'gift',
   position: 'center_modal',
   eventSpotlight: {

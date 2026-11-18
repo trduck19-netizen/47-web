@@ -2508,7 +2508,7 @@ export const App: React.FC = () => {
         />
 
         {/* Floating Announcement (Configured via Admin) */}
-        {currentTab !== 'admin' && (
+        {currentTab !== 'admin' && currentTab !== 'shopee-test' && (
           <FloatingAnnouncement onNavigateTab={(tab) => handleSelectTab(tab as any)} />
         )}
       </Suspense>
