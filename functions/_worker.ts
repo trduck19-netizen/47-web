@@ -188,6 +188,7 @@ import * as categoriesIndexApi from './api/categories/index';
 import * as categoriesIdApi from './api/categories/[id]';
 import * as vouchersIndexApi from './api/vouchers/index';
 import * as vouchersVerifyApi from './api/vouchers/verify';
+import * as vouchersRedeemApi from './api/vouchers/redeem';
 import * as vouchersIdApi from './api/vouchers/[id]';
 import * as shippingIndexApi from './api/shipping/index';
 import * as shippingIdApi from './api/shipping/[id]';
@@ -902,7 +903,11 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'DELETE') return await categoriesIdApi.onRequestDelete(customContext);
       }
 
-      // Vouchers API (/api/vouchers, /api/admin/vouchers, /api/vouchers/verify & /api/vouchers/:id)
+      // Vouchers API (/api/vouchers, /api/admin/vouchers, /api/vouchers/verify, /api/vouchers/redeem & /api/vouchers/:id)
+      if (pathname === '/api/vouchers/redeem' || pathname === '/api/admin/vouchers/redeem') {
+        if (method === 'OPTIONS') return await vouchersRedeemApi.onRequestOptions();
+        if (method === 'POST') return await vouchersRedeemApi.onRequestPost(context);
+      }
       if (pathname === '/api/vouchers/verify' || pathname === '/api/admin/vouchers/verify') {
         if (method === 'OPTIONS') return await vouchersVerifyApi.onRequestOptions(context);
         if (method === 'POST') return await vouchersVerifyApi.onRequestPost(context);
@@ -1121,6 +1126,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         }
         if (method === 'OPTIONS') return await adminOrdersIdApi.onRequestOptions();
         if (method === 'GET') return await adminOrdersIdApi.onRequestGet(context);
+        if (method === 'DELETE' && (adminOrdersIdApi as any).onRequestDelete) return await (adminOrdersIdApi as any).onRequestDelete(context);
         return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
       }
 

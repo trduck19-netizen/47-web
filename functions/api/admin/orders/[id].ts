@@ -11,7 +11,7 @@ interface Env {
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Key, X-Admin-Key, X-Api-Key, x-admin-sync-key, X-Requested-With',
 };
 
@@ -117,6 +117,60 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   } catch (err: any) {
     return new Response(
       JSON.stringify({ success: false, error: 'Lỗi máy chủ khi lấy chi tiết đơn hàng: ' + (err?.message || String(err)) }),
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+};
+
+/**
+ * DELETE /api/admin/orders/:id
+ * Dọn dẹp đơn test per Rule 7 (Zero Test Artifacts on Production)
+ */
+export const onRequestDelete: PagesFunction<Env> = async (context) => {
+  const { env, request, params } = context;
+
+  try {
+    if (!env.DB) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Database not available' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    const auth = await verifyAdminAuth(request, env as any, 'STORE_FULL');
+    if (!auth.authorized) {
+      return new Response(
+        JSON.stringify({ success: false, error: auth.error || 'Unauthorized' }),
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+
+    const url = new URL(request.url);
+    let targetId = String(params?.id || url.searchParams.get('id') || '').trim();
+    if (!targetId) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      const lastPart = parts[parts.length - 1];
+      if (lastPart && lastPart !== 'orders') {
+        targetId = lastPart;
+      }
+    }
+
+    if (!targetId) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Thiếu mã đơn hàng (:id).' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    await env.DB.prepare('DELETE FROM orders WHERE id = ? OR order_code = ?').bind(targetId, targetId).run();
+
+    return new Response(
+      JSON.stringify({ success: true, message: `Đã xóa đơn hàng "${targetId}".` }),
+      { status: 200, headers: CORS_HEADERS }
+    );
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Lỗi máy chủ khi xóa đơn hàng: ' + (err?.message || String(err)) }),
       { status: 500, headers: CORS_HEADERS }
     );
   }

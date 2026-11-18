@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-302: Căn Chỉnh Schema Đơn Hàng D1 (orders table), Định Tuyến DELETE Edge Worker & Phân Tách Kho Hàng Đa Ngành
+- **Triệu chứng & Rủi ro**:
+  - Khi tạo đơn VietQR qua `POST /api/orders/create-qr` cho sản phẩm đa ngành (vật lý), nếu hàm xử lý giả định mọi sản phẩm đều có mã trong bảng `inventory_codes` sẽ dẫn đến lỗi trả về `400 OUT_OF_STOCK` hoặc lỗi máy chủ `500 table orders has no column named status: SQLITE_ERROR`.
+  - Trong kiến trúc Edge Worker Pages (`_worker.ts`), nếu không khai báo ủy quyền cho phương thức `DELETE` của module `adminOrdersIdApi`, lệnh `DELETE /api/admin/orders/:id` sẽ bị chặn ở cấp độ Worker trả về mã lỗi `405 Method not allowed`, cản trở việc dọn dẹp đơn test tự động per Rule 7.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Viết hàm `ensureOrdersSchema(db)` kiểm tra `PRAGMA table_info(orders)` và tự động bổ sung mọi cột tương thích (`status`, `order_code`, `user_id`, `member_id`, `buyer_email`, `customer_email`, `customer_name`, `customer_phone`, `product_type`, `subtotal_amount`, v.v.) đảm bảo 100% không bao giờ gặp lỗi thiếu cột.
+  - Phân tách logic kiểm tra kho trong `createQrOrderD1`: Nếu sản phẩm thuộc bảng `products` (đa ngành), kiểm tra trực tiếp `stock_quantity >= qty`, không bắt buộc `inventory_codes`. Hàng vật lý chỉ trừ tồn kho mà không yêu cầu mã số.
+  - Khai báo xử lý method `DELETE` trong `_worker.ts` cho tuyến `/api/admin/orders/:id` kết nối tới `adminOrdersIdApi.onRequestDelete`.
+  - Thực thi kiểm thử mua thật áp voucher thành công và dọn sạch 100% dữ liệu test trong D1 per Rule 7.
+
 ### ISSUE-301: Đồng Bộ Tuyệt Đối Số Đếm Catalog 593 Game, Ngày Hết Hạn WWM (587/55/642), Tab Tin Tức SSOT & Xóa Dữ Liệu Mẫu Đa Ngành
 - **Triệu chứng & Rủi ro**:
   - Khi gộp hoặc đồng bộ dữ liệu nếu vô tình để ngày hết hạn `expires_at` về `null`, mã quá hạn sẽ bị tính thành còn hạn (WWM bị thành 601 còn hạn thay vì 587 còn hạn).

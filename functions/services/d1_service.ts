@@ -696,6 +696,58 @@ export async function ensureGiveawaySchema(db: D1Database): Promise<void> {
   }
 }
 
+let ordersSchemaChecked = false;
+/**
+ * Fast & lightweight schema check for orders table alignment across multi-channel and legacy schemas.
+ */
+export async function ensureOrdersSchema(db: D1Database): Promise<void> {
+  if (ordersSchemaChecked) return;
+  try {
+    const ordersColsInfo: any = await db.prepare('PRAGMA table_info(orders);').all().catch(() => ({ results: [] }));
+    const orderCols = new Set((ordersColsInfo?.results || []).map((r: any) => String(r.name || '').toLowerCase()));
+
+    const colsToAdd: [string, string][] = [
+      ['status', "TEXT NOT NULL DEFAULT 'PENDING'"],
+      ['order_code', 'TEXT'],
+      ['user_id', 'TEXT'],
+      ['member_id', 'TEXT'],
+      ['buyer_email', 'TEXT'],
+      ['customer_email', 'TEXT'],
+      ['customer_name', "TEXT DEFAULT 'Khách hàng'"],
+      ['customer_phone', "TEXT DEFAULT ''"],
+      ['product_type', "TEXT DEFAULT 'physical'"],
+      ['subtotal_amount', 'INTEGER DEFAULT 0'],
+      ['shipping_fee', 'INTEGER DEFAULT 0'],
+      ['shipping_status', "TEXT DEFAULT 'PENDING'"],
+      ['voucher_code', 'TEXT'],
+      ['delivered_codes', "TEXT NOT NULL DEFAULT ''"],
+      ['delivered_codes_json', "TEXT DEFAULT '[]'"],
+      ['balance_before', 'INTEGER NOT NULL DEFAULT 0'],
+      ['balance_after', 'INTEGER NOT NULL DEFAULT 0'],
+      ['idempotency_key', 'TEXT'],
+      ['expires_at', 'TEXT'],
+      ['original_price', 'INTEGER DEFAULT 0'],
+      ['price_paid', 'INTEGER DEFAULT 0'],
+      ['discount_type', 'TEXT'],
+      ['price_rule', 'TEXT'],
+      ['sepay_transaction_id', 'TEXT'],
+      ['paid_at', 'TEXT'],
+      ['updated_at', "TEXT DEFAULT (datetime('now'))"]
+    ];
+
+    for (const [colName, colDef] of colsToAdd) {
+      if (!orderCols.has(colName.toLowerCase())) {
+        await db.prepare(`ALTER TABLE orders ADD COLUMN ${colName} ${colDef};`).run().catch((err) => {
+          console.warn(`[ensureOrdersSchema ADD COLUMN ${colName} error]`, err?.message);
+        });
+      }
+    }
+    ordersSchemaChecked = true;
+  } catch (err: any) {
+    console.warn('[ensureOrdersSchema error]', err?.message);
+  }
+}
+
 /**
  * Safe runtime schema upgrades for utilities (first purchase offer flags)
  */
@@ -1880,6 +1932,91 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       }
     } catch (e) {
       console.warn('[Migration 0028_rotate_compromised_keys_and_purge_raw_keys_v1 error]', e);
+    }
+
+    // Migration 0029: Seed 5 multi-industry categories and configure Universal Mall SePay prefix UM
+    try {
+      const catCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0029_seed_multi_industry_categories_v1' LIMIT 1").first().catch(() => null);
+      if (!catCheck) {
+        // Ensure categories table exists
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS categories (
+            id TEXT PRIMARY KEY,
+            industry_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            icon TEXT,
+            description TEXT,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          )
+        `).run().catch(() => {});
+
+        // 5 Multi-industry categories: Fashion, Beauty, Tech, Services, Gaming (each with 3-5 subcategories)
+        const multiCategories: [string, string, string, string, string, string, number][] = [
+          // 1. Fashion (Thời Trang & Phụ Kiện)
+          ['cat_fash_top', 'fashion', 'Áo Nam & Nữ', 'ao-nam-nu', '👕', 'Áo thun, sơ mi, áo polo, áo khoác unisex', 1],
+          ['cat_fash_bottom', 'fashion', 'Quần Jeans & Kaki', 'quan-jeans-kaki', '👖', 'Quần baggy, quần jogger, quần tây công sở', 2],
+          ['cat_fash_dress', 'fashion', 'Váy Đầm & Set Đồ', 'vay-dam-set-do', '👗', 'Đầm dự tiệc, váy dạo phố, set đồ thiết kế', 3],
+          ['cat_fash_shoes', 'fashion', 'Giày Dép & Sneaker', 'giay-dep-sneaker', '👟', 'Giày thể thao, sandal, giày da cao cấp', 4],
+          ['cat_fash_bags', 'fashion', 'Túi Xách & Balo', 'tui-xach-balo', '🎒', 'Túi đeo chéo, balo thời trang, ví da', 5],
+          // 2. Beauty (Mỹ Phẩm & Sắc Đẹp)
+          ['cat_beau_skincare', 'beauty', 'Chăm Sóc Da Mặt', 'cham-soc-da-mat', '🧴', 'Serum, toner, kem dưỡng ẩm, kem chống nắng', 1],
+          ['cat_beau_makeup', 'beauty', 'Son Môi & Trang Điểm', 'son-moi-trang-diem', '💄', 'Son lì, cushion phấn nước, mascara, phấn mắt', 2],
+          ['cat_beau_perfume', 'beauty', 'Nước Hoa Cao Cấp', 'nuoc-hoa-cao-cap', '🌸', 'Nước hoa nam nữ chính hãng, tinh dầu thơm phòng', 3],
+          ['cat_beau_body', 'beauty', 'Chăm Sóc Body & Tóc', 'cham-soc-body-toc', '🛁', 'Dầu gội thảo mộc, sữa tắm, dưỡng thể toàn thân', 4],
+          // 3. Tech (Thiết Bị Số & Công Nghệ)
+          ['cat_tech_phone', 'tech', 'Điện Thoại & Tablet', 'dien-thoai-tablet', '📱', 'Smartphone, máy tính bảng, máy đọc sách chính hãng', 1],
+          ['cat_tech_charger', 'tech', 'Cáp Sạc & Pin Dự Phòng', 'cap-sac-pin-du-phong', '🔋', 'Củ sạc nhanh GaN, pin sạc MagSafe, cáp Type-C', 2],
+          ['cat_tech_audio', 'tech', 'Tai Nghe & Loa Bluetooth', 'tai-nghe-loa-bluetooth', '🎧', 'Tai nghe chống ồn TWS, loa di động chống nước', 3],
+          ['cat_tech_gear', 'tech', 'Bàn Phím & Chuột Gaming', 'ban-phim-chuot-gaming', '⌨️', 'Bàn phím cơ Bluetooth, chuột silent công thái học', 4],
+          // 4. Services (Khóa Học & Dịch Vụ Số)
+          ['cat_serv_course', 'services', 'Khóa Học Trực Tuyến', 'khoa-hoc-truc-tuyen', '🎓', 'Lập trình, Marketing số, Kỹ năng AI thực chiến', 1],
+          ['cat_serv_license', 'services', 'Tài Khoản & Phần Mềm VIP', 'tai-khoan-phan-mem-vip', '🔑', 'Canva Pro, Office 365, Chatbot AI bản quyền', 2],
+          ['cat_serv_design', 'services', 'Thiết Kế & Media Số', 'thiet-ke-media-so', '🎨', 'Thiết kế logo, bộ nhận diện thương hiệu, banner', 3],
+          ['cat_serv_tools', 'services', 'Công Cụ Marketing & SEO', 'cong-cu-marketing-seo', '📈', 'Tool quét data, hệ thống gửi email tự động, hosting', 4],
+          // 5. Gaming (Game & Tiện Ích Số)
+          ['cat_game_cards', 'gaming', 'Thẻ Game & Nạp Tiền', 'the-game-nap-tien', '💳', 'Thẻ Garena, Zing, Gate, nạp game trực tiếp', 1],
+          ['cat_game_acc', 'gaming', 'Tài Khoản Game VIP', 'tai-khoan-game-vip', '🎮', 'Tài khoản VIP game mobile & PC bảo hành 1-1', 2],
+          ['cat_game_code', 'gaming', 'Giftcode & Tiện Ích Số', 'giftcode-tien-ich-so', '🎁', 'Giftcode độc quyền, tiện ích hỗ trợ game thủ', 3],
+        ];
+
+        for (const [id, indId, name, slug, icon, desc, sort] of multiCategories) {
+          await db.prepare(`
+            INSERT INTO categories (id, industry_id, name, slug, icon, description, sort_order, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
+            ON CONFLICT(id) DO UPDATE SET
+              industry_id = excluded.industry_id,
+              name = excluded.name,
+              slug = excluded.slug,
+              icon = excluded.icon,
+              description = excluded.description,
+              sort_order = excluded.sort_order,
+              is_active = 1
+          `).bind(id, indId, name, slug, icon, desc, sort).run().catch(() => {});
+        }
+
+        // Configure Universal Mall SePay prefix and settings in system_settings
+        const uniMallSepayConfig = JSON.stringify({
+          bankName: 'TPBank',
+          accountNumber: '10004681879',
+          bankAccount: 'UNIVERSAL MALL',
+          paymentPrefix: 'UM',
+          minQrAmount: 2000,
+          qrOrderExpiryMinutes: 15,
+          webhookUrl: 'https://universal-mall-shop.pages.dev/api/webhooks/sepay',
+        });
+        await db.prepare(`
+          INSERT INTO system_settings (key, value, updated_at)
+          VALUES ('wcg_admin_sepay_v4', ?, datetime('now'))
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+        `).bind(uniMallSepayConfig).run().catch(() => {});
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0029_seed_multi_industry_categories_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0029_seed_multi_industry_categories_v1 error]', e);
     }
 
     try {
@@ -5476,6 +5613,9 @@ export interface CreateQrOrderParams {
   discountType?: string;
   discountAmount?: number;
   priceRule?: string;
+  customerName?: string;
+  customerPhone?: string;
+  voucherCode?: string;
 }
 
 export interface CreateQrOrderResult {
@@ -5494,6 +5634,7 @@ export interface CreateQrOrderResult {
  */
 export async function createQrOrderD1(db: D1Database, params: CreateQrOrderParams): Promise<CreateQrOrderResult> {
   await ensureSchemaUpgrades(db);
+  await ensureOrdersSchema(db);
 
   const {
     userId,
@@ -5540,21 +5681,38 @@ export async function createQrOrderD1(db: D1Database, params: CreateQrOrderParam
     }
   }
 
-  // 2. Kiểm tra tồn kho khả dụng và lấy mã AVAILABLE để tạm giữ
-  const availableCodes = await db.prepare(`
-    SELECT id, code_content 
-    FROM inventory_codes 
-    WHERE (product_id = ? OR product_id = (SELECT id FROM store_products WHERE id = ?))
-      AND status = 'AVAILABLE' 
-    LIMIT ?
-  `).bind(productId, productId, qty).all<any>();
+  // 2. Kiểm tra loại sản phẩm: products đa ngành (Universal Mall) hay store_products / utilities (legacy)
+  let multiProduct = await db.prepare('SELECT * FROM products WHERE id = ? LIMIT 1').bind(productId).first<any>();
+  let isMultiProduct = !!multiProduct;
 
-  if (!availableCodes?.results || availableCodes.results.length < qty) {
-    return {
-      success: false,
-      error: 'Sản phẩm tạm thời không đủ số lượng mã trong kho.',
-      code: 'OUT_OF_STOCK',
-    };
+  let selectedCodeIds: string[] = [];
+
+  if (isMultiProduct) {
+    if (Number(multiProduct.stock_quantity || 0) < qty) {
+      return {
+        success: false,
+        error: 'Sản phẩm tạm thời không đủ số lượng trong kho.',
+        code: 'OUT_OF_STOCK',
+      };
+    }
+  } else {
+    // Kiểm tra tồn kho khả dụng và lấy mã AVAILABLE để tạm giữ
+    const availableCodes = await db.prepare(`
+      SELECT id, code_content 
+      FROM inventory_codes 
+      WHERE (product_id = ? OR product_id = (SELECT id FROM store_products WHERE id = ?))
+        AND status = 'AVAILABLE' 
+      LIMIT ?
+    `).bind(productId, productId, qty).all<any>();
+
+    if (!availableCodes?.results || availableCodes.results.length < qty) {
+      return {
+        success: false,
+        error: 'Sản phẩm tạm thời không đủ số lượng mã trong kho.',
+        code: 'OUT_OF_STOCK',
+      };
+    }
+    selectedCodeIds = availableCodes.results.map((c: any) => String(c.id));
   }
 
   // 3. Đọc số dư hiện tại của khách (số dư Core KHÔNG BỊ TRỪ khi chọn QR)
@@ -5565,11 +5723,10 @@ export async function createQrOrderD1(db: D1Database, params: CreateQrOrderParam
   const orderId = params.orderId || `ORD-QR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
   const expiryMins = Math.max(5, Math.min(60, expiryMinutes || 15));
   const expiresAt = new Date(Date.now() + expiryMins * 60 * 1000).toISOString();
-  const selectedCodeIds = availableCodes.results.map((c: any) => String(c.id));
 
   // 5. Thực thi Batch Atomic D1:
-  // - Khóa mã kho: status = 'RESERVED', order_id = orderId
-  // - Trừ tồn kho tạm thời trong store_products
+  // - Khóa mã kho (nếu có): status = 'RESERVED', order_id = orderId
+  // - Trừ tồn kho tạm thời trong products hoặc store_products
   // - Tạo bản ghi đơn hàng với payment_status = 'PENDING_PAYMENT', payment_method = 'vietqr'
   // - Ghi nhật ký kiểm toán security_logs
   const stmts: any[] = [];
@@ -5580,35 +5737,54 @@ export async function createQrOrderD1(db: D1Database, params: CreateQrOrderParam
     );
   }
 
-  stmts.push(
-    db.prepare("UPDATE store_products SET stock_quantity = MAX(0, stock_quantity - ?) WHERE id = ?").bind(qty, productId)
-  );
+  if (isMultiProduct) {
+    stmts.push(
+      db.prepare("UPDATE products SET stock_quantity = MAX(0, stock_quantity - ?) WHERE id = ?").bind(qty, productId)
+    );
+  } else {
+    stmts.push(
+      db.prepare("UPDATE store_products SET stock_quantity = MAX(0, stock_quantity - ?) WHERE id = ?").bind(qty, productId)
+    );
+  }
+
+  const customerName = params.customerName || (user?.display_name || user?.username || 'Khách hàng');
+  const customerPhone = params.customerPhone || (user?.phone || '0900000000');
+  const prodType = isMultiProduct ? (multiProduct.product_type || 'physical') : 'digital';
 
   stmts.push(
     db.prepare(`
       INSERT INTO orders (
-        id, member_id, buyer_email, product_id, product_title,
-        quantity, unit_price, total_amount, status,
-        balance_before, balance_after, delivered_codes,
+        id, order_code, user_id, member_id, buyer_email, customer_email,
+        customer_name, customer_phone, product_id, product_title, product_type,
+        quantity, unit_price, subtotal_amount, total_amount, status,
+        balance_before, balance_after, delivered_codes, delivered_codes_json,
         idempotency_key, payment_method, expires_at,
         payment_status, original_price, price_paid,
-        discount_type, discount_amount, price_rule, created_at
+        discount_type, discount_amount, price_rule, voucher_code, created_at, updated_at
       ) VALUES (
+        ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
-        ?, ?, ?, 'PENDING',
-        ?, ?, '',
+        ?, ?, ?, ?, 'PENDING',
+        ?, ?, '', '[]',
         ?, 'vietqr', ?,
         'PENDING_PAYMENT', ?, ?,
-        ?, ?, ?, datetime('now')
+        ?, ?, ?, ?, datetime('now'), datetime('now')
       )
     `).bind(
       orderId,
+      orderId,
+      userId,
       userId,
       buyerEmail,
+      buyerEmail,
+      customerName,
+      customerPhone,
       productId,
       productTitle,
+      prodType,
       qty,
       unitPrice,
+      originalPrice,
       totalAmount,
       currentBalance,
       currentBalance, // Giữ nguyên số dư Core
@@ -5618,7 +5794,8 @@ export async function createQrOrderD1(db: D1Database, params: CreateQrOrderParam
       pricePaid,
       discountType,
       discountAmount,
-      priceRule || null
+      priceRule || null,
+      params.voucherCode || null
     )
   );
 
@@ -5705,8 +5882,14 @@ export async function checkAndExpireOrdersD1(db: D1Database, targetOrderId?: str
         WHERE id = ?
       `).bind(qty, pId);
 
+      const stmtStockMulti = db.prepare(`
+        UPDATE products 
+        SET stock_quantity = stock_quantity + ? 
+        WHERE id = ?
+      `).bind(qty, pId);
+
       // 1. Thực thi batch hoàn trả mã kho và hủy đơn quá hạn
-      await db.batch([stmtOrder, stmtCodes, stmtStock]);
+      await db.batch([stmtOrder, stmtCodes, stmtStock, stmtStockMulti]);
       count++;
 
       // 2. Ghi nhật ký kiểm toán bất đồng bộ

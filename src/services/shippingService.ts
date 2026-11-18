@@ -115,12 +115,12 @@ export const CARRIERS: Record<CarrierCode, CarrierInfo> = {
 };
 
 export const DEFAULT_CARRIER_CONFIG: CarrierApiConfig = {
-  mode: 'sandbox',
-  ghtkToken: 'sandbox_ghtk_token_wcg_2026',
-  ghnToken: 'sandbox_ghn_token_wcg_2026',
-  ghnShopId: '123456',
-  vtpUsername: 'sandbox_vtp_user',
-  vtpPassword: 'sandbox_vtp_password',
+  mode: 'production',
+  ghtkToken: '',
+  ghnToken: '',
+  ghnShopId: '',
+  vtpUsername: '',
+  vtpPassword: '',
   activeCarriers: ['GHTK', 'GHN', 'VTP'],
   defaultCarrier: 'GHTK',
 };

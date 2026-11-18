@@ -5,6 +5,30 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-18]
+
+### 419. Hoàn Thiện Web Thành Sàn Bán Hàng Đa Ngành Universal Mall Thật & Tách Biệt Phân Vùng Game (18/11/2026)
+- **Bối cảnh & Yêu cầu của Chủ sở hữu / Muse Audit**:
+  1. *Nạp danh mục & sản phẩm*: Tạo 20 danh mục con cho 5 ngành (thời trang, làm đẹp, công nghệ, dịch vụ, game) trong D1. Xây dựng CRUD sản phẩm trong trang Admin chuẩn Rule 9, trạng thái sản phẩm chờ user cung cấp danh sách hàng thật, không tự bịa sản phẩm ảo.
+  2. *Tách nội dung game ra khỏi trang chủ sàn*: Trang chủ `/` chuyển 100% thành sàn đa ngành (Banner, 5 ngành hàng, Flash Sale đa ngành, Voucher sàn). Chuyển toàn bộ 593 game, giftcode 0đ, tin tức game vào tiểu phân vùng chuyên biệt `/game-zone`.
+  3. *Vận chuyển thật & giao mã tự động*: Hàng vật lý phân tách vận chuyển qua các hãng GHTK, GHN, Viettel Post; hàng số giao mã trực tiếp tự động 0đ ship. Xóa sạch token sandbox giả định.
+  4. *Cấu hình thanh toán SePay riêng & Mua thử thật*: Tiền tố thanh toán `UM` (Universal Mall), webhook `/api/webhooks/sepay`. Mua thử thành công đơn hàng thật áp voucher `MALL50K`, sinh mã VietQR chuẩn NAPAS 247/EMVCo, và tự động dọn sạch 100% dữ liệu test per Rule 7.
+  5. *Đồng bộ voucher qua API & kho*: Quản lý voucher hoàn toàn qua API `/api/vouchers` và D1, loại bỏ lưu trữ `localStorage`, hỗ trợ áp dụng và trừ lượt sử dụng qua `/api/vouchers/redeem`.
+  6. *Sửa triệt để số liệu ghi cứng*: Xóa bỏ hoàn toàn các chuỗi ghi cứng "10 gói Hiệp Khách Hành", nút "Cửa Hàng Đa Ngành (10)", fallback 593...
+- **Giải pháp áp dụng (Solution)**:
+  1. Migration 0029 & 0030: Gieo 20 danh mục đa ngành chuẩn D1 và căn chỉnh cấu trúc tương thích bảng `orders` cho cả hàng vật lý và sản phẩm số.
+  2. Cập nhật `ShopeeTestView.tsx`: Tách biệt phân vùng giao diện `subView === 'home'` (100% Sàn thương mại điện tử đa ngành) và `subView === 'game-zone'` (Khu vực Cổng game & Giftcode).
+  3. Dọn sạch fake tokens trong `shippingService.ts`, chuyển sang chế độ `production`.
+  4. Cấu hình định dạng memo SePay tiền tố `UM`, kiểm thử quy trình tạo đơn VietQR và xóa sạch dữ liệu test trong D1 per Rule 7.
+  5. Kết nối trực tiếp `voucherService.ts` với D1 endpoint `/api/vouchers` và `/api/vouchers/redeem`.
+- **Kiểm thử & Nghiệm thu**:
+  - `POST /api/products`: 201 (Thêm sản phẩm thành công) & DELETE dọn sạch.
+  - `POST /api/orders/create-qr`: 200 (Tạo đơn VietQR áp voucher MALL50K thành công).
+  - `GET /api/categories`: 200 (Trả về đủ 20 danh mục con cho 5 ngành).
+  - `GET /api/vouchers`: 200 (4 voucher hoạt động: FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10).
+  - Quét an toàn bảo mật Rule 10: 0 secret rò rỉ.
+  - Zero test artifacts on production: CSDL D1 sạch 100% (products: 0, orders: 0).
+
 ## [2026-11-17]
 
 ### 418. Khôi Phục Ngày Hết Hạn 14 Mã WWM, Đồng Bộ Số Đếm 593 Game Chuẩn SSOT, Ổn Định Tab Tin Tức & Xóa 14 Sản Phẩm Mẫu Đa Ngành (17/11/2026)

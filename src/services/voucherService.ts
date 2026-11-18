@@ -43,21 +43,20 @@ export interface VoucherStackingResult {
   totalSavings: number;
 }
 
-const STORAGE_KEY_VOUCHERS = 'wcg_vouchers_registry_v1';
-
 export const INITIAL_VOUCHERS: VoucherItem[] = [
   {
-    id: 'vc_fs_15k',
-    code: 'FREESHIP15K',
-    title: 'Freeship Xtra 15.000đ',
-    description: 'Giảm 15.000đ phí vận chuyển cho đơn hàng từ 50.000đ',
+    id: 'v_free_01',
+    code: 'FREESHIP30K',
+    title: 'Freeship Toàn Quốc 30.000đ',
+    description: 'Giảm 30.000đ phí vận chuyển cho đơn hàng từ 100.000đ',
     voucherType: 'freeship',
     discountType: 'fixed',
-    discountValue: 15000,
-    minOrderValue: 50000,
-    scopeType: 'physical_only',
+    discountValue: 30000,
+    maxDiscount: 30000,
+    minOrderValue: 100000,
+    scopeType: 'all',
     totalUsage: 1000,
-    usedCount: 234,
+    usedCount: 0,
     startDate: '2026-01-01T00:00:00Z',
     endDate: '2026-12-31T23:59:59Z',
     isActive: true,
@@ -65,17 +64,18 @@ export const INITIAL_VOUCHERS: VoucherItem[] = [
     highlightColor: '#00bfa5',
   },
   {
-    id: 'vc_fs_30k',
-    code: 'FREESHIP30K',
-    title: 'Freeship Toàn Quốc 30.000đ',
-    description: 'Giảm 30.000đ phí vận chuyển cho đơn hàng từ 150.000đ',
+    id: 'v_free_02',
+    code: 'FREESHIPMAX',
+    title: 'Freeship Max 50.000đ',
+    description: 'Giảm 50.000đ phí vận chuyển cho đơn hàng từ 300.000đ',
     voucherType: 'freeship',
     discountType: 'fixed',
-    discountValue: 30000,
-    minOrderValue: 150000,
-    scopeType: 'physical_only',
-    totalUsage: 500,
-    usedCount: 189,
+    discountValue: 50000,
+    maxDiscount: 50000,
+    minOrderValue: 300000,
+    scopeType: 'all',
+    totalUsage: 1000,
+    usedCount: 0,
     startDate: '2026-01-01T00:00:00Z',
     endDate: '2026-12-31T23:59:59Z',
     isActive: true,
@@ -83,114 +83,42 @@ export const INITIAL_VOUCHERS: VoucherItem[] = [
     highlightColor: '#00bfa5',
   },
   {
-    id: 'vc_fs_100pct',
-    code: 'FREESHIPALL',
-    title: 'Miễn Phí Vận Chuyển 100%',
-    description: 'Miễn 100% phí ship (tối đa 50.000đ) cho đơn từ 300.000đ',
-    voucherType: 'freeship',
-    discountType: 'percent',
-    discountValue: 100,
-    maxDiscount: 50000,
-    minOrderValue: 300000,
-    scopeType: 'physical_only',
-    totalUsage: 200,
-    usedCount: 78,
-    startDate: '2026-01-01T00:00:00Z',
-    endDate: '2026-12-31T23:59:59Z',
-    isActive: true,
-    badgeText: 'Freeship 100%',
-    highlightColor: '#00bfa5',
-  },
-  {
-    id: 'vc_san_20k',
-    code: 'SAN20K',
-    title: 'Voucher Sàn Giảm 20.000đ',
-    description: 'Giảm ngay 20.000đ cho đơn hàng bất kỳ từ 99.000đ',
-    voucherType: 'platform',
-    discountType: 'fixed',
-    discountValue: 20000,
-    minOrderValue: 99000,
-    scopeType: 'all',
-    totalUsage: 2000,
-    usedCount: 842,
-    startDate: '2026-01-01T00:00:00Z',
-    endDate: '2026-12-31T23:59:59Z',
-    isActive: true,
-    badgeText: 'Toàn Sàn',
-    highlightColor: '#ee4d2d',
-  },
-  {
-    id: 'vc_san_10pct',
-    code: 'SAN10PCT',
-    title: 'Siêu Hội Mua Sắm - Giảm 10%',
-    description: 'Giảm 10% (tối đa 50.000đ) cho đơn hàng từ 150.000đ',
-    voucherType: 'platform',
-    discountType: 'percent',
-    discountValue: 10,
-    maxDiscount: 50000,
-    minOrderValue: 150000,
-    scopeType: 'all',
-    totalUsage: 800,
-    usedCount: 321,
-    startDate: '2026-01-01T00:00:00Z',
-    endDate: '2026-12-31T23:59:59Z',
-    isActive: true,
-    badgeText: 'Shopee Mall',
-    highlightColor: '#ee4d2d',
-  },
-  {
-    id: 'vc_san_50k',
-    code: 'SAN50K',
-    title: 'Voucher Độc Quyền Giảm 50.000đ',
-    description: 'Giảm cực lớn 50.000đ cho đơn hàng từ 250.000đ',
+    id: 'v_disc_01',
+    code: 'MALL50K',
+    title: 'Voucher Sàn Giảm 50.000đ',
+    description: 'Giảm 50.000đ cho đơn hàng đa ngành từ 200.000đ',
     voucherType: 'platform',
     discountType: 'fixed',
     discountValue: 50000,
-    minOrderValue: 250000,
+    maxDiscount: 50000,
+    minOrderValue: 200000,
     scopeType: 'all',
-    totalUsage: 300,
-    usedCount: 165,
+    totalUsage: 1000,
+    usedCount: 0,
     startDate: '2026-01-01T00:00:00Z',
     endDate: '2026-12-31T23:59:59Z',
     isActive: true,
-    badgeText: 'Hot Voucher',
+    badgeText: 'Mall 50K',
     highlightColor: '#ee4d2d',
   },
   {
-    id: 'vc_shop_game10k',
-    code: 'GAMEVIP10K',
-    title: 'Voucher Game VIP Giảm 10.000đ',
-    description: 'Giảm 10.000đ cho tất cả mã thẻ, tài khoản game từ 50.000đ',
-    voucherType: 'shop',
-    discountType: 'fixed',
-    discountValue: 10000,
-    minOrderValue: 50000,
-    scopeType: 'digital_only',
-    totalUsage: 1500,
-    usedCount: 654,
+    id: 'v_disc_02',
+    code: 'UNIVERSAL10',
+    title: 'Siêu Hội Mua Sắm - Giảm 10%',
+    description: 'Giảm 10% (tối đa 100.000đ) cho đơn hàng từ 150.000đ',
+    voucherType: 'platform',
+    discountType: 'percent',
+    discountValue: 10,
+    maxDiscount: 100000,
+    minOrderValue: 150000,
+    scopeType: 'all',
+    totalUsage: 1000,
+    usedCount: 0,
     startDate: '2026-01-01T00:00:00Z',
     endDate: '2026-12-31T23:59:59Z',
     isActive: true,
-    badgeText: 'Shop Game',
-    highlightColor: '#8b5cf6',
-  },
-  {
-    id: 'vc_shop_fashion25k',
-    code: 'FASHION25K',
-    title: 'Thời Trang & Mỹ Phẩm Giảm 25.000đ',
-    description: 'Giảm 25.000đ khi đặt mua quần áo, phụ kiện từ 120.000đ',
-    voucherType: 'shop',
-    discountType: 'fixed',
-    discountValue: 25000,
-    minOrderValue: 120000,
-    scopeType: 'physical_only',
-    totalUsage: 500,
-    usedCount: 112,
-    startDate: '2026-01-01T00:00:00Z',
-    endDate: '2026-12-31T23:59:59Z',
-    isActive: true,
-    badgeText: 'Shop Thời Trang',
-    highlightColor: '#ec4899',
+    badgeText: 'Giảm 10%',
+    highlightColor: '#ee4d2d',
   },
 ];
 
@@ -202,32 +130,85 @@ class VoucherService {
   }
 
   private init() {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = localStorage.getItem(STORAGE_KEY_VOUCHERS);
-        if (raw) {
-          const list: VoucherItem[] = JSON.parse(raw);
-          list.forEach((v) => this.vouchers.set(v.id, v));
-        } else {
-          // Initialize defaults
-          INITIAL_VOUCHERS.forEach((v) => this.vouchers.set(v.id, v));
-          this.save();
-        }
-      } else {
-        INITIAL_VOUCHERS.forEach((v) => this.vouchers.set(v.id, v));
-      }
-    } catch {
-      INITIAL_VOUCHERS.forEach((v) => this.vouchers.set(v.id, v));
+    // 1. Nạp danh mục voucher thật mặc định khớp 100% CSDL D1
+    INITIAL_VOUCHERS.forEach((v) => this.vouchers.set(v.id, v));
+
+    // 2. Tự động đồng bộ trực tiếp từ Cloudflare D1 API /api/vouchers
+    if (typeof window !== 'undefined') {
+      this.fetchVouchersFromApi().catch(() => {});
     }
   }
 
-  private save() {
+  /**
+   * Đồng bộ danh sách voucher thời gian thực từ CSDL D1 (/api/vouchers)
+   */
+  public async fetchVouchersFromApi(): Promise<VoucherItem[]> {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const list = Array.from(this.vouchers.values());
-        localStorage.setItem(STORAGE_KEY_VOUCHERS, JSON.stringify(list));
+      const res = await fetch('/api/vouchers');
+      if (res.ok) {
+        const json: any = await res.json();
+        if (json && json.success && Array.isArray(json.data)) {
+          this.vouchers.clear();
+          json.data.forEach((row: any) => {
+            const codeUpper = String(row.code || '').toUpperCase().trim();
+            const isFreeship = row.voucher_type === 'freeship' || codeUpper.startsWith('FREE');
+            const item: VoucherItem = {
+              id: row.id,
+              code: codeUpper,
+              title: isFreeship
+                ? (row.discount_value >= 50000 ? 'Freeship Max 50.000đ' : 'Freeship Toàn Quốc 30.000đ')
+                : (row.discount_type === 'percent' ? `Siêu Hội Mua Sắm - Giảm ${row.discount_value}%` : `Voucher Sàn Giảm ${Number(row.discount_value).toLocaleString('vi-VN')}đ`),
+              description: isFreeship
+                ? `Giảm ${Number(row.discount_value).toLocaleString('vi-VN')}đ phí vận chuyển cho đơn từ ${Number(row.min_order_amount).toLocaleString('vi-VN')}đ`
+                : `Giảm ${row.discount_type === 'percent' ? `${row.discount_value}%` : `${Number(row.discount_value).toLocaleString('vi-VN')}đ`} cho đơn từ ${Number(row.min_order_amount).toLocaleString('vi-VN')}đ`,
+              voucherType: isFreeship ? 'freeship' : 'platform',
+              discountType: row.discount_type || 'fixed',
+              discountValue: Number(row.discount_value) || 0,
+              maxDiscount: row.max_discount_amount ? Number(row.max_discount_amount) : undefined,
+              minOrderValue: Number(row.min_order_amount) || 0,
+              scopeType: 'all',
+              totalUsage: Number(row.usage_limit) || 1000,
+              usedCount: Number(row.usage_count) || 0,
+              startDate: row.start_date || '2026-01-01T00:00:00Z',
+              endDate: row.end_date || '2026-12-31T23:59:59Z',
+              isActive: row.is_active === 1 || row.is_active === true,
+              badgeText: isFreeship ? 'Freeship Xtra' : 'Mall Voucher',
+              highlightColor: isFreeship ? '#00bfa5' : '#ee4d2d',
+            };
+            this.vouchers.set(item.id, item);
+          });
+          return Array.from(this.vouchers.values());
+        }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('[VoucherService] sync from /api/vouchers error, keeping in-memory D1 vouchers:', err);
+    }
+    return Array.from(this.vouchers.values());
+  }
+
+  /**
+   * Trừ lượt dùng voucher trong Cloudflare D1 khi đơn hàng thanh toán thành công
+   */
+  public async redeemVoucher(code: string, orderId?: string): Promise<boolean> {
+    const cleanCode = code.trim().toUpperCase();
+    try {
+      const res = await fetch('/api/vouchers/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: cleanCode, order_id: orderId }),
+      });
+      if (res.ok) {
+        // Cập nhật số lượt dùng trong bộ nhớ cache
+        const v = this.getByCode(cleanCode);
+        if (v) {
+          v.usedCount = (v.usedCount || 0) + 1;
+        }
+        return true;
+      }
+    } catch (err) {
+      console.warn('[VoucherService] redeem voucher error:', err);
+    }
+    return false;
   }
 
   public getAll(): VoucherItem[] {
@@ -356,18 +337,20 @@ class VoucherService {
   /**
    * Ghi nhận sử dụng voucher sau khi đặt hàng thành công
    */
-  public recordUsage(code?: string): void {
+  public recordUsage(code?: string, orderId?: string): void {
     if (!code) return;
-    const v = this.getByCode(code);
+    const cleanCode = code.trim().toUpperCase();
+    const v = this.getByCode(cleanCode);
     if (v) {
-      v.usedCount = Math.min(v.totalUsage, v.usedCount + 1);
+      v.usedCount = Math.min(v.totalUsage, (v.usedCount || 0) + 1);
       this.vouchers.set(v.id, v);
-      this.save();
     }
+    // Ghi nhận trực tiếp vào CSDL D1 qua endpoint /api/vouchers/redeem
+    this.redeemVoucher(cleanCode, orderId).catch(() => {});
   }
 
   /**
-   * Quản trị CRUD Voucher
+   * Quản trị CRUD Voucher (Đồng bộ bộ nhớ RAM client)
    */
   public saveVoucher(item: Partial<VoucherItem> & { code: string; title: string }): VoucherItem {
     const existing = item.id ? this.vouchers.get(item.id) : undefined;
@@ -393,21 +376,17 @@ class VoucherService {
       highlightColor: item.highlightColor || (item.voucherType === 'freeship' ? '#00bfa5' : '#ee4d2d'),
     };
     this.vouchers.set(id, fullItem);
-    this.save();
     return fullItem;
   }
 
   public deleteVoucher(id: string): boolean {
-    const ok = this.vouchers.delete(id);
-    if (ok) this.save();
-    return ok;
+    return this.vouchers.delete(id);
   }
 
   public toggleVoucher(id: string): boolean {
     const item = this.vouchers.get(id);
     if (!item) return false;
     item.isActive = !item.isActive;
-    this.save();
     return item.isActive;
   }
 }

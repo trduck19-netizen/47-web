@@ -80,7 +80,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       success: true,
       status: 'ONLINE',
       endpoint: 'SePay Webhook Receiver (Cloudflare D1 Production-Ready)',
-      service: 'CodeGame.Shop & Admin Shop',
+      service: 'Universal Mall & Admin Portal',
       currencyRule: '1 VND = 1 Core',
       database: 'Cloudflare D1 (Edge SQLite)',
       idempotency: 'UNIQUE constraint (sepay_transactions.transaction_id)',
@@ -149,7 +149,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 2. Xác thực API Key 2 tầng bảo mật (Cloudflare Environment Variable hoặc D1 System Settings)
     let configuredApiKey = (env.SEPAY_API_KEY || '').trim();
-    let configuredPrefix = 'WCG';
+    let configuredPrefix = 'UM';
     let autoCreditRatio = 1;
     let configuredAccountNumber = '';
     let configuredBankName = '';
@@ -163,7 +163,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           configuredApiKey = parsed.apiKey.trim();
         }
         if (parsed?.paymentPrefix && typeof parsed.paymentPrefix === 'string') {
-          configuredPrefix = parsed.paymentPrefix.trim().toUpperCase() || 'WCG';
+          configuredPrefix = parsed.paymentPrefix.trim().toUpperCase() || 'UM';
         }
         if (parsed?.accountNumber && typeof parsed.accountNumber === 'string') {
           configuredAccountNumber = parsed.accountNumber.trim();
@@ -318,11 +318,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const cleanContent = content.replace(/\u00a0/g, ' ').trim();
 
     // 4b. Kiểm tra xem giao dịch có phải là thanh toán ĐƠN HÀNG TRỰC TIẾP (Direct QR Order) hay không
-    // Cú pháp: WCG ORD-QR-... hoặc ORD-QR-... hoặc WCG ORD-... hoặc CGM-...
+    // Cú pháp: UM ORD-QR-... hoặc ORD-QR-... hoặc UNIMALL ORD-... hoặc WCG ORD-... hoặc CGM-...
     const orderIdMatch = cleanContent.match(/\b(ORD(?:-QR)?-[A-Za-z0-9_-]+)\b/i) ||
       cleanContent.match(/\b(CGM-[A-Za-z0-9_-]+)\b/i) ||
-      cleanContent.match(/(?:WCG|COD)\s*[:\-\s]?\s*(ORD[A-Za-z0-9_-]+)/i) ||
-      cleanContent.match(/(?:WCG|COD)\s*[:\-\s]?\s*(CGM-[A-Za-z0-9_-]+)/i);
+      cleanContent.match(/(?:UM|UNIMALL|WCG|COD)\s*[:\-\s]?\s*(ORD[A-Za-z0-9_-]+)/i) ||
+      cleanContent.match(/(?:UM|UNIMALL|WCG|COD)\s*[:\-\s]?\s*(CGM-[A-Za-z0-9_-]+)/i);
 
     if (orderIdMatch) {
       const orderId = orderIdMatch[1].trim();

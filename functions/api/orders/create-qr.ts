@@ -222,10 +222,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 2. Tìm kiếm sản phẩm trong D1
+    // 2. Tìm kiếm sản phẩm trong D1 (store_products, products đa ngành, utilities)
     let product: any = null;
     if (targetId) {
       product = await env.DB.prepare('SELECT * FROM store_products WHERE id = ? LIMIT 1').bind(targetId).first<any>();
+      if (!product) {
+        product = await env.DB.prepare('SELECT * FROM products WHERE id = ? LIMIT 1').bind(targetId).first<any>();
+      }
       if (!product) {
         product = await env.DB.prepare('SELECT * FROM utilities WHERE id = ? LIMIT 1').bind(targetId).first<any>();
       }
@@ -234,6 +237,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (!product && productTitle) {
       const cleanTitle = String(productTitle).trim().toLowerCase();
       product = await env.DB.prepare('SELECT * FROM store_products WHERE LOWER(title) = ? LIMIT 1').bind(cleanTitle).first<any>();
+      if (!product) {
+        product = await env.DB.prepare('SELECT * FROM products WHERE LOWER(title) = ? LIMIT 1').bind(cleanTitle).first<any>();
+      }
       if (!product) {
         product = await env.DB.prepare('SELECT * FROM utilities WHERE LOWER(title) = ? LIMIT 1').bind(cleanTitle).first<any>();
       }
@@ -352,11 +358,40 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
+    // 3.1 Áp dụng Voucher giảm giá nếu khách hàng cung cấp
+    const effectiveVoucherCode = String(body?.voucherCode || body?.voucher_code || '').trim().toUpperCase();
+    if (effectiveVoucherCode) {
+      try {
+        const vRec = await env.DB.prepare(
+          'SELECT * FROM vouchers WHERE UPPER(code) = ? AND is_active = 1 LIMIT 1'
+        ).bind(effectiveVoucherCode).first<any>();
+        if (vRec) {
+          let vDiscount = 0;
+          if (vRec.discount_type === 'percent') {
+            vDiscount = Math.round((finalTotalAmount * Number(vRec.discount_value)) / 100);
+          } else {
+            vDiscount = Number(vRec.discount_value) || 0;
+          }
+          if (vRec.max_discount && Number(vRec.max_discount) > 0 && vDiscount > Number(vRec.max_discount)) {
+            vDiscount = Number(vRec.max_discount);
+          }
+          if (vDiscount > 0) {
+            discountAmount += vDiscount;
+            finalTotalAmount = Math.max(2000, finalTotalAmount - vDiscount);
+            pricePaidTotal = finalTotalAmount;
+            discountType = `voucher:${vRec.code}`;
+          }
+        }
+      } catch (e) {
+        console.warn('[Voucher application warning]', e);
+      }
+    }
+
     // 4. Đọc cấu hình SePay từ D1 system_settings
     let bankName = 'TPBank';
     let accountNumber = '10004681879';
-    let bankAccount = 'CODE GAME SHOP';
-    let paymentPrefix = 'WCG';
+    let bankAccount = 'UNIVERSAL MALL';
+    let paymentPrefix = 'UM';
     let minQrAmount = 2000;
     let qrOrderExpiryMinutes = 15;
 
@@ -369,7 +404,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         if (parsed?.bankName) bankName = parsed.bankName.trim();
         if (parsed?.accountNumber) accountNumber = parsed.accountNumber.trim();
         if (parsed?.bankAccount) bankAccount = parsed.bankAccount.trim();
-        if (parsed?.paymentPrefix) paymentPrefix = parsed.paymentPrefix.trim().toUpperCase() || 'WCG';
+        if (parsed?.paymentPrefix) paymentPrefix = parsed.paymentPrefix.trim().toUpperCase() || 'UM';
         if (parsed?.minQrAmount && Number(parsed.minQrAmount) > 0) minQrAmount = Number(parsed.minQrAmount);
         if (parsed?.qrOrderExpiryMinutes && Number(parsed.qrOrderExpiryMinutes) > 0) qrOrderExpiryMinutes = Number(parsed.qrOrderExpiryMinutes);
       }
@@ -389,9 +424,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       } catch {}
     }
 
-    if (!configuredApiKey && !env.ADMIN_SYNC_SECRET) {
+    if (!configuredApiKey && !env.ADMIN_SYNC_SECRET && !accountNumber) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Chưa cấu hình SePay API Key trên máy chủ. Không thể tạo đơn thanh toán QR lúc này.' }),
+        JSON.stringify({ success: false, message: 'Chưa cấu hình SePay API Key hoặc thông tin tài khoản nhận tiền trên máy chủ.' }),
         { status: 500, headers: CORS_HEADERS }
       );
     }
@@ -430,6 +465,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       discountType,
       discountAmount,
       priceRule,
+      customerName: member.display_name || member.username || 'Khách hàng',
+      customerPhone: member.phone || '',
+      voucherCode: effectiveVoucherCode || undefined,
     });
 
     if (!qrResult.success) {
