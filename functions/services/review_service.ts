@@ -73,16 +73,15 @@ export async function getProductReviews(
     hasReviewed = !!existing;
 
     // 2. Kiểm tra đã mua chưa (ở orders hoặc seller_orders)
-    const pattern = `%"id":"${productId}"%`;
     const orderCheck = await db
       .prepare(`
         SELECT id FROM orders
         WHERE member_id = ?
-          AND (product_id = ? OR items LIKE ?)
+          AND product_id = ?
           AND (status IN ('COMPLETED', 'HOLDING', 'PAID') OR payment_status = 'PAID')
         LIMIT 1
       `)
-      .bind(currentUserId, productId, pattern)
+      .bind(currentUserId, productId)
       .first<any>();
 
     if (orderCheck) {
@@ -150,18 +149,17 @@ export async function createProductReview(
     }
 
     // 3. Kiểm tra xem tài khoản đã mua sản phẩm hay chưa
-    const pattern = `%"id":"${productId}"%`;
     let hasBought = false;
 
     const orderCheck = await db
       .prepare(`
         SELECT id FROM orders
         WHERE member_id = ?
-          AND (product_id = ? OR items LIKE ?)
+          AND product_id = ?
           AND (status IN ('COMPLETED', 'HOLDING', 'PAID') OR payment_status = 'PAID')
         LIMIT 1
       `)
-      .bind(userId, productId, pattern)
+      .bind(userId, productId)
       .first<any>();
 
     if (orderCheck) {
