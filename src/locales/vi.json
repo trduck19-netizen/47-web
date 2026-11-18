@@ -355,7 +355,9 @@
       "side1Desc": "Hoàn tiền 100% nếu mã lỗi",
       "side2Badge": "VietQR 0S",
       "side2Title": "Nạp Tiền Tự Động",
-      "side2Desc": "Cộng số dư ví tức thì 24/7"
+      "side2Desc": "Cộng số dư ví tức thì 24/7",
+      "prevSlide": "Slide trước",
+      "nextSlide": "Slide kế tiếp"
     },
     "services": {
       "instantDelivery": "Giao Mã 0s",
@@ -427,6 +429,20 @@
       "themeLight": "Sáng",
       "themeDark": "Tối"
     }
+  },
+  "marketing": {
+    "copyCodeTitle": "Sao chép mã Giftcode",
+    "orderTitle": "Đơn hàng mới",
+    "claimTitle": "Nhận quà thành công",
+    "depositTitle": "Nạp ví thành công",
+    "restockTitle": "Vừa cập nhật kho",
+    "trendingTitle": "Sôi động hôm nay",
+    "viewDetails": "Xem chi tiết",
+    "mute1h": "Không hiện 1h",
+    "mute1hShort": "Tắt 1h",
+    "muteTooltip": "Tắt thông báo nổi trên màn hình trong 1 giờ",
+    "close": "Đóng thông báo",
+    "justNow": "vừa xong"
   },
   "common": {
     "loading": "Đang tải dữ liệu...",

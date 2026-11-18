@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Gift,
   ShoppingBag,
@@ -15,6 +15,7 @@ import {
 import type { MarketingNotification, ToastPosition } from '../types/marketing';
 import { marketingService } from '../services/marketingService';
 import { dataService } from '../services/dataService';
+import { useLanguage } from '../context/LanguageContext';
 
 const MARKETING_SNOOZE_KEY = 'wcg_marketing_toast_snooze_until';
 
@@ -35,6 +36,7 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
   onOpenWallet,
   onExploreClick,
 }) => {
+  const { t, language } = useLanguage();
   const [notification, setNotification] = useState<MarketingNotification | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
@@ -784,6 +786,101 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
   const IconComponent = meta.icon;
   const posStyle = getPositionStyles(toastPosition);
 
+  // Dynamic message localization (Song ngữ VI / EN)
+  const displayMessage = useMemo(() => {
+    if (!notification?.message) return '';
+    if (language !== 'en') return notification.message;
+
+    const raw = notification.message;
+
+    // Pattern 1: "... vừa sao chép 1 Giftcode game ..."
+    if (raw.includes('vừa sao chép')) {
+      const copyMatch = raw.match(/^(.*?)\s+vừa sao chép\s+(?:tất cả\s+(\d+)|(\d+))\s*(?:mã code cho|Giftcode game|Giftcode)?\s*(.*)$/i);
+      if (copyMatch) {
+        const user = copyMatch[1] || notification.userName || 'User';
+        const count = copyMatch[2] || copyMatch[3] || '1';
+        const game = copyMatch[4]?.trim() || notification.gameName || 'Game';
+        const countNum = parseInt(count, 10) || 1;
+        return countNum > 1
+          ? `${user} just copied all ${countNum} giftcodes for ${game}`
+          : `${user} just copied 1 giftcode for ${game}`;
+      }
+      return raw
+        .replace(/vừa sao chép/g, 'just copied')
+        .replace(/tất cả\s+(\d+)\s+mã code cho/gi, 'all $1 giftcodes for')
+        .replace(/1\s+Giftcode game/gi, '1 giftcode for')
+        .replace(/Giftcode game/gi, 'giftcode for')
+        .replace(/mã code cho/gi, 'giftcodes for');
+    }
+
+    // Pattern 2: "... vừa mua ..."
+    if (raw.includes('vừa mua')) {
+      return raw.replace(/vừa mua/g, 'just purchased');
+    }
+
+    // Pattern 3: "... vừa nhận thành công ..." / "... vừa nhận ..."
+    if (raw.includes('vừa nhận')) {
+      return raw.replace(/vừa nhận thành công/g, 'just claimed').replace(/vừa nhận/g, 'just claimed');
+    }
+
+    // Pattern 4: "... vừa nạp thành công ..."
+    if (raw.includes('vừa nạp')) {
+      return raw.replace(/vừa nạp thành công/g, 'just topped up').replace(/vừa nạp/g, 'just topped up');
+    }
+
+    // Pattern 5: "Kho hàng ... vừa được bổ sung ... mã mới"
+    if (raw.includes('Kho hàng') || raw.includes('bổ sung')) {
+      return raw
+        .replace(/Kho hàng/g, 'Stock for')
+        .replace(/vừa được bổ sung/g, 'just added')
+        .replace(/mã mới/g, 'new codes');
+    }
+
+    // Pattern 6: "Hôm nay đã có ... lượt sao chép giftcode"
+    if (raw.includes('Hôm nay đã có')) {
+      return raw.replace(/Hôm nay đã có\s+(\d+)\s+lượt sao chép giftcode/gi, '$1 giftcodes copied today');
+    }
+
+    return raw;
+  }, [notification?.message, notification?.userName, notification?.gameName, language]);
+
+  const displayTitle = useMemo(() => {
+    if (!notification?.title) return '';
+    if (language !== 'en') return notification.title;
+
+    if (notification.type === 'COPY_CODE' || notification.title.includes('Sao chép')) {
+      return t.marketing?.copyCodeTitle || 'Giftcode Copied';
+    }
+    if (notification.type === 'BUY_PRODUCT' || notification.title.includes('Đơn hàng')) {
+      return t.marketing?.orderTitle || 'New Order';
+    }
+    if (notification.type === 'CLAIM_GIVEAWAY' || notification.title.includes('Nhận quà')) {
+      return t.marketing?.claimTitle || 'Gift Claimed';
+    }
+    if (notification.type === 'DEPOSIT_WALLET' || notification.title.includes('Nạp ví')) {
+      return t.marketing?.depositTitle || 'Wallet Top-up';
+    }
+    if (notification.type === 'RESTOCK_PRODUCT' || notification.title.includes('cập nhật kho')) {
+      return t.marketing?.restockTitle || 'Restocked';
+    }
+    if (notification.type === 'STATS_COPY' || notification.title.includes('Sôi động')) {
+      return t.marketing?.trendingTitle || 'Trending Today';
+    }
+    return notification.title;
+  }, [notification?.title, notification?.type, language, t.marketing]);
+
+  const displayTimeAgo = useMemo(() => {
+    if (!notification?.timeAgo) return '';
+    if (language !== 'en') return notification.timeAgo;
+
+    const raw = notification.timeAgo.trim();
+    if (raw === 'vừa xong' || raw === 'vừa nãy') return t.marketing?.justNow || 'just now';
+    return raw
+      .replace(/(\d+)\s*phút trước/gi, '$1m ago')
+      .replace(/(\d+)\s*giờ trước/gi, '$1h ago')
+      .replace(/(\d+)\s*giây trước/gi, '$1s ago');
+  }, [notification?.timeAgo, language, t.marketing]);
+
   return (
     <div
       role="alert"
@@ -832,24 +929,24 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
         <div className="flex-1 min-w-0 pr-4 overflow-hidden">
           <div className="flex items-center justify-between gap-1.5 mb-0.5">
             <span className="text-[10px] sm:text-[11px] font-bold tracking-tight text-foreground truncate flex items-center gap-1 min-w-0">
-              <span className="truncate">{notification.title}</span>
+              <span className="truncate">{displayTitle}</span>
               <Sparkles className="w-2.5 h-2.5 text-amber-400 shrink-0" />
             </span>
             <span
               className="text-[9px] sm:text-[10px] font-mono shrink-0 px-1.5 py-0.5 rounded-md text-muted-foreground bg-muted/60"
             >
-              {notification.timeAgo}
+              {displayTimeAgo}
             </span>
           </div>
 
           <p className="text-[11px] sm:text-xs text-muted-foreground leading-snug line-clamp-2 break-words break-all font-medium overflow-hidden">
-            {notification.message}
+            {displayMessage}
           </p>
 
           {/* Interactive Action Hint & Snooze Option */}
           <div className="flex items-center justify-between gap-2 mt-1.5 pt-1 border-t border-border/40 min-w-0">
             <div className="flex items-center gap-0.5 text-[10px] sm:text-[11px] text-primary-light font-semibold group-hover:underline shrink-0">
-              <span>Xem chi tiết</span>
+              <span>{t.marketing?.viewDetails || (language === 'en' ? 'View details' : 'Xem chi tiết')}</span>
               <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </div>
 
@@ -857,11 +954,11 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
               type="button"
               onClick={snoozeForOneHour}
               className="text-[9px] sm:text-[10px] text-muted-foreground/80 hover:text-foreground hover:bg-muted/70 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1 cursor-pointer shrink-0 truncate max-w-[140px]"
-              title="Tắt thông báo nổi trên màn hình trong 1 giờ"
+              title={t.marketing?.muteTooltip || (language === 'en' ? 'Mute screen popups for 1 hour' : 'Tắt thông báo nổi trên màn hình trong 1 giờ')}
             >
               <BellOff className="w-2.5 h-2.5 shrink-0" />
-              <span className="hidden sm:inline">Không hiện 1h</span>
-              <span className="sm:hidden">Tắt 1h</span>
+              <span className="hidden sm:inline">{t.marketing?.mute1h || (language === 'en' ? 'Mute 1h' : 'Không hiện 1h')}</span>
+              <span className="sm:hidden">{t.marketing?.mute1hShort || (language === 'en' ? 'Mute 1h' : 'Tắt 1h')}</span>
             </button>
           </div>
         </div>
@@ -874,8 +971,8 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
             dismissNotification();
           }}
           className="absolute top-2 right-2 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-          title="Đóng thông báo"
-          aria-label="Đóng thông báo"
+          title={t.marketing?.close || (language === 'en' ? 'Close notification' : 'Đóng thông báo')}
+          aria-label={t.marketing?.close || (language === 'en' ? 'Close notification' : 'Đóng thông báo')}
         >
           <X className="w-3.5 h-3.5" />
         </button>

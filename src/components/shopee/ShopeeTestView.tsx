@@ -731,7 +731,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     e.stopPropagation();
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
-    onShowToast(`Đã sao chép mã: ${code}`, 'success');
+    onShowToast(language === 'en' ? `Copied code: ${code}` : `Đã sao chép mã: ${code}`, 'success');
     
     // Confetti effect
     try {
@@ -829,9 +829,13 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             {t.mall?.topNav?.marketplace || (language === 'en' ? 'Comprehensive Marketplace' : 'Bản Sàn Toàn Diện')}
           </span>
           <span className="truncate">
-            {t.mall?.topNav?.editionDesc || (language === 'en' ? 'Running full Shopee Game edition at ' : 'Đang chạy phiên bản sàn Shopee Game tại đường dẫn ')}
+            {language === 'en'
+              ? (t.mall?.topNav?.editionDesc || 'Running full Shopee Game edition at ')
+              : (t.mall?.topNav?.editionDesc || 'Đang chạy phiên bản sàn Shopee Game tại đường dẫn ')}
             <code className="bg-amber-600/30 px-1.5 py-0.5 rounded font-mono">codegame.shop/test1</code>
-            {t.mall?.topNav?.mainSiteUnaffected || (language === 'en' ? ' (Main site unaffected)' : ' (Web chính không bị ảnh hưởng)')}
+            {language === 'en'
+              ? (t.mall?.topNav?.mainSiteUnaffected || ' (Main site unaffected)')
+              : (t.mall?.topNav?.mainSiteUnaffected || ' (Web chính không bị ảnh hưởng)')}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -927,7 +931,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 <button 
                   onClick={() => setSubView('account')}
                   className="font-semibold text-amber-200 hover:underline cursor-pointer truncate max-w-[100px]"
-                  title="Mở trang tài khoản & ví trong test1"
+                  title={language === 'en' ? 'Open account and wallet' : 'Mở trang tài khoản & ví'}
                 >
                   {currentUser.displayName || currentUser.name || currentUser.username}
                 </button>
@@ -1082,7 +1086,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 ? 'bg-black/20 hover:bg-black/40 text-white cursor-pointer active:scale-95'
                 : 'opacity-20 text-white/50 cursor-not-allowed pointer-events-none'
             }`}
-            title="Cuộn sang trái"
+            title={language === 'en' ? (t.mall?.subnav?.scrollLeft || 'Scroll left') : (t.mall?.subnav?.scrollLeft || 'Cuộn sang trái')}
+            aria-label={language === 'en' ? (t.mall?.subnav?.scrollLeft || 'Scroll left') : (t.mall?.subnav?.scrollLeft || 'Cuộn sang trái')}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -1176,7 +1181,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 ? 'bg-black/20 hover:bg-black/40 text-white cursor-pointer active:scale-95'
                 : 'opacity-20 text-white/50 cursor-not-allowed pointer-events-none'
             }`}
-            title="Cuộn sang phải"
+            title={language === 'en' ? (t.mall?.subnav?.scrollRight || 'Scroll right') : (t.mall?.subnav?.scrollRight || 'Cuộn sang phải')}
+            aria-label={language === 'en' ? (t.mall?.subnav?.scrollRight || 'Scroll right') : (t.mall?.subnav?.scrollRight || 'Cuộn sang phải')}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -1783,7 +1789,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     setHeroSlide((prev) => (prev - 1 + 3) % 3);
                   }}
                   className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20 cursor-pointer"
-                  title="Slide trước"
+                  title={language === 'en' ? (t.mall?.hero?.prevSlide || 'Previous slide') : (t.mall?.hero?.prevSlide || 'Slide trước')}
+                  aria-label={language === 'en' ? (t.mall?.hero?.prevSlide || 'Previous slide') : (t.mall?.hero?.prevSlide || 'Slide trước')}
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -1795,7 +1802,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     setHeroSlide((prev) => (prev + 1) % 3);
                   }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20 cursor-pointer"
-                  title="Slide kế tiếp"
+                  title={language === 'en' ? (t.mall?.hero?.nextSlide || 'Next slide') : (t.mall?.hero?.nextSlide || 'Slide kế tiếp')}
+                  aria-label={language === 'en' ? (t.mall?.hero?.nextSlide || 'Next slide') : (t.mall?.hero?.nextSlide || 'Slide kế tiếp')}
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -2688,7 +2696,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                                 ? 'bg-amber-400 text-slate-950 shadow-md'
                                 : 'bg-black/50 hover:bg-black/80 text-white/90 backdrop-blur-xs'
                             }`}
-                            title="Lưu vào tủ game theo dõi"
+                            title={language === 'en' ? 'Save to tracked games' : 'Lưu vào tủ game theo dõi'}
                           >
                             <Bookmark className="w-3 h-3 fill-current" />
                           </button>
@@ -2709,10 +2717,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       <div className="p-2 pt-0 space-y-1.5">
                         <div className="flex items-baseline justify-between">
                           <div className="text-purple-600 font-bold text-xs">
-                            0 Core (Miễn Phí)
+                            {language === 'en' ? '0 Core (Free)' : '0 Core (Miễn Phí)'}
                           </div>
                           <div className="text-[10px] text-slate-400 font-medium">
-                            {activeCount} mã sẵn
+                            {language === 'en' ? `${activeCount} available` : `${activeCount} mã sẵn`}
                           </div>
                         </div>
 
@@ -2722,13 +2730,13 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                             className="flex-1 py-1 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 text-[10px] font-bold flex items-center justify-center gap-1 transition cursor-pointer"
                           >
                             <Gift className="w-3 h-3" />
-                            <span>Xem Chi Tiết Mã</span>
+                            <span>{language === 'en' ? 'View Giftcode Details' : 'Xem Chi Tiết Mã'}</span>
                           </button>
                           {firstCode && (
                             <button
                               onClick={(e) => handleCopyCode(firstCode, e)}
                               className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-mono font-bold flex items-center justify-center transition cursor-pointer shrink-0"
-                              title={`Copy nhanh mã: ${firstCode}`}
+                              title={language === 'en' ? `Quick copy code: ${firstCode}` : `Copy nhanh mã: ${firstCode}`}
                             >
                               {copiedCode === firstCode ? (
                                 <Check className="w-3 h-3 text-emerald-500" />

@@ -220,33 +220,40 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     [language]
   );
 
-  // Tạo Proxy để hỗ trợ cả t('path') và t.section.key
+  // Tạo Proxy để hỗ trợ cả t('path') và t.section.key đa tầng đệ quy
   const t = useMemo(() => {
     const currentDict = dictionaries[language] || dictionaries.vi;
     const fallbackDict = dictionaries.vi;
 
+    const createRecursiveProxy = (currentObj: any, fallbackObj: any): any => {
+      return new Proxy(currentObj || {}, {
+        get(target, prop) {
+          if (typeof prop === 'string') {
+            const curVal = target[prop];
+            const fbVal = fallbackObj && typeof fallbackObj === 'object' ? fallbackObj[prop] : undefined;
+            const val = curVal !== undefined ? curVal : fbVal;
+            if (val !== null && typeof val === 'object') {
+              return createRecursiveProxy(val, fbVal);
+            }
+            return val !== undefined ? val : prop;
+          }
+          return Reflect.get(target, prop);
+        },
+      });
+    };
+
     const handler: ProxyHandler<any> = {
       get(target, prop, receiver) {
         if (typeof prop === 'string') {
-          // Nếu truy cập thuộc tính như t.nav, t.header...
-          const currentVal = currentDict[prop] !== undefined ? currentDict[prop] : fallbackDict[prop];
-          if (currentVal !== undefined) {
-            if (typeof currentVal === 'object' && currentVal !== null) {
-              // Trả về proxy đệ quy cho object con
-              return new Proxy(currentVal, {
-                get(childTarget, childProp) {
-                  if (typeof childProp === 'string') {
-                    const childVal =
-                      childTarget[childProp] !== undefined
-                        ? childTarget[childProp]
-                        : fallbackDict[prop]?.[childProp];
-                    return childVal !== undefined ? childVal : childProp;
-                  }
-                  return Reflect.get(childTarget, childProp);
-                },
-              });
+          // Nếu truy cập thuộc tính như t.nav, t.header, t.mall...
+          const currentVal = currentDict[prop];
+          const fallbackVal = fallbackDict[prop];
+          const val = currentVal !== undefined ? currentVal : fallbackVal;
+          if (val !== undefined) {
+            if (typeof val === 'object' && val !== null) {
+              return createRecursiveProxy(val, fallbackVal);
             }
-            return currentVal;
+            return val;
           }
         }
         return Reflect.get(target, prop, receiver);

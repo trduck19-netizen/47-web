@@ -355,7 +355,9 @@
       "side1Desc": "100% refund for defective codes",
       "side2Badge": "VietQR 0S",
       "side2Title": "Instant Auto Top-up",
-      "side2Desc": "Real-time wallet balance credit 24/7"
+      "side2Desc": "Real-time wallet balance credit 24/7",
+      "prevSlide": "Previous slide",
+      "nextSlide": "Next slide"
     },
     "services": {
       "instantDelivery": "Instant 0s",
@@ -427,6 +429,20 @@
       "themeLight": "Light",
       "themeDark": "Dark"
     }
+  },
+  "marketing": {
+    "copyCodeTitle": "Giftcode Copied",
+    "orderTitle": "New Order",
+    "claimTitle": "Gift Claimed",
+    "depositTitle": "Wallet Top-up",
+    "restockTitle": "Restocked",
+    "trendingTitle": "Trending Today",
+    "viewDetails": "View details",
+    "mute1h": "Mute 1h",
+    "mute1hShort": "Mute 1h",
+    "muteTooltip": "Mute screen popups for 1 hour",
+    "close": "Close notification",
+    "justNow": "just now"
   },
   "common": {
     "loading": "Loading data...",
