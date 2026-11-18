@@ -21,6 +21,68 @@ const STORAGE_KEY = 'wcg_content_translations_v1';
 
 // Bộ bản dịch mẫu Tiếng Anh ban đầu cho 5 ngành hàng, sản phẩm tiêu biểu và hướng dẫn nhập code
 const INITIAL_CONTENT_TRANSLATIONS: ContentTranslationRecord[] = [
+  // 0. Danh mục ngành hàng Universal Mall (Categories)
+  {
+    object_type: 'category',
+    object_id: 'all',
+    field: 'name',
+    language: 'en',
+    content: 'All',
+    reviewer: 'Admin Verified',
+    status: 'approved',
+    updated_at: '2026-11-18T12:00:00Z',
+  },
+  {
+    object_type: 'category',
+    object_id: 'fashion',
+    field: 'name',
+    language: 'en',
+    content: 'Fashion & Accessories',
+    reviewer: 'Admin Verified',
+    status: 'approved',
+    updated_at: '2026-11-18T12:00:00Z',
+  },
+  {
+    object_type: 'category',
+    object_id: 'beauty',
+    field: 'name',
+    language: 'en',
+    content: 'Beauty & Cosmetics',
+    reviewer: 'Admin Verified',
+    status: 'approved',
+    updated_at: '2026-11-18T12:00:00Z',
+  },
+  {
+    object_type: 'category',
+    object_id: 'tech',
+    field: 'name',
+    language: 'en',
+    content: 'Digital & Tech Devices',
+    reviewer: 'Admin Verified',
+    status: 'approved',
+    updated_at: '2026-11-18T12:00:00Z',
+  },
+  {
+    object_type: 'category',
+    object_id: 'services',
+    field: 'name',
+    language: 'en',
+    content: 'Courses & Digital Services',
+    reviewer: 'Admin Verified',
+    status: 'approved',
+    updated_at: '2026-11-18T12:00:00Z',
+  },
+  {
+    object_type: 'category',
+    object_id: 'gaming',
+    field: 'name',
+    language: 'en',
+    content: 'Gaming & Top-up Cards',
+    reviewer: 'Admin Verified',
+    status: 'approved',
+    updated_at: '2026-11-18T12:00:00Z',
+  },
+
   // 1. Ngành hàng (Industries)
   {
     object_type: 'industry',
@@ -193,7 +255,15 @@ class ContentTranslationService {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            this.translations = parsed;
+            // Đảm bảo các bản dịch mẫu mới (danh mục, ngành hàng) được bổ sung nếu chưa có
+            const existingKeys = new Set(parsed.map((t: any) => `${t.object_type}:${t.object_id}:${t.field}:${t.language}`));
+            const merged = [...parsed];
+            for (const initT of INITIAL_CONTENT_TRANSLATIONS) {
+              if (!existingKeys.has(`${initT.object_type}:${initT.object_id}:${initT.field}:${initT.language}`)) {
+                merged.push(initT);
+              }
+            }
+            this.translations = merged;
             this.isLoaded = true;
             return;
           }
@@ -250,6 +320,18 @@ class ContentTranslationService {
 
     if (found && found.content && found.content.trim()) {
       return found.content;
+    }
+
+    const initFound = INITIAL_CONTENT_TRANSLATIONS.find(
+      (t) =>
+        t.object_type === objectType &&
+        t.object_id === objectId &&
+        t.field === field &&
+        t.language === language &&
+        t.status === 'approved'
+    );
+    if (initFound && initFound.content && initFound.content.trim()) {
+      return initFound.content;
     }
 
     // Fallback an toàn về bản gốc tiếng Việt (không rỗng, không crash)

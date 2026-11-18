@@ -826,14 +826,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold flex items-center justify-between shadow-sm sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <span className="bg-black text-amber-400 px-2 py-0.5 rounded uppercase text-[10px] tracking-wider font-mono">
-            {language === 'en' ? 'Comprehensive Marketplace' : 'Bản Sàn Toàn Diện'}
+            {t.mall?.topNav?.marketplace || (language === 'en' ? 'Comprehensive Marketplace' : 'Bản Sàn Toàn Diện')}
           </span>
           <span className="truncate">
-            {language === 'en'
-              ? 'Running full Shopee Game edition at '
-              : 'Đang chạy phiên bản sàn Shopee Game tại đường dẫn '}
+            {t.mall?.topNav?.editionDesc || (language === 'en' ? 'Running full Shopee Game edition at ' : 'Đang chạy phiên bản sàn Shopee Game tại đường dẫn ')}
             <code className="bg-amber-600/30 px-1.5 py-0.5 rounded font-mono">codegame.shop/test1</code>
-            {language === 'en' ? ' (Main site unaffected)' : ' (Web chính không bị ảnh hưởng)'}
+            {t.mall?.topNav?.mainSiteUnaffected || (language === 'en' ? ' (Main site unaffected)' : ' (Web chính không bị ảnh hưởng)')}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -845,8 +843,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             className="flex items-center gap-1.5 bg-black hover:bg-slate-900 text-white px-3 py-1 rounded text-xs transition active:scale-95 cursor-pointer font-bold"
           >
             <Store className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{language === 'en' ? 'CodeGame Mall Homepage' : 'Trang Chủ Sàn CodeGame Mall'}</span>
-            <span className="sm:hidden">{language === 'en' ? 'Homepage' : 'Trang Chủ'}</span>
+            <span className="hidden sm:inline">{t.mall?.topNav?.mallHomepage || (language === 'en' ? 'Universal Mall Homepage' : 'Trang Chủ Sàn CodeGame Mall')}</span>
+            <span className="sm:hidden">{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ')}</span>
           </button>
         </div>
       </div>
@@ -860,14 +858,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               onClick={() => setSubView('seller')}
               className={`hover:opacity-80 transition cursor-pointer font-medium ${subView === 'seller' ? 'underline font-bold text-amber-200' : ''}`}
             >
-              {t.nav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}
+              {t.mall?.topNav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}
             </button>
             <span className="opacity-40">|</span>
             <button 
               onClick={() => setSubView('seller')}
               className={`hover:opacity-80 transition cursor-pointer font-medium ${subView === 'seller' ? 'underline font-bold text-amber-200' : ''}`}
             >
-              {t.nav?.openStore || (language === 'en' ? 'Open Store' : 'Mở Gian Hàng Game')}
+              {t.mall?.topNav?.openStore || (language === 'en' ? 'Open Store' : 'Mở Gian Hàng')}
             </button>
             <span className="opacity-40 hidden sm:inline">|</span>
             <button 
@@ -875,7 +873,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className="hover:opacity-80 transition cursor-pointer hidden sm:flex items-center gap-1 font-medium"
             >
               <Smartphone className="w-3.5 h-3.5" />
-              <span>{language === 'en' ? 'Download App (APK)' : 'Tải App (APK)'}</span>
+              <span>{t.mall?.topNav?.downloadApp || (language === 'en' ? 'Download App (APK)' : 'Tải App (APK)')}</span>
             </button>
             <span className="opacity-40 hidden md:inline">|</span>
             <button 
@@ -891,12 +889,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {/* Tủ Mã / Đơn Mua Shopee */}
             <button 
-              onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('marketplace') : onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem quà đã nhận', 'info')}
+              onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('marketplace') : onShowToast(t.mall?.topNav?.myVault || (language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem quà đã nhận'), 'info')}
               className="hover:opacity-80 transition cursor-pointer flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded font-medium text-[11px] sm:text-xs"
               title={language === 'en' ? 'View purchased giftcodes, game cards & accounts' : 'Xem các mã quà tặng, thẻ game & tài khoản đã mua'}
             >
               <Package className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t.nav?.orders || (language === 'en' ? 'Orders & Vault' : 'Đơn Mua / Tủ Mã')}</span>
+              <span className="hidden sm:inline">{t.mall?.topNav?.myVault || (language === 'en' ? 'Orders & Vault' : 'Đơn Mua / Tủ Mã')}</span>
               <span className="sm:hidden">{language === 'en' ? 'Vault' : 'Tủ Mã'}</span>
             </button>
 
@@ -984,7 +982,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 type="text" 
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                placeholder={language === 'en' ? 'Search games, giftcodes, accounts, VIP utilities...' : 'Tìm tựa game, thẻ nạp, gói code, tiện ích VIP...'} 
+                placeholder={t.mall?.search?.placeholder || (language === 'en' ? 'Search games, giftcodes, accounts, VIP utilities...' : 'Tìm tựa game, thẻ nạp, gói code, tiện ích VIP...')} 
                 className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
               />
               {searchKeyword && (
@@ -1019,15 +1017,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 ))
               ) : (
                 <>
-                  <button onClick={() => { setSearchKeyword('Áo Hoodie'); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">Áo Hoodie</button>
-                  <button onClick={() => { setSearchKeyword('Kem chống nắng'); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">Kem chống nắng</button>
-                  <button onClick={() => { setSearchKeyword('Củ sạc GaN'); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">Củ sạc GaN</button>
+                  <button onClick={() => { setSearchKeyword(t.mall?.search?.suggestionHoodie || (language === 'en' ? 'Hoodie' : 'Áo Hoodie')); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">{t.mall?.search?.suggestionHoodie || (language === 'en' ? 'Hoodie' : 'Áo Hoodie')}</button>
+                  <button onClick={() => { setSearchKeyword(t.mall?.search?.suggestionSunscreen || (language === 'en' ? 'Sunscreen' : 'Kem chống nắng')); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">{t.mall?.search?.suggestionSunscreen || (language === 'en' ? 'Sunscreen' : 'Kem chống nắng')}</button>
+                  <button onClick={() => { setSearchKeyword(t.mall?.search?.suggestionGanCharger || (language === 'en' ? 'GaN Fast Charger' : 'Củ sạc GaN')); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">{t.mall?.search?.suggestionGanCharger || (language === 'en' ? 'GaN Fast Charger' : 'Củ sạc GaN')}</button>
                   <button onClick={() => { setSearchKeyword('Canva Pro'); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">Canva Pro</button>
-                  <button onClick={() => { setSearchKeyword('Tai nghe Bluetooth'); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">Tai nghe Bluetooth</button>
+                  <button onClick={() => { setSearchKeyword(t.mall?.search?.suggestionEarbuds || (language === 'en' ? 'Bluetooth Earbuds' : 'Tai nghe Bluetooth')); setSelectedProductType('all'); }} className="hover:text-amber-200 transition">{t.mall?.search?.suggestionEarbuds || (language === 'en' ? 'Bluetooth Earbuds' : 'Tai nghe Bluetooth')}</button>
                 </>
               )}
               <button onClick={() => { setSearchKeyword(''); setSelectedProductType('all'); }} className="hover:text-amber-200 transition font-bold text-amber-300">
-                Tất Cả ({storeProducts?.length || 0} sản phẩm)
+                {t('mall.search.allProductsCount', { count: storeProducts?.length || 0 })}
               </button>
             </div>
           </div>
@@ -1074,7 +1072,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'home' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
             >
               <Store className="w-3.5 h-3.5" />
-              <span>{t.nav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ Sàn')}</span>
+              <span>{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ Sàn')}</span>
             </button>
 
             <button
@@ -1082,7 +1080,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'store' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
             >
               <ShoppingBag className="w-3.5 h-3.5" />
-              <span>{t.nav?.store || (language === 'en' ? 'Store' : 'Cửa Hàng Đa Ngành')}</span>
+              <span>{t.mall?.subnav?.store || (language === 'en' ? 'Multi-Industry Store' : 'Cửa Hàng Đa Ngành')}</span>
             </button>
 
             <button
@@ -1090,7 +1088,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'seller' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
             >
               <Store className="w-3.5 h-3.5" />
-              <span>{t.nav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}</span>
+              <span>{t.mall?.subnav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}</span>
             </button>
 
             <button
@@ -1098,7 +1096,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'account' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
             >
               <User className="w-3.5 h-3.5" />
-              <span>{t.nav?.account || (language === 'en' ? 'Account & Wallet' : 'Tài Khoản & Ví')}</span>
+              <span>{t.mall?.subnav?.account || (language === 'en' ? 'Account & Wallet' : 'Tài Khoản & Ví')}</span>
             </button>
 
             <button
@@ -1114,7 +1112,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'missions' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
             >
               <Trophy className="w-3.5 h-3.5" />
-              <span>{t.nav?.missions || (language === 'en' ? 'Missions' : 'Nhiệm Vụ')}</span>
+              <span>{t.mall?.subnav?.missions || (language === 'en' ? 'Missions' : 'Nhiệm Vụ')}</span>
             </button>
 
             <button
@@ -1130,7 +1128,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'a-z' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
             >
               <List className="w-3.5 h-3.5" />
-              <span>{language === 'en' ? 'A-Z Index' : 'Mục Lục A-Z'}</span>
+              <span>{t.mall?.subnav?.azIndex || (language === 'en' ? 'A-Z Index' : 'Mục Lục A-Z')}</span>
             </button>
 
             <button
@@ -1138,7 +1136,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className="ml-auto px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold transition flex items-center gap-1 shadow-sm shrink-0 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>{t.nav?.submitCode || (language === 'en' ? 'Submit Code' : 'Gửi Mã Mới')}</span>
+              <span>{t.mall?.subnav?.submitCode || (language === 'en' ? 'Submit Code' : 'Gửi Mã Mới')}</span>
             </button>
           </div>
 
@@ -1170,30 +1168,30 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 className="text-[#ee4d2d] font-bold hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Trang Chủ Sàn</span>
+                <span>{t.mall?.breadcrumb?.backHome || (language === 'en' ? 'Mall Home' : 'Trang Chủ Sàn')}</span>
               </button>
               <span className="text-slate-400">/</span>
               <span className="font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider text-[11px]">
-                {subView === 'news' && `Tin Tức Game (${newsCount} Bài Viết Chuẩn SEO)`}
-                {subView === 'events' && `Sự Kiện Game (${eventsCount} Sự Kiện Hot)`}
-                {subView === 'today-codes' && 'Mã Hôm Nay (Tự Đóng 22:30)'}
-                {subView === 'upcoming' && `Bảng Game Sắp Ra Mắt (${upcomingTotal} Bản Ghi Chuẩn Web Chính)`}
-                {subView === 'store' && `Cửa Hàng Đa Ngành (${storeProducts?.length || 0} Sản Phẩm)`}
-                {subView === 'game-zone' && `Khu Vực Game & Giftcode (${allGames?.length || 593} Game)`}
-                {subView === 'seller' && 'Sàn Giao Dịch & Kênh Người Bán'}
-                {subView === 'account' && 'Tài Khoản & Ví Core'}
-                {subView === 'missions' && 'Trung Tâm Nhiệm Vụ Game'}
-                {subView === 'telegram' && 'Cộng Đồng & Kênh Thông Báo Telegram'}
-                {subView === 'a-z' && 'Mục Lục Toàn Bộ Tựa Game A-Z'}
-                {subView === 'terms' && 'Điều Khoản Dịch Vụ Sàn'}
-                {subView === 'privacy' && 'Chính Sách Bảo Mật Sàn'}
+                {subView === 'news' && t('mall.breadcrumb.news', { count: newsCount })}
+                {subView === 'events' && t('mall.breadcrumb.events', { count: eventsCount })}
+                {subView === 'today-codes' && (t.mall?.breadcrumb?.todayCodes || (language === 'en' ? "Today's Codes (Closes at 22:30)" : 'Mã Hôm Nay (Tự Đóng 22:30)'))}
+                {subView === 'upcoming' && t('mall.breadcrumb.upcoming', { count: upcomingTotal })}
+                {subView === 'store' && t('mall.breadcrumb.store', { count: storeProducts?.length || 0 })}
+                {subView === 'game-zone' && t('mall.breadcrumb.gameZone', { count: allGames?.length || 593 })}
+                {subView === 'seller' && (t.mall?.breadcrumb?.seller || (language === 'en' ? 'Marketplace & Seller Portal' : 'Sàn Giao Dịch & Kênh Người Bán'))}
+                {subView === 'account' && (t.mall?.breadcrumb?.account || (language === 'en' ? 'Account & Core Wallet' : 'Tài Khoản & Ví Core'))}
+                {subView === 'missions' && (t.mall?.breadcrumb?.missions || (language === 'en' ? 'Game Mission Center' : 'Trung Tâm Nhiệm Vụ Game'))}
+                {subView === 'telegram' && (t.mall?.breadcrumb?.telegram || (language === 'en' ? 'Telegram Community & Alerts' : 'Cộng Đồng & Kênh Thông Báo Telegram'))}
+                {subView === 'a-z' && (t.mall?.breadcrumb?.az || (language === 'en' ? 'Complete A-Z Game Index' : 'Mục Lục Toàn Bộ Tựa Game A-Z'))}
+                {subView === 'terms' && (t.mall?.breadcrumb?.terms || (language === 'en' ? 'Mall Terms of Service' : 'Điều Khoản Dịch Vụ Sàn'))}
+                {subView === 'privacy' && (t.mall?.breadcrumb?.privacy || (language === 'en' ? 'Mall Privacy Policy' : 'Chính Sách Bảo Mật Sàn'))}
               </span>
             </div>
             <button 
               onClick={() => setSubView('home')}
               className="text-xs font-semibold px-3 py-1 rounded bg-orange-50 dark:bg-orange-950/40 text-[#ee4d2d] border border-[#ee4d2d]/30 hover:bg-[#ee4d2d] hover:text-white transition cursor-pointer"
             >
-              ← Quay Lại Kệ Hàng Sàn
+              {t.mall?.breadcrumb?.backToShelves || (language === 'en' ? '← Back to Product Shelves' : '← Quay Lại Kệ Hàng Sàn')}
             </button>
           </div>
         </div>
@@ -1781,28 +1779,40 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   {heroSlide === 0 && (
                     <>
                       <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
-                        🛍️ ĐẠI HỘI MUA SẮM UNIVERSAL MALL
+                        {t.mall?.hero?.slide0Badge || (language === 'en' ? '🛍️ UNIVERSAL MALL SHOPPING FESTIVAL' : '🛍️ ĐẠI HỘI MUA SẮM UNIVERSAL MALL')}
                       </div>
-                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">SÀN THƯƠNG MẠI ĐA NGÀNH CHÍNH HÃNG</h2>
-                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">Thời trang • Mỹ phẩm • Thiết bị số • Dịch vụ • Gaming • Giao hàng bưu chính & Giao mã tự động 0s</p>
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                        {t.mall?.hero?.slide0Title || (language === 'en' ? 'OFFICIAL MULTI-INDUSTRY MARKETPLACE' : 'SÀN THƯƠNG MẠI ĐA NGÀNH CHÍNH HÃNG')}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
+                        {t.mall?.hero?.slide0Desc || (language === 'en' ? 'Fashion • Beauty • Digital Devices • Services • Gaming • Courier Shipping & Instant 0s Delivery' : 'Thời trang • Mỹ phẩm • Thiết bị số • Dịch vụ • Gaming • Giao hàng bưu chính & Giao mã tự động 0s')}
+                      </p>
                     </>
                   )}
                   {heroSlide === 1 && (
                     <>
                       <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
-                        🎉 VÒNG QUAY MAY MẮN TRÚNG CORE
+                        {t.mall?.hero?.slide1Badge || (language === 'en' ? '🎉 LUCKY WHEEL & CORE REWARDS' : '🎉 VÒNG QUAY MAY MẮN TRÚNG CORE')}
                       </div>
-                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">VÒNG QUAY XU HẰNG NGÀY</h2>
-                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">Nhận lượt quay may mắn mỗi ngày • Trúng ngay tới 1.000 Core, thẻ cào & quà tặng độc quyền</p>
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                        {t.mall?.hero?.slide1Title || (language === 'en' ? 'DAILY LUCKY WHEEL' : 'VÒNG QUAY XU HẰNG NGÀY')}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
+                        {t.mall?.hero?.slide1Desc || (language === 'en' ? 'Get free spins every day • Win up to 1,000 Core, cards & exclusive rewards' : 'Nhận lượt quay may mắn mỗi ngày • Trúng ngay tới 1.000 Core, thẻ cào & quà tặng độc quyền')}
+                      </p>
                     </>
                   )}
                   {heroSlide === 2 && (
                     <>
                       <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
-                        🛡️ BẢO CHỨNG GIAO DỊCH 168H
+                        {t.mall?.hero?.slide2Badge || (language === 'en' ? '🛡️ 168-HOUR TRANSACTION ESCROW' : '🛡️ BẢO CHỨNG GIAO DỊCH 168H')}
                       </div>
-                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">MUA BÁN TIỆN ÍCH AN TOÀN 100%</h2>
-                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">Cơ chế sàn ký quỹ thông minh • Đền bù x2 nếu mã lỗi • Đội ngũ CSKH hỗ trợ kỹ thuật 24/7</p>
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                        {t.mall?.hero?.slide2Title || (language === 'en' ? '100% SAFE & VERIFIED TRANSACTIONS' : 'MUA BÁN TIỆN ÍCH AN TOÀN 100%')}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
+                        {t.mall?.hero?.slide2Desc || (language === 'en' ? 'Smart escrow protection • 2x refund if code invalid • 24/7 dedicated support team' : 'Cơ chế sàn ký quỹ thông minh • Đền bù x2 nếu mã lỗi • Đội ngũ CSKH hỗ trợ kỹ thuật 24/7')}
+                      </p>
                     </>
                   )}
                 </div>
@@ -1816,18 +1826,18 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       }}
                       className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
                     >
-                      Khám Phá Kệ Hàng Ngay →
+                      {t.mall?.hero?.slide0Btn || (language === 'en' ? 'Explore Products Now →' : 'Khám Phá Kệ Hàng Ngay →')}
                     </button>
                   )}
                   {heroSlide === 1 && (
                     <button 
                       onClick={() => {
                         if (onOpenGrowth) onOpenGrowth();
-                        else onShowToast('Mở Vòng Quay Xu May Mắn', 'info');
+                        else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu May Mắn', 'info');
                       }}
                       className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
                     >
-                      Quay Thưởng Ngay →
+                      {t.mall?.hero?.slide1Btn || (language === 'en' ? 'Spin Now →' : 'Quay Thưởng Ngay →')}
                     </button>
                   )}
                   {heroSlide === 2 && (
@@ -1835,7 +1845,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       onClick={() => setIsGuaranteeOpen(true)}
                       className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
                     >
-                      Tìm Hiểu Thêm →
+                      {t.mall?.hero?.slide2Btn || (language === 'en' ? 'Learn More →' : 'Tìm Hiểu Thêm →')}
                     </button>
                   )}
 
@@ -1868,12 +1878,18 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3.5 flex flex-col justify-between cursor-pointer hover:opacity-95 transition shadow-sm"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">Bảo Chứng Sàn</span>
+                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">
+                      {t.mall?.hero?.side1Badge || (language === 'en' ? 'Escrow Protection' : 'Bảo Chứng Sàn')}
+                    </span>
                     <ShieldCheck className="w-4 h-4 text-emerald-300" />
                   </div>
                   <div className="mt-2">
-                    <div className="font-bold text-xs sm:text-sm">Giữ Tiền 168 Giờ</div>
-                    <div className="text-[10px] text-white/80">Hoàn tiền 100% nếu mã lỗi</div>
+                    <div className="font-bold text-xs sm:text-sm">
+                      {t.mall?.hero?.side1Title || (language === 'en' ? '168-Hour Escrow Hold' : 'Giữ Tiền 168 Giờ')}
+                    </div>
+                    <div className="text-[10px] text-white/80">
+                      {t.mall?.hero?.side1Desc || (language === 'en' ? '100% refund for defective codes' : 'Hoàn tiền 100% nếu mã lỗi')}
+                    </div>
                   </div>
                 </div>
 
@@ -1882,12 +1898,18 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3.5 flex flex-col justify-between cursor-pointer hover:opacity-95 transition shadow-sm"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">VietQR 0S</span>
+                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">
+                      {t.mall?.hero?.side2Badge || (language === 'en' ? 'VietQR 0S' : 'VietQR 0S')}
+                    </span>
                     <CreditCard className="w-4 h-4 text-amber-300" />
                   </div>
                   <div className="mt-2">
-                    <div className="font-bold text-xs sm:text-sm">Nạp Tiền Tự Động</div>
-                    <div className="text-[10px] text-white/80">Cộng số dư ví tức thì 24/7</div>
+                    <div className="font-bold text-xs sm:text-sm">
+                      {t.mall?.hero?.side2Title || (language === 'en' ? 'Instant Auto Top-up' : 'Nạp Tiền Tự Động')}
+                    </div>
+                    <div className="text-[10px] text-white/80">
+                      {t.mall?.hero?.side2Desc || (language === 'en' ? 'Real-time wallet balance credit 24/7' : 'Cộng số dư ví tức thì 24/7')}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1905,7 +1927,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     ⚡
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.store?.instantDelivery || (language === 'en' ? 'Instant 0s' : 'Giao Mã 0s')}
+                    {t.mall?.services?.instantDelivery || (language === 'en' ? 'Instant 0s' : 'Giao Mã 0s')}
                   </span>
                 </button>
 
@@ -1922,7 +1944,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🚚
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {language === 'en' ? 'Shipping' : 'Giao Bưu Chính'}
+                    {t.mall?.services?.courierShipping || (language === 'en' ? 'Courier Shipping' : 'Giao Bưu Chính')}
                   </span>
                 </button>
 
@@ -1934,7 +1956,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🛡️
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.store?.guarantee168h || (language === 'en' ? '168H Protection' : 'Bảo Hộ 168H')}
+                    {t.mall?.services?.protection168h || (language === 'en' ? '168H Protection' : 'Bảo Hộ 168H')}
                   </span>
                 </button>
 
@@ -1943,7 +1965,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     💳
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {language === 'en' ? 'VietQR Top-up' : 'Nạp VietQR'}
+                    {t.mall?.services?.vietqrTopup || (language === 'en' ? 'VietQR Top-up' : 'Nạp VietQR')}
                   </span>
                 </button>
 
@@ -1959,7 +1981,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🎡
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {language === 'en' ? 'Lucky Wheel' : 'Vòng Quay Xu'}
+                    {t.mall?.services?.luckyWheel || (language === 'en' ? 'Lucky Wheel' : 'Vòng Quay Xu')}
                   </span>
                 </button>
 
@@ -1971,7 +1993,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🎟️
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {language === 'en' ? 'Vouchers' : 'Mã Giảm Giá'}
+                    {t.mall?.services?.vouchers || (language === 'en' ? 'Vouchers' : 'Mã Giảm Giá')}
                   </span>
                 </button>
 
@@ -1995,7 +2017,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     💬
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.nav?.support || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
+                    {t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
                   </span>
                 </button>
 
@@ -2008,10 +2030,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   <Compass className="w-4 h-4 text-[#ee4d2d]" />
                   <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d]">
-                    {language === 'en' ? 'MULTI-INDUSTRY CATEGORIES' : 'DANH MỤC NGÀNH HÀNG TOÀN SÀN'}
+                    {t.mall?.categories?.sectionTitle || (language === 'en' ? 'MULTI-INDUSTRY CATEGORIES' : 'DANH MỤC NGÀNH HÀNG TOÀN SÀN')}
                   </h3>
                   <span className="text-xs text-slate-500 font-medium">
-                    (5 Ngành Hàng Chính Hãng)
+                    {t.mall?.categories?.sectionSubtitle || (language === 'en' ? '(5 Official Industries)' : '(5 Ngành Hàng Chính Hãng)')}
                   </span>
                 </div>
 
@@ -2019,19 +2041,19 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 <div className="flex items-center gap-1.5 text-xs">
                   <span className="text-slate-400 flex items-center gap-1">
                     <ArrowUpDown className="w-3.5 h-3.5" />
-                    <span>{t.filter?.sortBy || (language === 'en' ? 'Sort by:' : 'Sắp xếp:')}</span>
+                    <span>{t.mall?.categories?.sortBy || (language === 'en' ? 'Sort by:' : 'Sắp xếp:')}</span>
                   </span>
                   <button
                     onClick={() => setSortOrder('latest')}
                     className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'latest' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
                   >
-                    {t.filter?.newest || (language === 'en' ? 'Newest' : 'Mới nhất')}
+                    {t.mall?.categories?.sortNewest || (language === 'en' ? 'Newest' : 'Mới nhất')}
                   </button>
                   <button
                     onClick={() => setSortOrder('codes')}
                     className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'codes' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
                   >
-                    {language === 'en' ? 'Popular' : 'Bán chạy'}
+                    {t.mall?.categories?.sortPopular || (language === 'en' ? 'Best Selling' : 'Bán chạy')}
                   </button>
                 </div>
               </div>
@@ -2052,7 +2074,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       {cat.icon || '📦'}
                     </div>
                     <div className="text-[11px] leading-tight font-medium line-clamp-1">
-                      {contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}
+                      {(t.mall?.categories as any)?.[cat.id] || contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}
                     </div>
                   </button>
                 ))}
@@ -2066,7 +2088,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   <div className="flex items-center gap-3">
                     <div className="text-lg sm:text-xl font-black text-[#ee4d2d] flex items-center tracking-tight">
                       <Flame className="w-5 h-5 sm:w-6 sm:h-6 mr-1 fill-current" />
-                      <span>{language === 'en' ? 'GOLDEN HOUR FLASH SALE' : 'FLASH SALE GIỜ VÀNG'}</span>
+                      <span>{t.mall?.flashSale?.title || (language === 'en' ? 'GOLDEN HOUR FLASH SALE' : 'FLASH SALE GIỜ VÀNG')}</span>
                     </div>
                     {/* Countdown Box */}
                     <div className="flex items-center gap-1 font-mono text-xs font-bold">
@@ -2085,7 +2107,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     }}
                     className="text-xs text-[#ee4d2d] hover:underline font-semibold flex items-center cursor-pointer"
                   >
-                    <span>{language === 'en' ? 'View All' : 'Xem Tất Cả'}</span>
+                    <span>{t.mall?.flashSale?.viewAll || (language === 'en' ? 'View All' : 'Xem Tất Cả')}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -2134,15 +2156,19 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       🎟️
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-white">Ưu Đãi Độc Quyền Sàn Universal Mall</h4>
-                      <p className="text-xs text-slate-500">Áp dụng mã FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 cho toàn bộ đơn hàng</p>
+                      <h4 className="font-bold text-sm text-slate-800 dark:text-white">
+                        {t.mall?.vouchers?.exclusiveTitle || (language === 'en' ? 'Universal Mall Exclusive Deals' : 'Ưu Đãi Độc Quyền Sàn Universal Mall')}
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        {t.mall?.vouchers?.exclusiveDesc || (language === 'en' ? 'Apply vouchers FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 to all orders' : 'Áp dụng mã FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 cho toàn bộ đơn hàng')}
+                      </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setIsCouponModalOpen(true)}
                     className="px-4 py-2 rounded-lg bg-[#ee4d2d] hover:bg-orange-600 text-white font-bold text-xs transition cursor-pointer shadow-sm"
                   >
-                    Xem Kho Voucher Sàn
+                    {t.mall?.vouchers?.viewAllBtn || (language === 'en' ? 'View Mall Vouchers' : 'Xem Kho Voucher Sàn')}
                   </button>
                 </div>
               </div>
@@ -2155,9 +2181,9 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               <div className="flex items-center justify-between border-b-2 border-[#ee4d2d] pb-2 flex-wrap gap-2">
                 <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
                   {[
-                    { id: 'all', label: language === 'en' ? '🔥 All Products' : '🔥 Tất Cả Sản Phẩm', count: filteredStoreProducts.length },
-                    { id: 'physical', label: language === 'en' ? '🚚 Physical Goods' : '🚚 Hàng Vật Lý (Ship)', count: filteredStoreProducts.filter(p => p.product_type === 'physical').length },
-                    { id: 'digital', label: language === 'en' ? '⚡ Digital (0s)' : '⚡ Hàng Số (Mã 0s)', count: filteredStoreProducts.filter(p => p.product_type !== 'physical').length },
+                    { id: 'all', label: t.mall?.products?.allTab || (language === 'en' ? '🔥 All Products' : '🔥 Tất Cả Sản Phẩm'), count: filteredStoreProducts.length },
+                    { id: 'physical', label: t.mall?.products?.physicalTab || (language === 'en' ? '🚚 Physical Goods (Ship)' : '🚚 Hàng Vật Lý (Ship)'), count: filteredStoreProducts.filter(p => p.product_type === 'physical').length },
+                    { id: 'digital', label: t.mall?.products?.digitalTab || (language === 'en' ? '⚡ Digital (0s)' : '⚡ Hàng Số (Mã 0s)'), count: filteredStoreProducts.filter(p => p.product_type !== 'physical').length },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -2190,10 +2216,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🛍️
                   </div>
                   <h3 className="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-100 mb-1">
-                    Sàn đang chuẩn bị danh sách sản phẩm đợt đầu
+                    {t.mall?.products?.emptyTitle || (language === 'en' ? 'Preparing First Product Batch' : 'Sàn đang chuẩn bị danh sách sản phẩm đợt đầu')}
                   </h3>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Hệ thống danh mục 5 ngành hàng đã sẵn sàng. Sản phẩm chính hãng đang được đồng bộ và kiểm duyệt trước khi mở bán.
+                    {t.mall?.products?.emptyDesc || (language === 'en' ? '5 multi-category catalog is ready. Authentic products are being synchronized and verified before launch.' : 'Hệ thống danh mục 5 ngành hàng đã sẵn sàng. Sản phẩm chính hãng đang được đồng bộ và kiểm duyệt trước khi mở bán.')}
                   </p>
                 </div>
               ) : (
@@ -2308,7 +2334,9 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               {mallTotalPages > 1 && (
                 <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                   <div className="text-slate-500 font-medium">
-                    Đang hiển thị {paginatedMallProducts.length} / {currentMallProducts.length} sản phẩm (Trang {currentPage} / {mallTotalPages})
+                    {language === 'en'
+                      ? `Showing ${paginatedMallProducts.length} / ${currentMallProducts.length} products (Page ${currentPage} / ${mallTotalPages})`
+                      : `Đang hiển thị ${paginatedMallProducts.length} / ${currentMallProducts.length} sản phẩm (Trang ${currentPage} / ${mallTotalPages})`}
                   </div>
 
                   <div className="flex items-center gap-1">
@@ -2757,7 +2785,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 mt-8 shadow-xs space-y-6 text-xs text-slate-700 dark:text-slate-300">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             
-            {/* Cột 1: Về CodeGame Mall */}
+            {/* Cột 1: Về Universal Mall */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#ee4d2d] flex items-center justify-center text-white font-black text-sm">
@@ -2766,21 +2794,21 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 <span className="font-extrabold text-base text-slate-950 dark:text-white">{shopBrand.name}</span>
               </div>
               <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed font-medium">
-                Sàn thương mại điện tử đa ngành chính hãng: Thời trang, Làm đẹp, Thiết bị số, Dịch vụ số & Giải trí. Hệ thống giao hàng bưu chính toàn quốc và giao mã tự động 0s.
+                {t.mall?.footer?.aboutDesc || (language === 'en' ? 'Authentic multi-industry e-commerce marketplace: Fashion, Beauty, Digital Tech, Services & Gaming. Nationwide courier shipping and 0s instant digital code delivery.' : 'Sàn thương mại điện tử đa ngành chính hãng: Thời trang, Làm đẹp, Thiết bị số, Dịch vụ số & Giải trí. Hệ thống giao hàng bưu chính toàn quốc và giao mã tự động 0s.')}
               </p>
               <div className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span>Hạ tầng Edge Network</span>
+                <span>{t.mall?.footer?.edgeNetwork || (language === 'en' ? 'Edge Network Infrastructure' : 'Hạ tầng Edge Network')}</span>
                 <span>•</span>
-                <span>Vận hành 24/7</span>
+                <span>{t.mall?.footer?.operating247 || (language === 'en' ? 'Operating 24/7' : 'Vận hành 24/7')}</span>
                 <span>•</span>
-                <span>Giữ tiền 168h</span>
+                <span>{t.mall?.footer?.escrow168h || (language === 'en' ? '168H Escrow Hold' : 'Giữ tiền 168h')}</span>
               </div>
             </div>
 
             {/* Cột 2: Danh Mục Thể Loại & Hàng Hóa */}
             <div className="space-y-2">
               <h4 className="font-extrabold text-slate-950 dark:text-white uppercase tracking-wider text-xs">
-                {categoriesConfig.footerCategoryTitle || 'Chuyên Mục Hàng Đầu'}
+                {t.mall?.footer?.topCategories || (language === 'en' ? 'Top Categories' : 'Chuyên Mục Hàng Đầu')}
               </h4>
               <ul className="space-y-2 text-xs font-semibold">
                 {(categoriesConfig.categories.length > 1 ? categoriesConfig.categories.slice(1) : categoriesConfig.categories).map((cat) => (
@@ -2795,7 +2823,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       className="text-slate-700 dark:text-slate-300 hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition text-left cursor-pointer flex items-center gap-1.5"
                     >
                       <span>{cat.icon || '📦'}</span>
-                      <span>{cat.label}</span>
+                      <span>{(t.mall?.categories as any)?.[cat.id] || contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}</span>
                     </button>
                   </li>
                 ))}
@@ -2804,31 +2832,33 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
 
             {/* Cột 3: Hỗ Trợ & Pháp Lý */}
             <div className="space-y-2">
-              <h4 className="font-extrabold text-slate-950 dark:text-white uppercase tracking-wider text-xs">Hỗ Trợ & Pháp Lý</h4>
+              <h4 className="font-extrabold text-slate-950 dark:text-white uppercase tracking-wider text-xs">
+                {t.mall?.footer?.supportAndLegal || (language === 'en' ? 'Support & Legal' : 'Hỗ Trợ & Pháp Lý')}
+              </h4>
               <ul className="space-y-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
                 <li>
                   <button onClick={() => setIsGuaranteeOpen(true)} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    🛡️ Chính Sách Bảo Chứng 168 Giờ
+                    {t.mall?.footer?.escrowPolicy || (language === 'en' ? '🛡️ 168-Hour Escrow Policy' : '🛡️ Chính Sách Bảo Chứng 168 Giờ')}
                   </button>
                 </li>
                 <li>
                   <button onClick={() => setSubView('terms')} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    📄 Điều Khoản Dịch Vụ
+                    {t.mall?.footer?.terms || (language === 'en' ? '📄 Terms of Service' : '📄 Điều Khoản Dịch Vụ')}
                   </button>
                 </li>
                 <li>
                   <button onClick={() => setSubView('privacy')} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    🔒 Chính Sách Bảo Mật
+                    {t.mall?.footer?.privacy || (language === 'en' ? '🔒 Privacy Policy' : '🔒 Chính Sách Bảo Mật')}
                   </button>
                 </li>
                 <li>
                   <button onClick={() => setIsSupportOpen(true)} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    💬 Trung Tâm Hỗ Trợ CSKH 24/7
+                    {t.mall?.footer?.supportCenter || (language === 'en' ? '💬 24/7 Customer Support' : '💬 Trung Tâm Hỗ Trợ CSKH 24/7')}
                   </button>
                 </li>
                 <li>
                   <button onClick={() => onShowToast('Hotline CSKH: 0987.654.321', 'info')} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    📞 Hotline: {shopBrand.hotline}
+                    {t('mall.footer.hotline', { number: shopBrand.hotline }) || `📞 Hotline: ${shopBrand.hotline}`}
                   </button>
                 </li>
               </ul>
@@ -2836,27 +2866,31 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
 
             {/* Cột 4: Kết Nối & Tải App */}
             <div className="space-y-2.5">
-              <h4 className="font-extrabold text-slate-950 dark:text-white uppercase tracking-wider text-xs">Kết Nối & Tải Ứng Dụng</h4>
+              <h4 className="font-extrabold text-slate-950 dark:text-white uppercase tracking-wider text-xs">
+                {t.mall?.footer?.connectAndApp || (language === 'en' ? 'Connect & Download App' : 'Kết Nối & Tải Ứng Dụng')}
+              </h4>
               <div className="space-y-2 text-xs">
                 <button
                   onClick={() => setSubView('telegram')}
                   className="w-full py-2 px-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Kênh Telegram Thông Báo</span>
+                  <span>{t.mall?.footer?.telegramChannel || (language === 'en' ? 'Telegram Announcement Channel' : 'Kênh Telegram Thông Báo')}</span>
                 </button>
                 <button
                   onClick={onOpenDownloadApp}
                   className="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
                 >
                   <Smartphone className="w-3.5 h-3.5" />
-                  <span>Tải App Trực Tiếp (APK)</span>
+                  <span>{t.mall?.footer?.downloadApk || (language === 'en' ? 'Direct App Download (APK)' : 'Tải App Trực Tiếp (APK)')}</span>
                 </button>
               </div>
 
               {/* Ngôn ngữ Footer */}
               <div className="pt-2">
-                <span className="text-xs text-slate-700 dark:text-slate-300 font-bold block mb-1">Ngôn ngữ hiển thị:</span>
+                <span className="text-xs text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                  {t.mall?.footer?.displayLanguage || (language === 'en' ? 'Display Language:' : 'Ngôn ngữ hiển thị:')}
+                </span>
                 <LanguageSelector variant="footer" />
               </div>
             </div>
@@ -2873,12 +2907,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className="inline-flex items-center gap-2 bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs px-6 py-2.5 rounded-full shadow transition cursor-pointer"
             >
               <Store className="w-4 h-4" />
-              <span>Về Đầu Trang Sàn CodeGame Mall</span>
+              <span>{t.mall?.footer?.backToTop || (language === 'en' ? 'Back to Top of Universal Mall' : 'Về Đầu Trang Sàn CodeGame Mall')}</span>
             </button>
           </div>
 
           <div className="text-center text-xs font-semibold text-slate-700 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-slate-800">
-            © 2026 {shopBrand.name} - Giao Diện Sàn Thương Mại Điện Tử Tiện Ích & Code Game (Bản Test 1 tại <code>/test1</code>)
+            {language === 'en'
+              ? `© 2026 ${shopBrand.name} - Multi-Industry E-Commerce & Gaming Services Platform`
+              : `© 2026 ${shopBrand.name} - Giao Diện Sàn Thương Mại Điện Tử Tiện Ích & Code Game`}
           </div>
         </div>
 
@@ -2887,18 +2923,20 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
 
       {/* 5. MODE SWITCHER NỔI GÓC PHẢI DƯỚI */}
       <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-2xl border border-slate-300 dark:border-slate-700 px-3 py-2 rounded-full text-xs font-semibold">
-        <span className="text-slate-600 dark:text-slate-300">Giao diện:</span>
+        <span className="text-slate-600 dark:text-slate-300">
+          {t.mall?.footer?.themeLabel || (language === 'en' ? 'Theme:' : 'Giao diện:')}
+        </span>
         <button 
           onClick={() => setIsShopeeDark(false)}
           className={`px-2.5 py-1 rounded-full transition cursor-pointer ${!isShopeeDark ? 'bg-[#ee4d2d] text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
         >
-          Shopee Trắng
+          {t.mall?.footer?.themeLight || (language === 'en' ? 'Light' : 'Shopee Trắng')}
         </button>
         <button 
           onClick={() => setIsShopeeDark(true)}
           className={`px-2.5 py-1 rounded-full transition cursor-pointer ${isShopeeDark ? 'bg-[#ee4d2d] text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
         >
-          Shopee Dark
+          {t.mall?.footer?.themeDark || (language === 'en' ? 'Dark' : 'Shopee Dark')}
         </button>
       </div>
 

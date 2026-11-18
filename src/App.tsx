@@ -16,6 +16,7 @@ import { Footer } from './components/Footer';
 import { ToastContainer, type ToastMessage } from './components/Toast';
 import { GameGridSkeleton } from './components/GameCardSkeleton';
 import { LanguageSeoHead } from './components/seo/LanguageSeoHead';
+import { useLanguage } from './context/LanguageContext';
 
 // P4: Code Splitting & Lazy Loaded Views / Modals with auto-recovery on stale deployment chunks
 const FloatingAnnouncement = lazyWithRetry(() => import('./components/FloatingAnnouncement').then((m) => ({ default: m.FloatingAnnouncement })));
@@ -90,6 +91,7 @@ const ADMIN_HASH_PREFIXES = [
 ];
 
 export const App: React.FC = () => {
+  const { language } = useLanguage();
   const [, startTransition] = useTransition();
 
   // Navigation Tab State (Decoupled Frontends Domain Detection & Hash Routing)
@@ -791,7 +793,8 @@ export const App: React.FC = () => {
           setSelectedGame(null);
           setCurrentTab('shopee-test');
           return;
-        } else if (!hash || hash === '#') {
+        } else if (pathname === '/en' || pathname === '/en/' || pathname === '/vi' || pathname === '/vi/' || !hash || hash === '#') {
+          setSelectedGame(null);
           setCurrentTab(isTestClientDomain ? 'shopee-test' : 'catalog');
         } else if (hash === '#catalog' || hashLower.startsWith('#catalog')) {
           setCurrentTab('catalog');
@@ -920,7 +923,9 @@ export const App: React.FC = () => {
           return;
         }
         if (isTestClientDomain) {
-          if (window.location.pathname !== '/' || window.location.hash) {
+          const path = window.location.pathname.toLowerCase();
+          const isLangPath = path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/';
+          if (!isLangPath && (window.location.pathname !== '/' || window.location.hash)) {
             window.history.replaceState(null, '', '/');
           }
         } else if (window.location.pathname !== '/test1' || window.location.hash) {
@@ -1005,13 +1010,28 @@ export const App: React.FC = () => {
         }
       } else if (currentTab === 'shopee-test') {
         const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
-        document.title = isTestClientDomain
-          ? 'Sàn Thương Mại Điện Tử & Tiện Ích Game | Bản Mẫu Trực Tuyến'
-          : 'Giao Diện Thử Nghiệm Phong Cách Shopee Game (Test 1) | CodeGame.shop';
+        if (isTestClientDomain) {
+          document.title = language === 'en'
+            ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace'
+            : 'Universal Mall - Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng';
+          const metaDesc = document.querySelector('meta[name="description"]');
+          if (metaDesc) {
+            metaDesc.setAttribute(
+              'content',
+              language === 'en'
+                ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace: Fashion, Beauty, Digital Tech, Services & Gaming. Nationwide courier and 0s instant code delivery.'
+                : 'Sàn thương mại điện tử đa ngành chính hãng Universal Mall: Thời trang, Làm đẹp, Thiết bị số, Dịch vụ số & Gaming. Giao hàng toàn quốc và mã 0s.'
+            );
+          }
+        } else {
+          document.title = 'Giao Diện Thử Nghiệm Phong Cách Shopee Game (Test 1) | CodeGame.shop';
+        }
         const isDeepLink = window.location.pathname.startsWith('/test1/game/') || window.location.pathname.startsWith('/test1/g/') || (isTestClientDomain && window.location.pathname.startsWith('/game/'));
         if (!isDeepLink) {
           if (isTestClientDomain) {
-            if (window.location.pathname !== '/' || window.location.hash) {
+            const path = window.location.pathname.toLowerCase();
+            const isLangPath = path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/';
+            if (!isLangPath && (window.location.pathname !== '/' || window.location.hash)) {
               window.history.replaceState(null, '', '/');
             }
           } else if (window.location.pathname !== '/test1' || window.location.hash) {
@@ -1025,7 +1045,7 @@ export const App: React.FC = () => {
         }
       }
     }
-  }, [selectedGame, currentTab, isInitialLoadDone]);
+  }, [selectedGame, currentTab, isInitialLoadDone, language]);
 
   // Handle browser popstate and hashchange navigation (Back / Forward buttons & anchors)
   useEffect(() => {
@@ -1225,7 +1245,7 @@ export const App: React.FC = () => {
       } else if (path === '/test1' || path.startsWith('/test1/') || hash.includes('test1')) {
         setSelectedGame(null);
         setCurrentTab('shopee-test');
-      } else if (path === '/' || path === '') {
+      } else if (path === '/' || path === '' || path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/') {
         setSelectedGame(null);
         const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
         setCurrentTab(isTestClient ? 'shopee-test' : 'catalog');

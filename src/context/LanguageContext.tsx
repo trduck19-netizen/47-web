@@ -69,34 +69,48 @@ function interpolate(template: string, params?: Record<string, any>): string {
 
 /**
  * Phát hiện ngôn ngữ ban đầu theo thứ tự ưu tiên:
- * 1. Lựa chọn tay đã lưu trong localStorage (luôn thắng)
- * 2. Tiền tố URL (/en/ hoặc /vi/)
- * 3. Gợi ý từ trình duyệt (navigator.language)
- * 4. Mặc định là Tiếng Việt (vi)
+ * 1. Tham số truy vấn URL (?lang=en hoặc ?lang=vi)
+ * 2. Tiền tố URL path (/en/, /en, /vi/, /vi)
+ * 3. Lựa chọn đã lưu của user trong localStorage (tôn trọng khi tải lại trang hoặc mở tab mới)
+ * 4. Ngôn ngữ của trình duyệt (navigator.language)
+ * 5. Mặc định là Tiếng Việt (DEFAULT_LANGUAGE = 'vi')
  */
 function detectInitialLanguage(): string {
   if (typeof window === 'undefined') return DEFAULT_LANGUAGE;
 
-  // 1. LocalStorage thắng mọi gợi ý
   try {
+    // 1. Tham số URL query: ?lang=en hoặc ?lang=vi
+    const params = new URLSearchParams(window.location.search);
+    const qLang = params.get('lang')?.toLowerCase();
+    if (qLang && ACTIVE_LANGUAGES.some((l) => l.code === qLang)) {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, qLang);
+      return qLang;
+    }
+
+    // 2. Tiền tố URL path: /en/, /en, /vi/, /vi
+    const path = window.location.pathname.toLowerCase();
+    for (const l of ACTIVE_LANGUAGES) {
+      if (path === `/${l.code}` || path.startsWith(`/${l.code}/`)) {
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, l.code);
+        return l.code;
+      }
+    }
+
+    // 3. Lựa chọn đã lưu của user trong localStorage
     const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (saved && (saved === 'vi' || saved === 'en' || saved === 'th')) {
+    if (saved && ACTIVE_LANGUAGES.some((l) => l.code === saved)) {
       return saved;
+    }
+
+    // 4. Ngôn ngữ trình duyệt
+    if (typeof navigator !== 'undefined' && navigator.language) {
+      const browserLang = navigator.language.toLowerCase();
+      const match = ACTIVE_LANGUAGES.find((l) => browserLang.startsWith(l.code));
+      if (match) return match.code;
     }
   } catch {}
 
-  // 2. URL Prefix
-  const path = window.location.pathname.toLowerCase();
-  if (path.startsWith('/en/') || path === '/en') return 'en';
-  if (path.startsWith('/th/') || path === '/th') return 'th';
-  if (path.startsWith('/vi/') || path === '/vi') return 'vi';
-
-  // 3. Browser language
-  if (typeof navigator !== 'undefined' && navigator.language) {
-    const browserLang = navigator.language.toLowerCase();
-    if (browserLang.startsWith('en')) return 'en';
-  }
-
+  // 5. Mặc định là Tiếng Việt
   return DEFAULT_LANGUAGE;
 }
 
@@ -104,7 +118,9 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [language, setLanguageState] = useState<string>(detectInitialLanguage);
 
   const setLanguage = useCallback((newLang: string) => {
-    const targetLang = newLang === 'en' ? 'en' : 'vi';
+    // Nhận bất kỳ ngôn ngữ nào trong ACTIVE_LANGUAGES, mặc định về DEFAULT_LANGUAGE ('vi')
+    const isValid = ACTIVE_LANGUAGES.some((l) => l.code === newLang);
+    const targetLang = isValid ? newLang : DEFAULT_LANGUAGE;
     setLanguageState(targetLang);
 
     try {
@@ -112,6 +128,27 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (typeof document !== 'undefined') {
         document.documentElement.lang = targetLang;
       }
+
+      // Cập nhật tiền tố URL mà không reload trang
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        const search = window.location.search;
+        const hash = window.location.hash;
+
+        if (targetLang === 'en') {
+          if (!path.startsWith('/en/') && path !== '/en') {
+            const cleanPath = path.replace(/^\/vi\/?/i, '/');
+            const newPath = cleanPath === '/' ? '/en/' : `/en${cleanPath}`;
+            window.history.replaceState(null, '', newPath + search + hash);
+          }
+        } else if (targetLang === 'vi') {
+          if (path.startsWith('/en/') || path === '/en') {
+            const cleanPath = path.replace(/^\/en\/?/i, '/');
+            window.history.replaceState(null, '', (cleanPath || '/') + search + hash);
+          }
+        }
+      }
+
       window.dispatchEvent(new CustomEvent('wcg_language_changed', { detail: targetLang }));
     } catch {}
   }, []);
@@ -123,8 +160,9 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     const handleStorage = (e: StorageEvent) => {
       if (e.key === LANGUAGE_STORAGE_KEY && e.newValue) {
-        const nextLang = e.newValue === 'en' ? 'en' : 'vi';
-        setLanguageState(nextLang);
+        if (ACTIVE_LANGUAGES.some((l) => l.code === e.newValue)) {
+          setLanguageState(e.newValue);
+        }
       }
     };
 
