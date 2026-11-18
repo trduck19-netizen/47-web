@@ -84,6 +84,9 @@ const tabTitlesEn: Record<string, { title: string; subtitle: string }> = {
   'api-keys': { title: 'API Keys & Scopes', subtitle: 'Granular permissions for AI agents, crawler bots, and third-party partners' },
   'security-logs': { title: 'Security Audit Logs', subtitle: 'Immutable tamper-proof logs of administrative actions' },
   profile: { title: 'Admin Account & Security', subtitle: 'Update personal credentials, password, and two-factor auth' },
+  translations: { title: 'Translations & i18n Management', subtitle: 'Manage multilingual localized keys (Vietnamese & English)' },
+  vouchers: { title: 'Vouchers & Shipping Discounts', subtitle: 'Shopee-style multi-tier discounts & freeship management' },
+  'first-purchase': { title: 'First Purchase Offers', subtitle: 'Welcome discounts and bonuses for newly registered users' },
 };
 
 const shortTabTitles: Record<AdminModuleTab, string> = {
@@ -155,6 +158,8 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   const activeTabTitles = language === 'en' ? tabTitlesEn : tabTitles;
   const meta = activeTabTitles[currentTab] || (language === 'en' ? { title: 'System Administration', subtitle: 'CodeGame Management System' } : { title: 'Quản Trị Hệ Thống', subtitle: 'Hệ thống quản lý CodeGame' });
 
+  const isEn = language === 'en';
+
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/80 px-3.5 sm:px-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
       {/* Left: Mobile Toggle & Page Title */}
@@ -162,7 +167,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         <button
           onClick={onToggleMobileSidebar}
           className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 shrink-0"
-          title="Mở menu điều hướng"
+          title={isEn ? 'Open navigation menu' : 'Mở menu điều hướng'}
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -180,7 +185,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           {typeof window !== 'undefined' && window.location.hostname.includes('test') && (
             <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-extrabold rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-sm shrink-0">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-              QUẢN TRỊ BẢN TEST (ĐỘC LẬP)
+              {isEn ? 'TEST PORTAL (ISOLATED)' : 'QUẢN TRỊ BẢN TEST (ĐỘC LẬP)'}
             </span>
           )}
         </div>
@@ -192,49 +197,49 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         <div className="relative" ref={quickActionRef}>
           <button
             onClick={() => setIsQuickActionOpen((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Tạo Nhanh</span>
+            <span className="hidden sm:inline">{isEn ? 'Quick Create' : 'Tạo Nhanh'}</span>
           </button>
 
           {isQuickActionOpen && (
-            <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in duration-100">
+            <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in duration-100 z-50">
               <button
                 onClick={() => {
                   setIsQuickActionOpen(false);
                   onQuickAction?.('add-game');
                 }}
-                className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+                className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer"
               >
-                + Thêm Game Mới
+                {isEn ? '+ Add New Game' : '+ Thêm Game Mới'}
               </button>
               <button
                 onClick={() => {
                   setIsQuickActionOpen(false);
                   onQuickAction?.('add-free-code');
                 }}
-                className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+                className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer"
               >
-                + Thêm Code Miễn Phí
+                {isEn ? '+ Add Free Code' : '+ Thêm Code Miễn Phí'}
               </button>
               <button
                 onClick={() => {
                   setIsQuickActionOpen(false);
                   onQuickAction?.('issue-private-code');
                 }}
-                className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+                className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer"
               >
-                + Cấp Code Riêng VIP
+                {isEn ? '+ Issue VIP Code' : '+ Cấp Code Riêng VIP'}
               </button>
               <button
                 onClick={() => {
                   setIsQuickActionOpen(false);
                   onQuickAction?.('adjust-wallet');
                 }}
-                className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+                className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer"
               >
-                + Điều Chỉnh Số Dư Ví
+                {isEn ? '+ Adjust Balance' : '+ Điều Chỉnh Số Dư Ví'}
               </button>
             </div>
           )}
@@ -250,10 +255,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
               // 2. Pull latest server data (members, transactions, new orders)
               await adminDataService.fetchFromCloudflareKV();
               const count = adminDataService.getMembers().length;
-              setSyncFeedback(`Đã đồng bộ (${count} TV)`);
+              setSyncFeedback(isEn ? `Synced (${count} users)` : `Đã đồng bộ (${count} TV)`);
               window.dispatchEvent(new CustomEvent('wcg_admin_data_updated', { detail: { type: 'KV_DATA_PULLED' } }));
             } catch {
-              setSyncFeedback('Đã đồng bộ!');
+              setSyncFeedback(isEn ? 'Synced!' : 'Đã đồng bộ!');
             } finally {
               setIsSyncing(false);
               setTimeout(() => setSyncFeedback(null), 3000);
@@ -261,10 +266,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           }}
           disabled={isSyncing}
           className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 transition-all cursor-pointer disabled:opacity-50"
-          title="Đồng bộ hai chiều toàn bộ thành viên, ví, đơn hàng và sản phẩm từ Cloudflare D1"
+          title={isEn ? 'Bi-directional sync members, wallet, orders from Cloudflare D1' : 'Đồng bộ hai chiều toàn bộ thành viên, ví, đơn hàng và sản phẩm từ Cloudflare D1'}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-          <span className="hidden sm:inline">{syncFeedback || 'Đồng Bộ'}</span>
+          <span className="hidden sm:inline">{syncFeedback || (isEn ? 'Sync D1' : 'Đồng Bộ')}</span>
         </button>
 
         {/* View Client Website Link */}
@@ -272,9 +277,9 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           <button
             onClick={onGoToClientSite}
             className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-300 transition-all cursor-pointer"
-            title="Mở website khách hàng (web-code-game.pages.dev)"
+            title={isEn ? 'Open client website (universal-mall-shop.pages.dev)' : 'Mở website khách hàng (universal-mall-shop.pages.dev)'}
           >
-            <span className="hidden sm:inline">Xem Web Khách</span>
+            <span className="hidden sm:inline">{isEn ? 'Client Store' : 'Xem Web Khách'}</span>
             <span className="text-[11px]">↗</span>
           </button>
         )}
@@ -285,8 +290,8 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         {/* Theme Toggle */}
         <button
           onClick={onToggleTheme}
-          className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
-          title={isDarkMode ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối'}
+          className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer"
+          title={isEn ? (isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode') : (isDarkMode ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối')}
         >
           {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
@@ -295,7 +300,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setIsNotificationOpen((prev) => !prev)}
-            className="relative rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+            className="relative rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer"
           >
             <Bell className="h-4 w-4" />
             {pendingCount > 0 && (
@@ -306,13 +311,13 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           </button>
 
           {isNotificationOpen && (
-            <div className="absolute right-0 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in duration-100">
+            <div className="absolute right-0 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in duration-100 z-50">
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  Thông báo hệ thống
+                  {isEn ? 'System Notifications' : 'Thông báo hệ thống'}
                 </span>
                 <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-                  {pendingCount} chờ duyệt
+                  {isEn ? `${pendingCount} pending` : `${pendingCount} chờ duyệt`}
                 </span>
               </div>
               <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -329,10 +334,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
                     </div>
                     <div>
                       <p className="font-semibold text-slate-800 dark:text-slate-200">
-                        Có {pendingCount} mã giftcode chờ phê duyệt
+                        {isEn ? `${pendingCount} giftcodes pending approval` : `Có ${pendingCount} mã giftcode chờ phê duyệt`}
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Nhấn để mở danh sách kiểm duyệt ngay.
+                        {isEn ? 'Click to open moderation list now.' : 'Nhấn để mở danh sách kiểm duyệt ngay.'}
                       </p>
                     </div>
                   </div>
@@ -344,10 +349,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
                   </div>
                   <div>
                     <p className="font-semibold text-slate-800 dark:text-slate-200">
-                      Hệ thống hoạt động bình thường
+                      {isEn ? 'System operational' : 'Hệ thống hoạt động bình thường'}
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Cloudflare KV & Webhook SePay đang kết nối ổn định.
+                      {isEn ? 'Cloudflare KV & SePay Webhook operating normally.' : 'Cloudflare KV & Webhook SePay đang kết nối ổn định.'}
                     </p>
                   </div>
                 </div>
@@ -360,7 +365,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setIsUserMenuOpen((prev) => !prev)}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <img
               src={currentUser?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=Admin'}
@@ -378,7 +383,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           </button>
 
           {isUserMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in duration-100">
+            <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in duration-100 z-50">
               <div className="border-b border-slate-100 px-4 py-2.5 dark:border-slate-800">
                 <p className="text-xs font-bold text-slate-900 dark:text-white">
                   {currentUser?.displayName}
@@ -392,20 +397,20 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
                     setIsUserMenuOpen(false);
                     onSelectTab('profile');
                   }}
-                  className="flex w-full items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="flex w-full items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <User className="h-4 w-4 text-slate-400" />
-                  <span>Hồ sơ quản trị</span>
+                  <span>{isEn ? 'Admin Profile' : 'Hồ sơ quản trị'}</span>
                 </button>
                 <button
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     onSelectTab('security-logs');
                   }}
-                  className="flex w-full items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="flex w-full items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <ShieldCheck className="h-4 w-4 text-slate-400" />
-                  <span>Nhật ký bảo mật</span>
+                  <span>{isEn ? 'Security Audit Logs' : 'Nhật ký bảo mật'}</span>
                 </button>
               </div>
 
@@ -416,10 +421,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
                       setIsUserMenuOpen(false);
                       onLogout();
                     }}
-                    className="flex w-full items-center gap-2.5 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30"
+                    className="flex w-full items-center gap-2.5 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30 cursor-pointer"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>Đăng xuất</span>
+                    <span>{isEn ? 'Sign out' : 'Đăng xuất'}</span>
                   </button>
                 </div>
               )}

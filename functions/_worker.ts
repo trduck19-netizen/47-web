@@ -310,7 +310,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
     }
 
     if (
-      (isAdminHost || pathname === '/admin' || pathname.startsWith('/admin/')) &&
+      (isAdminHost || pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/en/admin' || pathname.startsWith('/en/admin/')) &&
       method === 'GET' &&
       !pathname.startsWith('/api') &&
       !pathname.startsWith('/sync-bridge') &&

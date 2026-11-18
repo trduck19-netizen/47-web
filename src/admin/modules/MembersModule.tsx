@@ -21,12 +21,15 @@ import { adminDataService } from '../services/adminDataService';
 import { MemberRecord, UserRole } from '../types/adminTypes';
 import { formatCore } from '../../utils/textUtils';
 import { generateSalt, hashPassword } from '../../utils/cryptoUtils';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface MembersModuleProps {
   onShowToast: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isLoading, setIsLoading] = useState(false);
@@ -298,12 +301,12 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
   const columns: Column<MemberRecord>[] = [
     {
       key: 'displayName',
-      header: 'Thành Viên',
+      header: isEn ? 'Member' : 'Thành Viên',
       sortable: true,
       width: '26%',
       render: (item) => {
-        const name = item?.displayName || item?.id || 'Khách hàng';
-        const email = item?.email || 'Chưa cập nhật email';
+        const name = item?.displayName || item?.id || (isEn ? 'Customer' : 'Khách hàng');
+        const email = item?.email || (isEn ? 'Email not set' : 'Chưa cập nhật email');
         const avatarUrl =
           item?.avatar ||
           `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}&backgroundColor=0b0d19,16192e,241a45`;
@@ -329,14 +332,14 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
     },
     {
       key: 'role',
-      header: 'Vai Trò',
+      header: isEn ? 'Role' : 'Vai Trò',
       sortable: true,
       width: '12%',
       render: (item) => <StatusBadge status={item?.role || 'MEMBER'} size="sm" />,
     },
     {
       key: 'balance',
-      header: 'Số Dư & Đã Mua',
+      header: isEn ? 'Balance & Spent' : 'Số Dư & Đã Mua',
       sortable: true,
       width: '18%',
       render: (item) => {
@@ -348,7 +351,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
               {formatCore(bal)}
             </span>
             <span className="text-[10px] text-slate-400 font-mono block truncate">
-              Đã mua: {formatCore(spent)}
+              {isEn ? 'Spent:' : 'Đã mua:'} {formatCore(spent)}
             </span>
           </div>
         );
@@ -356,14 +359,14 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
     },
     {
       key: 'status',
-      header: 'Trạng Thái',
+      header: isEn ? 'Status' : 'Trạng Thái',
       sortable: true,
       width: '12%',
       render: (item) => <StatusBadge status={item?.status || 'ACTIVE'} size="sm" />,
     },
     {
       key: 'actions',
-      header: 'Thao Tác Quản Trị',
+      header: isEn ? 'Admin Actions' : 'Thao Tác Quản Trị',
       width: '32%',
       align: 'right',
       sticky: 'right',
@@ -374,29 +377,29 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
               setAdjustingMember(item);
               setAdjAmount(50000);
             }}
-            title="Điều chỉnh số dư ví (Nạp / Trừ)"
+            title={isEn ? 'Adjust wallet balance (Credit / Debit)' : 'Điều chỉnh số dư ví (Nạp / Trừ)'}
             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer shadow-xs whitespace-nowrap"
           >
             <Wallet className="h-3 w-3 text-emerald-500" />
-            <span>Ví</span>
+            <span>{isEn ? 'Wallet' : 'Ví'}</span>
           </button>
           <button
             onClick={() => {
               setRoleChangingMember(item);
               setNewRole((item?.role as UserRole) || 'MEMBER');
             }}
-            title="Đổi phân quyền"
+            title={isEn ? 'Change member role' : 'Đổi phân quyền'}
             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer shadow-xs whitespace-nowrap"
           >
             <Shield className="h-3 w-3 text-indigo-500" />
-            <span>Quyền</span>
+            <span>{isEn ? 'Role' : 'Quyền'}</span>
           </button>
           <button
             onClick={() => {
               setResetPassMember(item);
               setNewMemberPassword('');
             }}
-            title="Đổi mật khẩu tài khoản"
+            title={isEn ? 'Reset member password' : 'Đổi mật khẩu tài khoản'}
             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer shadow-xs whitespace-nowrap"
           >
             <KeyRound className="h-3 w-3 text-amber-500" />
@@ -404,7 +407,11 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
           </button>
           <button
             onClick={() => setBanningMember(item)}
-            title={item?.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa'}
+            title={
+              item?.status === 'ACTIVE'
+                ? (isEn ? 'Ban account' : 'Khóa tài khoản')
+                : (isEn ? 'Unban account' : 'Mở khóa')
+            }
             className={`rounded-lg px-1.5 py-1 text-[11px] font-semibold border flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap shadow-xs ${
               item?.status === 'ACTIVE'
                 ? 'border-rose-500/30 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40'
@@ -412,7 +419,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
             }`}
           >
             {item?.status === 'ACTIVE' ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-            <span>{item?.status === 'ACTIVE' ? 'Khóa' : 'Mở'}</span>
+            <span>{item?.status === 'ACTIVE' ? (isEn ? 'Ban' : 'Khóa') : (isEn ? 'Unban' : 'Mở')}</span>
           </button>
         </div>
       ),
@@ -424,28 +431,28 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
       {/* Customer / Member KPI Summary Cards */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Tổng Khách Hàng / Thành Viên"
+          title={isEn ? 'Total Customers / Members' : 'Tổng Khách Hàng / Thành Viên'}
           value={totalMembersCount}
-          subtext="Đồng bộ tự động 24/7 từ web khách"
+          subtext={isEn ? 'Real-time 24/7 sync from store' : 'Đồng bộ tự động 24/7 từ web khách'}
           icon={Users}
           color="indigo"
         />
         <StatCard
-          title="Khách Hàng VIP & Nạp Tiền"
+          title={isEn ? 'VIP Customers & Depositors' : 'Khách Hàng VIP & Nạp Tiền'}
           value={vipMembersCount}
-          subtext="Tài khoản nạp Core & thành viên uy tín"
+          subtext={isEn ? 'Funded accounts & trusted members' : 'Tài khoản nạp Core & thành viên uy tín'}
           icon={Crown}
           color="amber"
         />
         <StatCard
-          title="Tổng Số Dư Ví Toàn Hệ Thống"
+          title={isEn ? 'Total System Wallet Balances' : 'Tổng Số Dư Ví Toàn Hệ Thống'}
           value={formatCore(totalSystemBalance)}
           subtext={`~${formatVnd(totalSystemBalance)}`}
           icon={Coins}
           color="emerald"
         />
         <StatCard
-          title="Tổng Core Đã Mua / Tiêu Thụ"
+          title={isEn ? 'Total Spent / Consumed' : 'Tổng Core Đã Mua / Tiêu Thụ'}
           value={formatCore(totalSystemSpent)}
           subtext={`~${formatVnd(totalSystemSpent)}`}
           icon={TrendingUp}
@@ -458,32 +465,32 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
         columns={columns}
         keyExtractor={(item) => item?.id || `usr_${Math.random()}`}
         isLoading={isLoading}
-        searchPlaceholder="Tìm theo tên hiển thị, email, số điện thoại, ID tài khoản..."
+        searchPlaceholder={isEn ? 'Search by display name, email, phone, account ID...' : 'Tìm theo tên hiển thị, email, số điện thoại, ID tài khoản...'}
         searchKeys={['displayName', 'email', 'phone', 'id']}
         onRefresh={handleManualRefresh}
         filters={[
           {
             key: 'role',
-            label: 'Vai trò',
+            label: isEn ? 'Role' : 'Vai trò',
             selectedValue: roleFilter,
             options: [
-              { label: 'Tất cả vai trò', value: 'ALL' },
+              { label: isEn ? 'All Roles' : 'Tất cả vai trò', value: 'ALL' },
               { label: 'Super Admin', value: 'SUPER_ADMIN' },
               { label: 'Admin', value: 'ADMIN' },
               { label: 'Moderator', value: 'MODERATOR' },
               { label: 'VIP Gold', value: 'VIP' },
-              { label: 'Thành viên', value: 'MEMBER' },
+              { label: isEn ? 'Member' : 'Thành viên', value: 'MEMBER' },
             ],
             onChange: setRoleFilter,
           },
           {
             key: 'status',
-            label: 'Trạng thái',
+            label: isEn ? 'Status' : 'Trạng thái',
             selectedValue: statusFilter,
             options: [
-              { label: 'Tất cả trạng thái', value: 'ALL' },
-              { label: 'Hoạt động (ACTIVE)', value: 'ACTIVE' },
-              { label: 'Bị khóa (BANNED)', value: 'BANNED' },
+              { label: isEn ? 'All Status' : 'Tất cả trạng thái', value: 'ALL' },
+              { label: isEn ? 'Active (ACTIVE)' : 'Hoạt động (ACTIVE)', value: 'ACTIVE' },
+              { label: isEn ? 'Banned (BANNED)' : 'Bị khóa (BANNED)', value: 'BANNED' },
             ],
             onChange: setStatusFilter,
           },

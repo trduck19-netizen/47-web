@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export type StatusType =
   | 'ACTIVE'
@@ -268,12 +269,48 @@ const statusConfig: Record<
   },
 };
 
+const statusLabelsEn: Record<string, string> = {
+  ACTIVE: 'Active',
+  INACTIVE: 'Inactive',
+  HOT: 'Hot',
+  MAINTENANCE: 'Maintenance',
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  EXPIRED: 'Expired',
+  AVAILABLE: 'In Stock',
+  SOLD: 'Sold',
+  PROCESSING: 'Processing',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+  REFUNDED: 'Refunded',
+  REFUND: 'Refund',
+  DEPOSIT: 'Deposit',
+  ORDER_PAYMENT: 'Order Payment',
+  ADMIN_ADJUST: 'Admin Adjust',
+  REWARD: 'Reward',
+  SUCCESS: 'Success',
+  FAILED: 'Failed',
+  INFO: 'Info',
+  WARNING: 'Warning',
+  CRITICAL: 'Critical',
+  SUPER_ADMIN: 'Super Admin',
+  ADMIN: 'Admin',
+  MODERATOR: 'Moderator',
+  MEMBER: 'Member',
+  VIP: 'VIP',
+  SHIPPING: 'Shipping',
+  DELIVERED: 'Delivered',
+};
+
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
   label,
   size = 'md',
   dot = true,
 }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const normKey = (status || '').toUpperCase();
   const config = statusConfig[normKey] || {
     bg: 'bg-slate-500/10 dark:bg-slate-500/15',
@@ -289,6 +326,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     lg: 'px-3 py-1.5 text-sm',
   };
 
+  const displayLabel = label || (isEn ? (statusLabelsEn[normKey] || config.defaultLabel) : config.defaultLabel);
+
   return (
     <span
       className={`inline-flex items-center gap-1.5 font-semibold rounded-full border ${config.bg} ${config.text} ${config.border} ${sizeClasses[size]}`}
@@ -296,7 +335,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       {dot && (
         <span className={`h-1.5 w-1.5 rounded-full ${config.dotColor} animate-pulse`} />
       )}
-      {label || config.defaultLabel}
+      {displayLabel}
     </span>
   );
 };

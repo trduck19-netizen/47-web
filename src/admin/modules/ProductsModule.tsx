@@ -4,6 +4,7 @@ import {
   RefreshCw, AlertCircle, CheckCircle2, X, Package, Image as ImageIcon,
   DollarSign, Layers, Check, ShoppingBag, Eye,
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CategoryItem {
   id: string;
@@ -37,6 +38,8 @@ interface ProductItem {
 }
 
 export const ProductsModule: React.FC = () => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [filterIndustry, setFilterIndustry] = useState<string>('all');
@@ -253,13 +256,17 @@ export const ProductsModule: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h2 className="text-xl font-black text-gray-900 tracking-tight">Quản Lý Sản Phẩm Đa Ngành</h2>
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">
+              {isEn ? 'Multi-Industry Products Management' : 'Quản Lý Sản Phẩm Đa Ngành'}
+            </h2>
             <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-bold text-[10px]">
               D1 Database Live
             </span>
           </div>
           <p className="text-gray-500 text-xs mt-0.5">
-            Quản trị kho hàng vật lý (Giao hàng bưu chính GHTK/GHN/VTP) & Hàng số (Giao mã tự động 0s)
+            {isEn
+              ? 'Manage physical inventory (GHTK/GHN/VTP postal shipping) & digital products (0s auto delivery)'
+              : 'Quản trị kho hàng vật lý (Giao hàng bưu chính GHTK/GHN/VTP) & Hàng số (Giao mã tự động 0s)'}
           </p>
         </div>
 
@@ -268,7 +275,7 @@ export const ProductsModule: React.FC = () => {
             onClick={fetchProducts}
             disabled={isLoading}
             className="p-2 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl transition flex items-center space-x-1"
-            title="Tải lại từ D1"
+            title={isEn ? 'Reload from D1' : 'Tải lại từ D1'}
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-orange-600' : ''}`} />
           </button>
@@ -277,7 +284,7 @@ export const ProductsModule: React.FC = () => {
             className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Thêm Sản Phẩm Mới</span>
+            <span>{isEn ? 'Add New Product' : 'Thêm Sản Phẩm Mới'}</span>
           </button>
         </div>
       </div>
@@ -301,12 +308,12 @@ export const ProductsModule: React.FC = () => {
       <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0">
           {[
-            { id: 'all', label: 'Tất Cả Ngành' },
-            { id: 'fashion', label: '👕 Thời Trang' },
-            { id: 'beauty', label: '💄 Mỹ Phẩm' },
-            { id: 'tech', label: '📱 Công Nghệ' },
-            { id: 'services', label: '🎓 Dịch Vụ' },
-            { id: 'gaming', label: '🎮 Game' },
+            { id: 'all', label: isEn ? 'All Industries' : 'Tất Cả Ngành' },
+            { id: 'fashion', label: isEn ? '👕 Fashion' : '👕 Thời Trang' },
+            { id: 'beauty', label: isEn ? '💄 Beauty' : '💄 Mỹ Phẩm' },
+            { id: 'tech', label: isEn ? '📱 Tech' : '📱 Công Nghệ' },
+            { id: 'services', label: isEn ? '🎓 Services' : '🎓 Dịch Vụ' },
+            { id: 'gaming', label: isEn ? '🎮 Gaming' : '🎮 Game' },
           ].map((ind) => (
             <button
               key={ind.id}
@@ -328,9 +335,9 @@ export const ProductsModule: React.FC = () => {
             onChange={(e) => setFilterType(e.target.value)}
             className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
           >
-            <option value="all">Tất Cả Loại Hàng</option>
-            <option value="physical">🚚 Hàng Vật Lý (Ship)</option>
-            <option value="digital">⚡ Hàng Số (Mã 0s)</option>
+            <option value="all">{isEn ? 'All Item Types' : 'Tất Cả Loại Hàng'}</option>
+            <option value="physical">{isEn ? '🚚 Physical (Shipping)' : '🚚 Hàng Vật Lý (Ship)'}</option>
+            <option value="digital">{isEn ? '⚡ Digital (0s Code)' : '⚡ Hàng Số (Mã 0s)'}</option>
           </select>
 
           <div className="relative">
@@ -339,7 +346,7 @@ export const ProductsModule: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm tên sản phẩm, thương hiệu..."
+              placeholder={isEn ? 'Search product name, brand...' : 'Tìm tên sản phẩm, thương hiệu...'}
               className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs w-56 focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
@@ -351,12 +358,12 @@ export const ProductsModule: React.FC = () => {
         <table className="table-fixed w-full text-left">
           <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 font-bold">
             <tr>
-              <th className="py-3 px-3 w-[36%]">Sản phẩm & Thương hiệu</th>
-              <th className="py-3 px-2 w-[14%]">Ngành & Danh mục</th>
-              <th className="py-3 px-2 w-[12%]">Loại hàng</th>
-              <th className="py-3 px-2 w-[14%]">Giá bán</th>
-              <th className="py-3 px-2 w-[10%]">Tồn kho / Bán</th>
-              <th className="py-3 px-3 w-[14%] text-right">Thao tác</th>
+              <th className="py-3 px-3 w-[36%]">{isEn ? 'Product & Brand' : 'Sản phẩm & Thương hiệu'}</th>
+              <th className="py-3 px-2 w-[14%]">{isEn ? 'Industry & Category' : 'Ngành & Danh mục'}</th>
+              <th className="py-3 px-2 w-[12%]">{isEn ? 'Item Type' : 'Loại hàng'}</th>
+              <th className="py-3 px-2 w-[14%]">{isEn ? 'Selling Price' : 'Giá bán'}</th>
+              <th className="py-3 px-2 w-[10%]">{isEn ? 'Stock / Sold' : 'Tồn kho / Bán'}</th>
+              <th className="py-3 px-3 w-[14%] text-right">{isEn ? 'Actions' : 'Thao tác'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -368,17 +375,19 @@ export const ProductsModule: React.FC = () => {
                       <Package className="w-6 h-6" />
                     </div>
                     <h3 className="font-bold text-gray-800 text-sm">
-                      Kho hàng D1 hiện chưa có sản phẩm nào
+                      {isEn ? 'D1 inventory currently has no products' : 'Kho hàng D1 hiện chưa có sản phẩm nào'}
                     </h3>
                     <p className="text-gray-500 text-xs leading-relaxed">
-                      Toàn bộ sản phẩm mẫu demo đã được dọn sạch. Bạn có thể nhấn <strong>"Thêm Sản Phẩm Mới"</strong> hoặc nạp danh sách sản phẩm thật đợt đầu vào CSDL D1.
+                      {isEn
+                        ? 'All demo products have been cleared. You can click "Add New Product" to stock your live D1 catalog.'
+                        : 'Toàn bộ sản phẩm mẫu demo đã được dọn sạch. Bạn có thể nhấn "Thêm Sản Phẩm Mới" hoặc nạp danh sách sản phẩm thật đợt đầu vào CSDL D1.'}
                     </p>
                     <button
                       onClick={openCreateModal}
                       className="inline-flex items-center space-x-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl shadow-sm transition"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>Thêm Sản Phẩm Đầu Tiên</span>
+                      <span>{isEn ? 'Add First Product' : 'Thêm Sản Phẩm Đầu Tiên'}</span>
                     </button>
                   </div>
                 </td>
@@ -409,7 +418,7 @@ export const ProductsModule: React.FC = () => {
                             {p.title}
                           </p>
                           <p className="text-[10px] text-gray-400 truncate">
-                            {p.brand_name || 'Chính Hãng'} • ID: {p.id}
+                            {p.brand_name || (isEn ? 'Official Brand' : 'Chính Hãng')} • ID: {p.id}
                           </p>
                         </div>
                       </div>
@@ -428,12 +437,12 @@ export const ProductsModule: React.FC = () => {
                       {p.product_type === 'physical' ? (
                         <span className="inline-flex items-center space-x-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold text-[10px]">
                           <Truck className="w-3 h-3" />
-                          <span>Vật lý (Ship)</span>
+                          <span>{isEn ? 'Physical (Ship)' : 'Vật lý (Ship)'}</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center space-x-1 bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold text-[10px]">
                           <Zap className="w-3 h-3" />
-                          <span>Mã số 0s</span>
+                          <span>{isEn ? 'Digital 0s' : 'Mã số 0s'}</span>
                         </span>
                       )}
                     </td>
@@ -451,9 +460,13 @@ export const ProductsModule: React.FC = () => {
 
                     <td className="py-2.5 px-2">
                       <p className={`font-semibold ${p.stock_quantity > 0 ? 'text-gray-800' : 'text-rose-600'}`}>
-                        {p.stock_quantity > 0 ? `Kho: ${p.stock_quantity}` : 'Hết hàng'}
+                        {p.stock_quantity > 0
+                          ? (isEn ? `Stock: ${p.stock_quantity}` : `Kho: ${p.stock_quantity}`)
+                          : (isEn ? 'Out of stock' : 'Hết hàng')}
                       </p>
-                      <p className="text-[10px] text-gray-400">Đã bán: {p.sold_count || 0}</p>
+                      <p className="text-[10px] text-gray-400">
+                        {isEn ? `Sold: ${p.sold_count || 0}` : `Đã bán: ${p.sold_count || 0}`}
+                      </p>
                     </td>
 
                     <td className="py-2.5 px-3 text-right">
@@ -461,14 +474,14 @@ export const ProductsModule: React.FC = () => {
                         <button
                           onClick={() => openEditModal(p)}
                           className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                          title="Sửa sản phẩm"
+                          title={isEn ? 'Edit product' : 'Sửa sản phẩm'}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p)}
                           className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                          title="Xóa sản phẩm"
+                          title={isEn ? 'Delete product' : 'Xóa sản phẩm'}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -493,9 +506,13 @@ export const ProductsModule: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-black text-gray-900 text-sm">
-                    {editingProduct ? 'Chỉnh Sửa Sản Phẩm' : 'Thêm Sản Phẩm Mới'}
+                    {editingProduct
+                      ? (isEn ? 'Edit Product' : 'Chỉnh Sửa Sản Phẩm')
+                      : (isEn ? 'Add New Product' : 'Thêm Sản Phẩm Mới')}
                   </h3>
-                  <p className="text-[10px] text-gray-400">Lưu dữ liệu trực tiếp vào CSDL Cloudflare D1</p>
+                  <p className="text-[10px] text-gray-400">
+                    {isEn ? 'Save data directly into Cloudflare D1 database' : 'Lưu dữ liệu trực tiếp vào CSDL Cloudflare D1'}
+                  </p>
                 </div>
               </div>
               <button
@@ -508,20 +525,24 @@ export const ProductsModule: React.FC = () => {
 
             <form onSubmit={handleSaveProduct} className="p-4 space-y-4">
               <div>
-                <label className="block font-bold text-gray-700 mb-1">Tên sản phẩm *</label>
+                <label className="block font-bold text-gray-700 mb-1">
+                  {isEn ? 'Product Name *' : 'Tên sản phẩm *'}
+                </label>
                 <input
                   type="text"
                   required
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="Ví dụ: Áo Hoodie Unisex Cotton 380gsm..."
+                  placeholder={isEn ? 'e.g. Unisex Cotton Hoodie 380gsm...' : 'Ví dụ: Áo Hoodie Unisex Cotton 380gsm...'}
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Ngành hàng *</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {isEn ? 'Industry *' : 'Ngành hàng *'}
+                  </label>
                   <select
                     value={formIndustry}
                     onChange={(e) => {
@@ -530,22 +551,24 @@ export const ProductsModule: React.FC = () => {
                     }}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
-                    <option value="fashion">👕 Thời Trang & Phụ Kiện</option>
-                    <option value="beauty">💄 Mỹ Phẩm & Sắc Đẹp</option>
-                    <option value="tech">📱 Thiết Bị Số & Công Nghệ</option>
-                    <option value="services">🎓 Khóa Học & Dịch Vụ Số</option>
-                    <option value="gaming">🎮 Game & Tiện Ích</option>
+                    <option value="fashion">{isEn ? '👕 Fashion & Apparel' : '👕 Thời Trang & Phụ Kiện'}</option>
+                    <option value="beauty">{isEn ? '💄 Beauty & Cosmetics' : '💄 Mỹ Phẩm & Sắc Đẹp'}</option>
+                    <option value="tech">{isEn ? '📱 Tech & Electronics' : '📱 Thiết Bị Số & Công Nghệ'}</option>
+                    <option value="services">{isEn ? '🎓 Courses & Digital Services' : '🎓 Khóa Học & Dịch Vụ Số'}</option>
+                    <option value="gaming">{isEn ? '🎮 Gaming & Utilities' : '🎮 Game & Tiện Ích'}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Danh mục con</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {isEn ? 'Sub-Category' : 'Danh mục con'}
+                  </label>
                   <select
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
-                    <option value="">-- Chọn danh mục --</option>
+                    <option value="">{isEn ? '-- Select category --' : '-- Chọn danh mục --'}</option>
                     {filteredCategories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.icon || '•'} {c.name}
@@ -555,21 +578,25 @@ export const ProductsModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Loại sản phẩm *</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {isEn ? 'Product Type *' : 'Loại sản phẩm *'}
+                  </label>
                   <select
                     value={formType}
                     onChange={(e) => setFormType(e.target.value as any)}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
-                    <option value="physical">🚚 Hàng Vật Lý (Vận Chuyển Bưu Chính)</option>
-                    <option value="digital">⚡ Hàng Số (Giao Mã Tự Động 0s)</option>
+                    <option value="physical">{isEn ? '🚚 Physical Goods (Postal Courier)' : '🚚 Hàng Vật Lý (Vận Chuyển Bưu Chính)'}</option>
+                    <option value="digital">{isEn ? '⚡ Digital Goods (0s Instant Code)' : '⚡ Hàng Số (Giao Mã Tự Động 0s)'}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Giá bán hiện tại (đ) *</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {isEn ? 'Selling Price (VND) *' : 'Giá bán hiện tại (đ) *'}
+                  </label>
                   <input
                     type="number"
                     min="0"
@@ -582,7 +609,9 @@ export const ProductsModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Giá gốc gạch ngang (đ)</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {isEn ? 'List / Original Price (VND)' : 'Giá gốc gạch ngang (đ)'}
+                  </label>
                   <input
                     type="number"
                     min="0"
@@ -594,7 +623,9 @@ export const ProductsModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Số lượng tồn kho *</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {isEn ? 'Stock Quantity *' : 'Số lượng tồn kho *'}
+                  </label>
                   <input
                     type="number"
                     min="0"
@@ -608,18 +639,22 @@ export const ProductsModule: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Thương hiệu / Xuất xứ</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {isEn ? 'Brand / Origin' : 'Thương hiệu / Xuất xứ'}
+                  </label>
                   <input
                     type="text"
                     value={formBrand}
                     onChange={(e) => setFormBrand(e.target.value)}
-                    placeholder="Ví dụ: Shopee Mall, Baseus, Official..."
+                    placeholder={isEn ? 'e.g. Shopee Mall, Baseus, Official...' : 'Ví dụ: Shopee Mall, Baseus, Official...'}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">URL Ảnh đại diện</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {isEn ? 'Thumbnail Image URL' : 'URL Ảnh đại diện'}
+                  </label>
                   <input
                     type="url"
                     value={formThumbnail}
@@ -631,12 +666,14 @@ export const ProductsModule: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700 mb-1">Mô tả sản phẩm</label>
+                <label className="block font-bold text-gray-700 mb-1">
+                  {isEn ? 'Product Description' : 'Mô tả sản phẩm'}
+                </label>
                 <textarea
                   rows={3}
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Thông số kỹ thuật, chất liệu, chính sách đổi trả..."
+                  placeholder={isEn ? 'Specs, materials, refund policy...' : 'Thông số kỹ thuật, chất liệu, chính sách đổi trả...'}
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
@@ -647,7 +684,7 @@ export const ProductsModule: React.FC = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition"
                 >
-                  Hủy bỏ
+                  {isEn ? 'Cancel' : 'Hủy bỏ'}
                 </button>
                 <button
                   type="submit"
@@ -655,7 +692,13 @@ export const ProductsModule: React.FC = () => {
                   className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl shadow-sm transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Đang lưu D1...' : editingProduct ? 'Cập Nhật D1' : 'Tạo Sản Phẩm D1'}</span>
+                  <span>
+                    {isSubmitting
+                      ? (isEn ? 'Saving D1...' : 'Đang lưu D1...')
+                      : editingProduct
+                      ? (isEn ? 'Update D1' : 'Cập Nhật D1')
+                      : (isEn ? 'Create Product D1' : 'Tạo Sản Phẩm D1')}
+                  </span>
                 </button>
               </div>
             </form>

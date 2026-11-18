@@ -18,6 +18,7 @@ import {
 import { StatusBadge } from './ui/StatusBadge';
 import { WalletTransaction } from '../types/adminTypes';
 import { formatCore, formatFullDateTime, formatTimeAgo, smartVietnameseMatch } from '../../utils/textUtils';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface RecentBalanceChangesWidgetProps {
   transactions?: WalletTransaction[];
@@ -33,8 +34,8 @@ interface RecentBalanceChangesWidgetProps {
 
 export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProps> = ({
   transactions = [],
-  title = 'Biến Động Số Dư Gần Nhất',
-  subtitle = 'Theo dõi chi tiết dòng tiền nạp, mua code và điều chỉnh số dư thành viên thời gian thực',
+  title,
+  subtitle,
   limit = 8,
   compact = false,
   showFilters = true,
@@ -42,6 +43,10 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
   onAdjustWallet,
   onRefresh,
 }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const effectiveTitle = title || (isEn ? 'Recent Balance Changes' : 'Biến Động Số Dư Gần Nhất');
+  const effectiveSubtitle = subtitle || (isEn ? 'Real-time tracking of deposits, code purchases, and member wallet adjustments' : 'Theo dõi chi tiết dòng tiền nạp, mua code và điều chỉnh số dư thành viên thời gian thực');
   const [activeFilter, setActiveFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -161,7 +166,7 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white sm:text-base">
-                  {title}
+                  {effectiveTitle}
                 </h3>
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -170,7 +175,7 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
               </div>
               {!compact && (
                 <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                  {subtitle}
+                  {effectiveSubtitle}
                 </p>
               )}
             </div>
@@ -185,7 +190,7 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
               className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all active:scale-95"
             >
               <PlusCircle className="h-3.5 w-3.5" />
-              <span>Điều Chỉnh Ví</span>
+              <span>{isEn ? 'Adjust Wallet' : 'Điều Chỉnh Ví'}</span>
             </button>
           )}
 
@@ -194,7 +199,7 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
               onClick={onViewAll}
               className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors ml-auto sm:ml-0"
             >
-              <span>Xem sổ cái</span>
+              <span>{isEn ? 'View ledger' : 'Xem sổ cái'}</span>
               <ExternalLink className="h-3.5 w-3.5" />
             </button>
           )}
@@ -207,7 +212,9 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2.5 sm:p-3 dark:border-emerald-500/10 dark:bg-emerald-500/5">
             <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
               <ArrowDownLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-[11px] font-semibold">Tiền Nạp / Vào</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold">
+                {isEn ? 'Deposits / Inflow' : 'Tiền Nạp / Vào'}
+              </span>
             </div>
             <p className="mt-1 font-mono text-sm sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400 truncate">
               +{formatVnd(stats.inflow)}
@@ -217,7 +224,9 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
           <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-2.5 sm:p-3 dark:border-rose-500/10 dark:bg-rose-500/5">
             <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
               <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-[11px] font-semibold">Tiền Trừ / Chi</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold">
+                {isEn ? 'Deductions / Outflow' : 'Tiền Trừ / Chi'}
+              </span>
             </div>
             <p className="mt-1 font-mono text-sm sm:text-base font-extrabold text-rose-600 dark:text-rose-400 truncate">
               -{formatVnd(stats.outflow)}
@@ -227,10 +236,12 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
           <div className="col-span-2 sm:col-span-1 rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-3 dark:border-slate-800 dark:bg-slate-800/40">
             <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
               <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-[11px] font-semibold">Lượt Biến Động</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold">
+                {isEn ? 'Total Events' : 'Lượt Biến Động'}
+              </span>
             </div>
             <p className="mt-1 font-mono text-sm sm:text-base font-extrabold text-slate-800 dark:text-slate-200">
-              {stats.totalCount} giao dịch
+              {stats.totalCount} {isEn ? 'transactions' : 'giao dịch'}
             </p>
           </div>
         </div>
@@ -242,11 +253,11 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
           {/* Quick Filter Chips (Horizontal scroll on mobile) */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto scrollbar-none">
             {[
-              { id: 'ALL', label: 'Tất cả' },
-              { id: 'INFLOW', label: 'Nạp / Vào (+)' },
-              { id: 'OUTFLOW', label: 'Thanh toán (-)' },
-              { id: 'REFUND', label: 'Hoàn tiền' },
-              { id: 'ADMIN_ADJUST', label: 'Admin sửa' },
+              { id: 'ALL', label: isEn ? 'All' : 'Tất cả' },
+              { id: 'INFLOW', label: isEn ? 'Inflow (+)' : 'Nạp / Vào (+)' },
+              { id: 'OUTFLOW', label: isEn ? 'Outflow (-)' : 'Thanh toán (-)' },
+              { id: 'REFUND', label: isEn ? 'Refund' : 'Hoàn tiền' },
+              { id: 'ADMIN_ADJUST', label: isEn ? 'Admin adjust' : 'Admin sửa' },
             ].map((f) => (
               <button
                 key={f.id}
@@ -269,7 +280,7 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm mã GD, email, lý do..."
+              placeholder={isEn ? 'Search ref ID, email, reason...' : 'Tìm mã GD, email, lý do...'}
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
@@ -282,10 +293,10 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
           <div className="rounded-xl border border-dashed border-slate-200 py-8 text-center dark:border-slate-800">
             <Activity className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Không tìm thấy biến động số dư nào phù hợp.
+              {isEn ? 'No balance changes match your criteria.' : 'Không tìm thấy biến động số dư nào phù hợp.'}
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Các giao dịch nạp tiền, mua code hoặc hoàn tiền sẽ tự động cập nhật tại đây.
+              {isEn ? 'Deposits, code purchases, and refunds will automatically appear here.' : 'Các giao dịch nạp tiền, mua code hoặc hoàn tiền sẽ tự động cập nhật tại đây.'}
             </p>
           </div>
         ) : (
@@ -403,7 +414,9 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
             onClick={onViewAll}
             className="text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
           >
-            Xem tất cả {transactions.length} biến động trong Sổ Cái Ví ➔
+            {isEn
+              ? `View all ${transactions.length} balance changes in Ledger ➔`
+              : `Xem tất cả ${transactions.length} biến động trong Sổ Cái Ví ➔`}
           </button>
         </div>
       )}

@@ -9,6 +9,7 @@ import {
 import { AdminSidebar, AdminModuleTab } from './AdminSidebar';
 import { AdminTopbar } from './AdminTopbar';
 import { AdminUser } from '../types/adminTypes';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface AdminLayoutProps {
   currentTab: AdminModuleTab;
@@ -37,6 +38,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onQuickAction,
   children,
 }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -124,7 +127,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <div className="relative">
             <LayoutDashboard className={`h-5 w-5 transition-transform ${currentTab === 'dashboard' ? 'scale-110' : ''}`} />
           </div>
-          <span className="text-[10px] mt-0.5">Tổng quan</span>
+          <span className="text-[10px] mt-0.5">{isEn ? 'Overview' : 'Tổng quan'}</span>
         </button>
 
         {/* 2. Kho Code */}
@@ -139,7 +142,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <div className="relative">
             <Package className={`h-5 w-5 transition-transform ${currentTab === 'code-inventory' ? 'scale-110' : ''}`} />
           </div>
-          <span className="text-[10px] mt-0.5">Kho code</span>
+          <span className="text-[10px] mt-0.5">{isEn ? 'Inventory' : 'Kho code'}</span>
         </button>
 
         {/* 3. Đơn Hàng (with pending badge) */}
@@ -159,7 +162,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               </span>
             )}
           </div>
-          <span className="text-[10px] mt-0.5">Đơn hàng</span>
+          <span className="text-[10px] mt-0.5">{isEn ? 'Orders' : 'Đơn hàng'}</span>
         </button>
 
         {/* 4. Ví & Sổ Cái */}
@@ -174,7 +177,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <div className="relative">
             <Wallet className={`h-5 w-5 transition-transform ${currentTab === 'wallet' ? 'scale-110' : ''}`} />
           </div>
-          <span className="text-[10px] mt-0.5">Sổ cái ví</span>
+          <span className="text-[10px] mt-0.5">{isEn ? 'Wallet' : 'Sổ cái ví'}</span>
         </button>
 
         {/* 5. Menu Khác (opens full drawer) */}
@@ -192,7 +195,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               <span className="absolute -top-1 -right-1.5 flex h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900" />
             )}
           </div>
-          <span className="text-[10px] mt-0.5">Menu khác</span>
+          <span className="text-[10px] mt-0.5">{isEn ? 'More' : 'Menu khác'}</span>
         </button>
       </nav>
     </div>

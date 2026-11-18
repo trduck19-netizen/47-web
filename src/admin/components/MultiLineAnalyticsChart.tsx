@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { adminDataService } from '../services/adminDataService';
 import type { DailyDataPoint } from '../types/adminTypes';
+import { useLanguage } from '../../context/LanguageContext';
 
 export type { DailyDataPoint };
 
@@ -116,6 +117,8 @@ function buildSvgPath(points: Array<{ x: number; y: number }>): string {
 }
 
 export const MultiLineAnalyticsChart: React.FC = () => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [timeRange, setTimeRange] = useState<7 | 14 | 30>(7);
   const [dataVersion, setDataVersion] = useState(0);
   const [visibleSeries, setVisibleSeries] = useState<Record<string, boolean>>(() => {
@@ -228,11 +231,13 @@ export const MultiLineAnalyticsChart: React.FC = () => {
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-emerald-500" />
             <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">
-              Biểu Đồ Tăng Trưởng Đa Biến
+              {isEn ? 'Multi-Metric Growth Analytics' : 'Biểu Đồ Tăng Trưởng Đa Biến'}
             </h3>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Phân tích đa chiều: Doanh thu, đăng ký, lượt copy giftcode, game và code mới theo thời gian
+            {isEn
+              ? 'Multi-dimensional analysis: Revenue, signups, giftcode copies, new games and codes over time'
+              : 'Phân tích đa chiều: Doanh thu, đăng ký, lượt copy giftcode, game và code mới theo thời gian'}
           </p>
         </div>
 
@@ -240,14 +245,14 @@ export const MultiLineAnalyticsChart: React.FC = () => {
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Dữ liệu thực Live</span>
+            <span>{isEn ? 'Live Data Feed' : 'Dữ liệu thực Live'}</span>
           </div>
 
           <button
             type="button"
             onClick={() => setDataVersion((v) => v + 1)}
             className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer active:scale-95 border border-slate-200/80 dark:border-slate-700/80"
-            title="Làm mới dữ liệu từ Web Khách"
+            title={isEn ? 'Refresh data from store' : 'Làm mới dữ liệu từ Web Khách'}
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
@@ -262,7 +267,7 @@ export const MultiLineAnalyticsChart: React.FC = () => {
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              7 Ngày
+              {isEn ? '7 Days' : '7 Ngày'}
             </button>
             <button
               type="button"
@@ -273,7 +278,7 @@ export const MultiLineAnalyticsChart: React.FC = () => {
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              14 Ngày
+              {isEn ? '14 Days' : '14 Ngày'}
             </button>
             <button
               type="button"
@@ -284,7 +289,7 @@ export const MultiLineAnalyticsChart: React.FC = () => {
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              30 Ngày
+              {isEn ? '30 Days' : '30 Ngày'}
             </button>
           </div>
         </div>
@@ -502,10 +507,10 @@ export const MultiLineAnalyticsChart: React.FC = () => {
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Filter className="w-3.5 h-3.5 text-indigo-400" />
-            Ghi chú dữ liệu (Bấm để bật/tắt đường hiển thị):
+            {isEn ? 'Data Legend (Click to toggle series):' : 'Ghi chú dữ liệu (Bấm để bật/tắt đường hiển thị):'}
           </span>
           <span className="text-[10px] text-slate-400 italic hidden sm:inline">
-            Đường biểu diễn đã được chuẩn hóa theo thang đo %
+            {isEn ? 'Normalized to percentage scale' : 'Đường biểu diễn đã được chuẩn hóa theo thang đo %'}
           </span>
         </div>
 
@@ -515,6 +520,19 @@ export const MultiLineAnalyticsChart: React.FC = () => {
             const isVisible = visibleSeries[config.key];
             // Sum or latest value
             const totalVal = data.reduce((sum, d) => sum + (d[config.key] as number), 0);
+            const localizedLabel = isEn
+              ? config.key === 'revenue'
+                ? 'Revenue'
+                : config.key === 'codeCopies'
+                ? 'Code Copies'
+                : config.key === 'newMembers'
+                ? 'New Signups'
+                : config.key === 'newCodes'
+                ? 'New Codes'
+                : config.key === 'newGames'
+                ? 'New Games'
+                : 'Orders'
+              : config.label;
 
             return (
               <button
@@ -526,7 +544,7 @@ export const MultiLineAnalyticsChart: React.FC = () => {
                     ? 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 shadow-sm'
                     : 'bg-transparent border-slate-200/50 dark:border-slate-800/50 opacity-45 hover:opacity-75'
                 }`}
-                title={`Bật/tắt đường ${config.label}`}
+                title={isEn ? `Toggle ${localizedLabel}` : `Bật/tắt đường ${config.label}`}
               >
                 <div className="flex items-center justify-between gap-1 mb-1">
                   <div className="flex items-center gap-1.5 min-w-0">
@@ -535,7 +553,7 @@ export const MultiLineAnalyticsChart: React.FC = () => {
                       style={{ backgroundColor: isVisible ? config.color : '#94A3B8' }}
                     />
                     <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">
-                      {config.label}
+                      {localizedLabel}
                     </span>
                   </div>
                   {isVisible ? (

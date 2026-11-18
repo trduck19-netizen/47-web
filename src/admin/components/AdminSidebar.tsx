@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { AdminUser } from '../types/adminTypes';
 import { normalizeVietnamese } from '../../utils/textUtils';
+import { useLanguage } from '../../context/LanguageContext';
 
 export type AdminModuleTab =
   | 'dashboard'
@@ -99,80 +100,83 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onGoToClientSite,
   onCloseMobile,
 }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [navSearch, setNavSearch] = useState('');
+
   const sections: NavSection[] = [
     {
-      title: 'TỔNG QUAN',
+      title: isEn ? 'OVERVIEW' : 'TỔNG QUAN',
       items: [
         {
           id: 'dashboard',
-          label: 'Tổng quan',
+          label: isEn ? 'Overview' : 'Tổng quan',
           icon: LayoutDashboard,
         },
       ],
     },
     {
-      title: 'NỘI DUNG & GAME',
+      title: isEn ? 'CONTENT & GAMES' : 'NỘI DUNG & GAME',
       items: [
         {
           id: 'games',
-          label: 'Quản lý Game',
+          label: isEn ? 'Game Directory' : 'Quản lý Game',
           icon: Gamepad2,
         },
         {
           id: 'news',
-          label: 'Tin Tức Game & Code',
+          label: isEn ? 'News & Events' : 'Tin Tức Game & Code',
           icon: Newspaper,
         },
         {
           id: 'free-codes',
-          label: 'Code Miễn Phí',
+          label: isEn ? 'Free Codes' : 'Code Miễn Phí',
           icon: Gift,
         },
         {
           id: 'giftcodes',
-          label: 'Duyệt Giftcode Khách',
+          label: isEn ? 'User Submissions' : 'Duyệt Giftcode Khách',
           icon: CheckSquare,
           badge: pendingGiftcodesCount,
           badgeColor: 'bg-amber-500 text-white',
         },
         {
           id: 'crawler',
-          label: 'Crawler & Auto Sync',
+          label: isEn ? 'Crawler & Auto Sync' : 'Crawler & Auto Sync',
           icon: Bot,
         },
         {
           id: 'content',
-          label: 'Nội Dung Web',
+          label: isEn ? 'Website CMS' : 'Nội Dung Web',
           icon: Globe,
         },
         {
           id: 'translations',
-          label: 'Quản Lý Bản Dịch (i18n)',
+          label: isEn ? 'Translations (i18n)' : 'Quản Lý Bản Dịch (i18n)',
           icon: Globe,
           badge: 'VI+EN',
           badgeColor: 'bg-cyan-500 text-neutral-950 font-bold',
         },
         {
           id: 'floating-notification',
-          label: 'Thông Báo Nổi',
+          label: isEn ? 'Floating Notifications' : 'Thông Báo Nổi',
           icon: BellRing,
         },
         {
           id: 'marketing',
-          label: 'Thông Báo Marketing',
+          label: isEn ? 'Marketing & FOMO' : 'Thông Báo Marketing',
           icon: Megaphone,
         },
         {
           id: 'email-notifications',
-          label: 'Thông Báo Email & Khách',
+          label: isEn ? 'Email Alerts' : 'Thông Báo Email & Khách',
           icon: Mail,
-          badge: 'MỚI',
+          badge: isEn ? 'NEW' : 'MỚI',
           badgeColor: 'bg-emerald-500 text-neutral-950 font-bold',
         },
         {
           id: 'telegram',
-          label: 'Tích Hợp Telegram',
+          label: isEn ? 'Telegram Bot' : 'Tích Hợp Telegram',
           icon: Send,
           badge: 'BOT',
           badgeColor: 'bg-[#229ED9] text-white font-bold',
@@ -180,61 +184,61 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       ],
     },
     {
-      title: 'THƯƠNG MẠI & KHO',
+      title: isEn ? 'COMMERCE & INVENTORY' : 'THƯƠNG MẠI & KHO',
       items: [
         {
           id: 'code-inventory',
-          label: 'Kho Code & Gói Bán',
+          label: isEn ? 'Code Inventory' : 'Kho Code & Gói Bán',
           icon: Package,
         },
         {
           id: 'utilities',
-          label: 'Quản Lý Tiện Ích',
+          label: isEn ? 'Utilities' : 'Quản Lý Tiện Ích',
           icon: Wrench,
         },
         {
           id: 'private-codes',
-          label: 'Phát Code & Giveaway',
+          label: isEn ? 'VIP Codes & Giveaways' : 'Phát Code & Giveaway',
           icon: KeyRound,
         },
         {
           id: 'event-scheduler',
-          label: 'Lịch Đếm Ngược Sự Kiện',
+          label: isEn ? 'Event Scheduler' : 'Lịch Đếm Ngược Sự Kiện',
           icon: Clock,
-          badge: 'MỚI',
+          badge: isEn ? 'NEW' : 'MỚI',
           badgeColor: 'bg-amber-500 text-neutral-950 font-bold',
         },
         {
           id: 'orders',
-          label: 'Đơn Hàng Code',
+          label: isEn ? 'Orders & Fulfillment' : 'Đơn Hàng Code',
           icon: ShoppingCart,
           badge: pendingOrdersCount,
           badgeColor: 'bg-sky-500 text-white',
         },
         {
           id: 'vouchers',
-          label: 'Voucher & Freeship',
+          label: isEn ? 'Vouchers & Freeship' : 'Voucher & Freeship',
           icon: Ticket,
           badge: 'SHOPEE',
           badgeColor: 'bg-orange-500 text-white font-bold',
         },
         {
           id: 'first-purchase',
-          label: 'Ưu Đãi Mua Lần Đầu',
+          label: isEn ? 'First Purchase Offers' : 'Ưu Đãi Mua Lần Đầu',
           icon: Sparkles,
           badge: 'HOT',
           badgeColor: 'bg-rose-500 text-white font-bold',
         },
         {
           id: 'marketplace',
-          label: 'Sàn TMĐT & Gian Hàng',
+          label: isEn ? 'Merchants Marketplace' : 'Sàn TMĐT & Gian Hàng',
           icon: Store,
-          badge: 'MỚI',
+          badge: isEn ? 'NEW' : 'MỚI',
           badgeColor: 'bg-emerald-500 text-neutral-950 font-bold',
         },
         {
           id: 'platform-leads',
-          label: 'Khách Thuê / Mua Sàn',
+          label: isEn ? 'Platform SaaS Leads' : 'Khách Thuê / Mua Sàn',
           icon: Rocket,
           badge: 'LEADS',
           badgeColor: 'bg-amber-500 text-neutral-950 font-bold',
@@ -242,58 +246,58 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       ],
     },
     {
-      title: 'TÀI CHÍNH & NGƯỜI DÙNG',
+      title: isEn ? 'FINANCE & USERS' : 'TÀI CHÍNH & NGƯỜI DÙNG',
       items: [
         {
           id: 'members',
-          label: 'Thành viên',
+          label: isEn ? 'Members' : 'Thành viên',
           icon: Users,
         },
         {
           id: 'wallet',
-          label: 'Quản lý Ví',
+          label: isEn ? 'Wallet Ledger' : 'Quản lý Ví',
           icon: Wallet,
         },
         {
           id: 'sepay',
-          label: 'Liên Kết SePay',
+          label: isEn ? 'SePay Gateway' : 'Liên Kết SePay',
           icon: Zap,
         },
       ],
     },
     {
-      title: 'TĂNG TRƯỞNG & NHIỆM VỤ',
+      title: isEn ? 'GROWTH & MISSIONS' : 'TĂNG TRƯỞNG & NHIỆM VỤ',
       items: [
         {
           id: 'missions',
-          label: 'Quản Lý Nhiệm Vụ',
+          label: isEn ? 'Missions & Tasks' : 'Quản Lý Nhiệm Vụ',
           icon: CheckSquare,
         },
         {
           id: 'growth',
-          label: 'Tăng Trưởng & Viral',
+          label: isEn ? 'Growth & Viral' : 'Tăng Trưởng & Viral',
           icon: Rocket,
         },
       ],
     },
     {
-      title: 'HỆ THỐNG & BẢO MẬT',
+      title: isEn ? 'SYSTEM & SECURITY' : 'HỆ THỐNG & BẢO MẬT',
       items: [
         {
           id: 'api-keys',
-          label: 'Quản Lý Khóa API',
+          label: isEn ? 'API Keys & Scopes' : 'Quản Lý Khóa API',
           icon: KeyRound,
-          badge: 'MỚI',
+          badge: isEn ? 'NEW' : 'MỚI',
           badgeColor: 'bg-indigo-500 text-white font-bold',
         },
         {
           id: 'security-logs',
-          label: 'Nhật Ký Bảo Mật',
+          label: isEn ? 'Security Audit Logs' : 'Nhật Ký Bảo Mật',
           icon: ShieldAlert,
         },
         {
           id: 'profile',
-          label: 'Tài Khoản Của Tôi',
+          label: isEn ? 'My Account' : 'Tài Khoản Của Tôi',
           icon: UserCircle,
         },
       ],
@@ -352,7 +356,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         <button
           onClick={onToggleCollapse}
           className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          title={collapsed ? 'Mở rộng menu' : 'Thu nhỏ menu'}
+          title={collapsed ? (isEn ? 'Expand menu' : 'Mở rộng menu') : (isEn ? 'Collapse menu' : 'Thu nhỏ menu')}
         >
           {collapsed ? (
             <ChevronRight className="h-4 w-4" />
@@ -371,7 +375,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               type="text"
               value={navSearch}
               onChange={(e) => setNavSearch(e.target.value)}
-              placeholder="Tìm nhanh module..."
+              placeholder={isEn ? 'Search modules...' : 'Tìm nhanh module...'}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-7 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-200"
             />
             {navSearch && (
@@ -473,7 +477,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           }`}
                         >
                           <Zap className="w-3 h-3 text-amber-500 shrink-0" />
-                          <span>Sự Kiện Game</span>
+                          <span>{isEn ? 'Game Events' : 'Sự Kiện Game'}</span>
                         </button>
                         <button
                           type="button"
@@ -490,7 +494,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           }`}
                         >
                           <Clock className="w-3 h-3 text-purple-500 shrink-0" />
-                          <span>Hàng Chờ Duyệt</span>
+                          <span>{isEn ? 'Pending Queue' : 'Hàng Chờ Duyệt'}</span>
                         </button>
                       </div>
                     )}
@@ -510,11 +514,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             className={`flex w-full items-center rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors ${
               collapsed ? 'justify-center' : 'justify-between'
             }`}
-            title="Mở trang chủ khách hàng"
+            title={isEn ? 'Open client website' : 'Mở trang chủ khách hàng'}
           >
             <div className="flex items-center gap-2">
               <ExternalLink className="h-4 w-4 text-indigo-500" />
-              {!collapsed && <span>Trang Khách Hàng</span>}
+              {!collapsed && <span>{isEn ? 'Client Store' : 'Trang Khách Hàng'}</span>}
             </div>
             {!collapsed && <span className="text-[10px] text-slate-400">↗</span>}
           </button>

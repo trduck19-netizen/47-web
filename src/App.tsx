@@ -104,7 +104,8 @@ export const App: React.FC = () => {
       // 1. If on dedicated admin domain or admin hash/route -> Open AdminApp directly
       const isAdminDomain = host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.includes('admin-test-code-game-shop') || host.startsWith('admin.');
       const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hash.startsWith(p));
-      if (isAdminDomain || path.startsWith('/admin') || isAdminHash) {
+      const isAdminPath = path.startsWith('/admin') || path.startsWith('/en/admin');
+      if (isAdminDomain || isAdminPath || isAdminHash) {
         return 'admin';
       }
 
@@ -580,7 +581,8 @@ export const App: React.FC = () => {
 
         // 2. Admin routes on client domain or localhost
         const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hashLower.startsWith(p));
-        if (isAdminHash || window.location.pathname.toLowerCase().startsWith('/admin')) {
+        const currentPath = window.location.pathname.toLowerCase();
+        if (isAdminHash || currentPath.startsWith('/admin') || currentPath.startsWith('/en/admin')) {
           setCurrentTab('admin');
           return;
         }
@@ -1058,7 +1060,8 @@ export const App: React.FC = () => {
       // 0. Dedicated Admin domain or Admin route/hash -> Always stay in Admin!
       const isAdminDomain = host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.includes('admin-test-code-game-shop') || host.startsWith('admin.');
       const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hash.startsWith(p));
-      if (isAdminDomain || path.startsWith('/admin') || isAdminHash) {
+      const isAdminPath = path.startsWith('/admin') || path.startsWith('/en/admin');
+      if (isAdminDomain || isAdminPath || isAdminHash) {
         setSelectedGame(null);
         setCurrentTab('admin');
         return;

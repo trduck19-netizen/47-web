@@ -35,6 +35,7 @@ import {
   ShippingOrderRecord,
 } from '../../services/shippingService';
 import { ShippingTrackingModal } from '../../components/shipping/ShippingTrackingModal';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface OrdersModuleProps {
   onShowToast: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -52,6 +53,8 @@ const CARRIER_PRESETS = [
 ];
 
 export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [orders, setOrders] = useState<AdminOrderRecord[]>([]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [methodFilter, setMethodFilter] = useState('ALL');
@@ -247,7 +250,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
   const columns: Column<AdminOrderRecord>[] = [
     {
       key: 'orderCode',
-      header: 'Mã Đơn & Loại',
+      header: isEn ? 'Order Code & Type' : 'Mã Đơn & Loại',
       sortable: true,
       render: (item) => {
         const isPhys = item.orderType === 'PHYSICAL' || (item as any).order_type === 'physical' || Boolean(item.shippingAddress);
@@ -257,11 +260,11 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
               <span className="font-bold text-indigo-600 dark:text-indigo-400">{item.orderCode}</span>
               {isPhys ? (
                 <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.2 text-[9px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                  <Truck className="w-2.5 h-2.5" /> Vật Lý
+                  <Truck className="w-2.5 h-2.5" /> {isEn ? 'Physical' : 'Vật Lý'}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.2 text-[9px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                  <Package className="w-2.5 h-2.5" /> Kỹ Thuật Số
+                  <Package className="w-2.5 h-2.5" /> {isEn ? 'Digital' : 'Kỹ Thuật Số'}
                 </span>
               )}
             </div>
@@ -274,10 +277,10 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
     },
     {
       key: 'buyerName',
-      header: 'Khách Hàng & Nơi Nhận',
+      header: isEn ? 'Customer & Destination' : 'Khách Hàng & Nơi Nhận',
       render: (item) => {
         const isPhys = item.orderType === 'PHYSICAL' || (item as any).order_type === 'physical' || Boolean(item.shippingAddress);
-        const displayName = item.shippingName || item.buyerName || item.buyerEmail || 'Khách hàng';
+        const displayName = item.shippingName || item.buyerName || item.buyerEmail || (isEn ? 'Customer' : 'Khách hàng');
         const displayPhone = item.shippingPhone || item.buyerPhone;
         return (
           <div className="text-xs space-y-0.5">
@@ -298,7 +301,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
     },
     {
       key: 'productTitle',
-      header: 'Sản Phẩm & Biến Thể',
+      header: isEn ? 'Product & Variant' : 'Sản Phẩm & Biến Thể',
       render: (item) => {
         const isPhys = item.orderType === 'PHYSICAL' || (item as any).order_type === 'physical' || Boolean(item.shippingAddress);
         return (
@@ -308,7 +311,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
             </p>
             {item.variantName && (
               <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate" title={item.variantName}>
-                Phân loại: {item.variantName}
+                {isEn ? 'Variant' : 'Phân loại'}: {item.variantName}
               </p>
             )}
             {isPhys ? (
@@ -323,7 +326,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                       setIsTrackingModalOpen(true);
                     }}
                     className="text-[10px] text-emerald-400 font-mono font-bold hover:underline flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20"
-                    title="Bấm để xem hành trình bưu chính thời gian thực"
+                    title={isEn ? 'Click to track courier shipment in real-time' : 'Bấm để xem hành trình bưu chính thời gian thực'}
                   >
                     <Truck className="w-3 h-3 shrink-0" />
                     <span className="font-bold">{item.carrier || 'GHTK'}:</span>
@@ -331,11 +334,13 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                   </button>
                 </div>
               ) : (
-                <p className="text-[10px] text-amber-500 italic">Chưa xuất mã vận đơn</p>
+                <p className="text-[10px] text-amber-500 italic">
+                  {isEn ? 'No tracking code issued' : 'Chưa xuất mã vận đơn'}
+                </p>
               )
             ) : (
               <p className="text-[10px] text-slate-400 font-mono">
-                {item.deliveredCodes?.length || 1} mã giao tự động
+                {item.deliveredCodes?.length || 1} {isEn ? 'auto delivery codes' : 'mã giao tự động'}
               </p>
             )}
           </div>
@@ -344,7 +349,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
     },
     {
       key: 'amount',
-      header: 'Tổng Tiền',
+      header: isEn ? 'Total Amount' : 'Tổng Tiền',
       sortable: true,
       align: 'right',
       render: (item) => {
@@ -359,7 +364,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                 : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
             }`}>
-              {isQr ? '⚡ VietQR' : 'Ví Thành Viên'}
+              {isQr ? '⚡ VietQR' : (isEn ? 'Member Wallet' : 'Ví Thành Viên')}
             </span>
           </div>
         );
@@ -367,7 +372,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
     },
     {
       key: 'status',
-      header: 'Trạng Thái & Thao Tác',
+      header: isEn ? 'Status & Actions' : 'Trạng Thái & Thao Tác',
       align: 'right',
       render: (item) => {
         const pStatus = (item as any).payment_status || (item as any).paymentStatus;
@@ -379,19 +384,19 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
           <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
             {isPendingQr ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 animate-pulse">
-                Chờ QR
+                {isEn ? 'Awaiting QR' : 'Chờ QR'}
               </span>
             ) : isExpiredQr ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-                Đã hủy
+                {isEn ? 'Cancelled' : 'Đã hủy'}
               </span>
             ) : item.status === 'SHIPPING' ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800 animate-pulse">
-                <Truck className="w-2.5 h-2.5" /> Đang giao
+                <Truck className="w-2.5 h-2.5" /> {isEn ? 'Shipping' : 'Đang giao'}
               </span>
             ) : item.status === 'DELIVERED' ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                <CheckCircle2 className="w-2.5 h-2.5" /> Đã giao
+                <CheckCircle2 className="w-2.5 h-2.5" /> {isEn ? 'Delivered' : 'Đã giao'}
               </span>
             ) : (
               <StatusBadge status={item.status} size="sm" />
@@ -399,7 +404,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
 
             <button
               onClick={() => setViewingOrder(item)}
-              title="Xem chi tiết đơn"
+              title={isEn ? 'View order details' : 'Xem chi tiết đơn'}
               className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
             >
               <Eye className="h-4 w-4" />
@@ -408,7 +413,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
             {isPhys && (
               <button
                 onClick={() => handleOpenShippingModal(item)}
-                title="Cập nhật vận đơn & giao hàng"
+                title={isEn ? 'Update shipping & delivery' : 'Cập nhật vận đơn & giao hàng'}
                 className="rounded-lg p-1 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-400"
               >
                 <Truck className="h-4 w-4" />
@@ -418,7 +423,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
             {(item.status === 'COMPLETED' || item.status === 'DELIVERED') && (
               <button
                 onClick={() => setRefundingOrder(item)}
-                title="Hoàn tiền đơn hàng"
+                title={isEn ? 'Refund order' : 'Hoàn tiền đơn hàng'}
                 className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -435,26 +440,26 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-3">
         <StatCard
-          title="Tổng Doanh Thu Bán Hàng"
+          title={isEn ? 'Total Sales Revenue' : 'Tổng Doanh Thu Bán Hàng'}
           value={formatVnd(totalRevenue)}
           icon={DollarSign}
           color="emerald"
-          subtext="Các đơn hoàn thành & đã giao"
+          subtext={isEn ? 'Completed & delivered orders' : 'Các đơn hoàn thành & đã giao'}
         />
         <StatCard
-          title="Đơn Hàng Vật Lý"
+          title={isEn ? 'Physical Orders' : 'Đơn Hàng Vật Lý'}
           value={physicalOrdersCount}
           icon={Truck}
           color="indigo"
-          subtext="Giao vận toàn quốc"
+          subtext={isEn ? 'Nationwide courier delivery' : 'Giao vận toàn quốc'}
         />
         <div className="col-span-2 sm:col-span-1">
           <StatCard
-            title="Đơn Đang Vận Chuyển"
+            title={isEn ? 'In-Transit Orders' : 'Đơn Đang Vận Chuyển'}
             value={shippingOrdersCount}
             icon={ShoppingCart}
             color="amber"
-            subtext="Đang trên đường giao"
+            subtext={isEn ? 'Out for delivery' : 'Đang trên đường giao'}
           />
         </div>
       </div>
@@ -465,7 +470,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
         columns={columns}
         keyExtractor={(item) => item.id}
         isLoading={isLoading}
-        searchPlaceholder="Tìm mã đơn, tên, SĐT, địa chỉ giao hàng, sản phẩm..."
+        searchPlaceholder={isEn ? 'Search order code, customer name, phone, address, product...' : 'Tìm mã đơn, tên, SĐT, địa chỉ giao hàng, sản phẩm...'}
         searchKeys={['orderCode', 'buyerName', 'buyerEmail', 'shippingName', 'shippingPhone', 'shippingAddress', 'productTitle', 'trackingCode']}
         onRefresh={handleManualRefresh}
         onExportCsv={handleExportCsv}
@@ -474,47 +479,47 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
             type="button"
             onClick={() => setIsCarrierConfigOpen(true)}
             className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-semibold text-neutral-200 border border-neutral-700 transition-colors flex items-center gap-1.5 shrink-0"
-            title="Cấu hình Token API GHTK, GHN, Viettel Post"
+            title={isEn ? 'Configure GHTK, GHN, Viettel Post API Tokens' : 'Cấu hình Token API GHTK, GHN, Viettel Post'}
           >
             <Settings className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Cấu Hình API Vận Chuyển</span>
+            <span>{isEn ? 'Courier API Setup' : 'Cấu Hình API Vận Chuyển'}</span>
           </button>
         }
         filters={[
           {
             key: 'type',
-            label: 'Phân loại hàng',
+            label: isEn ? 'Product Type' : 'Phân loại hàng',
             selectedValue: typeFilter,
             options: [
-              { label: 'Tất cả loại hàng', value: 'ALL' },
-              { label: '📦 Hàng Vật Lý (Giao vận)', value: 'PHYSICAL' },
-              { label: '⚡ Hàng Kỹ Thuật Số (Mã code)', value: 'DIGITAL' },
+              { label: isEn ? 'All Types' : 'Tất cả loại hàng', value: 'ALL' },
+              { label: isEn ? '📦 Physical Goods (Courier)' : '📦 Hàng Vật Lý (Giao vận)', value: 'PHYSICAL' },
+              { label: isEn ? '⚡ Digital Goods (Codes)' : '⚡ Hàng Kỹ Thuật Số (Mã code)', value: 'DIGITAL' },
             ],
             onChange: (val) => setTypeFilter(val as any),
           },
           {
             key: 'status',
-            label: 'Trạng thái',
+            label: isEn ? 'Status' : 'Trạng thái',
             selectedValue: statusFilter,
             options: [
-              { label: 'Tất cả trạng thái', value: 'ALL' },
-              { label: 'Hoàn thành / Đã giao', value: 'COMPLETED' },
-              { label: 'Đang giao hàng (SHIPPING)', value: 'SHIPPING' },
-              { label: 'Đang xử lý (PROCESSING)', value: 'PROCESSING' },
-              { label: 'Chờ thanh toán QR (PENDING)', value: 'PENDING' },
-              { label: 'Hết hạn / Đã hủy (CANCELLED)', value: 'CANCELLED' },
-              { label: 'Đã hoàn tiền (REFUNDED)', value: 'REFUNDED' },
+              { label: isEn ? 'All Status' : 'Tất cả trạng thái', value: 'ALL' },
+              { label: isEn ? 'Completed / Delivered' : 'Hoàn thành / Đã giao', value: 'COMPLETED' },
+              { label: isEn ? 'Shipping (SHIPPING)' : 'Đang giao hàng (SHIPPING)', value: 'SHIPPING' },
+              { label: isEn ? 'Processing (PROCESSING)' : 'Đang xử lý (PROCESSING)', value: 'PROCESSING' },
+              { label: isEn ? 'Pending Payment (PENDING)' : 'Chờ thanh toán QR (PENDING)', value: 'PENDING' },
+              { label: isEn ? 'Cancelled / Expired' : 'Hết hạn / Đã hủy (CANCELLED)', value: 'CANCELLED' },
+              { label: isEn ? 'Refunded (REFUNDED)' : 'Đã hoàn tiền (REFUNDED)', value: 'REFUNDED' },
             ],
             onChange: setStatusFilter,
           },
           {
             key: 'paymentMethod',
-            label: 'Phương thức',
+            label: isEn ? 'Payment Method' : 'Phương thức',
             selectedValue: methodFilter,
             options: [
-              { label: 'Tất cả phương thức', value: 'ALL' },
-              { label: 'Ví Thành Viên', value: 'WALLET' },
-              { label: 'VietQR Trực Tiếp', value: 'VIETQR' },
+              { label: isEn ? 'All Methods' : 'Tất cả phương thức', value: 'ALL' },
+              { label: isEn ? 'Member Wallet' : 'Ví Thành Viên', value: 'WALLET' },
+              { label: 'VietQR', value: 'VIETQR' },
             ],
             onChange: setMethodFilter,
           },

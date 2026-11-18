@@ -38,12 +38,87 @@ import { PlatformLeadsModule } from './modules/PlatformLeadsModule';
 import { TranslationsModule } from './modules/TranslationsModule';
 import { VouchersModule } from './modules/VouchersModule';
 import { MarketingNotificationToast } from '../components/MarketingNotificationToast';
+import { LanguageProvider, useLanguage } from '../context/LanguageContext';
 
 interface AdminAppProps {
   onBackToClient?: () => void;
 }
 
-export const AdminApp: React.FC<AdminAppProps> = ({ onBackToClient }) => {
+const tabTitlesVi: Record<AdminModuleTab, string> = {
+  dashboard: 'Bảng Điều Khiển Tổng Quan',
+  games: 'Quản Lý Danh Mục Game',
+  news: 'Quản Lý Tin Tức & Bài Viết',
+  'free-codes': 'Quản Lý Code Miễn Phí',
+  giftcodes: 'Kiểm Duyệt Giftcode',
+  crawler: 'Crawler & Auto Sync',
+  marketing: 'Cấu Hình Marketing & FOMO',
+  'floating-notification': 'Cài Đặt Thông Báo Nổi',
+  growth: 'Tăng Trưởng & Viral',
+  'email-notifications': 'Thông Báo Email & Khách',
+  telegram: 'Tích Hợp Telegram',
+  members: 'Quản Lý Thành Viên & Phân Quyền',
+  wallet: 'Sổ Cái & Quản Lý Ví',
+  'private-codes': 'Cấp Phát Code VIP & Giveaway',
+  'code-inventory': 'Kho Code Bán & Gói Cửa Hàng',
+  utilities: 'Kho Tiện Ích & Gói Dịch Vụ',
+  missions: 'Quản Lý Nhiệm Vụ & Duyệt Bài',
+  'event-scheduler': 'Lịch Sự Kiện Đếm Ngược',
+  orders: 'Quản Lý Đơn Hàng & Vận Chuyển',
+  marketplace: 'Sàn TMĐT & Gian Hàng Người Bán',
+  'platform-leads': 'Khách Thuê / Mua Sàn',
+  translations: 'Quản Lý Bản Dịch (i18n)',
+  vouchers: 'Quản Lý Voucher & Freeship',
+  'first-purchase': 'Ưu Đãi Mua Lần Đầu',
+  sepay: 'Cổng Thanh Toán Tự Động SePay',
+  content: 'Quản Trị Nội Dung & CMS',
+  'api-keys': 'Quản Lý Khóa API & Phân Quyền',
+  'security-logs': 'Nhật Ký Bảo Mật & Audit Log',
+  profile: 'Tài Khoản & Bảo Mật Admin',
+};
+
+const tabTitlesEn: Record<AdminModuleTab, string> = {
+  dashboard: 'Dashboard Overview',
+  games: 'Game Directory Management',
+  news: 'News & Articles Management',
+  'free-codes': 'Free Codes Management',
+  giftcodes: 'Giftcode Moderation',
+  crawler: 'Crawler & Auto Sync',
+  marketing: 'Marketing & FOMO Engine',
+  'floating-notification': 'Floating Notification Widget',
+  growth: 'Growth & Referral Center',
+  'email-notifications': 'Email & Customer Notifications',
+  telegram: 'Telegram Bot Integration',
+  members: 'Members & Roles Management',
+  wallet: 'Wallet Ledger & Transactions',
+  'private-codes': 'VIP Codes & Giveaways',
+  'code-inventory': 'Code Inventory & Store Bundles',
+  utilities: 'Utilities & External Services',
+  missions: 'Missions & Task Moderation',
+  'event-scheduler': 'Event Countdown Scheduler',
+  orders: 'Orders & Fulfillment',
+  marketplace: 'E-Commerce Marketplace',
+  'platform-leads': 'Platform SaaS Leads',
+  translations: 'Translations & i18n Management',
+  vouchers: 'Vouchers & Shipping Discounts',
+  'first-purchase': 'First Purchase Offers',
+  sepay: 'SePay Automated Gateway',
+  content: 'Website Content CMS',
+  'api-keys': 'API Keys & Scopes',
+  'security-logs': 'Security Audit Logs',
+  profile: 'Admin Account & Security',
+};
+
+const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
+  const { language } = useLanguage();
+
+  // Dynamic Browser Tab Title based on active language and current tab
+  useEffect(() => {
+    const isEn = language === 'en';
+    const tabName = isEn ? (tabTitlesEn[currentTab] || 'Dashboard') : (tabTitlesVi[currentTab] || 'Bảng Điều Khiển');
+    document.title = isEn
+      ? `${tabName} - Admin Console | Universal Mall`
+      : `${tabName} - Trang Quản Trị Admin | Universal Mall`;
+  }, [language, currentTab]);
   // Navigation State
   const [currentTab, setCurrentTab] = useState<AdminModuleTab>(() => {
     const raw = window.location.hash.replace(/^#\/?/, '');
@@ -676,6 +751,14 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       {/* Global Toast Notifications */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} position="top-center" maxVisible={3} />
     </AdminLayout>
+  );
+};
+
+export const AdminApp: React.FC<AdminAppProps> = (props) => {
+  return (
+    <LanguageProvider>
+      <AdminAppInner {...props} />
+    </LanguageProvider>
   );
 };
 

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { smartVietnameseMatch } from '../../../utils/textUtils';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export interface Column<T> {
   key: string;
@@ -80,6 +81,11 @@ export function DataTable<T extends Record<string, any>>({
   onSelectionChange,
   onRowClick,
 }: DataTableProps<T>) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const effectivePlaceholder = searchPlaceholder !== 'Tìm kiếm dữ liệu...' ? searchPlaceholder : (isEn ? 'Search data...' : 'Tìm kiếm dữ liệu...');
+  const effectiveEmpty = emptyMessage !== 'Không tìm thấy bản ghi nào phù hợp.' ? emptyMessage : (isEn ? 'No matching records found.' : 'Không tìm thấy bản ghi nào phù hợp.');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -196,7 +202,7 @@ export function DataTable<T extends Record<string, any>>({
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder={searchPlaceholder}
+                placeholder={effectivePlaceholder}
                 className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-8 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500"
               />
               {searchTerm && (
@@ -393,7 +399,7 @@ export function DataTable<T extends Record<string, any>>({
                   >
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Search className="h-8 w-8 text-slate-300 dark:text-slate-600" />
-                      <p className="text-sm font-medium">{emptyMessage}</p>
+                      <p className="text-sm font-medium">{effectiveEmpty}</p>
                     </div>
                   </td>
                 </tr>
@@ -464,7 +470,7 @@ export function DataTable<T extends Record<string, any>>({
         {/* Pagination Bar */}
         <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 sm:flex-row">
           <div className="flex items-center gap-2">
-            <span>Hiển thị</span>
+            <span>{isEn ? 'Showing' : 'Hiển thị'}</span>
             <select
               value={pageSize}
               onChange={(e) => {
@@ -480,7 +486,7 @@ export function DataTable<T extends Record<string, any>>({
               ))}
             </select>
             <span>
-              trên tổng số <strong>{filteredData.length}</strong> kết quả
+              {isEn ? `of ` : `trên tổng số `}<strong>{filteredData.length}</strong> {isEn ? `results` : `kết quả`}
             </span>
           </div>
 
@@ -489,7 +495,7 @@ export function DataTable<T extends Record<string, any>>({
               onClick={() => setCurrentPage(1)}
               disabled={validCurrentPage <= 1}
               className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 disabled:opacity-30 dark:hover:bg-slate-800"
-              title="Trang đầu"
+              title={isEn ? 'First page' : 'Trang đầu'}
             >
               <ChevronsLeft className="h-4 w-4" />
             </button>
@@ -497,7 +503,7 @@ export function DataTable<T extends Record<string, any>>({
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={validCurrentPage <= 1}
               className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 disabled:opacity-30 dark:hover:bg-slate-800"
-              title="Trang trước"
+              title={isEn ? 'Previous page' : 'Trang trước'}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -510,7 +516,7 @@ export function DataTable<T extends Record<string, any>>({
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={validCurrentPage >= totalPages}
               className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 disabled:opacity-30 dark:hover:bg-slate-800"
-              title="Trang sau"
+              title={isEn ? 'Next page' : 'Trang sau'}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -518,7 +524,7 @@ export function DataTable<T extends Record<string, any>>({
               onClick={() => setCurrentPage(totalPages)}
               disabled={validCurrentPage >= totalPages}
               className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 disabled:opacity-30 dark:hover:bg-slate-800"
-              title="Trang cuối"
+              title={isEn ? 'Last page' : 'Trang cuối'}
             >
               <ChevronsRight className="h-4 w-4" />
             </button>

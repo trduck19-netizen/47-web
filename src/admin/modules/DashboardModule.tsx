@@ -14,6 +14,7 @@ import { RecentBalanceChangesWidget } from '../components/RecentBalanceChangesWi
 import { adminDataService } from '../services/adminDataService';
 import { DashboardMetrics, GameAdminRecord, WalletTransaction, GiftcodeSubmission } from '../types/adminTypes';
 import { AdminModuleTab } from '../components/AdminSidebar';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface DashboardModuleProps {
   onNavigate: (tab: AdminModuleTab) => void;
@@ -21,6 +22,8 @@ interface DashboardModuleProps {
 }
 
 export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [topGames, setTopGames] = useState<GameAdminRecord[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<WalletTransaction[]>([]);
@@ -90,43 +93,47 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
-          title="Tổng Doanh Thu"
+          title={isEn ? 'Total Revenue' : 'Tổng Doanh Thu'}
           value={formatVnd(metrics.totalRevenue)}
           icon={DollarSign}
           color="emerald"
-          change={{ value: '+14.8%', trend: 'up', label: 'tuần này' }}
+          change={{ value: '+14.8%', trend: 'up', label: isEn ? 'this week' : 'tuần này' }}
           onClick={() => onNavigate('wallet')}
         />
         <StatCard
-          title="Tổng Thành Viên"
-          value={`${metrics.totalMembers} người`}
+          title={isEn ? 'Total Members' : 'Tổng Thành Viên'}
+          value={isEn ? `${metrics.totalMembers} members` : `${metrics.totalMembers} người`}
           icon={Users}
           color="purple"
-          subtext="Tài khoản thành viên"
+          subtext={isEn ? 'Registered accounts' : 'Tài khoản thành viên'}
           onClick={() => onNavigate('members')}
         />
         <StatCard
-          title="Kho Game Quản Lý"
+          title={isEn ? 'Managed Games' : 'Kho Game Quản Lý'}
           value={metrics.totalGames}
           icon={Gamepad2}
           color="indigo"
-          subtext={`${metrics.activeGames} đang hoạt động`}
+          subtext={isEn ? `${metrics.activeGames} active` : `${metrics.activeGames} đang hoạt động`}
           onClick={() => onNavigate('games')}
         />
         <StatCard
-          title="Tổng Giftcode"
+          title={isEn ? 'Total Giftcodes' : 'Tổng Giftcode'}
           value={metrics.totalGiftcodes}
           icon={Gift}
           color="sky"
-          subtext="4.6k+ mã khả dụng"
+          subtext={isEn ? '4.6k+ available' : '4.6k+ mã khả dụng'}
           onClick={() => onNavigate('free-codes')}
         />
         <StatCard
-          title="Code Chờ Duyệt"
+          title={isEn ? 'Pending Submissions' : 'Code Chờ Duyệt'}
           value={metrics.pendingSubmissions}
           icon={CheckSquare}
           color={metrics.pendingSubmissions > 0 ? 'amber' : 'purple'}
-          subtext={metrics.pendingSubmissions > 0 ? 'Cần xử lý ngay' : 'Đã duyệt hết'}
+          subtext={
+            metrics.pendingSubmissions > 0
+              ? (isEn ? 'Requires review' : 'Cần xử lý ngay')
+              : (isEn ? 'All reviewed' : 'Đã duyệt hết')
+          }
           onClick={() => onNavigate('giftcodes')}
         />
       </div>
@@ -140,13 +147,13 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Game Nổi Bật Nhất
+              {isEn ? 'Top Featured Games' : 'Game Nổi Bật Nhất'}
             </h3>
             <button
               onClick={() => onNavigate('games')}
               className="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
             >
-              Xem tất cả
+              {isEn ? 'View all' : 'Xem tất cả'}
             </button>
           </div>
 
@@ -202,21 +209,21 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) 
             <div className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4 text-amber-500" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Giftcode Thành Viên Gửi Chờ Duyệt
+                {isEn ? 'Pending Giftcode Submissions' : 'Giftcode Thành Viên Gửi Chờ Duyệt'}
               </h3>
             </div>
             <button
               onClick={() => onNavigate('giftcodes')}
               className="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
             >
-              Mở duyệt ({pendingSubmissions.length})
+              {isEn ? `Review (${pendingSubmissions.length})` : `Mở duyệt (${pendingSubmissions.length})`}
             </button>
           </div>
 
           <div className="mt-4 space-y-3">
             {pendingSubmissions.length === 0 ? (
               <p className="py-6 text-center text-xs text-slate-400">
-                Hiện không có mã code nào chờ duyệt.
+                {isEn ? 'No submissions currently pending review.' : 'Hiện không có mã code nào chờ duyệt.'}
               </p>
             ) : (
               pendingSubmissions.map((sub) => (
@@ -232,14 +239,14 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) 
                       <span className="text-[11px] text-slate-400">({sub.gameSlug})</span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Gửi bởi: <strong className="text-slate-700 dark:text-slate-300">{sub.submitterName}</strong>
+                      {isEn ? 'Submitted by:' : 'Gửi bởi:'} <strong className="text-slate-700 dark:text-slate-300">{sub.submitterName}</strong>
                     </p>
                   </div>
                   <button
                     onClick={() => onNavigate('giftcodes')}
                     className="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-indigo-700"
                   >
-                    Duyệt
+                    {isEn ? 'Review' : 'Duyệt'}
                   </button>
                 </div>
               ))
@@ -250,8 +257,8 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) 
         {/* Recent Balance Changes */}
         <RecentBalanceChangesWidget
           transactions={recentTransactions}
-          title="Biến Động Số Dư Gần Nhất"
-          subtitle="Ghi nhận giao dịch thời gian thực"
+          title={isEn ? 'Recent Balance Changes' : 'Biến Động Số Dư Gần Nhất'}
+          subtitle={isEn ? 'Real-time ledger updates' : 'Ghi nhận giao dịch thời gian thực'}
           limit={5}
           compact={true}
           showFilters={false}
