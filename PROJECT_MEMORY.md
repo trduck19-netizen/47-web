@@ -2,7 +2,7 @@
 
 > **QUY TẮC BẮT BUỘC DÀNH CHO AI AGENT & DEVELOPER**:
 > Trước khi thực hiện bất kỳ chỉnh sửa nào trong codebase, **BẮT BUỘC** phải đọc file này cùng với `CHANGELOG.md` và `KNOWN_ISSUES.md`.
-> Tuân thủ tuyệt đối 9 quy tắc vàng trong `AGENTS.md` / `GEMINI.md`, đặc biệt là **Rule 9 (Single-Screen First 100%)**.
+> Tuân thủ tuyệt đối 12 quy tắc vàng trong `AGENTS.md` / `GEMINI.md`, đặc biệt là **Rule 9 (Single-Screen First 100%)** và **Rule 12 (100% Bilingual VI/EN First)**.
 
 ---
 
@@ -69,3 +69,6 @@
    - Tự động map quyền mới vào `ALL_API_SCOPES` trong `src/admin/modules/ApiKeysModule.tsx` và `hasScope` trong `functions/services/mission_service.ts`.
 6. **Rule 7 (Zero Test Artifacts)**:
    - Tự động dọn dẹp sạch sẽ toàn bộ dữ liệu test sau khi kiểm thử.
+7. **Rule 12 (100% Bilingual VI/EN First)**:
+   - Mọi tính năng, module, giao diện mới (cả Web Khách và Web Quản trị) bắt buộc phải hỗ trợ song ngữ Tiếng Việt và Tiếng Anh ngay từ đầu.
+   - Không ghi cứng văn bản trong JSX/TSX; mọi chuỗi hiển thị phải lưu trong `src/locales/vi.json` và `src/locales/en.json`, gọi qua hook `useLanguage()`. URL chuẩn hóa `/en/` và `/` (hoặc `/vi/`).

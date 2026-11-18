@@ -81,3 +81,26 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, AI Agent
   - Tuyệt đối không kết thúc lượt (end turn) trong im lặng khi tác vụ có nguy cơ kéo dài.
   - Luôn cập nhật tiến độ ngắn gọn, thông báo rõ tác nhân đang làm gì và dự kiến mất bao lâu.
 
+### 🌐 12. NGUYÊN TẮC BẮT BUỘC SONG NGỮ VIỆT - ANH TOÀN DIỆN (100% BILINGUAL VI/EN FIRST)
+- **1. Bắt buộc song ngữ cho 100% tính năng mới (Zero Monolingual Feature)**:
+  - Bất cứ khi nào tác nhân xây dựng, phát triển, hoặc mở rộng bất kỳ tính năng nào (Web Khách, Web Quản trị, modal, drawer, form, table, card, filter, banner, toast notification, badge, tooltip, nút bấm, nhãn input, thông báo lỗi/thành công): **BẮT BUỘC PHẢI HỖ TRỢ ĐỒNG THỜI CẢ 2 NGÔN NGỮ TIẾNG VIỆT VÀ TIẾNG ANH (VI & EN)**.
+  - **TUYỆT ĐỐI KHÔNG** ghi cứng (hardcode) chuỗi văn bản Tiếng Việt hoặc Tiếng Anh trực tiếp vào JSX/TSX.
+- **2. Quy chuẩn từ điển tập trung (`vi.json` & `en.json`)**:
+  - Mọi chuỗi hiển thị phải được khai báo song song và đối xứng trong 2 file từ điển:
+    * `src/locales/vi.json` (bản tiếng Việt)
+    * `src/locales/en.json` (bản tiếng Anh)
+  - Hiển thị văn bản qua hook ngôn ngữ: `const { t, language } = useLanguage();` và gọi `t('section.key')` hoặc `t.section.key`.
+  - Với các chuỗi có tham số biến thiên (số lượng, tên, tiền tệ, mốc thời gian): sử dụng cú pháp template `{param}` (ví dụ: `{count}`, `{name}`, `{amount}`) và truyền qua `t('section.key', { count: ... })`.
+- **3. Danh mục bảo lưu không dịch (Preserved Tokens / Exceptions)**:
+  - Tên người dùng / tài khoản (masked username `a***@gmail.com`).
+  - Tên riêng game, tên sản phẩm thương hiệu, mã code / giftcode bản quyền, mã voucher (`FREESHIP30K`, `MALL50K`), đường dẫn URL, mã hash / ID.
+  - Các chuỗi này giữ nguyên giá trị gốc trên cả 2 ngôn ngữ.
+- **4. Đồng bộ chuyển đổi URL & Trạng thái (URL & State Synchronization)**:
+  - Ngôn ngữ mặc định của sàn là Tiếng Việt (`vi`).
+  - Tiền tố URL chuẩn hóa: `/en/` cho Tiếng Anh, `/` hoặc `/vi/` cho Tiếng Việt.
+  - Khi người dùng chuyển đổi ngôn ngữ, 100% nội dung trang và các thành phần giao diện (bao gồm cả carousel, popup, toast, placeholder tìm kiếm) phải đổi tức thì theo ngôn ngữ được chọn.
+- **5. Kiểm thử song ngữ bắt buộc trước khi triển khai (Pre-deploy Bilingual Verification)**:
+  - Mọi bản build và kiểm thử trước khi deploy phải được xác minh trên cả 2 chế độ Tiếng Việt (`/`) và Tiếng Anh (`/en/`).
+  - Xác nhận 0% chuỗi tiếng Việt sót lại ở chế độ Anh, và 0% chuỗi tiếng Anh bị vỡ/sót ở chế độ Việt.
+
+
