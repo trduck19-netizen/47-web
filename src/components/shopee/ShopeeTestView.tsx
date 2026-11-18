@@ -2284,6 +2284,21 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                                 </span>
                               )}
                             </div>
+
+                            {/* Điểm đánh giá sản phẩm hoặc Chưa có đánh giá */}
+                            <div className="flex items-center gap-1 text-[10px] pt-0.5">
+                              {prod.rating && prod.review_count && prod.review_count > 0 ? (
+                                <div className="flex items-center gap-0.5 text-amber-500 font-medium">
+                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                  <span className="font-bold">{Number(prod.rating).toFixed(1)}</span>
+                                  <span className="text-slate-400 font-mono">({prod.review_count})</span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 text-[10px]">
+                                  {language === 'en' ? 'No reviews yet' : 'Chưa có đánh giá'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 

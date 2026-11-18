@@ -1,4 +1,5 @@
 import fallbackGiveawaysData from '../../src/data/giveaways.json';
+import { recordEscrowHold } from './escrow_service';
 /**
  * D1 Database Service for web-code-game
  * Implements atomic batch operations, strict constraint validations, and schema management.
@@ -2030,6 +2031,72 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0031_purge_test_products_v1 error]', e);
     }
 
+    // Migration 0032: Purge test product permanently from store_products table (Việc 3)
+    try {
+      const spPurgeCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0032_purge_store_products_test_v1' LIMIT 1").first().catch(() => null);
+      if (!spPurgeCheck) {
+        await db.prepare("DELETE FROM store_products WHERE id = 'sp_test_1' OR LOWER(id) LIKE '%test%' OR LOWER(title) LIKE '%test%';").run().catch(() => {});
+        await db.prepare("DELETE FROM inventory_codes WHERE product_id = 'sp_test_1';").run().catch(() => {});
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0032_purge_store_products_test_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0032_purge_store_products_test_v1 error]', e);
+    }
+
+    // Migration 0033: Product reviews schema & Escrow columns (Việc 1 & 2)
+    try {
+      const prCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0033_product_reviews_and_escrow_v1' LIMIT 1").first().catch(() => null);
+      if (!prCheck) {
+        // 1. Tạo bảng đánh giá sản phẩm product_reviews
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS product_reviews (
+            id TEXT PRIMARY KEY,
+            product_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            user_name TEXT,
+            rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+            comment TEXT,
+            status TEXT NOT NULL DEFAULT 'pending',
+            admin_note TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(product_id, user_id)
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_product_reviews_prod_status ON product_reviews(product_id, status, created_at);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_product_reviews_user ON product_reviews(user_id);").run().catch(() => {});
+
+        // 2. Nâng cấp cột cho bảng orders (Escrow 168 giờ)
+        await db.prepare("ALTER TABLE orders ADD COLUMN escrow_status TEXT DEFAULT 'NONE';").run().catch(() => {});
+        await db.prepare("ALTER TABLE orders ADD COLUMN hold_until TEXT;").run().catch(() => {});
+        await db.prepare("ALTER TABLE orders ADD COLUMN released_at TEXT;").run().catch(() => {});
+        await db.prepare("ALTER TABLE orders ADD COLUMN seller_id TEXT;").run().catch(() => {});
+        await db.prepare("ALTER TABLE orders ADD COLUMN dispute_reason TEXT;").run().catch(() => {});
+        await db.prepare("ALTER TABLE orders ADD COLUMN dispute_detail TEXT;").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_orders_escrow ON orders(escrow_status, hold_until);").run().catch(() => {});
+
+        // 3. Khởi tạo gian hàng chính thức Universal Mall (Official Platform Seller) nếu chưa có
+        const officialSeller = await db.prepare("SELECT id FROM sellers WHERE id = 'seller_universal_mall' LIMIT 1").first().catch(() => null);
+        if (!officialSeller) {
+          await db.prepare(`
+            INSERT INTO sellers (
+              id, owner_member_id, name, slug, contact_phone, bank_name, bank_account, bank_account_name,
+              description, status, pending_balance_core, available_balance_core, withdrawn_balance_core, created_at, updated_at
+            ) VALUES (
+              'seller_universal_mall', 'admin', 'Universal Mall Official Store', 'universal-mall-official',
+              '0987654321', 'TPBANK', '00000000000', 'UNIVERSAL MALL',
+              'Gian hàng chính hãng sàn Universal Mall - Bảo chứng giữ tiền 168 giờ', 'ACTIVE', 0, 0, 0, datetime('now'), datetime('now')
+            )
+          `).run().catch(() => {});
+        }
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0033_product_reviews_and_escrow_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0033_product_reviews_and_escrow_v1 error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);
@@ -2947,12 +3014,13 @@ export async function purchaseOrderD1(db: D1Database, params: D1PurchaseParams):
       WHERE id = ?;
     `).bind(pSku, pSku, quantity, pSku, pSku, quantity, productId);
 
-    // 5. Ghi Đơn hàng kèm thông tin ưu đãi/chiết khấu/quy tắc giá
+    // 5. Ghi Đơn hàng kèm thông tin ưu đãi/chiết khấu/quy tắc giá & cơ chế bảo chứng giữ tiền 168 giờ
+    const holdUntilIso = new Date(Date.now() + 168 * 3600 * 1000).toISOString();
     const priceRuleValue = params.priceRule || (discountType ? 'first_purchase' : null);
     const stmtOrder = db.prepare(`
       INSERT INTO orders (
         id, member_id, buyer_email, product_id, product_title, quantity,
-        unit_price, total_amount, status, balance_before, balance_after,
+        unit_price, total_amount, status, escrow_status, hold_until, seller_id, balance_before, balance_after,
         delivered_codes, idempotency_key, created_at,
         original_price, price_paid, discount_type, discount_amount, price_rule
       )
@@ -2965,7 +3033,10 @@ export async function purchaseOrderD1(db: D1Database, params: D1PurchaseParams):
         ?,
         ?,
         ?,
-        'COMPLETED',
+        'HOLDING',
+        'HOLDING',
+        ?,
+        'seller_universal_mall',
         m.balance + ?,
         m.balance,
         (SELECT COALESCE(json_group_array(code_content), '[]') FROM inventory_codes WHERE order_id = ?),
@@ -2985,6 +3056,7 @@ export async function purchaseOrderD1(db: D1Database, params: D1PurchaseParams):
       quantity,
       unitPrice,
       totalAmount,
+      holdUntilIso,
       totalAmount,
       orderId,
       idempotencyKey || null,
@@ -3021,6 +3093,15 @@ export async function purchaseOrderD1(db: D1Database, params: D1PurchaseParams):
 
     // THỰC THI 100% NGUYÊN TỬ TRONG MỘT DB.BATCH DUY NHẤT (Gồm gán code + tạo đơn + trừ tiền):
     await db.batch([stmtGuard, stmtDeduct, stmtClaimCodes, stmtUpdateStock, stmtUpdateUtil, stmtOrder, stmtWalletTx]);
+
+    // Bảo chứng giữ tiền sàn 168h: ghi nhận dòng HOLD vào seller_ledger
+    await recordEscrowHold(db, {
+      orderId,
+      sellerId: 'seller_universal_mall',
+      amountCore: totalAmount,
+      actor: userId,
+      reason: `Bảo chứng sàn giữ tiền 168 giờ cho đơn hàng ${orderId}`,
+    }).catch((e) => console.warn('[Escrow hold order error]', e));
 
     // Lấy lại đơn hàng vừa tạo (delivered_codes đã được lưu sẵn nguyên tử trong batch)
     const orderRes: any = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first();
@@ -6083,8 +6164,9 @@ export async function completeQrOrderD1(db: D1Database, params: {
   }
 
   const deliveredJson = JSON.stringify(codeList);
+  const holdUntilIso = new Date(Date.now() + 168 * 3600 * 1000).toISOString();
 
-  // 5. Thực thi Batch hoàn tất đơn
+  // 5. Thực thi Batch hoàn tất đơn và thiết lập bảo chứng giữ tiền 168 giờ
   const stmts: any[] = [];
 
   for (const cId of codeIds) {
@@ -6096,13 +6178,16 @@ export async function completeQrOrderD1(db: D1Database, params: {
   stmts.push(
     db.prepare(`
       UPDATE orders 
-      SET status = 'COMPLETED',
+      SET status = 'HOLDING',
+          escrow_status = 'HOLDING',
+          hold_until = ?,
+          seller_id = COALESCE(seller_id, 'seller_universal_mall'),
           payment_status = 'PAID',
           paid_at = datetime('now'),
           sepay_transaction_id = ?,
           delivered_codes = ?
       WHERE id = ?
-    `).bind(sepayTxId, deliveredJson, orderId)
+    `).bind(holdUntilIso, sepayTxId, deliveredJson, orderId)
   );
 
   stmts.push(
@@ -6120,6 +6205,15 @@ export async function completeQrOrderD1(db: D1Database, params: {
 
   // 1. Thực thi batch hoàn tất đơn, giao mã và ghi sổ cái SePay
   await db.batch(stmts);
+
+  // Bảo chứng giữ tiền sàn 168h: ghi nhận dòng HOLD vào seller_ledger
+  await recordEscrowHold(db, {
+    orderId,
+    sellerId: order.seller_id || 'seller_universal_mall',
+    amountCore: amount,
+    actor: 'sepay_webhook',
+    reason: `Bảo chứng sàn giữ tiền 168 giờ cho đơn hàng SePay ${orderId}`,
+  }).catch((e) => console.warn('[Escrow hold QR order error]', e));
 
   // 2. Ghi nhật ký kiểm toán bất đồng bộ
   const logId = 'sec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
@@ -6141,7 +6235,7 @@ export async function completeQrOrderD1(db: D1Database, params: {
 
   return {
     success: true,
-    order: { ...order, status: 'COMPLETED', payment_status: 'PAID', delivered_codes: deliveredJson },
+    order: { ...order, status: 'HOLDING', escrow_status: 'HOLDING', hold_until: holdUntilIso, payment_status: 'PAID', delivered_codes: deliveredJson },
     deliveredCodes: codeList,
   };
 }

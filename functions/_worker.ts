@@ -1,4 +1,7 @@
 import * as syncApi from './api/sync';
+import { confirmReceivedAndRelease, fileOrderDispute, autoReleaseDueEscrow, resolveAdminDispute } from './services/escrow_service';
+import { getProductReviews, createProductReview, approveReview, rejectReview, deleteReview, listAdminReviews } from './services/review_service';
+import { extractUserIdFromToken } from './services/auth_service';
 import * as syncLiteApi from './api/sync-lite';
 import * as statsApi from './api/stats';
 import * as voteApi from './api/vote';
@@ -353,6 +356,9 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         }
         try {
           await ensureSchemaUpgrades(env.DB);
+          // Việc 3: Dọn sạch vĩnh viễn sản phẩm test khỏi store_products & inventory_codes
+          await env.DB.prepare("DELETE FROM store_products WHERE id = 'sp_test_1' OR LOWER(id) LIKE '%test%' OR LOWER(title) LIKE '%test%';").run().catch(() => {});
+          await env.DB.prepare("DELETE FROM inventory_codes WHERE product_id = 'sp_test_1' OR LOWER(product_id) LIKE '%test%';").run().catch(() => {});
           const res = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all<any>();
           const tables = (res.results || []).map((r: any) => r.name);
           const counts: Record<string, number> = {};
@@ -410,6 +416,9 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           await initializeD1(env.DB);
           await ensureMarketplaceSchema(env.DB);
           await ensureSchemaUpgrades(env.DB);
+          // Việc 3: Dọn sạch vĩnh viễn sản phẩm test khỏi store_products & inventory_codes
+          await env.DB.prepare("DELETE FROM store_products WHERE id = 'sp_test_1' OR LOWER(id) LIKE '%test%' OR LOWER(title) LIKE '%test%';").run().catch(() => {});
+          await env.DB.prepare("DELETE FROM inventory_codes WHERE product_id = 'sp_test_1' OR LOWER(product_id) LIKE '%test%';").run().catch(() => {});
 
           // Extra multi-industry tables
           const extraStmts = [
@@ -800,6 +809,185 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
             await invalidateCatalogEdgeCache(ctx, request, env);
           }
           return res;
+        }
+      }
+
+      // 5b. /api/orders/:id/confirm-received (Bảo chứng 168h: Khách xác nhận đã nhận hàng -> Giải ngân cho người bán)
+      if (pathname.match(/^\/api\/orders\/([^\/]+)\/confirm-received$/)) {
+        if (method === 'OPTIONS') {
+          return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': '*' } });
+        }
+        if (method === 'POST') {
+          if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          const match = pathname.match(/^\/api\/orders\/([^\/]+)\/confirm-received$/);
+          const orderId = match ? match[1] : '';
+          const authHeader = request.headers.get('Authorization') || '';
+          const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+          const userId = extractUserIdFromToken(token) || 'customer';
+          const result = await confirmReceivedAndRelease(env.DB, orderId, userId, `user_${userId}`);
+          return new Response(JSON.stringify(result), {
+            status: result.success ? 200 : 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      }
+
+      // 5c. /api/orders/:id/dispute (Bảo chứng 168h: Khách khiếu nại trong 168h -> Đóng băng tiền, chờ Admin xử lý)
+      if (pathname.match(/^\/api\/orders\/([^\/]+)\/dispute$/)) {
+        if (method === 'OPTIONS') {
+          return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': '*' } });
+        }
+        if (method === 'POST') {
+          if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          const match = pathname.match(/^\/api\/orders\/([^\/]+)\/dispute$/);
+          const orderId = match ? match[1] : '';
+          const authHeader = request.headers.get('Authorization') || '';
+          const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+          const userId = extractUserIdFromToken(token) || 'customer';
+          const body: any = await request.json().catch(() => ({}));
+          const reason = body?.reason || 'Hàng lỗi hoặc không nhận được hàng';
+          const detail = body?.detail || '';
+          const result = await fileOrderDispute(env.DB, { orderId, userId, reason, detail });
+          return new Response(JSON.stringify(result), {
+            status: result.success ? 200 : 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      }
+
+      // 5d. /api/orders/auto-release-escrow (Bảo chứng 168h: Tự động giải ngân sau 168h không khiếu nại)
+      if (pathname === '/api/orders/auto-release-escrow') {
+        if (method === 'OPTIONS') {
+          return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, GET, OPTIONS', 'Access-Control-Allow-Headers': '*' } });
+        }
+        if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        const result = await autoReleaseDueEscrow(env.DB, 'system_auto_release_168h');
+        return new Response(JSON.stringify({ success: true, ...result }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+
+      // 5e. /api/admin/orders/:id/resolve-dispute (Admin xử lý khiếu nại: RELEASE hoặc REFUND)
+      if (pathname.match(/^\/api\/admin\/orders\/([^\/]+)\/resolve-dispute$/)) {
+        if (method === 'OPTIONS') {
+          return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': '*' } });
+        }
+        if (method === 'POST') {
+          if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          const match = pathname.match(/^\/api\/admin\/orders\/([^\/]+)\/resolve-dispute$/);
+          const orderId = match ? match[1] : '';
+          const authHeader = request.headers.get('Authorization') || '';
+          const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+          const adminId = extractUserIdFromToken(token) || 'admin';
+          const body: any = await request.json().catch(() => ({}));
+          const resolution = body?.resolution === 'REFUND' ? 'REFUND' : 'RELEASE';
+          const note = body?.note || '';
+          const result = await resolveAdminDispute(env.DB, { orderId, resolution, adminId, note });
+          return new Response(JSON.stringify(result), {
+            status: result.success ? 200 : 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      }
+
+      // 5f. /api/products/:id/reviews & /api/reviews (Public reviews & ratings)
+      if (pathname.match(/^\/api\/products\/([^\/]+)\/reviews$/) || pathname === '/api/reviews') {
+        const prodMatch = pathname.match(/^\/api\/products\/([^\/]+)\/reviews$/);
+        const productId = prodMatch ? prodMatch[1] : url.searchParams.get('productId');
+        if (method === 'OPTIONS') {
+          return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': '*' } });
+        }
+        if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        if (method === 'GET') {
+          if (!productId) {
+            return new Response(JSON.stringify({ success: false, message: 'Thiếu productId' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          }
+          const authHeader = request.headers.get('Authorization') || '';
+          const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+          const currentUserId = extractUserIdFromToken(token) || undefined;
+          const reviewsData = await getProductReviews(env.DB, productId, currentUserId);
+          return new Response(JSON.stringify({ success: true, ...reviewsData }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+        if (method === 'POST') {
+          const authHeader = request.headers.get('Authorization') || '';
+          const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+          const userId = extractUserIdFromToken(token);
+          if (!userId) {
+            return new Response(JSON.stringify({ success: false, message: 'Vui lòng đăng nhập để gửi đánh giá sản phẩm.', code: 'UNAUTHORIZED' }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+          const body: any = await request.json().catch(() => ({}));
+          const targetProductId = productId || body?.productId;
+          const rating = Number(body?.rating);
+          const comment = String(body?.comment || '');
+          const userName = body?.userName || undefined;
+
+          if (!targetProductId) {
+            return new Response(JSON.stringify({ success: false, message: 'Thiếu productId', code: 'MISSING_PRODUCT_ID' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+
+          const result = await createProductReview(env.DB, {
+            productId: targetProductId,
+            userId,
+            userName,
+            rating,
+            comment,
+          });
+
+          return new Response(JSON.stringify(result), {
+            status: result.success ? 200 : (result.code === 'NOT_PURCHASED' ? 403 : 400),
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      }
+
+      // 5g. /api/admin/reviews (Admin review moderation: list, approve, reject, delete)
+      if (pathname === '/api/admin/reviews' || pathname.startsWith('/api/admin/reviews/')) {
+        if (method === 'OPTIONS') {
+          return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': '*' } });
+        }
+        if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        if (pathname === '/api/admin/reviews' && method === 'GET') {
+          const status = url.searchParams.get('status') || undefined;
+          const listRes = await listAdminReviews(env.DB, status);
+          return new Response(JSON.stringify(listRes), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+        const approveMatch = pathname.match(/^\/api\/admin\/reviews\/([^\/]+)\/approve$/);
+        if (approveMatch && method === 'POST') {
+          const res = await approveReview(env.DB, approveMatch[1]);
+          return new Response(JSON.stringify(res), {
+            status: res.success ? 200 : 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+        const rejectMatch = pathname.match(/^\/api\/admin\/reviews\/([^\/]+)\/reject$/);
+        if (rejectMatch && method === 'POST') {
+          const body: any = await request.json().catch(() => ({}));
+          const res = await rejectReview(env.DB, rejectMatch[1], body?.adminNote);
+          return new Response(JSON.stringify(res), {
+            status: res.success ? 200 : 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+        const deleteMatch = pathname.match(/^\/api\/admin\/reviews\/([^\/]+)$/);
+        if (deleteMatch && method === 'DELETE') {
+          const res = await deleteReview(env.DB, deleteMatch[1]);
+          return new Response(JSON.stringify(res), {
+            status: res.success ? 200 : 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
         }
       }
 

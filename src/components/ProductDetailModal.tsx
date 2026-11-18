@@ -38,6 +38,7 @@ import { getProductPackages } from '../utils/productPackageUtils';
 import { GuideLinksBanner } from './GuideLinksBanner';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { PackageShareModal } from './PackageShareModal';
+import { ProductReviewsSection } from './ProductReviewsSection';
 
 export interface ProductDetailModalProps {
   product: StoreProduct | UtilityProduct | null;
@@ -1293,6 +1294,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </div>
                     </div>
                   )
+                )}
+
+                {/* Đánh Giá & Nhận Xét Sản Phẩm Thực Tế */}
+                {product?.id && (
+                  <ProductReviewsSection
+                    productId={product.id}
+                    currentUser={currentUser}
+                    onOpenAuth={onOpenAuth}
+                    onShowToast={onShowToast}
+                  />
                 )}
 
                 {/* Nút Mua Ngay đã được chuyển hoàn toàn lên khối mô tả ghim cố định */}

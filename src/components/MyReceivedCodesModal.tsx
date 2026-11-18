@@ -241,6 +241,25 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
     }
   };
 
+  const handleConfirmReceived = async (orderId: string) => {
+    const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+    try {
+      const res = await fetch(`/api/orders/${orderId}/confirm-received`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        onShowToast('Xác nhận thành công!', data.message || 'Đã giải ngân cho người bán.', 'success');
+        loadAll();
+      } else {
+        onShowToast('Thông báo', data.message || 'Không thể xác nhận nhận hàng.', 'error');
+      }
+    } catch {
+      onShowToast('Lỗi', 'Không thể kết nối máy chủ.', 'error');
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       const u = dataService.getCurrentUser();
@@ -620,6 +639,18 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
                       >
                         <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                         <span>Đánh Giá</span>
+                      </button>
+                    )}
+
+                    {/* Nút Xác Nhận Nhận Hàng (Giải ngân 168h) */}
+                    {(mOrder.status === 'PAID' || mOrder.status === 'DELIVERED') && (
+                      <button
+                        onClick={() => handleConfirmReceived(mOrder.id)}
+                        className="px-2.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                        title="Xác nhận đã nhận hàng thành công và giải ngân cho người bán"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Đã Nhận Hàng</span>
                       </button>
                     )}
 

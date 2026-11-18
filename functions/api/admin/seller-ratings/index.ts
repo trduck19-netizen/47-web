@@ -100,21 +100,55 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const rowsRes = await env.DB.prepare(sql).bind(...binds).all<any>();
 
+    // Merge các đánh giá sản phẩm từ bảng product_reviews (Việc 2)
+    const prRows = await env.DB.prepare(`
+      SELECT 
+        pr.id,
+        'official_store' as seller_id,
+        pr.user_id as buyer_member_id,
+        pr.rating as rating_stars,
+        pr.comment as rating_comment,
+        UPPER(pr.status) as status,
+        pr.admin_note as rating_reject_reason,
+        pr.created_at,
+        'Universal Mall' as seller_name,
+        pr.product_id as product_name,
+        pr.user_name as buyer_username
+      FROM product_reviews pr
+      ORDER BY pr.created_at DESC
+      LIMIT 50
+    `).all<any>().catch(() => ({ results: [] }));
+
+    const prStats = await env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN LOWER(status) = 'pending' THEN 1 ELSE 0 END) as pending_count,
+        SUM(CASE WHEN LOWER(status) = 'approved' THEN 1 ELSE 0 END) as approved_count,
+        SUM(CASE WHEN LOWER(status) = 'rejected' THEN 1 ELSE 0 END) as rejected_count
+      FROM product_reviews
+    `).first<any>().catch(() => null);
+
+    const combinedRatings = [...(rowsRes?.results || []), ...(prRows?.results || [])];
+    const totalCount = (Number(statsRow?.total) || 0) + (Number(prStats?.total) || 0);
+    const pendingCount = (Number(statsRow?.pending_count) || 0) + (Number(prStats?.pending_count) || 0);
+    const approvedCount = (Number(statsRow?.approved_count) || 0) + (Number(prStats?.approved_count) || 0);
+    const rejectedCount = (Number(statsRow?.rejected_count) || 0) + (Number(prStats?.rejected_count) || 0);
+
     return new Response(
       JSON.stringify({
         success: true,
         stats: {
-          total: Number(statsRow?.total) || 0,
-          pending_count: Number(statsRow?.pending_count) || 0,
-          approved_count: Number(statsRow?.approved_count) || 0,
-          rejected_count: Number(statsRow?.rejected_count) || 0,
+          total: totalCount,
+          pending_count: pendingCount,
+          approved_count: approvedCount,
+          rejected_count: rejectedCount,
         },
-        ratings: rowsRes?.results || [],
+        ratings: combinedRatings,
         pagination: {
           page,
           limit,
-          total: totalFiltered,
-          total_pages: Math.ceil(totalFiltered / limit),
+          total: totalFiltered + (Number(prStats?.total) || 0),
+          total_pages: Math.ceil((totalFiltered + (Number(prStats?.total) || 0)) / limit),
         },
       }),
       { status: 200, headers: CORS_HEADERS }

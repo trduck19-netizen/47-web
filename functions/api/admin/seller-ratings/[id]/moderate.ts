@@ -45,12 +45,34 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const rating = await env.DB
+    let rating = await env.DB
       .prepare('SELECT * FROM seller_ratings WHERE id = ? LIMIT 1')
       .bind(ratingId)
       .first<any>();
 
+    // Nếu không tìm thấy trong seller_ratings, tìm và duyệt trong product_reviews (Việc 2)
     if (!rating) {
+      const pr = await env.DB
+        .prepare('SELECT * FROM product_reviews WHERE id = ? LIMIT 1')
+        .bind(ratingId)
+        .first<any>();
+
+      if (pr) {
+        const newStatus = decision === 'APPROVED' ? 'approved' : 'rejected';
+        await env.DB
+          .prepare('UPDATE product_reviews SET status = ?, admin_note = ?, updated_at = datetime("now") WHERE id = ?')
+          .bind(newStatus, reason || (decision === 'APPROVED' ? 'Đã duyệt' : 'Từ chối'), ratingId)
+          .run();
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: decision === 'APPROVED' ? 'Đã phê duyệt đánh giá sản phẩm thành công!' : 'Đã từ chối hiển thị đánh giá sản phẩm.',
+          }),
+          { status: 200, headers: CORS_HEADERS }
+        );
+      }
+
       return new Response(
         JSON.stringify({ success: false, error: 'Không tìm thấy đánh giá này.' }),
         { status: 404, headers: CORS_HEADERS }
