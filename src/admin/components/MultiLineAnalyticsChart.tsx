@@ -16,6 +16,7 @@ import {
 import { adminDataService } from '../services/adminDataService';
 import type { DailyDataPoint } from '../types/adminTypes';
 import { useLanguage } from '../../context/LanguageContext';
+import { formatCurrencyVND } from '../../utils/textUtils';
 
 export type { DailyDataPoint };
 

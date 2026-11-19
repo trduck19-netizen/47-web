@@ -411,7 +411,7 @@ export const UserWalletModal: React.FC<UserWalletModalProps> = ({
                 onClick={onClose}
                 className="w-full py-3.5 rounded-2xl bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold cursor-pointer border border-border"
               >
-                Để sau
+                {t.authModal?.later || (isEn ? 'Later' : 'Để sau')}
               </button>
             </div>
           </div>

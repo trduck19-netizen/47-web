@@ -1331,7 +1331,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   onClick={onClose}
                   className="w-full sm:w-auto px-4 py-3 rounded-xl bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold cursor-pointer"
                 >
-                  Để sau
+                  {t.authModal?.later || (isEn ? 'Later' : 'Để sau')}
                 </button>
               </div>
             </div>
