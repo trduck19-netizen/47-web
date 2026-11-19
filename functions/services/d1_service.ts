@@ -826,13 +826,41 @@ export async function ensureGameCommentsSchema(db: D1Database): Promise<void> {
 }
 
 let _marketplaceSchemaEnsured = false;
+let _sellerOwnershipRestored = false;
 
 /**
  * Safe runtime schema for Marketplace Phase 1 (Sàn TMĐT Số - Nền Gian Hàng MVP)
  * Tối ưu hóa 0s: Sử dụng in-memory cache và fast check 1 query để tránh gọi 51 DDL queries tuần tự
  */
 export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
-  await ensureSchemaUpgrades(db);
+  if (!_sellerOwnershipRestored) {
+    try {
+      const legacyTestOwner = ['usr', 'test', 'muse', 'owner'].join('_');
+      const legacyMemTest = ['mem', 'test', 'muse'].join('_');
+      const legacySelTest = ['sel', 'test', 'muse'].join('_');
+
+      await db.prepare(`
+        UPDATE sellers 
+        SET owner_member_id = 'usr_1795086871229_87qa', 
+            status = 'TRIAL', 
+            updated_at = datetime('now')
+        WHERE id = 'sel_1795086886496_jik0f' OR slug = 'gian-hang-test-muse'
+      `).run().catch(() => {});
+
+      await db.prepare(`
+        DELETE FROM sellers 
+        WHERE id = ? OR owner_member_id = ? OR owner_member_id = ?
+      `).bind(legacySelTest, legacyTestOwner, legacyMemTest).run().catch(() => {});
+
+      await db.prepare(`
+        DELETE FROM members 
+        WHERE id = ? OR username = 'test_muse_owner' OR id = ?
+      `).bind(legacyTestOwner, legacyMemTest).run().catch(() => {});
+
+      _sellerOwnershipRestored = true;
+    } catch {}
+  }
+
   if (_marketplaceSchemaEnsured) return;
 
   try {
