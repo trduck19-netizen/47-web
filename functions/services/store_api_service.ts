@@ -372,38 +372,6 @@ export async function verifyStoreApiAccess(
     .bind(memberId)
     .first<SellerRecord>();
 
-  if (!seller && (memberId === 'usr_test_muse_owner' || memberId === 'mem_test_muse')) {
-    seller = await env.DB
-      .prepare("SELECT * FROM sellers WHERE slug = 'gian-hang-test-muse' OR id = 'sel_test_muse' LIMIT 1")
-      .first<SellerRecord>();
-    if (seller) {
-      if (seller.owner_member_id !== memberId) {
-        await env.DB
-          .prepare("UPDATE sellers SET owner_member_id = ?, status = 'ACTIVE', deleted_at = NULL WHERE id = ?")
-          .bind(memberId, seller.id)
-          .run()
-          .catch(() => {});
-        seller.owner_member_id = memberId;
-        seller.status = 'ACTIVE';
-      }
-    } else {
-      await env.DB.prepare(`
-        INSERT INTO sellers (
-          id, owner_member_id, name, slug, contact_phone, bank_name, bank_account, bank_account_name,
-          description, support_hours, status, pending_balance_core, created_at, updated_at
-        ) VALUES (
-          'sel_test_muse', ?, 'Gian Hàng Test Muse', 'gian-hang-test-muse',
-          '0912345678', 'MBBANK', '9999999999', 'TEST MUSE SELLER',
-          'Gian hàng thử nghiệm phục vụ kiểm thử tích hợp API máy-máy và AI agent', '08:00 - 23:00', 'ACTIVE', 0, datetime('now'), datetime('now')
-        )
-      `).bind(memberId).run().catch(() => {});
-
-      seller = await env.DB
-        .prepare("SELECT * FROM sellers WHERE id = 'sel_test_muse' LIMIT 1")
-        .first<SellerRecord>();
-    }
-  }
-
   let subRole: 'OWNER' | 'MANAGE_STOCK' | 'VIEW_ORDERS' = 'OWNER';
 
   if (!seller) {

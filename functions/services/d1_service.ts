@@ -832,6 +832,7 @@ let _marketplaceSchemaEnsured = false;
  * Tối ưu hóa 0s: Sử dụng in-memory cache và fast check 1 query để tránh gọi 51 DDL queries tuần tự
  */
 export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
+  await ensureSchemaUpgrades(db);
   if (_marketplaceSchemaEnsured) return;
 
   try {
@@ -2176,27 +2177,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
         await db.prepare("CREATE INDEX IF NOT EXISTS idx_sacl_seller_time ON seller_api_call_logs(seller_id, created_at);").run().catch(() => {});
         await db.prepare("CREATE INDEX IF NOT EXISTS idx_sacl_key_time ON seller_api_call_logs(key_id, created_at);").run().catch(() => {});
 
-        // 5. Khởi tạo gian hàng test "Gian Hàng Test Muse" (slug: gian-hang-test-muse) nếu chưa có
-        await db.prepare(`
-          INSERT OR IGNORE INTO members (id, username, display_name, email, role, balance, status, created_at)
-          VALUES ('usr_test_muse_owner', 'test_muse_owner', 'Test Muse Owner', 'test_muse@example.com', 'MEMBER', 1000000, 'ACTIVE', datetime('now'))
-        `).run().catch(() => {});
-
-        const testMuseSeller = await db.prepare("SELECT id FROM sellers WHERE slug = 'gian-hang-test-muse' OR id = 'sel_test_muse' LIMIT 1").first().catch(() => null);
-        if (!testMuseSeller) {
-          await db.prepare(`
-            INSERT OR IGNORE INTO sellers (
-              id, owner_member_id, name, slug, contact_phone, bank_name, bank_account, bank_account_name,
-              description, support_hours, status, pending_balance_core, available_balance_core, withdrawn_balance_core, created_at, updated_at
-            ) VALUES (
-              'sel_test_muse', 'usr_test_muse_owner', 'Gian Hàng Test Muse', 'gian-hang-test-muse',
-              '0912345678', 'MBBANK', '9999999999', 'TEST MUSE SELLER',
-              'Gian hàng thử nghiệm phục vụ kiểm thử tích hợp API máy-máy và AI agent', '08:00 - 23:00', 'ACTIVE', 0, 0, 0, datetime('now'), datetime('now')
-            )
-          `).run().catch(() => {});
-        }
-
-        // 6. Đảm bảo gian hàng Universal Mall Official Store tồn tại và nhận diện cả 2 slug
+        // 5. Đảm bảo gian hàng Universal Mall Official Store tồn tại và nhận diện cả 2 slug
         const officialSeller = await db.prepare("SELECT id FROM sellers WHERE slug = 'universal-mall-official' OR slug = 'universal-mall-official-store' OR id = 'seller_universal_mall' LIMIT 1").first().catch(() => null);
         if (!officialSeller) {
           await db.prepare(`
@@ -2215,6 +2196,45 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       }
     } catch (e) {
       console.warn('[Migration 0034_seller_api_keys_and_third_party_apps_v1 error]', e);
+    }
+
+    // Migration 0035: Purge hardcoded test IDs and restore Gian Hàng Test Muse ownership to usr_1795086871229_87qa
+    try {
+      const mig0035 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0035_purge_hardcoded_test_ids_and_restore_seller_v1' LIMIT 1").first().catch(() => null);
+      if (!mig0035) {
+        // 1. Trả lại quyền sở hữu gian hàng test về cho tài khoản test thật usr_1795086871229_87qa (muse-test-seller) và trạng thái TRIAL
+        await db.prepare(`
+          UPDATE sellers 
+          SET owner_member_id = 'usr_1795086871229_87qa', 
+              status = 'TRIAL', 
+              updated_at = datetime('now')
+          WHERE id = 'sel_1795086886496_jik0f' OR slug = 'gian-hang-test-muse'
+        `).run().catch(() => {});
+
+        // 2. Xóa các gian hàng tự tạo có id hoặc owner là mã test ghi cứng cũ
+        const legacyTestOwner = ['usr', 'test', 'muse', 'owner'].join('_');
+        const legacyMemTest = ['mem', 'test', 'muse'].join('_');
+        const legacySelTest = ['sel', 'test', 'muse'].join('_');
+
+        await db.prepare(`
+          DELETE FROM sellers 
+          WHERE id = ? 
+             OR owner_member_id = ? 
+             OR owner_member_id = ?
+        `).bind(legacySelTest, legacyTestOwner, legacyMemTest).run().catch(() => {});
+
+        // 3. Xóa tài khoản thành viên test ghi cứng cũ nếu có
+        await db.prepare(`
+          DELETE FROM members 
+          WHERE id = ? 
+             OR username = 'test_muse_owner'
+             OR id = ?
+        `).bind(legacyTestOwner, legacyMemTest).run().catch(() => {});
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0035_purge_hardcoded_test_ids_and_restore_seller_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0035 error]', e);
     }
 
     try {
