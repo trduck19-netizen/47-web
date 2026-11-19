@@ -37,6 +37,7 @@ import { SellerModerationModule } from './modules/SellerModerationModule';
 import { PlatformLeadsModule } from './modules/PlatformLeadsModule';
 import { TranslationsModule } from './modules/TranslationsModule';
 import { VouchersModule } from './modules/VouchersModule';
+import { HomepageSectionsModule } from './modules/HomepageSectionsModule';
 import { MarketingNotificationToast } from '../components/MarketingNotificationToast';
 import { LanguageProvider, useLanguage } from '../context/LanguageContext';
 
@@ -53,6 +54,7 @@ const tabTitlesVi: Record<AdminModuleTab, string> = {
   crawler: 'Crawler & Auto Sync',
   marketing: 'Cấu Hình Marketing & FOMO',
   'floating-notification': 'Cài Đặt Thông Báo Nổi',
+  'homepage-sections': 'Tùy Chỉnh Hiển Thị Trang Chủ',
   growth: 'Tăng Trưởng & Viral',
   'email-notifications': 'Thông Báo Email & Khách',
   telegram: 'Tích Hợp Telegram',
@@ -85,6 +87,7 @@ const tabTitlesEn: Record<AdminModuleTab, string> = {
   crawler: 'Crawler & Auto Sync',
   marketing: 'Marketing & FOMO Engine',
   'floating-notification': 'Floating Notification Widget',
+  'homepage-sections': 'Homepage Layout & Sections',
   growth: 'Growth & Referral Center',
   'email-notifications': 'Email & Customer Notifications',
   telegram: 'Telegram Bot Integration',
@@ -126,6 +129,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       'crawler',
       'marketing',
       'floating-notification',
+      'homepage-sections',
       'growth',
       'email-notifications',
       'telegram',
@@ -423,6 +427,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
         'crawler',
         'marketing',
         'floating-notification',
+        'homepage-sections',
         'growth',
         'email-notifications',
       'telegram',
@@ -729,6 +734,10 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
 
         {currentTab === 'floating-notification' && (
           <FloatingNotificationModule onShowToast={showToast} />
+        )}
+
+        {currentTab === 'homepage-sections' && (
+          <HomepageSectionsModule onShowToast={showToast} />
         )}
 
         {currentTab === 'marketing' && (

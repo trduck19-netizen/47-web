@@ -101,6 +101,7 @@ export type ApiKeyScope =
   | 'NOTIFICATIONS_FULL'
   | 'SECURITY_LOGS_FULL'
   | 'SYSTEM_SETTINGS_FULL'
+  | 'HOMEPAGE_SECTIONS_MANAGE'
   | 'SYNC_FULL' 
   | 'API_KEYS_FULL'
   | 'HISTORY_FULL'
@@ -493,6 +494,17 @@ export const ALL_API_SCOPES: ScopeOption[] = [
     badgeText: 'text-blue-500',
     badgeBorder: 'border-blue-500/20',
     icon: Settings,
+  },
+  {
+    id: 'HOMEPAGE_SECTIONS_MANAGE',
+    name: 'Cấu Hình Hiển Thị Trang Chủ (Homepage Sections Layout API)',
+    category: 'Giao Diện',
+    description: 'Bật/tắt và sắp xếp thứ tự các khối/phần trên trang chủ web khách qua /api/admin/homepage-sections.',
+    color: 'emerald',
+    badgeBg: 'bg-emerald-500/10',
+    badgeText: 'text-emerald-500',
+    badgeBorder: 'border-emerald-500/20',
+    icon: SlidersHorizontal,
   },
   {
     id: 'SYNC_FULL',

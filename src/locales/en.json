@@ -318,6 +318,7 @@
     "firstPurchase": "First Purchase Offers",
     "growth": "Growth & Viral Center",
     "vouchers": "Vouchers & Freeship",
+    "homepageSections": "Homepage Sections",
     "products": "Multi-Industry Products",
     "categories": "Industry Categories",
     "login": {
@@ -722,5 +723,30 @@
     "sampleCurlTitle": "cURL Sample",
     "sampleFetchTitle": "Fetch Sample (Node.js/JS)",
     "openFullDocsBtn": "View Full STORE_API_GUIDE.md"
+  },
+  "homepageSectionsModule": {
+    "title": "Homepage Layout & Section Display",
+    "subtitle": "Manage visibility and reorder storefront homepage sections on Universal Mall in real time.",
+    "saveSuccess": "Homepage section layout saved successfully!",
+    "saveError": "Failed to save homepage section layout. Please try again.",
+    "loadError": "Unable to load layout from server. Using local layout cache.",
+    "resetSuccess": "Reset all sections to default order and visibility!",
+    "unsavedChanges": "Unsaved changes",
+    "savedStatus": "Layout synchronized",
+    "viewStorefront": "View Storefront",
+    "saveChanges": "Save Layout",
+    "resetDefaults": "Reset Defaults",
+    "saving": "Saving...",
+    "colOrder": "Order",
+    "colName": "Section / Component",
+    "colDescription": "Function & Position",
+    "colStatus": "Status",
+    "colActions": "Actions & Ordering",
+    "statusVisible": "Visible",
+    "statusHidden": "Hidden",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "toggleVisibility": "Toggle visibility",
+    "rule9Notice": "Single-screen optimized layout — Changes reflect on customer storefront within at most 30 seconds."
   }
 }

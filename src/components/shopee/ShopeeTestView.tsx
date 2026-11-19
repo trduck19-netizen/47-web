@@ -20,6 +20,7 @@ import { gameEventService } from '../../services/gameEventService';
 import { formatCore, formatCurrencyVND } from '../../utils/textUtils';
 import { formatCurrency, formatDateTime } from '../../utils/formatUtils';
 import { contentTranslationService } from '../../services/contentTranslationService';
+import { homepageSectionsService } from '../../services/homepageSectionsService';
 import { ShopeeGuaranteeModal } from './ShopeeGuaranteeModal';
 import { ShopeeSupportModal } from './ShopeeSupportModal';
 
@@ -820,10 +821,781 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     return formatPrice(bal);
   }, [currentUser, shopBrand.currencyMode, language]);
 
+
+  // Dynamic homepage sections layout state
+  const [orderedSections, setOrderedSections] = useState(() =>
+    homepageSectionsService.getOrderedSections()
+  );
+
+  useEffect(() => {
+    const unsubscribe = homepageSectionsService.subscribe((updated) => {
+      setOrderedSections([...updated].sort((a, b) => a.order - b.order));
+    });
+    return unsubscribe;
+  }, []);
+
+  const isSectionEnabled = (id: string) => {
+    const item = orderedSections.find((s) => s.id === id);
+    return item ? item.enabled : true;
+  };
+
+  const homeNewsArticles = useMemo(() => {
+    try {
+      return newsService.getPublishedArticles().slice(0, 3);
+    } catch {
+      return [];
+    }
+  }, [newsCount]);
+
+  // Dynamic homepage section renderer
+  const renderHomeSection = (sectionId: string) => {
+    switch (sectionId) {
+      case 'main_hero_banner':
+        return (
+          <>
+            {/* 3.1. HERO BANNER GRID (2/3 + 1/3) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              {/* Banner Chính Lớn - Dynamic Carousel 3 Slides */}
+              <div className="md:col-span-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] shadow-sm group">
+                {/* Nút lùi slide */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHeroSlide((prev) => (prev - 1 + 3) % 3);
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20 cursor-pointer"
+                  title={language === 'en' ? (t.mall?.hero?.prevSlide || 'Previous slide') : (t.mall?.hero?.prevSlide || 'Slide trước')}
+                  aria-label={language === 'en' ? (t.mall?.hero?.prevSlide || 'Previous slide') : (t.mall?.hero?.prevSlide || 'Slide trước')}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+
+                {/* Nút tiến slide */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHeroSlide((prev) => (prev + 1) % 3);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20 cursor-pointer"
+                  title={language === 'en' ? (t.mall?.hero?.nextSlide || 'Next slide') : (t.mall?.hero?.nextSlide || 'Slide kế tiếp')}
+                  aria-label={language === 'en' ? (t.mall?.hero?.nextSlide || 'Next slide') : (t.mall?.hero?.nextSlide || 'Slide kế tiếp')}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                {/* Nội dung Slide theo heroSlide */}
+                <div className="z-10">
+                  {heroSlide === 0 && (
+                    <>
+                      <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
+                        {t.mall?.hero?.slide0Badge || (language === 'en' ? '🛍️ UNIVERSAL MALL SHOPPING FESTIVAL' : '🛍️ ĐẠI HỘI MUA SẮM UNIVERSAL MALL')}
+                      </div>
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                        {t.mall?.hero?.slide0Title || (language === 'en' ? 'OFFICIAL MULTI-INDUSTRY MARKETPLACE' : 'SÀN THƯƠNG MẠI ĐA NGÀNH CHÍNH HÃNG')}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
+                        {t.mall?.hero?.slide0Desc || (language === 'en' ? 'Fashion • Beauty • Digital Devices • Services • Gaming • Courier Shipping & Instant 0s Delivery' : 'Thời trang • Mỹ phẩm • Thiết bị số • Dịch vụ • Gaming • Giao hàng bưu chính & Giao mã tự động 0s')}
+                      </p>
+                    </>
+                  )}
+                  {heroSlide === 1 && (
+                    <>
+                      <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
+                        {t.mall?.hero?.slide1Badge || (language === 'en' ? '🎉 LUCKY WHEEL & CORE REWARDS' : '🎉 VÒNG QUAY MAY MẮN TRÚNG CORE')}
+                      </div>
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                        {t.mall?.hero?.slide1Title || (language === 'en' ? 'DAILY LUCKY WHEEL' : 'VÒNG QUAY XU HẰNG NGÀY')}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
+                        {t.mall?.hero?.slide1Desc || (language === 'en' ? 'Get free spins every day • Win up to 1,000 Core, cards & exclusive rewards' : 'Nhận lượt quay may mắn mỗi ngày • Trúng ngay tới 1.000 Core, thẻ cào & quà tặng độc quyền')}
+                      </p>
+                    </>
+                  )}
+                  {heroSlide === 2 && (
+                    <>
+                      <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
+                        {t.mall?.hero?.slide2Badge || (language === 'en' ? '🛡️ 168-HOUR TRANSACTION ESCROW' : '🛡️ BẢO CHỨNG GIAO DỊCH 168H')}
+                      </div>
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                        {t.mall?.hero?.slide2Title || (language === 'en' ? '100% SAFE & VERIFIED TRANSACTIONS' : 'MUA BÁN TIỆN ÍCH AN TOÀN 100%')}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
+                        {t.mall?.hero?.slide2Desc || (language === 'en' ? 'Smart escrow protection • 2x refund if code invalid • 24/7 dedicated support team' : 'Cơ chế sàn ký quỹ thông minh • Đền bù x2 nếu mã lỗi • Đội ngũ CSKH hỗ trợ kỹ thuật 24/7')}
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                <div className="z-10 flex items-center justify-between mt-4">
+                  {heroSlide === 0 && (
+                    <button 
+                      onClick={() => {
+                        const el = document.getElementById('shopee-products-grid');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
+                    >
+                      {t.mall?.hero?.slide0Btn || (language === 'en' ? 'Explore Products Now →' : 'Khám Phá Kệ Hàng Ngay →')}
+                    </button>
+                  )}
+                  {heroSlide === 1 && (
+                    <button 
+                      onClick={() => {
+                        if (onOpenGrowth) onOpenGrowth();
+                        else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu May Mắn', 'info');
+                      }}
+                      className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
+                    >
+                      {t.mall?.hero?.slide1Btn || (language === 'en' ? 'Spin Now →' : 'Quay Thưởng Ngay →')}
+                    </button>
+                  )}
+                  {heroSlide === 2 && (
+                    <button 
+                      onClick={() => setIsGuaranteeOpen(true)}
+                      className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
+                    >
+                      {t.mall?.hero?.slide2Btn || (language === 'en' ? 'Learn More →' : 'Tìm Hiểu Thêm →')}
+                    </button>
+                  )}
+
+                  {/* Indicator Dots */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setHeroSlide(0)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 0 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                      aria-label="Slide 1"
+                    />
+                    <button
+                      onClick={() => setHeroSlide(1)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 1 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                      aria-label="Slide 2"
+                    />
+                    <button
+                      onClick={() => setHeroSlide(2)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 2 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                      aria-label="Slide 3"
+                    />
+                  </div>
+                </div>
+                <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+              </div>
+
+              {/* 2 Banner Phụ Cột Phải */}
+              <div className="grid grid-cols-2 md:grid-cols-1 gap-2.5">
+                <div 
+                  onClick={() => setIsGuaranteeOpen(true)}
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3.5 flex flex-col justify-between cursor-pointer hover:opacity-95 transition shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">
+                      {t.mall?.hero?.side1Badge || (language === 'en' ? 'Escrow Protection' : 'Bảo Chứng Sàn')}
+                    </span>
+                    <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                  </div>
+                  <div className="mt-2">
+                    <div className="font-bold text-xs sm:text-sm">
+                      {t.mall?.hero?.side1Title || (language === 'en' ? '168-Hour Escrow Hold' : 'Giữ Tiền 168 Giờ')}
+                    </div>
+                    <div className="text-[10px] text-white/80">
+                      {t.mall?.hero?.side1Desc || (language === 'en' ? '100% refund for defective codes' : 'Hoàn tiền 100% nếu mã lỗi')}
+                    </div>
+                  </div>
+                </div>
+
+                <div 
+                  onClick={onOpenWallet}
+                  className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3.5 flex flex-col justify-between cursor-pointer hover:opacity-95 transition shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">
+                      {t.mall?.hero?.side2Badge || (language === 'en' ? 'VietQR 0S' : 'VietQR 0S')}
+                    </span>
+                    <CreditCard className="w-4 h-4 text-amber-300" />
+                  </div>
+                  <div className="mt-2">
+                    <div className="font-bold text-xs sm:text-sm">
+                      {t.mall?.hero?.side2Title || (language === 'en' ? 'Instant Auto Top-up' : 'Nạp Tiền Tự Động')}
+                    </div>
+                    <div className="text-[10px] text-white/80">
+                      {t.mall?.hero?.side2Desc || (language === 'en' ? 'Real-time wallet balance credit 24/7' : 'Cộng số dư ví tức thì 24/7')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      case 'categories_grid':
+        return (
+          <div className="space-y-3">
+            {/* 3.2. DỊCH VỤ NHANH SHOPEE (8 Icon Dịch Vụ) */}
+            <div className={`rounded-xl p-4 shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 text-center">
+                
+                <button 
+                  onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('orders') : onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem mã giao 0s', 'info')} 
+                  className="group flex flex-col items-center cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-orange-500">
+                    ⚡
+                  </div>
+                  <span className="text-[11px] font-medium mt-2 leading-tight">
+                    {t('mall.services.instantDelivery')}
+                  </span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedProductType('all');
+                    const el = document.getElementById('shopee-products-grid');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }} 
+                  className="group flex flex-col items-center cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-red-500">
+                    🚚
+                  </div>
+                  <span className="text-[11px] font-medium mt-2 leading-tight">
+                    {t('mall.services.courierShipping')}
+                  </span>
+                </button>
+
+                <button 
+                  onClick={() => setIsGuaranteeOpen(true)} 
+                  className="group flex flex-col items-center cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-amber-500">
+                    🛡️
+                  </div>
+                  <span className="text-[11px] font-medium mt-2 leading-tight">
+                    {t('mall.services.protection168h')}
+                  </span>
+                </button>
+
+                <button onClick={onOpenWallet} className="group flex flex-col items-center cursor-pointer">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-blue-500">
+                    💳
+                  </div>
+                  <span className="text-[11px] font-medium mt-2 leading-tight">
+                    {t('mall.services.vietqrTopup')}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setHeroSlide(1);
+                    if (onOpenGrowth) onOpenGrowth();
+                    else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu May Mắn', 'info');
+                  }}
+                  className="group flex flex-col items-center cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-purple-500">
+                    🎡
+                  </div>
+                  <span className="text-[11px] font-medium mt-2 leading-tight">
+                    {t('mall.services.luckyWheel')}
+                  </span>
+                </button>
+
+                <button 
+                  onClick={() => setIsCouponModalOpen(true)} 
+                  className="group flex flex-col items-center cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-emerald-500">
+                    🎟️
+                  </div>
+                  <span className="text-[11px] font-medium mt-2 leading-tight">
+                    {t('mall.services.vouchers')}
+                  </span>
+                </button>
+
+                <button 
+                  onClick={() => setSubView('game-zone')} 
+                  className="group flex flex-col items-center cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500">
+                    🎮
+                  </div>
+                  <span className="text-[11px] font-medium mt-2 leading-tight">
+                    Game Zone
+                  </span>
+                </button>
+
+                <button 
+                  onClick={() => setIsSupportOpen(true)} 
+                  className="group flex flex-col items-center cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-pink-500">
+                    💬
+                  </div>
+                  <span className="text-[11px] font-medium mt-2 leading-tight">
+                    {t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
+                  </span>
+                </button>
+
+              </div>
+            </div>
+
+            {/* 3.3. DANH MỤC ĐA NGÀNH (Universal Multi-Industry Categories) */}
+            <div className={`rounded-xl shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="p-3 border-b border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Compass className="w-4 h-4 text-[#ee4d2d]" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d]">
+                    {t.mall?.categories?.sectionTitle || (language === 'en' ? 'MULTI-INDUSTRY CATEGORIES' : 'DANH MỤC NGÀNH HÀNG TOÀN SÀN')}
+                  </h3>
+                  <span className="text-xs text-slate-500 font-medium">
+                    {t.mall?.categories?.sectionSubtitle || (language === 'en' ? '(5 Official Industries)' : '(5 Ngành Hàng Chính Hãng)')}
+                  </span>
+                </div>
+
+                {/* Sắp xếp */}
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-slate-400 flex items-center gap-1">
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <span>{t.mall?.categories?.sortBy || (language === 'en' ? 'Sort by:' : 'Sắp xếp:')}</span>
+                  </span>
+                  <button
+                    onClick={() => setSortOrder('latest')}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'latest' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                  >
+                    {t.mall?.categories?.sortNewest || (language === 'en' ? 'Newest' : 'Mới nhất')}
+                  </button>
+                  <button
+                    onClick={() => setSortOrder('codes')}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'codes' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                  >
+                    {t.mall?.categories?.sortPopular || (language === 'en' ? 'Best Selling' : 'Bán chạy')}
+                  </button>
+                </div>
+              </div>
+
+              {/* Dynamic Universal Category Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-800 text-center">
+                {categoriesConfig.categories.map((cat) => (
+                  <button 
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`p-3 transition cursor-pointer flex flex-col items-center justify-center ${
+                      selectedCategory === cat.id 
+                        ? `bg-orange-500/10 ${currentAccent.textColor} font-bold border-b-2 border-current` 
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg mb-1 shadow-inner">
+                      {cat.icon || '📦'}
+                    </div>
+                    <div className="text-[11px] leading-tight font-medium line-clamp-1">
+                      {(t.mall?.categories as any)?.[cat.id] || contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      case 'flash_sale':
+        return (
+          <div className="space-y-3">
+            <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="text-lg sm:text-xl font-black text-[#ee4d2d] flex items-center tracking-tight">
+                      <Flame className="w-5 h-5 sm:w-6 sm:h-6 mr-1 fill-current" />
+                      <span>{t.mall?.flashSale?.title || (language === 'en' ? 'GOLDEN HOUR FLASH SALE' : 'FLASH SALE GIỜ VÀNG')}</span>
+                    </div>
+                    {/* Countdown Box */}
+                    <div className="flex items-center gap-1 font-mono text-xs font-bold">
+                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.hours).padStart(2, '0')}</span>
+                      <span>:</span>
+                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                      <span>:</span>
+                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      const el = document.getElementById('shopee-products-grid');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="text-xs text-[#ee4d2d] hover:underline font-semibold flex items-center cursor-pointer"
+                  >
+                    <span>{t.mall?.flashSale?.viewAll || (language === 'en' ? 'View All' : 'Xem Tất Cả')}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                  {storeProducts.slice(0, 6).map((prod) => (
+                    <div 
+                      key={prod.id}
+                      onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`Sản phẩm: ${prod.title}`, 'info')}
+                      className={`rounded-lg border p-2 flex flex-col justify-between hover:border-[#ee4d2d] hover:shadow-md transition cursor-pointer group relative ${isShopeeDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'}`}
+                    >
+                      <div>
+                        <div className="relative w-full aspect-square rounded overflow-hidden bg-slate-100 dark:bg-slate-700 mb-2">
+                          {prod.cover_image_url || prod.product_images?.[0] ? (
+                            <img src={prod.cover_image_url || prod.product_images?.[0]} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                          )}
+                          <span className="absolute top-0 left-0 bg-[#ee4d2d] text-white font-extrabold text-[9px] px-1 py-0.2 rounded-br">
+                            FLASH
+                          </span>
+                        </div>
+                        <div className="font-semibold text-xs truncate group-hover:text-[#ee4d2d] transition" title={prod.title}>
+                          {prod.title}
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 truncate">{prod.brand || 'Universal Mall'}</div>
+                      </div>
+
+                      <div className="mt-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+                        <div className="flex items-baseline justify-between">
+                          <div className="text-[#ee4d2d] font-bold text-xs">{formatPrice(prod.current_price)}</div>
+                          {prod.original_price > prod.current_price && (
+                            <div className="text-[10px] text-slate-400 line-through font-mono">{formatPrice(prod.original_price)}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+          </div>
+        );
+      case 'vouchers_section':
+        return (
+          <>
+            <div className={`rounded-xl shadow-sm border p-4 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-[#ee4d2d] flex items-center justify-center font-bold text-xl">
+                      🎟️
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-800 dark:text-white">
+                        {t.mall?.vouchers?.exclusiveTitle || (language === 'en' ? 'Universal Mall Exclusive Deals' : 'Ưu Đãi Độc Quyền Sàn Universal Mall')}
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        {t.mall?.vouchers?.exclusiveDesc || (language === 'en' ? 'Apply vouchers FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 to all orders' : 'Áp dụng mã FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 cho toàn bộ đơn hàng')}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsCouponModalOpen(true)}
+                    className="px-4 py-2 rounded-lg bg-[#ee4d2d] hover:bg-orange-600 text-white font-bold text-xs transition cursor-pointer shadow-sm"
+                  >
+                    {t.mall?.vouchers?.viewAllBtn || (language === 'en' ? 'View Mall Vouchers' : 'Xem Kho Voucher Sàn')}
+                  </button>
+                </div>
+              </div>
+          </>
+        );
+      case 'games_and_codes':
+        return (
+          <div className="space-y-4">
+            {/* 3.5. KỆ HÀNG HÓA SÀN ĐA NGÀNH: PHÂN LOẠI & SẢN PHẨM */}
+            <div id="shopee-products-grid" className="space-y-3 scroll-mt-28">
+              
+              {/* TAB CHUYỂN ĐỔI KỆ HÀNG */}
+              <div className="flex items-center justify-between border-b-2 border-[#ee4d2d] pb-2 flex-wrap gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
+                  {[
+                    { id: 'all', label: t.mall?.products?.allTab || (language === 'en' ? '🔥 All Products' : '🔥 Tất Cả Sản Phẩm'), count: filteredStoreProducts.length },
+                    { id: 'physical', label: t.mall?.products?.physicalTab || (language === 'en' ? '🚚 Physical Goods (Ship)' : '🚚 Hàng Vật Lý (Ship)'), count: filteredStoreProducts.filter(p => p.product_type === 'physical').length },
+                    { id: 'digital', label: t.mall?.products?.digitalTab || (language === 'en' ? '⚡ Digital (0s)' : '⚡ Hàng Số (Mã 0s)'), count: filteredStoreProducts.filter(p => p.product_type !== 'physical').length },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSelectedProductType(tab.id as any)}
+                      className={`px-3 py-1.5 rounded-t-lg font-bold text-xs whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                        selectedProductType === tab.id
+                          ? 'bg-[#ee4d2d] text-white shadow'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-orange-50'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${selectedProductType === tab.id ? 'bg-white text-[#ee4d2d]' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'}`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-xs text-slate-500 font-medium">
+                  {t('mall.paginationSummary', {
+                    page: currentPage,
+                    totalPages: mallTotalPages,
+                    total: currentMallProducts.length,
+                  })}
+                </div>
+              </div>
+
+              {/* LƯỚI SẢN PHẨM SÀN ĐA NGÀNH HOẶC EMPTY STATE */}
+              {currentMallProducts.length === 0 ? (
+                <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-8 my-4">
+                  <div className="w-16 h-16 rounded-2xl bg-orange-500/10 text-[#ee4d2d] border border-[#ee4d2d]/20 flex items-center justify-center mx-auto mb-3 text-2xl">
+                    🛍️
+                  </div>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-100 mb-1">
+                    {t.mall?.products?.emptyTitle || (language === 'en' ? 'Preparing First Product Batch' : 'Sàn đang chuẩn bị danh sách sản phẩm đợt đầu')}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    {t.mall?.products?.emptyDesc || (language === 'en' ? '5 multi-category catalog is ready. Authentic products are being synchronized and verified before launch.' : 'Hệ thống danh mục 5 ngành hàng đã sẵn sàng. Sản phẩm chính hãng đang được đồng bộ và kiểm duyệt trước khi mở bán.')}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                  {paginatedMallProducts.map((prod) => {
+                    const isOutOfStock = (prod.stock_quantity ?? 0) <= 0;
+                    const hasFirstOffer = prod.first_purchase_price ? true : ((prod.original_price || prod.current_price || 0) <= 30000 && prod.current_price > 2000);
+                    const firstPrice = prod.first_purchase_price ? Number(prod.first_purchase_price) : 2000;
+                    const displayCurrentPrice = hasFirstOffer ? firstPrice : prod.current_price;
+                    const displayOriginalPrice = (prod.original_price && prod.original_price > 0) ? prod.original_price : prod.current_price;
+                    const discountPercent = displayOriginalPrice > displayCurrentPrice
+                      ? Math.round(((displayOriginalPrice - displayCurrentPrice) / displayOriginalPrice) * 100)
+                      : (prod.discount_percent || 0);
+
+                    return (
+                      <div
+                        key={prod.id}
+                        onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`Chi tiết sản phẩm: ${prod.title}`, 'info')}
+                        className={`rounded-lg border hover:border-[#ee4d2d] hover:-translate-y-0.5 transition duration-150 shadow-sm cursor-pointer overflow-hidden flex flex-col justify-between group ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+                      >
+                        <div>
+                          <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
+                            {prod.cover_image_url || prod.product_images?.[0] ? (
+                              <img src={prod.cover_image_url || prod.product_images?.[0]} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                            ) : (
+                              <span className="text-4xl">📦</span>
+                            )}
+                            <span className="absolute top-0 left-0 bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-br">
+                              {prod.product_type === 'physical' ? (language === 'en' ? 'Physical Goods' : 'Hàng Vật Lý') : (prod.badge || (language === 'en' ? 'Digital' : 'Hàng Số'))}
+                            </span>
+                            {discountPercent > 0 && (
+                              <span className="absolute top-0 right-0 bg-yellow-400 text-red-600 text-[10px] font-bold px-1 py-0.2">
+                                -{discountPercent}%
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="p-2 space-y-1">
+                            <div className="text-[11px] font-semibold line-clamp-2 leading-snug group-hover:text-[#ee4d2d] transition" title={prod.title}>
+                              {contentTranslationService.translateField('product', prod.id, 'name', prod.title, language)}
+                            </div>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {prod.product_type === 'physical' ? (
+                                <span className="text-[9px] border border-blue-500 text-blue-500 px-1 rounded font-medium">
+                                  {language === 'en' ? 'Nationwide Shipping' : 'Giao tận nơi'}
+                                </span>
+                              ) : (
+                                <span className="text-[9px] border border-emerald-500 text-emerald-500 px-1 rounded font-medium">
+                                  {language === 'en' ? 'Instant 0s' : 'Giao 0s'}
+                                </span>
+                              )}
+                              {prod.brand ? (
+                                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[100px]">
+                                  {contentTranslationService.translateField('brand', prod.brand, 'name', prod.brand, language)}
+                                </span>
+                              ) : (
+                                <span className="text-[9px] text-slate-400 truncate max-w-[100px]">{prod.game_name || 'Universal Mall'}</span>
+                              )}
+                              {prod.variants && prod.variants.length > 0 && (
+                                <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1 rounded">
+                                  {prod.variants.length} {language === 'en' ? 'variants' : 'phân loại'}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Điểm đánh giá sản phẩm hoặc Chưa có đánh giá */}
+                            <div className="flex items-center gap-1 text-[10px] pt-0.5">
+                              {prod.rating && prod.review_count && prod.review_count > 0 ? (
+                                <div className="flex items-center gap-0.5 text-amber-500 font-medium">
+                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                  <span className="font-bold">{Number(prod.rating).toFixed(1)}</span>
+                                  <span className="text-slate-400 font-mono">({prod.review_count})</span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 text-[10px]">
+                                  {language === 'en' ? 'No reviews yet' : 'Chưa có đánh giá'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-2 pt-0 space-y-1.5">
+                          <div className="flex items-baseline justify-between gap-1 flex-wrap">
+                            {hasFirstOffer ? (
+                              <div className="flex items-center gap-1">
+                                <span className="text-[#ee4d2d] font-bold text-xs">{formatPrice(firstPrice)}</span>
+                                <span className="text-[9px] font-bold px-1 py-0.2 bg-rose-500/10 text-rose-500 rounded">
+                                  {language === 'en' ? 'Promo' : 'Ưu đãi'}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-[#ee4d2d] font-bold text-xs">{formatPrice(prod.current_price)}</div>
+                            )}
+                            {displayOriginalPrice > displayCurrentPrice && (
+                              <div className="text-[10px] text-slate-400 line-through font-mono">{formatPrice(displayOriginalPrice)}</div>
+                            )}
+                          </div>
+
+                          <button
+                            disabled={isOutOfStock}
+                            onClick={isOutOfStock ? undefined : (e) => {
+                              e.stopPropagation();
+                              if (prod.variants && prod.variants.length > 1 && onSelectProduct) {
+                                onSelectProduct(prod);
+                              } else {
+                                handleAddProductToCart(prod, e);
+                              }
+                            }}
+                            className={`w-full py-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-sm ${
+                              isOutOfStock
+                                ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed'
+                                : 'bg-[#ee4d2d] hover:bg-orange-600 text-white cursor-pointer'
+                            }`}
+                          >
+                            <ShoppingCart className="w-3 h-3" />
+                            <span>{isOutOfStock ? (language === 'en' ? 'Out of Stock' : 'Hết Hàng') : (prod.variants && prod.variants.length > 1 ? (language === 'en' ? 'Select Variant' : 'Chọn Phân Loại') : (t.cart?.addToCart || (language === 'en' ? 'Add to Cart' : 'Thêm Giỏ Hàng')))}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* BỘ PHÂN TRANG SẢN PHẨM SÀN */}
+              {mallTotalPages > 1 && (
+                <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                  <div className="text-slate-500 font-medium">
+                    {t('mall.showingCount', {
+                      from: (currentPage - 1) * 20 + 1,
+                      to: Math.min(currentPage * 20, currentMallProducts.length),
+                      total: currentMallProducts.length,
+                    })}
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      disabled={currentPage <= 1}
+                      onClick={() => {
+                        setCurrentPage((p) => Math.max(1, p - 1));
+                        const el = document.getElementById('shopee-products-grid');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className={`p-1.5 rounded border ${currentPage <= 1 ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer'}`}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {Array.from({ length: Math.min(5, mallTotalPages) }, (_, i) => {
+                      let pageNum = currentPage;
+                      if (currentPage <= 3) pageNum = i + 1;
+                      else if (currentPage >= mallTotalPages - 2) pageNum = mallTotalPages - 4 + i;
+                      else pageNum = currentPage - 2 + i;
+                      if (pageNum < 1 || pageNum > mallTotalPages) return null;
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => {
+                            setCurrentPage(pageNum);
+                            const el = document.getElementById('shopee-products-grid');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className={`w-7 h-7 rounded text-xs font-bold transition cursor-pointer ${
+                            currentPage === pageNum
+                              ? 'bg-[#ee4d2d] text-white shadow-xs'
+                              : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-orange-50 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      disabled={currentPage >= mallTotalPages}
+                      onClick={() => {
+                        setCurrentPage((p) => Math.min(mallTotalPages, p + 1));
+                        const el = document.getElementById('shopee-products-grid');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className={`p-1.5 rounded border ${currentPage >= mallTotalPages ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer'}`}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        );
+      case 'news_section':
+        return (
+          <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Newspaper className="w-5 h-5 text-[#ee4d2d]" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d]">
+                  {isEn ? 'GAMING & TECH NEWS' : 'TIN TỨC GAME & CẨM NANG MUA SẮM'}
+                </h3>
+                <span className="text-xs text-slate-500 font-medium">
+                  ({newsCount} {isEn ? 'Articles' : 'Bài viết'})
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setSubView('news');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-xs text-[#ee4d2d] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <span>{isEn ? 'View all news' : 'Xem tất cả tin'}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              {homeNewsArticles.map((art) => (
+                <div
+                  key={art.id || art.slug}
+                  onClick={() => {
+                    setSubView('news');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`rounded-lg border p-3 flex flex-col justify-between hover:border-[#ee4d2d] hover:shadow-sm transition cursor-pointer ${
+                    isShopeeDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  <div className="font-semibold text-xs text-slate-900 dark:text-white line-clamp-2" title={art.title}>
+                    {art.title}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-2 flex items-center justify-between">
+                    <span>{art.category || (isEn ? 'Gaming' : 'Game')}</span>
+                    <span>{art.views || 0} {isEn ? 'reads' : 'lượt xem'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-200 font-sans pb-16 ${isShopeeDark ? 'bg-[#0a0f1d] text-slate-100' : 'bg-[#f5f5f5] text-slate-800'}`}>
       
       {/* 0. TOP BAR BÁO HIỆU WEB TEST 1 */}
+      {isSectionEnabled('top_announcement') && (
+
       <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold flex items-center justify-between shadow-sm sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <span className="bg-black text-amber-400 px-2 py-0.5 rounded uppercase text-[10px] tracking-wider font-mono">
@@ -853,6 +1625,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           </button>
         </div>
       </div>
+
+            )}
 
       {/* 1. SHOPEE TOPBAR (Giữ người dùng ở lại test1) */}
       <div className="bg-[#ee4d2d] text-white text-[12px] py-1 px-4 border-b border-white/10">
@@ -1775,679 +2549,40 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         )}
 
         {/* ========================================================================= */}
-        {/* SUBVIEW CHÍNH: HOME STOREFRONT SHOPEE MALL                               */}
+        {/* SUBVIEW CHÍNH: HOME STOREFRONT SHOPEE MALL (DYNAMIC ORDERED SECTIONS)     */}
         {/* ========================================================================= */}
         {subView === 'home' && (
           <>
-            {/* 3.1. HERO BANNER GRID (2/3 + 1/3) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-              {/* Banner Chính Lớn - Dynamic Carousel 3 Slides */}
-              <div className="md:col-span-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] shadow-sm group">
-                {/* Nút lùi slide */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setHeroSlide((prev) => (prev - 1 + 3) % 3);
-                  }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20 cursor-pointer"
-                  title={language === 'en' ? (t.mall?.hero?.prevSlide || 'Previous slide') : (t.mall?.hero?.prevSlide || 'Slide trước')}
-                  aria-label={language === 'en' ? (t.mall?.hero?.prevSlide || 'Previous slide') : (t.mall?.hero?.prevSlide || 'Slide trước')}
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
+            {orderedSections
+              .filter(
+                (s) =>
+                  s.enabled &&
+                  ['main_hero_banner', 'categories_grid', 'flash_sale', 'vouchers_section', 'games_and_codes', 'news_section'].includes(
+                    s.id
+                  )
+              )
+              .map((section) => (
+                <React.Fragment key={section.id}>
+                  {renderHomeSection(section.id)}
+                </React.Fragment>
+              ))}
 
-                {/* Nút tiến slide */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setHeroSlide((prev) => (prev + 1) % 3);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20 cursor-pointer"
-                  title={language === 'en' ? (t.mall?.hero?.nextSlide || 'Next slide') : (t.mall?.hero?.nextSlide || 'Slide kế tiếp')}
-                  aria-label={language === 'en' ? (t.mall?.hero?.nextSlide || 'Next slide') : (t.mall?.hero?.nextSlide || 'Slide kế tiếp')}
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-
-                {/* Nội dung Slide theo heroSlide */}
-                <div className="z-10">
-                  {heroSlide === 0 && (
-                    <>
-                      <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
-                        {t.mall?.hero?.slide0Badge || (language === 'en' ? '🛍️ UNIVERSAL MALL SHOPPING FESTIVAL' : '🛍️ ĐẠI HỘI MUA SẮM UNIVERSAL MALL')}
-                      </div>
-                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
-                        {t.mall?.hero?.slide0Title || (language === 'en' ? 'OFFICIAL MULTI-INDUSTRY MARKETPLACE' : 'SÀN THƯƠNG MẠI ĐA NGÀNH CHÍNH HÃNG')}
-                      </h2>
-                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
-                        {t.mall?.hero?.slide0Desc || (language === 'en' ? 'Fashion • Beauty • Digital Devices • Services • Gaming • Courier Shipping & Instant 0s Delivery' : 'Thời trang • Mỹ phẩm • Thiết bị số • Dịch vụ • Gaming • Giao hàng bưu chính & Giao mã tự động 0s')}
-                      </p>
-                    </>
-                  )}
-                  {heroSlide === 1 && (
-                    <>
-                      <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
-                        {t.mall?.hero?.slide1Badge || (language === 'en' ? '🎉 LUCKY WHEEL & CORE REWARDS' : '🎉 VÒNG QUAY MAY MẮN TRÚNG CORE')}
-                      </div>
-                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
-                        {t.mall?.hero?.slide1Title || (language === 'en' ? 'DAILY LUCKY WHEEL' : 'VÒNG QUAY XU HẰNG NGÀY')}
-                      </h2>
-                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
-                        {t.mall?.hero?.slide1Desc || (language === 'en' ? 'Get free spins every day • Win up to 1,000 Core, cards & exclusive rewards' : 'Nhận lượt quay may mắn mỗi ngày • Trúng ngay tới 1.000 Core, thẻ cào & quà tặng độc quyền')}
-                      </p>
-                    </>
-                  )}
-                  {heroSlide === 2 && (
-                    <>
-                      <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
-                        {t.mall?.hero?.slide2Badge || (language === 'en' ? '🛡️ 168-HOUR TRANSACTION ESCROW' : '🛡️ BẢO CHỨNG GIAO DỊCH 168H')}
-                      </div>
-                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
-                        {t.mall?.hero?.slide2Title || (language === 'en' ? '100% SAFE & VERIFIED TRANSACTIONS' : 'MUA BÁN TIỆN ÍCH AN TOÀN 100%')}
-                      </h2>
-                      <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
-                        {t.mall?.hero?.slide2Desc || (language === 'en' ? 'Smart escrow protection • 2x refund if code invalid • 24/7 dedicated support team' : 'Cơ chế sàn ký quỹ thông minh • Đền bù x2 nếu mã lỗi • Đội ngũ CSKH hỗ trợ kỹ thuật 24/7')}
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                <div className="z-10 flex items-center justify-between mt-4">
-                  {heroSlide === 0 && (
-                    <button 
-                      onClick={() => {
-                        const el = document.getElementById('shopee-products-grid');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
-                    >
-                      {t.mall?.hero?.slide0Btn || (language === 'en' ? 'Explore Products Now →' : 'Khám Phá Kệ Hàng Ngay →')}
-                    </button>
-                  )}
-                  {heroSlide === 1 && (
-                    <button 
-                      onClick={() => {
-                        if (onOpenGrowth) onOpenGrowth();
-                        else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu May Mắn', 'info');
-                      }}
-                      className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
-                    >
-                      {t.mall?.hero?.slide1Btn || (language === 'en' ? 'Spin Now →' : 'Quay Thưởng Ngay →')}
-                    </button>
-                  )}
-                  {heroSlide === 2 && (
-                    <button 
-                      onClick={() => setIsGuaranteeOpen(true)}
-                      className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
-                    >
-                      {t.mall?.hero?.slide2Btn || (language === 'en' ? 'Learn More →' : 'Tìm Hiểu Thêm →')}
-                    </button>
-                  )}
-
-                  {/* Indicator Dots */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => setHeroSlide(0)}
-                      className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 0 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
-                      aria-label="Slide 1"
-                    />
-                    <button
-                      onClick={() => setHeroSlide(1)}
-                      className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 1 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
-                      aria-label="Slide 2"
-                    />
-                    <button
-                      onClick={() => setHeroSlide(2)}
-                      className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 2 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
-                      aria-label="Slide 3"
-                    />
-                  </div>
-                </div>
-                <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
-              </div>
-
-              {/* 2 Banner Phụ Cột Phải */}
-              <div className="grid grid-cols-2 md:grid-cols-1 gap-2.5">
-                <div 
-                  onClick={() => setIsGuaranteeOpen(true)}
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3.5 flex flex-col justify-between cursor-pointer hover:opacity-95 transition shadow-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">
-                      {t.mall?.hero?.side1Badge || (language === 'en' ? 'Escrow Protection' : 'Bảo Chứng Sàn')}
-                    </span>
-                    <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                  </div>
-                  <div className="mt-2">
-                    <div className="font-bold text-xs sm:text-sm">
-                      {t.mall?.hero?.side1Title || (language === 'en' ? '168-Hour Escrow Hold' : 'Giữ Tiền 168 Giờ')}
-                    </div>
-                    <div className="text-[10px] text-white/80">
-                      {t.mall?.hero?.side1Desc || (language === 'en' ? '100% refund for defective codes' : 'Hoàn tiền 100% nếu mã lỗi')}
-                    </div>
-                  </div>
-                </div>
-
-                <div 
-                  onClick={onOpenWallet}
-                  className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3.5 flex flex-col justify-between cursor-pointer hover:opacity-95 transition shadow-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">
-                      {t.mall?.hero?.side2Badge || (language === 'en' ? 'VietQR 0S' : 'VietQR 0S')}
-                    </span>
-                    <CreditCard className="w-4 h-4 text-amber-300" />
-                  </div>
-                  <div className="mt-2">
-                    <div className="font-bold text-xs sm:text-sm">
-                      {t.mall?.hero?.side2Title || (language === 'en' ? 'Instant Auto Top-up' : 'Nạp Tiền Tự Động')}
-                    </div>
-                    <div className="text-[10px] text-white/80">
-                      {t.mall?.hero?.side2Desc || (language === 'en' ? 'Real-time wallet balance credit 24/7' : 'Cộng số dư ví tức thì 24/7')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 3.2. DỊCH VỤ NHANH SHOPEE (8 Icon Dịch Vụ) */}
-            <div className={`rounded-xl p-4 shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 text-center">
-                
-                <button 
-                  onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('orders') : onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem mã giao 0s', 'info')} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-orange-500">
-                    ⚡
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.instantDelivery')}
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setSelectedProductType('all');
-                    const el = document.getElementById('shopee-products-grid');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-red-500">
-                    🚚
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.courierShipping')}
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => setIsGuaranteeOpen(true)} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-amber-500">
-                    🛡️
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.protection168h')}
-                  </span>
-                </button>
-
-                <button onClick={onOpenWallet} className="group flex flex-col items-center cursor-pointer">
-                  <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-blue-500">
-                    💳
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.vietqrTopup')}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setHeroSlide(1);
-                    if (onOpenGrowth) onOpenGrowth();
-                    else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu May Mắn', 'info');
-                  }}
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-purple-500">
-                    🎡
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.luckyWheel')}
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => setIsCouponModalOpen(true)} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-emerald-500">
-                    🎟️
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.vouchers')}
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => setSubView('game-zone')} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500">
-                    🎮
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    Game Zone
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => setIsSupportOpen(true)} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-pink-500">
-                    💬
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
-                  </span>
-                </button>
-
-              </div>
-            </div>
-
-            {/* 3.3. DANH MỤC ĐA NGÀNH (Universal Multi-Industry Categories) */}
-            <div className={`rounded-xl shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="p-3 border-b border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Compass className="w-4 h-4 text-[#ee4d2d]" />
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d]">
-                    {t.mall?.categories?.sectionTitle || (language === 'en' ? 'MULTI-INDUSTRY CATEGORIES' : 'DANH MỤC NGÀNH HÀNG TOÀN SÀN')}
-                  </h3>
-                  <span className="text-xs text-slate-500 font-medium">
-                    {t.mall?.categories?.sectionSubtitle || (language === 'en' ? '(5 Official Industries)' : '(5 Ngành Hàng Chính Hãng)')}
-                  </span>
-                </div>
-
-                {/* Sắp xếp */}
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="text-slate-400 flex items-center gap-1">
-                    <ArrowUpDown className="w-3.5 h-3.5" />
-                    <span>{t.mall?.categories?.sortBy || (language === 'en' ? 'Sort by:' : 'Sắp xếp:')}</span>
-                  </span>
-                  <button
-                    onClick={() => setSortOrder('latest')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'latest' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
-                  >
-                    {t.mall?.categories?.sortNewest || (language === 'en' ? 'Newest' : 'Mới nhất')}
-                  </button>
-                  <button
-                    onClick={() => setSortOrder('codes')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'codes' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
-                  >
-                    {t.mall?.categories?.sortPopular || (language === 'en' ? 'Best Selling' : 'Bán chạy')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Dynamic Universal Category Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-800 text-center">
-                {categoriesConfig.categories.map((cat) => (
-                  <button 
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`p-3 transition cursor-pointer flex flex-col items-center justify-center ${
-                      selectedCategory === cat.id 
-                        ? `bg-orange-500/10 ${currentAccent.textColor} font-bold border-b-2 border-current` 
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg mb-1 shadow-inner">
-                      {cat.icon || '📦'}
-                    </div>
-                    <div className="text-[11px] leading-tight font-medium line-clamp-1">
-                      {(t.mall?.categories as any)?.[cat.id] || contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 3.4. FLASH SALE / ƯU ĐÃI NGÀNH HÀNG */}
-            {storeProducts.length > 0 ? (
-              <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
-                  <div className="flex items-center gap-3">
-                    <div className="text-lg sm:text-xl font-black text-[#ee4d2d] flex items-center tracking-tight">
-                      <Flame className="w-5 h-5 sm:w-6 sm:h-6 mr-1 fill-current" />
-                      <span>{t.mall?.flashSale?.title || (language === 'en' ? 'GOLDEN HOUR FLASH SALE' : 'FLASH SALE GIỜ VÀNG')}</span>
-                    </div>
-                    {/* Countdown Box */}
-                    <div className="flex items-center gap-1 font-mono text-xs font-bold">
-                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.hours).padStart(2, '0')}</span>
-                      <span>:</span>
-                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                      <span>:</span>
-                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => {
-                      const el = document.getElementById('shopee-products-grid');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="text-xs text-[#ee4d2d] hover:underline font-semibold flex items-center cursor-pointer"
-                  >
-                    <span>{t.mall?.flashSale?.viewAll || (language === 'en' ? 'View All' : 'Xem Tất Cả')}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-                  {storeProducts.slice(0, 6).map((prod) => (
-                    <div 
-                      key={prod.id}
-                      onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`Sản phẩm: ${prod.title}`, 'info')}
-                      className={`rounded-lg border p-2 flex flex-col justify-between hover:border-[#ee4d2d] hover:shadow-md transition cursor-pointer group relative ${isShopeeDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'}`}
-                    >
-                      <div>
-                        <div className="relative w-full aspect-square rounded overflow-hidden bg-slate-100 dark:bg-slate-700 mb-2">
-                          {prod.cover_image_url || prod.product_images?.[0] ? (
-                            <img src={prod.cover_image_url || prod.product_images?.[0]} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
-                          )}
-                          <span className="absolute top-0 left-0 bg-[#ee4d2d] text-white font-extrabold text-[9px] px-1 py-0.2 rounded-br">
-                            FLASH
-                          </span>
-                        </div>
-                        <div className="font-semibold text-xs truncate group-hover:text-[#ee4d2d] transition" title={prod.title}>
-                          {prod.title}
-                        </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 truncate">{prod.brand || 'Universal Mall'}</div>
-                      </div>
-
-                      <div className="mt-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
-                        <div className="flex items-baseline justify-between">
-                          <div className="text-[#ee4d2d] font-bold text-xs">{formatPrice(prod.current_price)}</div>
-                          {prod.original_price > prod.current_price && (
-                            <div className="text-[10px] text-slate-400 line-through font-mono">{formatPrice(prod.original_price)}</div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className={`rounded-xl shadow-sm border p-4 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-[#ee4d2d] flex items-center justify-center font-bold text-xl">
-                      🎟️
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-white">
-                        {t.mall?.vouchers?.exclusiveTitle || (language === 'en' ? 'Universal Mall Exclusive Deals' : 'Ưu Đãi Độc Quyền Sàn Universal Mall')}
-                      </h4>
-                      <p className="text-xs text-slate-500">
-                        {t.mall?.vouchers?.exclusiveDesc || (language === 'en' ? 'Apply vouchers FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 to all orders' : 'Áp dụng mã FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 cho toàn bộ đơn hàng')}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsCouponModalOpen(true)}
-                    className="px-4 py-2 rounded-lg bg-[#ee4d2d] hover:bg-orange-600 text-white font-bold text-xs transition cursor-pointer shadow-sm"
-                  >
-                    {t.mall?.vouchers?.viewAllBtn || (language === 'en' ? 'View Mall Vouchers' : 'Xem Kho Voucher Sàn')}
-                  </button>
-                </div>
+            {orderedSections.filter(
+              (s) =>
+                s.enabled &&
+                ['main_hero_banner', 'categories_grid', 'flash_sale', 'vouchers_section', 'games_and_codes', 'news_section'].includes(
+                  s.id
+                )
+            ).length === 0 && (
+              <div className="py-20 text-center text-sm text-neutral-400 dark:text-neutral-500 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl">
+                <Layers className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p>
+                  {isEn
+                    ? 'No homepage sections are currently displayed.'
+                    : 'Hiện chưa có mục nào được bật hiển thị trên trang chủ.'}
+                </p>
               </div>
             )}
-
-            {/* 3.5. KỆ HÀNG HÓA SÀN ĐA NGÀNH: PHÂN LOẠI & SẢN PHẨM */}
-            <div id="shopee-products-grid" className="space-y-3 scroll-mt-28">
-              
-              {/* TAB CHUYỂN ĐỔI KỆ HÀNG */}
-              <div className="flex items-center justify-between border-b-2 border-[#ee4d2d] pb-2 flex-wrap gap-2">
-                <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
-                  {[
-                    { id: 'all', label: t.mall?.products?.allTab || (language === 'en' ? '🔥 All Products' : '🔥 Tất Cả Sản Phẩm'), count: filteredStoreProducts.length },
-                    { id: 'physical', label: t.mall?.products?.physicalTab || (language === 'en' ? '🚚 Physical Goods (Ship)' : '🚚 Hàng Vật Lý (Ship)'), count: filteredStoreProducts.filter(p => p.product_type === 'physical').length },
-                    { id: 'digital', label: t.mall?.products?.digitalTab || (language === 'en' ? '⚡ Digital (0s)' : '⚡ Hàng Số (Mã 0s)'), count: filteredStoreProducts.filter(p => p.product_type !== 'physical').length },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setSelectedProductType(tab.id as any)}
-                      className={`px-3 py-1.5 rounded-t-lg font-bold text-xs whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                        selectedProductType === tab.id
-                          ? 'bg-[#ee4d2d] text-white shadow'
-                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-orange-50'
-                      }`}
-                    >
-                      <span>{tab.label}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${selectedProductType === tab.id ? 'bg-white text-[#ee4d2d]' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'}`}>
-                        {tab.count}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="text-xs text-slate-500 font-medium">
-                  {t('mall.paginationSummary', {
-                    page: currentPage,
-                    totalPages: mallTotalPages,
-                    total: currentMallProducts.length,
-                  })}
-                </div>
-              </div>
-
-              {/* LƯỚI SẢN PHẨM SÀN ĐA NGÀNH HOẶC EMPTY STATE */}
-              {currentMallProducts.length === 0 ? (
-                <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-8 my-4">
-                  <div className="w-16 h-16 rounded-2xl bg-orange-500/10 text-[#ee4d2d] border border-[#ee4d2d]/20 flex items-center justify-center mx-auto mb-3 text-2xl">
-                    🛍️
-                  </div>
-                  <h3 className="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-100 mb-1">
-                    {t.mall?.products?.emptyTitle || (language === 'en' ? 'Preparing First Product Batch' : 'Sàn đang chuẩn bị danh sách sản phẩm đợt đầu')}
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    {t.mall?.products?.emptyDesc || (language === 'en' ? '5 multi-category catalog is ready. Authentic products are being synchronized and verified before launch.' : 'Hệ thống danh mục 5 ngành hàng đã sẵn sàng. Sản phẩm chính hãng đang được đồng bộ và kiểm duyệt trước khi mở bán.')}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                  {paginatedMallProducts.map((prod) => {
-                    const isOutOfStock = (prod.stock_quantity ?? 0) <= 0;
-                    const hasFirstOffer = prod.first_purchase_price ? true : ((prod.original_price || prod.current_price || 0) <= 30000 && prod.current_price > 2000);
-                    const firstPrice = prod.first_purchase_price ? Number(prod.first_purchase_price) : 2000;
-                    const displayCurrentPrice = hasFirstOffer ? firstPrice : prod.current_price;
-                    const displayOriginalPrice = (prod.original_price && prod.original_price > 0) ? prod.original_price : prod.current_price;
-                    const discountPercent = displayOriginalPrice > displayCurrentPrice
-                      ? Math.round(((displayOriginalPrice - displayCurrentPrice) / displayOriginalPrice) * 100)
-                      : (prod.discount_percent || 0);
-
-                    return (
-                      <div
-                        key={prod.id}
-                        onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`Chi tiết sản phẩm: ${prod.title}`, 'info')}
-                        className={`rounded-lg border hover:border-[#ee4d2d] hover:-translate-y-0.5 transition duration-150 shadow-sm cursor-pointer overflow-hidden flex flex-col justify-between group ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
-                      >
-                        <div>
-                          <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
-                            {prod.cover_image_url || prod.product_images?.[0] ? (
-                              <img src={prod.cover_image_url || prod.product_images?.[0]} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
-                            ) : (
-                              <span className="text-4xl">📦</span>
-                            )}
-                            <span className="absolute top-0 left-0 bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-br">
-                              {prod.product_type === 'physical' ? (language === 'en' ? 'Physical Goods' : 'Hàng Vật Lý') : (prod.badge || (language === 'en' ? 'Digital' : 'Hàng Số'))}
-                            </span>
-                            {discountPercent > 0 && (
-                              <span className="absolute top-0 right-0 bg-yellow-400 text-red-600 text-[10px] font-bold px-1 py-0.2">
-                                -{discountPercent}%
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="p-2 space-y-1">
-                            <div className="text-[11px] font-semibold line-clamp-2 leading-snug group-hover:text-[#ee4d2d] transition" title={prod.title}>
-                              {contentTranslationService.translateField('product', prod.id, 'name', prod.title, language)}
-                            </div>
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {prod.product_type === 'physical' ? (
-                                <span className="text-[9px] border border-blue-500 text-blue-500 px-1 rounded font-medium">
-                                  {language === 'en' ? 'Nationwide Shipping' : 'Giao tận nơi'}
-                                </span>
-                              ) : (
-                                <span className="text-[9px] border border-emerald-500 text-emerald-500 px-1 rounded font-medium">
-                                  {language === 'en' ? 'Instant 0s' : 'Giao 0s'}
-                                </span>
-                              )}
-                              {prod.brand ? (
-                                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[100px]">
-                                  {contentTranslationService.translateField('brand', prod.brand, 'name', prod.brand, language)}
-                                </span>
-                              ) : (
-                                <span className="text-[9px] text-slate-400 truncate max-w-[100px]">{prod.game_name || 'Universal Mall'}</span>
-                              )}
-                              {prod.variants && prod.variants.length > 0 && (
-                                <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1 rounded">
-                                  {prod.variants.length} {language === 'en' ? 'variants' : 'phân loại'}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Điểm đánh giá sản phẩm hoặc Chưa có đánh giá */}
-                            <div className="flex items-center gap-1 text-[10px] pt-0.5">
-                              {prod.rating && prod.review_count && prod.review_count > 0 ? (
-                                <div className="flex items-center gap-0.5 text-amber-500 font-medium">
-                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                  <span className="font-bold">{Number(prod.rating).toFixed(1)}</span>
-                                  <span className="text-slate-400 font-mono">({prod.review_count})</span>
-                                </div>
-                              ) : (
-                                <span className="text-slate-400 text-[10px]">
-                                  {language === 'en' ? 'No reviews yet' : 'Chưa có đánh giá'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="p-2 pt-0 space-y-1.5">
-                          <div className="flex items-baseline justify-between gap-1 flex-wrap">
-                            {hasFirstOffer ? (
-                              <div className="flex items-center gap-1">
-                                <span className="text-[#ee4d2d] font-bold text-xs">{formatPrice(firstPrice)}</span>
-                                <span className="text-[9px] font-bold px-1 py-0.2 bg-rose-500/10 text-rose-500 rounded">
-                                  {language === 'en' ? 'Promo' : 'Ưu đãi'}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="text-[#ee4d2d] font-bold text-xs">{formatPrice(prod.current_price)}</div>
-                            )}
-                            {displayOriginalPrice > displayCurrentPrice && (
-                              <div className="text-[10px] text-slate-400 line-through font-mono">{formatPrice(displayOriginalPrice)}</div>
-                            )}
-                          </div>
-
-                          <button
-                            disabled={isOutOfStock}
-                            onClick={isOutOfStock ? undefined : (e) => {
-                              e.stopPropagation();
-                              if (prod.variants && prod.variants.length > 1 && onSelectProduct) {
-                                onSelectProduct(prod);
-                              } else {
-                                handleAddProductToCart(prod, e);
-                              }
-                            }}
-                            className={`w-full py-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-sm ${
-                              isOutOfStock
-                                ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed'
-                                : 'bg-[#ee4d2d] hover:bg-orange-600 text-white cursor-pointer'
-                            }`}
-                          >
-                            <ShoppingCart className="w-3 h-3" />
-                            <span>{isOutOfStock ? (language === 'en' ? 'Out of Stock' : 'Hết Hàng') : (prod.variants && prod.variants.length > 1 ? (language === 'en' ? 'Select Variant' : 'Chọn Phân Loại') : (t.cart?.addToCart || (language === 'en' ? 'Add to Cart' : 'Thêm Giỏ Hàng')))}</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* BỘ PHÂN TRANG SẢN PHẨM SÀN */}
-              {mallTotalPages > 1 && (
-                <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                  <div className="text-slate-500 font-medium">
-                    {t('mall.showingCount', {
-                      from: (currentPage - 1) * 20 + 1,
-                      to: Math.min(currentPage * 20, currentMallProducts.length),
-                      total: currentMallProducts.length,
-                    })}
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      disabled={currentPage <= 1}
-                      onClick={() => {
-                        setCurrentPage((p) => Math.max(1, p - 1));
-                        const el = document.getElementById('shopee-products-grid');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className={`p-1.5 rounded border ${currentPage <= 1 ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer'}`}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    {Array.from({ length: Math.min(5, mallTotalPages) }, (_, i) => {
-                      let pageNum = currentPage;
-                      if (currentPage <= 3) pageNum = i + 1;
-                      else if (currentPage >= mallTotalPages - 2) pageNum = mallTotalPages - 4 + i;
-                      else pageNum = currentPage - 2 + i;
-                      if (pageNum < 1 || pageNum > mallTotalPages) return null;
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => {
-                            setCurrentPage(pageNum);
-                            const el = document.getElementById('shopee-products-grid');
-                            if (el) el.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                          className={`w-7 h-7 rounded text-xs font-bold transition cursor-pointer ${
-                            currentPage === pageNum
-                              ? 'bg-[#ee4d2d] text-white shadow-xs'
-                              : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-orange-50 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-
-                    <button
-                      disabled={currentPage >= mallTotalPages}
-                      onClick={() => {
-                        setCurrentPage((p) => Math.min(mallTotalPages, p + 1));
-                        const el = document.getElementById('shopee-products-grid');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className={`p-1.5 rounded border ${currentPage >= mallTotalPages ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer'}`}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-            </div>
           </>
         )}
 
@@ -2838,6 +2973,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         )}
 
         {/* 3.6. FOOTER ĐẦY ĐỦ 4 CỘT CHUẨN WEB CHÍNH (ĐỘ TƯƠNG PHẢN CAO CHO THEME TRẮNG) */}
+        {isSectionEnabled('footer') && (
         <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 mt-8 shadow-xs space-y-6 text-xs text-slate-700 dark:text-slate-300">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             
@@ -2973,8 +3109,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               : `© 2026 ${shopBrand.name} - Giao Diện Sàn Thương Mại Điện Tử Tiện Ích & Code Game`}
           </div>
         </div>
+        )}
 
       </div>
+
 
 
       {/* 5. MODE SWITCHER NỔI GÓC PHẢI DƯỚI */}

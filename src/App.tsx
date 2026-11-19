@@ -17,6 +17,7 @@ import { ToastContainer, type ToastMessage } from './components/Toast';
 import { GameGridSkeleton } from './components/GameCardSkeleton';
 import { LanguageSeoHead } from './components/seo/LanguageSeoHead';
 import { useLanguage } from './context/LanguageContext';
+import { homepageSectionsService } from './services/homepageSectionsService';
 
 // P4: Code Splitting & Lazy Loaded Views / Modals with auto-recovery on stale deployment chunks
 const FloatingAnnouncement = lazyWithRetry(() => import('./components/FloatingAnnouncement').then((m) => ({ default: m.FloatingAnnouncement })));
@@ -227,6 +228,18 @@ export const App: React.FC = () => {
   const [allGamesList, setAllGamesList] = useState<GameItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Homepage sections state for floating notifications
+  const [isFloatingEnabled, setIsFloatingEnabled] = useState(() =>
+    homepageSectionsService.isSectionEnabled('floating_notification')
+  );
+
+  useEffect(() => {
+    const unsub = homepageSectionsService.subscribe(() => {
+      setIsFloatingEnabled(homepageSectionsService.isSectionEnabled('floating_notification'));
+    });
+    return unsub;
+  }, []);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -2528,28 +2541,30 @@ export const App: React.FC = () => {
       </Suspense>
 
       {/* Social Proof Marketing Notifications Toast (Customer Web tabs) */}
-      <Suspense fallback={null}>
-        <MarketingNotificationToast
-          onSelectGameSlug={handleSelectGameSlug}
-          onSelectProduct={handleSelectProductById}
-          onSelectUtility={(utilityId) => {
-            handleSelectTab('utilities');
-            setSelectedUtilityId(utilityId);
-            window.location.hash = `#utility=${utilityId}`;
-          }}
-          onSelectGiveaway={(giveawayId) => {
-            handleSelectTab('giveaways');
-            window.location.hash = `#gw=${giveawayId}`;
-          }}
-          onOpenWallet={() => setIsWalletModalOpen(true)}
-          onExploreClick={handleExploreOrSubmitSearch}
-        />
+      {isFloatingEnabled && (
+        <Suspense fallback={null}>
+          <MarketingNotificationToast
+            onSelectGameSlug={handleSelectGameSlug}
+            onSelectProduct={handleSelectProductById}
+            onSelectUtility={(utilityId) => {
+              handleSelectTab('utilities');
+              setSelectedUtilityId(utilityId);
+              window.location.hash = `#utility=${utilityId}`;
+            }}
+            onSelectGiveaway={(giveawayId) => {
+              handleSelectTab('giveaways');
+              window.location.hash = `#gw=${giveawayId}`;
+            }}
+            onOpenWallet={() => setIsWalletModalOpen(true)}
+            onExploreClick={handleExploreOrSubmitSearch}
+          />
 
-        {/* Floating Announcement (Configured via Admin) */}
-        {currentTab !== 'admin' && currentTab !== 'shopee-test' && (
-          <FloatingAnnouncement onNavigateTab={(tab) => handleSelectTab(tab as any)} />
-        )}
-      </Suspense>
+          {/* Floating Announcement (Configured via Admin) */}
+          {currentTab !== 'admin' && currentTab !== 'shopee-test' && (
+            <FloatingAnnouncement onNavigateTab={(tab) => handleSelectTab(tab as any)} />
+          )}
+        </Suspense>
+      )}
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} maxVisible={3} />

@@ -189,6 +189,8 @@ import * as adminNotificationsBroadcastApi from './api/admin/notifications/broad
 import * as adminNotificationsSettingsApi from './api/admin/notifications/settings';
 import * as adminSecurityLogsIndexApi from './api/admin/security-logs/index';
 import * as adminSettingsIndexApi from './api/admin/settings/index';
+import * as homepageSectionsAdminApi from './api/admin/homepage-sections';
+import * as homepageSectionsPublicApi from './api/homepage-sections';
 // Universal Commerce Platform RESTful APIs
 import * as productsIndexApi from './api/products/index';
 import * as productsIdApi from './api/products/[id]';
@@ -1097,6 +1099,14 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'DELETE') return await categoriesIdApi.onRequestDelete(customContext);
       }
 
+      // Homepage Sections Public API (/api/homepage-sections)
+      if (pathname === '/api/homepage-sections') {
+        if (method === 'OPTIONS') return await homepageSectionsPublicApi.onRequestOptions();
+        if (method === 'GET') return await homepageSectionsPublicApi.onRequestGet(context);
+        if (method === 'PUT') return await homepageSectionsPublicApi.onRequestPut(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+
       // Vouchers API (/api/vouchers, /api/admin/vouchers, /api/vouchers/verify, /api/vouchers/redeem & /api/vouchers/:id)
       if (pathname === '/api/vouchers/redeem' || pathname === '/api/admin/vouchers/redeem') {
         if (method === 'OPTIONS') return await vouchersRedeemApi.onRequestOptions();
@@ -1508,6 +1518,14 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS') return await adminSettingsIndexApi.onRequestOptions();
         if (method === 'GET') return await adminSettingsIndexApi.onRequestGet(context);
         if (method === 'PUT') return await adminSettingsIndexApi.onRequestPut(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 8c-26. /api/admin/homepage-sections (Homepage Sections Layout & Visibility API)
+      if (pathname === '/api/admin/homepage-sections') {
+        if (method === 'OPTIONS') return await homepageSectionsAdminApi.onRequestOptions();
+        if (method === 'GET') return await homepageSectionsAdminApi.onRequestGet(context);
+        if (method === 'PUT') return await homepageSectionsAdminApi.onRequestPut(context);
         return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
       }
 

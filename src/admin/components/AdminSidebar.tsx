@@ -30,6 +30,7 @@ import {
   Sparkles,
   Store,
   Ticket,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { AdminUser } from '../types/adminTypes';
 import { normalizeVietnamese } from '../../utils/textUtils';
@@ -44,6 +45,7 @@ export type AdminModuleTab =
   | 'crawler'
   | 'marketing'
   | 'floating-notification'
+  | 'homepage-sections'
   | 'growth'
   | 'members'
   | 'wallet'
@@ -161,6 +163,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           id: 'floating-notification',
           label: isEn ? 'Floating Notifications' : 'Thông Báo Nổi',
           icon: BellRing,
+        },
+        {
+          id: 'homepage-sections',
+          label: isEn ? 'Homepage Layout' : 'Hiển Thị Trang Chủ',
+          icon: SlidersHorizontal,
         },
         {
           id: 'marketing',

@@ -318,6 +318,7 @@
     "firstPurchase": "Ưu Đãi Mua Lần Đầu",
     "growth": "Tăng Trưởng & Giới Thiệu",
     "vouchers": "Voucher & Freeship",
+    "homepageSections": "Hiển Thị Trang Chủ",
     "products": "Quản Lý Sản Phẩm Đa Ngành",
     "categories": "Danh Mục Ngành Hàng",
     "login": {
@@ -723,5 +724,30 @@
     "sampleCurlTitle": "Mẫu Gọi cURL",
     "sampleFetchTitle": "Mẫu Gọi Fetch (Node.js/JS)",
     "openFullDocsBtn": "Xem Tài Liệu STORE_API_GUIDE.md Đầy Đủ"
+  },
+  "homepageSectionsModule": {
+    "title": "Tùy Chỉnh Hiển Thị Trang Chủ",
+    "subtitle": "Quản trị bật/tắt và sắp xếp thứ tự hiển thị các khu vực trên trang chủ web khách Universal Mall theo thời gian thực.",
+    "saveSuccess": "Đã lưu cấu hình hiển thị trang chủ thành công!",
+    "saveError": "Lỗi lưu cấu hình hiển thị trang chủ. Vui lòng thử lại.",
+    "loadError": "Không thể tải cấu hình từ máy chủ. Đang hiển thị bản cục bộ.",
+    "resetSuccess": "Đã khôi phục thứ tự và trạng thái mặc định của các mục!",
+    "unsavedChanges": "Có thay đổi chưa lưu",
+    "savedStatus": "Cấu hình đã đồng bộ",
+    "viewStorefront": "Xem Trang Chủ",
+    "saveChanges": "Lưu Cấu Hình",
+    "resetDefaults": "Khôi Phục Mặc Định",
+    "saving": "Đang Lưu...",
+    "colOrder": "Thứ Tự",
+    "colName": "Khu Vực / Thành Phần",
+    "colDescription": "Chức Năng & Vị Trí",
+    "colStatus": "Trạng Thái",
+    "colActions": "Thao Tác & Thứ Tự",
+    "statusVisible": "Đang Hiện",
+    "statusHidden": "Đang Ẩn",
+    "moveUp": "Chuyển lên",
+    "moveDown": "Chuyển xuống",
+    "toggleVisibility": "Bật/Tắt hiển thị",
+    "rule9Notice": "Hiển thị 100% trọn vẹn trong một màn hình — Các thay đổi sẽ phản ánh trên web khách trong vòng tối đa 30 giây."
   }
 }
