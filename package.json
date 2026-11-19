@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "check:i18n": "node scripts/check-hardcoded-i18n.cjs",
     "build": "node scripts/build.cjs",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=universal-mall-shop --branch=main",

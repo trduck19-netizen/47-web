@@ -28,7 +28,7 @@ interface MembersModuleProps {
 }
 
 export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => {
-  const { language } = useLanguage();
+  const { language, formatCurrency, t } = useLanguage();
   const isEn = language === 'en';
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -178,7 +178,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
   };
 
   const formatVnd = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0);
+    return formatCurrency(val);
   };
 
   // Metrics Calculations (Defensive)
@@ -501,13 +501,13 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
       <FormModal
         isOpen={Boolean(adjustingMember)}
         onClose={() => setAdjustingMember(null)}
-        title={`Điều Chỉnh Số Dư Ví: ${adjustingMember?.displayName || adjustingMember?.id}`}
-        subtitle="Mọi thay đổi số dư sẽ được ghi nhận vào Sổ Cái Tài Chính (Ledger) và Nhật Ký Bảo Mật."
+        title={isEn ? `Adjust Wallet Balance: ${adjustingMember?.displayName || adjustingMember?.id}` : `Điều Chỉnh Số Dư Ví: ${adjustingMember?.displayName || adjustingMember?.id}`}
+        subtitle={isEn ? 'All balance modifications will be logged in Ledger and Security Audit Trail.' : 'Mọi thay đổi số dư sẽ được ghi nhận vào Sổ Cái Tài Chính (Ledger) và Nhật Ký Bảo Mật.'}
         maxWidth="md"
       >
         <form onSubmit={handleAdjustWalletSubmit} className="space-y-4">
           <div className="rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
-            <p className="text-slate-500 dark:text-slate-400">Số dư hiện tại:</p>
+            <p className="text-slate-500 dark:text-slate-400">{isEn ? 'Current Balance:' : 'Số dư hiện tại:'}</p>
             <p className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
               {formatCore(Number(adjustingMember?.balance) || 0)}{' '}
               <span className="text-xs font-normal text-slate-500">(~{formatVnd(Number(adjustingMember?.balance) || 0)})</span>
@@ -524,7 +524,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
               }`}
             >
-              + Cộng Tiền Số Dư
+              {isEn ? '+ Credit Balance' : '+ Cộng Tiền Số Dư'}
             </button>
             <button
               type="button"
@@ -535,13 +535,13 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
               }`}
             >
-              - Trừ Tiền Số Dư
+              {isEn ? '- Debit Balance' : '- Trừ Tiền Số Dư'}
             </button>
           </div>
 
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Số Tiền Core (1 Core = 1 VND) <span className="text-rose-500">*</span>
+              {isEn ? 'Amount Core (1 Core = 1 VND)' : 'Số Tiền Core (1 Core = 1 VND)'} <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"
@@ -556,14 +556,14 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
 
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Lý Do Điều Chỉnh <span className="text-rose-500">*</span>
+              {isEn ? 'Adjustment Reason' : 'Lý Do Điều Chỉnh'} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               required
               value={adjReason}
               onChange={(e) => setAdjReason(e.target.value)}
-              placeholder="VD: Thưởng sự kiện / Hoàn tiền đơn lỗi"
+              placeholder={isEn ? 'e.g. Event bonus / Order refund' : 'VD: Thưởng sự kiện / Hoàn tiền đơn lỗi'}
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
@@ -574,7 +574,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
               onClick={() => setAdjustingMember(null)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
             >
-              Hủy
+              {t?.glossary?.cancel || (isEn ? 'Cancel' : 'Hủy')}
             </button>
             <button
               type="submit"
@@ -582,7 +582,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
               className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
             >
               <Save className="h-4 w-4" />
-              <span>{isSubmittingAdjust ? 'Đang xử lý...' : 'Xác Nhận Thay Đổi Số Dư'}</span>
+              <span>{isSubmittingAdjust ? (isEn ? 'Processing...' : 'Đang xử lý...') : (isEn ? 'Confirm Balance Change' : 'Xác Nhận Thay Đổi Số Dư')}</span>
             </button>
           </div>
         </form>
@@ -592,24 +592,24 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
       <FormModal
         isOpen={Boolean(roleChangingMember)}
         onClose={() => setRoleChangingMember(null)}
-        title={`Thay Đổi Vai Trò: ${roleChangingMember?.displayName || roleChangingMember?.id}`}
+        title={isEn ? `Change Role: ${roleChangingMember?.displayName || roleChangingMember?.id}` : `Thay Đổi Vai Trò: ${roleChangingMember?.displayName || roleChangingMember?.id}`}
         maxWidth="sm"
       >
         <form onSubmit={handleChangeRoleSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Chọn Vai Trò Mới
+              {isEn ? 'Select New Role' : 'Chọn Vai Trò Mới'}
             </label>
             <select
               value={newRole}
               onChange={(e) => setNewRole(e.target.value as any)}
               className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-semibold text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
-              <option value="MEMBER">Thành viên thông thường</option>
-              <option value="VIP">VIP Gold (Ưu đãi nạp & code)</option>
-              <option value="MODERATOR">Moderator (Kiểm duyệt code)</option>
-              <option value="ADMIN">Admin (Quản lý nội dung & kho)</option>
-              <option value="SUPER_ADMIN">Super Admin (Toàn quyền)</option>
+              <option value="MEMBER">{isEn ? 'Regular Member' : 'Thành viên thông thường'}</option>
+              <option value="VIP">{isEn ? 'VIP Gold (Discounts & Codes)' : 'VIP Gold (Ưu đãi nạp & code)'}</option>
+              <option value="MODERATOR">{isEn ? 'Moderator (Review codes)' : 'Moderator (Kiểm duyệt code)'}</option>
+              <option value="ADMIN">{isEn ? 'Admin (Content & inventory)' : 'Admin (Quản lý nội dung & kho)'}</option>
+              <option value="SUPER_ADMIN">{isEn ? 'Super Admin (Full access)' : 'Super Admin (Toàn quyền)'}</option>
             </select>
           </div>
 
@@ -619,14 +619,14 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
               onClick={() => setRoleChangingMember(null)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
             >
-              Hủy
+              {t?.glossary?.cancel || (isEn ? 'Cancel' : 'Hủy')}
             </button>
             <button
               type="submit"
               className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 cursor-pointer"
             >
               <Save className="h-4 w-4" />
-              <span>Lưu Phân Quyền</span>
+              <span>{isEn ? 'Save Role Permission' : 'Lưu Phân Quyền'}</span>
             </button>
           </div>
         </form>
@@ -637,21 +637,21 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
         isOpen={Boolean(banningMember)}
         onClose={() => setBanningMember(null)}
         onConfirm={handleBanToggleConfirm}
-        title={banningMember?.status === 'ACTIVE' ? 'Khóa Tài Khoản Thành Viên' : 'Mở Khóa Tài Khoản'}
+        title={banningMember?.status === 'ACTIVE' ? (isEn ? 'Block Member Account' : 'Khóa Tài Khoản Thành Viên') : (isEn ? 'Unblock Member Account' : 'Mở Khóa Tài Khoản')}
         message={
           banningMember?.status === 'ACTIVE' ? (
             <span>
-              Bạn có chắc chắn muốn khóa tài khoản{' '}
-              <strong className="text-rose-600 dark:text-rose-400">{banningMember.displayName || banningMember.id}</strong>? Thành viên sẽ không thể đăng nhập, nhận code hay thực hiện giao dịch ví.
+              {isEn ? 'Are you sure you want to block ' : 'Bạn có chắc chắn muốn khóa tài khoản '}
+              <strong className="text-rose-600 dark:text-rose-400">{banningMember.displayName || banningMember.id}</strong>? {isEn ? 'Member will not be able to log in, redeem codes, or execute wallet transactions.' : 'Thành viên sẽ không thể đăng nhập, nhận code hay thực hiện giao dịch ví.'}
             </span>
           ) : (
             <span>
-              Xác nhận kích hoạt lại tài khoản cho{' '}
+              {isEn ? 'Confirm unblocking account for ' : 'Xác nhận kích hoạt lại tài khoản cho '}
               <strong>{banningMember?.displayName || banningMember?.id}</strong>.
             </span>
           )
         }
-        confirmText={banningMember?.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa ngay'}
+        confirmText={banningMember?.status === 'ACTIVE' ? (isEn ? 'Block Account' : 'Khóa tài khoản') : (isEn ? 'Unblock Now' : 'Mở khóa ngay')}
         variant={banningMember?.status === 'ACTIVE' ? 'danger' : 'success'}
       />
 
@@ -661,33 +661,33 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
           isOpen={Boolean(step2Action)}
           onClose={() => setStep2Action(null)}
           onSuccess={handleStep2Success}
-          title="Xác Minh Bước 2: Điều Chỉnh Số Dư Ví"
-          actionTitle={`Điều chỉnh số dư ví cho ${step2Action.member.displayName || step2Action.member.id}`}
+          title={isEn ? 'Step 2 Verification: Wallet Balance Adjustment' : 'Xác Minh Bước 2: Điều Chỉnh Số Dư Ví'}
+          actionTitle={isEn ? `Adjust wallet balance for ${step2Action.member.displayName || step2Action.member.id}` : `Điều chỉnh số dư ví cho ${step2Action.member.displayName || step2Action.member.id}`}
           actionDetails={
             <div className="space-y-1">
               <p>
-                Thành viên: <strong>{step2Action.member.displayName}</strong> ({step2Action.member.email || step2Action.member.id})
+                {isEn ? 'Member:' : 'Thành viên:'} <strong>{step2Action.member.displayName}</strong> ({step2Action.member.email || step2Action.member.id})
               </p>
               <p>
-                Biến động:{' '}
+                {isEn ? 'Change:' : 'Biến động:'}{' '}
                 <strong className={step2Action.amount >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-mono' : 'text-rose-600 dark:text-rose-400 font-mono'}>
                   {step2Action.amount >= 0 ? '+' : ''}{formatCore(step2Action.amount)}
                 </strong>{' '}
                 <span className="text-slate-400 text-[10px]">({step2Action.amount >= 0 ? '+' : ''}{formatVnd(step2Action.amount)})</span>
               </p>
               <p>
-                Số dư sau điều chỉnh:{' '}
+                {isEn ? 'Balance after adjustment:' : 'Số dư sau điều chỉnh:'}{' '}
                 <strong className="text-slate-900 dark:text-white font-mono">
                   {formatCore(Math.max(0, (Number(step2Action.member.balance) || 0) + step2Action.amount))}
                 </strong>{' '}
-                <span className="text-slate-400 text-[10px]">(Trước: {formatCore(step2Action.member.balance)})</span>
+                <span className="text-slate-400 text-[10px]">({isEn ? 'Before:' : 'Trước:'} {formatCore(step2Action.member.balance)})</span>
               </p>
               <p>
-                Lý do: <em>{step2Action.reason}</em>
+                {isEn ? 'Reason:' : 'Lý do:'} <em>{step2Action.reason}</em>
               </p>
             </div>
           }
-          confirmButtonText="Xác Nhận Thay Đổi Số Dư"
+          confirmButtonText={isEn ? 'Confirm Balance Change' : 'Xác Nhận Thay Đổi Số Dư'}
           variant="warning"
         />
       )}
@@ -696,14 +696,14 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
       <FormModal
         isOpen={Boolean(resetPassMember)}
         onClose={() => setResetPassMember(null)}
-        title={`Đổi Mật Khẩu Thành Viên: ${resetPassMember?.displayName || resetPassMember?.id}`}
-        subtitle="Mật khẩu mới sẽ được mã hóa và cập nhật trực tiếp vào cơ sở dữ liệu để thành viên có thể đăng nhập."
+        title={isEn ? `Reset Member Password: ${resetPassMember?.displayName || resetPassMember?.id}` : `Đổi Mật Khẩu Thành Viên: ${resetPassMember?.displayName || resetPassMember?.id}`}
+        subtitle={isEn ? 'New password will be hashed and updated directly in the database for the member to log in.' : 'Mật khẩu mới sẽ được mã hóa và cập nhật trực tiếp vào cơ sở dữ liệu để thành viên có thể đăng nhập.'}
         maxWidth="sm"
       >
         <form onSubmit={handleResetMemberPasswordSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Mật Khẩu Mới (Tối thiểu 6 ký tự) <span className="text-rose-500">*</span>
+              {isEn ? 'New Password (min 6 chars)' : 'Mật Khẩu Mới (Tối thiểu 6 ký tự)'} <span className="text-rose-500">*</span>
             </label>
             <input
               type="password"
@@ -711,7 +711,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
               minLength={6}
               value={newMemberPassword}
               onChange={(e) => setNewMemberPassword(e.target.value)}
-              placeholder="Nhập mật khẩu mới..."
+              placeholder={isEn ? 'Enter new password...' : 'Nhập mật khẩu mới...'}
               className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
@@ -722,7 +722,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
               onClick={() => setResetPassMember(null)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 cursor-pointer"
             >
-              Hủy
+              {t?.glossary?.cancel || (isEn ? 'Cancel' : 'Hủy')}
             </button>
             <button
               type="submit"
@@ -730,7 +730,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
               className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-amber-700 disabled:opacity-50 cursor-pointer"
             >
               <Save className="h-4 w-4" />
-              <span>{isResettingPassword ? 'Đang lưu...' : 'Lưu Mật Khẩu Mới'}</span>
+              <span>{isResettingPassword ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save New Password' : 'Lưu Mật Khẩu Mới')}</span>
             </button>
           </div>
         </form>

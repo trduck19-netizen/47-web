@@ -811,7 +811,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               onClick={fetchSellers}
               className="px-3 py-1.5 rounded-xl border border-border hover:bg-muted/50 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> {isEn ? 'Refresh' : 'Làm mới'}
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> {t?.glossary?.refresh || (isEn ? 'Refresh' : 'Làm mới')}
             </button>
           </div>
 
@@ -971,7 +971,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               onClick={fetchProducts}
               className="px-3 py-1.5 rounded-xl border border-border hover:bg-muted/50 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> {isEn ? 'Refresh' : 'Làm mới'}
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> {t?.glossary?.refresh || (isEn ? 'Refresh' : 'Làm mới')}
             </button>
           </div>
 

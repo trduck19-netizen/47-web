@@ -28,6 +28,9 @@ interface LanguageContextType {
   availableLanguages: LanguageMeta[];
   activeLanguages: LanguageMeta[];
   currentLanguageMeta: LanguageMeta;
+  /** Chế độ kiểm tra tràn khung và phát hiện chữ ghi cứng nội bộ */
+  isPseudo: boolean;
+  setIsPseudo: (enabled: boolean) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -55,6 +58,67 @@ function getNestedValue(obj: any, path: string): string | undefined {
     }
   }
   return typeof current === 'string' ? current : undefined;
+}
+
+/**
+ * Bảng biến đổi ký tự Pseudolocalization:
+ * Kéo dài văn bản ~30%, thêm dấu phụ quốc tế để kiểm thử tràn khung ngang và lộ chữ ghi cứng
+ */
+const PSEUDO_ACCENTS: Record<string, string> = {
+  a: 'á', b: 'ḅ', c: 'ç', d: 'đ', e: 'é', f: 'ƒ', g: 'ğ', h: 'ĥ',
+  i: 'í', j: 'ĵ', k: 'ķ', l: 'ł', m: 'ḿ', n: 'ñ', o: 'ó', p: 'ƥ',
+  q: 'ʠ', r: 'ř', s: 'š', t: 'ţ', u: 'ú', v: 'ṽ', w: 'ŵ', x: 'ẋ',
+  y: 'ý', z: 'ž',
+  A: 'Á', B: 'Ḅ', C: 'Ç', D: 'Đ', E: 'É', F: 'Ƒ', G: 'Ğ', H: 'Ĥ',
+  I: 'Í', J: 'Ĵ', K: 'Ķ', L: 'Ł', M: 'Ḿ', N: 'Ñ', O: 'Ó', P: 'Ƥ',
+  Q: 'Ǫ', R: 'Ř', S: 'Š', T: 'Ţ', U: 'Ú', V: 'Ṽ', W: 'Ŵ', X: 'Ẋ',
+  Y: 'Ý', Z: 'Ž',
+};
+
+export function pseudolocalize(text: string): string {
+  if (!text || typeof text !== 'string') return text;
+  if (/^\s*$/.test(text) || /^https?:\/\//i.test(text) || text.startsWith('/')) return text;
+
+  // Bảo vệ tokens và tags cú pháp
+  const tokens: string[] = [];
+  const placeholder = text.replace(/(\{[^}]+\}|<[^>]+>)/g, (match) => {
+    tokens.push(match);
+    return `___TOKEN_${tokens.length - 1}___`;
+  });
+
+  let pseudo = '';
+  for (let i = 0; i < placeholder.length; i++) {
+    const ch = placeholder[i];
+    const transformed = PSEUDO_ACCENTS[ch] || ch;
+    pseudo += transformed;
+    // Kéo dài nguyên âm thêm 1 ký tự (~30% dài hơn)
+    if (/[aeiouyAEIOUY]/.test(ch)) {
+      pseudo += transformed;
+    }
+  }
+
+  tokens.forEach((tok, idx) => {
+    pseudo = pseudo.replace(`___TOKEN_${idx}___`, tok);
+  });
+
+  return `[!!! ${pseudo} !!!]`;
+}
+
+function detectInitialPseudoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const testMode = params.get('i18n-test')?.toLowerCase();
+    const pseudoParam = params.get('pseudo')?.toLowerCase();
+    if (testMode === 'pseudo' || pseudoParam === 'true' || pseudoParam === '1') {
+      return true;
+    }
+    const sessionFlag = sessionStorage.getItem('wcg_pseudo_i18n');
+    if (sessionFlag === 'true') {
+      return true;
+    }
+  } catch {}
+  return false;
 }
 
 /**
@@ -152,6 +216,15 @@ function syncUrlWithLanguage(targetLang: string) {
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<string>(detectInitialLanguage);
+  const [isPseudo, setIsPseudoState] = useState<boolean>(detectInitialPseudoMode);
+
+  const setIsPseudo = useCallback((enabled: boolean) => {
+    setIsPseudoState(enabled);
+    try {
+      sessionStorage.setItem('wcg_pseudo_i18n', enabled ? 'true' : 'false');
+      window.dispatchEvent(new CustomEvent('wcg_pseudo_changed', { detail: enabled }));
+    } catch {}
+  }, []);
 
   const setLanguage = useCallback((newLang: string) => {
     // Nhận bất kỳ ngôn ngữ nào trong ACTIVE_LANGUAGES, mặc định về DEFAULT_LANGUAGE ('vi')
@@ -215,9 +288,13 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         val = key.split('.').pop() || key;
       }
 
-      return interpolate(val, params);
+      const translated = interpolate(val, params);
+      if (isPseudo) {
+        return pseudolocalize(translated);
+      }
+      return translated;
     },
-    [language]
+    [language, isPseudo]
   );
 
   // Tạo Proxy để hỗ trợ cả t('path') và t.section.key đa tầng đệ quy
@@ -235,7 +312,11 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (val !== null && typeof val === 'object') {
               return createRecursiveProxy(val, fbVal);
             }
-            return val !== undefined ? val : prop;
+            const finalVal = val !== undefined ? val : prop;
+            if (isPseudo && typeof finalVal === 'string') {
+              return pseudolocalize(finalVal);
+            }
+            return finalVal;
           }
           return Reflect.get(target, prop);
         },
@@ -253,6 +334,9 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (typeof val === 'object' && val !== null) {
               return createRecursiveProxy(val, fallbackVal);
             }
+            if (isPseudo && typeof val === 'string') {
+              return pseudolocalize(val);
+            }
             return val;
           }
         }
@@ -265,7 +349,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
 
     return new Proxy(translateFn, handler) as any;
-  }, [language, translateFn]);
+  }, [language, isPseudo, translateFn]);
 
   // Helpers định dạng tiền tệ và ngày giờ gắn liền ngôn ngữ
   const handleFormatCurrency = useCallback(
@@ -295,6 +379,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       availableLanguages: AVAILABLE_LANGUAGES,
       activeLanguages: ACTIVE_LANGUAGES,
       currentLanguageMeta,
+      isPseudo,
+      setIsPseudo,
     }),
     [
       language,
@@ -304,6 +390,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       handleFormatDateTime,
       handleFormatNumber,
       currentLanguageMeta,
+      isPseudo,
+      setIsPseudo,
     ]
   );
 
@@ -332,6 +420,8 @@ export const useLanguage = (): LanguageContextType => {
       availableLanguages: AVAILABLE_LANGUAGES,
       activeLanguages: ACTIVE_LANGUAGES,
       currentLanguageMeta: AVAILABLE_LANGUAGES[0],
+      isPseudo: false,
+      setIsPseudo: () => {},
     };
   }
   return context;

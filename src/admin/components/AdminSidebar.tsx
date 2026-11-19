@@ -347,7 +347,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <button
             onClick={onCloseMobile}
             className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-            title="Đóng menu"
+            title={t?.admin?.sidebar?.collapse || (isEn ? 'Close menu' : 'Đóng menu')}
+            aria-label={t?.admin?.sidebar?.collapse || (isEn ? 'Close menu' : 'Đóng menu')}
           >
             <X className="h-5 w-5" />
           </button>

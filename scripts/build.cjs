@@ -2,6 +2,9 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+console.log('🛡️ 0. Scanning UI code for hardcoded Vietnamese strings (i18n Guard)...');
+execSync('node scripts/check-hardcoded-i18n.cjs', { stdio: 'inherit' });
+
 console.log('📦 1. Building Vite Frontend...');
 execSync('npx vite build', { stdio: 'inherit' });
 

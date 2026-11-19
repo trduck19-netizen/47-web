@@ -1989,19 +1989,19 @@ export const App: React.FC = () => {
                   onShowToast={showToast}
                   isActive={isStickySearchVisible}
                   isFloating={true}
-                  placeholder="Tìm nhanh tên game, giftcode mới nhất..."
+                  placeholder={t?.hero?.searchPlaceholder || (isEn ? 'Quick search games, giftcodes...' : 'Tìm nhanh tên game, giftcode mới nhất...')}
                   onExploreClick={handleExploreOrSubmitSearch}
                 />
               </div>
               <button
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                title="Cuộn lên đầu trang"
-                aria-label="Cuộn lên đầu trang"
+                title={t?.footer?.backToTop || (isEn ? 'Scroll to top' : 'Cuộn lên đầu trang')}
+                aria-label={t?.footer?.backToTop || (isEn ? 'Scroll to top' : 'Cuộn lên đầu trang')}
                 className="px-2.5 sm:px-3 py-2 rounded-xl bg-card hover:bg-card-hover border border-border text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
               >
                 <ArrowUp className="w-4 h-4 text-primary-light" />
-                <span className="hidden sm:inline">Lên đầu</span>
+                <span className="hidden sm:inline">{isEn ? 'Top' : 'Lên đầu'}</span>
               </button>
             </div>
           </div>

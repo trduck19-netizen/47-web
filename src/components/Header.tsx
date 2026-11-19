@@ -85,6 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
   branding,
 }) => {
   const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [cartCount, setCartCount] = useState<number>(() => cartService.getCartCount());
@@ -167,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
             className="flex items-center gap-1.5 sm:gap-2 group shrink-0 cursor-pointer select-none"
-            aria-label="Về trang chủ tra cứu code"
+            aria-label={isEn ? 'Return to Home / Code Lookup' : 'Về trang chủ tra cứu code'}
           >
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary via-primary-hover to-accent flex items-center justify-center shadow-glow-primary group-hover:scale-105 transition-transform overflow-hidden shrink-0">
               {branding?.logoUrl ? (
@@ -289,10 +290,10 @@ export const Header: React.FC<HeaderProps> = ({
             <a
               href="#giai-phap-san"
               className="hidden lg:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:border-amber-500/60"
-              title="Giải pháp bán đứt hoặc cho thuê sàn TMĐT chuyên nghiệp"
+              title={isEn ? 'Turnkey E-commerce Mall Solutions & Licensing' : 'Giải pháp bán đứt hoặc cho thuê sàn TMĐT chuyên nghiệp'}
             >
               <Rocket className="w-3.5 h-3.5 text-amber-400" />
-              <span>Thuê / Mua Sàn</span>
+              <span>{isEn ? 'Rent / Buy Mall' : 'Thuê / Mua Sàn'}</span>
               <span className="text-[9px] px-1 rounded bg-amber-500 text-neutral-950 font-black">HOT</span>
             </a>
 
@@ -306,10 +307,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenPlayground}
                 className="hidden sm:flex relative items-center gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 hover:from-amber-500/25 hover:to-rose-500/25 border border-amber-500/40 text-amber-300 font-extrabold text-xs transition-all active:scale-95 shadow-sm cursor-pointer group"
-                title="Săn Quà Tân Thủ, Vòng Quay May Mắn & Mời Bạn Nhận Hoa Hồng"
+                title={isEn ? 'Newbie Rewards, Lucky Wheel & Affiliate Commission' : 'Săn Quà Tân Thủ, Vòng Quay May Mắn & Mời Bạn Nhận Hoa Hồng'}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform animate-pulse" />
-                <span className="hidden xs:inline">Săn Quà</span>
+                <span className="hidden xs:inline">{isEn ? 'Rewards' : 'Săn Quà'}</span>
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-sm">
                   FREE
                 </span>
@@ -321,10 +322,10 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onOpenDownloadApp}
               className="relative flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-2 rounded-xl bg-gradient-to-r from-primary/15 via-purple-500/15 to-accent/15 hover:from-primary/25 hover:to-accent/25 border border-primary/40 text-primary-light font-extrabold text-xs transition-all active:scale-95 shadow-sm cursor-pointer group shrink-0"
-              title="Cài đặt App CodeGame lên điện thoại (Nhận code mới & Quà tặng tức thì)"
+              title={isEn ? 'Install App on mobile (Get instant codes & gifts)' : 'Cài đặt App CodeGame lên điện thoại (Nhận code mới & Quà tặng tức thì)'}
             >
               <Smartphone className="w-3.5 h-3.5 text-primary-light group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">Tải App</span>
+              <span className="hidden sm:inline">{isEn ? 'Download App' : 'Tải App'}</span>
               <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm">
                 APP
               </span>
@@ -336,8 +337,8 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenCart}
                 className="relative p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border text-muted-foreground hover:text-foreground transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
-                title="Giỏ hàng đa gian hàng"
-                aria-label="Giỏ hàng đa gian hàng"
+                title={isEn ? 'Mall Shopping Cart' : 'Giỏ hàng đa gian hàng'}
+                aria-label={isEn ? 'Mall Shopping Cart' : 'Giỏ hàng đa gian hàng'}
               >
                 <ShoppingCart className="w-4 h-4 text-primary" />
                 {cartCount > 0 && (
@@ -380,7 +381,7 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     className="relative flex items-center gap-1.5 p-1 sm:p-1.5 rounded-xl bg-card hover:bg-card-hover border border-border text-xs transition-all cursor-pointer shadow-sm active:scale-95 group shrink-0"
                     title={`${currentUser.displayName || currentUser.username} • ${formatCore(currentUser.wallet_balance)}`}
-                    aria-label="Thông tin nhân vật"
+                    aria-label={isEn ? 'Character & Account Info' : 'Thông tin nhân vật'}
                   >
                     <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-primary/20 text-primary-light flex items-center justify-center overflow-hidden border border-border shrink-0">
                       {currentUser.avatar_url ? (
@@ -417,7 +418,7 @@ export const Header: React.FC<HeaderProps> = ({
                           if (onOpenProfile) onOpenProfile();
                         }}
                         className="w-full p-2.5 border-b border-border/60 flex items-start gap-2.5 rounded-xl hover:bg-primary/10 transition-colors text-left cursor-pointer group"
-                        title="Xem & Chỉnh sửa thông tin nhân vật"
+                        title={isEn ? 'View & Edit Profile' : 'Xem & Chỉnh sửa thông tin nhân vật'}
                       >
                         <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden border border-border shrink-0 mt-0.5 group-hover:border-primary/50 transition-colors">
                           {currentUser.avatar_url ? (
@@ -432,7 +433,7 @@ export const Header: React.FC<HeaderProps> = ({
                               {currentUser.displayName || currentUser.username}
                             </span>
                             <span className="text-[10px] text-primary-light font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                              Sửa ↗
+                              {isEn ? 'Edit ↗' : 'Sửa ↗'}
                             </span>
                           </div>
                           <span className="text-[10px] text-muted-foreground truncate block mb-1">
@@ -440,7 +441,7 @@ export const Header: React.FC<HeaderProps> = ({
                           </span>
                           {/* Số dư ngay dưới mail */}
                           <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
-                            <span className="text-[10px] text-muted-foreground">Số dư:</span>
+                            <span className="text-[10px] text-muted-foreground">{isEn ? 'Balance:' : 'Số dư:'}</span>
                             <span className="font-mono font-bold text-emerald-400 text-xs">
                               {formatCore(currentUser.wallet_balance)}
                             </span>
@@ -460,10 +461,10 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <User className="w-4 h-4 text-primary-light group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">Thông Tin Nhân Vật</span>
+                          <span className="font-medium">{isEn ? 'Character Profile' : 'Thông Tin Nhân Vật'}</span>
                         </span>
                         <span className="text-[10px] text-primary-light font-bold">
-                          Hồ sơ ↗
+                          {isEn ? 'Profile ↗' : 'Hồ sơ ↗'}
                         </span>
                       </button>
 
@@ -518,14 +519,14 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <span className="flex items-center gap-2">
                             <ShoppingCart className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                            <span className="font-medium">Giỏ Hàng Đa Gian Hàng</span>
+                            <span className="font-medium">{isEn ? 'Mall Cart' : 'Giỏ Hàng Đa Gian Hàng'}</span>
                           </span>
                           {cartCount > 0 ? (
                             <span className="text-[10px] text-primary font-bold bg-primary/20 px-2 py-0.5 rounded-full">
-                              {cartCount} món
+                              {cartCount} {isEn ? 'items' : 'món'}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground font-medium">0 món</span>
+                            <span className="text-[10px] text-muted-foreground font-medium">{isEn ? '0 items' : '0 món'}</span>
                           )}
                         </button>
                       )}
@@ -542,10 +543,10 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <Store className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-                          <span className="font-bold text-purple-300">Kênh Người Bán</span>
+                          <span className="font-bold text-purple-300">{isEn ? 'Seller Center' : 'Kênh Người Bán'}</span>
                         </span>
                         <span className="text-[10px] text-purple-300 font-bold bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30">
-                          Gian Hàng
+                          {isEn ? 'Shop' : 'Gian Hàng'}
                         </span>
                       </button>
 
@@ -561,7 +562,7 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <Award className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                          <span className="font-bold text-amber-300">Nhiệm Vụ Nhận Quà</span>
+                          <span className="font-bold text-amber-300">{isEn ? 'Daily Missions' : 'Nhiệm Vụ Nhận Quà'}</span>
                         </span>
                         <span className="text-[10px] text-amber-400 font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
                           HOT
@@ -580,7 +581,7 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <Send className="w-4 h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
-                          <span className="font-bold text-foreground">Thông Báo Telegram</span>
+                          <span className="font-bold text-foreground">{isEn ? 'Telegram Alerts' : 'Thông Báo Telegram'}</span>
                         </span>
                         <span className="text-[10px] text-[#229ED9] font-bold bg-[#229ED9]/20 px-2 py-0.5 rounded-full border border-[#229ED9]/40">
                           BOT
@@ -596,19 +597,19 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenBookmarks();
                         }}
                         className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
-                        title="Xem danh sách game đã lưu và theo dõi"
+                        title={isEn ? 'Saved games and watchlist' : 'Xem danh sách game đã lưu và theo dõi'}
                       >
                         <span className="flex items-center gap-2">
                           <Bookmark className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">Tủ Game Đã Lưu</span>
+                          <span className="font-medium">{isEn ? 'Saved Games' : 'Tủ Game Đã Lưu'}</span>
                         </span>
                         {bookmarkCount > 0 ? (
                           <span className="text-[10px] text-amber-300 font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                            {bookmarkCount} game
+                            {bookmarkCount} {isEn ? 'games' : 'game'}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground font-medium">Trống</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">{isEn ? 'Empty' : 'Trống'}</span>
                         )}
                       </button>
 
@@ -625,7 +626,7 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <span className="flex items-center gap-2">
                             <Bell className="w-4 h-4 text-secondary group-hover:scale-110 transition-transform" />
-                            <span className="font-medium">Thông Báo Email</span>
+                            <span className="font-medium">{isEn ? 'Email Alerts' : 'Thông Báo Email'}</span>
                           </span>
                           <span className="text-[10px] text-secondary font-bold bg-secondary/15 px-2 py-0.5 rounded-full border border-secondary/30">
                             Cài đặt
@@ -712,7 +713,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {/* Shared: Giao Diện & Ngôn Ngữ */}
                       <div className="pt-2 pb-1 border-t border-border/60 space-y-2">
                         <div className="px-2 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                          <span>Giao Diện & Ngôn Ngữ</span>
+                          <span>{isEn ? 'Appearance & Language' : 'Giao Diện & Ngôn Ngữ'}</span>
                         </div>
 
                         {/* Sáng / Tối Theme Toggle */}
@@ -730,10 +731,10 @@ export const Header: React.FC<HeaderProps> = ({
                             ) : (
                               <Moon className="w-4 h-4 text-muted-foreground shrink-0" />
                             )}
-                            <span className="font-medium">{isDarkMode ? 'Chế độ Sáng' : 'Chế độ Tối'}</span>
+                            <span className="font-medium">{isDarkMode ? (isEn ? 'Light Mode' : 'Chế độ Sáng') : (isEn ? 'Dark Mode' : 'Chế độ Tối')}</span>
                           </span>
                           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted border border-border/60 text-muted-foreground">
-                            {isDarkMode ? 'Sáng' : 'Tối'}
+                            {isDarkMode ? (isEn ? 'Light' : 'Sáng') : (isEn ? 'Dark' : 'Tối')}
                           </span>
                         </button>
 
@@ -741,7 +742,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <div className="p-1.5 rounded-xl bg-muted/40 border border-border/50 flex items-center justify-between gap-2">
                           <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pl-1">
                             <Globe className="w-3.5 h-3.5 text-primary-light shrink-0" />
-                            <span>Ngôn ngữ:</span>
+                            <span>{isEn ? 'Language:' : 'Ngôn ngữ:'}</span>
                           </span>
                           <LanguageSelector variant="pill" />
                         </div>
@@ -772,7 +773,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setIsUserMenuOpen((prev) => !prev);
                     }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 min-h-[32px] sm:min-h-[38px] rounded-xl text-xs font-bold bg-primary/20 hover:bg-primary/30 text-primary-light border border-primary/40 transition-all cursor-pointer active:scale-95 shrink-0"
-                    aria-label="Tài khoản & Cài đặt"
+                    aria-label={isEn ? 'Account & Settings' : 'Tài khoản & Cài đặt'}
                   >
                     <User className="w-3.5 h-3.5 text-primary-light shrink-0" />
                     <span>{t.header.account}</span>
@@ -788,9 +789,9 @@ export const Header: React.FC<HeaderProps> = ({
                             <User className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-bold text-foreground text-xs">Tài Khoản Khách</p>
+                            <p className="font-bold text-foreground text-xs">{isEn ? 'Guest Account' : 'Tài Khoản Khách'}</p>
                             <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                              Đăng nhập để nhận Giftcode riêng & tích lũy điểm Core
+                              {isEn ? 'Log in to claim exclusive giftcodes & accumulate Core' : 'Đăng nhập để nhận Giftcode riêng & tích lũy điểm Core'}
                             </p>
                           </div>
                           <button
@@ -801,7 +802,7 @@ export const Header: React.FC<HeaderProps> = ({
                             }}
                             className="w-full py-2 px-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-extrabold text-xs shadow-glow-primary transition-all cursor-pointer active:scale-95"
                           >
-                            Đăng Nhập / Đăng Ký
+                            {isEn ? 'Log In / Register' : 'Đăng Nhập / Đăng Ký'}
                           </button>
                         </div>
 
@@ -817,7 +818,7 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <span className="flex items-center gap-2">
                             <Send className="w-4 h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
-                            <span className="font-bold text-foreground">Cộng Đồng & Bot Telegram</span>
+                            <span className="font-bold text-foreground">{isEn ? 'Community & Telegram Bot' : 'Cộng Đồng & Bot Telegram'}</span>
                           </span>
                           <span className="text-[10px] text-[#229ED9] font-bold bg-[#229ED9]/20 px-2 py-0.5 rounded-full border border-[#229ED9]/40">
                             BOT
@@ -828,7 +829,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {/* Shared: Giao Diện & Ngôn Ngữ */}
                       <div className="pt-2 pb-1 border-t border-border/60 space-y-2">
                         <div className="px-2 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                          <span>Giao Diện & Ngôn Ngữ</span>
+                          <span>{isEn ? 'Appearance & Language' : 'Giao Diện & Ngôn Ngữ'}</span>
                         </div>
 
                         {/* Sáng / Tối Theme Toggle */}
@@ -846,10 +847,10 @@ export const Header: React.FC<HeaderProps> = ({
                             ) : (
                               <Moon className="w-4 h-4 text-muted-foreground shrink-0" />
                             )}
-                            <span className="font-medium">{isDarkMode ? 'Chế độ Sáng' : 'Chế độ Tối'}</span>
+                            <span className="font-medium">{isDarkMode ? (isEn ? 'Light Mode' : 'Chế độ Sáng') : (isEn ? 'Dark Mode' : 'Chế độ Tối')}</span>
                           </span>
                           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted border border-border/60 text-muted-foreground">
-                            {isDarkMode ? 'Sáng' : 'Tối'}
+                            {isDarkMode ? (isEn ? 'Light' : 'Sáng') : (isEn ? 'Dark' : 'Tối')}
                           </span>
                         </button>
 
@@ -857,7 +858,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <div className="p-1.5 rounded-xl bg-muted/40 border border-border/50 flex items-center justify-between gap-2">
                           <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pl-1">
                             <Globe className="w-3.5 h-3.5 text-primary-light shrink-0" />
-                            <span>Ngôn ngữ:</span>
+                            <span>{isEn ? 'Language:' : 'Ngôn ngữ:'}</span>
                           </span>
                           <LanguageSelector variant="pill" />
                         </div>
@@ -879,8 +880,8 @@ export const Header: React.FC<HeaderProps> = ({
                 }
               }}
               className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 relative group bg-card hover:bg-[#229ED9]/15 border border-border/80 hover:border-[#229ED9]/40 text-muted-foreground hover:text-[#229ED9]"
-              title="Cộng đồng Telegram & Bot nhận code riêng"
-              aria-label="Cộng đồng Telegram"
+              title={isEn ? 'Telegram Community & Exclusive Bot Codes' : 'Cộng đồng Telegram & Bot nhận code riêng'}
+              aria-label={isEn ? 'Telegram Community' : 'Cộng đồng Telegram'}
             >
               <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
             </button>
@@ -890,8 +891,8 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenNotificationModal}
                 className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border/80 hover:border-secondary/40 text-muted-foreground hover:text-secondary transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 relative group"
-                title="Đăng ký nhận mã code & sự kiện qua Email"
-                aria-label="Nhận thông báo email"
+                title={isEn ? 'Subscribe to Giftcodes & Events via Email' : 'Đăng ký nhận mã code & sự kiện qua Email'}
+                aria-label={isEn ? 'Email Notifications' : 'Nhận thông báo email'}
               >
                 <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary group-hover:scale-110 transition-transform" />
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-secondary rounded-full border border-card animate-pulse" />

@@ -13,7 +13,8 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onSelectCategory, categories, onOpenDownloadApp, totalGames }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [activeModal, setActiveModal] = useState<'terms' | 'privacy' | 'contact' | null>(null);
   const [footerData, setFooterData] = useState(() => dataService.getContentByKey('footer_support'));
   const [termsData, setTermsData] = useState(() => dataService.getContentByKey('terms_of_service'));
@@ -149,7 +150,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, categories, on
                     href="/danh-sach-game-a-z"
                     className="text-primary-light font-bold hover:underline transition-colors text-left flex items-center gap-1.5"
                   >
-                    <span>📚 Danh Sách Game A-Z</span>
+                    <span>{isEn ? '📚 Game Directory A-Z' : '📚 Danh Sách Game A-Z'}</span>
                     <span className="text-[10px] bg-primary/20 text-primary-light px-1.5 py-0.5 rounded font-mono">
                       {liveGamesCount}
                     </span>
@@ -305,26 +306,26 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, categories, on
               {activeModal === 'privacy' && activePrivacy.content}
               {activeModal === 'contact' && (
                 <div className="space-y-3">
-                  <p>Mọi thắc mắc, khiếu nại hoặc yêu cầu hỗ trợ nạp/nhận mã code game, vui lòng liên hệ trực tiếp với Ban Quản Trị qua các kênh chính thức sau:</p>
+                  <p>{isEn ? 'For questions, dispute resolutions, or giftcode inquiries, please contact our Admin Team via the following channels:' : 'Mọi thắc mắc, khiếu nại hoặc yêu cầu hỗ trợ nạp/nhận mã code game, vui lòng liên hệ trực tiếp với Ban Quản Trị qua các kênh chính thức sau:'}</p>
                   <div className="p-4 rounded-2xl bg-muted/60 border border-border space-y-2.5">
                     <div className="flex items-center gap-2 text-foreground font-semibold">
                       <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>Email Tiếp Nhận: <strong className="text-amber-300 font-mono ml-1">{supportEmail}</strong></span>
+                      <span>{isEn ? 'Support Email:' : 'Email Tiếp Nhận:'} <strong className="text-amber-300 font-mono ml-1">{supportEmail}</strong></span>
                     </div>
                     <div className="flex items-center gap-2 text-foreground font-semibold">
                       <Send className="w-4 h-4 text-sky-400 shrink-0" />
-                      <span>Cộng Đồng Telegram: <a href={telegramGroupLink || supportTelegram} target="_blank" rel="noreferrer" className="text-sky-400 font-mono underline hover:text-sky-300 ml-1">{telegramGroupLink || supportTelegram}</a></span>
+                      <span>{isEn ? 'Telegram Group:' : 'Cộng Đồng Telegram:'} <a href={telegramGroupLink || supportTelegram} target="_blank" rel="noreferrer" className="text-sky-400 font-mono underline hover:text-sky-300 ml-1">{telegramGroupLink || supportTelegram}</a></span>
                     </div>
                     <div className="flex items-center gap-2 text-foreground font-semibold">
                       <MessageSquare className="w-4 h-4 text-blue-400 shrink-0" />
-                      <span>Hỗ Trợ Zalo: <a href={supportZalo} target="_blank" rel="noreferrer" className="text-blue-400 font-mono underline hover:text-blue-300 ml-1">{supportZalo}</a></span>
+                      <span>{isEn ? 'Zalo Support:' : 'Hỗ Trợ Zalo:'} <a href={supportZalo} target="_blank" rel="noreferrer" className="text-blue-400 font-mono underline hover:text-blue-300 ml-1">{supportZalo}</a></span>
                     </div>
                     <div className="flex items-center gap-2 text-foreground font-semibold">
                       <PhoneCall className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>Hotline 24/7: <strong className="text-emerald-400 font-mono ml-1">{supportHotline}</strong></span>
+                      <span>{isEn ? 'Hotline 24/7:' : 'Hotline 24/7:'} <strong className="text-emerald-400 font-mono ml-1">{supportHotline}</strong></span>
                     </div>
                   </div>
-                  <p className="text-muted-foreground text-xs">Hệ thống xử lý tự động 24/7. Hỗ trợ kỹ thuật viên trực tuyến từ 8:00 đến 23:00 hàng ngày.</p>
+                  <p className="text-muted-foreground text-xs">{isEn ? 'Automated system 24/7. Live customer agents available 8:00 AM - 11:00 PM daily.' : 'Hệ thống xử lý tự động 24/7. Hỗ trợ kỹ thuật viên trực tuyến từ 8:00 đến 23:00 hàng ngày.'}</p>
                 </div>
               )}
             </div>

@@ -523,65 +523,104 @@ export function smartVietnameseMatch(
   return false;
 }
 
-// Format currency VND
-export function formatCurrencyVND(amount: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(amount || 0);
+// Helper phát hiện ngôn ngữ hiện hành cho utility định dạng
+function isCurrentEn(language?: string): boolean {
+  if (language) return language.startsWith('en');
+  if (typeof document !== 'undefined' && document.documentElement.lang) {
+    return document.documentElement.lang.startsWith('en');
+  }
+  if (typeof localStorage !== 'undefined') {
+    const saved = localStorage.getItem('wcg_language');
+    if (saved && saved.startsWith('en')) return true;
+  }
+  return false;
 }
 
-// Format Core Currency (1 VND = 1 Core)
-export function formatCore(amount: number): string {
-  const formatted = new Intl.NumberFormat('vi-VN', {
+// Format currency VND chuẩn song ngữ: 20.000 đ (vi) vs 20,000 VND (en)
+export function formatCurrencyVND(amount: number, language?: string): string {
+  const isEn = isCurrentEn(language);
+  const val = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  if (isEn) {
+    const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(val);
+    return `${formatted} VND`;
+  }
+  const formatted = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(val);
+  return `${formatted} đ`;
+}
+
+// Format Core Currency (1 VND = 1 Core) chuẩn song ngữ
+export function formatCore(amount: number, language?: string): string {
+  const isEn = isCurrentEn(language);
+  const val = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  const formatted = new Intl.NumberFormat(isEn ? 'en-US' : 'vi-VN', {
     maximumFractionDigits: 0,
-  }).format(amount || 0);
+  }).format(val);
   return `${formatted} Core`;
 }
 
-// Format Dual Display: e.g. "50.000 Core (~50.000đ)"
-export function formatPriceDual(amount: number): string {
-  const core = formatCore(amount);
-  const vnd = formatCurrencyVND(amount);
+// Format Dual Display: e.g. "50.000 Core (~50.000 đ)" vs "50,000 Core (~50,000 VND)"
+export function formatPriceDual(amount: number, language?: string): string {
+  const core = formatCore(amount, language);
+  const vnd = formatCurrencyVND(amount, language);
   return `${core} (${vnd})`;
 }
 
-// Format relative date
-export function formatRelativeDate(dateStr?: string | null): string {
-  if (!dateStr) return 'Gần đây';
+// Format relative date chuẩn song ngữ
+export function formatRelativeDate(dateStr?: string | null, language?: string): string {
+  const isEn = isCurrentEn(language);
+  if (!dateStr) return isEn ? 'Recent' : 'Gần đây';
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
+    if (isEn) {
+      return d.toLocaleDateString('en-US', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
     return d.toLocaleDateString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
     });
   } catch {
-    return String(dateStr || 'Gần đây');
+    return String(dateStr || (isEn ? 'Recent' : 'Gần đây'));
   }
 }
 
-// Safe full datetime format: "14:30:25 - 30/09/2026"
-export function formatFullDateTime(dateStr?: string | number | null): string {
+// Safe full datetime format: "14:30:25 - 30/09/2026" (vi) vs "Sep 30, 2026, 02:30:25 PM (GMT+7)" (en)
+export function formatFullDateTime(dateStr?: string | number | null, language?: string): string {
+  const isEn = isCurrentEn(language);
   if (!dateStr) return '—';
   try {
     let cleanStr = String(dateStr).trim();
     if (/^\d{10,13}$/.test(cleanStr)) {
       const num = Number(cleanStr);
-      const d = new Date(num < 10000000000 ? num * 1000 : num);
-      if (!isNaN(d.getTime())) {
-        const pad = (n: number) => String(n).padStart(2, '0');
-        return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} - ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-      }
-    }
-    // If format is SQLite "YYYY-MM-DD HH:MM:SS" without timezone, treat as UTC
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(cleanStr)) {
+      cleanStr = new Date(num < 10000000000 ? num * 1000 : num).toISOString();
+    } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(cleanStr)) {
       cleanStr = cleanStr.replace(' ', 'T') + 'Z';
     }
     const d = new Date(cleanStr);
     if (isNaN(d.getTime())) return String(dateStr);
+
+    if (isEn) {
+      return (
+        new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        }).format(d) + ' (GMT+7)'
+      );
+    }
+
     const pad = (n: number) => String(n).padStart(2, '0');
     const hours = pad(d.getHours());
     const minutes = pad(d.getMinutes());

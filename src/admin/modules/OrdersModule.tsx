@@ -53,7 +53,7 @@ const CARRIER_PRESETS = [
 ];
 
 export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
-  const { language } = useLanguage();
+  const { language, formatCurrency, formatDateTime, t } = useLanguage();
   const isEn = language === 'en';
   const [orders, setOrders] = useState<AdminOrderRecord[]>([]);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -161,7 +161,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
   };
 
   const formatVnd = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+    return formatCurrency(val);
   };
 
   const handleCopy = (code: string) => {
@@ -269,7 +269,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
               )}
             </div>
             <p className="text-[10px] text-slate-400 truncate" title={item.id}>
-              {formatFullDateTime(item.createdAt)}
+              {formatDateTime(item.createdAt)}
             </p>
           </div>
         );
@@ -602,13 +602,13 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
 
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                Ghi Chú Vận Đơn (Tùy chọn)
+                {isEn ? 'Shipping Notes (Optional)' : 'Ghi Chú Vận Đơn (Tùy chọn)'}
               </label>
               <input
                 type="text"
                 value={shippingNoteInput}
                 onChange={(e) => setShippingNoteInput(e.target.value)}
-                placeholder="Ví dụ: Khách hẹn giao sau 18h, kiện hàng dễ vỡ..."
+                placeholder={isEn ? 'e.g. Fragile parcel, deliver after 6pm...' : 'Ví dụ: Khách hẹn giao sau 18h, kiện hàng dễ vỡ...'}
                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -619,7 +619,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 onClick={() => setShippingOrder(null)}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               >
-                Hủy
+                {t?.glossary?.cancel || (isEn ? 'Cancel' : 'Hủy')}
               </button>
               <button
                 type="button"
@@ -627,7 +627,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 className="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 flex items-center gap-1.5"
               >
                 <Truck className="w-3.5 h-3.5" />
-                <span>Lưu Cập Nhật Vận Đơn</span>
+                <span>{isEn ? 'Save Tracking Update' : 'Lưu Cập Nhật Vận Đơn'}</span>
               </button>
             </div>
           </div>
@@ -638,20 +638,20 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
       <FormModal
         isOpen={Boolean(viewingOrder)}
         onClose={() => setViewingOrder(null)}
-        title={`Chi Tiết Đơn Hàng #${viewingOrder?.orderCode}`}
-        subtitle="Thông tin khách hàng, địa chỉ giao vận và mã sản phẩm."
+        title={isEn ? `Order Details #${viewingOrder?.orderCode}` : `Chi Tiết Đơn Hàng #${viewingOrder?.orderCode}`}
+        subtitle={isEn ? 'Buyer info, delivery address and serial keys/credentials.' : 'Thông tin khách hàng, địa chỉ giao vận và mã sản phẩm.'}
         maxWidth="lg"
       >
         {viewingOrder && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-xs dark:bg-slate-800/60">
               <div>
-                <p className="text-slate-400">Khách Hàng & Nơi Nhận</p>
+                <p className="text-slate-400">{isEn ? 'Customer & Delivery Info' : 'Khách Hàng & Nơi Nhận'}</p>
                 <p className="font-bold text-slate-900 dark:text-white mt-0.5">
                   {viewingOrder.shippingName || viewingOrder.buyerName}
                 </p>
                 <p className="text-slate-500">{viewingOrder.buyerEmail}</p>
-                <p className="text-slate-500 font-mono">{viewingOrder.shippingPhone || viewingOrder.buyerPhone || 'Không có SĐT'}</p>
+                <p className="text-slate-500 font-mono">{viewingOrder.shippingPhone || viewingOrder.buyerPhone || (isEn ? 'No phone' : 'Không có SĐT')}</p>
                 {viewingOrder.shippingAddress && (
                   <p className="text-slate-600 dark:text-slate-300 mt-1 font-medium">
                     📍 {viewingOrder.shippingAddress}
@@ -659,13 +659,13 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 )}
                 {viewingOrder.shippingNote && (
                   <p className="text-amber-500 text-[11px] mt-0.5 italic">
-                    Ghi chú: {viewingOrder.shippingNote}
+                    {isEn ? 'Note' : 'Ghi chú'}: {viewingOrder.shippingNote}
                   </p>
                 )}
               </div>
 
               <div>
-                <p className="text-slate-400">Thanh Toán & Trạng Thái</p>
+                <p className="text-slate-400">{isEn ? 'Payment & Order Status' : 'Thanh Toán & Trạng Thái'}</p>
                 <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">
                   {formatVnd(viewingOrder.amount)}
                 </p>
@@ -675,7 +675,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 </div>
                 {viewingOrder.trackingCode && (
                   <div className="mt-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-mono text-[11px]">
-                    <span className="font-bold">🚚 {viewingOrder.carrier || 'Vận chuyển'}:</span> {viewingOrder.trackingCode}
+                    <span className="font-bold">🚚 {viewingOrder.carrier || (isEn ? 'Carrier' : 'Vận chuyển')}:</span> {viewingOrder.trackingCode}
                   </div>
                 )}
               </div>
@@ -685,7 +685,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
             {viewingOrder.orderType !== 'PHYSICAL' && (!viewingOrder.shippingAddress || (viewingOrder.deliveredCodes && viewingOrder.deliveredCodes.length > 0)) && (
               <div>
                 <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                  Mã Sản Phẩm Đã Bàn Giao ({viewingOrder.deliveredCodes?.length || 0})
+                  {isEn ? `Delivered Credentials / Serial Keys (${viewingOrder.deliveredCodes?.length || 0})` : `Mã Sản Phẩm Đã Bàn Giao (${viewingOrder.deliveredCodes?.length || 0})`}
                 </h4>
                 <div className="space-y-2">
                   {viewingOrder.deliveredCodes && viewingOrder.deliveredCodes.length > 0 ? (
@@ -704,12 +704,12 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                           ) : (
                             <Copy className="h-4 w-4" />
                           )}
-                          <span className="text-[11px]">Sao chép</span>
+                          <span className="text-[11px]">{isEn ? 'Copy' : 'Sao chép'}</span>
                         </button>
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-slate-400 italic">Không có mã bàn giao.</p>
+                    <p className="text-xs text-slate-400 italic">{isEn ? 'No delivered credentials.' : 'Không có mã bàn giao.'}</p>
                   )}
                 </div>
               </div>
@@ -727,7 +727,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                   className="rounded-xl bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 flex items-center gap-1"
                 >
                   <Truck className="w-3.5 h-3.5" />
-                  <span>Cập Nhật Vận Đơn</span>
+                  <span>{isEn ? 'Update Shipping' : 'Cập Nhật Vận Đơn'}</span>
                 </button>
               )}
               {(viewingOrder.status === 'COMPLETED' || viewingOrder.status === 'DELIVERED') && (
@@ -740,7 +740,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                   }}
                   className="rounded-xl bg-rose-50 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300"
                 >
-                  Hoàn Tiền Cho Khách
+                  {isEn ? 'Refund to Buyer' : 'Hoàn Tiền Cho Khách'}
                 </button>
               )}
               <button
@@ -748,7 +748,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 onClick={() => setViewingOrder(null)}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               >
-                Đóng
+                {t?.glossary?.close || (isEn ? 'Close' : 'Đóng')}
               </button>
             </div>
           </div>
@@ -760,17 +760,17 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
         isOpen={Boolean(refundingOrder)}
         onClose={() => setRefundingOrder(null)}
         onConfirm={handleRefundConfirm}
-        title="Xác Nhận Hoàn Tiền Đơn Hàng"
+        title={isEn ? 'Confirm Order Refund' : 'Xác Nhận Hoàn Tiền Đơn Hàng'}
         message={
           <span>
-            Bạn có chắc chắn muốn hoàn lại{' '}
+            {isEn ? 'Are you sure you want to refund ' : 'Bạn có chắc chắn muốn hoàn lại '}
             <strong className="text-rose-600 font-mono">
               {formatVnd(refundingOrder?.amount || 0)}
             </strong>{' '}
-            vào ví của khách hàng <strong>{refundingOrder?.buyerEmail}</strong>? Đơn hàng sẽ đổi trạng thái sang REFUNDED.
+            {isEn ? `to buyer wallet of ${refundingOrder?.buyerEmail}? Status will change to REFUNDED.` : `vào ví của khách hàng ${refundingOrder?.buyerEmail}? Đơn hàng sẽ đổi trạng thái sang REFUNDED.`}
           </span>
         }
-        confirmText="Hoàn tiền ngay"
+        confirmText={isEn ? 'Refund Now' : 'Hoàn tiền ngay'}
         variant="warning"
       />
 
@@ -788,12 +788,12 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm sm:text-base text-white flex items-center gap-2">
-                    Cấu Hình API Vận Chuyển Tự Động
+                    {isEn ? 'Automated Shipping Carrier API' : 'Cấu Hình API Vận Chuyển Tự Động'}
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       GHTK • GHN • Viettel Post
                     </span>
                   </h3>
-                  <p className="text-xs text-neutral-400">Tự động kết nối, tính cước và sinh mã vận đơn khi khách đặt hàng</p>
+                  <p className="text-xs text-neutral-400">{isEn ? 'Auto sync, rate calculation, and waybill generation on checkout.' : 'Tự động kết nối, tính cước và sinh mã vận đơn khi khách đặt hàng'}</p>
                 </div>
               </div>
               <button
@@ -809,14 +809,18 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 e.preventDefault();
                 shippingService.saveConfig(carrierConfig);
                 setIsCarrierConfigOpen(false);
-                onShowToast('Lưu cấu hình thành công', 'Thông tin API 3 đơn vị vận chuyển đã được áp dụng ngay.', 'success');
+                onShowToast(
+                  isEn ? 'Configuration Saved' : 'Lưu cấu hình thành công',
+                  isEn ? 'API credentials for 3 carriers applied successfully.' : 'Thông tin API 3 đơn vị vận chuyển đã được áp dụng ngay.',
+                  'success'
+                );
               }}
               className="p-5 space-y-4 overflow-y-auto flex-1 text-xs"
             >
               <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-white block">Môi Trường Vận Hành (API Mode)</span>
-                  <span className="text-[11px] text-neutral-400">Chọn chế độ kết nối bưu chính</span>
+                  <span className="font-bold text-white block">{isEn ? 'Operational Mode (API Mode)' : 'Môi Trường Vận Hành (API Mode)'}</span>
+                  <span className="text-[11px] text-neutral-400">{isEn ? 'Choose postal gateway environment' : 'Chọn chế độ kết nối bưu chính'}</span>
                 </div>
                 <div className="flex items-center gap-1 bg-neutral-900 p-1 rounded-lg border border-neutral-800">
                   <button
@@ -828,7 +832,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                         : 'text-neutral-400 hover:text-white'
                     }`}
                   >
-                    Sandbox (Thử nghiệm)
+                    Sandbox
                   </button>
                   <button
                     type="button"
@@ -839,14 +843,14 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                         : 'text-neutral-400 hover:text-white'
                     }`}
                   >
-                    Production (Thật)
+                    Production
                   </button>
                 </div>
               </div>
 
               {/* Hãng mặc định */}
               <div>
-                <label className="font-semibold text-neutral-300 block mb-1">Đơn Vị Vận Chuyển Mặc Định</label>
+                <label className="font-semibold text-neutral-300 block mb-1">{isEn ? 'Default Carrier' : 'Đơn Vị Vận Chuyển Mặc Định'}</label>
                 <select
                   value={carrierConfig.defaultCarrier}
                   onChange={(e) => setCarrierConfig({ ...carrierConfig, defaultCarrier: e.target.value as CarrierCode })}
@@ -869,7 +873,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                     type="password"
                     value={carrierConfig.ghtkToken || ''}
                     onChange={(e) => setCarrierConfig({ ...carrierConfig, ghtkToken: e.target.value })}
-                    placeholder="Nhập mã API Token cấp bởi GHTK..."
+                    placeholder={isEn ? 'Enter API Token provided by GHTK...' : 'Nhập mã API Token cấp bởi GHTK...'}
                     className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800 font-mono text-white outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -897,7 +901,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                       type="text"
                       value={carrierConfig.ghnShopId || ''}
                       onChange={(e) => setCarrierConfig({ ...carrierConfig, ghnShopId: e.target.value })}
-                      placeholder="Mã cửa hàng (Shop ID)..."
+                      placeholder={isEn ? 'Shop ID...' : 'Mã cửa hàng (Shop ID)...'}
                       className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800 font-mono text-white outline-none focus:border-orange-500"
                     />
                   </div>
@@ -911,22 +915,22 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[11px] text-neutral-400 block mb-1">Tài Khoản VTP</label>
+                    <label className="text-[11px] text-neutral-400 block mb-1">{isEn ? 'VTP Account' : 'Tài Khoản VTP'}</label>
                     <input
                       type="text"
                       value={carrierConfig.vtpUsername || ''}
                       onChange={(e) => setCarrierConfig({ ...carrierConfig, vtpUsername: e.target.value })}
-                      placeholder="Tên đăng nhập Viettel Post..."
+                      placeholder={isEn ? 'Viettel Post username...' : 'Tên đăng nhập Viettel Post...'}
                       className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800 text-white outline-none focus:border-red-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-neutral-400 block mb-1">Mật Khẩu</label>
+                    <label className="text-[11px] text-neutral-400 block mb-1">{isEn ? 'Password' : 'Mật Khẩu'}</label>
                     <input
                       type="password"
                       value={carrierConfig.vtpPassword || ''}
                       onChange={(e) => setCarrierConfig({ ...carrierConfig, vtpPassword: e.target.value })}
-                      placeholder="Mật khẩu VTP..."
+                      placeholder={isEn ? 'VTP Password...' : 'Mật khẩu VTP...'}
                       className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800 text-white outline-none focus:border-red-500"
                     />
                   </div>
@@ -939,13 +943,13 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
                   onClick={() => setIsCarrierConfigOpen(false)}
                   className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold text-xs transition-colors"
                 >
-                  Đóng
+                  {t?.glossary?.close || (isEn ? 'Close' : 'Đóng')}
                 </button>
                 <button
                   type="submit"
                   className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all"
                 >
-                  Lưu Cấu Hình Vận Chuyển
+                  {isEn ? 'Save Carrier Settings' : 'Lưu Cấu Hình Vận Chuyển'}
                 </button>
               </div>
             </form>

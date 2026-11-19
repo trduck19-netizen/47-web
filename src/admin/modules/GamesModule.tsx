@@ -935,11 +935,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
               <div className="flex items-center gap-2.5 text-purple-300 font-medium">
                 <Rocket className="w-5 h-5 text-purple-400 shrink-0" />
                 <span>
-                  {isEn ? (
-                    <>Detected <strong className="text-white font-bold">{upcomingCount}</strong> new games from Muse API. Select 'Upcoming Games & Muse API' to view and sync.</>
-                  ) : (
-                    <>Phát hiện <strong className="text-white font-bold">{upcomingCount}</strong> tựa game mới từ Muse API. Chọn mục 'Game Chuẩn Bị Ra Mắt & API Muse' để xem và đồng bộ.</>
-                  )}
+                  {t('admin.gamesModule.bannerMuseApi', { count: upcomingCount })}
                 </span>
               </div>
               <button
@@ -959,11 +955,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
               <div className="flex items-center gap-2.5 text-emerald-300 font-medium">
                 <Smartphone className="w-5 h-5 text-emerald-400 shrink-0" />
                 <span>
-                  {isEn ? (
-                    <>Detected <strong className="text-white font-bold">{pendingGamesCount}</strong> new games from Google Play Store VN pending approval!</>
-                  ) : (
-                    <>Phát hiện <strong className="text-white font-bold">{pendingGamesCount}</strong> tựa game mới từ Google Play Store VN đang chờ duyệt!</>
-                  )}
+                  {t('admin.gamesModule.bannerPending', { count: pendingGamesCount })}
                 </span>
               </div>
               <button

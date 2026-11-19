@@ -127,7 +127,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   onQuickAction,
   pendingCount = 0,
 }) => {
-  const { language } = useLanguage();
+  const { language, isPseudo, setIsPseudo } = useLanguage();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
@@ -286,6 +286,24 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
 
         {/* Language Selector (Admin i18n switcher) */}
         <LanguageSelector variant="admin" />
+
+        {/* Pseudo i18n Test Mode Toggle (Internal QA) */}
+        <button
+          type="button"
+          onClick={() => setIsPseudo(!isPseudo)}
+          className={`px-2 py-1.5 rounded-lg border text-[10px] font-mono font-bold transition-all cursor-pointer ${
+            isPseudo
+              ? 'bg-amber-500 text-black border-amber-400 shadow-sm animate-pulse'
+              : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-neutral-200'
+          }`}
+          title={
+            isPseudo
+              ? (isEn ? 'Pseudolocalization ACTIVE (Strings extended ~30%). Click to turn OFF' : 'Chế độ chữ giả ĐANG BẬT (kéo dài ~30% chuỗi để soi tràn khung). Nhấp để TẮT')
+              : (isEn ? 'Turn ON Pseudolocalization to test UI overflow & unlocalized strings' : 'Bật chế độ chữ giả để kiểm tra tràn khung và phát hiện chữ ghi cứng')
+          }
+        >
+          PSEUDO: {isPseudo ? 'ON' : 'OFF'}
+        </button>
 
         {/* Theme Toggle */}
         <button

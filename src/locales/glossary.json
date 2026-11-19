@@ -1,0 +1,210 @@
+{
+  "$schema": "Glossary of Universal Mall SSOT Translation Terms",
+  "terms": {
+    "save": {
+      "vi": "Lưu",
+      "en": "Save",
+      "context": "Lưu biểu mẫu hoặc cấu hình"
+    },
+    "cancel": {
+      "vi": "Hủy",
+      "en": "Cancel",
+      "context": "Hủy bỏ thao tác hoặc đóng hộp thoại"
+    },
+    "refresh": {
+      "vi": "Làm mới",
+      "en": "Refresh",
+      "context": "Nút làm mới dữ liệu bảng hoặc danh sách"
+    },
+    "exportCsv": {
+      "vi": "Xuất CSV",
+      "en": "Export CSV",
+      "context": "Xuất dữ liệu bảng ra file CSV"
+    },
+    "importCsv": {
+      "vi": "Nhập CSV",
+      "en": "Import CSV",
+      "context": "Nhập dữ liệu từ file CSV"
+    },
+    "confirm": {
+      "vi": "Xác nhận",
+      "en": "Confirm",
+      "context": "Nút xác nhận hành động"
+    },
+    "close": {
+      "vi": "Đóng",
+      "en": "Close",
+      "context": "Nút đóng modal/popup/thông báo"
+    },
+    "delete": {
+      "vi": "Xóa",
+      "en": "Delete",
+      "context": "Nút xóa bản ghi"
+    },
+    "edit": {
+      "vi": "Sửa",
+      "en": "Edit",
+      "context": "Nút chỉnh sửa thông tin"
+    },
+    "details": {
+      "vi": "Chi tiết",
+      "en": "Details",
+      "context": "Xem chi tiết bản ghi"
+    },
+    "filter": {
+      "vi": "Bộ lọc",
+      "en": "Filter",
+      "context": "Lọc danh sách"
+    },
+    "filterStatus": {
+      "vi": "Lọc trạng thái",
+      "en": "Filter status",
+      "context": "Nhãn lọc theo trạng thái"
+    },
+    "search": {
+      "vi": "Tìm kiếm",
+      "en": "Search",
+      "context": "Tìm kiếm từ khóa"
+    },
+    "searchPlaceholder": {
+      "vi": "Tìm kiếm dữ liệu...",
+      "en": "Search data...",
+      "context": "Gợi ý ô tìm kiếm"
+    },
+    "status": {
+      "vi": "Trạng thái",
+      "en": "Status",
+      "context": "Cột hoặc trường trạng thái"
+    },
+    "actions": {
+      "vi": "Thao tác",
+      "en": "Actions",
+      "context": "Cột nút thao tác"
+    },
+    "all": {
+      "vi": "Tất cả",
+      "en": "All",
+      "context": "Lựa chọn tất cả danh mục/trạng thái"
+    },
+    "store": {
+      "vi": "Gian hàng",
+      "en": "Store",
+      "context": "Gian hàng người bán"
+    },
+    "stores": {
+      "vi": "Gian hàng",
+      "en": "Stores",
+      "context": "Danh sách các gian hàng"
+    },
+    "orders": {
+      "vi": "Đơn hàng",
+      "en": "Orders",
+      "context": "Đơn hàng người mua / gian hàng"
+    },
+    "escrow": {
+      "vi": "Bảo chứng 168 giờ",
+      "en": "168h Escrow Guarantee",
+      "context": "Chính sách giữ tiền bảo vệ người mua"
+    },
+    "vouchers": {
+      "vi": "Mã giảm giá",
+      "en": "Vouchers",
+      "context": "Mã ưu đãi giảm giá đơn hàng"
+    },
+    "freeship": {
+      "vi": "Miễn phí vận chuyển",
+      "en": "Free Shipping",
+      "context": "Ưu đãi phí giao hàng"
+    },
+    "members": {
+      "vi": "Thành viên",
+      "en": "Members",
+      "context": "Quản lý người dùng và vai trò"
+    },
+    "games": {
+      "vi": "Danh mục Game",
+      "en": "Game Directory",
+      "context": "Kho danh mục game sàn"
+    },
+    "wallet": {
+      "vi": "Ví tiền",
+      "en": "Wallet",
+      "context": "Sổ cái và quản lý ví"
+    },
+    "withdrawals": {
+      "vi": "Rút tiền",
+      "en": "Withdrawals",
+      "context": "Yêu cầu rút tiền người bán"
+    },
+    "reconciliation": {
+      "vi": "Đối soát",
+      "en": "Reconciliation",
+      "context": "Đối soát 3 nguồn tài chính"
+    },
+    "disputes": {
+      "vi": "Khiếu nại",
+      "en": "Disputes",
+      "context": "Giải quyết tranh chấp người mua và người bán"
+    },
+    "pending": {
+      "vi": "Chờ duyệt",
+      "en": "Pending",
+      "context": "Trạng thái đang chờ xử lý"
+    },
+    "active": {
+      "vi": "Hoạt động",
+      "en": "Active",
+      "context": "Trạng thái đang hoạt động"
+    },
+    "suspended": {
+      "vi": "Tạm khóa",
+      "en": "Suspended",
+      "context": "Trạng thái bị tạm khóa"
+    },
+    "rejected": {
+      "vi": "Từ chối",
+      "en": "Rejected",
+      "context": "Trạng thái bị từ chối"
+    },
+    "approved": {
+      "vi": "Đã duyệt",
+      "en": "Approved",
+      "context": "Trạng thái đã được phê duyệt"
+    },
+    "viewMore": {
+      "vi": "Xem thêm",
+      "en": "View more",
+      "context": "Mở rộng danh sách"
+    },
+    "viewLess": {
+      "vi": "Thu gọn",
+      "en": "Collapse",
+      "context": "Thu gọn danh sách"
+    },
+    "back": {
+      "vi": "Quay lại",
+      "en": "Back",
+      "context": "Quay lại trang trước"
+    },
+    "total": {
+      "vi": "Tổng số",
+      "en": "Total",
+      "context": "Tổng số bản ghi"
+    },
+    "loading": {
+      "vi": "Đang tải dữ liệu...",
+      "en": "Loading data...",
+      "context": "Trạng thái chờ tải dữ liệu"
+    },
+    "success": {
+      "vi": "Thành công!",
+      "en": "Success!",
+      "context": "Thông báo thao tác thành công"
+    },
+    "error": {
+      "vi": "Có lỗi xảy ra, vui lòng thử lại.",
+      "en": "An error occurred, please try again.",
+      "context": "Thông báo thao tác thất bại"
+    }
+  }
+}

@@ -191,6 +191,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   onShowToast,
 }) => {
   const { t, language } = useLanguage();
+  const isEn = language === 'en';
 
   // Internal SubView state (All navigation stays inside test1)
   const [subView, setSubView] = useState<ShopeeSubView>('home');
@@ -1271,10 +1272,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               <div>
                 <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
                   <Tag className="w-5 h-5 text-[#ee4d2d]" />
-                  <span>Mã Giftcode Hôm Nay (Đóng lúc 22:30)</span>
+                  <span>{isEn ? "Today's Giftcodes (Closes at 22:30)" : 'Mã Giftcode Hôm Nay (Đóng lúc 22:30)'}</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Các mã phát hành độc quyền trong ngày, nhận ngay trước khi đồng hồ điểm 22:30.
+                  {isEn ? 'Exclusive daily giftcodes, claim before 22:30 GMT+7.' : 'Các mã phát hành độc quyền trong ngày, nhận ngay trước khi đồng hồ điểm 22:30.'}
                 </p>
               </div>
             </div>
@@ -1391,7 +1392,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       <div className="text-xs">
                         <div className="text-[10px] font-semibold text-amber-500 mb-1 flex items-center gap-1">
                           <Gift className="w-3 h-3" />
-                          <span>Quà dự kiến:</span>
+                          <span>{isEn ? 'Expected Gifts:' : 'Quà dự kiến:'}</span>
                         </div>
                         {expCodes.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
@@ -1403,7 +1404,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                           </div>
                         ) : (
                           <div className="text-[10px] text-slate-400 italic bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800">
-                            Chưa có quà dự kiến (Đang cập nhật từ NPH)
+                            {isEn ? 'No expected gifts yet (Updating from publisher)' : 'Chưa có quà dự kiến (Đang cập nhật từ NPH)'}
                           </div>
                         )}
                       </div>
@@ -1488,14 +1489,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     className="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Settings className="w-3.5 h-3.5" />
-                    <span>Hồ Sơ & Bảo Mật</span>
+                    <span>{isEn ? 'Profile & Security' : 'Hồ Sơ & Bảo Mật'}</span>
                   </button>
                 ) : (
                   <button
                     onClick={onOpenAuth}
                     className="flex-1 sm:flex-initial px-4 py-2 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs transition shadow cursor-pointer"
                   >
-                    Đăng Nhập / Đăng Ký
+                    {isEn ? 'Log In / Register' : 'Đăng Nhập / Đăng Ký'}
                   </button>
                 )}
               </div>
@@ -1511,13 +1512,13 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       <Wallet className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Ví Core Sàn</h4>
-                      <p className="text-[10px] text-slate-400">Tỷ lệ quy đổi: 1 Core = 1.000 VNĐ</p>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{isEn ? 'Mall Core Wallet' : 'Ví Core Sàn'}</h4>
+                      <p className="text-[10px] text-slate-400">{isEn ? 'Rate: 1 Core = 1,000 VND' : 'Tỷ lệ quy đổi: 1 Core = 1.000 VNĐ'}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-base font-extrabold text-[#ee4d2d]">{walletBalanceDisplay}</div>
-                    <div className="text-[10px] text-slate-400">Khớp số dư thực</div>
+                    <div className="text-[10px] text-slate-400">{isEn ? 'Actual balance' : 'Khớp số dư thực'}</div>
                   </div>
                 </div>
 
@@ -1527,14 +1528,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     className="flex-1 py-2 px-3 rounded-lg bg-gradient-to-r from-[#ee4d2d] to-orange-500 hover:from-[#d73211] hover:to-orange-600 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition"
                   >
                     <CreditCard className="w-3.5 h-3.5" />
-                    <span>Nạp VietQR 24/7</span>
+                    <span>{isEn ? 'Deposit 24/7' : 'Nạp VietQR 24/7'}</span>
                   </button>
                   <button
                     onClick={() => setIsProfileOpen(true)}
                     className="py-2 px-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:border-[#ee4d2d] flex items-center justify-center gap-1 cursor-pointer transition"
                   >
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Lịch Sử</span>
+                    <span>{isEn ? 'History' : 'Lịch Sử'}</span>
                   </button>
                 </div>
               </div>
@@ -1547,12 +1548,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       <Package className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Kho Mã & Đơn Hàng</h4>
-                      <p className="text-[10px] text-slate-400">Giao mã tự động 0s • Bảo hộ 168h</p>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{isEn ? 'Code Vault & Orders' : 'Kho Mã & Đơn Hàng'}</h4>
+                      <p className="text-[10px] text-slate-400">{isEn ? 'Auto delivery 0s • 168h Escrow Protection' : 'Giao mã tự động 0s • Bảo hộ 168h'}</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-500/20">
-                    Sẵn Sàng
+                    {isEn ? 'Ready' : 'Sẵn Sàng'}
                   </span>
                 </div>
 
@@ -1562,14 +1563,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>Đơn Hàng Sàn</span>
+                    <span>{isEn ? 'Mall Orders' : 'Đơn Hàng Sàn'}</span>
                   </button>
                   <button
                     onClick={() => onOpenReceivedCodes?.('giveaways')}
                     className="py-2 px-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:border-emerald-500 flex items-center justify-center gap-1 cursor-pointer transition"
                   >
                     <Gift className="w-3.5 h-3.5" />
-                    <span>Mã Sự Kiện</span>
+                    <span>{isEn ? 'Event Codes' : 'Mã Sự Kiện'}</span>
                   </button>
                 </div>
               </div>
@@ -1582,12 +1583,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       <Bookmark className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Tủ Game Theo Dõi</h4>
-                      <p className="text-[10px] text-slate-400">Chống trùng lặp • Nhận thông báo mã mới</p>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{isEn ? 'Tracked Games' : 'Tủ Game Theo Dõi'}</h4>
+                      <p className="text-[10px] text-slate-400">{isEn ? 'Anti-duplicate • New code alerts' : 'Chống trùng lặp • Nhận thông báo mã mới'}</p>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                    {bookmarkedGamesList.length} game
+                    {bookmarkedGamesList.length} {isEn ? 'games' : 'game'}
                   </span>
                 </div>
 
@@ -1596,7 +1597,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition"
                 >
                   <Bookmark className="w-3.5 h-3.5 fill-current" />
-                  <span>Mở Tủ Game Đang Lưu ({bookmarkedGamesList.length})</span>
+                  <span>{isEn ? `Open Tracked Games (${bookmarkedGamesList.length})` : `Mở Tủ Game Đang Lưu (${bookmarkedGamesList.length})`}</span>
                 </button>
               </div>
 
@@ -1608,12 +1609,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       <ShieldCheck className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Bảo Mật & Pháp Lý</h4>
-                      <p className="text-[10px] text-slate-400">Bảo chứng sàn 168h • Tuân thủ G1/G234</p>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{isEn ? 'Security & Compliance' : 'Bảo Mật & Pháp Lý'}</h4>
+                      <p className="text-[10px] text-slate-400">{isEn ? '168h Escrow Guarantee • G1/G234 Compliant' : 'Bảo chứng sàn 168h • Tuân thủ G1/G234'}</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-600 border border-purple-500/20">
-                    Bảo Hộ
+                    {isEn ? 'Protected' : 'Bảo Hộ'}
                   </span>
                 </div>
 
@@ -1623,14 +1624,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     className="flex-1 py-2 px-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:border-purple-500 flex items-center justify-center gap-1 cursor-pointer transition"
                   >
                     <FileText className="w-3.5 h-3.5" />
-                    <span>Điều Khoản</span>
+                    <span>{isEn ? 'Terms' : 'Điều Khoản'}</span>
                   </button>
                   <button
                     onClick={() => setSubView('privacy')}
                     className="flex-1 py-2 px-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:border-purple-500 flex items-center justify-center gap-1 cursor-pointer transition"
                   >
                     <Lock className="w-3.5 h-3.5" />
-                    <span>Bảo Mật</span>
+                    <span>{isEn ? 'Privacy' : 'Bảo Mật'}</span>
                   </button>
                 </div>
               </div>
@@ -1747,13 +1748,13 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           <div className="rounded-xl overflow-hidden shadow-sm p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <FileText className="w-6 h-6 text-[#ee4d2d]" />
-              <span>Điều Khoản Dịch Vụ Sàn CodeGame Mall</span>
+              <span>{isEn ? 'Universal Mall Terms of Service' : 'Điều Khoản Dịch Vụ Sàn CodeGame Mall'}</span>
             </h3>
             <div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
-              <p><strong>1. Quy định chung:</strong> Toàn bộ giftcode và mã quà tặng trên sàn CodeGame Mall được chia sẻ hoàn toàn miễn phí hoặc phân phối từ các nhà phát hành game chính thức có giấy phép phê duyệt nội dung G1/G234 tại Việt Nam.</p>
-              <p><strong>2. Cơ chế bảo chứng 168 giờ:</strong> Đối với các giao dịch tài khoản, thẻ nạp và tiện ích qua sàn, số tiền thanh toán của người mua được hệ thống tạm giữ an toàn trong 168 giờ (7 ngày). Trong khoảng thời gian này, nếu phát sinh lỗi mã hoặc tranh chấp, người mua có quyền yêu cầu hoàn tiền 100% hoặc đổi mã 1-chạm.</p>
-              <p><strong>3. Chống gian lận và tự mua:</strong> Hệ thống nghiêm cấm mọi hành vi tự mua hàng của chính gian hàng mình, spam tạo đơn ảo hoặc dùng công cụ tự động can thiệp vào tài nguyên máy chủ.</p>
-              <p><strong>4. Quyền của Ban Quản Trị:</strong> Ban Quản Trị có quyền cập nhật và bổ sung các điều khoản nhằm bảo vệ tối đa quyền lợi chính đáng của cộng đồng game thủ và các gian hàng đối tác.</p>
+              <p><strong>{isEn ? '1. General Provisions:' : '1. Quy định chung:'}</strong> {isEn ? 'All giftcodes and vouchers on Universal Mall are distributed free or from official game publishers holding valid G1/G234 licenses in Vietnam.' : 'Toàn bộ giftcode và mã quà tặng trên sàn CodeGame Mall được chia sẻ hoàn toàn miễn phí hoặc phân phối từ các nhà phát hành game chính thức có giấy phép phê duyệt nội dung G1/G234 tại Việt Nam.'}</p>
+              <p><strong>{isEn ? '2. 168-Hour Escrow Protection:' : '2. Cơ chế bảo chứng 168 giờ:'}</strong> {isEn ? 'For buyer security, all payment funds are safely held in escrow for 168 hours (7 days). Within this window, buyers can request a 100% refund or 1-tap exchange if any issue arises.' : 'Đối với các giao dịch tài khoản, thẻ nạp và tiện ích qua sàn, số tiền thanh toán của người mua được hệ thống tạm giữ an toàn trong 168 giờ (7 ngày). Trong khoảng thời gian này, nếu phát sinh lỗi mã hoặc tranh chấp, người mua có quyền yêu cầu hoàn tiền 100% hoặc đổi mã 1-chạm.'}</p>
+              <p><strong>{isEn ? '3. Anti-Fraud & Self-Dealing:' : '3. Chống gian lận và tự mua:'}</strong> {isEn ? 'Self-purchasing, fake orders, and automated bot actions interfering with system resources are strictly prohibited.' : 'Hệ thống nghiêm cấm mọi hành vi tự mua hàng của chính gian hàng mình, spam tạo đơn ảo hoặc dùng công cụ tự động can thiệp vào tài nguyên máy chủ.'}</p>
+              <p><strong>{isEn ? '4. Management Rights:' : '4. Quyền của Ban Quản Trị:'}</strong> {isEn ? 'The administration reserves the right to update terms to protect gamers and merchants.' : 'Ban Quản Trị có quyền cập nhật và bổ sung các điều khoản nhằm bảo vệ tối đa quyền lợi chính đáng của cộng đồng game thủ và các gian hàng đối tác.'}</p>
             </div>
           </div>
         )}
@@ -1763,12 +1764,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           <div className="rounded-xl overflow-hidden shadow-sm p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <ShieldCheck className="w-6 h-6 text-emerald-500" />
-              <span>Chính Sách Bảo Mật & An Toàn Thông Tin</span>
+              <span>{isEn ? 'Privacy Policy & Information Security' : 'Chính Sách Bảo Mật & An Toàn Thông Tin'}</span>
             </h3>
             <div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
-              <p><strong>1. Bảo vệ dữ liệu cá nhân:</strong> Chúng tôi cam kết tuyệt đối bảo mật thông tin tài khoản, email và số điện thoại của người dùng theo tiêu chuẩn an toàn thông tin mạng.</p>
-              <p><strong>2. Mã hóa giao dịch ví và kho mã:</strong> Toàn bộ mã giftcode trong kho và lịch sử biến động số dư ví Core được mã hóa bằng thuật toán AES-GCM Web Crypto trên mạng lưới Cloudflare Edge Network.</p>
-              <p><strong>3. Không chia sẻ cho bên thứ ba:</strong> Chúng tôi không bán, cho thuê hay tiết lộ bất kỳ thông tin cá nhân nào của bạn cho bên thứ ba vì bất kỳ mục đích thương mại nào.</p>
+              <p><strong>{isEn ? '1. Personal Data Protection:' : '1. Bảo vệ dữ liệu cá nhân:'}</strong> {isEn ? 'We commit to strict confidentiality of account, email, and phone info according to cybersecurity standards.' : 'Chúng tôi cam kết tuyệt đối bảo mật thông tin tài khoản, email và số điện thoại của người dùng theo tiêu chuẩn an toàn thông tin mạng.'}</p>
+              <p><strong>{isEn ? '2. Cryptographic Security:' : '2. Mã hóa giao dịch ví và kho mã:'}</strong> {isEn ? 'All giftcodes and ledger transactions are encrypted with AES-GCM Web Crypto on the Cloudflare Edge Network.' : 'Toàn bộ mã giftcode trong kho và lịch sử biến động số dư ví Core được mã hóa bằng thuật toán AES-GCM Web Crypto trên mạng lưới Cloudflare Edge Network.'}</p>
+              <p><strong>{isEn ? '3. Zero Third-Party Sharing:' : '3. Không chia sẻ cho bên thứ ba:'}</strong> {isEn ? 'We never sell, rent, or disclose personal data to third parties for commercial gain.' : 'Chúng tôi không bán, cho thuê hay tiết lộ bất kỳ thông tin cá nhân nào của bạn cho bên thứ ba vì bất kỳ mục đích thương mại nào.'}</p>
             </div>
           </div>
         )}
@@ -2456,11 +2457,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-xs mb-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Khu Vực Game Zone</span>
+                  <span>{isEn ? 'Game Zone Area' : 'Khu Vực Game Zone'}</span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black">GAME ZONE — TIỆN ÍCH GAME & GIFTCODE</h2>
+                <h2 className="text-xl sm:text-2xl font-black">{isEn ? 'GAME ZONE — UTILITIES & GIFTCODES' : 'GAME ZONE — TIỆN ÍCH GAME & GIFTCODE'}</h2>
                 <p className="text-xs text-white/80 mt-0.5">
-                  Tổng hợp {allGames.length} tựa game có giấy phép ABEI G1/G234, nhận mã miễn phí và tiện ích game.
+                  {isEn ? `Catalog of ${allGames.length} licensed games (ABEI G1/G234), free codes and utilities.` : `Tổng hợp ${allGames.length} tựa game có giấy phép ABEI G1/G234, nhận mã miễn phí và tiện ích game.`}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -2658,7 +2659,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                         className="w-full py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-sm cursor-pointer"
                       >
                         <Gift className="w-3 h-3" />
-                        <span>Săn Quà 0Đ</span>
+                        <span>{isEn ? 'Claim 0 VND' : 'Săn Quà 0Đ'}</span>
                       </button>
                     </div>
                   </div>
@@ -2756,12 +2757,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               {filteredGames.length === 0 && (
                 <div className="py-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500">
                   <Compass className="w-10 h-10 mx-auto text-slate-400 mb-2 opacity-50" />
-                  <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">Không tìm thấy tựa game nào trong danh mục này</p>
+                  <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                    {isEn ? 'No games found in this category' : 'Không tìm thấy tựa game nào trong danh mục này'}
+                  </p>
                   <button
                     onClick={() => { setSelectedCategory('all'); setSearchKeyword(''); }}
                     className="mt-3 px-4 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition cursor-pointer"
                   >
-                    Xem Toàn Bộ {allGames.length} Game
+                    {isEn ? `View All ${allGames.length} Games` : `Xem Toàn Bộ ${allGames.length} Game`}
                   </button>
                 </div>
               )}
