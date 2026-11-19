@@ -231,7 +231,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       clearTimeout(timer);
       window.removeEventListener('resize', checkNavScroll);
     };
-  }, [homepageSectionsConfig, language]);
+  }, [language]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedProductType, setSelectedProductType] = useState<'all' | 'giftcode' | 'utility' | 'account' | 'giveaway'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -839,6 +839,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   useEffect(() => {
     const unsubscribe = homepageSectionsService.subscribe((updated) => {
       setOrderedSections([...updated].sort((a, b) => a.order - b.order));
+      setTimeout(checkNavScroll, 100);
     });
     return unsubscribe;
   }, []);
