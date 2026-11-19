@@ -273,9 +273,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // Ghi audit log
+    const actorName = storeAuth.authType === 'STORE_API_KEY' 
+      ? `API_KEY:${storeAuth.keyName || 'StoreKey'}`
+      : storeAuth.authType === 'THIRD_PARTY_TOKEN'
+      ? `APP:${storeAuth.keyName || 'AppToken'}`
+      : (storeAuth.member?.username || storeAuth.seller?.name || 'Seller');
+    const actorEmail = storeAuth.member?.email || (storeAuth.seller?.slug ? `${storeAuth.seller.slug}@store.local` : 'seller@store.local');
+
     await logAdminAudit(env.DB, {
-      actorName: auth.member.username || auth.member.email,
-      actorEmail: auth.member.email,
+      actorName,
+      actorEmail,
       action: 'SELLER_RESTOCK_CODES',
       targetId: product.id,
       details: {

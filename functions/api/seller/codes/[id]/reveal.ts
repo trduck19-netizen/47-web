@@ -61,6 +61,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const viewLogId = `scv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const ipAddress = request.headers.get('cf-connecting-ip') || '127.0.0.1';
 
+    const viewerMemberId = storeAuth.member?.id || storeAuth.seller.member_id || 'system';
+    const viewerName = storeAuth.authType === 'STORE_API_KEY'
+      ? `API_KEY:${storeAuth.keyName || 'StoreKey'}`
+      : storeAuth.authType === 'THIRD_PARTY_TOKEN'
+      ? `APP:${storeAuth.keyName || 'AppToken'}`
+      : (storeAuth.member?.username || storeAuth.seller?.name || 'Seller');
+
     // Ghi audit log vào seller_code_views (§5.2)
     await env.DB
       .prepare(`
@@ -72,8 +79,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         viewLogId,
         codeRow.id,
         codeRow.seller_id,
-        memberId,
-        auth.member.username || auth.member.email,
+        viewerMemberId,
+        viewerName,
         ipAddress
       )
       .run()

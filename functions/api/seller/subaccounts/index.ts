@@ -103,7 +103,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (targetMember.id === memberId) {
+    const currentMemberId = storeAuth.member?.id || storeAuth.seller.member_id;
+    if (targetMember.id === currentMemberId) {
       return new Response(
         JSON.stringify({ success: false, error: 'Bạn đã là chủ gian hàng này, không thể thêm chính mình làm tài khoản phụ.' }),
         { status: 400, headers: CORS_HEADERS }
@@ -144,15 +145,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         targetMember.id,
         cleanEmail,
         role,
-        memberId,
+        currentMemberId,
         nowIso,
         nowIso
       )
       .run();
 
+    const actorName = storeAuth.authType === 'STORE_API_KEY' 
+      ? `API_KEY:${storeAuth.keyName || 'StoreKey'}`
+      : storeAuth.authType === 'THIRD_PARTY_TOKEN'
+      ? `APP:${storeAuth.keyName || 'AppToken'}`
+      : (storeAuth.member?.username || storeAuth.seller?.name || 'Seller');
+    const actorEmail = storeAuth.member?.email || (storeAuth.seller?.slug ? `${storeAuth.seller.slug}@store.local` : 'seller@store.local');
+
     await logAdminAudit(env.DB, {
-      actorName: auth.member.username || auth.member.email,
-      actorEmail: auth.member.email,
+      actorName,
+      actorEmail,
       action: 'SELLER_ADD_SUBACCOUNT',
       targetId: subId,
       details: { seller_name: seller.name, sub_email: cleanEmail, role },
