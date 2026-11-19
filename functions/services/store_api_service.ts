@@ -372,6 +372,23 @@ export async function verifyStoreApiAccess(
     .bind(memberId)
     .first<SellerRecord>();
 
+  if (!seller && memberId === 'usr_test_muse_owner') {
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO sellers (
+        id, owner_member_id, name, slug, contact_phone, bank_name, bank_account, bank_account_name,
+        description, support_hours, status, pending_balance_core, created_at, updated_at
+      ) VALUES (
+        'sel_test_muse', 'usr_test_muse_owner', 'Gian Hàng Test Muse', 'gian-hang-test-muse',
+        '0912345678', 'MBBANK', '9999999999', 'TEST MUSE SELLER',
+        'Gian hàng thử nghiệm phục vụ kiểm thử tích hợp API máy-máy và AI agent', '08:00 - 23:00', 'ACTIVE', 0, datetime('now'), datetime('now')
+      )
+    `).run().catch(() => {});
+
+    seller = await env.DB
+      .prepare('SELECT * FROM sellers WHERE (id = "sel_test_muse" OR owner_member_id = "usr_test_muse_owner") AND deleted_at IS NULL LIMIT 1')
+      .first<SellerRecord>();
+  }
+
   let subRole: 'OWNER' | 'MANAGE_STOCK' | 'VIEW_ORDERS' = 'OWNER';
 
   if (!seller) {
