@@ -16,6 +16,7 @@ import confetti from 'canvas-confetti';
 import { authService } from '../services/authService';
 import { calculatePasswordStrength, isValidUsername, isValidEmail } from '../utils/cryptoUtils';
 import type { UserProfile } from '../types/game';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -30,6 +31,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess,
   onShowToast,
 }) => {
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
 
   // Login Form
@@ -238,14 +241,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-heading font-extrabold text-base sm:text-lg text-foreground truncate">
-                  {tab === 'login' && 'Đăng Nhập Tài Khoản'}
-                  {tab === 'register' && 'Đăng Ký Thành Viên'}
-                  {tab === 'forgot' && 'Khôi Phục Mật Khẩu'}
+                  {tab === 'login' && (isEn ? 'Account Login' : 'Đăng Nhập Tài Khoản')}
+                  {tab === 'register' && (isEn ? 'Member Registration' : 'Đăng Ký Thành Viên')}
+                  {tab === 'forgot' && (isEn ? 'Password Recovery' : 'Khôi Phục Mật Khẩu')}
                 </h3>
                 <p className="text-xs text-muted-foreground truncate">
-                  {tab === 'login' && 'Nhập thông tin đăng nhập để tiếp tục'}
-                  {tab === 'register' && 'Tạo tài khoản thành viên mới'}
-                  {tab === 'forgot' && 'Xác thực để đặt lại mật khẩu'}
+                  {tab === 'login' && (isEn ? 'Enter login credentials to continue' : 'Nhập thông tin đăng nhập để tiếp tục')}
+                  {tab === 'register' && (isEn ? 'Create a new member account' : 'Tạo tài khoản thành viên mới')}
+                  {tab === 'forgot' && (isEn ? 'Verify identity to reset password' : 'Xác thực để đặt lại mật khẩu')}
                 </p>
               </div>
             </div>
@@ -276,7 +279,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Đăng Nhập
+              {isEn ? 'Log In' : 'Đăng Nhập'}
             </button>
             <button
               onClick={() => {
@@ -289,7 +292,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Đăng Ký
+              {isEn ? 'Register' : 'Đăng Ký'}
             </button>
           </div>
         </div>

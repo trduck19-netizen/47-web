@@ -31,6 +31,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import type { UserProfile } from '../types/game';
 import { formatCore, formatFullDateTime } from '../utils/textUtils';
 import { buildVietQrUrl, generateVietQrDataUrl } from '../utils/vietQrUtils';
+import { useLanguage } from '../context/LanguageContext';
 
 interface UserWalletModalProps {
   isOpen: boolean;
@@ -51,6 +52,8 @@ export const UserWalletModal: React.FC<UserWalletModalProps> = ({
   onShowToast,
   onOpenAuth,
 }) => {
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [activeTab, setActiveTab] = useState<'TOPUP' | 'HISTORY'>('TOPUP');
   const [customInput, setCustomInput] = useState<string>('');
   const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
@@ -384,10 +387,10 @@ export const UserWalletModal: React.FC<UserWalletModalProps> = ({
 
             <div className="space-y-2 max-w-sm">
               <h3 className="font-heading font-extrabold text-xl sm:text-2xl text-foreground">
-                Yêu Cầu Đăng Nhập
+                {t.authModal?.loginRequiredTitle || (isEn ? 'Login Required' : 'Yêu Cầu Đăng Nhập')}
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Bạn cần đăng nhập hoặc tạo tài khoản thành viên để nạp Core tự động qua cổng SePay và đảm bảo tiền được cộng chính xác vào ví của bạn.
+                {t.authModal?.walletLoginRequiredDesc || (isEn ? 'Please log in or create a member account to top up Core automatically via SePay and ensure funds are credited safely to your wallet.' : 'Bạn cần đăng nhập hoặc tạo tài khoản thành viên để nạp Core tự động qua cổng SePay và đảm bảo tiền được cộng chính xác vào ví của bạn.')}
               </p>
             </div>
 
@@ -401,7 +404,7 @@ export const UserWalletModal: React.FC<UserWalletModalProps> = ({
                 className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-primary to-indigo-600 hover:opacity-95 text-white font-bold text-xs shadow-glow-primary cursor-pointer flex items-center justify-center gap-2"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Đăng Nhập / Đăng Ký Ngay</span>
+                <span>{t.authModal?.loginOrRegisterNow || (isEn ? 'Log In / Register Now' : 'Đăng Nhập / Đăng Ký Ngay')}</span>
               </button>
               <button
                 type="button"

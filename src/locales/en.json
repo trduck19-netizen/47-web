@@ -51,6 +51,7 @@
     "missions": "Missions",
     "todayCodes": "Today's Codes",
     "cart": "Shopping Cart",
+    "wallet": "Wallet",
     "solutions": "Buy / Rent Platform",
     "sellerCenter": "Seller Center"
   },
@@ -564,6 +565,8 @@
       "gameZone": "Game Zone",
       "support247": "Support 24/7"
     },
+    "paginationSummary": "Page {page} / {totalPages} • Total {total} products",
+    "showingCount": "Showing {from} - {to} of {total} products",
     "categories": {
       "sectionTitle": "MULTI-INDUSTRY CATEGORIES",
       "sectionSubtitle": "(5 Official Industries)",
@@ -639,6 +642,17 @@
     "close": "Close notification",
     "justNow": "Just now",
     "trendingMessage": "System just recorded {count} giftcode copies today!"
+  },
+  "authModal": {
+    "loginRequiredTitle": "Login Required",
+    "walletLoginRequiredDesc": "Please log in or create a member account to top up Core automatically via SePay and ensure funds are credited safely to your wallet.",
+    "checkoutLoginRequiredDesc": "Please log in to receive instant giftcode delivery and activate escrow warranty for your order.",
+    "firstPurchaseDiscount": "Log in to enjoy first-purchase discount at only 2,000 Core",
+    "loginOrRegisterNow": "Log In / Register Now",
+    "later": "Later",
+    "tabLogin": "Log In",
+    "tabRegister": "Register",
+    "tabForgot": "Forgot Password"
   },
   "common": {
     "loading": "Loading data...",

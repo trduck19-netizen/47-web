@@ -818,7 +818,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   const walletBalanceDisplay = useMemo(() => {
     const bal = currentUser?.wallet_balance ?? (currentUser as any)?.balance ?? 200;
     return formatPrice(bal);
-  }, [currentUser, shopBrand.currencyMode]);
+  }, [currentUser, shopBrand.currencyMode, language]);
 
   return (
     <div className={`min-h-screen transition-colors duration-200 font-sans pb-16 ${isShopeeDark ? 'bg-[#0a0f1d] text-slate-100' : 'bg-[#f5f5f5] text-slate-800'}`}>
@@ -937,13 +937,13 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   {currentUser.displayName || currentUser.name || currentUser.username}
                 </button>
                 <button onClick={onOpenWallet} className="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer">
-                  {t.nav?.wallet || (language === 'en' ? 'Wallet' : 'Ví')}: {walletBalanceDisplay}
+                  {t.nav?.wallet || (isEn ? 'Wallet' : 'Ví')}: {walletBalanceDisplay}
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2 pl-2 border-l border-white/20">
                 <button onClick={onOpenWallet} className="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer hidden sm:block">
-                  {t.nav?.wallet || (language === 'en' ? 'Wallet' : 'Ví')}: {walletBalanceDisplay}
+                  {t.nav?.wallet || (isEn ? 'Wallet' : 'Ví')}: {walletBalanceDisplay}
                 </button>
                 <button onClick={onOpenAuth} className="hover:opacity-80 font-medium cursor-pointer">
                   {t.nav?.login || (language === 'en' ? 'Login' : 'Đăng Nhập')}
@@ -1962,7 +1962,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     ⚡
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.mall?.services?.instantDelivery || (language === 'en' ? 'Instant 0s' : 'Giao Mã 0s')}
+                    {t('mall.services.instantDelivery')}
                   </span>
                 </button>
 
@@ -1979,7 +1979,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🚚
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.mall?.services?.courierShipping || (language === 'en' ? 'Courier Shipping' : 'Giao Bưu Chính')}
+                    {t('mall.services.courierShipping')}
                   </span>
                 </button>
 
@@ -1991,7 +1991,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🛡️
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.mall?.services?.protection168h || (language === 'en' ? '168H Protection' : 'Bảo Hộ 168H')}
+                    {t('mall.services.protection168h')}
                   </span>
                 </button>
 
@@ -2000,7 +2000,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     💳
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.mall?.services?.vietqrTopup || (language === 'en' ? 'VietQR Top-up' : 'Nạp VietQR')}
+                    {t('mall.services.vietqrTopup')}
                   </span>
                 </button>
 
@@ -2016,7 +2016,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🎡
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.mall?.services?.luckyWheel || (language === 'en' ? 'Lucky Wheel' : 'Vòng Quay Xu')}
+                    {t('mall.services.luckyWheel')}
                   </span>
                 </button>
 
@@ -2028,7 +2028,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     🎟️
                   </div>
                   <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.mall?.services?.vouchers || (language === 'en' ? 'Vouchers' : 'Mã Giảm Giá')}
+                    {t('mall.services.vouchers')}
                   </span>
                 </button>
 
@@ -2238,9 +2238,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 </div>
 
                 <div className="text-xs text-slate-500 font-medium">
-                  {language === 'en'
-                    ? `Page ${currentPage} / ${mallTotalPages} • Total ${currentMallProducts.length} items`
-                    : `Trang ${currentPage} / ${mallTotalPages} • Tổng ${currentMallProducts.length} sản phẩm`}
+                  {t('mall.paginationSummary', {
+                    page: currentPage,
+                    totalPages: mallTotalPages,
+                    total: currentMallProducts.length,
+                  })}
                 </div>
               </div>
 
@@ -2384,9 +2386,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               {mallTotalPages > 1 && (
                 <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                   <div className="text-slate-500 font-medium">
-                    {language === 'en'
-                      ? `Showing ${paginatedMallProducts.length} / ${currentMallProducts.length} products (Page ${currentPage} / ${mallTotalPages})`
-                      : `Đang hiển thị ${paginatedMallProducts.length} / ${currentMallProducts.length} sản phẩm (Trang ${currentPage} / ${mallTotalPages})`}
+                    {t('mall.showingCount', {
+                      from: (currentPage - 1) * 20 + 1,
+                      to: Math.min(currentPage * 20, currentMallProducts.length),
+                      total: currentMallProducts.length,
+                    })}
                   </div>
 
                   <div className="flex items-center gap-1">

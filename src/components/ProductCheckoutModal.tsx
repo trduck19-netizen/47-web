@@ -1273,14 +1273,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
               <div className="space-y-1.5">
                 <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 max-w-sm mx-auto">
                   <Sparkles className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
-                  <span>Đăng nhập để nhận ưu đãi mua lần đầu chỉ 2.000 Core</span>
+                  <span>{t.authModal?.firstPurchaseDiscount || (isEn ? 'Log in to enjoy first-purchase discount at only 2,000 Core' : 'Đăng nhập để nhận ưu đãi mua lần đầu chỉ 2.000 Core')}</span>
                 </div>
 
                 <h3 className="font-heading font-extrabold text-xl text-foreground">
-                  Yêu Cầu Đăng Nhập
+                  {t.authModal?.loginRequiredTitle || (isEn ? 'Login Required' : 'Yêu Cầu Đăng Nhập')}
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  Bạn cần đăng nhập tài khoản để nhận mã quà tặng tự động và kích hoạt bảo hành cho đơn hàng.
+                  {t.authModal?.checkoutLoginRequiredDesc || (isEn ? 'Please log in to receive instant giftcode delivery and activate escrow warranty for your order.' : 'Bạn cần đăng nhập tài khoản để nhận mã quà tặng tự động và kích hoạt bảo hành cho đơn hàng.')}
                 </p>
               </div>
 
@@ -1325,7 +1325,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-secondary to-primary hover:opacity-95 text-white font-bold text-xs shadow-glow-primary cursor-pointer flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>Đăng Nhập / Đăng Ký Ngay</span>
+                  <span>{t.authModal?.loginOrRegisterNow || (isEn ? 'Log In / Register Now' : 'Đăng Nhập / Đăng Ký Ngay')}</span>
                 </button>
                 <button
                   onClick={onClose}

@@ -21,7 +21,10 @@ const IN_SCOPE_UI_FILES = [
   'src/admin/AdminApp.tsx',
   'src/admin/components/AdminSidebar.tsx',
   'src/admin/components/AdminTopbar.tsx',
+  'src/admin/components/MultiLineAnalyticsChart.tsx',
+  'src/admin/components/RecentBalanceChangesWidget.tsx',
   'src/admin/components/ui/DataTable.tsx',
+  'src/admin/modules/DashboardModule.tsx',
   'src/admin/modules/OrdersModule.tsx',
   'src/admin/modules/MembersModule.tsx',
 ];
@@ -180,6 +183,23 @@ function scanUiFile(filePath) {
             line: lineNum,
             type: 'JSX_ATTR_HARDCODED',
             content: attrVal,
+            snippet: trimmed,
+          });
+        }
+      }
+    }
+
+    // 7. Kiểm tra Template Literal nằm trực tiếp trong JSX: {`... tiếng Việt ...`}
+    const jsxTemplateMatches = cleanLine.match(/\{\s*`([^\`]*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ][^\`]*)`\s*\}/g);
+    if (jsxTemplateMatches) {
+      for (const m of jsxTemplateMatches) {
+        const tplVal = m.replace(/^\{\s*`|`\s*\}$/g, '').trim();
+        const isWhitelisted = ALLOWED_KEYWORDS.some((kw) => tplVal.includes(kw));
+        if (!isWhitelisted && VIETNAMESE_ACCENT_REGEX.test(tplVal)) {
+          violations.push({
+            line: lineNum,
+            type: 'JSX_TEMPLATE_LITERAL_HARDCODED',
+            content: tplVal,
             snippet: trimmed,
           });
         }

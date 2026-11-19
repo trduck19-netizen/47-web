@@ -116,6 +116,34 @@ function buildSvgPath(points: Array<{ x: number; y: number }>): string {
   return path;
 }
 
+
+function formatMetricValue(key: string, val: number, isEn: boolean): string {
+  if (key === 'revenue') {
+    return isEn ? formatCurrencyVND(val, 'en') : formatCurrencyVND(val, 'vi');
+  }
+  const formattedNum = val.toLocaleString(isEn ? 'en-US' : 'vi-VN');
+  switch (key) {
+    case 'codeCopies': return isEn ? `${formattedNum} copies` : `${formattedNum} lượt`;
+    case 'newMembers': return isEn ? `${formattedNum} members` : `${formattedNum} người`;
+    case 'newCodes': return isEn ? `${formattedNum} codes` : `${formattedNum} mã`;
+    case 'newGames': return isEn ? `${formattedNum} games` : `${formattedNum} game`;
+    case 'orders': return isEn ? `${formattedNum} orders` : `${formattedNum} đơn`;
+    default: return String(val);
+  }
+}
+
+function translateDayLabel(dayLabel: string, isEn: boolean): string {
+  if (!isEn || !dayLabel) return dayLabel;
+  return dayLabel
+    .replace('CN', 'Sun')
+    .replace('T2', 'Mon')
+    .replace('T3', 'Tue')
+    .replace('T4', 'Wed')
+    .replace('T5', 'Thu')
+    .replace('T6', 'Fri')
+    .replace('T7', 'Sat');
+}
+
 export const MultiLineAnalyticsChart: React.FC = () => {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -312,7 +340,7 @@ export const MultiLineAnalyticsChart: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2 font-bold text-slate-300">
               <span className="flex items-center gap-1.5 text-indigo-400">
                 <Calendar className="w-3.5 h-3.5" />
-                {currentHoverItem.dayLabel}
+                {translateDayLabel(currentHoverItem.dayLabel, isEn)}
               </span>
               <span className="text-[10px] text-slate-400 font-mono">{currentHoverItem.fullDate}</span>
             </div>
@@ -324,10 +352,10 @@ export const MultiLineAnalyticsChart: React.FC = () => {
                   <div key={config.key} className="flex items-center justify-between gap-3 text-[11px]">
                     <span className="flex items-center gap-1.5 text-slate-300">
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
-                      <span>{config.label}:</span>
+                      <span>{isEn ? (config.key === 'revenue' ? 'Revenue' : config.key === 'codeCopies' ? 'Code Copies' : config.key === 'newMembers' ? 'New Signups' : config.key === 'newCodes' ? 'New Codes' : config.key === 'newGames' ? 'New Games' : 'Orders') : config.label}:</span>
                     </span>
                     <strong className="font-mono" style={{ color: config.color }}>
-                      {config.formatter(val)}
+                      {formatMetricValue(config.key, val, isEn)}
                     </strong>
                   </div>
                 );
@@ -420,7 +448,7 @@ export const MultiLineAnalyticsChart: React.FC = () => {
                       : 'fill-slate-400 dark:fill-slate-500'
                   }`}
                 >
-                  {timeRange <= 7 ? item.dayLabel.split(' ')[0] : item.date}
+                  {timeRange <= 7 ? translateDayLabel(item.dayLabel.split(' ')[0], isEn) : item.date}
                 </text>
 
                 {/* Invisible wide touch / mouse hover target */}
@@ -565,9 +593,9 @@ export const MultiLineAnalyticsChart: React.FC = () => {
 
                 <div className="flex items-baseline justify-between mt-auto">
                   <span className="text-xs font-mono font-extrabold truncate" style={{ color: isVisible ? config.color : '#94A3B8' }}>
-                    {config.formatter(totalVal)}
+                    {formatMetricValue(config.key, totalVal, isEn)}
                   </span>
-                  <span className="text-[9px] text-slate-400 uppercase font-sans">Tổng</span>
+                  <span className="text-[9px] text-slate-400 uppercase font-sans">{isEn ? 'Total' : 'Tổng'}</span>
                 </div>
               </button>
             );

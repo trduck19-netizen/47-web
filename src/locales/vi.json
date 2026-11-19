@@ -51,6 +51,7 @@
     "missions": "Nhiệm Vụ",
     "todayCodes": "Mã Hôm Nay",
     "cart": "Giỏ Hàng",
+    "wallet": "Ví",
     "solutions": "Thuê / Mua Sàn",
     "sellerCenter": "Kênh Người Bán"
   },
@@ -565,6 +566,8 @@
       "gameZone": "Game Zone",
       "support247": "Hỗ Trợ 24/7"
     },
+    "paginationSummary": "Trang {page} / {totalPages} • Tổng {total} sản phẩm",
+    "showingCount": "Đang hiển thị {from} - {to} trên tổng số {total} sản phẩm",
     "categories": {
       "sectionTitle": "DANH MỤC NGÀNH HÀNG TOÀN SÀN",
       "sectionSubtitle": "(5 Ngành Hàng Chính Hãng)",
@@ -640,6 +643,17 @@
     "close": "Đóng thông báo",
     "justNow": "Vừa xong",
     "trendingMessage": "Hệ thống vừa ghi nhận {count} lượt sao chép giftcode hôm nay!"
+  },
+  "authModal": {
+    "loginRequiredTitle": "Yêu Cầu Đăng Nhập",
+    "walletLoginRequiredDesc": "Bạn cần đăng nhập hoặc tạo tài khoản thành viên để nạp Core tự động qua cổng SePay và đảm bảo tiền được cộng chính xác vào ví của bạn.",
+    "checkoutLoginRequiredDesc": "Bạn cần đăng nhập tài khoản để nhận mã quà tặng tự động và kích hoạt bảo hành cho đơn hàng.",
+    "firstPurchaseDiscount": "Đăng nhập để nhận ưu đãi mua lần đầu chỉ 2.000 Core",
+    "loginOrRegisterNow": "Đăng Nhập / Đăng Ký Ngay",
+    "later": "Để sau",
+    "tabLogin": "Đăng Nhập",
+    "tabRegister": "Đăng Ký",
+    "tabForgot": "Quên Mật Khẩu"
   },
   "common": {
     "loading": "Đang tải dữ liệu...",

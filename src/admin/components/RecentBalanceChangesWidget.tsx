@@ -344,7 +344,7 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
                         <button
                           onClick={(e) => handleCopyRef(tx.referenceId, e)}
                           className="inline-flex items-center gap-1 font-mono font-medium hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                          title="Bấm để sao chép mã tham chiếu"
+                          title={isEn ? 'Click to copy reference code' : 'Bấm để sao chép mã tham chiếu'}
                         >
                           <span>Ref: {tx.referenceId}</span>
                           {isCopied ? (
@@ -357,14 +357,14 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
 
                       <span
                         className="inline-flex items-center gap-1.5 font-medium text-slate-500 dark:text-slate-400"
-                        title={`Thời gian chính xác: ${formatFullDateTime(tx.createdAt)} (${formatTimeAgo(tx.createdAt)})`}
+                        title={isEn ? `Exact time: ${formatFullDateTime(tx.createdAt, 'en')} (${formatTimeAgo(tx.createdAt, 'en')})` : `Thời gian chính xác: ${formatFullDateTime(tx.createdAt)} (${formatTimeAgo(tx.createdAt)})`}
                       >
                         <Clock className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
                         <span className="font-mono text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200">
-                          {formatFullDateTime(tx.createdAt)}
+                          {formatFullDateTime(tx.createdAt, language)}
                         </span>
                         <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500">
-                          • {formatTimeAgo(tx.createdAt)}
+                          • {formatTimeAgo(tx.createdAt, language)}
                         </span>
                       </span>
                     </div>
@@ -390,7 +390,7 @@ export const RecentBalanceChangesWidget: React.FC<RecentBalanceChangesWidgetProp
                   {/* Balance Before -> After Trail */}
                   {(tx.balanceAfter !== undefined || tx.balanceBefore !== undefined) && (
                     <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                      <span>Ví:</span>
+                      <span>{isEn ? 'Wallet:' : 'Ví:'}</span>
                       <span className="text-slate-400">
                         {formatCore(Number(tx.balanceBefore) || 0)}
                       </span>

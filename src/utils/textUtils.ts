@@ -634,9 +634,10 @@ export function formatFullDateTime(dateStr?: string | number | null, language?: 
   }
 }
 
-// Relative time formatting in Vietnamese: "Vừa xong", "5 phút trước", "Hôm qua lúc 14:30"
-export function formatTimeAgo(dateStr?: string | number | null): string {
-  if (!dateStr) return 'Vừa xong';
+// Relative time formatting bilingual: "Vừa xong" vs "Just now", "5 phút trước" vs "5m ago"
+export function formatTimeAgo(dateStr?: string | number | null, language?: string): string {
+  const isEn = isCurrentEn(language);
+  if (!dateStr) return isEn ? 'Just now' : 'Vừa xong';
   try {
     let cleanStr = String(dateStr).trim();
     if (/^\d{10,13}$/.test(cleanStr)) {
@@ -652,20 +653,20 @@ export function formatTimeAgo(dateStr?: string | number | null): string {
     const now = Date.now();
     const diffSec = Math.floor((now - d.getTime()) / 1000);
 
-    if (diffSec < 30) return 'Vừa xong';
-    if (diffSec < 60) return `${diffSec} giây trước`;
+    if (diffSec < 30) return isEn ? 'Just now' : 'Vừa xong';
+    if (diffSec < 60) return isEn ? `${diffSec}s ago` : `${diffSec} giây trước`;
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin} phút trước`;
+    if (diffMin < 60) return isEn ? `${diffMin}m ago` : `${diffMin} phút trước`;
     const diffHour = Math.floor(diffMin / 60);
-    if (diffHour < 24) return `${diffHour} giờ trước`;
+    if (diffHour < 24) return isEn ? `${diffHour}h ago` : `${diffHour} giờ trước`;
     const diffDay = Math.floor(diffHour / 24);
-    if (diffDay === 1) return 'Hôm qua';
-    if (diffDay < 7) return `${diffDay} ngày trước`;
+    if (diffDay === 1) return isEn ? 'Yesterday' : 'Hôm qua';
+    if (diffDay < 7) return isEn ? `${diffDay}d ago` : `${diffDay} ngày trước`;
 
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
   } catch {
-    return 'Gần đây';
+    return isEn ? 'Recently' : 'Gần đây';
   }
 }
 

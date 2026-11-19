@@ -530,8 +530,8 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
       <FormModal
         isOpen={Boolean(shippingOrder)}
         onClose={() => setShippingOrder(null)}
-        title={`Cập Nhật Vận Đơn #${shippingOrder?.orderCode}`}
-        subtitle="Thiết lập đơn vị vận chuyển, mã vận đơn và cập nhật trạng thái đơn hàng."
+        title={isEn ? `Update Shipping Tracking #${shippingOrder?.orderCode}` : `Cập Nhật Vận Đơn #${shippingOrder?.orderCode}`}
+        subtitle={isEn ? 'Set shipping carrier, tracking number and update order status.' : 'Thiết lập đơn vị vận chuyển, mã vận đơn và cập nhật trạng thái đơn hàng.'}
         maxWidth="md"
       >
         {shippingOrder && (
