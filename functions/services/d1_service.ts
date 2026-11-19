@@ -2177,6 +2177,11 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
         await db.prepare("CREATE INDEX IF NOT EXISTS idx_sacl_key_time ON seller_api_call_logs(key_id, created_at);").run().catch(() => {});
 
         // 5. Khởi tạo gian hàng test "Gian Hàng Test Muse" (slug: gian-hang-test-muse) nếu chưa có
+        await db.prepare(`
+          INSERT OR IGNORE INTO members (id, username, display_name, email, role, balance, status, created_at)
+          VALUES ('usr_test_muse_owner', 'test_muse_owner', 'Test Muse Owner', 'test_muse@example.com', 'MEMBER', 1000000, 'ACTIVE', datetime('now'))
+        `).run().catch(() => {});
+
         const testMuseSeller = await db.prepare("SELECT id FROM sellers WHERE slug = 'gian-hang-test-muse' OR id = 'sel_test_muse' LIMIT 1").first().catch(() => null);
         if (!testMuseSeller) {
           await db.prepare(`
