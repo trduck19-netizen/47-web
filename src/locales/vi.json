@@ -786,6 +786,115 @@
         "name": "Chân trang",
         "description": "Khối chân trang ghim ở đáy website, chứa thông tin pháp lý sàn, chính sách bảo chứng giao dịch và liên hệ hỗ trợ."
       }
+    },
+    "subsectionsCount": "{count} mục con",
+    "expandSubsections": "Mở rộng danh sách mục con",
+    "collapseSubsections": "Thu gọn danh sách mục con",
+    "parentDisabledNotice": "Mục lớn đang tắt — các mục con sẽ bị ẩn đồng thời trên web khách.",
+    "noSubsections": "Mục này không có thành phần con.",
+    "groups": {
+      "navigation": "Thanh Điều Hướng",
+      "shortcuts": "Hàng Lối Tắt Dịch Vụ",
+      "categories": "Tab Ngành Hàng Toàn Sàn",
+      "sorting": "Thanh Sắp Xếp Sản Phẩm"
+    },
+    "subsections": {
+      "nav_home": {
+        "name": "Trang Chủ Sàn",
+        "description": "Nút điều hướng về trang chủ sàn thương mại điện tử Universal Mall."
+      },
+      "nav_store": {
+        "name": "Cửa Hàng Đa Ngành",
+        "description": "Nút mở danh mục các gian hàng và sản phẩm chính hãng toàn sàn."
+      },
+      "nav_seller": {
+        "name": "Kênh Người Bán",
+        "description": "Nút truy cập cổng quản trị gian hàng và mở bán hàng dành cho đối tác."
+      },
+      "nav_account": {
+        "name": "Tài Khoản & Ví",
+        "description": "Nút mở hồ sơ cá nhân, số dư ví Core và lịch sử giao dịch."
+      },
+      "nav_game_zone": {
+        "name": "Game Zone",
+        "description": "Nút chuyển nhanh sang phân khu 593 tựa game có giấy phép ABEI."
+      },
+      "nav_missions": {
+        "name": "Nhiệm Vụ",
+        "description": "Nút mở trung tâm nhiệm vụ điểm danh và săn thưởng Core hàng ngày."
+      },
+      "nav_telegram": {
+        "name": "Telegram",
+        "description": "Nút kết nối cộng đồng game thủ và kênh nhận thông báo bot Telegram."
+      },
+      "nav_a_z": {
+        "name": "Mục Lục A-Z",
+        "description": "Nút tra cứu danh bạ toàn bộ tựa game theo bảng chữ cái A-Z."
+      },
+      "nav_submit_code": {
+        "name": "Gửi Mã Mới",
+        "description": "Nút mở cửa sổ gửi giftcode cộng đồng đóng góp nhận thưởng."
+      },
+      "shortcut_instant_delivery": {
+        "name": "Giao Mã 0s",
+        "description": "Lối tắt mở tủ mã cá nhân và xem các đơn hàng giao mã tự động tức thì."
+      },
+      "shortcut_courier_shipping": {
+        "name": "Giao Bưu Chính",
+        "description": "Lối tắt cuộn nhanh xuống danh mục hàng vật lý vận chuyển bưu điện."
+      },
+      "shortcut_protection_168h": {
+        "name": "Bảo Hộ 168H",
+        "description": "Lối tắt mở chính sách ký quỹ bảo hiểm giao dịch an toàn 7 ngày."
+      },
+      "shortcut_vietqr_topup": {
+        "name": "Nạp VietQR",
+        "description": "Lối tắt mở cửa sổ nạp tiền tự động qua mã VietQR chuẩn ngân hàng."
+      },
+      "shortcut_lucky_wheel": {
+        "name": "Vòng Quay Xu",
+        "description": "Lối tắt tham gia vòng quay may mắn trúng xu Core và quà tặng sàn."
+      },
+      "shortcut_vouchers": {
+        "name": "Mã Giảm Giá",
+        "description": "Lối tắt mở kho voucher Shopee đa tầng và mã giảm giá toàn sàn."
+      },
+      "shortcut_game_zone": {
+        "name": "Game Zone",
+        "description": "Lối tắt chuyển vào khu vực game bản quyền và săn giftcode miễn phí."
+      },
+      "shortcut_support_247": {
+        "name": "Hỗ Trợ 24/7",
+        "description": "Lối tắt mở kênh liên hệ chăm sóc khách hàng và giải quyết khiếu nại."
+      },
+      "cat_all": {
+        "name": "Tất Cả",
+        "description": "Tab hiển thị toàn bộ các sản phẩm thuộc mọi ngành hàng trên sàn."
+      },
+      "cat_fashion": {
+        "name": "Thời Trang & Phụ Kiện",
+        "description": "Tab lọc các sản phẩm áo quần, giày dép, túi xách và phụ kiện nam nữ."
+      },
+      "cat_beauty": {
+        "name": "Mỹ Phẩm & Sắc Đẹp",
+        "description": "Tab lọc các sản phẩm chăm sóc da mặt, trang điểm và nước hoa cao cấp."
+      },
+      "cat_tech": {
+        "name": "Thiết Bị Số & Công Nghệ",
+        "description": "Tab lọc các thiết bị điện thoại, cáp sạc, tai nghe và phụ kiện máy tính."
+      },
+      "cat_services": {
+        "name": "Khóa Học & Dịch Vụ",
+        "description": "Tab lọc các khóa học trực tuyến, tài khoản phần mềm và dịch vụ số."
+      },
+      "cat_gaming": {
+        "name": "Gaming & Thẻ Nạp",
+        "description": "Tab lọc các sản phẩm thẻ cào game, tài khoản VIP và vật phẩm game."
+      },
+      "sort_bar": {
+        "name": "Thanh Sắp Xếp (Mới nhất / Bán chạy)",
+        "description": "Cụm nút chuyển đổi thứ tự sắp xếp sản phẩm theo Mới nhất hoặc Bán chạy nhất."
+      }
     }
   }
 }

@@ -785,6 +785,115 @@
         "name": "Footer",
         "description": "Four-column footer anchored at the bottom of the page, presenting platform credentials, escrow policy, and support links."
       }
+    },
+    "subsectionsCount": "{count} sub-items",
+    "expandSubsections": "Expand sub-items",
+    "collapseSubsections": "Collapse sub-items",
+    "parentDisabledNotice": "Parent section is disabled — sub-items are temporarily hidden on storefront.",
+    "noSubsections": "This section has no sub-items.",
+    "groups": {
+      "navigation": "Navigation Bar",
+      "shortcuts": "Quick Service Shortcuts",
+      "categories": "Mall Category Tabs",
+      "sorting": "Product Sorting Controls"
+    },
+    "subsections": {
+      "nav_home": {
+        "name": "Mall Home",
+        "description": "Navigation link to Universal Mall marketplace homepage."
+      },
+      "nav_store": {
+        "name": "Multi-Industry Store",
+        "description": "Navigation link to multi-industry official stores and products."
+      },
+      "nav_seller": {
+        "name": "Seller Center",
+        "description": "Portal access for seller management and vendor onboarding."
+      },
+      "nav_account": {
+        "name": "Account & Wallet",
+        "description": "Access user profile, Core wallet balance, and transaction history."
+      },
+      "nav_game_zone": {
+        "name": "Game Zone",
+        "description": "Quick link to the licensed 593-game portal and game catalog."
+      },
+      "nav_missions": {
+        "name": "Missions",
+        "description": "Daily check-in quests and Core reward center."
+      },
+      "nav_telegram": {
+        "name": "Telegram",
+        "description": "Connect to Telegram gaming community and instant notification bot."
+      },
+      "nav_a_z": {
+        "name": "A-Z Index",
+        "description": "Comprehensive alphabetical directory of all licensed games."
+      },
+      "nav_submit_code": {
+        "name": "Submit Code",
+        "description": "Action button to contribute community giftcodes and earn rewards."
+      },
+      "shortcut_instant_delivery": {
+        "name": "Instant Delivery 0s",
+        "description": "Quick shortcut to view auto-delivered digital codes and orders."
+      },
+      "shortcut_courier_shipping": {
+        "name": "Courier Shipping",
+        "description": "Quick shortcut scrolling down to physical courier-shipped goods."
+      },
+      "shortcut_protection_168h": {
+        "name": "168H Protection",
+        "description": "Shortcut to 7-day escrow protection and trade insurance policy."
+      },
+      "shortcut_vietqr_topup": {
+        "name": "VietQR Topup",
+        "description": "Quick shortcut to bank transfer topup via standard VietQR."
+      },
+      "shortcut_lucky_wheel": {
+        "name": "Lucky Wheel",
+        "description": "Shortcut to lucky spin wheel for winning Core coins and prizes."
+      },
+      "shortcut_vouchers": {
+        "name": "Vouchers & Coupons",
+        "description": "Shortcut to platform coupon vault and multi-tier discount vouchers."
+      },
+      "shortcut_game_zone": {
+        "name": "Game Zone",
+        "description": "Shortcut to licensed game portal and free giftcode giveaways."
+      },
+      "shortcut_support_247": {
+        "name": "24/7 Support",
+        "description": "Shortcut to 24/7 customer care and dispute resolution hotline."
+      },
+      "cat_all": {
+        "name": "All Categories",
+        "description": "Category tab displaying all products across all mall industries."
+      },
+      "cat_fashion": {
+        "name": "Fashion & Accessories",
+        "description": "Filter tab for apparel, footwear, bags, and fashion accessories."
+      },
+      "cat_beauty": {
+        "name": "Beauty & Cosmetics",
+        "description": "Filter tab for skincare, cosmetics, and premium perfumes."
+      },
+      "cat_tech": {
+        "name": "Digital Tech & Gadgets",
+        "description": "Filter tab for mobile devices, charging gear, audio, and PC peripherals."
+      },
+      "cat_services": {
+        "name": "Courses & Services",
+        "description": "Filter tab for online courses, software licenses, and digital services."
+      },
+      "cat_gaming": {
+        "name": "Gaming & Recharge",
+        "description": "Filter tab for gaming recharge cards, VIP accounts, and game items."
+      },
+      "sort_bar": {
+        "name": "Sorting Bar (Newest / Best Selling)",
+        "description": "Toggle controls for sorting products by Newest arrival or Best Selling."
+      }
     }
   }
 }

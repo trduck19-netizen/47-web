@@ -21,6 +21,7 @@ import { formatCore, formatCurrencyVND } from '../../utils/textUtils';
 import { formatCurrency, formatDateTime } from '../../utils/formatUtils';
 import { contentTranslationService } from '../../services/contentTranslationService';
 import { homepageSectionsService } from '../../services/homepageSectionsService';
+import { getDefaultSubsectionsForParent } from '../../config/homepageSections';
 import { ShopeeGuaranteeModal } from './ShopeeGuaranteeModal';
 import { ShopeeSupportModal } from './ShopeeSupportModal';
 
@@ -203,11 +204,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   // Navigation scroll state & ref for 12-item subnav bar
   const navScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const checkNavScroll = () => {
     const el = navScrollRef.current;
-    if (!el) return;
+    if (!el) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return;
+    }
     setCanScrollLeft(el.scrollLeft > 5);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
   };
@@ -220,9 +225,13 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
 
   useEffect(() => {
     checkNavScroll();
+    const timer = setTimeout(checkNavScroll, 100);
     window.addEventListener('resize', checkNavScroll);
-    return () => window.removeEventListener('resize', checkNavScroll);
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkNavScroll);
+    };
+  }, [homepageSectionsConfig, language]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedProductType, setSelectedProductType] = useState<'all' | 'giftcode' | 'utility' | 'account' | 'giveaway'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -839,6 +848,24 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     return item ? item.enabled : true;
   };
 
+  const isSubsectionEnabled = (parentId: string, subId: string) => {
+    const parent = orderedSections.find((s) => s.id === parentId);
+    if (!parent) return true;
+    if (!parent.enabled) return false;
+    if (!parent.subsections) return true;
+    const sub = parent.subsections.find((s) => s.id === subId);
+    return sub ? sub.enabled : true;
+  };
+
+  const getOrderedSubsections = (parentId: string, group?: string) => {
+    const parent = orderedSections.find((s) => s.id === parentId);
+    const subs = parent?.subsections && parent.subsections.length > 0
+      ? parent.subsections
+      : getDefaultSubsectionsForParent(parentId);
+    const filtered = group ? subs.filter((s) => s.group === group) : subs;
+    return [...filtered].sort((a, b) => a.order - b.order);
+  };
+
   const homeNewsArticles = useMemo(() => {
     try {
       return newsService.getPublishedArticles().slice(0, 3);
@@ -846,6 +873,278 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       return [];
     }
   }, [newsCount]);
+
+  // Helper render các nút lối tắt dịch vụ theo mã con
+  const renderShortcutItem = (shortcutId: string) => {
+    switch (shortcutId) {
+      case 'shortcut_instant_delivery':
+        return (
+          <button 
+            key="shortcut_instant_delivery"
+            onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('orders') : onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem mã giao 0s', 'info')} 
+            className="group flex flex-col items-center cursor-pointer"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-orange-500">
+              ⚡
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              {t('mall.services.instantDelivery')}
+            </span>
+          </button>
+        );
+      case 'shortcut_courier_shipping':
+        return (
+          <button 
+            key="shortcut_courier_shipping"
+            onClick={() => {
+              setSelectedCategory('all');
+              setSelectedProductType('all');
+              const el = document.getElementById('shopee-products-grid');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }} 
+            className="group flex flex-col items-center cursor-pointer"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-red-500">
+              🚚
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              {t('mall.services.courierShipping')}
+            </span>
+          </button>
+        );
+      case 'shortcut_protection_168h':
+        return (
+          <button 
+            key="shortcut_protection_168h"
+            onClick={() => setIsGuaranteeOpen(true)} 
+            className="group flex flex-col items-center cursor-pointer"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-amber-500">
+              🛡️
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              {t('mall.services.protection168h')}
+            </span>
+          </button>
+        );
+      case 'shortcut_vietqr_topup':
+        return (
+          <button key="shortcut_vietqr_topup" onClick={onOpenWallet} className="group flex flex-col items-center cursor-pointer">
+            <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-blue-500">
+              💳
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              {t('mall.services.vietqrTopup')}
+            </span>
+          </button>
+        );
+      case 'shortcut_lucky_wheel':
+        return (
+          <button
+            key="shortcut_lucky_wheel"
+            onClick={() => {
+              setHeroSlide(1);
+              if (onOpenGrowth) onOpenGrowth();
+              else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu May Mắn', 'info');
+            }}
+            className="group flex flex-col items-center cursor-pointer"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-purple-500">
+              🎡
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              {t('mall.services.luckyWheel')}
+            </span>
+          </button>
+        );
+      case 'shortcut_vouchers':
+        return (
+          <button 
+            key="shortcut_vouchers"
+            onClick={() => setIsCouponModalOpen(true)} 
+            className="group flex flex-col items-center cursor-pointer"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-emerald-500">
+              🎟️
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              {t('mall.services.vouchers')}
+            </span>
+          </button>
+        );
+      case 'shortcut_game_zone':
+        return (
+          <button 
+            key="shortcut_game_zone"
+            onClick={() => setSubView('game-zone')} 
+            className="group flex flex-col items-center cursor-pointer"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500">
+              🎮
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              Game Zone
+            </span>
+          </button>
+        );
+      case 'shortcut_support_247':
+        return (
+          <button 
+            key="shortcut_support_247"
+            onClick={() => setIsSupportOpen(true)} 
+            className="group flex flex-col items-center cursor-pointer"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-pink-500">
+              💬
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              {t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
+            </span>
+          </button>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Helper render các nút thanh điều hướng theo mã con
+  const renderNavButton = (navId: string) => {
+    switch (navId) {
+      case 'nav_home':
+        return (
+          <button
+            key="nav_home"
+            onClick={() => setSubView('home')}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              subView === 'home'
+                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
+                : 'hover:bg-white/15 text-white/95'
+            }`}
+          >
+            <Store className="w-3.5 h-3.5 shrink-0" />
+            <span>{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ Sàn')}</span>
+          </button>
+        );
+      case 'nav_store':
+        return (
+          <button
+            key="nav_store"
+            onClick={() => setSubView('store')}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              subView === 'store'
+                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
+                : 'hover:bg-white/15 text-white/95'
+            }`}
+          >
+            <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+            <span>{t.mall?.subnav?.store || (language === 'en' ? 'Multi-Industry Store' : 'Cửa Hàng Đa Ngành')}</span>
+          </button>
+        );
+      case 'nav_seller':
+        return (
+          <button
+            key="nav_seller"
+            onClick={() => setSubView('seller')}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              subView === 'seller'
+                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
+                : 'hover:bg-white/15 text-white/95'
+            }`}
+          >
+            <Store className="w-3.5 h-3.5 shrink-0" />
+            <span>{t.mall?.subnav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}</span>
+          </button>
+        );
+      case 'nav_account':
+        return (
+          <button
+            key="nav_account"
+            onClick={() => setSubView('account')}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              subView === 'account'
+                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
+                : 'hover:bg-white/15 text-white/95'
+            }`}
+          >
+            <User className="w-3.5 h-3.5 shrink-0" />
+            <span>{t.mall?.subnav?.account || (language === 'en' ? 'Account & Wallet' : 'Tài Khoản & Ví')}</span>
+          </button>
+        );
+      case 'nav_game_zone':
+        return (
+          <button
+            key="nav_game_zone"
+            onClick={() => setSubView('game-zone' as any)}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              subView === ('game-zone' as any)
+                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
+                : 'hover:bg-white/15 text-white/95'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>Game Zone</span>
+          </button>
+        );
+      case 'nav_missions':
+        return (
+          <button
+            key="nav_missions"
+            onClick={() => setSubView('missions')}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              subView === 'missions'
+                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
+                : 'hover:bg-white/15 text-white/95'
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5 shrink-0" />
+            <span>{t.mall?.subnav?.missions || (language === 'en' ? 'Missions' : 'Nhiệm Vụ')}</span>
+          </button>
+        );
+      case 'nav_telegram':
+        return (
+          <button
+            key="nav_telegram"
+            onClick={() => setSubView('telegram')}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              subView === 'telegram'
+                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
+                : 'hover:bg-white/15 text-white/95'
+            }`}
+          >
+            <Send className="w-3.5 h-3.5 shrink-0" />
+            <span>Telegram</span>
+          </button>
+        );
+      case 'nav_a_z':
+        return (
+          <button
+            key="nav_a_z"
+            onClick={() => setSubView('a-z')}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              subView === 'a-z'
+                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
+                : 'hover:bg-white/15 text-white/95'
+            }`}
+          >
+            <List className="w-3.5 h-3.5 shrink-0" />
+            <span>{t.mall?.subnav?.azIndex || (language === 'en' ? 'A-Z Index' : 'Mục Lục A-Z')}</span>
+          </button>
+        );
+      case 'nav_submit_code':
+        return (
+          <button
+            key="nav_submit_code"
+            onClick={() => setIsSubmitCodeOpen(true)}
+            className="px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold transition flex items-center gap-1 shadow-sm shrink-0 whitespace-nowrap cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 shrink-0" />
+            <span>{t.mall?.subnav?.submitCode || (language === 'en' ? 'Submit Code' : 'Gửi Mã Mới')}</span>
+          </button>
+        );
+      default:
+        return null;
+    }
+  };
 
   // Dynamic homepage section renderer
   const renderHomeSection = (sectionId: string) => {
@@ -1025,176 +1324,109 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             </div>
           </>
         );
-      case 'categories_grid':
+      case 'categories_grid': {
+        const shortcutSubsections = getOrderedSubsections('categories_grid', 'shortcuts');
+        const activeShortcuts = shortcutSubsections.filter((s) => s.enabled);
+
+        const categorySubsections = getOrderedSubsections('categories_grid', 'categories');
+        const activeCategorySubsections = categorySubsections.filter((s) => s.enabled);
+
+        const isSortBarEnabled = isSubsectionEnabled('categories_grid', 'sort_bar');
+
+        const visibleCategories = activeCategorySubsections
+          .map((sub) => {
+            const rawId = sub.id.replace(/^cat_/, '');
+            const found = categoriesConfig.categories.find((c) => c.id === rawId || `cat_${c.id}` === sub.id);
+            if (found) return found;
+            return {
+              id: rawId,
+              label: language === 'en' ? (sub.nameEn || rawId) : (sub.nameVi || rawId),
+              icon: sub.icon || '📦',
+              description: language === 'en' ? (sub.descriptionEn || '') : (sub.descriptionVi || ''),
+            };
+          })
+          .filter(Boolean);
+
+        if (activeShortcuts.length === 0 && visibleCategories.length === 0 && !isSortBarEnabled) {
+          return null;
+        }
+
         return (
           <div className="space-y-3">
             {/* 3.2. DỊCH VỤ NHANH SHOPEE (8 Icon Dịch Vụ) */}
-            <div className={`rounded-xl p-4 shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 text-center">
-                
-                <button 
-                  onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('orders') : onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem mã giao 0s', 'info')} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-orange-500">
-                    ⚡
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.instantDelivery')}
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setSelectedProductType('all');
-                    const el = document.getElementById('shopee-products-grid');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-red-500">
-                    🚚
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.courierShipping')}
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => setIsGuaranteeOpen(true)} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-amber-500">
-                    🛡️
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.protection168h')}
-                  </span>
-                </button>
-
-                <button onClick={onOpenWallet} className="group flex flex-col items-center cursor-pointer">
-                  <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-blue-500">
-                    💳
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.vietqrTopup')}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setHeroSlide(1);
-                    if (onOpenGrowth) onOpenGrowth();
-                    else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu May Mắn', 'info');
-                  }}
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-purple-500">
-                    🎡
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.luckyWheel')}
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => setIsCouponModalOpen(true)} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-emerald-500">
-                    🎟️
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t('mall.services.vouchers')}
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => setSubView('game-zone')} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500">
-                    🎮
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    Game Zone
-                  </span>
-                </button>
-
-                <button 
-                  onClick={() => setIsSupportOpen(true)} 
-                  className="group flex flex-col items-center cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-pink-500">
-                    💬
-                  </div>
-                  <span className="text-[11px] font-medium mt-2 leading-tight">
-                    {t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
-                  </span>
-                </button>
-
+            {activeShortcuts.length > 0 && (
+              <div className={`rounded-xl p-4 shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-4 text-center">
+                  {activeShortcuts.map((sub) => renderShortcutItem(sub.id))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 3.3. DANH MỤC ĐA NGÀNH (Universal Multi-Industry Categories) */}
-            <div className={`rounded-xl shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="p-3 border-b border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Compass className="w-4 h-4 text-[#ee4d2d]" />
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d]">
-                    {t.mall?.categories?.sectionTitle || (language === 'en' ? 'MULTI-INDUSTRY CATEGORIES' : 'DANH MỤC NGÀNH HÀNG TOÀN SÀN')}
-                  </h3>
-                  <span className="text-xs text-slate-500 font-medium">
-                    {t.mall?.categories?.sectionSubtitle || (language === 'en' ? '(5 Official Industries)' : '(5 Ngành Hàng Chính Hãng)')}
-                  </span>
+            {(visibleCategories.length > 0 || isSortBarEnabled) && (
+              <div className={`rounded-xl shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="p-3 border-b border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Compass className="w-4 h-4 text-[#ee4d2d]" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d]">
+                      {t.mall?.categories?.sectionTitle || (language === 'en' ? 'MULTI-INDUSTRY CATEGORIES' : 'DANH MỤC NGÀNH HÀNG TOÀN SÀN')}
+                    </h3>
+                    <span className="text-xs text-slate-500 font-medium">
+                      {t.mall?.categories?.sectionSubtitle || (language === 'en' ? '(5 Official Industries)' : '(5 Ngành Hàng Chính Hãng)')}
+                    </span>
+                  </div>
+
+                  {/* Sắp xếp */}
+                  {isSortBarEnabled && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-slate-400 flex items-center gap-1">
+                        <ArrowUpDown className="w-3.5 h-3.5" />
+                        <span>{t.mall?.categories?.sortBy || (language === 'en' ? 'Sort by:' : 'Sắp xếp:')}</span>
+                      </span>
+                      <button
+                        onClick={() => setSortOrder('latest')}
+                        className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'latest' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                      >
+                        {t.mall?.categories?.sortNewest || (language === 'en' ? 'Newest' : 'Mới nhất')}
+                      </button>
+                      <button
+                        onClick={() => setSortOrder('codes')}
+                        className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'codes' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                      >
+                        {t.mall?.categories?.sortPopular || (language === 'en' ? 'Best Selling' : 'Bán chạy')}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                {/* Sắp xếp */}
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="text-slate-400 flex items-center gap-1">
-                    <ArrowUpDown className="w-3.5 h-3.5" />
-                    <span>{t.mall?.categories?.sortBy || (language === 'en' ? 'Sort by:' : 'Sắp xếp:')}</span>
-                  </span>
-                  <button
-                    onClick={() => setSortOrder('latest')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'latest' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
-                  >
-                    {t.mall?.categories?.sortNewest || (language === 'en' ? 'Newest' : 'Mới nhất')}
-                  </button>
-                  <button
-                    onClick={() => setSortOrder('codes')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer text-[11px] font-semibold ${sortOrder === 'codes' ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
-                  >
-                    {t.mall?.categories?.sortPopular || (language === 'en' ? 'Best Selling' : 'Bán chạy')}
-                  </button>
-                </div>
+                {/* Dynamic Universal Category Bar */}
+                {visibleCategories.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-800 text-center">
+                    {visibleCategories.map((cat) => (
+                      <button 
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`p-3 transition cursor-pointer flex flex-col items-center justify-center ${
+                          selectedCategory === cat.id 
+                            ? `bg-orange-500/10 ${currentAccent.textColor} font-bold border-b-2 border-current` 
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg mb-1 shadow-inner">
+                          {cat.icon || '📦'}
+                        </div>
+                        <div className="text-[11px] leading-tight font-medium line-clamp-1">
+                          {(t.mall?.categories as any)?.[cat.id] || contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-
-              {/* Dynamic Universal Category Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-800 text-center">
-                {categoriesConfig.categories.map((cat) => (
-                  <button 
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`p-3 transition cursor-pointer flex flex-col items-center justify-center ${
-                      selectedCategory === cat.id 
-                        ? `bg-orange-500/10 ${currentAccent.textColor} font-bold border-b-2 border-current` 
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg mb-1 shadow-inner">
-                      {cat.icon || '📦'}
-                    </div>
-                    <div className="text-[11px] leading-tight font-medium line-clamp-1">
-                      {(t.mall?.categories as any)?.[cat.id] || contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         );
+      }
       case 'flash_sale':
         return (
           <div className="space-y-3">
@@ -1849,120 +2081,51 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       </div>
 
       {/* 2.1. SUB-NAVIGATION BAR (Thanh Điều Hướng Toàn Diện Giữ Khách Ở Lại test1 Kèm 2 Mũi Tên Cuộn) */}
-      <div className={`${currentAccent.subNavBg} text-white text-xs font-semibold px-2 sm:px-4 shadow-inner border-t border-black/20 sticky top-0 z-40 transition-colors duration-300`}>
-        <div className="max-w-6xl mx-auto flex items-center gap-1 sm:gap-2 py-1.5">
-          {/* Mũi tên cuộn trái */}
-          <button
-            type="button"
-            onClick={() => scrollNav('left')}
-            disabled={!canScrollLeft}
-            className={`shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition ${
-              canScrollLeft
-                ? 'bg-black/20 hover:bg-black/40 text-white cursor-pointer active:scale-95'
-                : 'opacity-20 text-white/50 cursor-not-allowed pointer-events-none'
-            }`}
-            title={language === 'en' ? (t.mall?.subnav?.scrollLeft || 'Scroll left') : (t.mall?.subnav?.scrollLeft || 'Cuộn sang trái')}
-            aria-label={language === 'en' ? (t.mall?.subnav?.scrollLeft || 'Scroll left') : (t.mall?.subnav?.scrollLeft || 'Cuộn sang trái')}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+      {isSectionEnabled('top_announcement') && (() => {
+        const activeNavSubsections = getOrderedSubsections('top_announcement', 'navigation').filter((sub) => sub.enabled);
+        if (activeNavSubsections.length === 0) return null;
 
-          {/* Dải 12 mục cuộn mượt */}
-          <div
-            ref={navScrollRef}
-            onScroll={checkNavScroll}
-            className="flex-1 flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none whitespace-nowrap scroll-smooth py-0.5"
-          >
-            <button
-              onClick={() => setSubView('home')}
-              className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'home' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span>{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ Sàn')}</span>
-            </button>
+        return (
+          <div className={`${currentAccent.subNavBg} text-white text-xs font-semibold px-2 sm:px-4 shadow-inner border-t border-black/20 sticky top-0 z-40 transition-colors duration-300`}>
+            <div className="max-w-6xl xl:max-w-7xl mx-auto flex items-center gap-1 sm:gap-1.5 py-1.5">
+              {/* Mũi tên cuộn trái */}
+              {canScrollLeft && (
+                <button
+                  type="button"
+                  onClick={() => scrollNav('left')}
+                  className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition bg-black/20 hover:bg-black/40 text-white cursor-pointer active:scale-95"
+                  title={language === 'en' ? (t.mall?.subnav?.scrollLeft || 'Scroll left') : (t.mall?.subnav?.scrollLeft || 'Cuộn sang trái')}
+                  aria-label={language === 'en' ? (t.mall?.subnav?.scrollLeft || 'Scroll left') : (t.mall?.subnav?.scrollLeft || 'Cuộn sang trái')}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
 
-            <button
-              onClick={() => setSubView('store')}
-              className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'store' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
-            >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>{t.mall?.subnav?.store || (language === 'en' ? 'Multi-Industry Store' : 'Cửa Hàng Đa Ngành')}</span>
-            </button>
+              {/* Dải mục cuộn mượt */}
+              <div
+                ref={navScrollRef}
+                onScroll={checkNavScroll}
+                className="flex-1 flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none whitespace-nowrap scroll-smooth py-0.5"
+              >
+                {activeNavSubsections.map((sub) => renderNavButton(sub.id))}
+              </div>
 
-            <button
-              onClick={() => setSubView('seller')}
-              className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'seller' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span>{t.mall?.subnav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}</span>
-            </button>
-
-            <button
-              onClick={() => setSubView('account')}
-              className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'account' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>{t.mall?.subnav?.account || (language === 'en' ? 'Account & Wallet' : 'Tài Khoản & Ví')}</span>
-            </button>
-
-            <button
-              onClick={() => setSubView('game-zone' as any)}
-              className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === ('game-zone' as any) ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Game Zone</span>
-            </button>
-
-            <button
-              onClick={() => setSubView('missions')}
-              className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'missions' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              <span>{t.mall?.subnav?.missions || (language === 'en' ? 'Missions' : 'Nhiệm Vụ')}</span>
-            </button>
-
-            <button
-              onClick={() => setSubView('telegram')}
-              className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'telegram' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Telegram</span>
-            </button>
-
-            <button
-              onClick={() => setSubView('a-z')}
-              className={`px-2.5 py-1 rounded transition flex items-center gap-1.5 cursor-pointer ${subView === 'a-z' ? `bg-white ${currentAccent.textColor} font-bold shadow-sm` : 'hover:bg-white/15 text-white/95'}`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>{t.mall?.subnav?.azIndex || (language === 'en' ? 'A-Z Index' : 'Mục Lục A-Z')}</span>
-            </button>
-
-            <button
-              onClick={() => setIsSubmitCodeOpen(true)}
-              className="ml-auto px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold transition flex items-center gap-1 shadow-sm shrink-0 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{t.mall?.subnav?.submitCode || (language === 'en' ? 'Submit Code' : 'Gửi Mã Mới')}</span>
-            </button>
+              {/* Mũi tên cuộn phải */}
+              {canScrollRight && (
+                <button
+                  type="button"
+                  onClick={() => scrollNav('right')}
+                  className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition bg-black/20 hover:bg-black/40 text-white cursor-pointer active:scale-95"
+                  title={language === 'en' ? (t.mall?.subnav?.scrollRight || 'Scroll right') : (t.mall?.subnav?.scrollRight || 'Cuộn sang phải')}
+                  aria-label={language === 'en' ? (t.mall?.subnav?.scrollRight || 'Scroll right') : (t.mall?.subnav?.scrollRight || 'Cuộn sang phải')}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
-
-          {/* Mũi tên cuộn phải */}
-          <button
-            type="button"
-            onClick={() => scrollNav('right')}
-            disabled={!canScrollRight}
-            className={`shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition ${
-              canScrollRight
-                ? 'bg-black/20 hover:bg-black/40 text-white cursor-pointer active:scale-95'
-                : 'opacity-20 text-white/50 cursor-not-allowed pointer-events-none'
-            }`}
-            title={language === 'en' ? (t.mall?.subnav?.scrollRight || 'Scroll right') : (t.mall?.subnav?.scrollRight || 'Cuộn sang phải')}
-            aria-label={language === 'en' ? (t.mall?.subnav?.scrollRight || 'Scroll right') : (t.mall?.subnav?.scrollRight || 'Cuộn sang phải')}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+        );
+      })()}
       </div>
 
       {/* 2.2. BREADCRUMB QUAY LẠI TRANG CHỦ SÀN (KHI ĐANG XEM SUBVIEW KHÁC) */}

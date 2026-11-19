@@ -1,14 +1,17 @@
 import {
-  HomepageSectionState,
+  HomepageSectionConfig,
+  HomepageSubsectionConfig,
   getDefaultHomepageSectionsState,
   mergeHomepageSectionsConfig,
+  isSubsectionEnabled as checkSubEnabled,
+  getOrderedSubsections as getSubs,
 } from '../config/homepageSections';
 
 const STORAGE_KEY = 'wcg_homepage_sections_v1';
 const UPDATE_EVENT = 'wcg_homepage_sections_updated';
 
 class HomepageSectionsService {
-  private sections: HomepageSectionState[] = [];
+  private sections: HomepageSectionConfig[] = [];
   private isLoaded = false;
   private pollTimer: any = null;
   private lastFetchTime = 0;
@@ -20,7 +23,7 @@ class HomepageSectionsService {
     }
   }
 
-  private loadInitialFromStorage(): HomepageSectionState[] {
+  private loadInitialFromStorage(): HomepageSectionConfig[] {
     if (typeof window === 'undefined') {
       return getDefaultHomepageSectionsState();
     }
@@ -63,7 +66,7 @@ class HomepageSectionsService {
     });
   }
 
-  public async fetchSections(force = false): Promise<HomepageSectionState[]> {
+  public async fetchSections(force = false): Promise<HomepageSectionConfig[]> {
     const now = Date.now();
     if (!force && this.isLoaded && now - this.lastFetchTime < 10000) {
       return this.sections;
@@ -102,15 +105,15 @@ class HomepageSectionsService {
     return this.sections;
   }
 
-  public getSections(): HomepageSectionState[] {
+  public getSections(): HomepageSectionConfig[] {
     return [...this.sections];
   }
 
-  public getSectionsSnapshot(): HomepageSectionState[] {
+  public getSectionsSnapshot(): HomepageSectionConfig[] {
     return [...this.sections];
   }
 
-  public saveConfigLocally(newSections: HomepageSectionState[]): void {
+  public saveConfigLocally(newSections: HomepageSectionConfig[]): void {
     this.sections = mergeHomepageSectionsConfig(newSections);
     if (typeof window !== 'undefined') {
       try {
@@ -120,7 +123,7 @@ class HomepageSectionsService {
     }
   }
 
-  public getOrderedSections(): HomepageSectionState[] {
+  public getOrderedSections(): HomepageSectionConfig[] {
     return [...this.sections].sort((a, b) => a.order - b.order);
   }
 
@@ -129,7 +132,15 @@ class HomepageSectionsService {
     return item ? item.enabled : true;
   }
 
-  public subscribe(callback: (sections: HomepageSectionState[]) => void): () => void {
+  public isSubsectionEnabled(parentId: string, subId: string): boolean {
+    return checkSubEnabled(this.sections, parentId, subId);
+  }
+
+  public getOrderedSubsections(parentId: string, group?: string): HomepageSubsectionConfig[] {
+    return getSubs(this.sections, parentId, group);
+  }
+
+  public subscribe(callback: (sections: HomepageSectionConfig[]) => void): () => void {
     if (typeof window === 'undefined') return () => {};
 
     const handler = (e: any) => {
@@ -143,7 +154,7 @@ class HomepageSectionsService {
   }
 
   public async saveAdminSections(
-    newSections: HomepageSectionState[],
+    newSections: HomepageSectionConfig[],
     adminToken?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {

@@ -14,11 +14,16 @@ import {
   Layers,
   Sparkles,
   Info,
+  ChevronDown,
+  ChevronRight,
+  CornerDownRight,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import {
   HOMEPAGE_SECTIONS_REGISTRY,
+  HOMEPAGE_SUBSECTIONS_REGISTRY,
   HomepageSectionConfig,
+  HomepageSubsectionConfig,
   mergeHomepageSectionsConfig,
   getDefaultHomepageSectionsState,
 } from '../../config/homepageSections';
@@ -40,11 +45,18 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   );
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    top_announcement: false,
+    categories_grid: false,
+  });
+
+  const toggleExpand = (id: string) => {
+    setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const triggerToast = useCallback(
     (type: 'success' | 'error' | 'info', title: string, message?: string) => {
       if (typeof onShowToast === 'function') {
-        // Support both (type, msg) and (title, msg, type)
         try {
           if (onShowToast.length >= 3) {
             onShowToast(title, message, type);
@@ -136,6 +148,51 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     setSections(reordered);
   };
 
+  const handleSubsectionToggle = (parentId: string, subId: string) => {
+    setSections((prev) =>
+      prev.map((sec) => {
+        if (sec.id !== parentId || !sec.subsections) return sec;
+        return {
+          ...sec,
+          subsections: sec.subsections.map((sub) =>
+            sub.id === subId ? { ...sub, enabled: !sub.enabled } : sub
+          ),
+        };
+      })
+    );
+  };
+
+  const handleSubsectionMove = (parentId: string, subId: string, direction: 'up' | 'down') => {
+    setSections((prev) =>
+      prev.map((sec) => {
+        if (sec.id !== parentId || !sec.subsections) return sec;
+        const targetSub = sec.subsections.find((s) => s.id === subId);
+        if (!targetSub) return sec;
+
+        const group = targetSub.group;
+        const groupSubs = sec.subsections.filter((s) => s.group === group);
+        const subIndexInGroup = groupSubs.findIndex((s) => s.id === subId);
+        const targetIndexInGroup = direction === 'up' ? subIndexInGroup - 1 : subIndexInGroup + 1;
+        if (targetIndexInGroup < 0 || targetIndexInGroup >= groupSubs.length) return sec;
+
+        const reorderedGroup = [...groupSubs];
+        const temp = reorderedGroup[subIndexInGroup];
+        reorderedGroup[subIndexInGroup] = reorderedGroup[targetIndexInGroup];
+        reorderedGroup[targetIndexInGroup] = temp;
+        reorderedGroup.forEach((item, idx) => {
+          item.order = idx + 1;
+        });
+
+        // Reassemble all subsections preserving other groups
+        const otherSubs = sec.subsections.filter((s) => s.group !== group);
+        return {
+          ...sec,
+          subsections: [...otherSubs, ...reorderedGroup],
+        };
+      })
+    );
+  };
+
   const handleResetDefaults = () => {
     const defaults = getDefaultHomepageSectionsState();
     setSections(defaults);
@@ -154,6 +211,17 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           id: s.id,
           enabled: Boolean(s.enabled),
           order: idx + 1,
+          ...(s.subsections
+            ? {
+                subsections: s.subsections.map((sub, sIdx) => ({
+                  id: sub.id,
+                  parentId: sub.parentId,
+                  group: sub.group,
+                  enabled: Boolean(sub.enabled),
+                  order: sub.order || sIdx + 1,
+                })),
+              }
+            : {}),
         })),
       };
 
@@ -183,7 +251,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           data?.error || t('homepageSectionsModule.saveError') || 'Lỗi lưu cấu hình hiển thị.';
         triggerToast('error', errMsg);
       }
-    } catch (err: any) {
+    } catch {
       triggerToast(
         'error',
         t('homepageSectionsModule.saveError') || 'Lỗi kết nối máy chủ khi lưu cấu hình.'
@@ -218,14 +286,14 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                     {t('homepageSectionsModule.savedStatus') || 'Cấu hình đã đồng bộ'}
                   </span>
                 )}
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                 {t('homepageSectionsModule.subtitle') ||
-                  'Quản trị bật/tắt và sắp xếp thứ tự hiển thị các khu vực trên trang chủ web khách theo thời gian thực.'}
+                  'Quản trị bật/tắt và sắp xếp thứ tự hiển thị các khu vực trên trang chủ web khách Universal Mall theo thời gian thực.'}
               </p>
             </div>
           </div>
@@ -247,7 +315,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             type="button"
             onClick={handleResetDefaults}
             disabled={loading || saving}
-            className="px-3 py-1.5 text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5"
+            className="px-3 py-1.5 text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5 text-neutral-500" />
             <span>{t('homepageSectionsModule.resetDefaults') || 'Khôi Phục Mặc Định'}</span>
@@ -256,7 +324,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           <button
             type="button"
             onClick={handleViewStorefront}
-            className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-300 dark:border-neutral-700 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5"
+            className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-300 dark:border-neutral-700 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer"
           >
             <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
             <span>{t('homepageSectionsModule.viewStorefront') || 'Xem Trang Chủ'}</span>
@@ -266,7 +334,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-sm ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer ${
               hasChanges
                 ? 'bg-primary-600 hover:bg-primary-700 shadow-primary-500/20 animate-pulse'
                 : 'bg-primary-600 hover:bg-primary-700'
@@ -331,117 +399,368 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 '';
               const isFirst = idx === 0;
               const isLast = idx === sections.length - 1;
+              const hasSubsections = Boolean(section.subsections && section.subsections.length > 0);
+              const isExpanded = Boolean(expandedSections[section.id]);
 
               return (
-                <tr
-                  key={section.id}
-                  className={`transition-colors text-xs ${
-                    section.enabled
-                      ? 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
-                      : 'bg-neutral-50/60 dark:bg-neutral-900/40 opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  {/* Cột 1: Thứ tự & Nút Di chuyển (12%) */}
-                  <td className="py-2.5 px-3 text-center">
-                    <div className="inline-flex items-center gap-1.5">
-                      <span className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold text-xs flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                      <div className="flex flex-col gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => handleMove(idx, 'up')}
-                          disabled={isFirst}
-                          title={t('homepageSectionsModule.moveUp') || 'Chuyển lên'}
-                          className="p-1 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ArrowUp className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMove(idx, 'down')}
-                          disabled={isLast}
-                          title={t('homepageSectionsModule.moveDown') || 'Chuyển xuống'}
-                          className="p-1 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ArrowDown className="w-3 h-3" />
-                        </button>
+                <React.Fragment key={section.id}>
+                  <tr
+                    className={`transition-colors text-xs ${
+                      section.enabled
+                        ? 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
+                        : 'bg-neutral-50/60 dark:bg-neutral-900/40 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    {/* Cột 1: Thứ tự & Nút Di chuyển (12%) */}
+                    <td className="py-2.5 px-3 text-center">
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold text-xs flex items-center justify-center">
+                          {idx + 1}
+                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleMove(idx, 'up')}
+                            disabled={isFirst}
+                            title={t('homepageSectionsModule.moveUp') || 'Chuyển lên'}
+                            className="p-1 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMove(idx, 'down')}
+                            disabled={isLast}
+                            title={t('homepageSectionsModule.moveDown') || 'Chuyển xuống'}
+                            className="p-1 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* Cột 2: Tên mục, icon, ID (28%) */}
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 ${
-                          section.enabled
-                            ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400'
-                            : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400'
+                    {/* Cột 2: Tên mục, icon, ID & Nút mở rộng mục con (28%) */}
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 mt-0.5 ${
+                            section.enabled
+                              ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400'
+                              : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400'
+                          }`}
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className="font-semibold text-neutral-900 dark:text-white truncate"
+                            title={displayName}
+                          >
+                            {displayName}
+                          </div>
+                          <div
+                            className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 truncate"
+                            title={section.id}
+                          >
+                            {section.id}
+                          </div>
+
+                          {/* Nút mở rộng mục con */}
+                          {hasSubsections && (
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(section.id)}
+                              className="mt-1 text-[11px] font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              title={
+                                isExpanded
+                                  ? t('homepageSectionsModule.collapseSubsections') || 'Thu gọn mục con'
+                                  : t('homepageSectionsModule.expandSubsections') || 'Mở rộng mục con'
+                              }
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-3.5 h-3.5 text-primary-500" />
+                              ) : (
+                                <ChevronRight className="w-3.5 h-3.5 text-primary-500" />
+                              )}
+                              <span>
+                                {t('homepageSectionsModule.subsectionsCount', {
+                                  count: section.subsections!.length,
+                                }) || `${section.subsections!.length} mục con`}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Cột 3: Mô tả chức năng & vị trí (36%) */}
+                    <td className="py-2.5 px-3">
+                      <p
+                        className="text-neutral-600 dark:text-neutral-300 text-xs truncate"
+                        title={displayDesc}
+                      >
+                        {displayDesc}
+                      </p>
+                    </td>
+
+                    {/* Cột 4: Trạng thái badge (12%) */}
+                    <td className="py-2.5 px-3 text-center">
+                      {section.enabled ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          <Eye className="w-3 h-3" />
+                          <span>{t('homepageSectionsModule.statusVisible') || 'Đang Hiện'}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-500/10 text-neutral-500 dark:text-neutral-400 border border-neutral-500/20">
+                          <EyeOff className="w-3 h-3" />
+                          <span>{t('homepageSectionsModule.statusHidden') || 'Đang Ẩn'}</span>
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Cột 5: Toggle Switch (12%) */}
+                    <td className="py-2.5 px-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleToggle(section.id)}
+                        title={t('homepageSectionsModule.toggleVisibility') || 'Bật/Tắt hiển thị'}
+                        className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          section.enabled ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-700'
                         }`}
                       >
-                        <Layers className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div
-                          className="font-semibold text-neutral-900 dark:text-white truncate"
-                          title={displayName}
-                        >
-                          {displayName}
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                            section.enabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Accordion Row hiển thị danh sách mục con */}
+                  {hasSubsections && isExpanded && (
+                    <tr className="bg-neutral-50/80 dark:bg-neutral-900/80 border-b border-neutral-200 dark:border-neutral-800">
+                      <td colSpan={5} className="py-3 px-4">
+                        <div className="pl-3 sm:pl-5 border-l-2 border-primary-500/50 space-y-3">
+                          {/* Cảnh báo khi mục lớn đang bị tắt */}
+                          {!section.enabled && (
+                            <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>
+                                {t('homepageSectionsModule.parentDisabledNotice') ||
+                                  'Mục lớn đang tắt — các mục con sẽ bị ẩn đồng thời trên web khách.'}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Nhóm các mục con theo group */}
+                          {(() => {
+                            const groups = Array.from(
+                              new Set(section.subsections!.map((s) => s.group))
+                            );
+                            return groups.map((grpKey) => {
+                              const groupSubs = section.subsections!.filter(
+                                (s) => s.group === grpKey
+                              );
+                              const grpName =
+                                t(`homepageSectionsModule.groups.${grpKey}`) ||
+                                groupSubs[0]?.groupNameVi ||
+                                grpKey;
+
+                              return (
+                                <div
+                                  key={grpKey}
+                                  className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-2xs"
+                                >
+                                  <div className="bg-neutral-100 dark:bg-neutral-800/60 px-3 py-1.5 text-[11px] font-bold text-neutral-700 dark:text-neutral-300 flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800">
+                                    <span className="flex items-center gap-1.5">
+                                      <CornerDownRight className="w-3.5 h-3.5 text-primary-500" />
+                                      <span>{grpName}</span>
+                                    </span>
+                                    <span className="text-[10px] text-neutral-400 font-normal">
+                                      {groupSubs.length} mục
+                                    </span>
+                                  </div>
+
+                                  <table className="table-fixed w-full border-collapse">
+                                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                                      {groupSubs.map((sub, subIdx) => {
+                                        const subReg = HOMEPAGE_SUBSECTIONS_REGISTRY.find(
+                                          (r) => r.id === sub.id
+                                        );
+                                        const subName =
+                                          t(`homepageSectionsModule.subsections.${sub.id}.name`) ||
+                                          (isEn
+                                            ? sub.nameEn || subReg?.nameEn
+                                            : sub.nameVi || subReg?.nameVi) ||
+                                          sub.id;
+                                        const subDesc =
+                                          t(
+                                            `homepageSectionsModule.subsections.${sub.id}.description`
+                                          ) ||
+                                          (isEn
+                                            ? sub.descriptionEn || subReg?.descriptionEn
+                                            : sub.descriptionVi || subReg?.descriptionVi) ||
+                                          '';
+                                        const isSubFirst = subIdx === 0;
+                                        const isSubLast = subIdx === groupSubs.length - 1;
+                                        const isEffectivelyEnabled =
+                                          section.enabled && sub.enabled;
+
+                                        return (
+                                          <tr
+                                            key={sub.id}
+                                            className={`text-xs transition-colors ${
+                                              !section.enabled
+                                                ? 'opacity-50'
+                                                : sub.enabled
+                                                ? 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
+                                                : 'bg-neutral-50/50 dark:bg-neutral-900/30 opacity-60'
+                                            }`}
+                                          >
+                                            {/* Cột 1 (12%): Thứ tự & Nút di chuyển trong nhóm */}
+                                            <td className="w-[12%] py-2 px-3 text-center">
+                                              <div className="inline-flex items-center gap-1">
+                                                <span className="w-5 h-5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold text-[11px] flex items-center justify-center">
+                                                  {subIdx + 1}
+                                                </span>
+                                                <div className="flex flex-col gap-0.5">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      handleSubsectionMove(
+                                                        section.id,
+                                                        sub.id,
+                                                        'up'
+                                                      )
+                                                    }
+                                                    disabled={isSubFirst}
+                                                    title={
+                                                      t('homepageSectionsModule.moveUp') ||
+                                                      'Chuyển lên'
+                                                    }
+                                                    className="p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                  >
+                                                    <ArrowUp className="w-2.5 h-2.5" />
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      handleSubsectionMove(
+                                                        section.id,
+                                                        sub.id,
+                                                        'down'
+                                                      )
+                                                    }
+                                                    disabled={isSubLast}
+                                                    title={
+                                                      t('homepageSectionsModule.moveDown') ||
+                                                      'Chuyển xuống'
+                                                    }
+                                                    className="p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                  >
+                                                    <ArrowDown className="w-2.5 h-2.5" />
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </td>
+
+                                            {/* Cột 2 (28%): Tên mục con & ID */}
+                                            <td className="w-[28%] py-2 px-3">
+                                              <div className="min-w-0">
+                                                <div
+                                                  className="font-medium text-neutral-900 dark:text-white truncate"
+                                                  title={subName}
+                                                >
+                                                  {subName}
+                                                </div>
+                                                <div
+                                                  className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 truncate"
+                                                  title={sub.id}
+                                                >
+                                                  {sub.id}
+                                                </div>
+                                              </div>
+                                            </td>
+
+                                            {/* Cột 3 (36%): Mô tả chức năng & vị trí */}
+                                            <td className="w-[36%] py-2 px-3">
+                                              <p
+                                                className="text-neutral-600 dark:text-neutral-400 text-xs truncate"
+                                                title={subDesc}
+                                              >
+                                                {subDesc}
+                                              </p>
+                                            </td>
+
+                                            {/* Cột 4 (12%): Trạng thái badge */}
+                                            <td className="w-[12%] py-2 px-3 text-center">
+                                              {isEffectivelyEnabled ? (
+                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                  <Eye className="w-2.5 h-2.5" />
+                                                  <span>
+                                                    {t(
+                                                      'homepageSectionsModule.statusVisible'
+                                                    ) || 'Đang Hiện'}
+                                                  </span>
+                                                </span>
+                                              ) : (
+                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-neutral-500/10 text-neutral-500 dark:text-neutral-400 border border-neutral-500/20">
+                                                  <EyeOff className="w-2.5 h-2.5" />
+                                                  <span>
+                                                    {t(
+                                                      'homepageSectionsModule.statusHidden'
+                                                    ) || 'Đang Ẩn'}
+                                                  </span>
+                                                </span>
+                                              )}
+                                            </td>
+
+                                            {/* Cột 5 (12%): Toggle switch */}
+                                            <td className="w-[12%] py-2 px-3 text-center">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  handleSubsectionToggle(
+                                                    section.id,
+                                                    sub.id
+                                                  )
+                                                }
+                                                title={
+                                                  t(
+                                                    'homepageSectionsModule.toggleVisibility'
+                                                  ) || 'Bật/Tắt hiển thị'
+                                                }
+                                                className={`relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                                  sub.enabled
+                                                    ? 'bg-primary-600'
+                                                    : 'bg-neutral-300 dark:bg-neutral-700'
+                                                }`}
+                                              >
+                                                <span
+                                                  className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                                    sub.enabled
+                                                      ? 'translate-x-4'
+                                                      : 'translate-x-0'
+                                                  }`}
+                                                />
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              );
+                            });
+                          })()}
                         </div>
-                        <div
-                          className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 truncate"
-                          title={section.id}
-                        >
-                          {section.id}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Cột 3: Mô tả chức năng (36%) */}
-                  <td className="py-2.5 px-3">
-                    <p
-                      className="text-neutral-600 dark:text-neutral-300 text-xs truncate"
-                      title={displayDesc}
-                    >
-                      {displayDesc}
-                    </p>
-                  </td>
-
-                  {/* Cột 4: Trạng thái badge (12%) */}
-                  <td className="py-2.5 px-3 text-center">
-                    {section.enabled ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        <Eye className="w-3 h-3" />
-                        <span>{t('homepageSectionsModule.statusVisible') || 'Đang Hiện'}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-500/10 text-neutral-500 dark:text-neutral-400 border border-neutral-500/20">
-                        <EyeOff className="w-3 h-3" />
-                        <span>{t('homepageSectionsModule.statusHidden') || 'Đang Ẩn'}</span>
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Cột 5: Toggle Switch (12%) */}
-                  <td className="py-2.5 px-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => handleToggle(section.id)}
-                      title={t('homepageSectionsModule.toggleVisibility') || 'Bật/Tắt hiển thị'}
-                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        section.enabled ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-700'
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                          section.enabled ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </td>
-                </tr>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>

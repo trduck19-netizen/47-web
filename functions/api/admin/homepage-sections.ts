@@ -2,6 +2,7 @@ import { verifyAdminAuth } from '../../services/mission_service';
 import { ensureSchemaUpgrades, logAdminAudit } from '../../services/d1_service';
 import {
   HOMEPAGE_SECTIONS_REGISTRY,
+  HOMEPAGE_SUBSECTIONS_REGISTRY,
   mergeHomepageSectionsConfig,
   validateHomepageSectionsPayload,
 } from '../../../src/config/homepageSections';
@@ -54,6 +55,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       JSON.stringify({
         success: true,
         registry: HOMEPAGE_SECTIONS_REGISTRY,
+        subsectionsRegistry: HOMEPAGE_SUBSECTIONS_REGISTRY,
         sections,
         updated_at: row?.updated_at || null,
       }),
