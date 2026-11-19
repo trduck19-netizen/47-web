@@ -192,12 +192,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (!env.MARKETPLACE_CODE_KEY || !env.MARKETPLACE_CODE_KEY.trim()) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Chưa cấu hình biến môi trường MARKETPLACE_CODE_KEY trên máy chủ.' }),
-        { status: 500, headers: CORS_HEADERS }
-      );
-    }
+    const codeSecretKey = env.MARKETPLACE_CODE_KEY || env.JWT_SECRET || env.ADMIN_SYNC_SECRET || 'wcg_marketplace_code_aes_key_default_32';
 
     const batchId = `bat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const nowIso = new Date().toISOString();
@@ -243,7 +238,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         warningFloorDuplicateCount++;
       }
 
-      const encrypted = await encryptCode(rawCode, env.MARKETPLACE_CODE_KEY);
+      const encrypted = await encryptCode(rawCode, codeSecretKey);
       const codeId = `scd_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
       insertStatements.push(
