@@ -1856,30 +1856,35 @@ export const App: React.FC = () => {
       >
         <AdminApp
           onBackToClient={() => {
+            const isEn = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
             const host = typeof window !== 'undefined' ? window.location.hostname : '';
             if (host.includes('admin-universal-mall')) {
-              const newWin = window.open('https://universal-mall-shop.pages.dev', '_blank');
+              const target = isEn ? 'https://universal-mall-shop.pages.dev/en/' : 'https://universal-mall-shop.pages.dev/';
+              const newWin = window.open(target, '_blank');
               if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-                window.location.href = 'https://universal-mall-shop.pages.dev';
+                window.location.href = target;
               }
               return;
             }
             if (host.includes('admin-test-code-game-shop')) {
-              const newWin = window.open('https://test-code-game-shop.pages.dev', '_blank');
+              const target = isEn ? 'https://test-code-game-shop.pages.dev/en/' : 'https://test-code-game-shop.pages.dev/';
+              const newWin = window.open(target, '_blank');
               if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-                window.location.href = 'https://test-code-game-shop.pages.dev';
+                window.location.href = target;
               }
               return;
             }
             const isDedicatedAdmin = host.includes('admin-code-game-shop');
             if (isDedicatedAdmin) {
-              const newWin = window.open('https://codegame.shop', '_blank');
+              const target = isEn ? 'https://codegame.shop/en/' : 'https://codegame.shop/';
+              const newWin = window.open(target, '_blank');
               if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-                window.location.href = 'https://codegame.shop';
+                window.location.href = target;
               }
             } else {
-              if (window.location.pathname.toLowerCase().startsWith('/admin')) {
-                window.location.href = '/store';
+              const targetPath = isEn ? '/en/' : '/';
+              if (window.location.pathname.toLowerCase().startsWith('/admin') || window.location.pathname.toLowerCase().startsWith('/en/admin')) {
+                window.location.href = targetPath;
               } else {
                 handleSelectTab('store');
               }

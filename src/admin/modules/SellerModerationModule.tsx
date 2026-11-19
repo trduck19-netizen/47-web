@@ -28,12 +28,15 @@ import {
   Send,
   Star,
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface SellerModerationModuleProps {
   onShowToast?: (title: string, message?: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ onShowToast }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [activeTab, setActiveTab] = useState<
     'sellers' | 'products' | 'ratings' | 'disputes' | 'ledger' | 'reconciliation' | 'withdrawals' | 'webhook_exceptions' | 'config'
   >('sellers');
@@ -675,10 +678,12 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-card border border-border rounded-2xl shadow-sm">
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <Store className="w-5 h-5 text-primary" /> Quản Lý Sàn TMĐT & Tài Chính Giai Đoạn 2
+            <Store className="w-5 h-5 text-primary" /> {isEn ? 'E-Commerce Marketplace & Stage 2 Finance Management' : 'Quản Lý Sàn TMĐT & Tài Chính Giai Đoạn 2'}
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Duyệt gian hàng, xét duyệt sản phẩm, sổ cái 3 ngăn, đối soát 3 nguồn và quản lý rút tiền.
+            {isEn
+              ? 'Moderate stores, review products, 3-compartment ledger, 3-way reconciliation, and vendor withdrawals.'
+              : 'Duyệt gian hàng, xét duyệt sản phẩm, sổ cái 3 ngăn, đối soát 3 nguồn và quản lý rút tiền.'}
           </p>
         </div>
 
@@ -690,7 +695,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'sellers' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            Gian Hàng ({sellers.length})
+            {isEn ? `Stores (${sellers.length})` : `Gian Hàng (${sellers.length})`}
           </button>
           <button
             onClick={() => setActiveTab('products')}
@@ -698,7 +703,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'products' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            Sản Phẩm ({products.length})
+            {isEn ? `Products (${products.length})` : `Sản Phẩm (${products.length})`}
           </button>
           <button
             onClick={() => setActiveTab('ratings')}
@@ -706,7 +711,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'ratings' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Star className="w-3.5 h-3.5" /> Duyệt Đánh Giá
+            <Star className="w-3.5 h-3.5" /> {isEn ? 'Review Moderation' : 'Duyệt Đánh Giá'}
             {(ratingsStats?.pending_count || 0) > 0 && (
               <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-bold">
                 {ratingsStats.pending_count}
@@ -719,7 +724,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'disputes' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <ShieldAlert className="w-3.5 h-3.5" /> Khiếu Nại Sàn
+            <ShieldAlert className="w-3.5 h-3.5" /> {isEn ? 'Disputes' : 'Khiếu Nại Sàn'}
             {(disputesStats?.open_count || 0) > 0 && (
               <span className="ml-1 px-1.5 py-0.2 rounded-full bg-destructive text-white text-[10px] font-bold">
                 {disputesStats.open_count}
@@ -732,7 +737,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'ledger' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Receipt className="w-3.5 h-3.5" /> Sổ Cái 3 Ngăn
+            <Receipt className="w-3.5 h-3.5" /> {isEn ? '3-Compartment Ledger' : 'Sổ Cái 3 Ngăn'}
           </button>
           <button
             onClick={() => setActiveTab('reconciliation')}
@@ -740,7 +745,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'reconciliation' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Scale className="w-3.5 h-3.5" /> Đối Soát 3 Nguồn
+            <Scale className="w-3.5 h-3.5" /> {isEn ? '3-Way Reconciliation' : 'Đối Soát 3 Nguồn'}
           </button>
           <button
             onClick={() => setActiveTab('withdrawals')}
@@ -748,7 +753,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'withdrawals' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Coins className="w-3.5 h-3.5" /> Rút Tiền ({withdrawStats?.pending_count || 0})
+            <Coins className="w-3.5 h-3.5" /> {isEn ? `Withdrawals (${withdrawStats?.pending_count || 0})` : `Rút Tiền (${withdrawStats?.pending_count || 0})`}
           </button>
           <button
             onClick={() => setActiveTab('webhook_exceptions')}
@@ -756,7 +761,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'webhook_exceptions' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Ngoại Lệ
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> {isEn ? 'Exceptions' : 'Ngoại Lệ'}
           </button>
           <button
             onClick={() => setActiveTab('config')}
@@ -764,7 +769,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'config' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Sliders className="w-3.5 h-3.5" /> Cấu Hình
+            <Sliders className="w-3.5 h-3.5" /> {isEn ? 'Configuration' : 'Cấu Hình'}
           </button>
         </div>
       </div>
@@ -776,7 +781,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span className="font-bold">{sepayAlert.message}</span>
           </div>
-          <span className="text-[10px] text-muted-foreground shrink-0">{new Date(sepayAlert.last_alert_at).toLocaleString('vi-VN')}</span>
+          <span className="text-[10px] text-muted-foreground shrink-0">{new Date(sepayAlert.last_alert_at).toLocaleString(isEn ? 'en-US' : 'vi-VN')}</span>
         </div>
       )}
 
@@ -785,25 +790,25 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2 text-xs">
-              <label className="font-semibold text-muted-foreground">Lọc Trạng Thái:</label>
+              <label className="font-semibold text-muted-foreground">{isEn ? 'Filter Status:' : 'Lọc Trạng Thái:'}</label>
               <select
                 value={sellerStatusFilter}
                 onChange={(e) => setSellerStatusFilter(e.target.value)}
                 className="px-2.5 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold focus:outline-none focus:border-primary"
               >
-                <option value="">Tất cả ({sellers.length})</option>
-                <option value="PENDING">Chờ Duyệt (PENDING)</option>
-                <option value="TRIAL">Thử Việc (TRIAL)</option>
-                <option value="ACTIVE">Hoạt Động (ACTIVE)</option>
-                <option value="SUSPENDED">Tạm Khóa (SUSPENDED)</option>
-                <option value="REJECTED">Từ Chối (REJECTED)</option>
+                <option value="">{isEn ? `All (${sellers.length})` : `Tất cả (${sellers.length})`}</option>
+                <option value="PENDING">{isEn ? 'Pending (PENDING)' : 'Chờ Duyệt (PENDING)'}</option>
+                <option value="TRIAL">{isEn ? 'Trial (TRIAL)' : 'Thử Việc (TRIAL)'}</option>
+                <option value="ACTIVE">{isEn ? 'Active (ACTIVE)' : 'Hoạt Động (ACTIVE)'}</option>
+                <option value="SUSPENDED">{isEn ? 'Suspended (SUSPENDED)' : 'Tạm Khóa (SUSPENDED)'}</option>
+                <option value="REJECTED">{isEn ? 'Rejected (REJECTED)' : 'Từ Chối (REJECTED)'}</option>
               </select>
             </div>
             <button
               onClick={fetchSellers}
-              className="px-3 py-1.5 rounded-xl border border-border hover:bg-muted/50 text-xs font-semibold flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl border border-border hover:bg-muted/50 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Làm mới
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> {isEn ? 'Refresh' : 'Làm mới'}
             </button>
           </div>
 
@@ -811,18 +816,18 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
             <table className="table-fixed w-full text-xs text-left">
               <thead className="bg-muted/40 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
                 <tr>
-                  <th style={{ width: '28%' }} className="p-3">Gian Hàng & Liên Hệ</th>
-                  <th style={{ width: '18%' }} className="p-3">Ngân Hàng Rút</th>
-                  <th style={{ width: '14%' }} className="p-3">Hạn Mức & Uy Tín</th>
-                  <th style={{ width: '14%' }} className="p-3">Trạng Thái</th>
-                  <th style={{ width: '26%' }} className="p-3 text-right">Thao Tác Thẩm Định</th>
+                  <th style={{ width: '28%' }} className="p-3">{isEn ? 'STORE & CONTACT' : 'GIAN HÀNG & LIÊN HỆ'}</th>
+                  <th style={{ width: '18%' }} className="p-3">{isEn ? 'PAYOUT BANK' : 'NGÂN HÀNG RÚT'}</th>
+                  <th style={{ width: '14%' }} className="p-3">{isEn ? 'LIMIT & REPUTATION' : 'HẠN MỨC & UY TÍN'}</th>
+                  <th style={{ width: '14%' }} className="p-3">{isEn ? 'STATUS' : 'TRẠNG THÁI'}</th>
+                  <th style={{ width: '26%' }} className="p-3 text-right">{isEn ? 'MODERATION ACTIONS' : 'THAO TÁC THẨM ĐỊNH'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {sellers.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                      Không có gian hàng nào trong danh sách.
+                      {isEn ? 'No stores found in list.' : 'Không có gian hàng nào trong danh sách.'}
                     </td>
                   </tr>
                 ) : (
@@ -838,13 +843,13 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                           />
                           <div className="min-w-0 flex-1">
                             <div className="font-bold text-foreground truncate" title={s.name}>{s.name}</div>
-                            <div className="text-[10px] text-muted-foreground truncate" title={s.slug}>/{s.slug} • {s.contact_phone || 'Không số'}</div>
+                            <div className="text-[10px] text-muted-foreground truncate" title={s.slug}>/{s.slug} • {s.contact_phone || (isEn ? 'No phone' : 'Không số')}</div>
                           </div>
                         </div>
                       </td>
                       <td className="p-3">
-                        <div className="truncate font-semibold text-foreground" title={s.bank_name || 'Chưa cài'}>
-                          {s.bank_name || 'Chưa cài'}
+                        <div className="truncate font-semibold text-foreground" title={s.bank_name || (isEn ? 'Not set' : 'Chưa cài')}>
+                          {s.bank_name || (isEn ? 'Not set' : 'Chưa cài')}
                         </div>
                         <div className="text-[10px] text-muted-foreground truncate" title={s.bank_account}>
                           {s.bank_account || '—'} {s.bank_account_name ? `(${s.bank_account_name})` : ''}
@@ -852,15 +857,15 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                       </td>
                       <td className="p-3">
                         <div className="font-bold text-foreground">{s.reputation_score || 100} ⭐</div>
-                        <div className="text-[10px] text-muted-foreground">{s.trial_product_limit || 5} sp / {s.trial_order_max || 200} Core</div>
+                        <div className="text-[10px] text-muted-foreground">{s.trial_product_limit || 5} {isEn ? 'prods' : 'sp'} / {s.trial_order_max || 200} Core</div>
                       </td>
                       <td className="p-3">
-                        {s.status === 'PENDING' && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold text-[10px] border border-amber-500/20">Chờ duyệt</span>}
-                        {s.status === 'TRIAL' && <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold text-[10px] border border-blue-500/20">Thử việc</span>}
-                        {s.status === 'ACTIVE' && <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[10px] border border-emerald-500/20">Hoạt động</span>}
-                        {s.status === 'SUSPENDED' && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold text-[10px] border border-destructive/20">Tạm khóa</span>}
-                        {s.status === 'REJECTED' && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-bold text-[10px] border border-border">Từ chối</span>}
-                        {s.is_vacation === 1 && <div className="text-[10px] text-amber-500 font-semibold mt-0.5">🏖️ Nghỉ bán</div>}
+                        {s.status === 'PENDING' && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold text-[10px] border border-amber-500/20">{isEn ? 'Pending' : 'Chờ duyệt'}</span>}
+                        {s.status === 'TRIAL' && <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold text-[10px] border border-blue-500/20">{isEn ? 'Trial' : 'Thử việc'}</span>}
+                        {s.status === 'ACTIVE' && <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[10px] border border-emerald-500/20">{isEn ? 'Active' : 'Hoạt động'}</span>}
+                        {s.status === 'SUSPENDED' && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold text-[10px] border border-destructive/20">{isEn ? 'Suspended' : 'Tạm khóa'}</span>}
+                        {s.status === 'REJECTED' && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-bold text-[10px] border border-border">{isEn ? 'Rejected' : 'Từ chối'}</span>}
+                        {s.is_vacation === 1 && <div className="text-[10px] text-amber-500 font-semibold mt-0.5">{isEn ? '🏖️ On Vacation' : '🏖️ Nghỉ bán'}</div>}
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
@@ -868,24 +873,24 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                             <>
                               <button
                                 onClick={() => handleApproveSeller(s.id, 'TRIAL')}
-                                className="px-2 py-1 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 transition-colors"
-                                title="Duyệt vào chế độ Thử Việc (TRIAL)"
+                                className="px-2 py-1 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 transition-colors cursor-pointer"
+                                title={isEn ? 'Approve to Trial mode (TRIAL)' : 'Duyệt vào chế độ Thử Việc (TRIAL)'}
                               >
-                                Duyệt TRIAL
+                                {isEn ? 'Approve TRIAL' : 'Duyệt TRIAL'}
                               </button>
                               <button
                                 onClick={() => setRequestingInfoSeller(s)}
-                                className="px-2 py-1 rounded-lg border border-amber-500/30 text-amber-500 font-bold hover:bg-amber-500/10"
-                                title="Yêu cầu bổ sung thông tin"
+                                className="px-2 py-1 rounded-lg border border-amber-500/30 text-amber-500 font-bold hover:bg-amber-500/10 cursor-pointer"
+                                title={isEn ? 'Request additional information' : 'Yêu cầu bổ sung thông tin'}
                               >
-                                Yêu cầu thêm
+                                {isEn ? 'Request Info' : 'Yêu cầu thêm'}
                               </button>
                               <button
                                 onClick={() => setRejectingSeller(s)}
-                                className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10"
-                                title="Từ chối mở gian hàng"
+                                className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10 cursor-pointer"
+                                title={isEn ? 'Reject store registration' : 'Từ chối mở gian hàng'}
                               >
-                                Từ chối
+                                {isEn ? 'Reject' : 'Từ chối'}
                               </button>
                             </>
                           )}
@@ -893,33 +898,33 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                             <>
                               <button
                                 onClick={() => handleApproveSeller(s.id, 'ACTIVE')}
-                                className="px-2 py-1 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600"
-                                title="Nâng hạng lên ACTIVE chính thức"
+                                className="px-2 py-1 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600 cursor-pointer"
+                                title={isEn ? 'Promote to official ACTIVE status' : 'Nâng hạng lên ACTIVE chính thức'}
                               >
-                                Lên ACTIVE
+                                {isEn ? 'Promote to ACTIVE' : 'Lên ACTIVE'}
                               </button>
                               <button
                                 onClick={() => handleToggleSuspendSeller(s.id, s.status)}
-                                className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10"
+                                className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10 cursor-pointer"
                               >
-                                Tạm khóa
+                                {isEn ? 'Suspend' : 'Tạm khóa'}
                               </button>
                             </>
                           )}
                           {s.status === 'ACTIVE' && (
                             <button
                               onClick={() => handleToggleSuspendSeller(s.id, s.status)}
-                              className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10"
+                              className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10 cursor-pointer"
                             >
-                              Tạm khóa
+                              {isEn ? 'Suspend' : 'Tạm khóa'}
                             </button>
                           )}
                           {s.status === 'SUSPENDED' && (
                             <button
                               onClick={() => handleToggleSuspendSeller(s.id, s.status)}
-                              className="px-2 py-1 rounded-lg border border-emerald-500/30 text-emerald-500 font-bold hover:bg-emerald-500/10"
+                              className="px-2 py-1 rounded-lg border border-emerald-500/30 text-emerald-500 font-bold hover:bg-emerald-500/10 cursor-pointer"
                             >
-                              Mở khóa
+                              {isEn ? 'Unsuspend' : 'Mở khóa'}
                             </button>
                           )}
                         </div>
@@ -938,23 +943,23 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2 text-xs">
-              <label className="font-semibold text-muted-foreground">Lọc Trạng Thái:</label>
+              <label className="font-semibold text-muted-foreground">{isEn ? 'Filter Status:' : 'Lọc Trạng Thái:'}</label>
               <select
                 value={productStatusFilter}
                 onChange={(e) => setProductStatusFilter(e.target.value)}
                 className="px-2.5 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold focus:outline-none focus:border-primary"
               >
-                <option value="">Tất cả ({products.length})</option>
-                <option value="PENDING_REVIEW">Chờ Duyệt (PENDING_REVIEW)</option>
-                <option value="APPROVED">Đã Duyệt (APPROVED)</option>
-                <option value="REJECTED">Bị Từ Chối (REJECTED)</option>
+                <option value="">{isEn ? `All (${products.length})` : `Tất cả (${products.length})`}</option>
+                <option value="PENDING_REVIEW">{isEn ? 'Pending Review (PENDING_REVIEW)' : 'Chờ Duyệt (PENDING_REVIEW)'}</option>
+                <option value="APPROVED">{isEn ? 'Approved (APPROVED)' : 'Đã Duyệt (APPROVED)'}</option>
+                <option value="REJECTED">{isEn ? 'Rejected (REJECTED)' : 'Bị Từ Chối (REJECTED)'}</option>
               </select>
             </div>
             <button
               onClick={fetchProducts}
-              className="px-3 py-1.5 rounded-xl border border-border hover:bg-muted/50 text-xs font-semibold flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl border border-border hover:bg-muted/50 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Làm mới
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> {isEn ? 'Refresh' : 'Làm mới'}
             </button>
           </div>
 
@@ -962,18 +967,18 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
             <table className="table-fixed w-full text-xs text-left">
               <thead className="bg-muted/40 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
                 <tr>
-                  <th style={{ width: '32%' }} className="p-3">Sản Phẩm & Game</th>
-                  <th style={{ width: '20%' }} className="p-3">Gian Hàng</th>
-                  <th style={{ width: '16%' }} className="p-3">Giá Bán & Tồn Kho</th>
-                  <th style={{ width: '14%' }} className="p-3">Trạng Thái</th>
-                  <th style={{ width: '18%' }} className="p-3 text-right">Thao Tác</th>
+                  <th style={{ width: '32%' }} className="p-3">{isEn ? 'PRODUCT & GAME' : 'Sản Phẩm & Game'}</th>
+                  <th style={{ width: '20%' }} className="p-3">{isEn ? 'STORE' : 'Gian Hàng'}</th>
+                  <th style={{ width: '16%' }} className="p-3">{isEn ? 'PRICE & STOCK' : 'Giá Bán & Tồn Kho'}</th>
+                  <th style={{ width: '14%' }} className="p-3">{isEn ? 'STATUS' : 'Trạng Thái'}</th>
+                  <th style={{ width: '18%' }} className="p-3 text-right">{isEn ? 'ACTIONS' : 'Thao Tác'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {products.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                      Không có sản phẩm nào.
+                      {isEn ? 'No products found.' : 'Không có sản phẩm nào.'}
                     </td>
                   </tr>
                 ) : (
@@ -998,13 +1003,13 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                         <div className="text-[10px] text-muted-foreground">BH: {p.warranty_type || '24H'}</div>
                       </td>
                       <td className="p-3">
-                        <div className="font-bold text-primary">{p.price_core?.toLocaleString('vi-VN')} Core</div>
-                        <div className="text-[10px] text-muted-foreground">Kho: <span className="text-emerald-500 font-bold">{p.in_stock_count || 0}</span> | Đã bán: {p.sold_count || 0}</div>
+                        <div className="font-bold text-primary">{p.price_core?.toLocaleString(isEn ? 'en-US' : 'vi-VN')} Core</div>
+                        <div className="text-[10px] text-muted-foreground">{isEn ? 'Stock:' : 'Kho:'} <span className="text-emerald-500 font-bold">{p.in_stock_count || 0}</span> | {isEn ? 'Sold:' : 'Đã bán:'} {p.sold_count || 0}</div>
                       </td>
                       <td className="p-3">
-                        {p.status === 'PENDING_REVIEW' && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold text-[10px] border border-amber-500/20">Chờ duyệt</span>}
-                        {p.status === 'APPROVED' && <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[10px] border border-emerald-500/20">Đã duyệt</span>}
-                        {p.status === 'REJECTED' && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold text-[10px] border border-destructive/20">Bị từ chối</span>}
+                        {p.status === 'PENDING_REVIEW' && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold text-[10px] border border-amber-500/20">{isEn ? 'Pending Review' : 'Chờ duyệt'}</span>}
+                        {p.status === 'APPROVED' && <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[10px] border border-emerald-500/20">{isEn ? 'Approved' : 'Đã duyệt'}</span>}
+                        {p.status === 'REJECTED' && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold text-[10px] border border-destructive/20">{isEn ? 'Rejected' : 'Bị từ chối'}</span>}
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
@@ -1012,24 +1017,24 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                             <>
                               <button
                                 onClick={() => handleApproveProduct(p.id)}
-                                className="px-2 py-1 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600"
+                                className="px-2 py-1 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600 cursor-pointer"
                               >
-                                Duyệt
+                                {isEn ? 'Approve' : 'Duyệt'}
                               </button>
                               <button
                                 onClick={() => setRejectingProduct(p)}
-                                className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10"
+                                className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10 cursor-pointer"
                               >
-                                Từ chối
+                                {isEn ? 'Reject' : 'Từ chối'}
                               </button>
                             </>
                           )}
                           {p.status === 'APPROVED' && (
                             <button
                               onClick={() => setRejectingProduct(p)}
-                              className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10"
+                              className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive font-bold hover:bg-destructive/10 cursor-pointer"
                             >
-                              Gỡ bán
+                              {isEn ? 'Delist' : 'Gỡ bán'}
                             </button>
                           )}
                         </div>
@@ -1049,10 +1054,12 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-bold flex items-center gap-2">
-                <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> Hàng Đợi Kiểm Duyệt Đánh Giá Gian Hàng
+                <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> {isEn ? 'Store Ratings Moderation Queue' : 'Hàng Đợi Kiểm Duyệt Đánh Giá Gian Hàng'}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Xem xét và phê duyệt hoặc từ chối các đánh giá của người mua trước khi hiển thị công khai trên gian hàng.
+                {isEn
+                  ? 'Review, approve, or reject customer reviews before displaying them publicly on merchant stores.'
+                  : 'Xem xét và phê duyệt hoặc từ chối các đánh giá của người mua trước khi hiển thị công khai trên gian hàng.'}
               </p>
             </div>
 
@@ -1062,17 +1069,17 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                 onChange={(e) => setRatingStatusFilter(e.target.value)}
                 className="px-3 py-1.5 rounded-xl border border-border bg-card text-foreground text-xs font-semibold focus:outline-none"
               >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="PENDING">Chờ kiểm duyệt (PENDING)</option>
-                <option value="APPROVED">Đã phê duyệt (APPROVED)</option>
-                <option value="REJECTED">Đã từ chối (REJECTED)</option>
+                <option value="ALL">{isEn ? 'All Status' : 'Tất cả trạng thái'}</option>
+                <option value="PENDING">{isEn ? 'Pending Review (PENDING)' : 'Chờ kiểm duyệt (PENDING)'}</option>
+                <option value="APPROVED">{isEn ? 'Approved (APPROVED)' : 'Đã phê duyệt (APPROVED)'}</option>
+                <option value="REJECTED">{isEn ? 'Rejected (REJECTED)' : 'Đã từ chối (REJECTED)'}</option>
               </select>
 
               <button
                 onClick={fetchRatings}
                 disabled={loadingRatings}
-                className="p-2 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground transition-all"
-                title="Làm mới danh sách"
+                className="p-2 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+                title={isEn ? 'Refresh review list' : 'Làm mới danh sách'}
               >
                 <RefreshCw className={`w-4 h-4 ${loadingRatings ? 'animate-spin' : ''}`} />
               </button>
@@ -1082,19 +1089,19 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
           {/* Stats Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 bg-card border border-border rounded-xl">
-              <span className="text-[11px] text-muted-foreground font-semibold">Tổng Đánh Giá</span>
+              <span className="text-[11px] text-muted-foreground font-semibold">{isEn ? 'Total Reviews' : 'Tổng Đánh Giá'}</span>
               <div className="text-base font-bold text-foreground mt-0.5">{ratingsStats?.total || 0}</div>
             </div>
             <div className="p-3 bg-card border border-amber-500/20 rounded-xl bg-amber-500/5">
-              <span className="text-[11px] text-amber-400 font-semibold">Chờ Duyệt</span>
+              <span className="text-[11px] text-amber-400 font-semibold">{isEn ? 'Pending' : 'Chờ Duyệt'}</span>
               <div className="text-base font-bold text-amber-400 mt-0.5">{ratingsStats?.pending_count || 0}</div>
             </div>
             <div className="p-3 bg-card border border-emerald-500/20 rounded-xl bg-emerald-500/5">
-              <span className="text-[11px] text-emerald-400 font-semibold">Đã Duyệt</span>
+              <span className="text-[11px] text-emerald-400 font-semibold">{isEn ? 'Approved' : 'Đã Duyệt'}</span>
               <div className="text-base font-bold text-emerald-400 mt-0.5">{ratingsStats?.approved_count || 0}</div>
             </div>
             <div className="p-3 bg-card border border-destructive/20 rounded-xl bg-destructive/5">
-              <span className="text-[11px] text-destructive font-semibold">Đã Từ Chối</span>
+              <span className="text-[11px] text-destructive font-semibold">{isEn ? 'Rejected' : 'Đã Từ Chối'}</span>
               <div className="text-base font-bold text-destructive mt-0.5">{ratingsStats?.rejected_count || 0}</div>
             </div>
           </div>
@@ -1104,11 +1111,11 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
             <table className="table-fixed w-full text-xs">
               <thead>
                 <tr className="border-b border-border bg-muted/40 text-muted-foreground font-semibold">
-                  <th className="w-[25%] p-3 text-left">Đơn Hàng & Gian Hàng</th>
-                  <th className="w-[20%] p-3 text-left">Người Mua & Sao</th>
-                  <th className="w-[30%] p-3 text-left">Bình Luận / Nhận Xét</th>
-                  <th className="w-[12%] p-3 text-center">Trạng Thái</th>
-                  <th className="w-[13%] p-3 text-center">Thao Tác</th>
+                  <th className="w-[25%] p-3 text-left">{isEn ? 'ORDER & STORE' : 'Đơn Hàng & Gian Hàng'}</th>
+                  <th className="w-[20%] p-3 text-left">{isEn ? 'BUYER & RATING' : 'Người Mua & Sao'}</th>
+                  <th className="w-[30%] p-3 text-left">{isEn ? 'COMMENT & FEEDBACK' : 'Bình Luận / Nhận Xét'}</th>
+                  <th className="w-[12%] p-3 text-center">{isEn ? 'STATUS' : 'Trạng Thái'}</th>
+                  <th className="w-[13%] p-3 text-center">{isEn ? 'ACTIONS' : 'Thao Tác'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

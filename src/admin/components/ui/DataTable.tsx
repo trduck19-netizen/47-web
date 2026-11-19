@@ -250,7 +250,7 @@ export function DataTable<T extends Record<string, any>>({
             {onRefresh && (
               <button
                 onClick={onRefresh}
-                title="Làm mới"
+                title={isEn ? 'Refresh' : 'Làm mới'}
                 className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400 active:scale-95"
               >
                 <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isLoading ? 'animate-spin text-indigo-500' : ''}`} />
@@ -267,7 +267,7 @@ export function DataTable<T extends Record<string, any>>({
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 sm:py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500" />
-              <span>Xuất CSV</span>
+              <span>{isEn ? 'Export CSV' : 'Xuất CSV'}</span>
             </button>
           )}
           {actions}
@@ -278,7 +278,11 @@ export function DataTable<T extends Record<string, any>>({
       {selectable && selectedIds.length > 0 && (
         <div className="flex items-center justify-between rounded-xl bg-indigo-500/10 px-4 py-2.5 border border-indigo-500/30 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
           <div className="text-xs font-medium">
-            Đã chọn <strong className="font-bold text-indigo-600 dark:text-indigo-400">{selectedIds.length}</strong> bản ghi
+            {isEn ? (
+              <>Selected <strong className="font-bold text-indigo-600 dark:text-indigo-400">{selectedIds.length}</strong> records</>
+            ) : (
+              <>Đã chọn <strong className="font-bold text-indigo-600 dark:text-indigo-400">{selectedIds.length}</strong> bản ghi</>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {batchActions.map((action, idx) => (
@@ -301,7 +305,7 @@ export function DataTable<T extends Record<string, any>>({
               onClick={() => onSelectionChange?.([])}
               className="text-xs text-slate-500 hover:underline dark:text-slate-400 ml-2"
             >
-              Bỏ chọn
+              {isEn ? 'Deselect all' : 'Bỏ chọn'}
             </button>
           </div>
         </div>
@@ -311,8 +315,8 @@ export function DataTable<T extends Record<string, any>>({
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {/* Mobile Swipe Hint */}
         <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-slate-50 text-[11px] text-slate-500 border-b border-slate-100 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-800 font-medium">
-          <span>👈 Vuốt ngang xem thêm cột 👉</span>
-          <span>{filteredData.length} kết quả</span>
+          <span>{isEn ? '👈 Swipe to see more columns 👉' : '👈 Vuốt ngang xem thêm cột 👉'}</span>
+          <span>{filteredData.length} {isEn ? 'results' : 'kết quả'}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full table-fixed text-left text-xs sm:text-sm text-slate-600 dark:text-slate-300">

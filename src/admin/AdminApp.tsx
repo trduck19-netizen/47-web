@@ -523,29 +523,38 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
   };
 
   const handleGoToClientSite = () => {
+    const isEn = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
     if (onBackToClient) {
       onBackToClient();
     } else {
       const isTestAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-test-code-game-shop');
       if (isTestAdmin) {
-        const newWin = window.open('https://test-code-game-shop.pages.dev', '_blank');
+        const target = isEn ? 'https://test-code-game-shop.pages.dev/en/' : 'https://test-code-game-shop.pages.dev/';
+        const newWin = window.open(target, '_blank');
         if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-          window.location.href = 'https://test-code-game-shop.pages.dev';
+          window.location.href = target;
+        }
+        return;
+      }
+      const isUniversalMall = typeof window !== 'undefined' && (window.location.hostname.includes('admin-universal-mall') || window.location.hostname.includes('universal-mall'));
+      if (isUniversalMall) {
+        const target = isEn ? 'https://universal-mall-shop.pages.dev/en/' : 'https://universal-mall-shop.pages.dev/';
+        const newWin = window.open(target, '_blank');
+        if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+          window.location.href = target;
         }
         return;
       }
       const isDedicatedAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-code-game-shop');
       if (isDedicatedAdmin) {
-        const newWin = window.open('https://codegame.shop', '_blank');
+        const target = isEn ? 'https://codegame.shop/en/' : 'https://codegame.shop/';
+        const newWin = window.open(target, '_blank');
         if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-          window.location.href = 'https://codegame.shop';
+          window.location.href = target;
         }
       } else {
-        if (window.location.pathname.toLowerCase().startsWith('/admin')) {
-          window.location.href = '/#store';
-        } else {
-          window.location.hash = '#store';
-        }
+        const targetPath = isEn ? '/en/' : '/';
+        window.location.href = targetPath;
       }
     }
   };

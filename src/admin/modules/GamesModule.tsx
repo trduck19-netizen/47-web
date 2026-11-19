@@ -40,6 +40,7 @@ import { ImageUploadInput } from '../components/ui/ImageUploadInput';
 import { adminDataService } from '../services/adminDataService';
 import { GameAdminRecord } from '../types/adminTypes';
 import { UpcomingGamesSection } from './UpcomingGamesSection';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * Validates Google Play Store URL
@@ -102,6 +103,8 @@ interface GamesModuleProps {
 }
 
 export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGameCodes }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [subTab, setSubTab] = useState<'catalog' | 'upcoming' | 'audit_logs'>('catalog');
   const [viewingGame, setViewingGame] = useState<GameAdminRecord | null>(null);
   const [isViewDetailOpen, setIsViewDetailOpen] = useState(false);
@@ -591,7 +594,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
   const columns: Column<GameAdminRecord>[] = [
     {
       key: 'name',
-      header: 'Tên Game & Nhà Phát Hành',
+      header: isEn ? 'GAME NAME & PUBLISHER' : 'TÊN GAME & NHÀ PHÁT HÀNH',
       sortable: true,
       width: '34%',
       render: (item) => (
@@ -630,8 +633,8 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
                 <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500 shrink-0" />
               )}
             </div>
-            <p className="text-xs text-slate-400 truncate" title={`${item.publisher || 'Chưa rõ NPH'} • ${item.slug}`}>
-              {item.publisher || 'Chưa rõ NPH'} • <span className="font-mono text-[11px]">{item.slug}</span>
+            <p className="text-xs text-slate-400 truncate" title={`${item.publisher || (isEn ? 'Unknown Publisher' : 'Chưa rõ NPH')} • ${item.slug}`}>
+              {item.publisher || (isEn ? 'Unknown Publisher' : 'Chưa rõ NPH')} • <span className="font-mono text-[11px]">{item.slug}</span>
             </p>
           </div>
         </div>
@@ -639,7 +642,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
     },
     {
       key: 'category',
-      header: 'Thể Loại',
+      header: isEn ? 'GENRE' : 'THỂ LOẠI',
       sortable: true,
       width: '14%',
       render: (item) => (
@@ -650,14 +653,14 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
     },
     {
       key: 'status',
-      header: 'Trạng Thái',
+      header: isEn ? 'STATUS' : 'TRẠNG THÁI',
       sortable: true,
       width: '14%',
       render: (item) => <StatusBadge status={item.status} size="sm" />,
     },
     {
       key: 'platform',
-      header: 'Store / Lượt Tải',
+      header: isEn ? 'STORE / DOWNLOADS' : 'STORE / LƯỢT TẢI',
       width: '18%',
       render: (item) => {
         const hasPlay = Boolean(item.google_play_url || item.download_android);
@@ -697,9 +700,9 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
             </div>
 
             {stats && stats.total > 0 ? (
-              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1 truncate" title={`${stats.total} lượt tải (GP: ${stats.google_play} | iOS: ${stats.app_store})`}>
+              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1 truncate" title={`${stats.total} ${isEn ? 'downloads' : 'lượt tải'} (GP: ${stats.google_play} | iOS: ${stats.app_store})`}>
                 <Download className="w-3 h-3 shrink-0" />
-                <span>{stats.total} tải</span>
+                <span>{stats.total} {isEn ? 'downloads' : 'tải'}</span>
               </p>
             ) : item.so_giay_phep ? (
               <p className="text-[10px] text-slate-400 font-mono truncate" title={`GP: ${item.so_giay_phep}`}>GP: {item.so_giay_phep}</p>
@@ -710,7 +713,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
     },
     {
       key: 'actions',
-      header: 'Thao Tác',
+      header: isEn ? 'ACTIONS' : 'THAO TÁC',
       align: 'right',
       width: '20%',
       sticky: 'right',
@@ -720,7 +723,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
             href={`https://codegame.shop/game/${item.slug}`}
             target="_blank"
             rel="noreferrer"
-            title="Mở xem trên Web Khách (codegame.shop)"
+            title={isEn ? 'View on Client Store (codegame.shop)' : 'Mở xem trên Web Khách (codegame.shop)'}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-400 transition-colors"
           >
             <Globe className="h-4 w-4" />
@@ -732,7 +735,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
               setViewingGame(item);
               setIsViewDetailOpen(true);
             }}
-            title="Xem chi tiết toàn bộ thông tin & giấy phép"
+            title={isEn ? 'View full details & license' : 'Xem chi tiết toàn bộ thông tin & giấy phép'}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer transition-colors"
           >
             <Eye className="h-4 w-4" />
@@ -741,7 +744,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
           <button
             type="button"
             onClick={() => handleToggleVisibility(item)}
-            title={item.status === 'HIDDEN' || item.is_active === 0 ? 'Hiện game lên Web Khách' : 'Ẩn game khỏi Web Khách (dữ liệu & code bảo toàn 100%)'}
+            title={item.status === 'HIDDEN' || item.is_active === 0 ? (isEn ? 'Show game on Client Store' : 'Hiện game lên Web Khách') : (isEn ? 'Hide game from Client Store' : 'Ẩn game khỏi Web Khách (dữ liệu & code bảo toàn 100%)')}
             className={`rounded-lg p-1.5 cursor-pointer transition-colors ${
               item.status === 'HIDDEN' || item.is_active === 0
                 ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40'
@@ -753,7 +756,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
           {onOpenGameCodes && (
             <button
               onClick={() => onOpenGameCodes(item.slug)}
-              title="Xem danh sách code của game này"
+              title={isEn ? 'View codes for this game' : 'Xem danh sách code của game này'}
               className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
@@ -761,7 +764,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
           )}
           <button
             onClick={() => handleEdit(item)}
-            title="Chỉnh sửa thông tin"
+            title={isEn ? 'Edit information' : 'Chỉnh sửa thông tin'}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400 cursor-pointer transition-colors"
           >
             <Edit2 className="h-4 w-4" />
@@ -771,7 +774,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
               setDeletingGame(item);
               setIsDeleteOpen(true);
             }}
-            title="Xóa game"
+            title={isEn ? 'Delete game' : 'Xóa game'}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors"
           >
             <Trash2 className="h-4 w-4" />
@@ -795,7 +798,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
           }`}
         >
           <Gamepad2 className="w-4 h-4" />
-          <span>🎮 Danh Mục Game Sàn ({games.length})</span>
+          <span>🎮 {isEn ? `Store Game Directory (${games.length})` : `Danh Mục Game Sàn (${games.length})`}</span>
         </button>
 
         <button
@@ -808,7 +811,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
           }`}
         >
           <Rocket className="w-4 h-4 text-amber-400" />
-          <span>🚀 Game Chuẩn Bị Ra Mắt & API Muse ({upcomingCount})</span>
+          <span>🚀 {isEn ? `Upcoming Games & Muse API (${upcomingCount})` : `Game Chuẩn Bị Ra Mắt & API Muse (${upcomingCount})`}</span>
           <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
             API Live
           </span>
@@ -827,7 +830,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
           }`}
         >
           <History className="w-4 h-4 text-amber-300" />
-          <span>📜 Nhật Ký Kiểm Toán (Audit Logs)</span>
+          <span>📜 {isEn ? 'Audit Logs' : 'Nhật Ký Kiểm Toán (Audit Logs)'}</span>
         </button>
       </div>
 
@@ -838,10 +841,12 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
               <History className="w-5 h-5 text-amber-500" />
               <div>
                 <h3 className="text-sm font-bold text-amber-300">
-                  Nhật Ký Kiểm Toán Bản Ghi Game (Game Audit Logs)
+                  {isEn ? 'Game Audit Logs' : 'Nhật Ký Kiểm Toán Bản Ghi Game (Game Audit Logs)'}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Ghi lại toàn bộ lịch sử chỉnh sửa, thêm mới, ẩn, khôi phục hoặc xóa bản ghi game và giấy phép phát hành.
+                  {isEn
+                    ? 'Track full history of edits, additions, visibility changes, and deletions of games and licenses.'
+                    : 'Ghi lại toàn bộ lịch sử chỉnh sửa, thêm mới, ẩn, khôi phục hoặc xóa bản ghi game và giấy phép phát hành.'}
                 </p>
               </div>
             </div>
@@ -852,7 +857,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
               className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${isLoadingAuditLogs ? 'animate-spin' : ''}`} />
-              <span>Làm mới nhật ký</span>
+              <span>{isEn ? 'Refresh Logs' : 'Làm mới nhật ký'}</span>
             </button>
           </div>
 
@@ -861,25 +866,27 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
               <table className="w-full text-left text-xs">
                 <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[10px] font-bold">
                   <tr>
-                    <th className="p-3">Thời gian</th>
-                    <th className="p-3">Hành động</th>
-                    <th className="p-3">Tựa Game</th>
-                    <th className="p-3">Người thực hiện</th>
-                    <th className="p-3">Chi tiết thay đổi</th>
+                    <th className="p-3">{isEn ? 'Timestamp' : 'Thời gian'}</th>
+                    <th className="p-3">{isEn ? 'Action' : 'Hành động'}</th>
+                    <th className="p-3">{isEn ? 'Game Title' : 'Tựa Game'}</th>
+                    <th className="p-3">{isEn ? 'Actor' : 'Người thực hiện'}</th>
+                    <th className="p-3">{isEn ? 'Change Details' : 'Chi tiết thay đổi'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {auditLogs.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                        {isLoadingAuditLogs ? 'Đang tải dữ liệu nhật ký...' : 'Chưa có nhật ký kiểm toán nào được ghi nhận.'}
+                        {isLoadingAuditLogs
+                          ? (isEn ? 'Loading audit logs...' : 'Đang tải dữ liệu nhật ký...')
+                          : (isEn ? 'No audit logs recorded yet.' : 'Chưa có nhật ký kiểm toán nào được ghi nhận.')}
                       </td>
                     </tr>
                   ) : (
                     auditLogs.map((log: any, idx: number) => (
                       <tr key={log.id || idx} className="hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                          {log.timestamp ? new Date(log.timestamp).toLocaleString('vi-VN') : 'Vừa xong'}
+                          {log.timestamp ? new Date(log.timestamp).toLocaleString(isEn ? 'en-US' : 'vi-VN') : (isEn ? 'Just now' : 'Vừa xong')}
                         </td>
                         <td className="p-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -895,7 +902,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
                           </span>
                         </td>
                         <td className="p-3 font-semibold text-foreground">
-                          {log.target_name || log.target_slug || log.target_id || 'Hệ thống'}
+                          {log.target_name || log.target_slug || log.target_id || (isEn ? 'System' : 'Hệ thống')}
                           {log.target_slug && <span className="block font-mono text-[10px] text-muted-foreground">{log.target_slug}</span>}
                         </td>
                         <td className="p-3 font-medium text-slate-300">
@@ -922,154 +929,182 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
         />
       ) : (
         <>
+          {/* Banner Muse API New Games */}
+          {upcomingCount > 0 && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-900 to-indigo-950/40 border border-purple-500/30 text-xs sm:text-sm shadow-md">
+              <div className="flex items-center gap-2.5 text-purple-300 font-medium">
+                <Rocket className="w-5 h-5 text-purple-400 shrink-0" />
+                <span>
+                  {isEn ? (
+                    <>Detected <strong className="text-white font-bold">{upcomingCount}</strong> new games from Muse API. Select 'Upcoming Games & Muse API' to view and sync.</>
+                  ) : (
+                    <>Phát hiện <strong className="text-white font-bold">{upcomingCount}</strong> tựa game mới từ Muse API. Chọn mục 'Game Chuẩn Bị Ra Mắt & API Muse' để xem và đồng bộ.</>
+                  )}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubTab('upcoming')}
+                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+              >
+                <span>{isEn ? 'View & Sync' : 'Xem & Đồng Bộ'}</span>
+                <span>&rarr;</span>
+              </button>
+            </div>
+          )}
+
           {/* Banner Game Chờ Duyệt từ Google Play */}
           {pendingGamesCount > 0 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border border-emerald-500/40 text-xs sm:text-sm shadow-lg shadow-emerald-950/20">
-          <div className="flex items-center gap-2.5 text-emerald-300 font-medium">
-            <Smartphone className="w-5 h-5 text-emerald-400 shrink-0" />
-            <span>
-              Phát hiện <strong className="text-white font-bold">{pendingGamesCount}</strong> tựa game mới từ Google Play Store VN đang chờ duyệt!
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              window.location.hash = '#/crawler';
-            }}
-            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
-          >
-            <span>Duyệt Ngay Trong Crawler</span>
-            <span>&rarr;</span>
-          </button>
-        </div>
-      )}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border border-emerald-500/40 text-xs sm:text-sm shadow-lg shadow-emerald-950/20">
+              <div className="flex items-center gap-2.5 text-emerald-300 font-medium">
+                <Smartphone className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>
+                  {isEn ? (
+                    <>Detected <strong className="text-white font-bold">{pendingGamesCount}</strong> new games from Google Play Store VN pending approval!</>
+                  ) : (
+                    <>Phát hiện <strong className="text-white font-bold">{pendingGamesCount}</strong> tựa game mới từ Google Play Store VN đang chờ duyệt!</>
+                  )}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.hash = '#/crawler';
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+              >
+                <span>{isEn ? 'Review in Crawler' : 'Duyệt Ngay Trong Crawler'}</span>
+                <span>&rarr;</span>
+              </button>
+            </div>
+          )}
 
-      {/* Quick Status Bar for Catalog Display & Pagination */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50 text-xs">
-        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-          <Sliders className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-          <span>
-            Cơ chế phân trang trang chủ hiện tại:{' '}
-            <strong className="text-indigo-600 dark:text-indigo-400 font-bold">
-              {adminDataService.getPaginationConfig().mode === 'infinite'
-                ? '⚡ Cuộn vô tận (Infinite Scroll)'
-                : '📄 Đánh số trang truyền thống (Classic)'}
-            </strong>{' '}
-            ({adminDataService.getPaginationConfig().pageSize} game/trang)
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            window.location.hash = '#/content';
-          }}
-          className="inline-flex items-center gap-1 font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer shrink-0"
-        >
-          <span>Tùy chỉnh trong CMS</span>
-          <span>&rarr;</span>
-        </button>
-      </div>
-
-      {/* Table & Toolbar */}
-      <DataTable
-        data={games}
-        columns={columns}
-        keyExtractor={(item) => item.id}
-        isLoading={isLoading}
-        searchPlaceholder="Tìm theo tên game, slug, nhà phát hành..."
-        searchKeys={['name', 'slug', 'publisher', 'category']}
-        selectable
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        onRefresh={loadGames}
-        onExportCsv={handleExportCsv}
-        filters={[
-          {
-            key: 'category',
-            label: 'Thể loại',
-            selectedValue: categoryFilter,
-            options: [
-              { label: 'Tất cả thể loại', value: 'ALL' },
-              ...categories.map((c) => ({ label: c, value: c })),
-            ],
-            onChange: setCategoryFilter,
-          },
-          {
-            key: 'status',
-            label: 'Trạng thái',
-            selectedValue: statusFilter,
-            options: [
-              { label: 'Tất cả trạng thái', value: 'ALL' },
-              { label: 'Hoạt động (ACTIVE)', value: 'ACTIVE' },
-              { label: 'Nổi bật (HOT)', value: 'HOT' },
-              { label: 'Tắt / Ẩn (INACTIVE)', value: 'INACTIVE' },
-            ],
-            onChange: setStatusFilter,
-          },
-          {
-            key: 'storeLinks',
-            label: 'Link tải store',
-            selectedValue: storeLinkFilter,
-            options: [
-              { label: 'Tất cả link tải', value: 'ALL' },
-              { label: 'Chưa có link tải', value: 'NO_LINKS' },
-              { label: 'Thiếu Android', value: 'MISSING_ANDROID' },
-              { label: 'Thiếu iOS', value: 'MISSING_IOS' },
-              { label: 'Đủ 2 link', value: 'BOTH_LINKS' },
-            ],
-            onChange: (val) => setStoreLinkFilter(val as any),
-          },
-        ]}
-        actions={
-          <div className="flex items-center gap-2">
+          {/* Quick Status Bar for Catalog Display & Pagination */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50 text-xs">
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <Sliders className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span>
+                {isEn ? 'Current homepage pagination mode: ' : 'Cơ chế phân trang trang chủ hiện tại: '}
+                <strong className="text-indigo-600 dark:text-indigo-400 font-bold">
+                  {adminDataService.getPaginationConfig().mode === 'infinite'
+                    ? (isEn ? '⚡ Infinite Scroll' : '⚡ Cuộn vô tận (Infinite Scroll)')
+                    : (isEn ? '📄 Classic Pagination' : '📄 Đánh số trang truyền thống (Classic)')}
+                </strong>{' '}
+                ({adminDataService.getPaginationConfig().pageSize} {isEn ? 'games/page' : 'game/trang'})
+              </span>
+            </div>
             <button
               type="button"
               onClick={() => {
-                setCsvText('');
-                setCsvLog([]);
-                setIsCsvModalOpen(true);
+                window.location.hash = '#/content';
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer"
-              title="Nhập hàng loạt link store qua file CSV (slug, google_play_url, app_store_url)"
+              className="inline-flex items-center gap-1 font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer shrink-0"
             >
-              <FileText className="h-4 w-4 text-indigo-500" />
-              <span>Nhập CSV Link Tải</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleCreateNew}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all cursor-pointer"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Thêm Game Mới</span>
+              <span>{isEn ? 'Customize in CMS' : 'Tùy chỉnh trong CMS'}</span>
+              <span>&rarr;</span>
             </button>
           </div>
-        }
-        batchActions={[
-          {
-            label: 'Kích hoạt (ACTIVE)',
-            icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-            onClick: () => handleBulkStatus('ACTIVE'),
-          },
-          {
-            label: 'Đặt HOT',
-            icon: <Flame className="h-3.5 w-3.5 text-amber-300" />,
-            onClick: () => handleBulkStatus('HOT'),
-          },
-          {
-            label: 'Tắt hiển thị (INACTIVE)',
-            icon: <XCircle className="h-3.5 w-3.5" />,
-            onClick: () => handleBulkStatus('INACTIVE'),
-          },
-          {
-            label: 'Xóa các game đã chọn',
-            icon: <Trash2 className="h-3.5 w-3.5" />,
-            variant: 'danger',
-            onClick: () => setIsBulkDeleteOpen(true),
-          },
-        ]}
-      />
+
+          {/* Table & Toolbar */}
+          <DataTable
+            data={games}
+            columns={columns}
+            keyExtractor={(item) => item.id}
+            isLoading={isLoading}
+            searchPlaceholder={isEn ? 'Search game name, publisher, genre...' : 'Tìm kiếm tên game, nhà phát hành, thể loại...'}
+            searchKeys={['name', 'slug', 'publisher', 'category']}
+            selectable
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
+            onRefresh={loadGames}
+            onExportCsv={handleExportCsv}
+            filters={[
+              {
+                key: 'category',
+                label: isEn ? 'Genre' : 'Thể loại',
+                selectedValue: categoryFilter,
+                options: [
+                  { label: isEn ? 'All Genres' : 'Tất cả thể loại', value: 'ALL' },
+                  ...categories.map((c) => ({ label: c, value: c })),
+                ],
+                onChange: setCategoryFilter,
+              },
+              {
+                key: 'status',
+                label: isEn ? 'Status' : 'Trạng thái',
+                selectedValue: statusFilter,
+                options: [
+                  { label: isEn ? 'All Status' : 'Tất cả trạng thái', value: 'ALL' },
+                  { label: isEn ? 'Active (ACTIVE)' : 'Hoạt động (ACTIVE)', value: 'ACTIVE' },
+                  { label: isEn ? 'Featured (HOT)' : 'Nổi bật (HOT)', value: 'HOT' },
+                  { label: isEn ? 'Inactive / Hidden (INACTIVE)' : 'Tắt / Ẩn (INACTIVE)', value: 'INACTIVE' },
+                ],
+                onChange: setStatusFilter,
+              },
+              {
+                key: 'storeLinks',
+                label: isEn ? 'Store Links' : 'Link tải store',
+                selectedValue: storeLinkFilter,
+                options: [
+                  { label: isEn ? 'All Download Links' : 'Tất cả link tải', value: 'ALL' },
+                  { label: isEn ? 'No Download Links' : 'Chưa có link tải', value: 'NO_LINKS' },
+                  { label: isEn ? 'Missing Android' : 'Thiếu Android', value: 'MISSING_ANDROID' },
+                  { label: isEn ? 'Missing iOS' : 'Thiếu iOS', value: 'MISSING_IOS' },
+                  { label: isEn ? 'Both Store Links' : 'Đủ 2 link', value: 'BOTH_LINKS' },
+                ],
+                onChange: (val) => setStoreLinkFilter(val as any),
+              },
+            ]}
+            actions={
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCsvText('');
+                    setCsvLog([]);
+                    setIsCsvModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                  title={isEn ? 'Batch import store links via CSV' : 'Nhập hàng loạt link store qua file CSV (slug, google_play_url, app_store_url)'}
+                >
+                  <FileText className="h-4 w-4 text-indigo-500" />
+                  <span>{isEn ? 'Import Download Links CSV' : 'Nhập CSV Link Tải'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCreateNew}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>{isEn ? 'Add New Game' : 'Thêm Game Mới'}</span>
+                </button>
+              </div>
+            }
+            batchActions={[
+              {
+                label: isEn ? 'Activate (ACTIVE)' : 'Kích hoạt (ACTIVE)',
+                icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+                onClick: () => handleBulkStatus('ACTIVE'),
+              },
+              {
+                label: isEn ? 'Set Featured (HOT)' : 'Đặt HOT',
+                icon: <Flame className="h-3.5 w-3.5 text-amber-300" />,
+                onClick: () => handleBulkStatus('HOT'),
+              },
+              {
+                label: isEn ? 'Deactivate (INACTIVE)' : 'Tắt hiển thị (INACTIVE)',
+                icon: <XCircle className="h-3.5 w-3.5" />,
+                onClick: () => handleBulkStatus('INACTIVE'),
+              },
+              {
+                label: isEn ? 'Delete selected' : 'Xóa các game đã chọn',
+                icon: <Trash2 className="h-3.5 w-3.5" />,
+                variant: 'danger',
+                onClick: () => setIsBulkDeleteOpen(true),
+              },
+            ]}
+          />
 
       {/* Create / Edit Modal */}
       <FormModal
