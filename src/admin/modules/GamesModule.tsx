@@ -103,7 +103,7 @@ interface GamesModuleProps {
 }
 
 export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGameCodes }) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const isEn = language === 'en';
   const [subTab, setSubTab] = useState<'catalog' | 'upcoming' | 'audit_logs'>('catalog');
   const [viewingGame, setViewingGame] = useState<GameAdminRecord | null>(null);
