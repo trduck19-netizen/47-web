@@ -91,7 +91,8 @@ const ADMIN_HASH_PREFIXES = [
 ];
 
 export const App: React.FC = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const isEn = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
   const [, startTransition] = useTransition();
 
   // Navigation Tab State (Decoupled Frontends Domain Detection & Hash Routing)
@@ -1850,7 +1851,7 @@ export const App: React.FC = () => {
         fallback={
           <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-3 text-white">
             <div className="w-10 h-10 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-            <p className="text-sm font-medium">Đang tải Admin Panel...</p>
+            <p className="text-sm font-medium">{isEn ? (t?.common?.loadingAdminPanel || 'Loading Admin Panel...') : (t?.common?.loadingAdminPanel || 'Đang tải Admin Panel...')}</p>
           </div>
         }
       >
@@ -2097,7 +2098,7 @@ export const App: React.FC = () => {
             </>
           )}
 
-          <Suspense fallback={<div className="py-20 flex justify-center"><CyberLoader title="ĐANG TẢI GIAO DIỆN..." subText="Đang nạp dữ liệu..." /></div>}>
+          <Suspense fallback={<div className="py-20 flex justify-center"><CyberLoader title={isEn ? (t?.common?.loadingInterface || 'LOADING INTERFACE...') : (t?.common?.loadingInterface || 'ĐANG TẢI GIAO DIỆN...')} subText={isEn ? (t?.common?.loadingData || 'Loading data...') : (t?.common?.loadingData || 'Đang nạp dữ liệu...')} /></div>}>
             {currentTab === 'news' && (
               <NewsView
                 onShowToast={showToast}

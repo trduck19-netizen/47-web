@@ -304,7 +304,8 @@
       "searchPlaceholder": "Search menu...",
       "collapse": "Collapse menu",
       "expand": "Expand menu",
-      "clientStore": "Client Store"
+      "clientStore": "Client Store",
+      "seoNews": "SEO News Articles"
     },
     "topbar": {
       "quickAction": "Quick Create",
@@ -598,6 +599,12 @@
   },
   "common": {
     "loading": "Loading data...",
+    "loadingInterface": "LOADING INTERFACE...",
+    "loadingData": "Loading data...",
+    "loadingAdminPanel": "Loading Admin Panel...",
+    "verifyingAdmin": "Verifying admin session…",
+    "reloginAdmin": "Relogin with Admin Account",
+    "loadingStores": "Loading stores data...",
     "success": "Success!",
     "error": "An error occurred, please try again.",
     "confirm": "Confirm",

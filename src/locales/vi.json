@@ -304,7 +304,8 @@
       "searchPlaceholder": "Tìm chức năng nhanh...",
       "collapse": "Thu gọn menu",
       "expand": "Mở rộng menu",
-      "clientStore": "Xem Web Khách"
+      "clientStore": "Xem Web Khách",
+      "seoNews": "Tin Tức Chuẩn SEO"
     },
     "topbar": {
       "quickAction": "Tạo Nhanh",
@@ -598,6 +599,12 @@
   },
   "common": {
     "loading": "Đang tải dữ liệu...",
+    "loadingInterface": "ĐANG TẢI GIAO DIỆN...",
+    "loadingData": "Đang nạp dữ liệu...",
+    "loadingAdminPanel": "Đang tải Admin Panel...",
+    "verifyingAdmin": "Đang xác thực phiên quản trị…",
+    "reloginAdmin": "Đăng nhập lại bằng tài khoản quản trị",
+    "loadingStores": "Đang tải danh sách gian hàng...",
     "success": "Thành công!",
     "error": "Có lỗi xảy ra, vui lòng thử lại.",
     "confirm": "Xác nhận",

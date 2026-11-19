@@ -100,7 +100,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onGoToClientSite,
   onCloseMobile,
 }) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const isEn = language === 'en';
   const [navSearch, setNavSearch] = useState('');
 
@@ -460,7 +460,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           }`}
                         >
                           <Newspaper className="w-3 h-3 shrink-0" />
-                          <span>Tin Tức Chuẩn SEO</span>
+                          <span>{isEn ? (t?.admin?.sidebar?.seoNews || 'SEO News Articles') : (t?.admin?.sidebar?.seoNews || 'Tin Tức Chuẩn SEO')}</span>
                         </button>
                         <button
                           type="button"

@@ -35,7 +35,7 @@ interface SellerModerationModuleProps {
 }
 
 export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ onShowToast }) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const isEn = language === 'en';
   const [activeTab, setActiveTab] = useState<
     'sellers' | 'products' | 'ratings' | 'disputes' | 'ledger' | 'reconciliation' | 'withdrawals' | 'webhook_exceptions' | 'config'
@@ -117,9 +117,12 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
 
   const getAdminHeaders = () => {
     const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+    const syncKey = localStorage.getItem('wcg_admin_sync_key') || sessionStorage.getItem('wcg_admin_sync_key') || '';
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
+      'X-Sync-Key': syncKey,
+      'x-admin-sync-key': syncKey,
     };
   };
 
@@ -265,7 +268,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
     else if (activeTab === 'reconciliation' || activeTab === 'webhook_exceptions') fetchReconciliation();
     else if (activeTab === 'withdrawals') fetchWithdrawals();
     else if (activeTab === 'config') fetchConfig();
-  }, [activeTab, sellerStatusFilter, productStatusFilter, ratingStatusFilter, disputeStatusFilter, disputeAbusiveFilter, ledgerSellerFilter, ledgerTypeFilter, ledgerDateFilter, recExceptionFilter, withdrawalFilter]);
+  }, [activeTab, language, sellerStatusFilter, productStatusFilter, ratingStatusFilter, disputeStatusFilter, disputeAbusiveFilter, ledgerSellerFilter, ledgerTypeFilter, ledgerDateFilter, recExceptionFilter, withdrawalFilter]);
 
   // Fetch Ratings (§A)
   const fetchRatings = async () => {
@@ -695,7 +698,7 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
               activeTab === 'sellers' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {isEn ? `Stores (${sellers.length})` : `Gian Hàng (${sellers.length})`}
+            {isEn ? (loading && sellers.length === 0 ? 'Stores (...)' : `Stores (${sellers.length})`) : (loading && sellers.length === 0 ? 'Gian Hàng (...)' : `Gian Hàng (${sellers.length})`)}
           </button>
           <button
             onClick={() => setActiveTab('products')}
@@ -824,7 +827,16 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {sellers.length === 0 ? (
+                {loading && sellers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      <div className="flex items-center justify-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin text-primary" />
+                        <span>{isEn ? (t?.common?.loadingStores || 'Loading stores data...') : (t?.common?.loadingStores || 'Đang tải danh sách gian hàng...')}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : sellers.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-muted-foreground">
                       {isEn ? 'No stores found in list.' : 'Không có gian hàng nào trong danh sách.'}

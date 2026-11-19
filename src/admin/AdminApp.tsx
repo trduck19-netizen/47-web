@@ -109,7 +109,8 @@ const tabTitlesEn: Record<AdminModuleTab, string> = {
 };
 
 const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const isEn = language === 'en';
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<AdminModuleTab>(() => {
@@ -581,7 +582,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-300 px-4">
         <div className="flex flex-col items-center gap-3 text-center max-w-sm">
           <div className="h-8 w-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-          <p className="text-sm font-medium">Đang xác thực phiên quản trị…</p>
+          <p className="text-sm font-medium">{isEn ? (t?.common?.verifyingAdmin || 'Verifying admin session…') : (t?.common?.verifyingAdmin || 'Đang xác thực phiên quản trị…')}</p>
           <button
             type="button"
             onClick={() => {
@@ -591,7 +592,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
             }}
             className="mt-3 px-3.5 py-1.5 text-xs text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors cursor-pointer"
           >
-            Đăng nhập lại bằng tài khoản quản trị
+            {isEn ? (t?.common?.reloginAdmin || 'Relogin with Admin Account') : (t?.common?.reloginAdmin || 'Đăng nhập lại bằng tài khoản quản trị')}
           </button>
         </div>
       </div>
