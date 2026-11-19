@@ -433,11 +433,12 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         setProdPriceCore('');
         setProdOriginalPriceCore('');
         setProdDescription('');
+        setProdGameSlug('');
       } else {
-        setErrorMsg(data.error || 'Tạo sản phẩm thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Failed to create product.' : 'Tạo sản phẩm thất bại.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     }
   };
 
@@ -1219,27 +1220,27 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       {activeTab === 'products' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold">Danh Sách Sản Phẩm Của Gian Hàng</h2>
+            <h2 className="text-base font-bold">{isEn ? 'Store Product Catalog' : 'Danh Sách Sản Phẩm Của Gian Hàng'}</h2>
             <button
-              onClick={() => setShowAddProductModal(true)}
+              onClick={() => { setErrorMsg(''); setShowAddProductModal(true); }}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
-              <Plus className="w-4 h-4" /> Thêm Sản Phẩm Mới
+              <Plus className="w-4 h-4" /> {isEn ? 'Add New Product' : 'Thêm Sản Phẩm Mới'}
             </button>
           </div>
 
           {loadingProducts ? (
-            <div className="py-12 text-center text-muted-foreground">Đang tải sản phẩm...</div>
+            <div className="py-12 text-center text-muted-foreground">{isEn ? 'Loading products...' : 'Đang tải sản phẩm...'}</div>
           ) : products.length === 0 ? (
             <div className="py-12 text-center bg-card border border-border rounded-2xl">
               <Package className="w-12 h-12 text-muted-foreground/40 mx-auto mb-2" />
-              <div className="text-sm font-semibold">Chưa có sản phẩm nào</div>
-              <p className="text-xs text-muted-foreground mt-1 mb-4">Nhấn nút bên dưới để tạo sản phẩm đầu tiên.</p>
+              <div className="text-sm font-semibold">{isEn ? 'No products available' : 'Chưa có sản phẩm nào'}</div>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">{isEn ? 'Click the button below to create your first product.' : 'Nhấn nút bên dưới để tạo sản phẩm đầu tiên.'}</p>
               <button
-                onClick={() => setShowAddProductModal(true)}
+                onClick={() => { setErrorMsg(''); setShowAddProductModal(true); }}
                 className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold"
               >
-                Tạo Sản Phẩm
+                {isEn ? 'Create Product' : 'Tạo Sản Phẩm'}
               </button>
             </div>
           ) : (
@@ -2227,13 +2228,20 @@ const data = await res.json();`}
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold">Thêm Sản Phẩm Bán Mới</h3>
-              <button onClick={() => setShowAddProductModal(false)}><X className="w-5 h-5" /></button>
+              <h3 className="text-base font-bold">{isEn ? 'Add New Product' : 'Thêm Sản Phẩm Bán Mới'}</h3>
+              <button onClick={() => { setErrorMsg(''); setShowAddProductModal(false); }}><X className="w-5 h-5" /></button>
             </div>
+
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
 
             <form onSubmit={handleCreateProduct} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold mb-1">Chọn Tựa Game *</label>
+                <label className="block font-semibold mb-1">{isEn ? 'Select Game *' : 'Chọn Tựa Game *'}</label>
                 <select
                   required
                   value={prodGameSlug}
@@ -2241,36 +2249,36 @@ const data = await res.json();`}
                     setProdGameSlug(e.target.value);
                     const selectedGame = games.find((g) => g.slug === e.target.value);
                     if (selectedGame && !prodName) {
-                      setProdName(`Bộ Giftcode ${selectedGame.name} VIP`);
+                      setProdName(isEn ? `VIP Giftcode Pack ${selectedGame.name}` : `Bộ Giftcode ${selectedGame.name} VIP`);
                     }
                   }}
                   className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                 >
-                  <option value="">-- Chọn game trong catalog --</option>
+                  <option value="">{isEn ? '-- Select game in catalog --' : '-- Chọn game trong catalog --'}</option>
                   {games.map((g) => (
                     <option key={g.slug} value={g.slug}>{g.name}</option>
                   ))}
                 </select>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Ảnh bìa gói sản phẩm sẽ tự động lấy từ Logo chính thức của tựa game này (§5.1).
+                  {isEn ? 'Product cover will automatically use official logo of this game (§5.1).' : 'Ảnh bìa gói sản phẩm sẽ tự động lấy từ Logo chính thức của tựa game này (§5.1).'}
                 </p>
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Tên Gói Sản Phẩm *</label>
+                <label className="block font-semibold mb-1">{isEn ? 'Product Package Name *' : 'Tên Gói Sản Phẩm *'}</label>
                 <input
                   type="text"
                   required
                   value={prodName}
                   onChange={(e) => setProdName(e.target.value)}
-                  placeholder="Ví dụ: Gói 5 Mã Giftcode Khởi Đầu"
+                  placeholder={isEn ? 'E.g. Pack of 5 Starter Giftcodes' : 'Ví dụ: Gói 5 Mã Giftcode Khởi Đầu'}
                   className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Giá Bán Core *</label>
+                  <label className="block font-semibold mb-1">{isEn ? 'Selling Price (Core) *' : 'Giá Bán Core *'}</label>
                   <input
                     type="number"
                     required
@@ -2278,21 +2286,23 @@ const data = await res.json();`}
                     max={sellerData.status === 'TRIAL' ? sellerData.trial_order_max || 200 : 100000}
                     value={prodPriceCore}
                     onChange={(e) => setProdPriceCore(e.target.value)}
-                    placeholder="Ví dụ: 50"
+                    placeholder={isEn ? 'E.g. 50' : 'Ví dụ: 50'}
                     className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                   />
                   {sellerData.status === 'TRIAL' && (
-                    <span className="text-[10px] text-amber-500">Tối đa {sellerData.trial_order_max || 200} Core (TRIAL)</span>
+                    <span className="text-[10px] text-amber-500">
+                      {isEn ? `Max ${sellerData.trial_order_max || 200} Core (TRIAL)` : `Tối đa ${sellerData.trial_order_max || 200} Core (TRIAL)`}
+                    </span>
                   )}
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Giá Gốc Gạch Ngang (Tùy chọn)</label>
+                  <label className="block font-semibold mb-1">{isEn ? 'Original Price (Optional)' : 'Giá Gốc Gạch Ngang (Tùy chọn)'}</label>
                   <input
                     type="number"
                     min={1}
                     value={prodOriginalPriceCore}
                     onChange={(e) => setProdOriginalPriceCore(e.target.value)}
-                    placeholder="Ví dụ: 100"
+                    placeholder={isEn ? 'E.g. 100' : 'Ví dụ: 100'}
                     className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                   />
                 </div>
@@ -2300,37 +2310,37 @@ const data = await res.json();`}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Chính Sách Bảo Hành</label>
+                  <label className="block font-semibold mb-1">{isEn ? 'Warranty Policy' : 'Chính Sách Bảo Hành'}</label>
                   <select
                     value={prodWarrantyType}
                     onChange={(e) => setProdWarrantyType(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                   >
-                    <option value="24H">Bảo hành 24 Giờ</option>
-                    <option value="7D">Bảo hành 7 Ngày</option>
-                    <option value="30D">Bảo hành 30 Ngày</option>
+                    <option value="24H">{isEn ? 'Warranty 24 Hours' : 'Bảo hành 24 Giờ'}</option>
+                    <option value="7D">{isEn ? 'Warranty 7 Days' : 'Bảo hành 7 Ngày'}</option>
+                    <option value="30D">{isEn ? 'Warranty 30 Days' : 'Bảo hành 30 Ngày'}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Hình Thức Giao Mã</label>
+                  <label className="block font-semibold mb-1">{isEn ? 'Delivery Method' : 'Hình Thức Giao Mã'}</label>
                   <select
                     value={prodDeliveryType}
                     onChange={(e: any) => setProdDeliveryType(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                   >
-                    <option value="AUTO">Tự Động 24/7 (Từ Kho)</option>
-                    <option value="MANUAL">Thủ Công</option>
+                    <option value="AUTO">{isEn ? 'Auto 24/7 (From Vault)' : 'Tự Động 24/7 (Từ Kho)'}</option>
+                    <option value="MANUAL">{isEn ? 'Manual Delivery' : 'Thủ Công'}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Mô Tả Sản Phẩm</label>
+                <label className="block font-semibold mb-1">{isEn ? 'Product Description' : 'Mô Tả Sản Phẩm'}</label>
                 <textarea
                   rows={2}
                   value={prodDescription}
                   onChange={(e) => setProdDescription(e.target.value)}
-                  placeholder="Gói quà tặng gồm các vật phẩm..."
+                  placeholder={isEn ? 'Gift package includes items...' : 'Gói quà tặng gồm các vật phẩm...'}
                   className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                 />
               </div>
@@ -2338,16 +2348,16 @@ const data = await res.json();`}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddProductModal(false)}
+                  onClick={() => { setErrorMsg(''); setShowAddProductModal(false); }}
                   className="px-4 py-2 rounded-xl border border-border hover:bg-muted font-semibold"
                 >
-                  Hủy
+                  {isEn ? 'Cancel' : 'Hủy'}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold shadow-sm"
                 >
-                  Xác Nhận Tạo
+                  {isEn ? 'Confirm Create' : 'Xác Nhận Tạo'}
                 </button>
               </div>
             </form>
@@ -2360,9 +2370,16 @@ const data = await res.json();`}
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold">Nạp Mã Vào Kho Sản Phẩm</h3>
-              <button onClick={() => setShowAddCodesModal(false)}><X className="w-5 h-5" /></button>
+              <h3 className="text-base font-bold">{isEn ? 'Restock Codes Into Vault' : 'Nạp Mã Vào Kho Sản Phẩm'}</h3>
+              <button onClick={() => { setErrorMsg(''); setShowAddCodesModal(false); }}><X className="w-5 h-5" /></button>
             </div>
+
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
 
             <form onSubmit={handleAddCodes} className="space-y-4 text-xs">
               <p className="text-muted-foreground">

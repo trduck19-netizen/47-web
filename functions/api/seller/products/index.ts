@@ -2,6 +2,7 @@ import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../../services/d1_service';
 import { verifySellerAccess, getMarketplaceConfig } from '../../../services/marketplace_service';
 import { verifyStoreApiAccess } from '../../../services/store_api_service';
+import fallbackGamesData from '../../../../src/data/games188.json';
 
 interface Env {
   DB: D1Database;
@@ -135,14 +136,43 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       .bind(game_slug)
       .first<any>();
 
-    if (!game) {
-      game = await env.DB
-        .prepare("SELECT slug, name, icon_url FROM games LIMIT 1")
-        .first<any>();
+    if (!game && Array.isArray(fallbackGamesData)) {
+      const found = (fallbackGamesData as any[]).find(
+        (g) => (g.slug || g.id) === game_slug || (g.slug || g.id) === game_slug.toLowerCase()
+      );
+      if (found) {
+        const gameSlugClean = found.slug || found.id;
+        const iconClean = found.icon_url || found.iconUrl || `/game_icons/${gameSlugClean}.webp`;
+        game = {
+          slug: gameSlugClean,
+          name: found.name,
+          icon_url: iconClean,
+        };
+        // Tự động đồng bộ vào bảng games D1
+        await env.DB
+          .prepare(`
+            INSERT INTO games (id, slug, name, icon_url, category, publisher, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+            ON CONFLICT(slug) DO UPDATE SET name = excluded.name, icon_url = excluded.icon_url
+          `)
+          .bind(
+            `gm_${gameSlugClean}`,
+            gameSlugClean,
+            found.name,
+            iconClean,
+            found.category || 'Game Hot',
+            found.publisher || 'Nhà phát hành'
+          )
+          .run()
+          .catch(() => {});
+      }
     }
 
     if (!game) {
-      game = { slug: 'lien-quan-mobile', name: 'Liên Quân Mobile', icon_url: '/game_icons/lien-quan-mobile.webp' };
+      return new Response(
+        JSON.stringify({ success: false, error: 'Tựa game không tồn tại trong danh mục hệ thống.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
     }
 
     const officialCoverUrl = game.icon_url || `/game_icons/${game.slug}-thumb.webp`;

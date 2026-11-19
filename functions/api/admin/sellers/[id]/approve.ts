@@ -20,7 +20,7 @@ export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 };
 
-// POST: Duyệt hồ sơ gian hàng -> TRIAL (§3.2)
+// POST: Duyệt hồ sơ gian hàng -> TRIAL hoặc thăng cấp lên ACTIVE (§3.2)
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   try {
@@ -46,49 +46,92 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
+    const body = (await request.json().catch(() => ({}))) as any;
+    const rawTarget = String(body.status || body.target_status || body.mode || 'ACTIVE').toUpperCase().trim();
+    const targetStatus = ['TRIAL', 'ACTIVE'].includes(rawTarget) ? rawTarget : 'ACTIVE';
+
     const config = await getMarketplaceConfig(env.DB);
     const nowIso = new Date().toISOString();
-    await env.DB
-      .prepare(`
-        UPDATE sellers
-        SET status = 'TRIAL', 
-            trial_product_limit = ?, 
-            trial_order_max = ?, 
-            reject_reason = NULL, 
-            request_info_note = NULL, 
-            updated_at = ?
-        WHERE id = ?
-      `)
-      .bind(
-        config.default_trial_product_limit,
-        config.default_trial_order_max,
-        nowIso,
-        sellerId
-      )
-      .run();
 
-    await logAdminAudit(env.DB, {
-      actorName: auth.adminName || 'Admin',
-      action: 'ADMIN_APPROVE_SELLER',
-      targetId: sellerId,
-      details: {
-        seller_name: seller.name,
-        new_status: 'TRIAL',
-        trial_product_limit: config.default_trial_product_limit,
-        trial_order_max: config.default_trial_order_max,
-      },
-    });
+    if (targetStatus === 'ACTIVE') {
+      await env.DB
+        .prepare(`
+          UPDATE sellers
+          SET status = 'ACTIVE',
+              reject_reason = NULL,
+              request_info_note = NULL,
+              updated_at = ?
+          WHERE id = ?
+        `)
+        .bind(nowIso, sellerId)
+        .run();
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Đã duyệt gian hàng "${seller.name}" vào giai đoạn thử việc (TRIAL).`,
-        status: 'TRIAL',
-        trial_product_limit: config.default_trial_product_limit,
-        trial_order_max: config.default_trial_order_max,
-      }),
-      { status: 200, headers: CORS_HEADERS }
-    );
+      await logAdminAudit(env.DB, {
+        actorName: auth.adminName || 'Admin',
+        action: 'ADMIN_PROMOTE_SELLER_ACTIVE',
+        targetId: sellerId,
+        details: {
+          seller_name: seller.name,
+          old_status: seller.status,
+          new_status: 'ACTIVE',
+        },
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Đã nâng hạng gian hàng "${seller.name}" lên trạng thái Hoạt Động Chính Thức (ACTIVE).`,
+          status: 'ACTIVE',
+          seller_id: sellerId,
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    } else {
+      // TRIAL (§3.2)
+      await env.DB
+        .prepare(`
+          UPDATE sellers
+          SET status = 'TRIAL', 
+              trial_product_limit = ?, 
+              trial_order_max = ?, 
+              reject_reason = NULL, 
+              request_info_note = NULL, 
+              updated_at = ?
+          WHERE id = ?
+        `)
+        .bind(
+          config.default_trial_product_limit,
+          config.default_trial_order_max,
+          nowIso,
+          sellerId
+        )
+        .run();
+
+      await logAdminAudit(env.DB, {
+        actorName: auth.adminName || 'Admin',
+        action: 'ADMIN_APPROVE_SELLER_TRIAL',
+        targetId: sellerId,
+        details: {
+          seller_name: seller.name,
+          old_status: seller.status,
+          new_status: 'TRIAL',
+          trial_product_limit: config.default_trial_product_limit,
+          trial_order_max: config.default_trial_order_max,
+        },
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Đã duyệt gian hàng "${seller.name}" vào giai đoạn thử việc (TRIAL).`,
+          status: 'TRIAL',
+          trial_product_limit: config.default_trial_product_limit,
+          trial_order_max: config.default_trial_order_max,
+          seller_id: sellerId,
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
   } catch (err: any) {
     return new Response(
       JSON.stringify({ success: false, error: err?.message || 'Lỗi hệ thống.' }),

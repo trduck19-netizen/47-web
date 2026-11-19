@@ -379,17 +379,32 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
       const res = await fetch(`/api/admin/sellers/${id}/approve`, {
         method: 'POST',
         headers: getAdminHeaders(),
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, status: mode, target_status: mode }),
       });
       const data = await res.json();
-      if (data.success) {
-        showToast('Thành công', data.message, 'success');
+      if (data.success && data.status) {
+        setSellers((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, status: data.status } : s))
+        );
+        showToast(
+          isEn ? 'Success' : 'Thành công',
+          data.message || (isEn ? `Store status updated to ${data.status}` : `Đã chuyển trạng thái gian hàng sang ${data.status}`),
+          'success'
+        );
         fetchSellers();
       } else {
-        showToast('Lỗi', data.error || 'Duyệt thất bại', 'error');
+        showToast(
+          isEn ? 'Error' : 'Lỗi',
+          data.error || (isEn ? 'Action failed' : 'Duyệt thất bại'),
+          'error'
+        );
       }
     } catch {
-      showToast('Lỗi', 'Không thể kết nối đến máy chủ', 'error');
+      showToast(
+        isEn ? 'Error' : 'Lỗi',
+        isEn ? 'Cannot connect to server' : 'Không thể kết nối đến máy chủ',
+        'error'
+      );
     }
   };
 
