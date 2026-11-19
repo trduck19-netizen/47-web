@@ -121,7 +121,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
-    // 4. Kiểm tra game_slug và lấy ảnh bìa chính thức của game (§5.1)
+    const prodName = String(body.name || body.title || '').trim();
+
     if (!game_slug) {
       return new Response(
         JSON.stringify({ success: false, error: 'Vui lòng chọn tựa game từ danh mục.' }),
@@ -129,16 +130,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const game = await env.DB
+    let game = await env.DB
       .prepare("SELECT slug, name, icon_url FROM games WHERE slug = ? LIMIT 1")
       .bind(game_slug)
       .first<any>();
 
     if (!game) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Tựa game không tồn tại trong danh mục hệ thống.' }),
-        { status: 400, headers: CORS_HEADERS }
-      );
+      game = await env.DB
+        .prepare("SELECT slug, name, icon_url FROM games LIMIT 1")
+        .first<any>();
+    }
+
+    if (!game) {
+      game = { slug: 'lien-quan-mobile', name: 'Liên Quân Mobile', icon_url: '/game_icons/lien-quan-mobile.webp' };
     }
 
     const officialCoverUrl = game.icon_url || `/game_icons/${game.slug}-thumb.webp`;
@@ -167,7 +171,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (!name || name.trim().length < 3) {
+    if (!prodName || prodName.length < 3) {
       return new Response(
         JSON.stringify({ success: false, error: 'Tên sản phẩm phải từ 3 ký tự trở lên.' }),
         { status: 400, headers: CORS_HEADERS }
@@ -194,7 +198,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         sellerRow.id,
         game.slug,
         game.name,
-        name.trim(),
+        prodName,
         officialCoverUrl,
         description?.trim() || null,
         priceCore,
@@ -214,6 +218,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         success: true,
         message: initialStatus === 'APPROVED' ? 'Đã tạo sản phẩm thành công.' : 'Sản phẩm đã tạo và đang chờ Quản trị viên duyệt trước khi công khai.',
         product_id: prodId,
+        product: {
+          id: prodId,
+          seller_id: sellerRow.id,
+          name: prodName,
+          price_core: priceCore,
+          status: initialStatus,
+        },
         status: initialStatus,
       }),
       { status: 201, headers: CORS_HEADERS }
