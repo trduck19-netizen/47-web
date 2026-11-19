@@ -748,6 +748,44 @@
     "moveUp": "Chuyển lên",
     "moveDown": "Chuyển xuống",
     "toggleVisibility": "Bật/Tắt hiển thị",
-    "rule9Notice": "Hiển thị 100% trọn vẹn trong một màn hình — Các thay đổi sẽ phản ánh trên web khách trong vòng tối đa 30 giây."
+    "rule9Notice": "Hiển thị 100% trọn vẹn trong một màn hình — Các thay đổi sẽ phản ánh trên web khách trong vòng tối đa 30 giây.",
+    "sections": {
+      "top_announcement": {
+        "name": "Thanh thông báo trên cùng",
+        "description": "Thanh cảnh báo ghim trên đỉnh trang web khách, thông báo các chương trình ưu đãi, hotline CSKH và trạng thái sàn."
+      },
+      "main_hero_banner": {
+        "name": "Banner lớn",
+        "description": "Khối banner chuyển động nằm ngay dưới thanh tìm kiếm, quảng bá các chiến dịch mua sắm nổi bật và ưu đãi lớn."
+      },
+      "categories_grid": {
+        "name": "Lưới danh mục",
+        "description": "Lưới danh mục nằm ngay sau banner chính, hỗ trợ điều hướng nhanh đến các ngành hàng thời trang, mỹ phẩm và đồ số."
+      },
+      "flash_sale": {
+        "name": "Flash Sale",
+        "description": "Khu vực Giờ Vàng nằm giữa trang chủ, đếm ngược thời gian thực và giới thiệu các sản phẩm trợ giá sốc."
+      },
+      "vouchers_section": {
+        "name": "Mã giảm giá",
+        "description": "Khối biểu ngữ nằm tiếp sau Flash Sale, tổng hợp kho voucher Shopee đa tầng và mã miễn phí vận chuyển toàn sàn."
+      },
+      "games_and_codes": {
+        "name": "Khu Vực Game & Code",
+        "description": "Kệ hàng đa ngành nằm tại thân trang, phân loại sản phẩm vật lý, tài khoản số và danh mục Game Zone có bản quyền."
+      },
+      "news_section": {
+        "name": "Tin tức",
+        "description": "Khối tin tức nằm gần chân trang, cập nhật các bài viết sự kiện, tin tức game và cẩm nang mua sắm mới nhất."
+      },
+      "floating_notification": {
+        "name": "Thông báo nổi sao chép giftcode",
+        "description": "Cửa sổ thông báo ghim tại góc dưới màn hình, hiển thị đơn hàng thành công theo thời gian thực và hỗ trợ sao chép mã nhanh."
+      },
+      "footer": {
+        "name": "Chân trang",
+        "description": "Khối chân trang ghim ở đáy website, chứa thông tin pháp lý sàn, chính sách bảo chứng giao dịch và liên hệ hỗ trợ."
+      }
+    }
   }
 }

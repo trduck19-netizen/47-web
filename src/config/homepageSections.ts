@@ -45,7 +45,14 @@ export interface HomepageSectionState {
   id: string;
   enabled: boolean;
   order: number;
+  nameVi?: string;
+  nameEn?: string;
+  descriptionVi?: string;
+  descriptionEn?: string;
+  icon?: string;
 }
+
+export type HomepageSectionConfig = HomepageSectionState & Partial<HomepageSectionDefinition>;
 
 /**
  * Danh sách 9 mục trang chủ đợt đầu của sàn Universal Mall
@@ -55,8 +62,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'top_announcement',
     nameVi: 'Thanh thông báo trên cùng',
     nameEn: 'Top Announcement Bar',
-    descriptionVi: 'Thanh thông báo ghim trên đỉnh trang web thông báo sự kiện, hotline và phiên bản sàn',
-    descriptionEn: 'Top announcement bar pinned at the very top for campaigns, hotline, and mall status',
+    descriptionVi: 'Thanh cảnh báo ghim trên đỉnh trang web khách, thông báo các chương trình ưu đãi, hotline CSKH và trạng thái sàn.',
+    descriptionEn: 'Announcement bar pinned at the very top of the storefront, displaying promotional notices, hotline, and mall status.',
     defaultEnabled: true,
     defaultOrder: 1,
     icon: 'Megaphone',
@@ -65,8 +72,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'main_hero_banner',
     nameVi: 'Banner lớn',
     nameEn: 'Hero Banner Carousel',
-    descriptionVi: 'Banner động dạng carousel trình chiếu các chiến dịch mua sắm nổi bật và ưu đãi lớn',
-    descriptionEn: 'Dynamic hero carousel showcase for featured campaigns and headline promotions',
+    descriptionVi: 'Khối banner chuyển động nằm ngay dưới thanh tìm kiếm, quảng bá các chiến dịch mua sắm nổi bật và ưu đãi lớn.',
+    descriptionEn: 'Hero banner carousel located directly below the search bar, highlighting headline shopping campaigns and major deals.',
     defaultEnabled: true,
     defaultOrder: 2,
     icon: 'SlidersHorizontal',
@@ -75,8 +82,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'categories_grid',
     nameVi: 'Lưới danh mục',
     nameEn: 'Categories Grid',
-    descriptionVi: 'Lưới icon danh mục các ngành hàng: Thời trang, Làm đẹp, Thiết bị số, Dịch vụ game...',
-    descriptionEn: 'Grid of categories: Fashion, Beauty, Digital Tech, Services, and Gaming',
+    descriptionVi: 'Lưới danh mục nằm ngay sau banner chính, hỗ trợ điều hướng nhanh đến các ngành hàng thời trang, mỹ phẩm và đồ số.',
+    descriptionEn: 'Category grid situated directly below the hero banner, providing quick navigation to fashion, beauty, and digital goods.',
     defaultEnabled: true,
     defaultOrder: 3,
     icon: 'LayoutGrid',
@@ -85,8 +92,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'flash_sale',
     nameVi: 'Flash Sale',
     nameEn: 'Flash Sale',
-    descriptionVi: 'Khối Flash Sale Giờ Vàng kèm đồng hồ đếm ngược và sản phẩm trợ giá sốc',
-    descriptionEn: 'Golden Hour Flash Sale with real-time countdown timer and discounted items',
+    descriptionVi: 'Khu vực Giờ Vàng nằm giữa trang chủ, đếm ngược thời gian thực và giới thiệu các sản phẩm trợ giá sốc.',
+    descriptionEn: 'Flash sale section positioned in the center of the homepage, featuring real-time countdown and heavily discounted products.',
     defaultEnabled: true,
     defaultOrder: 4,
     icon: 'Flame',
@@ -95,8 +102,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'vouchers_section',
     nameVi: 'Mã giảm giá',
     nameEn: 'Vouchers & Discounts',
-    descriptionVi: 'Khối hiển thị mã giảm giá Shopee đa tầng và voucher miễn phí vận chuyển sàn',
-    descriptionEn: 'Multi-tier Shopee-style discount vouchers and freeship vouchers',
+    descriptionVi: 'Khối biểu ngữ nằm tiếp sau Flash Sale, tổng hợp kho voucher Shopee đa tầng và mã miễn phí vận chuyển toàn sàn.',
+    descriptionEn: 'Voucher promotional banner located after Flash Sale, featuring multi-tier platform vouchers and freeship coupon codes.',
     defaultEnabled: true,
     defaultOrder: 5,
     icon: 'Ticket',
@@ -105,8 +112,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'games_and_codes',
     nameVi: 'Khu Vực Game & Code',
     nameEn: 'Game Zone & Giftcodes',
-    descriptionVi: 'Danh mục game có bản quyền ABEI G1/G234, nhận giftcode miễn phí 0đ và thẻ game',
-    descriptionEn: 'Licensed game catalog, free giftcodes, and digital game cards',
+    descriptionVi: 'Kệ hàng đa ngành nằm tại thân trang, phân loại sản phẩm vật lý, tài khoản số và danh mục Game Zone có bản quyền.',
+    descriptionEn: 'Multi-industry merchandise showcase in the page body, categorizing physical goods, digital accounts, and licensed games.',
     defaultEnabled: true,
     defaultOrder: 6,
     icon: 'Gamepad2',
@@ -115,8 +122,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'news_section',
     nameVi: 'Tin tức',
     nameEn: 'News & Articles',
-    descriptionVi: 'Chuyên mục tin tức game, cẩm nang nhập giftcode và bài viết chuẩn SEO',
-    descriptionEn: 'Game news, giftcode guides, and SEO-optimized articles',
+    descriptionVi: 'Khối tin tức nằm gần chân trang, cập nhật các bài viết sự kiện, tin tức game và cẩm nang mua sắm mới nhất.',
+    descriptionEn: 'Featured news section positioned near the footer, highlighting event updates, gaming articles, and shopping guides.',
     defaultEnabled: true,
     defaultOrder: 7,
     icon: 'Newspaper',
@@ -125,8 +132,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'floating_notification',
     nameVi: 'Thông báo nổi sao chép giftcode',
     nameEn: 'Floating Giftcode Notification',
-    descriptionVi: 'Widget thông báo góc màn hình kích thích tương tác và sao chép mã tự động',
-    descriptionEn: 'Corner floating widget for copy tracking, live proof, and social notifications',
+    descriptionVi: 'Cửa sổ thông báo ghim tại góc dưới màn hình, hiển thị đơn hàng thành công theo thời gian thực và hỗ trợ sao chép mã nhanh.',
+    descriptionEn: 'Floating popup pinned to the corner of the screen, showcasing real-time order alerts and enabling quick code copying.',
     defaultEnabled: true,
     defaultOrder: 8,
     icon: 'BellRing',
@@ -135,8 +142,8 @@ export const HOMEPAGE_SECTIONS_REGISTRY: readonly HomepageSectionDefinition[] = 
     id: 'footer',
     nameVi: 'Chân trang',
     nameEn: 'Footer',
-    descriptionVi: 'Chân trang 4 cột: Về Universal Mall, Chuyên mục, Hỗ trợ & Pháp lý, Ngôn ngữ',
-    descriptionEn: '4-column footer: About, Categories, Support & Legal, and Language selector',
+    descriptionVi: 'Khối chân trang ghim ở đáy website, chứa thông tin pháp lý sàn, chính sách bảo chứng giao dịch và liên hệ hỗ trợ.',
+    descriptionEn: 'Four-column footer anchored at the bottom of the page, presenting platform credentials, escrow policy, and support links.',
     defaultEnabled: true,
     defaultOrder: 9,
     icon: 'PanelBottom',
@@ -153,9 +160,9 @@ export const VALID_HOMEPAGE_SECTION_IDS = new Set(
 /**
  * Trả về cấu hình mặc định ban đầu
  */
-export function getDefaultHomepageSectionsState(): HomepageSectionState[] {
+export function getDefaultHomepageSectionsState(): HomepageSectionConfig[] {
   return HOMEPAGE_SECTIONS_REGISTRY.map((sec) => ({
-    id: sec.id,
+    ...sec,
     enabled: sec.defaultEnabled,
     order: sec.defaultOrder,
   }));
@@ -167,7 +174,7 @@ export function getDefaultHomepageSectionsState(): HomepageSectionState[] {
  */
 export function mergeHomepageSectionsConfig(
   savedConfig: any
-): HomepageSectionState[] {
+): HomepageSectionConfig[] {
   if (!Array.isArray(savedConfig) || savedConfig.length === 0) {
     return getDefaultHomepageSectionsState();
   }
@@ -182,7 +189,7 @@ export function mergeHomepageSectionsConfig(
     }
   });
 
-  const result: HomepageSectionState[] = [];
+  const result: HomepageSectionConfig[] = [];
   let maxOrder = 0;
 
   // 1. Nạp các mục đã lưu hợp lệ
@@ -190,7 +197,7 @@ export function mergeHomepageSectionsConfig(
     const saved = savedMap.get(def.id);
     if (saved) {
       result.push({
-        id: def.id,
+        ...def,
         enabled: saved.enabled,
         order: saved.order,
       });
@@ -199,7 +206,7 @@ export function mergeHomepageSectionsConfig(
       // 2. Mục mới chưa từng được lưu trong DB -> Tự động nạp vào cuối
       maxOrder += 1;
       result.push({
-        id: def.id,
+        ...def,
         enabled: def.defaultEnabled,
         order: maxOrder,
       });

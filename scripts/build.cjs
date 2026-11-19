@@ -9,10 +9,21 @@ console.log('📦 1. Building Vite Frontend...');
 execSync('npx vite build', { stdio: 'inherit' });
 
 console.log('⚡ 2. Compiling Cloudflare Pages Edge Worker bundle...');
-let commitHash = 'unknown';
+let commitHash = process.env.COMMIT_HASH || process.env.CF_PAGES_COMMIT_SHA || '';
+if (!commitHash) {
+  try {
+    commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {}
+}
+if (!commitHash) commitHash = 'unknown';
+
 try {
-  commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+  const isDirty = execSync('git status --porcelain').toString().trim().length > 0;
+  if (isDirty) {
+    console.warn(`⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is ${commitHash}. If this is a release build, commit first before deploying.`);
+  }
 } catch {}
+
 const buildTime = new Date().toISOString();
 console.log(`   🏷️ Injected Build ID: ${commitHash} (${buildTime})`);
 execSync(`npx esbuild functions/_worker.ts --bundle --target=es2022 --format=esm --define:__BUILD_ID__="'${commitHash}'" --define:__BUILD_TIME__="'${buildTime}'" --outfile=dist/_worker.js`, { stdio: 'inherit' });

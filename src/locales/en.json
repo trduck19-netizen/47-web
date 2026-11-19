@@ -747,6 +747,44 @@
     "moveUp": "Move up",
     "moveDown": "Move down",
     "toggleVisibility": "Toggle visibility",
-    "rule9Notice": "Single-screen optimized layout — Changes reflect on customer storefront within at most 30 seconds."
+    "rule9Notice": "Single-screen optimized layout — Changes reflect on customer storefront within at most 30 seconds.",
+    "sections": {
+      "top_announcement": {
+        "name": "Top Announcement Bar",
+        "description": "Announcement bar pinned at the very top of the storefront, displaying promotional notices, hotline, and mall status."
+      },
+      "main_hero_banner": {
+        "name": "Hero Banner Carousel",
+        "description": "Hero banner carousel located directly below the search bar, highlighting headline shopping campaigns and major deals."
+      },
+      "categories_grid": {
+        "name": "Categories Grid",
+        "description": "Category grid situated directly below the hero banner, providing quick navigation to fashion, beauty, and digital goods."
+      },
+      "flash_sale": {
+        "name": "Flash Sale",
+        "description": "Flash sale section positioned in the center of the homepage, featuring real-time countdown and heavily discounted products."
+      },
+      "vouchers_section": {
+        "name": "Vouchers & Discounts",
+        "description": "Voucher promotional banner located after Flash Sale, featuring multi-tier platform vouchers and freeship coupon codes."
+      },
+      "games_and_codes": {
+        "name": "Game Zone & Giftcodes",
+        "description": "Multi-industry merchandise showcase in the page body, categorizing physical goods, digital accounts, and licensed games."
+      },
+      "news_section": {
+        "name": "News & Articles",
+        "description": "Featured news section positioned near the footer, highlighting event updates, gaming articles, and shopping guides."
+      },
+      "floating_notification": {
+        "name": "Floating Giftcode Notification",
+        "description": "Floating popup pinned to the corner of the screen, showcasing real-time order alerts and enabling quick code copying."
+      },
+      "footer": {
+        "name": "Footer",
+        "description": "Four-column footer anchored at the bottom of the page, presenting platform credentials, escrow policy, and support links."
+      }
+    }
   }
 }

@@ -5,7 +5,23 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
-## [2026-11-18]
+## [2026-11-19]
+
+### 421. Điền Mô Tả Song Ngữ Cột "Chức Năng & Vị Trí" và Đồng Bộ Tiêu Đề X-Build-Id (19/11/2026)
+- **Bối cảnh & Triệu chứng**:
+  1. *Việc 1 (Tiêu đề X-Build-Id ghi mã commit cũ)*: Trang khách và quản trị phản hồi `X-Build-Id: b3ee089` dù mã commit đang chạy là `d3a12b1`. Nguyên nhân: lệnh build diễn ra trước khi commit tạo hash mới, dẫn đến bundle Edge Worker mang hash của commit cha trước đó.
+  2. *Việc 2 (Cột "Chức Năng & Vị Trí" bị để trống)*: Bảng quản trị Layout Trang Chủ hiển thị 9 mục nhưng cột Chức Năng & Vị Trí trống trơn. Nguyên nhân: hàm `mergeHomepageSectionsConfig` chỉ trả về `{ id, enabled, order }` mà không nạp metadata (`descriptionVi`, `descriptionEn`, `nameVi`, `nameEn`, `icon`) từ registry, đồng thời thiếu fallback trong từ điển i18n.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Đồng bộ X-Build-Id (`scripts/build.cjs`)*: Cập nhật cơ chế sinh build ID đọc từ `process.env.COMMIT_HASH` hoặc `git rev-parse --short HEAD`, bổ sung cảnh báo khi working tree chưa commit. Tuân thủ nghiêm ngặt quy trình: commit tạo hash trước, sau đó mới build và deploy bundle lên Cloudflare Pages.
+  2. *Điền mô tả song ngữ chuẩn 9 mục (`src/config/homepageSections.ts`, `src/locales/vi.json`, `src/locales/en.json`, `src/admin/modules/HomepageSectionsModule.tsx`)*:
+     - Soạn thảo 9 câu mô tả súc tích bằng cả Tiếng Việt và Tiếng Anh nêu rõ cả **Chức năng** (mục này làm gì) và **Vị trí** (nằm ở đâu trên trang chủ).
+     - Bổ sung `sections` vào từ điển `vi.json` và `en.json`.
+     - Cập nhật `getDefaultHomepageSectionsState` và `mergeHomepageSectionsConfig` để luôn hợp nhất đầy đủ metadata vào từng item.
+     - `HomepageSectionsModule.tsx` ưu tiên lấy mô tả qua hook `t('homepageSectionsModule.sections.<id>.description')`, tự động đổi theo ngôn ngữ giao diện đang chọn, cắt tỉa `truncate` kèm tooltip per Rule 9.
+- **Kiểm thử & Nghiệm thu**:
+  - Máy quét i18n Guard: 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - Phản hồi `curl.exe -I` xác nhận `X-Build-Id` khớp đúng mã commit HEAD mới nhất trên cả web khách và web quản trị.
+  - Cột Chức Năng & Vị Trí hiển thị đầy đủ 100% cho 9 mục trên cả 2 ngôn ngữ VI và EN.
 
 ### 420. Xử Lý Triệt Để 5 Việc Còn Sót Sau Báo Cáo Kiểm Toán Sàn 18/11 (18/11/2026)
 - **Bối cảnh & Yêu cầu của Muse Audit 18/11 (11:40–11:45)**:

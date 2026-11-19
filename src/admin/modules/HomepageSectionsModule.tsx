@@ -320,8 +320,15 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           </thead>
           <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {sections.map((section, idx) => {
-              const displayName = isEn ? section.nameEn : section.nameVi;
-              const displayDesc = isEn ? section.descriptionEn : section.descriptionVi;
+              const reg = HOMEPAGE_SECTIONS_REGISTRY.find((r) => r.id === section.id);
+              const displayName =
+                t(`homepageSectionsModule.sections.${section.id}.name`) ||
+                (isEn ? (section.nameEn || reg?.nameEn) : (section.nameVi || reg?.nameVi)) ||
+                section.id;
+              const displayDesc =
+                t(`homepageSectionsModule.sections.${section.id}.description`) ||
+                (isEn ? (section.descriptionEn || reg?.descriptionEn) : (section.descriptionVi || reg?.descriptionVi)) ||
+                '';
               const isFirst = idx === 0;
               const isLast = idx === sections.length - 1;
 
