@@ -190,12 +190,13 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     await env.DB.prepare(`
       UPDATE members
       SET display_name = ?,
+          full_name = ?,
           email = ?,
           phone = ?,
           role = ?,
           status = ?
       WHERE id = ?
-    `).bind(newDisplayName, newEmail, newPhone, newRole, newStatus, existing.id).run();
+    `).bind(newDisplayName, newDisplayName, newEmail, newPhone, newRole, newStatus, existing.id).run();
 
     await logAdminAudit(env.DB, {
       actorName: auth.adminName || 'Admin',

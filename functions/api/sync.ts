@@ -4554,13 +4554,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         const finalHash = targetPass ? await computeHash(targetPass, targetSalt, pepper) : (m.passwordHash || m.password_hash || '');
         const memberId = m.id || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
         const displayName = m.displayName || m.username || cleanUser;
+        const fullName = m.fullName || m.full_name || displayName || cleanUser;
 
         await env.DB.prepare(`
-          INSERT INTO members (id, username, display_name, email, phone, role, balance, total_spent, status, salt, password_hash, avatar_url, created_at)
-          VALUES (?, ?, ?, ?, ?, 'MEMBER', 0, 0, 'ACTIVE', ?, ?, ?, datetime('now'))
+          INSERT INTO members (id, username, display_name, full_name, email, phone, role, balance, total_spent, status, salt, password_hash, avatar_url, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, 'MEMBER', 0, 0, 'ACTIVE', ?, ?, ?, datetime('now'))
           ON CONFLICT(id) DO UPDATE SET
             username = excluded.username,
             display_name = excluded.display_name,
+            full_name = excluded.full_name,
             email = excluded.email,
             salt = excluded.salt,
             password_hash = excluded.password_hash
@@ -4568,6 +4570,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           memberId,
           cleanUser,
           displayName,
+          fullName,
           cleanEmail,
           m.phone || '',
           targetSalt,
@@ -5217,9 +5220,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           // Thêm lệnh INSERT member
           stmts.push(
             env.DB.prepare(`
-              INSERT INTO members (id, username, display_name, email, phone, role, balance, total_spent, status, salt, password_hash, created_at, updated_at)
-              VALUES (?, ?, ?, ?, '', ?, ?, 0, ?, ?, ?, ?, datetime('now'))
-            `).bind(rawId, rawUsername, rawUsername, rawEmail, role, balance, status, salt, passwordHash, createdAt)
+              INSERT INTO members (id, username, display_name, full_name, email, phone, role, balance, total_spent, status, salt, password_hash, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, '', ?, ?, 0, ?, ?, ?, ?, datetime('now'))
+            `).bind(rawId, rawUsername, rawUsername, rawUsername, rawEmail, role, balance, status, salt, passwordHash, createdAt)
           );
 
           // Nếu có số dư ví > 0, thêm bản ghi giao dịch số dư vào wallet_transactions để kiểm toán sổ cái

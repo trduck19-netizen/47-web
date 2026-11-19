@@ -132,6 +132,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const sessionToken = await createSignedToken(userId, signingSecret);
     const nowIso = new Date().toISOString();
     const finalDisplayName = (displayName ? String(displayName).replace(/<[^>]*>?/gm, '').trim() : '') || cleanUsername;
+    const finalFullName = finalDisplayName || cleanUsername;
     const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(cleanUsername)}&backgroundColor=0b0d19,16192e,241a45`;
 
     const finalSalt = salt || ('wcg_salt_' + Math.random().toString(36).slice(2, 10));
@@ -142,12 +143,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     await env.DB.prepare(`
-      INSERT INTO members (id, username, display_name, email, phone, role, balance, total_spent, status, salt, password_hash, avatar_url, session_token, last_login, created_at, registered_ip)
-      VALUES (?, ?, ?, ?, ?, 'MEMBER', 0, 0, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO members (id, username, display_name, full_name, email, phone, role, balance, total_spent, status, salt, password_hash, avatar_url, session_token, last_login, created_at, registered_ip)
+      VALUES (?, ?, ?, ?, ?, ?, 'MEMBER', 0, 0, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       userId,
       cleanUsername,
       finalDisplayName,
+      finalFullName,
       cleanEmail,
       phone?.trim() || '',
       finalSalt,
@@ -183,6 +185,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           id: userId,
           username: cleanUsername,
           displayName: finalDisplayName,
+          fullName: finalFullName,
           email: cleanEmail,
           phone: phone?.trim() || '',
           role: 'user',

@@ -494,9 +494,9 @@ VALUES
   ('sp_5', 'Nạp Robux Premium 1000R$', 'roblox', 'Roblox', 300000, 33, 200000, 0, 1),
   ('sp_6', 'Gói Quân Huy Vĩnh Viễn Mùa 2026', 'lien-quan-mobile', 'Liên Quân Mobile', 150000, 20, 120000, 0, 1);
 
-INSERT OR IGNORE INTO members (id, username, display_name, email, role, balance, status, salt, password_hash)
+INSERT OR IGNORE INTO members (id, username, display_name, full_name, email, role, balance, status, salt, password_hash)
 VALUES
-  ('usr_admin', 'admin290200', 'admin290200', 'admin@codegame.store', 'SUPER_ADMIN', 0, 'ACTIVE', 'wcg_admin_salt_seed_2026', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac');
+  ('usr_admin', 'admin290200', 'admin290200', 'admin290200', 'admin@codegame.store', 'SUPER_ADMIN', 0, 'ACTIVE', 'wcg_admin_salt_seed_2026', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac');
 `;
 
 function splitSqlStatements(sql: string): string[] {
@@ -2191,8 +2191,8 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
   } catch {}
   try {
     await db.prepare(`
-      INSERT OR IGNORE INTO members (id, username, display_name, email, role, balance, status, session_token)
-      VALUES ('usr_admin', 'admin290200', 'admin290200', 'admin@codegame.store', 'SUPER_ADMIN', 0, 'ACTIVE', 'token_test_session_123');
+      INSERT OR IGNORE INTO members (id, username, display_name, full_name, email, role, balance, status, session_token)
+      VALUES ('usr_admin', 'admin290200', 'admin290200', 'admin290200', 'admin@codegame.store', 'SUPER_ADMIN', 0, 'ACTIVE', 'token_test_session_123');
     `).run().catch(() => {});
   } catch {}
   try {
@@ -4378,13 +4378,16 @@ export async function syncMembersToD1(db: D1Database, members: any[]): Promise<v
       const balance = Math.max(0, Number(m.balance) || 0);
       const totalSpent = Math.max(0, Number(m.totalSpent || m.total_spent || 0));
       const status = m.status === 'BANNED' ? 'BANNED' : 'ACTIVE';
+      const displayName = m.displayName || m.username || m.id;
+      const fullName = m.fullName || m.full_name || displayName;
       stmts.push(
         db.prepare(`
-          INSERT INTO members (id, username, display_name, email, phone, role, balance, total_spent, status, salt, password_hash, session_token, last_login, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO members (id, username, display_name, full_name, email, phone, role, balance, total_spent, status, salt, password_hash, session_token, last_login, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(id) DO UPDATE SET
             username = excluded.username,
             display_name = excluded.display_name,
+            full_name = excluded.full_name,
             email = excluded.email,
             phone = excluded.phone,
             role = excluded.role,
@@ -4406,7 +4409,8 @@ export async function syncMembersToD1(db: D1Database, members: any[]): Promise<v
         `).bind(
           m.id,
           m.username || m.displayName || m.id,
-          m.displayName || m.username || m.id,
+          displayName,
+          fullName,
           m.email || `${m.id}@webcodegame.vn`,
           m.phone || '',
           role,

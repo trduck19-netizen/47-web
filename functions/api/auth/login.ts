@@ -186,8 +186,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       if (!member) {
         try {
           await env.DB.prepare(`
-            INSERT OR IGNORE INTO members (id, email, phone, full_name, password_hash, role, balance, email_verified, status)
-            VALUES ('usr_admin', 'admin@codegame.store', '0988888888', 'Super Admin', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac', 'admin', 0, 1, 'active')
+            INSERT OR IGNORE INTO members (id, email, phone, full_name, username, display_name, password_hash, role, balance, email_verified, status)
+            VALUES ('usr_admin', 'admin@codegame.store', '0988888888', 'Super Admin', 'admin290200', 'Super Admin', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac', 'admin', 0, 1, 'active')
           `).run();
           member = await env.DB.prepare("SELECT * FROM members WHERE id = 'usr_admin' LIMIT 1").first<any>();
         } catch {}
@@ -196,9 +196,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       try {
         member = await env.DB.prepare(`
           SELECT * FROM members
-          WHERE LOWER(TRIM(email)) = ? OR id = ? OR phone = ?
+          WHERE LOWER(TRIM(email)) = ? OR LOWER(TRIM(username)) = ? OR id = ? OR phone = ?
           LIMIT 1
-        `).bind(cleanIdentifier, cleanIdentifier, cleanIdentifier).first<any>();
+        `).bind(cleanIdentifier, cleanIdentifier, cleanIdentifier, cleanIdentifier).first<any>();
       } catch {}
     }
 
