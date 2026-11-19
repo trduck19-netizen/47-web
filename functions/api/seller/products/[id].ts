@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema } from '../../../services/d1_service';
 import { getMarketplaceConfig } from '../../../services/marketplace_service';
+import { verifyStoreApiAccess } from '../../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -10,8 +11,8 @@ interface Env {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'GET, PUT, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Store-Key',
   'Content-Type': 'application/json; charset=utf-8',
 };
 
@@ -24,26 +25,27 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'ANY' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
     const productId = params.id as string;
-    const memberId = auth.member.id;
+    const sellerId = storeAuth.seller.id;
 
     const product = await env.DB
       .prepare(`
-        SELECT sp.* FROM seller_products sp
-        JOIN sellers s ON sp.seller_id = s.id
-        WHERE sp.id = ? AND sp.deleted_at IS NULL
-          AND (s.owner_member_id = ? OR s.id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ?))
+        SELECT sp.*,
+               (SELECT COUNT(*) FROM seller_codes sc WHERE sc.product_id = sp.id AND sc.status = 'IN_STOCK' AND sc.deleted_at IS NULL) as in_stock_count,
+               (SELECT COUNT(*) FROM seller_codes sc WHERE sc.product_id = sp.id AND sc.status = 'SOLD' AND sc.deleted_at IS NULL) as sold_count
+        FROM seller_products sp
+        WHERE sp.id = ? AND sp.seller_id = ? AND sp.deleted_at IS NULL
         LIMIT 1
       `)
-      .bind(productId, memberId, memberId)
+      .bind(productId, sellerId)
       .first<any>();
 
     if (!product) {
@@ -70,16 +72,16 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'MANAGE_STOCK' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
     const productId = params.id as string;
-    const memberId = auth.member.id;
+    const sellerId = storeAuth.seller.id;
     const body = (await request.json().catch(() => ({}))) as any;
 
     const product = await env.DB
@@ -87,11 +89,10 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
         SELECT sp.*, s.status as seller_status, s.trial_order_max
         FROM seller_products sp
         JOIN sellers s ON sp.seller_id = s.id
-        WHERE sp.id = ? AND sp.deleted_at IS NULL
-          AND (s.owner_member_id = ? OR s.id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ? AND role = 'MANAGE_STOCK'))
+        WHERE sp.id = ? AND sp.seller_id = ? AND sp.deleted_at IS NULL
         LIMIT 1
       `)
-      .bind(productId, memberId, memberId)
+      .bind(productId, sellerId)
       .first<any>();
 
     if (!product) {
@@ -192,31 +193,88 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   }
 };
 
+// PATCH: Bật/tắt bán hoặc chuyển đổi trạng thái sản phẩm (§5)
+export const onRequestPatch: PagesFunction<Env> = async (context) => {
+  const { request, env, params } = context;
+  try {
+    await ensureMarketplaceSchema(env.DB);
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'MANAGE_STOCK' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
+      return new Response(
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
+      );
+    }
+
+    const productId = params.id as string;
+    const sellerId = storeAuth.seller.id;
+    const body = (await request.json().catch(() => ({}))) as any;
+
+    const product = await env.DB
+      .prepare('SELECT id, status FROM seller_products WHERE id = ? AND seller_id = ? AND deleted_at IS NULL LIMIT 1')
+      .bind(productId, sellerId)
+      .first<any>();
+
+    if (!product) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Sản phẩm không tồn tại hoặc bạn không có quyền cập nhật.' }),
+        { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    let targetStatus = product.status;
+    if (body.status !== undefined) {
+      const s = String(body.status).toUpperCase().trim();
+      if (['DRAFT', 'APPROVED', 'PENDING_REVIEW'].includes(s)) {
+        targetStatus = s;
+      }
+    } else if (body.is_active !== undefined) {
+      targetStatus = body.is_active ? 'APPROVED' : 'DRAFT';
+    } else {
+      targetStatus = product.status === 'APPROVED' ? 'DRAFT' : 'APPROVED';
+    }
+
+    const nowIso = new Date().toISOString();
+    await env.DB
+      .prepare('UPDATE seller_products SET status = ?, updated_at = ? WHERE id = ?')
+      .bind(targetStatus, nowIso, productId)
+      .run();
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: targetStatus === 'APPROVED' ? 'Đã bật bán sản phẩm thành công.' : 'Đã tạm tắt bán sản phẩm (chuyển về nháp).',
+        status: targetStatus,
+      }),
+      { status: 200, headers: CORS_HEADERS }
+    );
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ success: false, error: err?.message || 'Lỗi hệ thống.' }),
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+};
+
 // DELETE: Xóa mềm sản phẩm (§0: cấm hard delete)
 export const onRequestDelete: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'MANAGE_STOCK' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
     const productId = params.id as string;
-    const memberId = auth.member.id;
+    const sellerId = storeAuth.seller.id;
 
     const product = await env.DB
-      .prepare(`
-        SELECT sp.id, sp.seller_id FROM seller_products sp
-        JOIN sellers s ON sp.seller_id = s.id
-        WHERE sp.id = ? AND sp.deleted_at IS NULL
-          AND (s.owner_member_id = ? OR s.id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ? AND role = 'MANAGE_STOCK'))
-        LIMIT 1
-      `)
-      .bind(productId, memberId, memberId)
+      .prepare('SELECT sp.id, sp.seller_id FROM seller_products sp WHERE sp.id = ? AND sp.seller_id = ? AND sp.deleted_at IS NULL LIMIT 1')
+      .bind(productId, sellerId)
       .first<any>();
 
     if (!product) {

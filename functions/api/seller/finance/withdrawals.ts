@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema } from '../../../services/d1_service';
 import { SellerRecord } from '../../../services/marketplace_service';
+import { verifyStoreApiAccess } from '../../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -12,7 +13,7 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Store-Key',
 };
 
 export const onRequestOptions: PagesFunction = async () => {
@@ -32,26 +33,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     await ensureMarketplaceSchema(env.DB);
 
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'OWNER' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
-    const memberId = auth.member.id;
-    const seller = await env.DB
-      .prepare("SELECT * FROM sellers WHERE owner_member_id = ? AND deleted_at IS NULL LIMIT 1")
-      .bind(memberId)
-      .first<SellerRecord>();
-
-    if (!seller) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Chỉ chủ gian hàng mới có quyền xem lịch sử rút tiền.' }),
-        { status: 403, headers: CORS_HEADERS }
-      );
-    }
+    const seller = storeAuth.seller;
 
     const url = new URL(request.url);
     const limit = Math.min(100, Math.max(10, parseInt(url.searchParams.get('limit') || '50', 10)));

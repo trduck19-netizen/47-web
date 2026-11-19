@@ -1,6 +1,7 @@
 import { PagesFunction } from '@cloudflare/workers-types';
 import { verifyMemberAuth } from '../../../../services/mission_service';
 import { ensureMarketplaceSchema } from '../../../../services/d1_service';
+import { verifyStoreApiAccess } from '../../../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -11,7 +12,7 @@ interface Env {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Store-Key',
   'Content-Type': 'application/json; charset=utf-8',
 };
 
@@ -24,16 +25,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'MANAGE_STOCK' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
     const disputeId = String(params.id || '').trim();
-    const memberId = auth.member.id;
+    const sellerId = storeAuth.seller.id;
     const body = (await request.json().catch(() => ({}))) as any;
     const message = typeof body.message === 'string' ? body.message.trim() : '';
     const replacementCode = typeof body.replacement_code === 'string' ? body.replacement_code.trim() : '';
@@ -52,35 +53,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 1. Kiểm tra khiếu nại tồn tại
+    // 1. Kiểm tra khiếu nại tồn tại và thuộc gian hàng này
     const dispute = await env.DB
-      .prepare('SELECT * FROM seller_disputes WHERE id = ? LIMIT 1')
-      .bind(disputeId)
+      .prepare('SELECT * FROM seller_disputes WHERE id = ? AND seller_id = ? LIMIT 1')
+      .bind(disputeId, sellerId)
       .first<any>();
 
     if (!dispute) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Không tìm thấy khiếu nại này.' }),
+        JSON.stringify({ success: false, error: 'Không tìm thấy khiếu nại này trong gian hàng của bạn.' }),
         { status: 404, headers: CORS_HEADERS }
-      );
-    }
-
-    // 2. Kiểm tra quyền của người gọi đối với gian hàng
-    const seller = await env.DB
-      .prepare(`
-        SELECT id FROM sellers
-        WHERE id = ? 
-          AND (owner_member_id = ? OR id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ?))
-          AND deleted_at IS NULL
-        LIMIT 1
-      `)
-      .bind(dispute.seller_id, memberId, memberId)
-      .first<any>();
-
-    if (!seller) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Bạn không có quyền quản lý gian hàng của khiếu nại này.' }),
-        { status: 403, headers: CORS_HEADERS }
       );
     }
 

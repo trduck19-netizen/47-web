@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../services/d1_service';
 import { SellerRecord } from '../../services/marketplace_service';
+import { verifyStoreApiAccess } from '../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -19,52 +20,28 @@ export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 };
 
-// GET: Lấy thông tin gian hàng của thành viên hiện tại
+// GET: Lấy thông tin gian hàng của thành viên hiện tại hoặc khóa API
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
-      return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
-      );
-    }
-
-    const memberId = auth.member.id;
-
-    // Tìm xem thành viên là chủ gian hàng hay tài khoản phụ
-    let seller = await env.DB
-      .prepare("SELECT * FROM sellers WHERE owner_member_id = ? AND deleted_at IS NULL LIMIT 1")
-      .bind(memberId)
-      .first<SellerRecord>();
-
-    let subRole: string | null = null;
-    if (!seller) {
-      const sub = await env.DB
-        .prepare(`
-          SELECT s.*, sa.role as sub_role 
-          FROM seller_subaccounts sa
-          JOIN sellers s ON sa.seller_id = s.id
-          WHERE sa.member_id = ? AND s.deleted_at IS NULL
-          LIMIT 1
-        `)
-        .bind(memberId)
-        .first<any>();
-
-      if (sub) {
-        seller = sub;
-        subRole = sub.sub_role;
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'ANY' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
+      // Nếu là phiên web nhưng chưa có gian hàng -> trả has_seller: false để web hiển thị form mở gian hàng
+      if (storeAuth.authType === 'MEMBER_SESSION' && storeAuth.status === 404) {
+        return new Response(
+          JSON.stringify({ success: true, has_seller: false }),
+          { status: 200, headers: CORS_HEADERS }
+        );
       }
-    }
-
-    if (!seller) {
       return new Response(
-        JSON.stringify({ success: true, has_seller: false }),
-        { status: 200, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API gian hàng hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
+
+    const seller = storeAuth.seller;
+    const subRole = storeAuth.role || 'OWNER';
 
     // Thống kê nhanh (§4)
     // 1. Doanh thu Core hôm nay
@@ -327,28 +304,16 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'OWNER' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API gian hàng hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
-    const memberId = auth.member.id;
+    const seller = storeAuth.seller;
     const body = (await request.json().catch(() => ({}))) as any;
-
-    const seller = await env.DB
-      .prepare("SELECT * FROM sellers WHERE owner_member_id = ? AND deleted_at IS NULL LIMIT 1")
-      .bind(memberId)
-      .first<SellerRecord>();
-
-    if (!seller) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Chỉ chủ gian hàng mới có quyền cập nhật thông tin này.' }),
-        { status: 403, headers: CORS_HEADERS }
-      );
-    }
 
     const {
       description,
@@ -405,29 +370,17 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'OWNER' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API gian hàng hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
-    const memberId = auth.member.id;
+    const seller = storeAuth.seller;
     const body = (await request.json().catch(() => ({}))) as any;
     const { is_vacation } = body;
-
-    const seller = await env.DB
-      .prepare("SELECT * FROM sellers WHERE owner_member_id = ? AND deleted_at IS NULL LIMIT 1")
-      .bind(memberId)
-      .first<SellerRecord>();
-
-    if (!seller) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Chỉ chủ gian hàng mới có quyền bật/tắt chế độ nghỉ bán.' }),
-        { status: 403, headers: CORS_HEADERS }
-      );
-    }
 
     const vacationVal = is_vacation ? 1 : 0;
     await env.DB

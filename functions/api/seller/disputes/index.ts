@@ -1,6 +1,7 @@
 import { PagesFunction } from '@cloudflare/workers-types';
 import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema } from '../../../services/d1_service';
+import { verifyStoreApiAccess } from '../../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -11,7 +12,7 @@ interface Env {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Store-Key',
   'Content-Type': 'application/json; charset=utf-8',
 };
 
@@ -24,33 +25,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'ANY' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
-    const memberId = auth.member.id;
-
-    // Tìm gian hàng của thành viên
-    const seller = await env.DB
-      .prepare(`
-        SELECT s.id, s.name, s.slug FROM sellers s
-        WHERE (s.owner_member_id = ? OR s.id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ?))
-          AND s.deleted_at IS NULL
-        LIMIT 1
-      `)
-      .bind(memberId, memberId)
-      .first<{ id: string; name: string; slug: string }>();
-
-    if (!seller) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Bạn không sở hữu hoặc quản lý gian hàng nào.' }),
-        { status: 404, headers: CORS_HEADERS }
-      );
-    }
+    const seller = storeAuth.seller;
 
     const url = new URL(request.url);
     const statusFilter = (url.searchParams.get('status') || '').toUpperCase().trim();

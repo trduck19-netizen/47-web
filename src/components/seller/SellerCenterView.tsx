@@ -30,7 +30,14 @@ import {
   PauseCircle,
   PlayCircle,
   Layers,
+  Code2,
+  Key,
+  Terminal,
+  ExternalLink,
+  Lock,
+  Check,
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import { Game } from '../../types/game';
 
 interface SellerCenterViewProps {
@@ -46,10 +53,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   games,
   onNavigateHome,
 }) => {
+  const { t, language } = useLanguage();
   const [loading, setLoading] = useState<boolean>(true);
   const [sellerData, setSellerData] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders' | 'disputes' | 'finance' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders' | 'disputes' | 'finance' | 'settings' | 'api_keys'>('dashboard');
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
 
@@ -96,6 +104,18 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [subaccounts, setSubaccounts] = useState<any[]>([]);
   const [newSubEmail, setNewSubEmail] = useState<string>('');
   const [newSubRole, setNewSubRole] = useState<'VIEW_ORDERS' | 'MANAGE_STOCK'>('VIEW_ORDERS');
+
+  // API Keys & Integrations State
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [loadingApiKeys, setLoadingApiKeys] = useState<boolean>(false);
+  const [thirdPartyApps, setThirdPartyApps] = useState<any[]>([]);
+  const [loadingApps, setLoadingApps] = useState<boolean>(false);
+  const [showCreateKeyModal, setShowCreateKeyModal] = useState<boolean>(false);
+  const [newKeyName, setNewKeyName] = useState<string>('');
+  const [newKeyScope, setNewKeyScope] = useState<'FULL' | 'READ_ONLY' | 'PRODUCTS_ONLY' | 'ORDERS_ONLY'>('FULL');
+  const [isCreatingKey, setIsCreatingKey] = useState<boolean>(false);
+  const [generatedRawKeyData, setGeneratedRawKeyData] = useState<{ rawKey: string; name: string } | null>(null);
+  const [copiedKey, setCopiedKey] = useState<boolean>(false);
 
   // Registration Form State
   const [regName, setRegName] = useState<string>('');
@@ -224,6 +244,37 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
     } catch {}
   };
 
+  // Fetch API Keys & Third-party Apps
+  const fetchApiKeys = async () => {
+    setLoadingApiKeys(true);
+    try {
+      const res = await fetch('/api/seller/api-keys', { headers: getHeaders() });
+      const data = await res.json();
+      if (data.success) {
+        setApiKeys(data.keys || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingApiKeys(false);
+    }
+  };
+
+  const fetchApps = async () => {
+    setLoadingApps(true);
+    try {
+      const res = await fetch('/api/seller/apps', { headers: getHeaders() });
+      const data = await res.json();
+      if (data.success) {
+        setThirdPartyApps(data.authorizations || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingApps(false);
+    }
+  };
+
   // Fetch Finance & Sổ Cái & Lịch Sử Rút Tiền (Giai đoạn 2)
   const fetchSellerFinance = async () => {
     setLoadingFinance(true);
@@ -287,6 +338,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       if (activeTab === 'disputes') fetchDisputes();
       if (activeTab === 'finance') fetchSellerFinance();
       if (activeTab === 'settings') fetchSubaccounts();
+      if (activeTab === 'api_keys') {
+        fetchApiKeys();
+        fetchApps();
+      }
     }
   }, [sellerData, activeTab, selectedProductId, orderFilter, disputeFilter]);
 
@@ -552,6 +607,91 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       }
     } catch {
       setErrorMsg('Lỗi kết nối máy chủ.');
+    }
+  };
+
+  const handleCreateApiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKeyName.trim()) return;
+    setIsCreatingKey(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/seller/api-keys', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ name: newKeyName.trim(), scope: newKeyScope }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGeneratedRawKeyData({ rawKey: data.raw_key, name: data.key.name });
+        setShowCreateKeyModal(false);
+        setNewKeyName('');
+        setNewKeyScope('FULL');
+        fetchApiKeys();
+      } else {
+        setErrorMsg(data.error || t('common.error', 'Có lỗi xảy ra, vui lòng thử lại.'));
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || t('common.error', 'Có lỗi xảy ra, vui lòng thử lại.'));
+    } finally {
+      setIsCreatingKey(false);
+    }
+  };
+
+  const handleRevokeApiKey = async (keyId: string, keyName: string) => {
+    if (!confirm(t('sellerApiKeys.revokeConfirm', 'Bạn có chắc chắn muốn thu hồi khóa này? Mọi hệ thống dùng khóa này sẽ bị từ chối ngay lập tức.'))) return;
+    try {
+      const res = await fetch(`/api/seller/api-keys/${keyId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg(data.message || t('common.success', 'Thành công!'));
+        fetchApiKeys();
+      } else {
+        setErrorMsg(data.error || t('common.error', 'Có lỗi xảy ra, vui lòng thử lại.'));
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || t('common.error', 'Có lỗi xảy ra, vui lòng thử lại.'));
+    }
+  };
+
+  const handleRotateApiKey = async (keyId: string, keyName: string) => {
+    if (!confirm(t('sellerApiKeys.rotateConfirm', 'Bạn có chắc chắn muốn xoay khóa này? Khóa cũ sẽ bị hủy ngay lập tức và cấp khóa mới.'))) return;
+    try {
+      const res = await fetch(`/api/seller/api-keys/${keyId}/rotate`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGeneratedRawKeyData({ rawKey: data.raw_key, name: data.key.name });
+        fetchApiKeys();
+      } else {
+        setErrorMsg(data.error || t('common.error', 'Có lỗi xảy ra, vui lòng thử lại.'));
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || t('common.error', 'Có lỗi xảy ra, vui lòng thử lại.'));
+    }
+  };
+
+  const handleRevokeApp = async (authId: string, appName: string) => {
+    if (!confirm(t('sellerApiKeys.revokeAppConfirm', 'Bạn có chắc chắn muốn thu hồi quyền của ứng dụng này?'))) return;
+    try {
+      const res = await fetch(`/api/seller/apps/${authId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg(data.message || t('common.success', 'Thành công!'));
+        fetchApps();
+      } else {
+        setErrorMsg(data.error || t('common.error', 'Có lỗi xảy ra, vui lòng thử lại.'));
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || t('common.error', 'Có lỗi xảy ra, vui lòng thử lại.'));
     }
   };
 
@@ -976,6 +1116,18 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           }`}
         >
           <Settings className="w-4 h-4" /> Cài Đặt & Tài Khoản Phụ
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('api_keys');
+            fetchApiKeys();
+            fetchApps();
+          }}
+          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+            activeTab === 'api_keys' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
+          }`}
+        >
+          <Code2 className="w-4 h-4" /> {t('sellerApiKeys.tabTitle', 'Khóa API & Tích Hợp')}
         </button>
       </div>
 
@@ -1834,6 +1986,242 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </div>
       )}
 
+      {/* Tab 7: API Keys & Integrations */}
+      {activeTab === 'api_keys' && (
+        <div className="space-y-6">
+          {/* Top Banner */}
+          <div className="p-6 rounded-2xl bg-card border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="text-base font-bold flex items-center gap-2">
+                <Code2 className="w-5 h-5 text-primary" />
+                {t('sellerApiKeys.tabTitle', 'Khóa API & Tích Hợp')}
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t('sellerApiKeys.tabDesc', 'Quản lý khóa API kết nối máy-máy và ủy quyền ứng dụng bên thứ ba cho gian hàng.')}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreateKeyModal(true)}
+              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs flex items-center gap-2 shadow-sm shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              {t('sellerApiKeys.createBtn', 'Tạo Khóa Mới')}
+            </button>
+          </div>
+
+          {/* Table: Danh Sách Khóa API */}
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+            <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Key className="w-4 h-4 text-primary" />
+              {t('sellerApiKeys.tableTitle', 'Danh Sách Khóa API Gian Hàng')}
+            </h4>
+
+            {loadingApiKeys ? (
+              <div className="py-8 text-center text-xs text-muted-foreground animate-pulse">
+                {t('common.loading', 'Đang tải dữ liệu...')}
+              </div>
+            ) : apiKeys.length === 0 ? (
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                Chưa có khóa API nào. Bấm "Tạo Khóa Mới" để cấp khóa đầu tiên.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border text-muted-foreground">
+                      <th className="py-2.5 px-3 font-semibold">{t('sellerApiKeys.colName', 'Tên Khóa')}</th>
+                      <th className="py-2.5 px-3 font-semibold">{t('sellerApiKeys.colPrefix', 'Tiền Tố Khóa')}</th>
+                      <th className="py-2.5 px-3 font-semibold">{t('sellerApiKeys.colScope', 'Phạm Vi Quyền')}</th>
+                      <th className="py-2.5 px-3 font-semibold">{t('sellerApiKeys.colCreated', 'Ngày Tạo')}</th>
+                      <th className="py-2.5 px-3 font-semibold">{t('sellerApiKeys.colLastUsed', 'Dùng Lần Cuối')}</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">{t('sellerApiKeys.colCalls', 'Số Lần Gọi')}</th>
+                      <th className="py-2.5 px-3 font-semibold text-center">{t('sellerApiKeys.colStatus', 'Trạng Thái')}</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">{t('sellerApiKeys.colActions', 'Thao Tác')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {apiKeys.map((k) => (
+                      <tr key={k.id} className="hover:bg-muted/40 transition-colors">
+                        <td className="py-3 px-3 font-bold text-foreground">{k.name}</td>
+                        <td className="py-3 px-3">
+                          <code className="px-2 py-0.5 rounded bg-muted font-mono font-bold text-primary text-[11px]">
+                            {k.key_prefix}
+                          </code>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            k.scope === 'FULL' ? 'bg-primary/10 text-primary border border-primary/20' :
+                            k.scope === 'READ_ONLY' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                            k.scope === 'PRODUCTS_ONLY' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+                            'bg-purple-500/10 text-purple-500 border border-purple-500/20'
+                          }`}>
+                            {k.scope === 'FULL' ? t('sellerApiKeys.scopeFull', 'Toàn Quyền') :
+                             k.scope === 'READ_ONLY' ? t('sellerApiKeys.scopeReadOnly', 'Chỉ Đọc') :
+                             k.scope === 'PRODUCTS_ONLY' ? t('sellerApiKeys.scopeProducts', 'Chỉ Sản Phẩm') :
+                             t('sellerApiKeys.scopeOrders', 'Chỉ Đơn Hàng')}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-muted-foreground">
+                          {new Date(k.created_at).toLocaleDateString('vi-VN')}
+                        </td>
+                        <td className="py-3 px-3 text-muted-foreground">
+                          {k.last_used_at ? new Date(k.last_used_at).toLocaleString('vi-VN') : t('sellerApiKeys.neverUsed', 'Chưa dùng')}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold">
+                          {Number(k.calls_count || 0).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {k.is_active ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold">
+                              {t('sellerApiKeys.statusActive', 'Hoạt Động')}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-bold">
+                              {t('sellerApiKeys.statusRevoked', 'Đã Thu Hồi')}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          {k.is_active ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleRotateApiKey(k.id, k.name)}
+                                title={t('sellerApiKeys.rotateBtn', 'Xoay Khóa')}
+                                className="px-2 py-1 rounded-lg border border-border hover:bg-muted text-muted-foreground text-[11px] font-semibold flex items-center gap-1"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                {t('sellerApiKeys.rotateBtn', 'Xoay Khóa')}
+                              </button>
+                              <button
+                                onClick={() => handleRevokeApiKey(k.id, k.name)}
+                                title={t('sellerApiKeys.revokeBtn', 'Thu Hồi')}
+                                className="px-2 py-1 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 text-[11px] font-semibold flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                {t('sellerApiKeys.revokeBtn', 'Thu Hồi')}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground italic">
+                              {t('sellerApiKeys.statusRevoked', 'Đã Thu Hồi')}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Section: Ứng Dụng Bên Thứ Ba Đang Có Quyền */}
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+            <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" />
+              {t('sellerApiKeys.thirdPartySectionTitle', 'Ứng Dụng Bên Thứ Ba Đang Có Quyền')}
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              {t('sellerApiKeys.thirdPartySectionDesc', 'Các hệ thống bên ngoài hoặc ứng dụng AI được bạn cấp quyền thay mặt quản lý gian hàng.')}
+            </p>
+
+            {loadingApps ? (
+              <div className="py-4 text-center text-xs text-muted-foreground animate-pulse">
+                {t('common.loading', 'Đang tải dữ liệu...')}
+              </div>
+            ) : thirdPartyApps.length === 0 ? (
+              <div className="py-4 text-xs text-muted-foreground text-center bg-muted/30 rounded-xl">
+                {t('sellerApiKeys.noThirdPartyApps', 'Chưa có ứng dụng bên thứ ba nào được liên kết.')}
+              </div>
+            ) : (
+              <div className="divide-y divide-border/60">
+                {thirdPartyApps.map((app) => (
+                  <div key={app.id} className="py-3 flex items-center justify-between text-xs">
+                    <div>
+                      <div className="font-bold text-foreground flex items-center gap-2">
+                        {app.app_name}
+                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold">
+                          {app.scope}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {t('sellerApiKeys.authorizedAt', 'Thời Điểm Duyệt')}: {new Date(app.created_at).toLocaleString('vi-VN')}
+                      </div>
+                    </div>
+                    {app.status === 'ACTIVE' ? (
+                      <button
+                        onClick={() => handleRevokeApp(app.id, app.app_name)}
+                        className="px-3 py-1 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-semibold"
+                      >
+                        {t('sellerApiKeys.revokeAppBtn', 'Thu Hồi Quyền')}
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground text-[11px] italic">
+                        {t('sellerApiKeys.statusRevoked', 'Đã Thu Hồi')}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section: Hướng Dẫn & Tài Liệu API */}
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-primary" />
+                {t('sellerApiKeys.apiDocsTitle', 'Tài Liệu Hướng Dẫn Tích Hợp API')}
+              </h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('sellerApiKeys.apiDocsDesc', 'Sử dụng Store API để kết nối máy-máy, ứng dụng ngoài hoặc cấu hình AI tự động quản lý.')}
+            </p>
+
+            <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-2 text-xs">
+              <div className="font-bold text-foreground">{t('sellerApiKeys.authHeaderTitle', 'Header Xác Thực Yêu Cầu')}:</div>
+              <div className="space-y-1 font-mono text-[11px]">
+                <div className="p-2 rounded bg-background border border-border">
+                  X-Store-Key: wcg_sk_YOUR_STORE_API_KEY_HERE
+                </div>
+                <div className="p-2 rounded bg-background border border-border">
+                  Authorization: Bearer wcg_sk_YOUR_STORE_API_KEY_HERE
+                </div>
+              </div>
+              <div className="text-[11px] text-muted-foreground pt-1">
+                ⚡ Giới hạn: Tối đa 600 yêu cầu / phút. Xem tài liệu kỹ thuật chi tiết tại file <strong className="text-foreground">docs/STORE_API_GUIDE.md</strong> trong mã nguồn.
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+              <div className="p-4 rounded-xl bg-background border border-border space-y-2">
+                <div className="font-sans font-bold text-foreground flex items-center justify-between">
+                  <span>{t('sellerApiKeys.sampleCurlTitle', 'Mẫu Gọi cURL')}</span>
+                </div>
+                <pre className="text-[11px] text-muted-foreground overflow-x-auto p-2 bg-muted/50 rounded-lg whitespace-pre-wrap">
+{`curl -X GET "https://universal-mall-shop.pages.dev/api/seller" \\
+  -H "X-Store-Key: YOUR_STORE_KEY"`}
+                </pre>
+              </div>
+
+              <div className="p-4 rounded-xl bg-background border border-border space-y-2">
+                <div className="font-sans font-bold text-foreground flex items-center justify-between">
+                  <span>{t('sellerApiKeys.sampleFetchTitle', 'Mẫu Gọi Fetch (Node.js/JS)')}</span>
+                </div>
+                <pre className="text-[11px] text-muted-foreground overflow-x-auto p-2 bg-muted/50 rounded-lg whitespace-pre-wrap">
+{`const res = await fetch('/api/seller/products', {
+  headers: {
+    'Authorization': 'Bearer YOUR_STORE_KEY'
+  }
+});
+const data = await res.json();`}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal: Thêm Sản Phẩm Mới */}
       {showAddProductModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -2165,6 +2553,133 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Tạo Khóa API Mới */}
+      {showCreateKeyModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold flex items-center gap-2">
+                <Key className="w-5 h-5 text-primary" />
+                {t('sellerApiKeys.modalCreateTitle', 'Tạo Khóa API Mới')}
+              </h3>
+              <button onClick={() => setShowCreateKeyModal(false)} className="p-1 rounded hover:bg-muted text-muted-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateApiKey} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold mb-1">
+                  {t('sellerApiKeys.keyNameLabel', 'Tên Khóa / Mục Đích Sử Dụng')} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  placeholder={t('sellerApiKeys.keyNamePlaceholder', 'Ví dụ: Bot Đồng Bộ Đơn Hàng Shopee / AI Quản Lý Kho')}
+                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">
+                  {t('sellerApiKeys.scopeLabel', 'Phạm Vi Thẩm Quyền')}
+                </label>
+                <select
+                  value={newKeyScope}
+                  onChange={(e: any) => setNewKeyScope(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary text-xs font-medium"
+                >
+                  <option value="FULL">{t('sellerApiKeys.scopeFull', 'Toàn Quyền')}</option>
+                  <option value="READ_ONLY">{t('sellerApiKeys.scopeReadOnly', 'Chỉ Đọc')}</option>
+                  <option value="PRODUCTS_ONLY">{t('sellerApiKeys.scopeProducts', 'Chỉ Sản Phẩm')}</option>
+                  <option value="ORDERS_ONLY">{t('sellerApiKeys.scopeOrders', 'Chỉ Đơn Hàng')}</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateKeyModal(false)}
+                  className="px-4 py-2 rounded-xl border border-border hover:bg-muted font-semibold text-xs"
+                >
+                  {t('sellerApiKeys.cancelBtn', 'Hủy')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingKey}
+                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-sm disabled:opacity-50"
+                >
+                  {isCreatingKey ? t('common.loading', 'Đang tạo...') : t('sellerApiKeys.confirmCreateBtn', 'Tạo Khóa')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Hiển Thị Khóa API Thô Duy Nhất 1 Lần */}
+      {generatedRawKeyData && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-primary/40 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-emerald-500">
+              <CheckCircle2 className="w-6 h-6 shrink-0" />
+              <h3 className="text-base font-bold text-foreground">
+                {t('sellerApiKeys.modalNewKeyTitle', 'Khóa API Đã Được Tạo Thành Công!')}
+              </h3>
+            </div>
+
+            <div className="p-3.5 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-xs leading-relaxed font-semibold">
+              ⚠️ {t('sellerApiKeys.modalNewKeyWarning', 'LƯU Ý QUAN TRỌNG: Hãy sao chép và lưu trữ khóa này ở nơi an toàn ngay bây giờ. Vì lý do an toàn bảo mật, khóa API thô này sẽ KHÔNG BAO GIỜ hiển thị lại!')}
+            </div>
+
+            <div className="space-y-1.5 text-xs">
+              <div className="text-muted-foreground">{t('sellerApiKeys.colName', 'Tên Khóa')}: <strong className="text-foreground">{generatedRawKeyData.name}</strong></div>
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  readOnly
+                  value={generatedRawKeyData.rawKey}
+                  className="w-full font-mono text-xs px-3.5 py-2.5 pr-24 rounded-xl border border-primary/40 bg-muted/60 text-foreground font-bold focus:outline-none select-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedRawKeyData.rawKey);
+                    setCopiedKey(true);
+                    setTimeout(() => setCopiedKey(false), 2500);
+                  }}
+                  className="absolute right-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-bold text-xs flex items-center gap-1 shadow-sm hover:opacity-95"
+                >
+                  {copiedKey ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      {t('sellerApiKeys.copied', 'Đã chép!')}
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      {t('sellerApiKeys.copyBtn', 'Sao Chép')}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setGeneratedRawKeyData(null)}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-foreground text-background font-bold text-xs shadow hover:opacity-90"
+              >
+                {t('sellerApiKeys.closeModalBtn', 'Tôi Đã Lưu Khóa An Toàn')}
+              </button>
+            </div>
           </div>
         </div>
       )}

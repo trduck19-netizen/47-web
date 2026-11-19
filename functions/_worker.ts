@@ -94,9 +94,14 @@ import * as sellerProductsCodesApi from './api/seller/products/[id]/codes';
 import * as sellerCodesRevealApi from './api/seller/codes/[id]/reveal';
 import * as sellerCodesIdApi from './api/seller/codes/[id]';
 import * as sellerOrdersIndexApi from './api/seller/orders/index';
+import * as sellerOrdersIdApi from './api/seller/orders/[id]';
 import * as sellerOrdersResolveReportApi from './api/seller/orders/[id]/resolve-report';
 import * as sellerSubaccountsIndexApi from './api/seller/subaccounts/index';
 import * as sellerSubaccountsIdApi from './api/seller/subaccounts/[id]';
+import * as sellerApiKeysIndexApi from './api/seller/api-keys/index';
+import * as sellerApiKeysIdApi from './api/seller/api-keys/[id]';
+import * as sellerAppsIndexApi from './api/seller/apps/index';
+import * as sellerAppsIdApi from './api/seller/apps/[id]';
 import * as storesSlugIndexApi from './api/stores/[slug]/index';
 import * as storesSlugProductsApi from './api/stores/[slug]/products';
 import * as sellerOrdersCreateApi from './api/seller-orders/index';
@@ -1859,6 +1864,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS') return await sellerProductsIdApi.onRequestOptions();
         if (method === 'GET') return await sellerProductsIdApi.onRequestGet(context);
         if (method === 'PUT') return await sellerProductsIdApi.onRequestPut(context);
+        if (method === 'PATCH') return await sellerProductsIdApi.onRequestPatch(context);
         if (method === 'DELETE') return await sellerProductsIdApi.onRequestDelete(context);
         return new Response('Method Not Allowed', { status: 405 });
       }
@@ -1895,6 +1901,73 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return new Response('Method Not Allowed', { status: 405 });
       }
 
+      const matchSellerOrderId = pathname.match(/^\/api\/seller\/orders\/([^/]+)$/);
+      if (matchSellerOrderId) {
+        context.params = { ...(context.params || {}), id: matchSellerOrderId[1] };
+        if (method === 'OPTIONS') return await sellerOrdersIdApi.onRequestOptions();
+        if (method === 'GET') return await sellerOrdersIdApi.onRequestGet(context);
+        if (method === 'POST') return await sellerOrdersIdApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      // 20.4b. Seller API Keys & Rotations
+      if (pathname === '/api/seller/api-keys') {
+        if (method === 'OPTIONS') return await sellerApiKeysIndexApi.onRequestOptions();
+        if (method === 'GET') return await sellerApiKeysIndexApi.onRequestGet(context);
+        if (method === 'POST') return await sellerApiKeysIndexApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchSellerApiKeyRotate = pathname.match(/^\/api\/seller\/api-keys\/([^/]+)\/rotate$/);
+      if (matchSellerApiKeyRotate) {
+        context.params = { ...(context.params || {}), id: matchSellerApiKeyRotate[1] };
+        if (method === 'OPTIONS') return await sellerApiKeysIdApi.onRequestOptions();
+        if (method === 'POST') return await sellerApiKeysIdApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchSellerApiKeyId = pathname.match(/^\/api\/seller\/api-keys\/([^/]+)$/);
+      if (matchSellerApiKeyId) {
+        context.params = { ...(context.params || {}), id: matchSellerApiKeyId[1] };
+        if (method === 'OPTIONS') return await sellerApiKeysIdApi.onRequestOptions();
+        if (method === 'POST') return await sellerApiKeysIdApi.onRequestPost(context);
+        if (method === 'DELETE') return await sellerApiKeysIdApi.onRequestDelete(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      // 20.4c. Seller Third-Party Apps & Authorizations
+      if (pathname === '/api/seller/apps') {
+        if (method === 'OPTIONS') return await sellerAppsIndexApi.onRequestOptions();
+        if (method === 'GET') return await sellerAppsIndexApi.onRequestGet(context);
+        if (method === 'POST') return await sellerAppsIndexApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchSellerAppApprove = pathname.match(/^\/api\/seller\/apps\/([^/]+)\/approve$/);
+      if (matchSellerAppApprove) {
+        context.params = { ...(context.params || {}), id: matchSellerAppApprove[1] };
+        if (method === 'OPTIONS') return await sellerAppsIdApi.onRequestOptions();
+        if (method === 'POST') return await sellerAppsIdApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchSellerAppRevoke = pathname.match(/^\/api\/seller\/apps\/([^/]+)\/revoke$/);
+      if (matchSellerAppRevoke) {
+        context.params = { ...(context.params || {}), id: matchSellerAppRevoke[1] };
+        if (method === 'OPTIONS') return await sellerAppsIdApi.onRequestOptions();
+        if (method === 'DELETE') return await sellerAppsIdApi.onRequestDelete(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchSellerAppId = pathname.match(/^\/api\/seller\/apps\/([^/]+)$/);
+      if (matchSellerAppId) {
+        context.params = { ...(context.params || {}), id: matchSellerAppId[1] };
+        if (method === 'OPTIONS') return await sellerAppsIdApi.onRequestOptions();
+        if (method === 'POST') return await sellerAppsIdApi.onRequestPost(context);
+        if (method === 'DELETE') return await sellerAppsIdApi.onRequestDelete(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
       // 20.5. Seller Subaccounts
       if (pathname === '/api/seller/subaccounts') {
         if (method === 'OPTIONS') return await sellerSubaccountsIndexApi.onRequestOptions();
@@ -1907,6 +1980,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       if (matchSellerSubId) {
         context.params = { ...(context.params || {}), id: matchSellerSubId[1] };
         if (method === 'OPTIONS') return await sellerSubaccountsIdApi.onRequestOptions();
+        if (method === 'PUT') return await sellerSubaccountsIdApi.onRequestPut(context);
         if (method === 'DELETE') return await sellerSubaccountsIdApi.onRequestDelete(context);
         return new Response('Method Not Allowed', { status: 405 });
       }

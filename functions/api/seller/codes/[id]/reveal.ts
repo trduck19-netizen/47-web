@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../../../services/mission_service';
 import { ensureMarketplaceSchema } from '../../../../services/d1_service';
 import { decryptCode } from '../../../../services/marketplace_service';
+import { verifyStoreApiAccess } from '../../../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -12,7 +13,7 @@ interface Env {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Store-Key',
   'Content-Type': 'application/json; charset=utf-8',
 };
 
@@ -25,28 +26,26 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'MANAGE_STOCK' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
     const codeId = params.id as string;
-    const memberId = auth.member.id;
+    const sellerId = storeAuth.seller.id;
 
     // Tìm mã và kiểm tra quyền
     const codeRow = await env.DB
       .prepare(`
-        SELECT sc.id, sc.seller_id, sc.code_encrypted, sc.status, s.owner_member_id
+        SELECT sc.id, sc.seller_id, sc.code_encrypted, sc.status
         FROM seller_codes sc
-        JOIN sellers s ON sc.seller_id = s.id
-        WHERE sc.id = ? AND sc.deleted_at IS NULL
-          AND (s.owner_member_id = ? OR s.id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ?))
+        WHERE sc.id = ? AND sc.seller_id = ? AND sc.deleted_at IS NULL
         LIMIT 1
       `)
-      .bind(codeId, memberId, memberId)
+      .bind(codeId, sellerId)
       .first<any>();
 
     if (!codeRow) {

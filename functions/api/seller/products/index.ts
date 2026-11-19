@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../../services/d1_service';
 import { verifySellerAccess, getMarketplaceConfig } from '../../../services/marketplace_service';
+import { verifyStoreApiAccess } from '../../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -24,33 +25,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'ANY' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API gian hàng hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
-    const memberId = auth.member.id;
-
-    // Tìm seller của member
-    const seller = await env.DB
-      .prepare(`
-        SELECT s.id FROM sellers s
-        WHERE (s.owner_member_id = ? OR s.id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ?))
-          AND s.deleted_at IS NULL
-        LIMIT 1
-      `)
-      .bind(memberId, memberId)
-      .first<{ id: string }>();
-
-    if (!seller) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Bạn chưa có gian hàng hoặc chưa được gán quyền.' }),
-        { status: 404, headers: CORS_HEADERS }
-      );
-    }
+    const seller = storeAuth.seller;
 
     const products = await env.DB
       .prepare(`
@@ -83,15 +66,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'MANAGE_STOCK' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API gian hàng hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
-    const memberId = auth.member.id;
+    const sellerRow = storeAuth.seller;
+    const memberId = storeAuth.memberId || sellerRow.owner_member_id;
     const body = (await request.json().catch(() => ({}))) as any;
     const {
       game_slug,
@@ -104,24 +88,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       delivery_type,
       low_stock_threshold,
     } = body;
-
-    // 1. Tìm thông tin gian hàng & kiểm tra quyền
-    const sellerRow = await env.DB
-      .prepare(`
-        SELECT s.* FROM sellers s
-        WHERE (s.owner_member_id = ? OR s.id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ? AND role = 'MANAGE_STOCK'))
-          AND s.deleted_at IS NULL
-        LIMIT 1
-      `)
-      .bind(memberId, memberId)
-      .first<any>();
-
-    if (!sellerRow) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Bạn không có quyền quản lý sản phẩm cho gian hàng này.' }),
-        { status: 403, headers: CORS_HEADERS }
-      );
-    }
 
     // 2. Kiểm tra trạng thái gian hàng
     if (sellerRow.status === 'SUSPENDED' || sellerRow.status === 'REJECTED') {

@@ -32,6 +32,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     await ensureMarketplaceSchema(env.DB);
 
+    // 0. Nghiêm cấm rút tiền qua API Key hoặc Token bên thứ 3 (Chỉ chủ gian hàng tự làm trên web)
+    const storeKeyHeader = request.headers.get('X-Store-Key') || request.headers.get('x-store-key') || '';
+    const authHeader = request.headers.get('Authorization') || '';
+    if (storeKeyHeader || authHeader.includes('wcg_sk_') || authHeader.includes('wcg_app_tok_')) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Rút tiền chỉ được phép thực hiện trực tiếp bởi chủ gian hàng trên giao diện web. Thao tác qua API Key / Token bên thứ ba bị nghiêm cấm theo quy định bảo mật.',
+        }),
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
+
     // 1. Xác thực đăng nhập
     const auth = await verifyMemberAuth(request, env as any);
     if (!auth.authorized || !auth.member) {

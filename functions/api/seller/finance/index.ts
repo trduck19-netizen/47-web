@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema } from '../../../services/d1_service';
 import { getMarketplaceConfig, SellerRecord } from '../../../services/marketplace_service';
+import { verifyStoreApiAccess } from '../../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -12,7 +13,7 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Store-Key',
 };
 
 export const onRequestOptions: PagesFunction = async () => {
@@ -32,44 +33,16 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     await ensureMarketplaceSchema(env.DB);
 
-    // 1. Xác thực đăng nhập
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    // 1. Xác thực đăng nhập hoặc Khóa API gian hàng
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'OWNER' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
-    const memberId = auth.member.id;
-
-    // 2. Tìm gian hàng mà member là CHỦ (Owner)
-    // Tài khoản phụ không được xem tài chính/rút tiền theo §0.5
-    const seller = await env.DB
-      .prepare("SELECT * FROM sellers WHERE owner_member_id = ? AND deleted_at IS NULL LIMIT 1")
-      .bind(memberId)
-      .first<SellerRecord>();
-
-    if (!seller) {
-      // Kiểm tra xem có phải subaccount không
-      const sub = await env.DB
-        .prepare("SELECT * FROM seller_subaccounts WHERE member_id = ? LIMIT 1")
-        .bind(memberId)
-        .first<any>();
-
-      if (sub) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Tài khoản phụ không có quyền truy cập mục tài chính và rút tiền của gian hàng.' }),
-          { status: 403, headers: CORS_HEADERS }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ success: false, error: 'Bạn chưa có gian hàng nào.' }),
-        { status: 404, headers: CORS_HEADERS }
-      );
-    }
-
+    const seller = storeAuth.seller;
     const config = await getMarketplaceConfig(env.DB);
 
     // 3. Đọc 3 ngăn số dư

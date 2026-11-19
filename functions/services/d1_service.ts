@@ -2097,6 +2097,121 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0033_product_reviews_and_escrow_v1 error]', e);
     }
 
+    // Migration 0034: Store API Keys & Third-party App Integration Schema (Việc 2 & Việc 3)
+    try {
+      const sakCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0034_seller_api_keys_and_third_party_apps_v1' LIMIT 1").first().catch(() => null);
+      if (!sakCheck) {
+        // 1. Bảng khóa API riêng theo gian hàng
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_api_keys (
+            id TEXT PRIMARY KEY,
+            seller_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            key_hash TEXT NOT NULL UNIQUE,
+            key_prefix TEXT NOT NULL,
+            scope TEXT NOT NULL DEFAULT 'FULL',
+            is_active INTEGER NOT NULL DEFAULT 1,
+            call_count INTEGER NOT NULL DEFAULT 0,
+            last_used_at TEXT DEFAULT '',
+            last_used_endpoint TEXT DEFAULT '',
+            last_used_ip TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            revoked_at TEXT
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sak_seller_hash ON seller_api_keys(seller_id, key_hash);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sak_key_hash ON seller_api_keys(key_hash);").run().catch(() => {});
+
+        // 2. Bảng ứng dụng bên thứ ba
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_third_party_apps (
+            id TEXT PRIMARY KEY,
+            app_name TEXT NOT NULL,
+            app_url TEXT DEFAULT '',
+            description TEXT DEFAULT '',
+            developer_email TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        // 3. Bảng ủy quyền ứng dụng bên thứ ba theo gian hàng
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_app_authorizations (
+            id TEXT PRIMARY KEY,
+            seller_id TEXT NOT NULL,
+            app_id TEXT NOT NULL,
+            app_name TEXT NOT NULL,
+            token_hash TEXT NOT NULL UNIQUE,
+            token_prefix TEXT NOT NULL,
+            scope TEXT NOT NULL DEFAULT 'FULL',
+            status TEXT NOT NULL DEFAULT 'PENDING',
+            call_count INTEGER NOT NULL DEFAULT 0,
+            last_used_at TEXT DEFAULT '',
+            last_used_endpoint TEXT DEFAULT '',
+            approved_at TEXT,
+            revoked_at TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_saa_seller_token ON seller_app_authorizations(seller_id, token_hash);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_saa_token_hash ON seller_app_authorizations(token_hash);").run().catch(() => {});
+
+        // 4. Bảng nhật ký gọi API gian hàng (audit trail & 600 req/min rate limit)
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_api_call_logs (
+            id TEXT PRIMARY KEY,
+            seller_id TEXT NOT NULL,
+            key_id TEXT,
+            auth_type TEXT NOT NULL,
+            endpoint TEXT NOT NULL,
+            method TEXT NOT NULL,
+            status_code INTEGER NOT NULL,
+            ip_address TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sacl_seller_time ON seller_api_call_logs(seller_id, created_at);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sacl_key_time ON seller_api_call_logs(key_id, created_at);").run().catch(() => {});
+
+        // 5. Khởi tạo gian hàng test "Gian Hàng Test Muse" (slug: gian-hang-test-muse) nếu chưa có
+        const testMuseSeller = await db.prepare("SELECT id FROM sellers WHERE slug = 'gian-hang-test-muse' OR id = 'sel_test_muse' LIMIT 1").first().catch(() => null);
+        if (!testMuseSeller) {
+          await db.prepare(`
+            INSERT OR IGNORE INTO sellers (
+              id, owner_member_id, name, slug, contact_phone, bank_name, bank_account, bank_account_name,
+              description, support_hours, status, pending_balance_core, available_balance_core, withdrawn_balance_core, created_at, updated_at
+            ) VALUES (
+              'sel_test_muse', 'usr_test_muse_owner', 'Gian Hàng Test Muse', 'gian-hang-test-muse',
+              '0912345678', 'MBBANK', '9999999999', 'TEST MUSE SELLER',
+              'Gian hàng thử nghiệm phục vụ kiểm thử tích hợp API máy-máy và AI agent', '08:00 - 23:00', 'ACTIVE', 0, 0, 0, datetime('now'), datetime('now')
+            )
+          `).run().catch(() => {});
+        }
+
+        // 6. Đảm bảo gian hàng Universal Mall Official Store tồn tại và nhận diện cả 2 slug
+        const officialSeller = await db.prepare("SELECT id FROM sellers WHERE slug = 'universal-mall-official' OR slug = 'universal-mall-official-store' OR id = 'seller_universal_mall' LIMIT 1").first().catch(() => null);
+        if (!officialSeller) {
+          await db.prepare(`
+            INSERT OR IGNORE INTO sellers (
+              id, owner_member_id, name, slug, contact_phone, bank_name, bank_account, bank_account_name,
+              description, support_hours, status, pending_balance_core, available_balance_core, withdrawn_balance_core, created_at, updated_at
+            ) VALUES (
+              'seller_universal_mall', 'usr_admin', 'Universal Mall Official Store', 'universal-mall-official',
+              '0987654321', 'TPBANK', '00000000000', 'UNIVERSAL MALL OFFICIAL',
+              'Gian hàng chính hãng sàn Universal Mall - Bảo chứng giữ tiền 168 giờ', '24/7', 'ACTIVE', 0, 0, 0, datetime('now'), datetime('now')
+            )
+          `).run().catch(() => {});
+        }
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0034_seller_api_keys_and_third_party_apps_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0034_seller_api_keys_and_third_party_apps_v1 error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);

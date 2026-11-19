@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../../../services/d1_service';
 import { decryptCode, checkAndFreezeBatchIfHighErrorRate } from '../../../../services/marketplace_service';
+import { verifyStoreApiAccess } from '../../../../services/store_api_service';
 
 interface Env {
   DB: D1Database;
@@ -12,7 +13,7 @@ interface Env {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Store-Key',
   'Content-Type': 'application/json; charset=utf-8',
 };
 
@@ -26,16 +27,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'MANAGE_STOCK' });
+    if (!storeAuth.authorized || !storeAuth.seller) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: storeAuth.error || 'Vui lòng đăng nhập hoặc cung cấp khóa API hợp lệ.' }),
+        { status: storeAuth.status || 401, headers: CORS_HEADERS }
       );
     }
 
     const orderId = params.id as string;
-    const memberId = auth.member.id;
+    const sellerId = storeAuth.seller.id;
+    const memberId = storeAuth.memberId || storeAuth.seller.owner_member_id;
     const body = (await request.json().catch(() => ({}))) as any;
     const { resolution_type, note } = body;
 
@@ -53,10 +55,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         FROM seller_orders so
         JOIN sellers s ON so.seller_id = s.id
         LEFT JOIN seller_codes sc ON so.code_id = sc.id
-        WHERE so.id = ? AND (s.owner_member_id = ? OR s.id IN (SELECT seller_id FROM seller_subaccounts WHERE member_id = ? AND role = 'MANAGE_STOCK'))
+        WHERE so.id = ? AND so.seller_id = ?
         LIMIT 1
       `)
-      .bind(orderId, memberId, memberId)
+      .bind(orderId, sellerId)
       .first<any>();
 
     if (!order) {
