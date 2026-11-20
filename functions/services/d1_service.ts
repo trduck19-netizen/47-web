@@ -4772,7 +4772,7 @@ export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
         SELECT 
           sp.id,
           sp.seller_id,
-          s.store_name AS seller_name,
+          s.name AS seller_name,
           s.slug AS seller_slug,
           sp.game_slug,
           sp.game_name,

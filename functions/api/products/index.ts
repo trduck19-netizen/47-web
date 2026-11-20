@@ -121,7 +121,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
               CASE WHEN sp.product_type = 'physical' THEN 999 ELSE COALESCE(sc_agg.available_codes, 0) END AS stock_quantity,
               sp.cover_url AS thumbnail_url,
               sp.description,
-              s.store_name AS brand_name,
+              s.name AS brand_name,
               5.0 AS rating_avg, 10 AS rating_count, COALESCE(sc_agg.sold_codes, 0) AS sold_count,
               1 AS is_active,
               sp.created_at, sp.updated_at
