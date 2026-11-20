@@ -992,7 +992,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
 
   // 5. Bảng điều khiển người bán chính (TRIAL / ACTIVE)
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-6">
       {/* Header Profile Bar */}
       <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 mb-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1079,38 +1079,38 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 border-b border-border/80 text-xs">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 mb-6 border-b border-border/80 text-xs">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Sliders className="w-4 h-4" /> {isEn ? 'Overview' : 'Tổng Quan'}
+          <Sliders className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'Overview' : 'Tổng Quan'}
         </button>
         <button
           onClick={() => setActiveTab('products')}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'products' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Package className="w-4 h-4" /> {isEn ? `Products (${stats?.total_products || products.length})` : `Sản Phẩm (${stats?.total_products || products.length})`}
+          <Package className="w-3.5 h-3.5 shrink-0" /> {isEn ? `Products (${stats?.total_products || products.length})` : `Sản Phẩm (${stats?.total_products || products.length})`}
         </button>
         <button
           onClick={() => setActiveTab('codes')}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'codes' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <KeyRound className="w-4 h-4" /> {isEn ? 'Vault & Restock' : 'Kho Mã & Nạp Kho'}
+          <KeyRound className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'Vault & Restock' : 'Kho Mã & Nạp Kho'}
         </button>
         <button
           onClick={() => setActiveTab('orders')}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'orders' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <ShoppingBag className="w-4 h-4" /> {isEn ? 'Sales Orders' : 'Đơn Hàng Bán'}
+          <ShoppingBag className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'Sales Orders' : 'Đơn Hàng Bán'}
           {(stats?.reported_orders_count || 0) > 0 && (
             <span className="px-1.5 py-0.2 rounded-full bg-destructive text-white text-[10px]">
               {stats.reported_orders_count}
@@ -1122,11 +1122,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             setActiveTab('disputes');
             fetchDisputes();
           }}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'disputes' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <ShieldAlert className="w-4 h-4" /> {isEn ? 'Platform Disputes' : 'Khiếu Nại Sàn'}
+          <ShieldAlert className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'Platform Disputes' : 'Khiếu Nại Sàn'}
           {unresolvedDisputeCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-destructive text-white text-[10px] font-bold">
               {unresolvedDisputeCount}
@@ -1135,19 +1135,19 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('finance')}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'finance' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Coins className="w-4 h-4" /> {isEn ? 'Finance & Payouts' : 'Tài Chính & Rút Tiền'}
+          <Coins className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'Finance & Payouts' : 'Tài Chính & Rút Tiền'}
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'settings' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Settings className="w-4 h-4" /> {isEn ? 'Settings & Staff' : 'Cài Đặt & Tài Khoản Phụ'}
+          <Settings className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'Settings & Staff' : 'Cài Đặt & Tài Khoản Phụ'}
         </button>
         <button
           onClick={() => {
@@ -1155,11 +1155,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             fetchApiKeys();
             fetchApps();
           }}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'api_keys' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Code2 className="w-4 h-4" /> {t('sellerApiKeys.tabTitle', isEn ? 'API Keys & Integration' : 'Khóa API & Tích Hợp')}
+          <Code2 className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'API Keys & Integrations' : 'Khóa API & Tích Hợp'}
         </button>
       </div>
 
