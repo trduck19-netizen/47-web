@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-304: Vị Trí D1 Migration Fast-Path Cache, Thanh Toán Giỏ Hàng Hỗn Hợp (Multi-Item Mixed Carts) & Graceful Carrier Degrade
+- **Triệu chứng & Rủi ro**:
+  - Khi thêm migration schema mới trong `d1_service.ts`, nếu đặt bên dưới khối kiểm tra fast-path cache (`wcg_virtual_layer_tables_v1`), ứng dụng đang chạy sẽ bỏ qua migration mới và không thực thi các câu lệnh `ALTER TABLE` / `CREATE TABLE`, dẫn tới lỗi thiếu cột (`no column named product_type`) trên môi trường production.
+  - Khi thanh toán giỏ hàng hỗn hợp (có cả hàng số và hàng vật lý) qua `/api/seller-orders/multi`, nếu logic máy chủ bắt buộc mọi mặt hàng đều phải có mã khả dụng trong `seller_codes`, giao dịch sẽ bị từ chối với lỗi `OUT_OF_STOCK` vì hàng vật lý quản lý theo số lượng tồn kho chứ không có mã số trong bảng `seller_codes`.
+  - Khi gọi API tính phí vận chuyển bưu chính (`/api/shipping/calculate-fee`), nếu chưa cấu hình API token mà trả về HTTP 500 sẽ làm gián đoạn luồng đặt hàng trên giao diện giỏ hàng.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Đặt migration mới (như `0036_split_order_engine_v1`) trước khối kiểm tra cache fast-path trong `ensureSchemaUpgrades`, đảm bảo các lệnh `ALTER TABLE ADD COLUMN` chạy tự động ngay lần khởi chạy đầu tiên.
+  - Phân tách nhánh kiểm tra tồn kho trong `functions/api/seller-orders/multi.ts`: Chỉ kiểm tra và giữ mã trong `seller_codes` đối với sản phẩm có `product_type !== 'physical'`, đối với hàng vật lý chỉ ghi nhận đơn hàng với trạng thái `PROCESSING` (Chờ lấy hàng).
+  - API tính cước vận chuyển đối với hãng chưa cấu hình token (như Viettel Post `VIETTEL_POST_TOKEN`) phải trả về HTTP 200 kèm `configured: false`, thông báo hướng dẫn cấu hình và mức cước ước tính tiêu chuẩn (`standardEstimateFee: 28000`), không ném ngoại lệ 500.
+
 ### ISSUE-303: Xóa Vật Lý Sản Phẩm Test (Hard Delete vs Soft Delete), Deploy Sạch commit_dirty=false & Chuẩn Hóa Danh Mục Đa Ngành
 - **Triệu chứng & Rủi ro**:
   - Khi xóa sản phẩm bằng lệnh `UPDATE products SET is_active = 0` (soft delete), các dòng dữ liệu thử nghiệm vẫn tồn tại trong CSDL D1. Báo cáo "đã xóa" sẽ bị kiểm toán độc lập đánh giá là chưa xóa vì số dòng trong bảng `products` không về 0.

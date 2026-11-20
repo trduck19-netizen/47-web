@@ -5,6 +5,29 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-20]
+
+### 422. Động Cơ Tách Đơn Hàng Số / Vật Lý (Split-Order Engine), Giữ Tiền Đa Tầng & Viettel Post (20/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  1. *Việc 1 (Phân loại sản phẩm số / vật lý)*: Mở rộng bảng `seller_products`, `products`, `seller_orders`, `orders` với `product_type`, `weight_grams`, `warehouse_address`. Bổ sung 2 bảng cấu hình vệ tinh `seller_product_digital_configs` và `seller_product_physical_configs`. Cập nhật form người bán `SellerCenterView.tsx` với Segmented Switch [⚡ Hàng Số] vs [📦 Hàng Vật Lý] và xác thực trường động theo loại.
+  2. *Việc 2 (Tách đơn khi thanh toán & giữ tiền đa tầng)*: Khi thanh toán giỏ đa gian hàng và hỗn hợp loại hàng (`multi.ts`, `pay-core.ts`), tự động chia tách đơn con theo gian hàng và loại hàng. Đơn số giao mã 0s, status `PAID`, phí sàn 5%, giữ tiền 24–72h; đơn vật lý status `PROCESSING`, phí sàn 2%, giữ tiền 168h. Sổ cái 3 ngăn ghi nhận giao dịch `HOLD` chuẩn xác.
+  3. *Việc 3 (Viettel Post & Chặn COD cho hàng số)*: Bổ sung carrier `VTP`/`VIETTEL_POST` vào `calculate-fee.ts`, đọc `VIETTEL_POST_TOKEN` từ biến môi trường Cloudflare, trả 200 kèm cước ước tính chuẩn 28.000đ khi chưa có token. Giỏ chỉ có hàng số tự động chặn phương thức COD kèm giải thích rõ.
+  4. *Việc 4 (Gợi ý mua kèm & Trợ lý tranh chấp tự động)*: Tự động cross-sell tối đa 3 sản phẩm số cùng gian hàng trong `CartDrawerModal.tsx`. Tích hợp trợ lý tranh chấp AI trong `SellerModerationModule.tsx` và `seller-disputes/index.ts` đối chiếu thời gian xem mã (`scv.first_viewed_at`) cho hàng số và trạng thái vận đơn bưu chính cho hàng vật lý.
+  5. *Việc 5 (Kiểm chứng & Deploy)*: Build sạch, vượt qua `check:i18n` 0 lỗi chuỗi cứng, quét Rule 10 0 secret rò rỉ, commit `523f2d9` đồng bộ GitHub `origin main` và triển khai đồng thời Cloudflare Pages `universal-mall-shop` và `admin-universal-mall`.
+- **Giải pháp áp dụng (Solution)**:
+  - D1 Migration 0036 (`functions/services/d1_service.ts`) tự động nâng cấp schema cho các bảng liên quan.
+  - API người bán (`seller/products/index.ts`, `seller/products/[id].ts`) và Storefront (`stores/[slug]/products.ts`) xử lý toàn diện `product_type` và metadata vệ tinh.
+  - Sổ cái ký quỹ (`escrow_service.ts`) áp dụng biểu phí đa tầng (2% vật lý, 5% số) và thời gian giải ngân riêng biệt.
+  - Giao diện người bán và quản trị tuân thủ nghiêm ngặt Rule 9 (Single-Screen First), hiển thị badge `[Hàng Số]` / `[Hàng Vật Lý]` gọn gàng không gây vỡ bảng hay tràn ngang.
+- **Kiểm thử & Nghiệm thu**:
+  - `check:i18n`: 0 chuỗi cứng, 100% song ngữ VI/EN.
+  - Rule 10: 3 lệnh git grep kiểm tra secret đều trả về 0.
+  - Live HTTP Verification: Cả 2 trang trả về `X-Build-Id: 523f2d9`.
+  - API Viettel Post: Trả 200 `{ configured: false, carrier: 'VTP', standardEstimateFee: 28000 }` không 500.
+  - API sản phẩm gian hàng: Trả về đầy đủ trường `product_type: "digital"`, `weight_grams: null`, `warehouse_address: null`.
+
+---
+
 ## [2026-11-19]
 
 ### 421. Điền Mô Tả Song Ngữ Cột "Chức Năng & Vị Trí" và Đồng Bộ Tiêu Đề X-Build-Id (19/11/2026)
