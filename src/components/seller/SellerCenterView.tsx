@@ -1079,10 +1079,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 mb-6 border-b border-border/80 text-xs">
+      <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto pb-2 mb-6 border-b border-border/80">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -1090,7 +1090,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('products')}
-          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'products' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -1098,7 +1098,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('codes')}
-          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'codes' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -1106,7 +1106,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('orders')}
-          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'orders' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -1122,7 +1122,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             setActiveTab('disputes');
             fetchDisputes();
           }}
-          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'disputes' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -1135,7 +1135,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('finance')}
-          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'finance' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -1143,7 +1143,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'settings' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -1155,7 +1155,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             fetchApiKeys();
             fetchApps();
           }}
-          className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'api_keys' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >

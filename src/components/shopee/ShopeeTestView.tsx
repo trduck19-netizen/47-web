@@ -2160,7 +2160,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       {/* 2.2. BREADCRUMB QUAY LẠI TRANG CHỦ SÀN (KHI ĐANG XEM SUBVIEW KHÁC) */}
       {subView !== 'home' && (
         <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-2">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className={`${subView === 'seller' ? 'max-w-[1600px]' : 'max-w-6xl'} mx-auto flex items-center justify-between`}>
             <div className="flex items-center gap-2 text-xs">
               <button 
                 onClick={() => setSubView('home')} 
@@ -2197,7 +2197,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       )}
 
       {/* 3. MAIN BODY CONTAINER */}
-      <div className="max-w-6xl mx-auto px-4 py-4 space-y-5">
+      <div className={`${subView === 'seller' ? 'max-w-[1600px]' : 'max-w-6xl'} mx-auto px-2 sm:px-4 py-4 space-y-5`}>
         
         {/* SUBVIEW 1: TIN TỨC GAME (272 BÀI TIN) */}
         {subView === 'news' && (
