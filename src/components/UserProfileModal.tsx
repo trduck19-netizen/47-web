@@ -54,10 +54,10 @@ interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserProfile | null;
-  onUpdateUser: (user: UserProfile) => void;
+  onUpdateUser?: (user: UserProfile) => void;
   onOpenWallet: () => void;
   onOpenReceivedCodes?: (initialTab?: 'giveaways' | 'orders' | 'privates' | 'missions' | 'marketplace') => void;
-  onLogout: () => void;
+  onLogout?: () => void;
   onShowToast: (title: string, message?: string, type?: 'success' | 'error' | 'info') => void;
   isDarkMode?: boolean;
   onToggleTheme?: () => void;
@@ -946,7 +946,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   type="button"
                   onClick={() => {
                     onClose();
-                    onLogout();
+                    if (typeof onLogout === 'function') {
+                      onLogout();
+                    } else {
+                      authService.logout();
+                      window.location.reload();
+                    }
                   }}
                   className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold border border-rose-500/30 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 text-xs sm:text-sm"
                 >

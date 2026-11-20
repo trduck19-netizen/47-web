@@ -79,6 +79,8 @@ interface ShopeeTestViewProps {
   onBackToHome: () => void;
   currentUser: UserProfile | null;
   onShowToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
+  onLogout?: () => void;
+  onUpdateUser?: (user: UserProfile) => void;
 }
 
 // 6 Danh mục Game Chuẩn Web Chính (Dùng regex đối sánh chính xác)
@@ -191,6 +193,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   onBackToHome,
   currentUser,
   onShowToast,
+  onLogout,
+  onUpdateUser,
 }) => {
   const { t, language } = useLanguage();
   const isEn = language === 'en';
@@ -3348,6 +3352,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
         onOpenWallet={onOpenWallet}
         onOpenReceivedCodes={onOpenReceivedCodes}
+        onLogout={onLogout}
+        onUpdateUser={onUpdateUser}
       />
 
       {/* Submit Code Modal trong test1 */}

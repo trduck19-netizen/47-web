@@ -2255,6 +2255,8 @@ export const App: React.FC = () => {
                 onBackToHome={() => handleSelectTab('catalog')}
                 currentUser={currentUser}
                 onShowToast={showToast}
+                onLogout={handleLogout}
+                onUpdateUser={handleUpdateUser}
               />
             )}
 
