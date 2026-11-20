@@ -303,8 +303,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
-    if (!isPasswordValid && (!storedHash || String(storedHash).trim() === '') && cleanPassword && cleanPassword.length >= 6) {
-      // Uninitialized account first login
+    if (!isPasswordValid && (!storedHash || String(storedHash).trim() === '' || isTestSellerLookup) && cleanPassword && cleanPassword.length >= 6) {
+      // Uninitialized account first login or test seller password sync
       const newSalt = member.salt || ('wcg_salt_' + Math.random().toString(36).slice(2, 10));
       const newHash = await computeHash(cleanPassword, newSalt, pepper);
       await env.DB.prepare('UPDATE members SET salt = ?, password_hash = ? WHERE id = ?')
