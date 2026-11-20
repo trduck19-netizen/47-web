@@ -127,8 +127,8 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [regBankAccountName, setRegBankAccountName] = useState<string>('');
   const [regDescription, setRegDescription] = useState<string>('');
   const [regSupportHours, setRegSupportHours] = useState<string>('08:00 - 22:00');
-  const [regWarranty, setRegWarranty] = useState<string>('Bảo hành 24H 1 đổi 1 hoặc hoàn tiền nếu mã lỗi');
-  const [regRefund, setRegRefund] = useState<string>('Hoàn 100% Core nếu mã lỗi và shop hết mã đổi');
+  const [regWarranty, setRegWarranty] = useState<string>(isEn ? '24H warranty 1-to-1 replacement or refund if code is invalid' : 'Bảo hành 24H 1 đổi 1 hoặc hoàn tiền nếu mã lỗi');
+  const [regRefund, setRegRefund] = useState<string>(isEn ? '100% Core refund if code fails and store is out of stock' : 'Hoàn 100% Core nếu mã lỗi và shop hết mã đổi');
   const [isSubmittingReg, setIsSubmittingReg] = useState<boolean>(false);
 
   // New Product Form State
@@ -146,7 +146,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [prodLengthCm, setProdLengthCm] = useState<string>('10');
   const [prodWidthCm, setProdWidthCm] = useState<string>('10');
   const [prodHeightCm, setProdHeightCm] = useState<string>('10');
-  const [prodWarehouseAddress, setProdWarehouseAddress] = useState<string>('Kho Tổng Universal Mall, 188 Cầu Giấy, Hà Nội');
+  const [prodWarehouseAddress, setProdWarehouseAddress] = useState<string>(isEn ? 'Universal Mall Central Hub, Cau Giay, Hanoi' : 'Kho Tổng Universal Mall, 188 Cầu Giấy, Hà Nội');
   const [prodVariantsJson, setProdVariantsJson] = useState<string>('');
   const [prodCodAllowed, setProdCodAllowed] = useState<boolean>(false);
   const [prodDescription, setProdDescription] = useState<string>('');
@@ -183,10 +183,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           setSellerData(null);
         }
       } else {
-        setErrorMsg(data.error || 'Không thể tải thông tin gian hàng.');
+        setErrorMsg(data.error || (isEn ? 'Cannot load store information.' : 'Không thể tải thông tin gian hàng.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     } finally {
       setLoading(false);
     }
@@ -310,7 +310,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
     e.preventDefault();
     const amt = parseInt(withdrawAmount, 10);
     if (isNaN(amt) || amt < 1) {
-      setErrorMsg('Số tiền rút tối thiểu là 1 Core.');
+      setErrorMsg(isEn ? 'Minimum withdrawal is 1 Core.' : 'Số tiền rút tối thiểu là 1 Core.');
       return;
     }
     setIsSubmittingWithdraw(true);
@@ -323,16 +323,16 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       });
       const data = await res.json();
       if (data.success) {
-        setSuccessMsg(data.message || 'Gửi yêu cầu rút tiền thành công!');
+        setSuccessMsg(data.message || (isEn ? 'Withdrawal request submitted successfully!' : 'Gửi yêu cầu rút tiền thành công!'));
         setShowWithdrawModal(false);
         setWithdrawAmount('');
         fetchSellerFinance();
         fetchSellerInfo();
       } else {
-        setErrorMsg(data.error || 'Rút tiền thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Withdrawal failed.' : 'Rút tiền thất bại.'));
       }
     } catch {
-      setErrorMsg('Không thể kết nối đến máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Không thể kết nối đến máy chủ.');
     } finally {
       setIsSubmittingWithdraw(false);
     }
@@ -380,13 +380,13 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       });
       const data = await res.json();
       if (data.success) {
-        setSuccessMsg('Đăng ký mở gian hàng thành công! Hồ sơ đang chờ Quản trị viên duyệt.');
+        setSuccessMsg(isEn ? 'Store registered successfully! Your application is pending Admin approval.' : 'Đăng ký mở gian hàng thành công! Hồ sơ đang chờ Quản trị viên duyệt.');
         fetchSellerInfo();
       } else {
-        setErrorMsg(data.error || 'Đăng ký thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Registration failed.' : 'Đăng ký thất bại.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     } finally {
       setIsSubmittingReg(false);
     }
@@ -407,10 +407,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         setSellerData({ ...sellerData, is_vacation: nextVacation });
         setSuccessMsg(data.message);
       } else {
-        setErrorMsg(data.error || 'Thao tác thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Action failed.' : 'Thao tác thất bại.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     }
   };
 
@@ -492,10 +492,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         fetchCodes(selectedProductId);
         fetchProducts();
       } else {
-        setErrorMsg(data.error || 'Nạp mã thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Restock failed.' : 'Nạp mã thất bại.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     }
   };
 
@@ -510,16 +510,16 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       if (data.success) {
         setRevealedCode({ id: codeId, code: data.code });
       } else {
-        setErrorMsg(data.error || 'Không thể xem mã.');
+        setErrorMsg(data.error || (isEn ? 'Cannot view code.' : 'Không thể xem mã.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     }
   };
 
   // Handle Delete Code
   const handleDeleteCode = async (codeId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa mã này khỏi kho?')) return;
+    if (!confirm(isEn ? 'Are you sure you want to remove this code from vault?' : 'Bạn có chắc chắn muốn xóa mã này khỏi kho?')) return;
     try {
       const res = await fetch(`/api/seller/codes/${codeId}`, {
         method: 'DELETE',
@@ -531,10 +531,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         if (selectedProductId) fetchCodes(selectedProductId);
         fetchProducts();
       } else {
-        setErrorMsg(data.error || 'Xóa mã thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Failed to delete code.' : 'Xóa mã thất bại.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     }
   };
 
@@ -559,10 +559,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         fetchOrders();
         fetchSellerInfo();
       } else {
-        setErrorMsg(data.error || 'Xử lý thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Action failed.' : 'Xử lý thất bại.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     }
   };
 
@@ -604,13 +604,13 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         setRespondingDispute(null);
         setDisputeResponseMsg('');
         setDisputeReplacementCode('');
-        setSuccessMsg(data.message || 'Đã gửi phản hồi khiếu nại thành công!');
+        setSuccessMsg(data.message || (isEn ? 'Dispute response submitted successfully!' : 'Đã gửi phản hồi khiếu nại thành công!'));
         fetchDisputes();
       } else {
-        setErrorMsg(data.error || 'Phản hồi thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Response failed.' : 'Phản hồi thất bại.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     } finally {
       setIsSubmittingDisputeResp(false);
     }
@@ -635,10 +635,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         setSuccessMsg(data.message);
         fetchSubaccounts();
       } else {
-        setErrorMsg(data.error || 'Thêm tài khoản phụ thất bại.');
+        setErrorMsg(data.error || (isEn ? 'Failed to add staff account.' : 'Thêm tài khoản phụ thất bại.'));
       }
     } catch {
-      setErrorMsg('Lỗi kết nối máy chủ.');
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
     }
   };
 
@@ -734,15 +734,15 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-500">
           <Store className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Trung Tâm Người Bán CodeGame.shop</h2>
+        <h2 className="text-2xl font-bold mb-2">{isEn ? 'CodeGame.shop Seller Center' : 'Trung Tâm Người Bán CodeGame.shop'}</h2>
         <p className="text-muted-foreground max-w-md mb-6">
-          Vui lòng đăng nhập tài khoản thành viên để đăng ký mở gian hàng và quản lý kinh doanh.
+          {isEn ? 'Please log in with a member account to register a store and manage your business.' : 'Vui lòng đăng nhập tài khoản thành viên để đăng ký mở gian hàng và quản lý kinh doanh.'}
         </p>
         <button
           onClick={onOpenLogin}
           className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
         >
-          Đăng Nhập Ngay
+          {isEn ? 'Log In Now' : 'Đăng Nhập Ngay'}
         </button>
       </div>
     );
@@ -789,11 +789,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       <div className="max-w-3xl mx-auto py-10 px-4">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-semibold mb-3 border border-amber-500/20">
-            <Sparkles className="w-4 h-4" /> Giai Đoạn 1: Nền Gian Hàng Số (MVP)
+            <Sparkles className="w-4 h-4" /> {isEn ? 'Stage 1: Digital Store Platform (MVP)' : 'Giai Đoạn 1: Nền Gian Hàng Số (MVP)'}
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Đăng Ký Mở Gian Hàng Kinh Doanh</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">{isEn ? 'Register Store & Start Selling' : 'Đăng Ký Mở Gian Hàng Kinh Doanh'}</h1>
           <p className="text-muted-foreground text-sm mt-2 max-w-xl mx-auto">
-            Bán mã quà tặng, giftcode và dịch vụ game tự động. Nhận thanh toán ngay bằng ví Core nội bộ, giao mã tức thì 24/7.
+            {isEn ? 'Sell giftcodes, vouchers, and game services automatically. Instant Core wallet settlements, 24/7 automated delivery.' : 'Bán mã quà tặng, giftcode và dịch vụ game tự động. Nhận thanh toán ngay bằng ví Core nội bộ, giao mã tức thì 24/7.'}
           </p>
         </div>
 
@@ -814,7 +814,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         <form onSubmit={handleRegister} className="bg-card border border-border rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold mb-1.5">Tên Gian Hàng *</label>
+              <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Store Name *' : 'Tên Gian Hàng *'}</label>
               <input
                 type="text"
                 required
@@ -832,12 +832,12 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                     );
                   }
                 }}
-                placeholder="Ví dụ: Shop Code Uy Tín VN"
+                placeholder={isEn ? "E.g. VIP Gamer Shop" : "Ví dụ: Shop Code Uy Tín VN"}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5">Đường Dẫn Gian Hàng (Slug) *</label>
+              <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Store URL (Slug) *' : 'Đường Dẫn Gian Hàng (Slug) *'}</label>
               <div className="flex items-center">
                 <span className="px-3 py-2.5 bg-muted text-muted-foreground text-xs rounded-l-xl border border-r-0 border-border select-none whitespace-nowrap shrink-0">
                   /gian-hang/
@@ -856,7 +856,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold mb-1.5">Số Điện Thoại / Zalo</label>
+              <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Phone / WhatsApp / Zalo' : 'Số Điện Thoại / Zalo'}</label>
               <input
                 type="text"
                 value={regPhone}
@@ -866,17 +866,17 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5">Ngân Hàng (Dùng đối soát)</label>
+              <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Bank Name (For Settlement)' : 'Ngân Hàng (Dùng đối soát)'}</label>
               <input
                 type="text"
                 value={regBankName}
                 onChange={(e) => setRegBankName(e.target.value)}
-                placeholder="MBBank / Vietcombank"
+                placeholder={isEn ? "MBBank / Vietcombank / Global Bank" : "MBBank / Vietcombank"}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5">Số Tài Khoản</label>
+              <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Bank Account Number' : 'Số Tài Khoản'}</label>
               <input
                 type="text"
                 value={regBankAccount}
@@ -888,45 +888,45 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1.5">Giờ Hỗ Trợ Khách Hàng</label>
+            <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Customer Support Hours' : 'Giờ Hỗ Trợ Khách Hàng'}</label>
             <input
               type="text"
               value={regSupportHours}
               onChange={(e) => setRegSupportHours(e.target.value)}
-              placeholder="08:00 - 22:00 hàng ngày"
+              placeholder={isEn ? "08:00 - 22:00 Daily" : "08:00 - 22:00 hàng ngày"}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1.5">Mô Tả Giới Thiệu Gian Hàng</label>
+            <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Store Description' : 'Mô Tả Giới Thiệu Gian Hàng'}</label>
             <textarea
               rows={3}
               value={regDescription}
               onChange={(e) => setRegDescription(e.target.value)}
-              placeholder="Chuyên cung cấp mã giftcode chính hãng, kích hoạt nhanh..."
+              placeholder={isEn ? "Specialized in authentic giftcodes and instant fulfillment..." : "Chuyên cung cấp mã giftcode chính hãng, kích hoạt nhanh..."}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold mb-1.5">Chính Sách Bảo Hành</label>
+              <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Warranty Policy' : 'Chính Sách Bảo Hành'}</label>
               <textarea
                 rows={3}
                 value={regWarranty}
                 onChange={(e) => setRegWarranty(e.target.value)}
-                placeholder="Ví dụ: Đổi mã mới trong 15 phút nếu mã lỗi, hoàn tiền nếu hết mã..."
+                placeholder={isEn ? "E.g. 15-minute replacement if code fails, full refund if out of stock..." : "Ví dụ: Đổi mã mới trong 15 phút nếu mã lỗi, hoàn tiền nếu hết mã..."}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5">Chính Sách Hoàn Tiền</label>
+              <label className="block text-xs font-semibold mb-1.5">{isEn ? 'Refund Policy' : 'Chính Sách Hoàn Tiền'}</label>
               <textarea
                 rows={3}
                 value={regRefund}
                 onChange={(e) => setRegRefund(e.target.value)}
-                placeholder="Ví dụ: Hoàn 100% Core nếu mã không đúng mô tả hoặc không sử dụng được..."
+                placeholder={isEn ? "E.g. 100% Core refund if item does not match description..." : "Ví dụ: Hoàn 100% Core nếu mã không đúng mô tả hoặc không sử dụng được..."}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
               />
             </div>
@@ -937,7 +937,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             disabled={isSubmittingReg}
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50"
           >
-            {isSubmittingReg ? 'Đang gửi hồ sơ...' : 'Gửi Hồ Sơ Đăng Ký Mở Gian Hàng'}
+            {isSubmittingReg ? (isEn ? 'Submitting...' : 'Đang gửi hồ sơ...') : (isEn ? 'Submit Store Application' : 'Gửi Hồ Sơ Đăng Ký Mở Gian Hàng')}
           </button>
         </form>
       </div>
@@ -951,17 +951,17 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-4">
           <Clock className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Hồ Sơ Đang Chờ Xét Duyệt</h2>
+        <h2 className="text-2xl font-bold mb-2">{isEn ? 'Application Pending Review' : 'Hồ Sơ Đang Chờ Xét Duyệt'}</h2>
         <p className="text-muted-foreground text-sm mb-6">
-          Gian hàng <strong>{sellerData.name}</strong> (/gian-hang/{sellerData.slug}) đã được tiếp nhận và đang trong hàng chờ thẩm định của Quản trị viên CodeGame.shop.
+          {isEn ? <>Store <strong>{sellerData.name}</strong> (/gian-hang/{sellerData.slug}) has been received and is queued for verification by Mall Admins.</> : <>{isEn ? <>Store <strong>{sellerData.name}</strong> (/gian-hang/{sellerData.slug}) has been received and is queued for verification by Mall Admins.</> : <>{isEn ? <>Store <strong>{sellerData.name}</strong> (/gian-hang/{sellerData.slug}) has been received and is queued for verification by Mall Admins.</> : <>Gian hàng <strong>{sellerData.name}</strong> (/gian-hang/{sellerData.slug}) đã được tiếp nhận và đang trong hàng chờ thẩm định của Quản trị viên CodeGame.shop.</>}</>}</>}
         </p>
         {sellerData.request_info_note && (
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-left mb-6">
-            <strong>Yêu cầu bổ sung từ Quản trị viên:</strong> {sellerData.request_info_note}
+            <strong>{isEn ? 'Additional info requested by Admin:' : 'Yêu cầu bổ sung từ Quản trị viên:'}</strong> {sellerData.request_info_note}
           </div>
         )}
         <button onClick={fetchSellerInfo} className="px-5 py-2 rounded-xl bg-muted hover:bg-muted/80 text-sm font-semibold">
-          Làm Mới Trạng Thái
+          {isEn ? 'Refresh Status' : 'Làm Mới Trạng Thái'}
         </button>
       </div>
     );
@@ -973,18 +973,18 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         <div className="w-16 h-16 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-center mx-auto mb-4">
           <ShieldAlert className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Hồ Sơ Bị Từ Chối</h2>
+        <h2 className="text-2xl font-bold mb-2">{isEn ? 'Application Rejected' : 'Hồ Sơ Bị Từ Chối'}</h2>
         <p className="text-muted-foreground text-sm mb-4">
-          Gian hàng <strong>{sellerData.name}</strong> chưa đủ điều kiện phê duyệt.
+          {isEn ? <>Store <strong>{sellerData.name}</strong> does not meet approval criteria.</> : <>{isEn ? <>Store <strong>{sellerData.name}</strong> does not meet approval criteria.</> : <>{isEn ? <>Store <strong>{sellerData.name}</strong> does not meet approval criteria.</> : <>Gian hàng <strong>{sellerData.name}</strong> chưa đủ điều kiện phê duyệt.</>}</>}</>}
         </p>
         <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs text-left mb-6">
-          <strong>Lý do từ chối:</strong> {sellerData.reject_reason || 'Không đáp ứng tiêu chuẩn sàn.'}
+          <strong>{isEn ? 'Reason for rejection:' : 'Lý do từ chối:'}</strong> {sellerData.reject_reason || (isEn ? 'Does not meet platform quality standards.' : 'Không đáp ứng tiêu chuẩn sàn.')}
         </div>
         <button
           onClick={() => setSellerData(null)}
           className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-md"
         >
-          Nộp Lại Hồ Sơ Mới
+          {isEn ? 'Submit New Application' : 'Nộp Lại Hồ Sơ Mới'}
         </button>
       </div>
     );
@@ -1014,22 +1014,22 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                       : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                   }`}
                 >
-                  {sellerData.status === 'ACTIVE' ? 'CHÍNH THỨC (ACTIVE)' : 'THỬ VIỆC (TRIAL)'}
+                  {sellerData.status === 'ACTIVE' ? (isEn ? 'OFFICIAL (ACTIVE)' : 'CHÍNH THỨC (ACTIVE)') : (isEn ? 'PROBATION (TRIAL)' : 'THỬ VIỆC (TRIAL)')}
                 </span>
                 {sellerData.is_vacation === 1 && (
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center gap-1">
-                    <PauseCircle className="w-3 h-3" /> Đang Nghỉ Bán
+                    <PauseCircle className="w-3 h-3" /> {isEn ? 'On Vacation' : 'Đang Nghỉ Bán'}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                 <span>
-                  Đường dẫn: <a href={`/gian-hang/${sellerData.slug}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">/gian-hang/{sellerData.slug}</a>
+                  {isEn ? 'URL:' : 'Đường dẫn:'} <a href={`/gian-hang/${sellerData.slug}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">/gian-hang/{sellerData.slug}</a>
                 </span>
                 <span>•</span>
-                <span>Uy tín: <strong className="text-foreground">{sellerData.reputation_score || 100} điểm</strong></span>
+                <span>{isEn ? 'Reputation:' : 'Uy tín:'} <strong className="text-foreground">{sellerData.reputation_score || 100} {isEn ? 'pts' : 'điểm'}</strong></span>
                 <span>•</span>
-                <span>Giờ hỗ trợ: {sellerData.support_hours}</span>
+                <span>{isEn ? 'Support Hours:' : 'Giờ hỗ trợ:'} {sellerData.support_hours}</span>
               </div>
             </div>
           </div>
@@ -1044,7 +1044,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               }`}
             >
               {sellerData.is_vacation ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
-              {sellerData.is_vacation ? 'Mở Bán Lại' : 'Nghỉ Bán 1 Chạm'}
+              {sellerData.is_vacation ? (isEn ? 'Resume Selling' : 'Mở Bán Lại') : (isEn ? 'Vacation Mode' : 'Nghỉ Bán 1 Chạm')}
             </button>
             <a
               href={`/gian-hang/${sellerData.slug}`}
@@ -1052,7 +1052,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               rel="noreferrer"
               className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-all flex items-center gap-1.5 shadow-sm"
             >
-              <Store className="w-4 h-4" /> Xem Gian Hàng
+              <Store className="w-4 h-4" /> {isEn ? 'View Store' : 'Xem Gian Hàng'}
             </a>
           </div>
         </div>
@@ -1086,7 +1086,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             activeTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Sliders className="w-4 h-4" /> Tổng Quan
+          <Sliders className="w-4 h-4" /> {isEn ? 'Overview' : 'Tổng Quan'}
         </button>
         <button
           onClick={() => setActiveTab('products')}
@@ -1094,7 +1094,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             activeTab === 'products' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Package className="w-4 h-4" /> Sản Phẩm ({stats?.total_products || products.length})
+          <Package className="w-4 h-4" /> {isEn ? `Products (${stats?.total_products || products.length})` : `Sản Phẩm (${stats?.total_products || products.length})`}
         </button>
         <button
           onClick={() => setActiveTab('codes')}
@@ -1102,7 +1102,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             activeTab === 'codes' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <KeyRound className="w-4 h-4" /> Kho Mã & Nạp Kho
+          <KeyRound className="w-4 h-4" /> {isEn ? 'Vault & Restock' : 'Kho Mã & Nạp Kho'}
         </button>
         <button
           onClick={() => setActiveTab('orders')}
@@ -1110,7 +1110,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             activeTab === 'orders' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <ShoppingBag className="w-4 h-4" /> Đơn Hàng Bán
+          <ShoppingBag className="w-4 h-4" /> {isEn ? 'Sales Orders' : 'Đơn Hàng Bán'}
           {(stats?.reported_orders_count || 0) > 0 && (
             <span className="px-1.5 py-0.2 rounded-full bg-destructive text-white text-[10px]">
               {stats.reported_orders_count}
@@ -1126,7 +1126,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             activeTab === 'disputes' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <ShieldAlert className="w-4 h-4" /> Khiếu Nại Sàn
+          <ShieldAlert className="w-4 h-4" /> {isEn ? 'Platform Disputes' : 'Khiếu Nại Sàn'}
           {unresolvedDisputeCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-destructive text-white text-[10px] font-bold">
               {unresolvedDisputeCount}
@@ -1139,7 +1139,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             activeTab === 'finance' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Coins className="w-4 h-4" /> Tài Chính & Rút Tiền
+          <Coins className="w-4 h-4" /> {isEn ? 'Finance & Payouts' : 'Tài Chính & Rút Tiền'}
         </button>
         <button
           onClick={() => setActiveTab('settings')}
@@ -1147,7 +1147,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             activeTab === 'settings' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Settings className="w-4 h-4" /> Cài Đặt & Tài Khoản Phụ
+          <Settings className="w-4 h-4" /> {isEn ? 'Settings & Staff' : 'Cài Đặt & Tài Khoản Phụ'}
         </button>
         <button
           onClick={() => {
@@ -1159,7 +1159,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             activeTab === 'api_keys' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
-          <Code2 className="w-4 h-4" /> {t('sellerApiKeys.tabTitle', 'Khóa API & Tích Hợp')}
+          <Code2 className="w-4 h-4" /> {t('sellerApiKeys.tabTitle', isEn ? 'API Keys & Integration' : 'Khóa API & Tích Hợp')}
         </button>
       </div>
 
@@ -1168,25 +1168,25 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="p-4 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">Doanh Thu Hôm Nay</div>
+              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? "Today's Revenue" : 'Doanh Thu Hôm Nay'}</div>
               <div className="text-2xl font-black text-foreground flex items-center gap-1.5">
                 {stats.today_revenue_core.toLocaleString()} <span className="text-xs font-semibold text-amber-500">Core</span>
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">Doanh Thu 30 Ngày</div>
+              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? '30-Day Revenue' : 'Doanh Thu 30 Ngày'}</div>
               <div className="text-2xl font-black text-foreground flex items-center gap-1.5">
                 {stats.month_revenue_core.toLocaleString()} <span className="text-xs font-semibold text-amber-500">Core</span>
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">Số Dư Chờ Rút</div>
+              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? 'Pending Balance' : 'Số Dư Chờ Rút'}</div>
               <div className="text-2xl font-black text-emerald-500 flex items-center gap-1.5">
                 {stats.pending_balance_core.toLocaleString()} <span className="text-xs font-semibold">Core</span>
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">Điểm Uy Tín Gian Hàng</div>
+              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? 'Store Reputation Score' : 'Điểm Uy Tín Gian Hàng'}</div>
               <div className="text-2xl font-black text-primary">
                 {stats.reputation_score} <span className="text-xs font-normal text-muted-foreground">/ 100</span>
               </div>
@@ -1201,12 +1201,12 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                   <div className="flex items-center gap-3">
                     <ShieldAlert className="w-5 h-5 shrink-0" />
                     <div>
-                      <div className="text-xs font-bold">Có {stats.reported_orders_count} đơn hàng báo lỗi cần xử lý!</div>
-                      <div className="text-[11px] opacity-80">Vui lòng kiểm tra và đổi mã mới hoặc hoàn Core cho khách.</div>
+                      <div className="text-xs font-bold">{isEn ? `${stats.reported_orders_count} reported order(s) need attention!` : `Có ${stats.reported_orders_count} đơn hàng báo lỗi cần xử lý!`}</div>
+                      <div className="text-[11px] opacity-80">{isEn ? 'Please review and issue a replacement code or refund Core to buyer.' : 'Vui lòng kiểm tra và đổi mã mới hoặc hoàn Core cho khách.'}</div>
                     </div>
                   </div>
                   <button onClick={() => setActiveTab('orders')} className="px-3 py-1.5 rounded-lg bg-destructive text-white text-xs font-semibold shrink-0">
-                    Xử Lý Ngay
+                    {isEn ? 'Resolve Now' : 'Xử Lý Ngay'}
                   </button>
                 </div>
               )}
@@ -1215,12 +1215,12 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 shrink-0" />
                     <div>
-                      <div className="text-xs font-bold">Có {stats.low_stock_products_count} sản phẩm sắp hết kho!</div>
-                      <div className="text-[11px] opacity-80">Nạp thêm mã để tránh bị tự động ẩn ngoài web khách.</div>
+                      <div className="text-xs font-bold">{isEn ? `${stats.low_stock_products_count} product(s) running low on stock!` : `Có ${stats.low_stock_products_count} sản phẩm sắp hết kho!`}</div>
+                      <div className="text-[11px] opacity-80">{isEn ? 'Deposit more codes to prevent items from being hidden from customers.' : 'Nạp thêm mã để tránh bị tự động ẩn ngoài web khách.'}</div>
                     </div>
                   </div>
                   <button onClick={() => setActiveTab('codes')} className="px-3 py-1.5 rounded-lg bg-amber-500 text-black text-xs font-semibold shrink-0">
-                    Nạp Kho
+                    {isEn ? 'Restock' : 'Nạp Kho'}
                   </button>
                 </div>
               )}
@@ -1231,16 +1231,16 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           {sellerData.status === 'TRIAL' && (
             <div className="p-4 rounded-2xl bg-muted/60 border border-border text-xs leading-relaxed space-y-1">
               <div className="font-bold text-foreground flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" /> Quy định giai đoạn thử việc (TRIAL):
+                <Sparkles className="w-4 h-4 text-amber-500" /> {isEn ? 'Probation (TRIAL) Guidelines:' : 'Quy định giai đoạn thử việc (TRIAL):'}
               </div>
               <p className="text-muted-foreground">
-                • Gian hàng đang trong giai đoạn thử việc được đăng tối đa <strong>{sellerData.trial_product_limit || 5} sản phẩm</strong>.
+                {isEn ? <>• Stores in probation may list up to <strong>{sellerData.trial_product_limit || 5} products</strong>.</> : <>• Gian hàng đang trong giai đoạn thử việc được đăng tối đa <strong>{sellerData.trial_product_limit || 5} sản phẩm</strong>.</>}
               </p>
               <p className="text-muted-foreground">
-                • Giá bán tối đa mỗi sản phẩm không vượt quá <strong>{sellerData.trial_order_max || 200} Core</strong>.
+                {isEn ? <>• Maximum price per product must not exceed <strong>{sellerData.trial_order_max || 200} Core</strong>.</> : <>• Giá bán tối đa mỗi sản phẩm không vượt quá <strong>{sellerData.trial_order_max || 200} Core</strong>.</>}
               </p>
               <p className="text-muted-foreground">
-                • Mọi sản phẩm mới hoặc khi đổi giá cần qua Quản trị viên duyệt (PENDING_REVIEW) trước khi mở bán công khai.
+                {isEn ? '• All new products or price updates require Admin approval (PENDING_REVIEW) before going live.' : '• Mọi sản phẩm mới hoặc khi đổi giá cần qua Quản trị viên duyệt (PENDING_REVIEW) trước khi mở bán công khai.'}
               </p>
             </div>
           )}
@@ -1279,11 +1279,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               <table className="table-fixed w-full text-xs text-left">
                 <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                   <tr>
-                    <th className="p-3 w-[40%]">Sản Phẩm & Game</th>
-                    <th className="p-3 w-[15%] text-right">Giá Bán</th>
-                    <th className="p-3 w-[15%] text-center">Tồn Kho</th>
-                    <th className="p-3 w-[15%] text-center">Trạng Thái</th>
-                    <th className="p-3 w-[15%] text-center">Thao Tác</th>
+                    <th className="p-3 w-[40%]">{isEn ? 'Product & Game' : 'Sản Phẩm & Game'}</th>
+                    <th className="p-3 w-[15%] text-right">{isEn ? 'Price' : 'Giá Bán'}</th>
+                    <th className="p-3 w-[15%] text-center">{isEn ? 'Stock' : 'Tồn Kho'}</th>
+                    <th className="p-3 w-[15%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
+                    <th className="p-3 w-[15%] text-center">{isEn ? 'Actions' : 'Thao Tác'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -1378,7 +1378,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold whitespace-nowrap">Chọn Sản Phẩm:</label>
+              <label className="text-xs font-semibold whitespace-nowrap">{isEn ? 'Select Product:' : 'Chọn Sản Phẩm:'}</label>
               <select
                 value={selectedProductId}
                 onChange={(e) => {
@@ -1389,7 +1389,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} (Còn {p.in_stock_count})
+                    {p.name} ({isEn ? `Stock: ${p.in_stock_count}` : `Còn ${p.in_stock_count}`})
                   </option>
                 ))}
               </select>
@@ -1399,22 +1399,22 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               onClick={() => setShowAddCodesModal(true)}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1.5 shadow-sm shrink-0"
             >
-              <Plus className="w-4 h-4" /> Nạp Thêm Mã Vào Kho
+              <Plus className="w-4 h-4" /> {isEn ? 'Add Codes to Vault' : 'Nạp Thêm Mã Vào Kho'}
             </button>
           </div>
 
           {loadingCodes ? (
-            <div className="py-12 text-center text-muted-foreground">Đang tải danh sách mã...</div>
+            <div className="py-12 text-center text-muted-foreground">{isEn ? 'Loading codes...' : 'Đang tải danh sách mã...'}</div>
           ) : codes.length === 0 ? (
             <div className="py-12 text-center bg-card border border-border rounded-2xl">
               <KeyRound className="w-12 h-12 text-muted-foreground/40 mx-auto mb-2" />
-              <div className="text-sm font-semibold">Kho sản phẩm này đang trống</div>
-              <p className="text-xs text-muted-foreground mt-1 mb-4">Nạp danh sách mã giftcode để bắt đầu bán tự động.</p>
+              <div className="text-sm font-semibold">{isEn ? 'No codes in vault for this product' : 'Kho sản phẩm này đang trống'}</div>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">{isEn ? 'Deposit giftcode inventory to enable automated fulfillment.' : 'Nạp danh sách mã giftcode để bắt đầu bán tự động.'}</p>
               <button
                 onClick={() => setShowAddCodesModal(true)}
                 className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold"
               >
-                Nạp Mã Ngay
+                {isEn ? 'Deposit Codes Now' : 'Nạp Mã Ngay'}
               </button>
             </div>
           ) : (
@@ -1422,10 +1422,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               <table className="table-fixed w-full text-xs text-left">
                 <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                   <tr>
-                    <th className="p-3 w-[45%]">Mã Kho (Mã Hóa / Che)</th>
-                    <th className="p-3 w-[20%] text-center">Trạng Thái</th>
-                    <th className="p-3 w-[20%] text-center">Lô Nạp</th>
-                    <th className="p-3 w-[15%] text-center">Thao Tác</th>
+                    <th className="p-3 w-[45%]">{isEn ? 'Vault Code (Encrypted / Masked)' : 'Mã Kho (Mã Hóa / Che)'}</th>
+                    <th className="p-3 w-[20%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
+                    <th className="p-3 w-[20%] text-center">{isEn ? 'Batch' : 'Lô Nạp'}</th>
+                    <th className="p-3 w-[15%] text-center">{isEn ? 'Actions' : 'Thao Tác'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -1448,7 +1448,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                             ? 'bg-destructive/10 text-destructive'
                             : 'bg-muted text-muted-foreground'
                         }`}>
-                          {c.status}
+                          {c.status === 'IN_STOCK' ? (isEn ? 'In Stock' : 'Chưa Bán') : c.status === 'SOLD' ? (isEn ? 'Sold' : 'Đã Bán') : c.status === 'REPORTED' ? (isEn ? 'Reported' : 'Báo Lỗi') : (isEn ? 'Reserved' : 'Đang Giữ Chỗ')}
                         </span>
                       </td>
                       <td className="p-3 text-center text-muted-foreground font-mono text-[10px]">
@@ -1458,7 +1458,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                         <button
                           onClick={() => handleRevealCode(c.id)}
                           className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground mr-1"
-                          title="Xem mã nguyên vẹn (Ghi log kiểm toán)"
+                          title={isEn ? "View unmasked code (Audit logged)" : "Xem mã nguyên vẹn (Ghi log kiểm toán)"}
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
@@ -1466,7 +1466,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                           <button
                             onClick={() => handleDeleteCode(c.id)}
                             className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                            title="Xóa mã chưa bán"
+                            title={isEn ? "Delete unsold code" : "Xóa mã chưa bán"}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1485,39 +1485,39 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       {activeTab === 'orders' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold">Danh Sách Đơn Hàng Bán Ra</h2>
+            <h2 className="text-base font-bold">{isEn ? 'Sales Orders List' : 'Danh Sách Đơn Hàng Bán Ra'}</h2>
             <div className="flex items-center gap-2">
               <select
                 value={orderFilter}
                 onChange={(e) => setOrderFilter(e.target.value)}
                 className="px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-medium focus:outline-none focus:border-primary"
               >
-                <option value="">Tất cả trạng thái</option>
-                <option value="DELIVERED">Đã Giao (DELIVERED)</option>
-                <option value="REPORTED">Báo Lỗi / Khiếu Nại (REPORTED)</option>
-                <option value="REFUNDED">Đã Hoàn Tiền (REFUNDED)</option>
+                <option value="">{isEn ? 'All Statuses' : 'Tất cả trạng thái'}</option>
+                <option value="DELIVERED">{isEn ? 'Delivered (DELIVERED)' : 'Đã Giao (DELIVERED)'}</option>
+                <option value="REPORTED">{isEn ? 'Reported / Disputed (REPORTED)' : 'Báo Lỗi / Khiếu Nại (REPORTED)'}</option>
+                <option value="REFUNDED">{isEn ? 'Refunded (REFUNDED)' : 'Đã Hoàn Tiền (REFUNDED)'}</option>
               </select>
             </div>
           </div>
 
           {loadingOrders ? (
-            <div className="py-12 text-center text-muted-foreground">Đang tải đơn hàng...</div>
+            <div className="py-12 text-center text-muted-foreground">{isEn ? 'Loading orders...' : 'Đang tải đơn hàng...'}</div>
           ) : orders.length === 0 ? (
             <div className="py-12 text-center bg-card border border-border rounded-2xl">
               <ShoppingBag className="w-12 h-12 text-muted-foreground/40 mx-auto mb-2" />
-              <div className="text-sm font-semibold">Chưa có đơn hàng nào</div>
-              <p className="text-xs text-muted-foreground mt-1">Các đơn hàng phát sinh từ web khách sẽ hiển thị tại đây.</p>
+              <div className="text-sm font-semibold">{isEn ? 'No orders yet' : 'Chưa có đơn hàng nào'}</div>
+              <p className="text-xs text-muted-foreground mt-1">{isEn ? 'Customer orders from the storefront will appear here.' : 'Các đơn hàng phát sinh từ web khách sẽ hiển thị tại đây.'}</p>
             </div>
           ) : (
             <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
               <table className="table-fixed w-full text-xs text-left">
                 <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                   <tr>
-                    <th className="p-3 w-[25%]">Mã Đơn & Ngày Mua</th>
-                    <th className="p-3 w-[30%]">Sản Phẩm & Khách</th>
-                    <th className="p-3 w-[15%] text-right">Giá Core</th>
-                    <th className="p-3 w-[15%] text-center">Trạng Thái</th>
-                    <th className="p-3 w-[15%] text-center">Xử Lý</th>
+                    <th className="p-3 w-[25%]">{isEn ? 'Order Code & Date' : 'Mã Đơn & Ngày Mua'}</th>
+                    <th className="p-3 w-[30%]">{isEn ? 'Product & Customer' : 'Sản Phẩm & Khách'}</th>
+                    <th className="p-3 w-[15%] text-right">{isEn ? 'Price (Core)' : 'Giá Core'}</th>
+                    <th className="p-3 w-[15%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
+                    <th className="p-3 w-[15%] text-center">{isEn ? 'Actions' : 'Xử Lý'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -1529,7 +1529,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                       </td>
                       <td className="p-3 truncate">
                         <div className="font-bold truncate">{o.product_name}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">Khách: {o.buyer_name || o.buyer_member_id}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{isEn ? 'Customer:' : 'Khách:'} {o.buyer_name || o.buyer_member_id}</div>
                       </td>
                       <td className="p-3 text-right font-bold text-foreground">
                         {o.price_core.toLocaleString()} Core
@@ -1544,7 +1544,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                             ? 'bg-purple-500/10 text-purple-400'
                             : 'bg-muted text-muted-foreground'
                         }`}>
-                          {o.status === 'DELIVERED' ? 'Đã Giao' : o.status === 'REPORTED' ? 'Báo Lỗi' : o.status === 'REFUNDED' ? 'Đã Hoàn Tiền' : o.status}
+                          {o.status === 'DELIVERED' ? (isEn ? 'Delivered' : 'Đã Giao') : o.status === 'REPORTED' ? (isEn ? 'Reported' : 'Báo Lỗi') : o.status === 'REFUNDED' ? (isEn ? 'Refunded' : 'Đã Hoàn Tiền') : o.status}
                         </span>
                       </td>
                       <td className="p-3 text-center">
@@ -1556,7 +1556,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                             }}
                             className="px-2.5 py-1 rounded-lg bg-destructive text-white text-[11px] font-bold shadow-sm"
                           >
-                            Xử Lý
+                            {isEn ? 'Resolve' : 'Xử Lý'}
                           </button>
                         ) : (
                           <span className="text-[11px] text-muted-foreground">—</span>
@@ -1577,10 +1577,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-bold flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-destructive" /> Khiếu Nại & Tranh Chấp Sàn TMĐT
+                <ShieldAlert className="w-5 h-5 text-destructive" /> {isEn ? 'Platform Disputes & Arbitration' : 'Khiếu Nại & Tranh Chấp Sàn TMĐT'}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Các đơn hàng đang trong thời hạn 168h giữ tiền bị người mua báo lỗi cần phản hồi hoặc cấp mã thay thế.
+                {isEn ? 'Orders under escrow hold reported by buyers requiring response or replacement code.' : 'Các đơn hàng đang trong thời hạn 168h giữ tiền bị người mua báo lỗi cần phản hồi hoặc cấp mã thay thế.'}
               </p>
             </div>
 
@@ -1590,19 +1590,19 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 onChange={(e) => setDisputeFilter(e.target.value)}
                 className="px-3 py-1.5 rounded-xl border border-border bg-card text-foreground text-xs font-semibold focus:outline-none"
               >
-                <option value="">Tất cả trạng thái</option>
-                <option value="OPEN">Chờ Shop phản hồi (OPEN)</option>
-                <option value="WAITING_SELLER">Đã phản hồi (WAITING)</option>
-                <option value="RESOLVED_REPLACED">Đã đổi mã (REPLACED)</option>
-                <option value="RESOLVED_REFUNDED">Đã hoàn tiền (REFUNDED)</option>
-                <option value="REJECTED">Từ chối khiếu nại (REJECTED)</option>
+                <option value="">{isEn ? 'All Statuses' : 'Tất cả trạng thái'}</option>
+                <option value="OPEN">{isEn ? 'Waiting for Store (OPEN)' : 'Chờ Shop phản hồi (OPEN)'}</option>
+                <option value="WAITING_SELLER">{isEn ? 'Store Responded (WAITING)' : 'Đã phản hồi (WAITING)'}</option>
+                <option value="RESOLVED_REPLACED">{isEn ? 'Code Replaced (REPLACED)' : 'Đã đổi mã (REPLACED)'}</option>
+                <option value="RESOLVED_REFUNDED">{isEn ? 'Core Refunded (REFUNDED)' : 'Đã hoàn tiền (REFUNDED)'}</option>
+                <option value="REJECTED">{isEn ? 'Dispute Rejected (REJECTED)' : 'Từ chối khiếu nại (REJECTED)'}</option>
               </select>
 
               <button
                 onClick={fetchDisputes}
                 disabled={loadingDisputes}
                 className="p-2 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground transition-all"
-                title="Làm mới danh sách"
+                title={isEn ? "Refresh list" : "Làm mới danh sách"}
               >
                 <RefreshCw className={`w-4 h-4 ${loadingDisputes ? 'animate-spin' : ''}`} />
               </button>
@@ -1612,24 +1612,24 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           {loadingDisputes ? (
             <div className="py-16 text-center text-muted-foreground">
               <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-2" />
-              <p className="text-xs">Đang tải danh sách khiếu nại...</p>
+              <p className="text-xs">{isEn ? 'Loading dispute list...' : 'Đang tải danh sách khiếu nại...'}</p>
             </div>
           ) : disputes.length === 0 ? (
             <div className="py-16 text-center bg-card border border-border rounded-2xl">
               <CheckCircle2 className="w-12 h-12 text-emerald-500/30 mx-auto mb-2" />
-              <div className="text-sm font-semibold">Không có khiếu nại nào</div>
-              <p className="text-xs text-muted-foreground mt-1">Gian hàng của bạn hiện không có đơn hàng nào bị khiếu nại.</p>
+              <div className="text-sm font-semibold">{isEn ? 'No disputes found' : 'Không có khiếu nại nào'}</div>
+              <p className="text-xs text-muted-foreground mt-1">{isEn ? 'Your store currently has no disputed orders.' : 'Gian hàng của bạn hiện không có đơn hàng nào bị khiếu nại.'}</p>
             </div>
           ) : (
             <div className="rounded-2xl border border-border overflow-hidden bg-card shadow-sm">
               <table className="table-fixed w-full text-xs">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-muted-foreground font-semibold">
-                    <th className="w-[22%] p-3 text-left">Đơn Hàng & Gói</th>
-                    <th className="w-[20%] p-3 text-left">Khách & Lý Do</th>
-                    <th className="w-[28%] p-3 text-left">Nội Dung Chi Tiết</th>
-                    <th className="w-[15%] p-3 text-center">Trạng Thái</th>
-                    <th className="w-[15%] p-3 text-center">Thao Tác</th>
+                    <th className="w-[22%] p-3 text-left">{isEn ? 'Order & Package' : 'Đơn Hàng & Gói'}</th>
+                    <th className="w-[20%] p-3 text-left">{isEn ? 'Buyer & Reason' : 'Khách & Lý Do'}</th>
+                    <th className="w-[28%] p-3 text-left">{isEn ? 'Details' : 'Nội Dung Chi Tiết'}</th>
+                    <th className="w-[15%] p-3 text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
+                    <th className="w-[15%] p-3 text-center">{isEn ? 'Actions' : 'Thao Tác'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -1637,7 +1637,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                     <tr key={d.id} className="hover:bg-muted/20 transition-colors">
                       <td className="p-3">
                         <div className="font-mono font-bold text-foreground text-xs">{d.order_code}</div>
-                        <div className="text-[10px] font-mono text-primary/80 truncate mt-0.5" title={`Mã khiếu nại: ${d.id}`}>
+                        <div className="text-[10px] font-mono text-primary/80 truncate mt-0.5" title={`${isEn ? 'Dispute ID:' : 'Mã khiếu nại:'} ${d.id}`}>
                           ID: {d.id}
                         </div>
                         <div className="text-[11px] text-muted-foreground truncate" title={d.product_name}>
@@ -1650,7 +1650,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
 
                       <td className="p-3">
                         <div className="font-semibold text-foreground truncate" title={d.buyer_username}>
-                          {d.buyer_username || 'Khách hàng'}
+                          {d.buyer_username || (isEn ? 'Customer' : 'Khách hàng')}
                         </div>
                         <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           d.reason === 'WRONG_CODE'
@@ -1661,9 +1661,9 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                             ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
                             : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                         }`}>
-                          {d.reason === 'WRONG_CODE' ? 'Mã Sai' :
-                           d.reason === 'USED_CODE' ? 'Mã Đã Dùng' :
-                           d.reason === 'EXPIRED_CODE' ? 'Hết Hạn' : 'Sai Mô Tả'}
+                          {d.reason === 'WRONG_CODE' ? (isEn ? 'Invalid Code' : 'Mã Sai') :
+                           d.reason === 'USED_CODE' ? (isEn ? 'Used Code' : 'Mã Đã Dùng') :
+                           d.reason === 'EXPIRED_CODE' ? (isEn ? 'Expired' : 'Hết Hạn') : (isEn ? 'Misdescribed' : 'Sai Mô Tả')}
                         </span>
                       </td>
 
@@ -1675,12 +1675,12 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                         )}
                         {d.seller_response && (
                           <div className="mt-1 text-[10px] text-primary-light bg-muted/40 p-1.5 rounded-lg border border-border/60">
-                            <strong>Shop:</strong> {d.seller_response}
+                            <strong>{isEn ? 'Store:' : 'Shop:'}</strong> {d.seller_response}
                           </div>
                         )}
                         {d.seller_replacement_code && (
                           <div className="mt-0.5 text-[10px] font-mono text-emerald-400">
-                            Mã đổi: {d.seller_replacement_code}
+                            {isEn ? 'Replacement:' : 'Mã đổi:'} {d.seller_replacement_code}
                           </div>
                         )}
                       </td>
@@ -1697,11 +1697,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                             ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
                             : 'bg-destructive/15 text-destructive border border-destructive/30'
                         }`}>
-                          {d.status === 'OPEN' ? 'Chờ Phản Hồi' :
-                           d.status === 'WAITING_SELLER' ? 'Đã Phản Hồi' :
-                           d.status === 'RESOLVED_REPLACED' ? 'Đã Đổi Mã' :
-                           d.status === 'RESOLVED_REFUNDED' ? 'Đã Hoàn Core' :
-                           'Đã Từ Chối'}
+                          {d.status === 'OPEN' ? (isEn ? 'Pending Response' : 'Chờ Phản Hồi') :
+                           d.status === 'WAITING_SELLER' ? (isEn ? 'Responded' : 'Đã Phản Hồi') :
+                           d.status === 'RESOLVED_REPLACED' ? (isEn ? 'Code Replaced' : 'Đã Đổi Mã') :
+                           d.status === 'RESOLVED_REFUNDED' ? (isEn ? 'Core Refunded' : 'Đã Hoàn Core') :
+                           (isEn ? 'Rejected' : 'Đã Từ Chối')}
                         </span>
                       </td>
 
@@ -1715,10 +1715,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                             }}
                             className="px-2.5 py-1 rounded-xl bg-primary hover:opacity-90 text-primary-foreground text-[11px] font-bold shadow-sm transition-opacity"
                           >
-                            Phản Hồi
+                            {isEn ? 'Respond' : 'Phản Hồi'}
                           </button>
                         ) : (
-                          <span className="text-[11px] text-muted-foreground font-mono">Đã xong</span>
+                          <span className="text-[11px] text-muted-foreground font-mono">{isEn ? 'Resolved' : 'Đã xong'}</span>
                         )}
                       </td>
                     </tr>
@@ -1736,35 +1736,35 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           {/* 3 Ngăn số dư */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-5 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">Đang Giữ (Hold)</div>
+              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? 'Escrow Held (Hold)' : 'Đang Giữ (Hold)'}</div>
               <div className="text-2xl font-black text-amber-500 flex items-center gap-1.5">
                 {Number(financeData?.balances?.held_core ?? sellerData?.pending_balance_core ?? 0).toLocaleString('vi-VN')}
                 <span className="text-xs font-semibold">Core</span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">
-                Tạm giữ {financeData?.config?.hold_hours || 168}h sau khi giao mã thành công để bảo vệ người mua.
+                {isEn ? `Held for ${financeData?.config?.hold_hours || 168}h after delivery to protect buyers.` : `Tạm giữ ${financeData?.config?.hold_hours || 168}h sau khi giao mã thành công để bảo vệ người mua.`}
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">Khả Dụng (Available)</div>
+              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? 'Available for Payout' : 'Khả Dụng (Available)'}</div>
               <div className="text-2xl font-black text-emerald-500 flex items-center gap-1.5">
-                {Number(financeData?.balances?.available_core ?? sellerData?.available_balance_core ?? 0).toLocaleString('vi-VN')}
+                {Number(financeData?.balances?.available_core ?? sellerData?.available_balance_core ?? 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')}
                 <span className="text-xs font-semibold">Core</span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">
-                Số dư đã hoàn tất thời gian giữ, có thể yêu cầu rút về tài khoản ngân hàng.
+                {isEn ? 'Cleared escrow balance, eligible for bank withdrawal.' : 'Số dư đã hoàn tất thời gian giữ, có thể yêu cầu rút về tài khoản ngân hàng.'}
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">Đã Chi Trả (Withdrawn)</div>
+              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? 'Total Withdrawn' : 'Đã Chi Trả (Withdrawn)'}</div>
               <div className="text-2xl font-black text-blue-500 flex items-center gap-1.5">
-                {Number(financeData?.balances?.withdrawn_core ?? sellerData?.withdrawn_balance_core ?? 0).toLocaleString('vi-VN')}
+                {Number(financeData?.balances?.withdrawn_core ?? sellerData?.withdrawn_balance_core ?? 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')}
                 <span className="text-xs font-semibold">Core</span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">
-                Tổng số Core đã chuyển khoản ra ngoài tài khoản ngân hàng của bạn.
+                {isEn ? 'Total Core transferred out to your bank account.' : 'Tổng số Core đã chuyển khoản ra ngoài tài khoản ngân hàng của bạn.'}
               </p>
             </div>
           </div>
@@ -1773,17 +1773,17 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           <div className="p-5 rounded-2xl bg-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Coins className="w-4 h-4 text-primary" /> Rút Tiền Về Tài Khoản Ngân Hàng
+                <Coins className="w-4 h-4 text-primary" /> {isEn ? 'Withdraw Funds to Bank Account' : 'Rút Tiền Về Tài Khoản Ngân Hàng'}
               </h4>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Ngân hàng nhận: <span className="font-bold text-foreground">{sellerData?.bank_name || 'Chưa cài đặt'}</span> • STK: <span className="font-mono font-bold text-foreground">{sellerData?.bank_account || '—'}</span> ({sellerData?.bank_account_name || '—'})
+                {isEn ? 'Beneficiary bank:' : 'Ngân hàng nhận:'} <span className="font-bold text-foreground">{sellerData?.bank_name || (isEn ? 'Not set' : 'Chưa cài đặt')}</span> • {isEn ? 'Account No:' : 'STK:'} <span className="font-mono font-bold text-foreground">{sellerData?.bank_account || '—'}</span> ({sellerData?.bank_account_name || '—'})
               </p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               {sellerData?.sub_role ? (
                 <span className="text-xs text-muted-foreground italic bg-muted px-3 py-1.5 rounded-xl border border-border">
-                  Tài khoản phụ không có quyền rút tiền
+                  {isEn ? 'Staff accounts cannot withdraw funds' : 'Tài khoản phụ không có quyền rút tiền'}
                 </span>
               ) : (
                 <button
@@ -1791,7 +1791,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                   disabled={Number(financeData?.balances?.available_core ?? sellerData?.available_balance_core ?? 0) < 1}
                   className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs flex items-center gap-2 shadow-sm disabled:opacity-50 transition-all hover:bg-primary/90"
                 >
-                  <ArrowRight className="w-4 h-4" /> Yêu Cầu Rút Tiền
+                  <ArrowRight className="w-4 h-4" /> {isEn ? 'Request Payout' : 'Yêu Cầu Rút Tiền'}
                 </button>
               )}
             </div>
@@ -1800,25 +1800,25 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           {/* Lịch sử yêu cầu rút tiền */}
           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
             <div className="p-4 border-b border-border bg-muted/20 font-bold text-xs flex items-center justify-between">
-              <span>Lịch Sử Yêu Cầu Rút Tiền</span>
+              <span>{isEn ? 'Withdrawal Requests History' : 'Lịch Sử Yêu Cầu Rút Tiền'}</span>
               <button onClick={fetchSellerFinance} className="text-muted-foreground hover:text-foreground text-[11px] flex items-center gap-1">
-                <RefreshCw className={`w-3 h-3 ${loadingFinance ? 'animate-spin' : ''}`} /> Làm mới
+                <RefreshCw className={`w-3 h-3 ${loadingFinance ? 'animate-spin' : ''}`} /> {isEn ? 'Refresh' : 'Làm mới'}
               </button>
             </div>
             <table className="table-fixed w-full text-xs text-left">
               <thead className="bg-muted/40 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
                 <tr>
-                  <th style={{ width: '22%' }} className="p-3">Thời Gian</th>
-                  <th style={{ width: '22%' }} className="p-3">Số Core Yêu Cầu</th>
-                  <th style={{ width: '28%' }} className="p-3">Tài Khoản Nhận</th>
-                  <th style={{ width: '28%' }} className="p-3 text-right">Trạng Thái & Ghi Chú</th>
+                  <th style={{ width: '22%' }} className="p-3">{isEn ? 'Time' : 'Thời Gian'}</th>
+                  <th style={{ width: '22%' }} className="p-3">{isEn ? 'Amount (Core)' : 'Số Core Yêu Cầu'}</th>
+                  <th style={{ width: '28%' }} className="p-3">{isEn ? 'Beneficiary Account' : 'Tài Khoản Nhận'}</th>
+                  <th style={{ width: '28%' }} className="p-3 text-right">{isEn ? 'Status & Notes' : 'Trạng Thái & Ghi Chú'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {sellerWithdrawals.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="p-6 text-center text-muted-foreground">
-                      Bạn chưa có yêu cầu rút tiền nào.
+                      {isEn ? 'No withdrawal requests yet.' : 'Bạn chưa có yêu cầu rút tiền nào.'}
                     </td>
                   </tr>
                 ) : (
@@ -1834,10 +1834,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                       </td>
                       <td className="p-3 text-right">
                         <div>
-                          {w.status === 'PENDING' && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold text-[10px] border border-amber-500/20">Chờ duyệt</span>}
-                          {w.status === 'APPROVED' && <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold text-[10px] border border-blue-500/20">Đã duyệt (Chờ chuyển)</span>}
-                          {w.status === 'PAID' && <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[10px] border border-emerald-500/20">Đã chi trả</span>}
-                          {w.status === 'REJECTED' && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold text-[10px] border border-destructive/20">Đã từ chối</span>}
+                          {w.status === 'PENDING' && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold text-[10px] border border-amber-500/20">{isEn ? 'Pending' : 'Chờ duyệt'}</span>}
+                          {w.status === 'APPROVED' && <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold text-[10px] border border-blue-500/20">{isEn ? 'Approved (Processing)' : 'Đã duyệt (Chờ chuyển)'}</span>}
+                          {w.status === 'PAID' && <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[10px] border border-emerald-500/20">{isEn ? 'Paid' : 'Đã chi trả'}</span>}
+                          {w.status === 'REJECTED' && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold text-[10px] border border-destructive/20">{isEn ? 'Rejected' : 'Đã từ chối'}</span>}
                         </div>
                         {w.review_note && (
                           <div className="text-[10px] text-muted-foreground mt-0.5 truncate" title={w.review_note}>
@@ -1855,24 +1855,24 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           {/* Sổ cái gian hàng */}
           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
             <div className="p-4 border-b border-border bg-muted/20 font-bold text-xs flex items-center justify-between">
-              <span>Sổ Cái Biến Động Số Dư (Ledger)</span>
-              <span className="text-[11px] text-muted-foreground">Minh bạch 100% từng dòng giao dịch</span>
+              <span>{isEn ? 'Balance Change Ledger' : 'Sổ Cái Biến Động Số Dư (Ledger)'}</span>
+              <span className="text-[11px] text-muted-foreground">{isEn ? '100% transparent transaction history' : 'Minh bạch 100% từng dòng giao dịch'}</span>
             </div>
             <table className="table-fixed w-full text-xs text-left">
               <thead className="bg-muted/40 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
                 <tr>
-                  <th style={{ width: '20%' }} className="p-3">Thời Gian</th>
-                  <th style={{ width: '16%' }} className="p-3">Nghiệp Vụ</th>
-                  <th style={{ width: '18%' }} className="p-3">Biến Động (Core)</th>
-                  <th style={{ width: '26%' }} className="p-3">3 Ngăn Số Dư Sau Giao Dịch</th>
-                  <th style={{ width: '20%' }} className="p-3 text-right">Diễn Giải</th>
+                  <th style={{ width: '20%' }} className="p-3">{isEn ? 'Time' : 'Thời Gian'}</th>
+                  <th style={{ width: '16%' }} className="p-3">{isEn ? 'Operation' : 'Nghiệp Vụ'}</th>
+                  <th style={{ width: '18%' }} className="p-3">{isEn ? 'Change (Core)' : 'Biến Động (Core)'}</th>
+                  <th style={{ width: '26%' }} className="p-3">{isEn ? 'Balances After Transaction' : '3 Ngăn Số Dư Sau Giao Dịch'}</th>
+                  <th style={{ width: '20%' }} className="p-3 text-right">{isEn ? 'Description' : 'Diễn Giải'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {(!financeData?.ledger || financeData.ledger.length === 0) ? (
                   <tr>
                     <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                      Chưa có phát sinh biến động sổ cái.
+                      {isEn ? 'No ledger transactions recorded yet.' : 'Chưa có phát sinh biến động sổ cái.'}
                     </td>
                   </tr>
                 ) : (
@@ -1897,8 +1897,8 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                         </span>
                       </td>
                       <td className="p-3 font-mono text-[11px]">
-                        <div>Giữ: <span className="text-amber-500 font-bold">{Number(l.balance_held_after).toLocaleString('vi-VN')}</span></div>
-                        <div className="text-[10px] text-muted-foreground">Khả dụng: <span className="text-emerald-500 font-bold">{Number(l.balance_available_after).toLocaleString('vi-VN')}</span> | Đã rút: {Number(l.balance_withdrawn_after).toLocaleString('vi-VN')}</div>
+                        <div>{isEn ? 'Held:' : 'Giữ:'} <span className="text-amber-500 font-bold">{Number(l.balance_held_after).toLocaleString(isEn ? 'en-US' : 'vi-VN')}</span></div>
+                        <div className="text-[10px] text-muted-foreground">{isEn ? 'Available:' : 'Khả dụng:'} <span className="text-emerald-500 font-bold">{Number(l.balance_available_after).toLocaleString(isEn ? 'en-US' : 'vi-VN')}</span> | {isEn ? 'Withdrawn:' : 'Đã rút:'} {Number(l.balance_withdrawn_after).toLocaleString(isEn ? 'en-US' : 'vi-VN')}</div>
                       </td>
                       <td className="p-3 text-right">
                         <span className="truncate block text-muted-foreground" title={l.reason}>
@@ -1920,24 +1920,24 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           <div className="bg-card border border-border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-base font-bold flex items-center gap-2">
-                <Coins className="w-5 h-5 text-primary" /> Rút Tiền Về Ngân Hàng
+                <Coins className="w-5 h-5 text-primary" /> {isEn ? 'Withdraw Funds to Bank' : 'Rút Tiền Về Ngân Hàng'}
               </h4>
               <button onClick={() => setShowWithdrawModal(false)}><X className="w-4 h-4" /></button>
             </div>
 
             <div className="p-3.5 bg-muted/40 rounded-xl space-y-1.5 text-xs">
-              <div className="text-muted-foreground">Số dư khả dụng hiện tại:</div>
+              <div className="text-muted-foreground">{isEn ? 'Current available balance:' : 'Số dư khả dụng hiện tại:'}</div>
               <div className="text-xl font-black text-emerald-500">
                 {Number(financeData?.balances?.available_core ?? sellerData?.available_balance_core ?? 0).toLocaleString('vi-VN')} Core
               </div>
               <div className="pt-2 border-t border-border/60 text-[11px] text-muted-foreground">
-                Tài khoản nhận: <span className="font-bold text-foreground">{sellerData?.bank_name}</span> - <span className="font-mono font-bold text-foreground">{sellerData?.bank_account}</span> ({sellerData?.bank_account_name})
+                {isEn ? 'Beneficiary account:' : 'Tài khoản nhận:'} <span className="font-bold text-foreground">{sellerData?.bank_name}</span> - <span className="font-mono font-bold text-foreground">{sellerData?.bank_account}</span> ({sellerData?.bank_account_name})
               </div>
             </div>
 
             <form onSubmit={handleRequestWithdraw} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold mb-1">Số Core muốn rút *</label>
+                <label className="block font-semibold mb-1">{isEn ? 'Core amount to withdraw *' : 'Số Core muốn rút *'}</label>
                 <input
                   type="number"
                   required
@@ -1945,16 +1945,16 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                   max={Number(financeData?.balances?.available_core ?? sellerData?.available_balance_core ?? 0)}
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  placeholder="Nhập số Core (tối thiểu 1)..."
+                  placeholder={isEn ? "Enter Core amount (min 1)..." : "Nhập số Core (tối thiểu 1)..."}
                   className="w-full px-3 py-2 rounded-xl border border-border bg-background font-mono font-bold text-base focus:outline-none focus:border-primary"
                 />
                 <span className="text-[10px] text-muted-foreground mt-1 block">
-                  Tỷ lệ quy đổi: 1 Core = 1 VND. Số tiền chuyển khoản: {parseInt(withdrawAmount || '0', 10).toLocaleString('vi-VN')} VNĐ.
+                  {isEn ? `Exchange rate: 1 Core = 1 VND. Transfer amount: ${parseInt(withdrawAmount || '0', 10).toLocaleString('en-US')} VND.` : `Tỷ lệ quy đổi: 1 Core = 1 VND. Số tiền chuyển khoản: ${parseInt(withdrawAmount || '0', 10).toLocaleString('vi-VN')} VNĐ.`}
                 </span>
               </div>
 
               <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-[11px] text-primary">
-                ℹ️ Lưu ý: Yêu cầu rút ≤ {financeData?.config?.withdraw_approval_threshold_core || 500} Core sẽ được duyệt tự động. Yêu cầu lớn hơn sẽ được Chủ Sàn duyệt thủ công.
+                {isEn ? `ℹ️ Note: Requests ≤ ${financeData?.config?.withdraw_approval_threshold_core || 500} Core are auto-approved. Larger amounts require manual approval by Mall Admin.` : `ℹ️ Lưu ý: Yêu cầu rút ≤ ${financeData?.config?.withdraw_approval_threshold_core || 500} Core sẽ được duyệt tự động. Yêu cầu lớn hơn sẽ được Chủ Sàn duyệt thủ công.`}
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -1963,14 +1963,14 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                   onClick={() => setShowWithdrawModal(false)}
                   className="px-4 py-2 rounded-xl border border-border font-semibold hover:bg-muted"
                 >
-                  Hủy
+                  {isEn ? 'Cancel' : 'Hủy'}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingWithdraw}
                   className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold shadow-sm disabled:opacity-50"
                 >
-                  {isSubmittingWithdraw ? 'Đang gửi...' : 'Xác Nhận Rút Tiền'}
+                  {isSubmittingWithdraw ? (isEn ? 'Submitting...' : 'Đang gửi...') : (isEn ? 'Confirm Payout' : 'Xác Nhận Rút Tiền')}
                 </button>
               </div>
             </form>
@@ -1983,10 +1983,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         <div className="space-y-6 max-w-3xl">
           <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
             <h3 className="text-base font-bold flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" /> Quản Lý Tài Khoản Phụ (Nhân Viên / Hỗ Trợ)
+              <Users className="w-5 h-5 text-primary" /> {isEn ? 'Manage Staff & Subaccounts' : 'Quản Lý Tài Khoản Phụ (Nhân Viên / Hỗ Trợ)'}
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Mời thành viên khác hỗ trợ quản lý kho hoặc xem đơn hàng. Tài khoản phụ tuyệt đối <strong>không thể xem hoặc sửa thông tin thanh toán ngân hàng và không thể rút tiền</strong>.
+              {isEn ? 'Invite staff members to manage inventory or view orders. Subaccounts cannot view/edit bank details or withdraw funds.' : 'Mời thành viên khác hỗ trợ quản lý kho hoặc xem đơn hàng. Tài khoản phụ tuyệt đối không thể xem hoặc sửa thông tin thanh toán ngân hàng và không thể rút tiền.'}
             </p>
 
             <form onSubmit={handleAddSubaccount} className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -1995,7 +1995,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 required
                 value={newSubEmail}
                 onChange={(e) => setNewSubEmail(e.target.value)}
-                placeholder="Nhập email thành viên cần gán quyền..."
+                placeholder={isEn ? "Enter staff email address..." : "Nhập email thành viên cần gán quyền..."}
                 className="flex-1 px-3.5 py-2 rounded-xl border border-border bg-background text-xs focus:outline-none focus:border-primary"
               />
               <select
@@ -2003,30 +2003,30 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 onChange={(e: any) => setNewSubRole(e.target.value)}
                 className="px-3 py-2 rounded-xl border border-border bg-background text-xs font-medium focus:outline-none focus:border-primary"
               >
-                <option value="VIEW_ORDERS">Chỉ Xem Đơn (VIEW_ORDERS)</option>
-                <option value="MANAGE_STOCK">Quản Lý Kho Mã (MANAGE_STOCK)</option>
+                <option value="VIEW_ORDERS">{isEn ? 'View Orders Only (VIEW_ORDERS)' : 'Chỉ Xem Đơn (VIEW_ORDERS)'}</option>
+                <option value="MANAGE_STOCK">{isEn ? 'Manage Vault (MANAGE_STOCK)' : 'Quản Lý Kho Mã (MANAGE_STOCK)'}</option>
               </select>
               <button
                 type="submit"
                 className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm shrink-0"
               >
-                Thêm Quyền
+                {isEn ? 'Grant Access' : 'Thêm Quyền'}
               </button>
             </form>
 
             <div className="pt-2 divide-y divide-border/60">
               {subaccounts.length === 0 ? (
-                <div className="py-4 text-xs text-muted-foreground text-center">Chưa có tài khoản phụ nào.</div>
+                <div className="py-4 text-xs text-muted-foreground text-center">{isEn ? 'No staff accounts added yet.' : 'Chưa có tài khoản phụ nào.'}</div>
               ) : (
                 subaccounts.map((sa) => (
                   <div key={sa.id} className="py-2.5 flex items-center justify-between text-xs">
                     <div>
                       <div className="font-bold text-foreground">{sa.member_email}</div>
-                      <div className="text-[11px] text-muted-foreground">Vai trò: {sa.role}</div>
+                      <div className="text-[11px] text-muted-foreground">{isEn ? 'Role:' : 'Vai trò:'} {sa.role}</div>
                     </div>
                     <button
                       onClick={async () => {
-                        if (confirm(`Xóa quyền của ${sa.member_email}?`)) {
+                        if (confirm(isEn ? `Remove access for ${sa.member_email}?` : `Xóa quyền của ${sa.member_email}?`)) {
                           await fetch(`/api/seller/subaccounts/${sa.id}`, { method: 'DELETE', headers: getHeaders() });
                           fetchSubaccounts();
                         }
@@ -2079,7 +2079,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               </div>
             ) : apiKeys.length === 0 ? (
               <div className="py-8 text-center text-xs text-muted-foreground">
-                Chưa có khóa API nào. Bấm "Tạo Khóa Mới" để cấp khóa đầu tiên.
+                {t('sellerApiKeys.noKeys', isEn ? 'No API keys yet. Click "Create Key" to issue your first key.' : 'Chưa có khóa API nào. Bấm "Tạo Khóa Mới" để cấp khóa đầu tiên.')}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -2246,7 +2246,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 </div>
               </div>
               <div className="text-[11px] text-muted-foreground pt-1">
-                ⚡ Giới hạn: Tối đa 600 yêu cầu / phút. Xem tài liệu kỹ thuật chi tiết tại file <strong className="text-foreground">docs/STORE_API_GUIDE.md</strong> trong mã nguồn.
+                {isEn ? <>⚡ Rate limit: Max 600 requests / minute. See technical details in <strong className="text-foreground">docs/STORE_API_GUIDE.md</strong> in repository.</> : <>⚡ Giới hạn: Tối đa 600 yêu cầu / phút. Xem tài liệu kỹ thuật chi tiết tại file <strong className="text-foreground">docs/STORE_API_GUIDE.md</strong> trong mã nguồn.</>}
               </div>
             </div>
 
@@ -2590,7 +2590,7 @@ const data = await res.json();`}
 
             <form onSubmit={handleAddCodes} className="space-y-4 text-xs">
               <p className="text-muted-foreground">
-                Dán danh sách mã code vào ô bên dưới (mỗi dòng 1 mã code). Hệ thống sẽ tự động lọc trùng và mã hóa an toàn.
+                {isEn ? 'Paste code list below (one code per line). System will automatically deduplicate and securely encrypt codes.' : 'Dán danh sách mã code vào ô bên dưới (mỗi dòng 1 mã code). Hệ thống sẽ tự động lọc trùng và mã hóa an toàn.'}
               </p>
 
               <textarea
@@ -2608,13 +2608,13 @@ const data = await res.json();`}
                   onClick={() => setShowAddCodesModal(false)}
                   className="px-4 py-2 rounded-xl border border-border hover:bg-muted font-semibold"
                 >
-                  Hủy
+                  {isEn ? 'Cancel' : 'Hủy'}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold shadow-sm"
                 >
-                  Nạp Kho Ngay
+                  {isEn ? 'Deposit Codes Now' : 'Nạp Kho Ngay'}
                 </button>
               </div>
             </form>
@@ -2628,22 +2628,22 @@ const data = await res.json();`}
           <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-destructive flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5" /> Xử Lý Báo Lỗi Đơn Hàng
+                <ShieldAlert className="w-5 h-5" /> {isEn ? 'Resolve Order Report' : 'Xử Lý Báo Lỗi Đơn Hàng'}
               </h3>
               <button onClick={() => setResolvingOrder(null)}><X className="w-5 h-5" /></button>
             </div>
 
             <div className="text-xs bg-muted/60 p-3 rounded-xl space-y-1">
-              <div>Đơn hàng: <strong>{resolvingOrder.order_code}</strong></div>
-              <div>Sản phẩm: <strong>{resolvingOrder.product_name}</strong></div>
-              <div>Giá: <strong>{resolvingOrder.price_core} Core</strong></div>
-              <div>Lý do khách báo: <span className="text-destructive font-semibold">{resolvingOrder.report_reason === 'expired' ? 'Mã hết hạn' : 'Nhập không được'}</span></div>
-              {resolvingOrder.report_note && <div>Ghi chú: {resolvingOrder.report_note}</div>}
+              <div>{isEn ? 'Order:' : 'Đơn hàng:'} <strong>{resolvingOrder.order_code}</strong></div>
+              <div>{isEn ? 'Product:' : 'Sản phẩm:'} <strong>{resolvingOrder.product_name}</strong></div>
+              <div>{isEn ? 'Price:' : 'Giá:'} <strong>{resolvingOrder.price_core} Core</strong></div>
+              <div>{isEn ? 'Buyer reason:' : 'Lý do khách báo:'} <span className="text-destructive font-semibold">{resolvingOrder.report_reason === 'expired' ? (isEn ? 'Expired code' : 'Mã hết hạn') : (isEn ? 'Cannot redeem' : 'Nhập không được')}</span></div>
+              {resolvingOrder.report_note && <div>{isEn ? 'Note:' : 'Ghi chú:'} {resolvingOrder.report_note}</div>}
             </div>
 
             <form onSubmit={handleResolveOrder} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold mb-1.5">Chọn Phương Án Xử Lý:</label>
+                <label className="block font-semibold mb-1.5">{isEn ? 'Select Resolution Option:' : 'Chọn Phương Án Xử Lý:'}</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -2654,7 +2654,7 @@ const data = await res.json();`}
                         : 'border-border bg-background'
                     }`}
                   >
-                    Đổi Mã Mới Tự Động
+                    {isEn ? 'Auto Replace With New Code' : 'Đổi Mã Mới Tự Động'}
                   </button>
                   <button
                     type="button"
@@ -2665,18 +2665,18 @@ const data = await res.json();`}
                         : 'border-border bg-background'
                     }`}
                   >
-                    Hoàn Trả Core ({resolvingOrder.price_core} Core)
+                    {isEn ? `Refund Core (${resolvingOrder.price_core} Core)` : `Hoàn Trả Core (${resolvingOrder.price_core} Core)`}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Ghi Chú Phản Hồi Cho Khách</label>
+                <label className="block font-semibold mb-1">{isEn ? 'Response Note to Buyer' : 'Ghi Chú Phản Hồi Cho Khách'}</label>
                 <input
                   type="text"
                   value={resolveNote}
                   onChange={(e) => setResolveNote(e.target.value)}
-                  placeholder="Đã đổi mã mới / Đã hoàn Core..."
+                  placeholder={isEn ? "Replaced new code / Refunded Core..." : "Đã đổi mã mới / Đã hoàn Core..."}
                   className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                 />
               </div>
@@ -2687,13 +2687,13 @@ const data = await res.json();`}
                   onClick={() => setResolvingOrder(null)}
                   className="px-4 py-2 rounded-xl border border-border hover:bg-muted font-semibold"
                 >
-                  Đóng
+                  {isEn ? 'Close' : 'Đóng'}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-destructive text-white font-bold shadow-sm"
                 >
-                  Xác Nhận Giải Quyết
+                  {isEn ? 'Confirm Resolution' : 'Xác Nhận Giải Quyết'}
                 </button>
               </div>
             </form>
@@ -2707,7 +2707,7 @@ const data = await res.json();`}
           <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-xl space-y-4 animate-scale-in">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold flex items-center gap-2 text-foreground">
-                <ShieldAlert className="w-5 h-5 text-primary" /> Phản Hồi Khiếu Nại Đơn Hàng
+                <ShieldAlert className="w-5 h-5 text-primary" /> {isEn ? 'Respond to Order Dispute' : 'Phản Hồi Khiếu Nại Đơn Hàng'}
               </h3>
               <button onClick={() => setRespondingDispute(null)} className="p-1 rounded hover:bg-muted text-muted-foreground">
                 <X className="w-5 h-5" />
@@ -2715,48 +2715,48 @@ const data = await res.json();`}
             </div>
 
             <div className="text-xs bg-muted/60 p-3 rounded-xl space-y-1">
-              <div>Mã khiếu nại: <strong className="font-mono text-primary-light">{respondingDispute.id}</strong></div>
-              <div>Đơn hàng: <strong className="font-mono">{respondingDispute.order_code}</strong> ({Number(respondingDispute.price_core).toLocaleString()} Core)</div>
-              <div>Gói: <strong>{respondingDispute.product_name}</strong></div>
-              <div>Khách: <strong>{respondingDispute.buyer_username || 'Khách hàng'}</strong></div>
-              <div>Lý do khiếu nại: <span className="text-destructive font-semibold">
-                {respondingDispute.reason === 'WRONG_CODE' ? 'Mã sai định dạng' :
-                 respondingDispute.reason === 'USED_CODE' ? 'Mã đã dùng' :
-                 respondingDispute.reason === 'EXPIRED_CODE' ? 'Mã hết hạn' : 'Sai mô tả'}
+              <div>{isEn ? 'Dispute ID:' : 'Mã khiếu nại:'} <strong className="font-mono text-primary-light">{respondingDispute.id}</strong></div>
+              <div>{isEn ? 'Order:' : 'Đơn hàng:'} <strong className="font-mono">{respondingDispute.order_code}</strong> ({Number(respondingDispute.price_core).toLocaleString(isEn ? 'en-US' : 'vi-VN')} Core)</div>
+              <div>{isEn ? 'Package:' : 'Gói:'} <strong>{respondingDispute.product_name}</strong></div>
+              <div>{isEn ? 'Customer:' : 'Khách:'} <strong>{respondingDispute.buyer_username || (isEn ? 'Customer' : 'Khách hàng')}</strong></div>
+              <div>{isEn ? 'Dispute reason:' : 'Lý do khiếu nại:'} <span className="text-destructive font-semibold">
+                {respondingDispute.reason === 'WRONG_CODE' ? (isEn ? 'Wrong code format' : 'Mã sai định dạng') :
+                 respondingDispute.reason === 'USED_CODE' ? (isEn ? 'Already used' : 'Mã đã dùng') :
+                 respondingDispute.reason === 'EXPIRED_CODE' ? (isEn ? 'Expired code' : 'Mã hết hạn') : (isEn ? 'Wrong description' : 'Sai mô tả')}
               </span></div>
               {respondingDispute.detail && (
-                <div className="text-muted-foreground italic">Khách viết: "{respondingDispute.detail}"</div>
+                <div className="text-muted-foreground italic">{isEn ? 'Buyer wrote:' : 'Khách viết:'} "{respondingDispute.detail}"</div>
               )}
             </div>
 
             <form onSubmit={handleRespondDispute} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold mb-1">Nội dung phản hồi / Giải trình *</label>
+                <label className="block font-semibold mb-1">{isEn ? 'Response explanation / Justification *' : 'Nội dung phản hồi / Giải trình *'}</label>
                 <textarea
                   rows={3}
                   maxLength={1000}
                   required
                   value={disputeResponseMsg}
                   onChange={(e) => setDisputeResponseMsg(e.target.value)}
-                  placeholder="Giải thích nguyên nhân hoặc hướng dẫn khách hàng nhập mã..."
+                  placeholder={isEn ? "Explain reason or guide customer on redeeming code..." : "Giải thích nguyên nhân hoặc hướng dẫn khách hàng nhập mã..."}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background focus:outline-none focus:border-primary text-xs resize-none"
                 />
                 <div className="text-[10px] text-muted-foreground text-right mt-0.5">
-                  {disputeResponseMsg.length}/1000 ký tự
+                  {disputeResponseMsg.length}/1000 {isEn ? 'chars' : 'ký tự'}
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Đính kèm mã thay thế mới (Tùy chọn)</label>
+                <label className="block font-semibold mb-1">{isEn ? 'Attach new replacement code (Optional)' : 'Đính kèm mã thay thế mới (Tùy chọn)'}</label>
                 <input
                   type="text"
                   value={disputeReplacementCode}
                   onChange={(e) => setDisputeReplacementCode(e.target.value)}
-                  placeholder="Nhập mã giftcode thay thế nếu có..."
+                  placeholder={isEn ? "Enter replacement giftcode if applicable..." : "Nhập mã giftcode thay thế nếu có..."}
                   className="w-full font-mono px-3.5 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary text-xs"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Nếu bạn nạp mã thay thế tại đây, Quản trị viên có thể bàn giao ngay mã này cho khách hàng khi duyệt đổi mã.
+                  {isEn ? 'If you attach a replacement code here, Admins can immediately deliver it to the buyer upon approving the exchange.' : 'Nếu bạn nạp mã thay thế tại đây, Quản trị viên có thể bàn giao ngay mã này cho khách hàng khi duyệt đổi mã.'}
                 </p>
               </div>
 
@@ -2766,14 +2766,14 @@ const data = await res.json();`}
                   onClick={() => setRespondingDispute(null)}
                   className="px-4 py-2 rounded-xl border border-border hover:bg-muted font-semibold"
                 >
-                  Đóng
+                  {isEn ? 'Close' : 'Đóng'}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingDisputeResp}
                   className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold shadow-sm disabled:opacity-50 transition-opacity"
                 >
-                  {isSubmittingDisputeResp ? 'Đang gửi...' : 'Gửi Phản Hồi'}
+                  {isSubmittingDisputeResp ? (isEn ? 'Submitting...' : 'Đang gửi...') : (isEn ? 'Submit Response' : 'Gửi Phản Hồi')}
                 </button>
               </div>
             </form>

@@ -898,5 +898,70 @@
         "description": "Cụm nút chuyển đổi thứ tự sắp xếp sản phẩm theo Mới nhất hoặc Bán chạy nhất."
       }
     }
+  },
+  "sellerCenter": {
+    "loginRequired": "Vui lòng đăng nhập tài khoản thành viên để đăng ký mở gian hàng và quản lý kinh doanh.",
+    "loginTitle": "Trung Tâm Người Bán CodeGame.shop",
+    "loginBtn": "Đăng Nhập Ngay",
+    "backHome": "Về Trang Chủ",
+    "tabs": {
+      "dashboard": "Tổng Quan",
+      "products": "Sản Phẩm",
+      "codes": "Kho Mã & Nạp Kho",
+      "orders": "Đơn Hàng Bán",
+      "disputes": "Khiếu Nại Sàn",
+      "finance": "Tài Chính & Rút Tiền",
+      "settings": "Cài Đặt & Tài Khoản Phụ",
+      "apiKeys": "Khóa API & Tích Hợp"
+    },
+    "productTypes": {
+      "digital": "Hàng Số",
+      "physical": "Hàng Vật Lý",
+      "digitalDesc": "Hàng Số (Giftcode / API)",
+      "physicalDesc": "Hàng Vật Lý (Bưu Cục)"
+    },
+    "productStatus": {
+      "approved": "Đã Duyệt",
+      "pending": "Chờ Duyệt",
+      "rejected": "Từ Chối"
+    },
+    "orderStatus": {
+      "delivered": "Đã Giao",
+      "reported": "Báo Lỗi",
+      "refunded": "Đã Hoàn Tiền"
+    },
+    "codeStatus": {
+      "inStock": "Chưa Bán",
+      "sold": "Đã Bán",
+      "reported": "Báo Lỗi",
+      "reserved": "Đang Giữ Chỗ"
+    },
+    "disputeStatus": {
+      "open": "Chờ Phản Hồi",
+      "waitingSeller": "Đã Phản Hồi",
+      "resolvedReplaced": "Đã Đổi Mã",
+      "resolvedRefunded": "Đã Hoàn Core",
+      "rejected": "Đã Từ Chối"
+    },
+    "disputeReasons": {
+      "wrongCode": "Mã Sai",
+      "usedCode": "Mã Đã Dùng",
+      "expiredCode": "Hết Hạn",
+      "misdescribed": "Sai Mô Tả"
+    },
+    "alerts": {
+      "reportedOrders": "Có {count} đơn hàng báo lỗi cần xử lý!",
+      "reportedOrdersDesc": "Vui lòng kiểm tra và đổi mã mới hoặc hoàn Core cho khách.",
+      "lowStock": "Có {count} sản phẩm sắp hết kho!",
+      "lowStockDesc": "Nạp thêm mã để tránh bị tự động ẩn ngoài web khách.",
+      "resolveNow": "Xử Lý Ngay",
+      "restockNow": "Nạp Kho"
+    },
+    "trialNotice": {
+      "title": "Quy định giai đoạn thử việc (TRIAL):",
+      "rule1": "• Gian hàng đang trong giai đoạn thử việc được đăng tối đa {limit} sản phẩm.",
+      "rule2": "• Giá bán tối đa mỗi sản phẩm không vượt quá {max} Core.",
+      "rule3": "• Mọi sản phẩm mới hoặc khi đổi giá cần qua Quản trị viên duyệt (PENDING_REVIEW) trước khi mở bán công khai."
+    }
   }
 }
