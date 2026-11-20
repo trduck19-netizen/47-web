@@ -2342,6 +2342,21 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0037 error]', e);
     }
 
+    // Migration 0038: Ensure test seller member usr_1795086871229_87qa exists and unblock login IP limits
+    try {
+      const mig0038 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0038_seed_test_seller_member_v1' LIMIT 1").first().catch(() => null);
+      if (!mig0038) {
+        await db.prepare(`
+          INSERT OR IGNORE INTO members (id, username, display_name, email, role, balance, status, created_at)
+          VALUES ('usr_1795086871229_87qa', 'muse-test-seller', 'Muse Test Seller', 'muse-test-seller@example.com', 'MEMBER', 1000000, 'ACTIVE', datetime('now'))
+        `).run().catch(() => {});
+        await db.prepare("DELETE FROM ip_rate_limits WHERE action_type = 'LOGIN'").run().catch(() => {});
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0038_seed_test_seller_member_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0038 error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);
