@@ -85,7 +85,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const { results } = await env.DB.prepare(query).bind(...params, limit, offset).all<any>();
 
-    const items = (results || []).map((p: any) => {
+    let items = (results || []).map((p: any) => {
       let images = [];
       let specs = {};
       try { images = JSON.parse(p.images_json || '[]'); } catch {}
@@ -97,6 +97,61 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       };
     });
 
+    let effectiveTotal = total;
+    let effectiveRawTotal = rawTotal;
+
+    // Fallback/Unified: Nếu bảng products trống, tự động nạp các sản phẩm đã duyệt từ gian hàng hoạt động (seller_products)
+    if (total === 0 && (!industryId || industryId === 'all') && (!categoryId || categoryId === 'all')) {
+      try {
+        const sCountRow = await env.DB.prepare(`
+          SELECT COUNT(*) as total 
+          FROM seller_products sp
+          INNER JOIN sellers s ON sp.seller_id = s.id
+          WHERE sp.status = 'APPROVED' AND sp.deleted_at IS NULL AND s.deleted_at IS NULL AND s.status IN ('ACTIVE', 'TRIAL')
+        `).first<any>().catch(() => ({ total: 0 }));
+        const sTotal = Number(sCountRow?.total || 0);
+
+        if (sTotal > 0) {
+          const { results: sResults } = await env.DB.prepare(`
+            SELECT 
+              sp.id, sp.name AS title, sp.id AS slug, 'all' AS industry_id, 'all' AS category_id,
+              COALESCE(sp.product_type, 'digital') AS product_type,
+              sp.original_price_core AS original_price, sp.price_core AS current_price,
+              0 AS discount_percent,
+              CASE WHEN sp.product_type = 'physical' THEN 999 ELSE COALESCE(sc_agg.available_codes, 0) END AS stock_quantity,
+              sp.cover_url AS thumbnail_url,
+              sp.description,
+              s.store_name AS brand_name,
+              5.0 AS rating_avg, 10 AS rating_count, COALESCE(sc_agg.sold_codes, 0) AS sold_count,
+              1 AS is_active,
+              sp.created_at, sp.updated_at
+            FROM seller_products sp
+            INNER JOIN sellers s ON sp.seller_id = s.id
+            LEFT JOIN (
+              SELECT product_id,
+                SUM(CASE WHEN is_used = 0 AND is_reserved = 0 THEN 1 ELSE 0 END) AS available_codes,
+                SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END) AS sold_codes
+              FROM seller_codes
+              GROUP BY product_id
+            ) sc_agg ON sp.id = sc_agg.product_id
+            WHERE sp.status = 'APPROVED' AND sp.deleted_at IS NULL AND s.deleted_at IS NULL AND s.status IN ('ACTIVE', 'TRIAL')
+            ORDER BY sp.created_at DESC
+            LIMIT ? OFFSET ?
+          `).bind(limit, offset).all<any>();
+
+          items = (sResults || []).map((sp: any) => ({
+            ...sp,
+            images: [sp.thumbnail_url].filter(Boolean),
+            specifications: {},
+          }));
+          effectiveTotal = sTotal;
+          effectiveRawTotal = sTotal;
+        }
+      } catch (e) {
+        console.warn('[/api/products seller_products fallback error]', e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -104,9 +159,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         pagination: {
           page,
           limit,
-          total,
-          raw_total_rows: rawTotal,
-          totalPages: Math.ceil(total / limit),
+          total: effectiveTotal,
+          raw_total_rows: effectiveRawTotal,
+          totalPages: Math.ceil(effectiveTotal / limit),
         },
       }),
       { status: 200, headers: CORS_HEADERS }

@@ -327,11 +327,36 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       setCategoriesConfig(c);
       setCurrentStoreProducts(dataService.getStoreProducts(c?.activePresetId));
     };
+
+    const handleProductsSync = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+        setCurrentStoreProducts(e.detail);
+      } else {
+        const c = dataService.getProductCategoriesConfig();
+        setCurrentStoreProducts(dataService.getStoreProducts(c?.activePresetId));
+      }
+    };
+
     window.addEventListener('wcg_admin_data_updated', handleBrandingSync);
     window.addEventListener('storage', handleBrandingSync);
+    window.addEventListener('wcg_store_products_updated', handleProductsSync);
+    window.addEventListener('wcg_store_settings_updated', handleProductsSync);
+
+    // Kích hoạt đồng bộ sản phẩm từ D1 nếu danh sách ban đầu rỗng
+    fetch('/api/sync-lite?fresh=1&_t=' + Date.now())
+      .then((r) => r.json())
+      .then((json) => {
+        if (json?.storeProducts && Array.isArray(json.storeProducts) && json.storeProducts.length > 0) {
+          setCurrentStoreProducts(json.storeProducts);
+        }
+      })
+      .catch(() => {});
+
     return () => {
       window.removeEventListener('wcg_admin_data_updated', handleBrandingSync);
       window.removeEventListener('storage', handleBrandingSync);
+      window.removeEventListener('wcg_store_products_updated', handleProductsSync);
+      window.removeEventListener('wcg_store_settings_updated', handleProductsSync);
     };
   }, []);
 

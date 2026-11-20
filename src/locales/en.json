@@ -195,6 +195,8 @@
   },
   "cart": {
     "title": "Your Shopping Cart",
+    "multiStoreTitle": "Multi-Store Cart",
+    "clearAll": "Clear all",
     "empty": "Your cart is currently empty",
     "emptyDesc": "Explore hundreds of exciting products and deals on our platform!",
     "continueShopping": "Continue Shopping",

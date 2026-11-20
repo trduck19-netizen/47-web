@@ -7,6 +7,26 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-20]
 
+### 423. Sửa Lỗi Sập Tab Sản Phẩm, Ngăn Gian Hàng Test Tự Về TRIAL, Bổ Sung Khóa Giỏ Hàng & Đồng Bộ Số Đếm Trang Chủ (20/11/2026)
+- **Bối cảnh & Triệu chứng**:
+  1. *Việc 1 (Sập tab Sản Phẩm trong Kênh Người Bán)*: Mở tab Sản Phẩm báo lỗi `isEn is not defined` do biến `isEn` được sử dụng ở nhiều vị trí nhưng chưa khai báo trong component.
+  2. *Việc 2 (Gian hàng test tự về TRIAL sau mỗi lần deploy)*: Trong `d1_service.ts`, hàm `ensureMarketplaceSchema` có khối lệnh runtime gán `status = 'TRIAL'` chạy mỗi khi Worker khởi động lại sau deploy do chỉ chặn bằng cờ bộ nhớ tạm.
+  3. *Việc 3 (Khóa chưa dịch trong giỏ hàng & Lệch số đếm trang chủ)*: Giỏ hàng hiển thị nguyên chuỗi khóa `multiStoreTitle` và `clearAll` do thiếu trong từ điển `vi.json` và `en.json`; trang chủ hiển thị "Tất Cả (0 sản phẩm)" do `loadAllStoreProductsD1` chỉ đếm từ bảng `store_products` cũ mà chưa liên kết tới `seller_products` đã duyệt.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Định nghĩa isEn (`src/components/seller/SellerCenterView.tsx`)*: Thêm `const isEn = language === 'en';` từ hook `useLanguage()`, rà soát sạch các biến phụ thuộc.
+  2. *Loại bỏ runtime status reset (`functions/services/d1_service.ts`)*: Gỡ bỏ hoàn toàn khối lệnh runtime gán cứng `status = 'TRIAL'` trong `ensureMarketplaceSchema` và migration 0035, đảm bảo trạng thái `ACTIVE` của gian hàng được bảo lưu vĩnh viễn qua mọi đợt deploy.
+  3. *Bổ sung từ điển giỏ hàng & Đồng bộ sản phẩm sàn đa ngành (`src/locales/vi.json`, `src/locales/en.json`, `functions/services/d1_service.ts`, `functions/api/products/index.ts`, `src/components/shopee/ShopeeTestView.tsx`)*:
+     - Thêm `multiStoreTitle` và `clearAll` song ngữ chuẩn xác vào `vi.json` và `en.json`.
+     - Nâng cấp `loadAllStoreProductsD1` tự động nạp các sản phẩm đã duyệt (`status = 'APPROVED'`) từ `seller_products` của các gian hàng đang hoạt động, đếm chính xác số lượng mã khả dụng từ `seller_codes`.
+     - Nâng cấp `GET /api/products` tự động fallback nạp sản phẩm từ `seller_products` khi bảng catalog trung tâm chưa có sản phẩm riêng.
+     - `ShopeeTestView.tsx` bổ sung lắng nghe sự kiện `wcg_store_products_updated` và tự động fetch `/api/sync-lite?fresh=1` khi danh sách sản phẩm ban đầu rỗng.
+- **Kiểm thử & Nghiệm thu**:
+  - `check:i18n`: 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - An toàn thông tin Rule 10: 3 lệnh git grep kiểm tra secret đều trả về 0.
+  - Tab Sản phẩm mở mượt mà trên cả 2 ngôn ngữ VI và EN.
+  - Tiêu đề giỏ hàng và nút xóa hiển thị đúng tiếng Việt / tiếng Anh.
+  - Trang chủ sàn hiển thị đúng tổng số sản phẩm thật đang bán từ các gian hàng đã duyệt.
+
 ### 422. Động Cơ Tách Đơn Hàng Số / Vật Lý (Split-Order Engine), Giữ Tiền Đa Tầng & Viettel Post (20/11/2026)
 - **Bối cảnh & Yêu cầu**:
   1. *Việc 1 (Phân loại sản phẩm số / vật lý)*: Mở rộng bảng `seller_products`, `products`, `seller_orders`, `orders` với `product_type`, `weight_grams`, `warehouse_address`. Bổ sung 2 bảng cấu hình vệ tinh `seller_product_digital_configs` và `seller_product_physical_configs`. Cập nhật form người bán `SellerCenterView.tsx` với Segmented Switch [⚡ Hàng Số] vs [📦 Hàng Vật Lý] và xác thực trường động theo loại.

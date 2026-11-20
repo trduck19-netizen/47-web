@@ -54,6 +54,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   onNavigateHome,
 }) => {
   const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [loading, setLoading] = useState<boolean>(true);
   const [sellerData, setSellerData] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);

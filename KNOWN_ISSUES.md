@@ -10,6 +10,18 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-305: Cờ Bộ Nhớ Tạm Runtime Reset Trạng Thái D1, Biến isEn Chưa Khai Báo Trong Component & Nguồn Đếm Sản Phẩm Trang Chủ
+- **Triệu chứng & Rủi ro**:
+  - Dùng cờ trong bộ nhớ JavaScript (`let _flag = false`) để bảo vệ các câu lệnh `UPDATE sellers SET status = 'TRIAL'` khi khởi động máy chủ Worker sẽ khiến câu lệnh bị chạy lại sau mỗi lần deploy mới (vì Worker tái khởi động làm mất cờ trong RAM), ghi đè trạng thái `ACTIVE` của gian hàng người dùng.
+  - Sử dụng biến `isEn` trong các nhánh render điều kiện JSX mà quên khai báo `const isEn = language === 'en'` ở đầu component sẽ làm sập hoàn toàn phân hệ khi người dùng bấm vào tab tương ứng với lỗi `isEn is not defined`.
+  - Khóa dịch truy cập qua Proxy `t.cart.key` nếu không tồn tại trong từ điển sẽ trả về chính tên khóa (`key`), làm lộ các chuỗi thô như `multiStoreTitle` hay `clearAll` trên giao diện người dùng.
+  - Trang chủ sàn TMĐT nếu chỉ đọc sản phẩm từ bảng cũ `store_products` thay vì liên kết với các sản phẩm đã được duyệt (`status = 'APPROVED'`) trong `seller_products` sẽ khiến bộ đếm trang chủ báo `0 sản phẩm` trong khi các gian hàng vẫn có sản phẩm đang bán.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Tuyệt đối không đặt bất kỳ câu lệnh nào tự ý cập nhật trạng thái dữ liệu người dùng (`status = 'TRIAL'`) trong các hàm chạy khi khởi động Worker (`ensureMarketplaceSchema`). Các tác vụ migration chỉ chạy 1 lần duy nhất và ghi nhận vào bảng `schema_migrations`.
+  - Luôn khai báo tường minh `const isEn = language === 'en'` ngay dưới hook `const { t, language } = useLanguage()` trong component.
+  - Bổ sung đầy đủ các khóa dịch song ngữ đối xứng trong `vi.json` và `en.json`.
+  - Trong `loadAllStoreProductsD1`, tự động nạp kết hợp các sản phẩm đã duyệt từ `seller_products` của các gian hàng đang hoạt động (`status IN ('ACTIVE', 'TRIAL')`), đếm tồn kho khả dụng từ `seller_codes`.
+
 ### ISSUE-304: Vị Trí D1 Migration Fast-Path Cache, Thanh Toán Giỏ Hàng Hỗn Hợp (Multi-Item Mixed Carts) & Graceful Carrier Degrade
 - **Triệu chứng & Rủi ro**:
   - Khi thêm migration schema mới trong `d1_service.ts`, nếu đặt bên dưới khối kiểm tra fast-path cache (`wcg_virtual_layer_tables_v1`), ứng dụng đang chạy sẽ bỏ qua migration mới và không thực thi các câu lệnh `ALTER TABLE` / `CREATE TABLE`, dẫn tới lỗi thiếu cột (`no column named product_type`) trên môi trường production.

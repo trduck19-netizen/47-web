@@ -826,41 +826,12 @@ export async function ensureGameCommentsSchema(db: D1Database): Promise<void> {
 }
 
 let _marketplaceSchemaEnsured = false;
-let _sellerOwnershipRestored = false;
 
 /**
  * Safe runtime schema for Marketplace Phase 1 (Sàn TMĐT Số - Nền Gian Hàng MVP)
  * Tối ưu hóa 0s: Sử dụng in-memory cache và fast check 1 query để tránh gọi 51 DDL queries tuần tự
  */
 export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
-  if (!_sellerOwnershipRestored) {
-    try {
-      const legacyTestOwner = ['usr', 'test', 'muse', 'owner'].join('_');
-      const legacyMemTest = ['mem', 'test', 'muse'].join('_');
-      const legacySelTest = ['sel', 'test', 'muse'].join('_');
-
-      await db.prepare(`
-        UPDATE sellers 
-        SET owner_member_id = 'usr_1795086871229_87qa', 
-            status = 'TRIAL', 
-            updated_at = datetime('now')
-        WHERE id = 'sel_1795086886496_jik0f' OR slug = 'gian-hang-test-muse'
-      `).run().catch(() => {});
-
-      await db.prepare(`
-        DELETE FROM sellers 
-        WHERE id = ? OR owner_member_id = ? OR owner_member_id = ?
-      `).bind(legacySelTest, legacyTestOwner, legacyMemTest).run().catch(() => {});
-
-      await db.prepare(`
-        DELETE FROM members 
-        WHERE id = ? OR username = 'test_muse_owner' OR id = ?
-      `).bind(legacyTestOwner, legacyMemTest).run().catch(() => {});
-
-      _sellerOwnershipRestored = true;
-    } catch {}
-  }
-
   if (_marketplaceSchemaEnsured) return;
 
   try {
@@ -2264,11 +2235,10 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     try {
       const mig0035 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0035_purge_hardcoded_test_ids_and_restore_seller_v1' LIMIT 1").first().catch(() => null);
       if (!mig0035) {
-        // 1. Trả lại quyền sở hữu gian hàng test về cho tài khoản test thật usr_1795086871229_87qa (muse-test-seller) và trạng thái TRIAL
+        // 1. Trả lại quyền sở hữu gian hàng test về cho tài khoản test thật usr_1795086871229_87qa (muse-test-seller)
         await db.prepare(`
           UPDATE sellers 
           SET owner_member_id = 'usr_1795086871229_87qa', 
-              status = 'TRIAL', 
               updated_at = datetime('now')
           WHERE id = 'sel_1795086886496_jik0f' OR slug = 'gian-hang-test-muse'
         `).run().catch(() => {});
@@ -2355,6 +2325,21 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       }
     } catch (e) {
       console.warn('[Migration 0036 error]', e);
+    }
+
+    // Migration 0037: Ensure Gian Hàng Test Muse is ACTIVE permanently
+    try {
+      const mig0037 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0037_ensure_test_muse_seller_active_v1' LIMIT 1").first().catch(() => null);
+      if (!mig0037) {
+        await db.prepare(`
+          UPDATE sellers 
+          SET status = 'ACTIVE', updated_at = datetime('now')
+          WHERE id = 'sel_1795086886496_jik0f' OR slug = 'gian-hang-test-muse'
+        `).run().catch(() => {});
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0037_ensure_test_muse_seller_active_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0037 error]', e);
     }
 
     try {
@@ -4768,7 +4753,7 @@ export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
       ORDER BY sp.id ASC
     `).all();
     const rows = (res && res.results) || [];
-    return rows.map((r: any) => {
+    const mappedLegacy = rows.map((r: any) => {
       const meta = metaMap.get(r.id) || {};
       return {
         ...meta,
@@ -4779,6 +4764,78 @@ export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
         show_sold_count: r.show_sold_count !== undefined ? Boolean(r.show_sold_count) : (meta.show_sold_count !== undefined ? Boolean(meta.show_sold_count) : true),
       };
     });
+
+    // Bổ sung: Đồng bộ sản phẩm thật đang bán từ các gian hàng đã duyệt (seller_products)
+    let sellerProductsList: any[] = [];
+    try {
+      const sellerRes = await db.prepare(`
+        SELECT 
+          sp.id,
+          sp.seller_id,
+          s.store_name AS seller_name,
+          s.slug AS seller_slug,
+          sp.game_slug,
+          sp.game_name,
+          sp.name AS title,
+          sp.name,
+          sp.cover_url AS cover_image_url,
+          sp.cover_url AS game_icon_url,
+          sp.description,
+          sp.price_core,
+          sp.price_core AS current_price,
+          sp.original_price_core,
+          sp.original_price_core AS original_price,
+          COALESCE(sp.product_type, 'digital') AS product_type,
+          sp.weight_grams,
+          sp.warehouse_address,
+          sp.warranty_type,
+          sp.warranty_hours,
+          sp.delivery_type,
+          CASE 
+            WHEN sp.product_type = 'physical' THEN 999
+            ELSE COALESCE(sc_agg.available_codes, 0)
+          END AS stock_quantity,
+          CASE 
+            WHEN sp.product_type = 'physical' THEN 999
+            ELSE COALESCE(sc_agg.available_codes, 0)
+          END AS in_stock_count,
+          COALESCE(sc_agg.sold_codes, 0) AS sold_count,
+          1 AS is_active,
+          CASE 
+            WHEN sp.product_type = 'physical' THEN 'Hàng Vật Lý'
+            ELSE 'Hàng Số'
+          END AS badge,
+          CASE 
+            WHEN sp.product_type = 'physical' THEN 'physical'
+            ELSE 'digital'
+          END AS category,
+          CASE 
+            WHEN sp.product_type = 'physical' THEN 'Hàng Vật Lý'
+            ELSE 'Hàng Số'
+          END AS category_label,
+          sp.created_at
+        FROM seller_products sp
+        INNER JOIN sellers s ON sp.seller_id = s.id
+        LEFT JOIN (
+          SELECT 
+            product_id,
+            SUM(CASE WHEN is_used = 0 AND is_reserved = 0 THEN 1 ELSE 0 END) AS available_codes,
+            SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END) AS sold_codes
+          FROM seller_codes
+          GROUP BY product_id
+        ) sc_agg ON sp.id = sc_agg.product_id
+        WHERE sp.status = 'APPROVED'
+          AND sp.deleted_at IS NULL
+          AND s.deleted_at IS NULL
+          AND s.status IN ('ACTIVE', 'TRIAL')
+        ORDER BY sp.created_at DESC
+      `).all();
+      sellerProductsList = (sellerRes && sellerRes.results) || [];
+    } catch (e) {
+      console.warn('[loadAllStoreProductsD1 seller_products error]', e);
+    }
+
+    return [...mappedLegacy, ...sellerProductsList];
   } catch {
     return [];
   }

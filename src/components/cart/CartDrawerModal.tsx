@@ -389,7 +389,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Đóng"
+              aria-label={language === 'en' ? 'Close' : 'Đóng'}
             >
               <X className="w-5 h-5" />
             </button>
@@ -570,10 +570,12 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5">
                                   <div className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                                     <AlertCircle className="w-4 h-4 shrink-0" />
-                                    Chỉ hỗ trợ thanh toán bằng Ví Core
+                                    {language === 'en' ? 'Only Core Wallet Payment Supported' : 'Chỉ hỗ trợ thanh toán bằng Ví Core'}
                                   </div>
                                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                    Gian hàng <strong>{co.seller_name}</strong> hiện chưa mở cổng chuyển khoản QR SePay tiền thật. Vui lòng chuyển sang tab <strong>Ví Core Nội Bộ</strong> phía trên để hoàn tất thanh toán cho đơn này.
+                                    {language === 'en'
+                                      ? <>Store <strong>{co.seller_name}</strong> has not enabled direct bank QR. Please switch to the <strong>Core Wallet</strong> tab above to complete payment.</>
+                                      : <>Gian hàng <strong>{co.seller_name}</strong> hiện chưa mở cổng chuyển khoản QR SePay tiền thật. Vui lòng chuyển sang tab <strong>Ví Core Nội Bộ</strong> phía trên để hoàn tất thanh toán cho đơn này.</>}
                                   </p>
                                 </div>
                               ) : (
