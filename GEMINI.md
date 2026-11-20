@@ -61,14 +61,17 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, AI Agent
 - **Giữ `.gitignore`**: Không bao giờ commit file `.env`, `*.secret`, `.muse_admin_key.secret`.
 
 ### ⏳ 11. NGUYÊN TẮC CHỐNG TREO MÁY & CHỐNG TÁC VỤ LẶP LẠI VÔ HẠN (STRICT TIMEOUT, ANTI-HANG & ZERO INFINITE LOOPS)
-- **1. Bắt buộc Timeout cho mọi lệnh terminal & mạng (Strict Timeout)**:
-  - Mọi lệnh kiểm tra mạng qua PowerShell (`Invoke-WebRequest`, `Invoke-RestMethod`) **BẮT BUỘC** kèm `-TimeoutSec 10` (tối đa 15 giây). Tuyệt đối không dùng cờ `-Method Head` mà không có `-TimeoutSec` vì HTTP HEAD có thể giữ kết nối mở gây treo tiến trình.
-  - Mọi lệnh gọi `curl` **BẮT BUỘC** kèm `--max-time 10 --connect-timeout 5`.
+- **1. Bắt buộc Timeout & An toàn cho mọi lệnh terminal & mạng (Strict Timeout & Safe Network Execution)**:
+  - **Cấm gọi `curl` trần trong PowerShell:** Windows PowerShell tự động map `curl` thành alias của `Invoke-WebRequest`. BẮT BUỘC luôn chỉ định rõ `curl.exe` (kèm `--max-time 10 --connect-timeout 5`) hoặc chạy qua `cmd /c curl.exe ...`.
+  - **Cấm dùng `Invoke-WebRequest` thiếu `-UseBasicParsing`:** Trong PowerShell 5.1, `Invoke-WebRequest` mặc định kích hoạt Internet Explorer DOM engine (`mshtml.dll`), gây treo máy (hang/freeze) vô hạn trong môi trường ngầm dù có `-TimeoutSec`. Nếu dùng PowerShell, BẮT BUỘC kèm cả `-UseBasicParsing` VÀ `-TimeoutSec 10`. Ưu tiên dùng `curl.exe` hoặc `Invoke-RestMethod`.
+  - **Cấm quét đệ quy không giới hạn (`Get-ChildItem -Recurse` / `dir /s`):** Tuyệt đối không quét đệ quy thư mục lớn (`node_modules`, `.gemini`, `brain`, `appDataDir`, ổ đĩa). Luôn dùng `-Depth 1` hoặc `cmd /c dir /b`.
   - Mọi lệnh terminal (`run_command`) tiềm ẩn thời gian chạy lâu phải đặt `WaitMsBeforeAsync: 10000` (10 giây) và có cơ chế timeout xác định.
-- **2. Giám sát tác vụ ngầm chủ động (Active Background Task Watchdog)**:
-  - Bất cứ khi nào khởi chạy background task (`run_command`), nếu sau 45–60 giây task chưa xong hoặc không sinh output mới, tác nhân **BẮT BUỘC** chủ động gọi `manage_task kill` để hủy task ngay lập tức.
+- **2. Giám sát tác vụ ngầm chủ động & Cấm chờ thụ động với lệnh kiểm tra nhanh (Active Background Watchdog & Zero Passive Wait)**:
+  - **Phân loại tác vụ ngầm:**
+    * *Tác vụ dài hạn thực sự (Build, Deploy, Migration):* Được phép chạy nền, Agent giám sát với watchdog tối đa 45–60 giây. Nếu sau 60 giây không sinh output mới, BẮT BUỘC gọi `manage_task kill`.
+    * *Tác vụ kiểm tra nhanh (Quick Probes - đọc HTTP header, curl check, ping port, git status):* Nếu một lệnh kiểm tra nhanh bị timeout chuyển thành background task, **AGENT TUYỆT ĐỐI KHÔNG KẾT THÚC LƯỢT (END TURN) ĐỂ CHỜ THỤ ĐỘNG**. Phải kiểm tra ngay hoặc hủy (`manage_task kill`) nếu quá 15 giây không có kết quả, rồi chuyển ngay sang phương án kỹ thuật nhẹ hơn (Node.js script với AbortSignal, đọc mã nguồn, hoặc cờ CLI trực tiếp).
   - Tuyệt đối không để task chạy ngầm vô hạn khiến người dùng phải chờ đợi hoặc hỏi "Sao lâu vậy bạn?".
-  - Sau khi hủy task, lập tức báo cáo nguyên nhân và chuyển ngay sang phương án kỹ thuật thay thế (ví dụ: dùng GET thay HEAD, tăng timeout hoặc đọc trực tiếp mã nguồn).
+  - Sau khi hủy task, lập tức báo cáo nguyên nhân và chuyển ngay sang phương án kỹ thuật thay thế.
 - **3. Quy tắc dập tắt vòng lặp vô hạn (Loop Breaker & Max 2 Retries)**:
   - **Tối đa 2 lần thử (Max 2 Attempts)**: Khi một lệnh terminal, truy vấn API, hoặc thao tác sửa code gặp lỗi hoặc không đạt kết quả mong muốn, tác nhân chỉ được phép thử lại tối đa 1 lần duy nhất với phương pháp khác.
   - **Cấm gọi lại cùng một lệnh với cùng tham số (Zero Exact Retry Spam)**: Nếu lần 1 thất bại, lần 2 bắt buộc phải thay đổi phương pháp (đổi cờ, đổi lệnh, kiểm tra nguyên nhân gốc rễ). Tuyệt đối không chạy 3 lần liên tiếp cùng một thao tác.
