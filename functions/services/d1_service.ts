@@ -4702,68 +4702,71 @@ export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
       });
     }
 
-    const res = await db.prepare(`
-      SELECT 
-        sp.id, 
-        sp.title, 
-        sp.game_slug, 
-        sp.game_name, 
-        sp.original_price, 
-        sp.discount_percent, 
-        sp.current_price, 
-        CASE 
-          WHEN ic_agg.total_cnt > 0 
-          THEN COALESCE(ic_agg.available_cnt, 0)
-          ELSE sp.stock_quantity 
-        END AS stock_quantity,
-        CASE 
-          WHEN ic_agg.total_cnt > 0 
-          THEN COALESCE(ic_agg.sold_cnt, 0)
-          ELSE sp.sold_count 
-        END AS sold_count,
-        sp.is_active, 
-        COALESCE(sp.package_type, 'pack') AS package_type,
-        COALESCE(sp.category, 'pack') AS category,
-        COALESCE(sp.category_label, '') AS category_label,
-        COALESCE(sp.cover_image_url, '') AS cover_image_url,
-        COALESCE(sp.game_icon_url, '') AS game_icon_url,
-        COALESCE(sp.description, '') AS description,
-        COALESCE(sp.badge, '') AS badge,
-        COALESCE(sp.virtual_sold_count, 0) AS virtual_sold_count,
-        COALESCE(sp.show_sold_count, 1) AS show_sold_count,
-        COALESCE(sp.sale_mode, 'normal') AS sale_mode,
-        sp.escalating_base_price,
-        sp.escalating_step,
-        sp.escalating_max_price,
-        COALESCE(sp.first_purchase_enabled, 1) AS first_purchase_enabled,
-        sp.first_purchase_price,
-        sp.first_purchase_max_price,
-        sp.created_at
-      FROM store_products sp
-      LEFT JOIN (
+    let mappedLegacy: any[] = [];
+    try {
+      const res = await db.prepare(`
         SELECT 
-          product_id,
-          COUNT(*) AS total_cnt,
-          SUM(CASE WHEN status = 'AVAILABLE' THEN 1 ELSE 0 END) AS available_cnt,
-          SUM(CASE WHEN status = 'SOLD' THEN 1 ELSE 0 END) AS sold_cnt
-        FROM inventory_codes
-        GROUP BY product_id
-      ) ic_agg ON sp.id = ic_agg.product_id
-      WHERE sp.is_active = 1 AND sp.id NOT LIKE 'ut_%'
-      ORDER BY sp.id ASC
-    `).all();
-    const rows = (res && res.results) || [];
-    const mappedLegacy = rows.map((r: any) => {
-      const meta = metaMap.get(r.id) || {};
-      return {
-        ...meta,
-        ...r,
-        virtual_sold_count: meta.virtual_sold_count !== undefined ? Math.max(0, Number(meta.virtual_sold_count) || 0) : Math.max(0, Number(r.virtual_sold_count) || 0),
-        fomo_anchor_time: meta.fomo_anchor_time || r.fomo_anchor_time || null,
-        show_stock_count: r.show_stock_count !== undefined ? Boolean(r.show_stock_count) : (meta.show_stock_count !== undefined ? Boolean(meta.show_stock_count) : true),
-        show_sold_count: r.show_sold_count !== undefined ? Boolean(r.show_sold_count) : (meta.show_sold_count !== undefined ? Boolean(meta.show_sold_count) : true),
-      };
-    });
+          sp.id, 
+          sp.title, 
+          sp.game_slug, 
+          sp.game_name, 
+          sp.original_price, 
+          sp.discount_percent, 
+          sp.current_price, 
+          CASE 
+            WHEN ic_agg.total_cnt > 0 
+            THEN COALESCE(ic_agg.available_cnt, 0)
+            ELSE sp.stock_quantity 
+          END AS stock_quantity,
+          CASE 
+            WHEN ic_agg.total_cnt > 0 
+            THEN COALESCE(ic_agg.sold_cnt, 0)
+            ELSE sp.sold_count 
+          END AS sold_count,
+          sp.is_active, 
+          COALESCE(sp.package_type, 'pack') AS package_type,
+          COALESCE(sp.category, 'pack') AS category,
+          COALESCE(sp.category_label, '') AS category_label,
+          COALESCE(sp.cover_image_url, '') AS cover_image_url,
+          COALESCE(sp.game_icon_url, '') AS game_icon_url,
+          COALESCE(sp.description, '') AS description,
+          COALESCE(sp.badge, '') AS badge,
+          COALESCE(sp.virtual_sold_count, 0) AS virtual_sold_count,
+          COALESCE(sp.show_sold_count, 1) AS show_sold_count,
+          COALESCE(sp.sale_mode, 'normal') AS sale_mode,
+          sp.escalating_base_price,
+          sp.escalating_step,
+          sp.escalating_max_price,
+          COALESCE(sp.first_purchase_enabled, 1) AS first_purchase_enabled,
+          sp.first_purchase_price,
+          sp.first_purchase_max_price,
+          sp.created_at
+        FROM store_products sp
+        LEFT JOIN (
+          SELECT 
+            product_id,
+            COUNT(*) AS total_cnt,
+            SUM(CASE WHEN status = 'AVAILABLE' THEN 1 ELSE 0 END) AS available_cnt,
+            SUM(CASE WHEN status = 'SOLD' THEN 1 ELSE 0 END) AS sold_cnt
+          FROM inventory_codes
+          GROUP BY product_id
+        ) ic_agg ON sp.id = ic_agg.product_id
+        WHERE sp.is_active = 1 AND sp.id NOT LIKE 'ut_%'
+        ORDER BY sp.id ASC
+      `).all();
+      const rows = (res && res.results) || [];
+      mappedLegacy = rows.map((r: any) => {
+        const meta = metaMap.get(r.id) || {};
+        return {
+          ...meta,
+          ...r,
+          virtual_sold_count: meta.virtual_sold_count !== undefined ? Math.max(0, Number(meta.virtual_sold_count) || 0) : Math.max(0, Number(r.virtual_sold_count) || 0),
+          fomo_anchor_time: meta.fomo_anchor_time || r.fomo_anchor_time || null,
+          show_stock_count: r.show_stock_count !== undefined ? Boolean(r.show_stock_count) : (meta.show_stock_count !== undefined ? Boolean(meta.show_stock_count) : true),
+          show_sold_count: r.show_sold_count !== undefined ? Boolean(r.show_sold_count) : (meta.show_sold_count !== undefined ? Boolean(meta.show_sold_count) : true),
+        };
+      });
+    } catch {}
 
     // Bổ sung: Đồng bộ sản phẩm thật đang bán từ các gian hàng đã duyệt (seller_products)
     let sellerProductsList: any[] = [];

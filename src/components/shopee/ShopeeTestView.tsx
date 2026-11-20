@@ -342,12 +342,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     window.addEventListener('wcg_store_products_updated', handleProductsSync);
     window.addEventListener('wcg_store_settings_updated', handleProductsSync);
 
-    // Kích hoạt đồng bộ sản phẩm từ D1 nếu danh sách ban đầu rỗng
-    fetch('/api/sync-lite?fresh=1&_t=' + Date.now())
+    // Kích hoạt đồng bộ sản phẩm thật đang bán từ D1
+    fetch('/api/products?limit=100&_t=' + Date.now())
       .then((r) => r.json())
       .then((json) => {
-        if (json?.storeProducts && Array.isArray(json.storeProducts) && json.storeProducts.length > 0) {
-          setCurrentStoreProducts(json.storeProducts);
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          setCurrentStoreProducts(json.data);
+          try {
+            localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(json.data));
+          } catch {}
         }
       })
       .catch(() => {});
