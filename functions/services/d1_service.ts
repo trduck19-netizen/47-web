@@ -4819,8 +4819,8 @@ export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
         LEFT JOIN (
           SELECT 
             product_id,
-            SUM(CASE WHEN is_used = 0 AND is_reserved = 0 THEN 1 ELSE 0 END) AS available_codes,
-            SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END) AS sold_codes
+            SUM(CASE WHEN status = 'IN_STOCK' AND deleted_at IS NULL THEN 1 ELSE 0 END) AS available_codes,
+            SUM(CASE WHEN status = 'SOLD' AND deleted_at IS NULL THEN 1 ELSE 0 END) AS sold_codes
           FROM seller_codes
           GROUP BY product_id
         ) sc_agg ON sp.id = sc_agg.product_id
