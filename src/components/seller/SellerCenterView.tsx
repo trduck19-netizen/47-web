@@ -131,6 +131,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [isSubmittingReg, setIsSubmittingReg] = useState<boolean>(false);
 
   // New Product Form State
+  const [prodType, setProdType] = useState<'digital' | 'physical'>('digital');
   const [prodGameSlug, setProdGameSlug] = useState<string>('');
   const [prodName, setProdName] = useState<string>('');
   const [prodPriceCore, setProdPriceCore] = useState<string>('');
@@ -138,6 +139,15 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [prodWarrantyType, setProdWarrantyType] = useState<string>('24H');
   const [prodWarrantyHours, setProdWarrantyHours] = useState<number>(24);
   const [prodDeliveryType, setProdDeliveryType] = useState<'AUTO' | 'MANUAL'>('AUTO');
+  const [prodDeliveryMode, setProdDeliveryMode] = useState<'INVENTORY' | 'WEBHOOK'>('INVENTORY');
+  const [prodWebhookUrl, setProdWebhookUrl] = useState<string>('');
+  const [prodWeightGrams, setProdWeightGrams] = useState<string>('500');
+  const [prodLengthCm, setProdLengthCm] = useState<string>('10');
+  const [prodWidthCm, setProdWidthCm] = useState<string>('10');
+  const [prodHeightCm, setProdHeightCm] = useState<string>('10');
+  const [prodWarehouseAddress, setProdWarehouseAddress] = useState<string>('Kho Tổng Universal Mall, 188 Cầu Giấy, Hà Nội');
+  const [prodVariantsJson, setProdVariantsJson] = useState<string>('');
+  const [prodCodAllowed, setProdCodAllowed] = useState<boolean>(false);
   const [prodDescription, setProdDescription] = useState<string>('');
   const [prodLowStock, setProdLowStock] = useState<number>(2);
 
@@ -408,20 +418,38 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
     e.preventDefault();
     setErrorMsg('');
     try {
+      const payload: any = {
+        product_type: prodType,
+        game_slug: prodType === 'digital' ? prodGameSlug : (prodGameSlug || 'physical_goods'),
+        name: prodName,
+        description: prodDescription,
+        price_core: parseInt(prodPriceCore, 10),
+        original_price_core: prodOriginalPriceCore ? parseInt(prodOriginalPriceCore, 10) : undefined,
+        warranty_type: prodWarrantyType,
+        warranty_hours: prodWarrantyHours,
+        delivery_type: prodDeliveryType,
+        low_stock_threshold: prodLowStock,
+      };
+
+      if (prodType === 'digital') {
+        payload.delivery_mode = prodDeliveryMode;
+        if (prodDeliveryMode === 'WEBHOOK') {
+          payload.webhook_url = prodWebhookUrl;
+        }
+      } else {
+        payload.weight_grams = parseInt(prodWeightGrams, 10);
+        payload.length_cm = parseInt(prodLengthCm, 10);
+        payload.width_cm = parseInt(prodWidthCm, 10);
+        payload.height_cm = parseInt(prodHeightCm, 10);
+        payload.warehouse_address = prodWarehouseAddress;
+        payload.variants_json = prodVariantsJson;
+        payload.cod_allowed = prodCodAllowed;
+      }
+
       const res = await fetch('/api/seller/products', {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({
-          game_slug: prodGameSlug,
-          name: prodName,
-          description: prodDescription,
-          price_core: parseInt(prodPriceCore, 10),
-          original_price_core: prodOriginalPriceCore ? parseInt(prodOriginalPriceCore, 10) : undefined,
-          warranty_type: prodWarrantyType,
-          warranty_hours: prodWarrantyHours,
-          delivery_type: prodDeliveryType,
-          low_stock_threshold: prodLowStock,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
@@ -434,6 +462,8 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         setProdOriginalPriceCore('');
         setProdDescription('');
         setProdGameSlug('');
+        setProdWebhookUrl('');
+        setProdVariantsJson('');
       } else {
         setErrorMsg(data.error || (isEn ? 'Failed to create product.' : 'Tạo sản phẩm thất bại.'));
       }
@@ -1262,8 +1292,21 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                         <div className="flex items-center gap-2.5">
                           <img src={p.cover_url} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0 border border-border" />
                           <div className="truncate">
-                            <div className="font-bold truncate" title={p.name}>{p.name}</div>
-                            <div className="text-[11px] text-muted-foreground truncate">{p.game_name || p.game_slug} • BH: {p.warranty_type}</div>
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 ${
+                                p.product_type === 'physical'
+                                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                  : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                              }`}>
+                                {p.product_type === 'physical' ? (isEn ? 'Physical' : 'Hàng Vật Lý') : (isEn ? 'Digital' : 'Hàng Số')}
+                              </span>
+                              <span className="font-bold truncate" title={p.name}>{p.name}</span>
+                            </div>
+                            <div className="text-[11px] text-muted-foreground truncate">
+                              {p.product_type === 'physical' 
+                                ? `${p.weight_grams ? `${p.weight_grams}g` : ''} • ${p.warehouse_address ? p.warehouse_address.split(',')[0] : (isEn ? 'Warehouse' : 'Kho hàng')}`
+                                : `${p.game_name || p.game_slug} • BH: ${p.warranty_type}`}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -1276,15 +1319,21 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                         )}
                       </td>
                       <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
-                          p.in_stock_count > (p.low_stock_threshold || 2)
-                            ? 'bg-emerald-500/10 text-emerald-500'
-                            : p.in_stock_count > 0
-                            ? 'bg-amber-500/10 text-amber-500'
-                            : 'bg-destructive/10 text-destructive'
-                        }`}>
-                          Còn {p.in_stock_count}
-                        </span>
+                        {p.product_type === 'physical' ? (
+                          <span className="px-2 py-0.5 rounded-full font-bold text-[11px] bg-emerald-500/10 text-emerald-500">
+                            {isEn ? 'Ready to Ship' : 'Sẵn Sàng Giao'}
+                          </span>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                            p.in_stock_count > (p.low_stock_threshold || 2)
+                              ? 'bg-emerald-500/10 text-emerald-500'
+                              : p.in_stock_count > 0
+                              ? 'bg-amber-500/10 text-amber-500'
+                              : 'bg-destructive/10 text-destructive'
+                          }`}>
+                            {isEn ? `Stock: ${p.in_stock_count}` : `Còn ${p.in_stock_count}`}
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 text-center">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -1294,19 +1343,25 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                             ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                             : 'bg-destructive/10 text-destructive border border-destructive/20'
                         }`}>
-                          {p.status === 'APPROVED' ? 'Đã Duyệt' : p.status === 'PENDING_REVIEW' ? 'Chờ Duyệt' : 'Từ Chối'}
+                          {p.status === 'APPROVED' ? (isEn ? 'Approved' : 'Đã Duyệt') : p.status === 'PENDING_REVIEW' ? (isEn ? 'Pending' : 'Chờ Duyệt') : (isEn ? 'Rejected' : 'Từ Chối')}
                         </span>
                       </td>
                       <td className="p-3 text-center">
-                        <button
-                          onClick={() => {
-                            setSelectedProductId(p.id);
-                            setActiveTab('codes');
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/80 text-[11px] font-semibold mr-1"
-                        >
-                          Kho Mã
-                        </button>
+                        {p.product_type === 'physical' ? (
+                          <span className="px-2 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-semibold">
+                            {isEn ? 'Parcel' : 'Bưu phẩm'}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedProductId(p.id);
+                              setActiveTab('codes');
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/80 text-[11px] font-semibold mr-1"
+                          >
+                            {isEn ? 'Vault' : 'Kho Mã'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -2239,43 +2294,220 @@ const data = await res.json();`}
               </div>
             )}
 
-            <form onSubmit={handleCreateProduct} className="space-y-4 text-xs">
+            <form onSubmit={handleCreateProduct} className="space-y-4 text-xs max-h-[80vh] overflow-y-auto pr-1">
+              {/* Bộ chọn loại sản phẩm bắt buộc ngay từ đầu */}
               <div>
-                <label className="block font-semibold mb-1">{isEn ? 'Select Game *' : 'Chọn Tựa Game *'}</label>
-                <select
-                  required
-                  value={prodGameSlug}
-                  onChange={(e) => {
-                    setProdGameSlug(e.target.value);
-                    const selectedGame = games.find((g) => g.slug === e.target.value);
-                    if (selectedGame && !prodName) {
-                      setProdName(isEn ? `VIP Giftcode Pack ${selectedGame.name}` : `Bộ Giftcode ${selectedGame.name} VIP`);
-                    }
-                  }}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                >
-                  <option value="">{isEn ? '-- Select game in catalog --' : '-- Chọn game trong catalog --'}</option>
-                  {games.map((g) => (
-                    <option key={g.slug} value={g.slug}>{g.name}</option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  {isEn ? 'Product cover will automatically use official logo of this game (§5.1).' : 'Ảnh bìa gói sản phẩm sẽ tự động lấy từ Logo chính thức của tựa game này (§5.1).'}
-                </p>
+                <label className="block font-semibold mb-1.5">{isEn ? 'Product Type *' : 'Phân Loại Sản Phẩm *'}</label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setProdType('digital')}
+                    className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                      prodType === 'digital'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span>⚡</span>
+                    <span>{isEn ? 'Digital Goods' : 'Hàng Số (Giftcode / API)'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProdType('physical')}
+                    className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                      prodType === 'physical'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span>📦</span>
+                    <span>{isEn ? 'Physical Goods' : 'Hàng Vật Lý (Bưu Cục)'}</span>
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="block font-semibold mb-1">{isEn ? 'Product Package Name *' : 'Tên Gói Sản Phẩm *'}</label>
-                <input
-                  type="text"
-                  required
-                  value={prodName}
-                  onChange={(e) => setProdName(e.target.value)}
-                  placeholder={isEn ? 'E.g. Pack of 5 Starter Giftcodes' : 'Ví dụ: Gói 5 Mã Giftcode Khởi Đầu'}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                />
-              </div>
+              {/* Nhánh Hàng Số (Digital) */}
+              {prodType === 'digital' ? (
+                <>
+                  <div>
+                    <label className="block font-semibold mb-1">{isEn ? 'Select Game *' : 'Chọn Tựa Game *'}</label>
+                    <select
+                      required
+                      value={prodGameSlug}
+                      onChange={(e) => {
+                        setProdGameSlug(e.target.value);
+                        const selectedGame = games.find((g) => g.slug === e.target.value);
+                        if (selectedGame && !prodName) {
+                          setProdName(isEn ? `VIP Giftcode Pack ${selectedGame.name}` : `Bộ Giftcode ${selectedGame.name} VIP`);
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                    >
+                      <option value="">{isEn ? '-- Select game in catalog --' : '-- Chọn game trong catalog --'}</option>
+                      {games.map((g) => (
+                        <option key={g.slug} value={g.slug}>{g.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {isEn ? 'Product cover will automatically use official logo of this game (§5.1).' : 'Ảnh bìa gói sản phẩm sẽ tự động lấy từ Logo chính thức của tựa game này (§5.1).'}
+                    </p>
+                  </div>
 
+                  <div>
+                    <label className="block font-semibold mb-1">{isEn ? 'Product Package Name *' : 'Tên Gói Sản Phẩm *'}</label>
+                    <input
+                      type="text"
+                      required
+                      value={prodName}
+                      onChange={(e) => setProdName(e.target.value)}
+                      placeholder={isEn ? 'E.g. Pack of 5 Starter Giftcodes' : 'Ví dụ: Gói 5 Mã Giftcode Khởi Đầu'}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold mb-1">{isEn ? 'Delivery Mode' : 'Cơ Chế Giao Hàng'}</label>
+                      <select
+                        value={prodDeliveryMode}
+                        onChange={(e: any) => setProdDeliveryMode(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                      >
+                        <option value="INVENTORY">{isEn ? 'From Vault Codes' : 'Tự động từ Kho Mã'}</option>
+                        <option value="WEBHOOK">{isEn ? 'Third-party Webhook API' : 'Kết nối Webhook API Đối Tác'}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-1">{isEn ? 'Warranty Hours' : 'Thời Gian Bảo Hành'}</label>
+                      <select
+                        value={prodWarrantyHours}
+                        onChange={(e) => {
+                          const h = parseInt(e.target.value, 10);
+                          setProdWarrantyHours(h);
+                          setProdWarrantyType(`${h}H`);
+                        }}
+                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                      >
+                        <option value={24}>{isEn ? '24 Hours Hold' : '24 Giờ (Giữ tiền 24h)'}</option>
+                        <option value={48}>{isEn ? '48 Hours Hold' : '48 Giờ (Giữ tiền 48h)'}</option>
+                        <option value={72}>{isEn ? '72 Hours Hold' : '72 Giờ (Giữ tiền 72h)'}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {prodDeliveryMode === 'WEBHOOK' && (
+                    <div>
+                      <label className="block font-semibold mb-1">{isEn ? 'Partner Webhook URL *' : 'Đường Dẫn Webhook API Đối Tác *'}</label>
+                      <input
+                        type="url"
+                        required
+                        value={prodWebhookUrl}
+                        onChange={(e) => setProdWebhookUrl(e.target.value)}
+                        placeholder="https://api.partner.com/deliver-code"
+                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary font-mono text-[11px]"
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Nhánh Hàng Vật Lý (Physical) */
+                <>
+                  <div>
+                    <label className="block font-semibold mb-1">{isEn ? 'Product Name *' : 'Tên Sản Phẩm Vật Lý *'}</label>
+                    <input
+                      type="text"
+                      required
+                      value={prodName}
+                      onChange={(e) => setProdName(e.target.value)}
+                      placeholder={isEn ? 'E.g. Gaming Mechanical Keyboard RGB' : 'Ví dụ: Bàn Phím Cơ Gaming RGB Hot-swap'}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold mb-1">{isEn ? 'Weight (grams) *' : 'Cân Nặng (gram) *'}</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={prodWeightGrams}
+                        onChange={(e) => setProdWeightGrams(e.target.value)}
+                        placeholder="500"
+                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                      />
+                      <span className="text-[10px] text-muted-foreground">{isEn ? 'For courier shipping fee' : 'Dùng tính cước phí vận chuyển bưu điện'}</span>
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-1">{isEn ? 'Dimensions DxRxC (cm)' : 'Kích Thước Dài x Rộng x Cao (cm)'}</label>
+                      <div className="grid grid-cols-3 gap-1">
+                        <input
+                          type="number"
+                          min={1}
+                          value={prodLengthCm}
+                          onChange={(e) => setProdLengthCm(e.target.value)}
+                          placeholder="D"
+                          className="px-2 py-2 rounded-xl border border-border bg-background text-center"
+                        />
+                        <input
+                          type="number"
+                          min={1}
+                          value={prodWidthCm}
+                          onChange={(e) => setProdWidthCm(e.target.value)}
+                          placeholder="R"
+                          className="px-2 py-2 rounded-xl border border-border bg-background text-center"
+                        />
+                        <input
+                          type="number"
+                          min={1}
+                          value={prodHeightCm}
+                          onChange={(e) => setProdHeightCm(e.target.value)}
+                          placeholder="C"
+                          className="px-2 py-2 rounded-xl border border-border bg-background text-center"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">{isEn ? 'Warehouse Address (For Pick-up) *' : 'Địa Chỉ Kho Lấy Hàng *'}</label>
+                    <input
+                      type="text"
+                      required
+                      value={prodWarehouseAddress}
+                      onChange={(e) => setProdWarehouseAddress(e.target.value)}
+                      placeholder={isEn ? 'E.g. Warehouse 1, Cau Giay, Hanoi' : 'Ví dụ: Kho Tổng Universal Mall, Cầu Giấy, Hà Nội'}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 items-center">
+                    <div>
+                      <label className="block font-semibold mb-1">{isEn ? 'Variants (Optional)' : 'Biến Thể (Màu sắc, Size)'}</label>
+                      <input
+                        type="text"
+                        value={prodVariantsJson}
+                        onChange={(e) => setProdVariantsJson(e.target.value)}
+                        placeholder={isEn ? 'E.g. Red Switch, Blue Switch' : 'Ví dụ: Bản Red Switch, Bản Blue Switch'}
+                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="pt-4">
+                      <label className="flex items-center gap-2 cursor-pointer font-semibold">
+                        <input
+                          type="checkbox"
+                          checked={prodCodAllowed}
+                          onChange={(e) => setProdCodAllowed(e.target.checked)}
+                          className="w-4 h-4 rounded text-primary focus:ring-primary"
+                        />
+                        <span>{isEn ? 'Allow Cash on Delivery (COD)' : 'Cho phép nhận hàng trả tiền (COD)'}</span>
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Phần chung: Giá bán và Mô tả */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold mb-1">{isEn ? 'Selling Price (Core) *' : 'Giá Bán Core *'}</label>
@@ -2308,39 +2540,13 @@ const data = await res.json();`}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold mb-1">{isEn ? 'Warranty Policy' : 'Chính Sách Bảo Hành'}</label>
-                  <select
-                    value={prodWarrantyType}
-                    onChange={(e) => setProdWarrantyType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                  >
-                    <option value="24H">{isEn ? 'Warranty 24 Hours' : 'Bảo hành 24 Giờ'}</option>
-                    <option value="7D">{isEn ? 'Warranty 7 Days' : 'Bảo hành 7 Ngày'}</option>
-                    <option value="30D">{isEn ? 'Warranty 30 Days' : 'Bảo hành 30 Ngày'}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">{isEn ? 'Delivery Method' : 'Hình Thức Giao Mã'}</label>
-                  <select
-                    value={prodDeliveryType}
-                    onChange={(e: any) => setProdDeliveryType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                  >
-                    <option value="AUTO">{isEn ? 'Auto 24/7 (From Vault)' : 'Tự Động 24/7 (Từ Kho)'}</option>
-                    <option value="MANUAL">{isEn ? 'Manual Delivery' : 'Thủ Công'}</option>
-                  </select>
-                </div>
-              </div>
-
               <div>
                 <label className="block font-semibold mb-1">{isEn ? 'Product Description' : 'Mô Tả Sản Phẩm'}</label>
                 <textarea
                   rows={2}
                   value={prodDescription}
                   onChange={(e) => setProdDescription(e.target.value)}
-                  placeholder={isEn ? 'Gift package includes items...' : 'Gói quà tặng gồm các vật phẩm...'}
+                  placeholder={isEn ? 'Detailed description...' : 'Mô tả chi tiết sản phẩm...'}
                   className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
                 />
               </div>

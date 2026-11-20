@@ -149,84 +149,118 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const deliveredResults: any[] = [];
 
     for (const co of childOrders) {
-      let reservedCode = null;
-      if (co.code_id) {
-        reservedCode = await env.DB.prepare("SELECT * FROM seller_codes WHERE id = ? LIMIT 1")
-          .bind(co.code_id).first<any>();
-      }
-      if (!reservedCode) {
-        reservedCode = await env.DB.prepare("SELECT * FROM seller_codes WHERE order_id = ? AND status = 'RESERVED' LIMIT 1")
-          .bind(co.id).first<any>();
-      }
+      const isPhysical = co.product_type === 'physical';
 
-      let plainCode = '';
-      let keyMissing = false;
+      if (isPhysical) {
+        // HÀNG VẬT LÝ: Không bóc mã kho, chuyển trạng thái "Chờ lấy hàng" (PROCESSING), giữ tiền 168 giờ, phí sàn 2%
+        const physicalHoldUntil = new Date(Date.now() + 168 * 3600 * 1000).toISOString();
 
-      if (!env.MARKETPLACE_CODE_KEY || !env.MARKETPLACE_CODE_KEY.trim()) {
-        keyMissing = true;
-      } else if (reservedCode?.code_encrypted) {
-        try {
-          plainCode = await decryptCode(reservedCode.code_encrypted, env.MARKETPLACE_CODE_KEY);
-        } catch {
-          keyMissing = true;
-        }
-      } else {
-        keyMissing = true;
-      }
-
-      if (keyMissing) {
-        // Chuyển sang chờ xử lý tay
         batchStatements.push(
           env.DB.prepare(`
             UPDATE seller_orders
-            SET payment_method = 'CORE', pending_manual_code = 1, updated_at = ?
-            WHERE id = ?
-          `).bind(nowIso, co.id)
-        );
-      } else {
-        // Đổi trạng thái sang PAID, gán code và hold_until
-        batchStatements.push(
-          env.DB.prepare(`
-            UPDATE seller_orders
-            SET status = 'PAID',
-                code_id = ?,
-                delivered_code = ?,
+            SET status = 'PROCESSING',
                 payment_method = 'CORE',
                 hold_until = ?,
                 updated_at = ?
             WHERE id = ?
-          `).bind(
-            reservedCode?.id || co.code_id,
-            plainCode,
-            holdUntil,
-            nowIso,
-            co.id
-          )
+          `).bind(physicalHoldUntil, nowIso, co.id)
         );
 
-        if (reservedCode?.id) {
+        deliveredResults.push({
+          child_order_id: co.id,
+          order_code: co.order_code,
+          seller_id: co.seller_id,
+          product_name: co.product_name,
+          product_type: 'physical',
+          price_core: co.price_core,
+          status: 'PROCESSING',
+          delivered_code: null,
+          delivery_note: 'Đơn hàng vật lý đã xác nhận, chuyển trạng thái Chờ lấy hàng (Awaiting Pickup) qua bưu cục.',
+        });
+      } else {
+        // HÀNG SỐ: Bóc tách mã giải mã từ kho, giao mã 0s, giữ tiền 24-72h (theo warranty_hours hoặc 48h), phí sàn 5%
+        const digitalHoldHours = Number(co.warranty_hours) || 48;
+        const digitalHoldUntil = new Date(Date.now() + digitalHoldHours * 3600 * 1000).toISOString();
+
+        let reservedCode = null;
+        if (co.code_id) {
+          reservedCode = await env.DB.prepare("SELECT * FROM seller_codes WHERE id = ? LIMIT 1")
+            .bind(co.code_id).first<any>();
+        }
+        if (!reservedCode) {
+          reservedCode = await env.DB.prepare("SELECT * FROM seller_codes WHERE order_id = ? AND status = 'RESERVED' LIMIT 1")
+            .bind(co.id).first<any>();
+        }
+
+        let plainCode = '';
+        let keyMissing = false;
+
+        if (!env.MARKETPLACE_CODE_KEY || !env.MARKETPLACE_CODE_KEY.trim()) {
+          keyMissing = true;
+        } else if (reservedCode?.code_encrypted) {
+          try {
+            plainCode = await decryptCode(reservedCode.code_encrypted, env.MARKETPLACE_CODE_KEY);
+          } catch {
+            keyMissing = true;
+          }
+        } else {
+          keyMissing = true;
+        }
+
+        if (keyMissing) {
           batchStatements.push(
             env.DB.prepare(`
-              UPDATE seller_codes
-              SET status = 'SOLD',
-                  order_id = ?,
-                  sold_at = ?,
+              UPDATE seller_orders
+              SET payment_method = 'CORE', pending_manual_code = 1, updated_at = ?
+              WHERE id = ?
+            `).bind(nowIso, co.id)
+          );
+        } else {
+          batchStatements.push(
+            env.DB.prepare(`
+              UPDATE seller_orders
+              SET status = 'PAID',
+                  code_id = ?,
+                  delivered_code = ?,
+                  payment_method = 'CORE',
+                  hold_until = ?,
                   updated_at = ?
               WHERE id = ?
-            `).bind(co.id, nowIso, nowIso, reservedCode.id)
+            `).bind(
+              reservedCode?.id || co.code_id,
+              plainCode,
+              digitalHoldUntil,
+              nowIso,
+              co.id
+            )
           );
-        }
-      }
 
-      deliveredResults.push({
-        child_order_id: co.id,
-        order_code: co.order_code,
-        seller_id: co.seller_id,
-        product_name: co.product_name,
-        price_core: co.price_core,
-        delivered_code: plainCode,
-        pending_manual_code: keyMissing,
-      });
+          if (reservedCode?.id) {
+            batchStatements.push(
+              env.DB.prepare(`
+                UPDATE seller_codes
+                SET status = 'SOLD',
+                    order_id = ?,
+                    sold_at = ?,
+                    updated_at = ?
+                WHERE id = ?
+              `).bind(co.id, nowIso, nowIso, reservedCode.id)
+            );
+          }
+        }
+
+        deliveredResults.push({
+          child_order_id: co.id,
+          order_code: co.order_code,
+          seller_id: co.seller_id,
+          product_name: co.product_name,
+          product_type: 'digital',
+          price_core: co.price_core,
+          status: 'PAID',
+          delivered_code: plainCode,
+          pending_manual_code: keyMissing,
+        });
+      }
     }
 
     // Cập nhật đơn cha
@@ -249,13 +283,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 6. Ghi dòng HOLD vào sổ cái cho từng gian hàng (§4.3)
     for (const co of childOrders) {
+      const isPhys = co.product_type === 'physical';
+      const holdNote = isPhys
+        ? `Thanh toán giỏ đa gian hàng bằng ví Core: Hàng vật lý đơn con ${co.order_code} (Bảo chứng 168h, phí sàn 2%)`
+        : `Thanh toán giỏ đa gian hàng bằng ví Core: Hàng số đơn con ${co.order_code} (Bảo chứng ${Number(co.warranty_hours) || 48}h, phí sàn 5%)`;
+
       await recordLedgerTransaction(env.DB, {
         sellerId: co.seller_id,
         orderId: co.id,
         type: 'HOLD',
         amountCore: co.price_core,
         actor: buyer.username || buyer.email || 'buyer_core_wallet',
-        reason: `Thanh toán giỏ đa gian hàng bằng ví Core (Đơn con ${co.order_code})`,
+        reason: holdNote,
       });
     }
 

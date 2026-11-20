@@ -101,6 +101,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         seller_avatar: co.seller_avatar,
         product_id: co.product_id,
         product_name: co.product_name,
+        product_type: co.product_type || 'digital',
         price_core: co.price_core,
         status: co.status,
         delivered_code: co.delivered_code,

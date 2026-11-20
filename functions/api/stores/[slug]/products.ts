@@ -51,7 +51,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         SELECT 
           sp.id, sp.seller_id, sp.game_slug, sp.game_name, sp.name, sp.cover_url,
           sp.description, sp.price_core, sp.original_price_core, sp.warranty_type,
-          sp.warranty_hours, sp.delivery_type, sp.created_at,
+          sp.warranty_hours, sp.delivery_type, COALESCE(sp.product_type, 'digital') as product_type,
+          sp.weight_grams, sp.warehouse_address, sp.created_at,
           (
             SELECT COUNT(*) FROM seller_codes sc
             WHERE sc.product_id = sp.id AND sc.status = 'IN_STOCK' AND sc.deleted_at IS NULL
@@ -76,7 +77,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       warranty_type: p.warranty_type,
       warranty_hours: p.warranty_hours,
       delivery_type: p.delivery_type,
-      has_stock: (p.stock_count || 0) > 0, // Không lộ số lượng thật (§6.1)
+      product_type: p.product_type || 'digital',
+      weight_grams: p.weight_grams,
+      warehouse_address: p.warehouse_address,
+      has_stock: p.product_type === 'physical' ? true : (p.stock_count || 0) > 0, // Không lộ số lượng thật (§6.1)
     }));
 
     return new Response(

@@ -16,6 +16,7 @@ import {
   Clock,
   ExternalLink,
   ShieldCheck,
+  Truck,
   Wallet,
 } from 'lucide-react';
 import { cartService, type CartItem, type StoreCartGroup } from '../../services/cartService';
@@ -78,6 +79,49 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
     window.addEventListener('wcg_cart_updated', handleCartUpdated);
     return () => window.removeEventListener('wcg_cart_updated', handleCartUpdated);
   }, [isOpen]);
+
+  // Gợi ý mua kèm hàng số cùng gian hàng khi giỏ có hàng vật lý (§4)
+  const [crossSellMap, setCrossSellMap] = useState<Record<string, any[]>>({});
+
+  useEffect(() => {
+    if (!isOpen || cartItems.length === 0) return;
+    const storesWithPhysical = groupedStores.filter((s) =>
+      s.items.some((i) => i.productType === 'physical') && s.sellerSlug
+    );
+
+    storesWithPhysical.forEach(async (store) => {
+      if (!store.sellerSlug || crossSellMap[store.sellerId]) return;
+      try {
+        const res = await fetch(`/api/stores/${store.sellerSlug}/products`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products)) {
+          const inCartIds = new Set(cartItems.map((i) => i.productId));
+          const digitalItems = data.products
+            .filter((p: any) => (p.product_type || 'digital') === 'digital' && !inCartIds.has(p.id))
+            .slice(0, 3);
+          if (digitalItems.length > 0) {
+            setCrossSellMap((prev) => ({ ...prev, [store.sellerId]: digitalItems }));
+          }
+        }
+      } catch {}
+    });
+  }, [isOpen, cartItems, groupedStores]);
+
+  const handleAddCrossSell = (prod: any, store: StoreCartGroup) => {
+    cartService.addToCart({
+      productId: prod.id,
+      productName: prod.name,
+      priceCore: prod.price_core,
+      sellerId: store.sellerId,
+      sellerName: store.sellerName,
+      sellerSlug: store.sellerSlug,
+      gameSlug: prod.game_slug,
+      gameName: prod.game_name,
+      coverUrl: prod.cover_url,
+      productType: 'digital',
+    });
+  };
 
   // Generate QR code data URLs for child orders
   useEffect(() => {
@@ -589,25 +633,39 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                               </div>
                             )
                           ) : (
-                              /* Đơn con đã hoàn tất -> hiển thị code */
-                              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
-                                <div className="text-[10px] font-semibold text-emerald-500 uppercase">Mã code đã nhận:</div>
-                                <div className="flex items-center justify-between">
-                                  <span className="font-mono font-bold text-sm text-foreground select-all">
-                                    {co.delivered_code || '(Mã đang sẵn sàng)'}
-                                  </span>
-                                  {co.delivered_code && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleCopy(co.delivered_code, `code_${co.id}`)}
-                                      className="px-2 py-1 rounded bg-card text-[11px] font-semibold border border-border flex items-center gap-1"
-                                    >
-                                      {copiedKey === `code_${co.id}` ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                                      {copiedKey === `code_${co.id}` ? 'Đã chép' : 'Sao chép'}
-                                    </button>
-                                  )}
+                              /* Đơn con đã hoàn tất -> hiển thị code cho hàng số hoặc trạng thái bưu cục cho hàng vật lý */
+                              co.product_type === 'physical' ? (
+                                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
+                                  <div className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase flex items-center gap-1.5">
+                                    <Truck className="w-3.5 h-3.5" />
+                                    <span>{language === 'en' ? 'Physical Order Status:' : 'Trạng thái vận chuyển bưu cục:'}</span>
+                                  </div>
+                                  <div className="text-xs font-bold text-foreground">
+                                    {language === 'en' ? 'Awaiting Pickup & Courier Dispatch (168h Escrow Protection)' : 'Chờ lấy hàng & Bàn giao bưu cục (Bảo chứng 168 giờ)'}
+                                  </div>
                                 </div>
-                              </div>
+                              ) : (
+                                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
+                                  <div className="text-[10px] font-semibold text-emerald-500 uppercase">
+                                    {language === 'en' ? 'Delivered Giftcode:' : 'Mã code đã nhận:'}
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-mono font-bold text-sm text-foreground select-all">
+                                      {co.delivered_code || '(Mã đang sẵn sàng)'}
+                                    </span>
+                                    {co.delivered_code && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopy(co.delivered_code, `code_${co.id}`)}
+                                        className="px-2 py-1 rounded bg-card text-[11px] font-semibold border border-border flex items-center gap-1 cursor-pointer"
+                                      >
+                                        {copiedKey === `code_${co.id}` ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                        {copiedKey === `code_${co.id}` ? (language === 'en' ? 'Copied' : 'Đã chép') : (language === 'en' ? 'Copy' : 'Sao chép')}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              )
                             )}
                           </div>
                         ))}
@@ -638,22 +696,31 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <div className="px-3 py-1.5 rounded-lg bg-muted border border-border font-mono text-xs font-black text-primary select-all">
-                            {co.delivered_code || '(Mã đang mở khóa)'}
-                          </div>
-                          {co.delivered_code && (
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(co.delivered_code, `code_del_${co.id}`)}
-                              className="p-1.5 rounded-lg bg-card hover:bg-card-hover border border-border text-xs flex items-center gap-1 shadow-sm"
-                              title="Sao chép mã"
-                            >
-                              {copiedKey === `code_del_${co.id}` ? (
-                                <Check className="w-4 h-4 text-emerald-500" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
+                          {co.product_type === 'physical' ? (
+                            <div className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5">
+                              <Truck className="w-4 h-4" />
+                              <span>{language === 'en' ? 'Awaiting Courier' : 'Chờ bưu tá lấy hàng'}</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="px-3 py-1.5 rounded-lg bg-muted border border-border font-mono text-xs font-black text-primary select-all">
+                                {co.delivered_code || '(Mã đang mở khóa)'}
+                              </div>
+                              {co.delivered_code && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(co.delivered_code, `code_del_${co.id}`)}
+                                  className="p-1.5 rounded-lg bg-card hover:bg-card-hover border border-border text-xs flex items-center gap-1 shadow-sm cursor-pointer"
+                                  title="Sao chép mã"
+                                >
+                                  {copiedKey === `code_del_${co.id}` ? (
+                                    <Check className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </button>
                               )}
-                            </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -775,8 +842,17 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                     {item.variantName}
                                   </div>
                                 )}
-                                <div className="text-xs font-black text-primary mt-0.5">
-                                  {item.priceCore.toLocaleString()} Core
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 ${
+                                    item.productType === 'physical'
+                                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                      : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                  }`}>
+                                    {item.productType === 'physical' ? (language === 'en' ? 'Physical' : 'Hàng Vật Lý') : (language === 'en' ? 'Digital' : 'Hàng Số')}
+                                  </span>
+                                  <span className="text-xs font-black text-primary">
+                                    {item.priceCore.toLocaleString()} Core
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -792,6 +868,33 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                           </div>
                         ))}
                       </div>
+
+                      {/* Gợi Ý Mua Kèm Hàng Số Cùng Gian Hàng (Cross-sell) */}
+                      {crossSellMap[store.sellerId] && crossSellMap[store.sellerId].length > 0 && (
+                        <div className="p-3 bg-muted/30 border-t border-border/80 space-y-2">
+                          <div className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                            <span>✨</span>
+                            <span>{language === 'en' ? `Recommended add-ons from ${store.sellerName}:` : `Gợi ý mua kèm từ ${store.sellerName}:`}</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {crossSellMap[store.sellerId].map((cs) => (
+                              <div key={cs.id} className="p-2 rounded-xl bg-card border border-border flex items-center justify-between gap-2">
+                                <div className="min-w-0 truncate">
+                                  <div className="text-[11px] font-semibold text-foreground truncate" title={cs.name}>{cs.name}</div>
+                                  <div className="text-[10px] font-bold text-primary">{Number(cs.price_core).toLocaleString()} Core</div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddCrossSell(cs, store)}
+                                  className="px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold shrink-0 cursor-pointer"
+                                >
+                                  + {language === 'en' ? 'Add' : 'Thêm'}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -812,6 +915,27 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                     Đơn hàng chưa được tạo và kho mã được bảo toàn. Bạn có thể kiểm tra lại hoặc bấm đặt hàng lại.
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Thông báo phân loại thanh toán COD theo loại hàng */}
+            {cartItems.every((i) => (i.productType || 'digital') === 'digital') ? (
+              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>
+                  {language === 'en' 
+                    ? 'Digital Goods (Giftcodes): Instant 0s delivery. COD is not available for digital products.'
+                    : 'Hàng số & Giftcode: Giao mã tức thì 0 giây. Không áp dụng hình thức nhận hàng trả tiền (COD).'}
+                </span>
+              </div>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] flex items-center gap-2">
+                <Truck className="w-4 h-4 shrink-0" />
+                <span>
+                  {language === 'en'
+                    ? 'Cart contains physical goods (GHTK / GHN / Viettel Post). COD available if enabled by store.'
+                    : 'Giỏ hàng có hàng vật lý giao qua bưu cục (GHTK / GHN / Viettel Post). Hỗ trợ COD theo gian hàng.'}
+                </span>
               </div>
             )}
 

@@ -1020,7 +1020,16 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                             onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
                           />
                           <div className="min-w-0 flex-1">
-                            <div className="font-bold text-foreground truncate" title={p.name}>{p.name}</div>
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 ${
+                                p.product_type === 'physical'
+                                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                  : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                              }`}>
+                                {p.product_type === 'physical' ? (isEn ? 'Physical' : 'Vật Lý') : (isEn ? 'Digital' : 'Hàng Số')}
+                              </span>
+                              <span className="font-bold text-foreground truncate" title={p.name}>{p.name}</span>
+                            </div>
                             <div className="text-[10px] text-muted-foreground truncate" title={p.game_slug}>Game: {p.game_name || p.game_slug}</div>
                           </div>
                         </div>
@@ -1358,7 +1367,16 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                   disputes.map((d) => (
                     <tr key={d.id} className={`hover:bg-muted/20 transition-colors ${d.is_flagged_abusive ? 'bg-destructive/5' : ''}`}>
                       <td className="p-3">
-                        <div className="font-mono font-bold text-foreground text-xs">{d.order_code}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                            d.product_type === 'physical'
+                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                              : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                          }`}>
+                            {d.product_type === 'physical' ? (isEn ? 'Physical' : 'Vật Lý') : (isEn ? 'Digital' : 'Hàng Số')}
+                          </span>
+                          <span className="font-mono font-bold text-foreground text-xs">{d.order_code}</span>
+                        </div>
                         <div className="text-[10px] font-mono text-primary/80 truncate mt-0.5" title={`Mã khiếu nại: ${d.id}`}>
                           ID: {d.id}
                         </div>
@@ -1414,6 +1432,17 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                             {d.buyer_has_viewed_code ? '👁️ Đã xem mã code' : '🔒 Chưa xem mã code'}
                           </span>
                         </div>
+                        {d.assistant_recommendation && (
+                          <div className="mt-1.5 p-1.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] space-y-0.5">
+                            <div className="font-bold text-primary flex items-center gap-1">
+                              <span>🤖 {isEn ? 'AI Assistant' : 'Trợ Lý Tự Động'} ({Math.round(d.assistant_recommendation.confidence * 100)}%):</span>
+                              <span className="font-mono uppercase text-foreground">{d.assistant_recommendation.action}</span>
+                            </div>
+                            <div className="text-muted-foreground line-clamp-2" title={d.assistant_recommendation.reason}>
+                              {d.assistant_recommendation.reason}
+                            </div>
+                          </div>
+                        )}
                         {d.seller_response && (
                           <div className="mt-1 text-[10px] text-primary-light bg-muted/40 p-1.5 rounded border border-border/60">
                             <strong>Shop:</strong> {d.seller_response}

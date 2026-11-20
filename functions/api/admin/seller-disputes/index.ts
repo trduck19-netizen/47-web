@@ -63,19 +63,21 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         s.slug as seller_slug,
         so.order_code,
         so.product_name,
+        COALESCE(so.product_type, 'digital') as product_type,
         so.price_core,
         so.delivered_code,
         so.hold_until,
         so.status as order_status,
         m.username as buyer_username,
         m.email as buyer_email,
-        COALESCE(scv.view_count, 0) as buyer_view_count
+        COALESCE(scv.view_count, 0) as buyer_view_count,
+        scv.first_viewed_at
       FROM seller_disputes sd
       LEFT JOIN sellers s ON sd.seller_id = s.id
       LEFT JOIN seller_orders so ON sd.order_id = so.id
       LEFT JOIN members m ON sd.buyer_member_id = m.id
       LEFT JOIN (
-        SELECT code_id, COUNT(*) as view_count
+        SELECT code_id, COUNT(*) as view_count, MIN(viewed_at) as first_viewed_at
         FROM seller_code_views
         GROUP BY code_id
       ) scv ON so.code_id = scv.code_id
@@ -110,10 +112,60 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const rowsRes = await env.DB.prepare(sql).bind(...binds).all<any>();
 
-    const disputes = (rowsRes?.results || []).map((d) => ({
-      ...d,
-      buyer_has_viewed_code: Number(d.buyer_view_count) > 0,
-    }));
+    const disputes = (rowsRes?.results || []).map((d) => {
+      const isPhys = d.product_type === 'physical';
+      const viewCount = Number(d.buyer_view_count) || 0;
+      let recAction = 'MANUAL_REVIEW';
+      let recConfidence = 0.8;
+      let recReason = 'Cần đối chiếu thêm thông tin giữa hai bên.';
+
+      if (isPhys) {
+        // Hàng vật lý
+        if (d.order_status === 'CANCELLED' || d.order_status === 'RETURNED' || String(d.report_reason || '').toLowerCase().includes('hoàn')) {
+          recAction = 'AUTO_REFUND';
+          recConfidence = 0.98;
+          recReason = 'Hàng vật lý giao thất bại hoặc có yêu cầu hoàn bưu gửi. Trợ lý đề xuất hoàn tiền về ví cho người mua.';
+        } else {
+          recAction = 'REQUIRE_UNBOXING_VIDEO';
+          recConfidence = 0.95;
+          recReason = 'Đơn hàng vật lý bắt buộc yêu cầu người mua cung cấp video mở hộp / khui hàng niêm phong làm bằng chứng.';
+        }
+      } else {
+        // Hàng số
+        if (viewCount === 0) {
+          recAction = 'AUTO_REFUND';
+          recConfidence = 0.99;
+          recReason = 'Người mua chưa từng bấm xem mã trong kho. Trợ lý đề xuất chấp thuận hoàn tiền ngay (không rủi ro lộ mã).';
+        } else if (d.first_viewed_at) {
+          const viewedTime = new Date(d.first_viewed_at).getTime();
+          const disputeTime = new Date(d.created_at).getTime();
+          const hoursElapsed = Math.round((disputeTime - viewedTime) / (3600 * 1000));
+          if (hoursElapsed > 24) {
+            recAction = 'MANUAL_REVIEW_FLAG';
+            recConfidence = 0.85;
+            recReason = `Mã đã được xem từ ${hoursElapsed} giờ trước khi mở khiếu nại. Cảnh báo rủi ro người mua đã dùng mã trước khi báo lỗi.`;
+          } else {
+            recAction = 'REPLACE_OR_REFUND';
+            recConfidence = 0.90;
+            recReason = `Khiếu nại được tạo sau khi xem mã ${hoursElapsed} giờ (trong ngưỡng bảo hành). Đề xuất đổi mã mới hoặc hoàn tiền.`;
+          }
+        } else {
+          recAction = 'REPLACE_OR_REFUND';
+          recConfidence = 0.88;
+          recReason = 'Đơn hàng số gặp sự cố mã. Đề xuất đổi mã mới hoặc giải quyết hoàn tiền.';
+        }
+      }
+
+      return {
+        ...d,
+        buyer_has_viewed_code: viewCount > 0,
+        assistant_recommendation: {
+          action: recAction,
+          confidence: recConfidence,
+          reason: recReason,
+        },
+      };
+    });
 
     return new Response(
       JSON.stringify({

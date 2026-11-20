@@ -19,6 +19,10 @@ export interface CartItem {
   variantName?: string;
   attributes?: Record<string, string>;
   quantity?: number;
+  productType?: 'digital' | 'physical';
+  weightGrams?: number;
+  warehouseAddress?: string;
+  codAllowed?: boolean;
 }
 
 export interface StoreCartGroup {

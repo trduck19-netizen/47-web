@@ -236,30 +236,108 @@ async function handleCalculateFee(context: EventContext<Env, any, any>): Promise
       }
     }
 
-    // 3. XỬ LÝ HÃNG VIETTEL POST (VTP)
-    const vtpToken = (env.VIETTEL_POST_TOKEN || '').trim();
-    const trackingFormat = 'VTP{YYMMDD}{6DIGITS} hoặc VT{6DIGITS}VN (Ví dụ: VTP261118104829)';
-    const trackingLookupUrl = 'https://viettelpost.vn/tra-cuu-hanh-trinh-don-hang?id=';
+    // 3. XỬ LÝ HÃNG VIETTEL POST (VTP / VIETTEL_POST)
+    if (carrier === 'VTP' || carrier === 'VIETTEL_POST' || carrier === 'VIETTELPOST') {
+      const vtpToken = (env.VIETTEL_POST_TOKEN || '').trim();
+      const trackingFormat = 'VTP{YYMMDD}{6DIGITS} hoặc VT{6DIGITS}VN (Ví dụ: VTP261118104829)';
+      const trackingLookupUrl = 'https://viettelpost.vn/tra-cuu-hanh-trinh-don-hang?id=';
 
+      if (!vtpToken) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            configured: false,
+            carrier: 'VTP',
+            carrierName: 'Viettel Post (Bưu Chính Viettel)',
+            error: 'MISSING_CARRIER_TOKEN',
+            message: 'Chưa cấu hình biến môi trường VIETTEL_POST_TOKEN trên Cloudflare Pages. Vui lòng thêm token API Viettel Post vào Cloudflare Settings > Environment Variables để gọi trực tiếp mạng bưu cục Viettel Post.',
+            trackingFormat,
+            trackingLookupUrl,
+            requiredCredentials: [
+              'VIETTEL_POST_TOKEN: Token API đối tác cung cấp tại trang https://partner.viettelpost.vn'
+            ],
+            standardEstimateFee: 28000,
+            timestamp: new Date().toISOString(),
+          }),
+          { status: 200, headers: CORS_HEADERS }
+        );
+      }
+
+      // Khi có token Viettel Post thật: Gọi API mạng trực tiếp tới Viettel Post
+      try {
+        const vtpRes = await fetch('https://partner.viettelpost.vn/v2/order/getPrice', {
+          method: 'POST',
+          headers: {
+            Token: vtpToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            PRODUCT_WEIGHT: weight,
+            PRODUCT_PRICE: orderValue,
+            MONEY_COLLECTION: 0,
+            ORDER_SERVICE: 'VCN', // Chuyển phát nhanh bưu chính
+            SENDER_PROVINCE: 1, // Hà Nội ID
+            RECEIVER_PROVINCE: province === 'Hồ Chí Minh' ? 2 : 1,
+          }),
+        });
+
+        const vtpData: any = await vtpRes.json();
+        if (vtpData && (vtpData.status === 200 || vtpData.error === false) && vtpData.data) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              configured: true,
+              carrier: 'VTP',
+              carrierName: 'Viettel Post (Bưu Chính Viettel)',
+              source: 'LIVE_VIETTEL_POST_NETWORK_API',
+              fee: vtpData.data.MONEY_TOTAL || vtpData.data.price || 28000,
+              insurance_fee: vtpData.data.MONEY_FEE_INSURANCE || 0,
+              estimated_delivery: '2 - 4 ngày làm việc',
+              trackingFormat,
+              trackingLookupUrl,
+              timestamp: new Date().toISOString(),
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        } else {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              configured: true,
+              carrier: 'VTP',
+              source: 'LIVE_VIETTEL_POST_NETWORK_API',
+              error: vtpData?.message || 'Lỗi phản hồi từ API bưu cục Viettel Post',
+              trackingFormat,
+              trackingLookupUrl,
+              fallbackFee: 28000,
+              timestamp: new Date().toISOString(),
+            }),
+            { status: 200, headers: CORS_HEADERS }
+          );
+        }
+      } catch (netErr: any) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            configured: true,
+            carrier: 'VTP',
+            error: `Lỗi kết nối mạng tới bưu cục Viettel Post: ${netErr?.message}`,
+            fallbackFee: 28000,
+            timestamp: new Date().toISOString(),
+          }),
+          { status: 502, headers: CORS_HEADERS }
+        );
+      }
+    }
+
+    // Trường hợp mã hãng không hợp lệ
     return new Response(
       JSON.stringify({
         success: false,
-        configured: Boolean(vtpToken),
-        carrier: 'VTP',
-        carrierName: 'Viettel Post (Bưu Chính Viettel)',
-        error: vtpToken ? null : 'MISSING_CARRIER_TOKEN',
-        message: vtpToken
-          ? 'Đã cấu hình token Viettel Post'
-          : 'Chưa cấu hình biến môi trường VIETTEL_POST_TOKEN trên Cloudflare Pages.',
-        trackingFormat,
-        trackingLookupUrl,
-        requiredCredentials: [
-          'VIETTEL_POST_TOKEN: Token đăng ký tại https://partner.viettelpost.vn'
-        ],
-        standardEstimateFee: 28000,
-        timestamp: new Date().toISOString(),
+        error: 'INVALID_CARRIER',
+        message: `Hãng vận chuyển '${carrier}' không được hỗ trợ. Các hãng hợp lệ: GHTK, GHN, VTP.`,
       }),
-      { status: 200, headers: CORS_HEADERS }
+      { status: 400, headers: CORS_HEADERS }
     );
   } catch (error: any) {
     return new Response(

@@ -5,7 +5,9 @@ export interface EscrowHoldParams {
   sellerId?: string;
   amountCore: number;
   actor: string;
-  reason: string;
+  reason?: string;
+  productType?: 'digital' | 'physical';
+  warrantyHours?: number;
 }
 
 /**
@@ -27,7 +29,7 @@ export async function ensureOfficialSeller(db: D1Database): Promise<string> {
           description, status, pending_balance_core, available_balance_core, withdrawn_balance_core, created_at, updated_at
         ) VALUES (?, 'admin', 'Universal Mall Official Store', 'universal-mall-official',
           '0987654321', 'TPBANK', '00000000000', 'UNIVERSAL MALL',
-          'Gian hàng chính hãng sàn Universal Mall - Bảo chứng giữ tiền 168 giờ', 'ACTIVE', 0, 0, 0, ?, ?
+          'Gian hàng chính hãng sàn Universal Mall - Bảo chứng giữ tiền đa tầng (24h - 168h)', 'ACTIVE', 0, 0, 0, ?, ?
         )
       `)
       .bind(defaultSellerId, nowIso, nowIso)
@@ -38,7 +40,9 @@ export async function ensureOfficialSeller(db: D1Database): Promise<string> {
 }
 
 /**
- * 1. Ghi nhận giữ tiền 168 giờ khi khách thanh toán thành công
+ * 1. Ghi nhận giữ tiền đa tầng khi khách thanh toán thành công
+ * - Hàng số: giữ 24–72h (theo warranty_hours hoặc 48h), hoa hồng 5%
+ * - Hàng vật lý: giữ 168h (7 ngày), hoa hồng 2%
  */
 export async function recordEscrowHold(
   db: D1Database,
@@ -46,8 +50,10 @@ export async function recordEscrowHold(
 ): Promise<{ success: boolean; holdUntil: string; ledgerId?: string; error?: string }> {
   try {
     const sellerId = params.sellerId || (await ensureOfficialSeller(db));
-    const holdHours = 168; // 168 giờ
+    const isPhys = params.productType === 'physical';
+    const holdHours = isPhys ? 168 : (params.warrantyHours || 48);
     const holdUntil = new Date(Date.now() + holdHours * 3600 * 1000).toISOString();
+    const feeRateDesc = isPhys ? 'phí hoa hồng 2%' : 'phí hoa hồng 5%';
 
     const ledgerRes = await recordLedgerTransaction(db, {
       sellerId,
@@ -55,7 +61,7 @@ export async function recordEscrowHold(
       type: 'HOLD',
       amountCore: params.amountCore,
       actor: params.actor,
-      reason: params.reason || `Bảo chứng sàn giữ tiền 168 giờ cho đơn hàng ${params.orderId}`,
+      reason: params.reason || `Bảo chứng sàn giữ tiền ${holdHours} giờ cho đơn hàng ${params.orderId} (${feeRateDesc})`,
     });
 
     if (!ledgerRes.success) {
@@ -106,7 +112,8 @@ export async function confirmReceivedAndRelease(
 
     const sellerId = order.seller_id || (await ensureOfficialSeller(db));
     const amount = Number(order.total_amount || 0);
-    const feeRate = 0.05; // Phí sàn 5%
+    const isPhysical = order.product_type === 'physical' || Boolean(order.shipping_address);
+    const feeRate = isPhysical ? 0.02 : 0.05; // Phí sàn đa tầng: Hàng vật lý 2%, Hàng số 5%
     const feeCore = Math.round(amount * feeRate);
     const nowIso = new Date().toISOString();
 
@@ -117,7 +124,7 @@ export async function confirmReceivedAndRelease(
       type: 'RELEASE',
       amountCore: amount,
       actor,
-      reason: `Khách hàng xác nhận đã nhận hàng - Giải ngân thành công cho đơn ${order.id}`,
+      reason: `Khách hàng xác nhận đã nhận hàng - Giải ngân thành công cho đơn ${order.id} (${isPhysical ? 'Hàng vật lý' : 'Hàng số'})`,
     });
 
     if (!relRes.success) {
@@ -132,7 +139,7 @@ export async function confirmReceivedAndRelease(
         type: 'FEE',
         amountCore: feeCore,
         actor: 'platform_fee',
-        reason: `Thu phí sàn 5% cho đơn ${order.id}`,
+        reason: `Thu phí hoa hồng sàn ${isPhysical ? '2%' : '5%'} cho đơn ${order.id}`,
       });
     }
 

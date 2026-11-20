@@ -922,11 +922,44 @@ export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
         warranty_hours INTEGER NOT NULL DEFAULT 24,
         delivery_type TEXT NOT NULL DEFAULT 'AUTO',
         low_stock_threshold INTEGER NOT NULL DEFAULT 2,
+        product_type TEXT DEFAULT 'digital',
+        weight_grams INTEGER,
+        warehouse_address TEXT,
         status TEXT NOT NULL DEFAULT 'PENDING_REVIEW',
         reject_reason TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         deleted_at TEXT
+      );
+    `).run().catch(() => {});
+
+    // 2.1 Bảng cấu hình sản phẩm số (§Động cơ tách đơn)
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS seller_product_digital_configs (
+        product_id TEXT PRIMARY KEY,
+        seller_id TEXT NOT NULL,
+        delivery_mode TEXT NOT NULL DEFAULT 'INVENTORY',
+        webhook_url TEXT,
+        warranty_hours INTEGER NOT NULL DEFAULT 24,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `).run().catch(() => {});
+
+    // 2.2 Bảng cấu hình sản phẩm vật lý (§Động cơ tách đơn)
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS seller_product_physical_configs (
+        product_id TEXT PRIMARY KEY,
+        seller_id TEXT NOT NULL,
+        weight_grams INTEGER NOT NULL,
+        length_cm INTEGER NOT NULL DEFAULT 10,
+        width_cm INTEGER NOT NULL DEFAULT 10,
+        height_cm INTEGER NOT NULL DEFAULT 10,
+        warehouse_address TEXT NOT NULL,
+        variants_json TEXT,
+        cod_allowed INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `).run().catch(() => {});
 
@@ -965,6 +998,7 @@ export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
         code_id TEXT,
         delivered_code TEXT,
         price_core INTEGER NOT NULL,
+        product_type TEXT DEFAULT 'digital',
         status TEXT NOT NULL DEFAULT 'DELIVERED',
         report_reason TEXT,
         report_note TEXT,
@@ -2263,6 +2297,64 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       }
     } catch (e) {
       console.warn('[Migration 0035 error]', e);
+    }
+
+    // Migration 0036: Split-Order Engine (Product type digital/physical, satellite config tables)
+    try {
+      const mig0036 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0036_split_order_engine_v1' LIMIT 1").first().catch(() => null);
+      if (!mig0036) {
+        // 1. Thêm cột phân loại sản phẩm số / vật lý và thông số kho vào seller_products và products
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN product_type TEXT DEFAULT 'digital';").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN weight_grams INTEGER;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN warehouse_address TEXT;").run().catch(() => {});
+        await db.prepare("ALTER TABLE products ADD COLUMN product_type TEXT DEFAULT 'digital';").run().catch(() => {});
+        await db.prepare("ALTER TABLE products ADD COLUMN weight_grams INTEGER;").run().catch(() => {});
+        await db.prepare("ALTER TABLE products ADD COLUMN warehouse_address TEXT;").run().catch(() => {});
+
+        // 2. Thêm cột product_type vào seller_orders và orders
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN product_type TEXT DEFAULT 'digital';").run().catch(() => {});
+        await db.prepare("ALTER TABLE orders ADD COLUMN product_type TEXT DEFAULT 'digital';").run().catch(() => {});
+
+        // 3. Tạo bảng cấu hình sản phẩm số (seller_product_digital_configs)
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_product_digital_configs (
+            product_id TEXT PRIMARY KEY,
+            seller_id TEXT NOT NULL,
+            delivery_mode TEXT NOT NULL DEFAULT 'INVENTORY',
+            webhook_url TEXT,
+            warranty_hours INTEGER NOT NULL DEFAULT 24,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        // 4. Tạo bảng cấu hình sản phẩm vật lý (seller_product_physical_configs)
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_product_physical_configs (
+            product_id TEXT PRIMARY KEY,
+            seller_id TEXT NOT NULL,
+            weight_grams INTEGER NOT NULL,
+            length_cm INTEGER NOT NULL DEFAULT 10,
+            width_cm INTEGER NOT NULL DEFAULT 10,
+            height_cm INTEGER NOT NULL DEFAULT 10,
+            warehouse_address TEXT NOT NULL,
+            variants_json TEXT,
+            cod_allowed INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        // 5. Chuẩn hóa dữ liệu cũ về mặc định 'digital'
+        await db.prepare("UPDATE seller_products SET product_type = 'digital' WHERE product_type IS NULL OR product_type = '';").run().catch(() => {});
+        await db.prepare("UPDATE products SET product_type = 'digital' WHERE product_type IS NULL OR product_type = '';").run().catch(() => {});
+        await db.prepare("UPDATE seller_orders SET product_type = 'digital' WHERE product_type IS NULL OR product_type = '';").run().catch(() => {});
+        await db.prepare("UPDATE orders SET product_type = 'digital' WHERE product_type IS NULL OR product_type = '';").run().catch(() => {});
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0036_split_order_engine_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0036 error]', e);
     }
 
     try {

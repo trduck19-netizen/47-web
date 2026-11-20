@@ -168,19 +168,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // Kiểm tra danh sách thử nghiệm tiền thật (§1.11)
       // Lưu ý: Các gian hàng ngoài danh sách này vẫn tiếp tục bán bằng ví Core bình thường; chỉ không sinh mã QR SePay tiền thật
       const isRealMoneyAllowed = isTestSellerAllowed(config, product.seller_id);
+      const isPhysical = product.product_type === 'physical';
 
-      // Tìm 1 mã IN_STOCK để giữ mã nguyên tử (§4.1: IN_STOCK -> RESERVED)
-      const availableCode = await env.DB.prepare(`
-        SELECT id FROM seller_codes
-        WHERE product_id = ? AND status = 'IN_STOCK' AND deleted_at IS NULL
-        ORDER BY created_at ASC LIMIT 1
-      `).bind(product.id).first<any>();
+      let availableCode: any = null;
+      if (!isPhysical) {
+        // Tìm 1 mã IN_STOCK để giữ mã nguyên tử (§4.1: IN_STOCK -> RESERVED)
+        availableCode = await env.DB.prepare(`
+          SELECT id FROM seller_codes
+          WHERE product_id = ? AND status = 'IN_STOCK' AND deleted_at IS NULL
+          ORDER BY created_at ASC LIMIT 1
+        `).bind(product.id).first<any>();
 
-      if (!availableCode) {
-        return new Response(
-          JSON.stringify({ success: false, error: `Sản phẩm "${product.name}" đã tạm hết mã trong kho.` }),
-          { status: 400, headers: CORS_HEADERS }
-        );
+        if (!availableCode) {
+          return new Response(
+            JSON.stringify({ success: false, error: `Sản phẩm "${product.name}" đã tạm hết mã trong kho.` }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
       }
 
       const childOrderId = `sord_${now}_${Math.random().toString(36).substring(2, 7)}`;
@@ -207,8 +211,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         seller_name: product.seller_name,
         product_id: product.id,
         product_name: product.name,
+        product_type: isPhysical ? 'physical' : 'digital',
         game_slug: product.game_slug,
-        code_id: availableCode.id,
+        code_id: availableCode ? availableCode.id : null,
         price_core: priceCore,
         status: 'PENDING_PAYMENT',
         payment_method: 'QR_SEPAY',
@@ -221,14 +226,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         bank_account: bankAccount,
       });
 
-      // Statement giữ mã cho đơn con
-      reserveCodeStatements.push(
-        env.DB.prepare(`
-          UPDATE seller_codes
-          SET status = 'RESERVED', order_id = ?, updated_at = ?
-          WHERE id = ? AND status = 'IN_STOCK'
-        `).bind(childOrderId, nowIso, availableCode.id)
-      );
+      // Statement giữ mã cho đơn con (chỉ áp dụng cho hàng số)
+      if (availableCode?.id) {
+        reserveCodeStatements.push(
+          env.DB.prepare(`
+            UPDATE seller_codes
+            SET status = 'RESERVED', order_id = ?, updated_at = ?
+            WHERE id = ? AND status = 'IN_STOCK'
+          `).bind(childOrderId, nowIso, availableCode.id)
+        );
+      }
     }
 
     if (childOrdersToInsert.length === 0) {
@@ -267,8 +274,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           INSERT INTO seller_orders (
             id, order_code, parent_order_id, buyer_member_id, buyer_name, buyer_email,
             seller_id, product_id, product_name, game_slug, code_id,
-            price_core, payment_method, status, expires_at, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'QR_SEPAY', 'PENDING_PAYMENT', ?, ?, ?)
+            price_core, payment_method, product_type, status, expires_at, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'QR_SEPAY', ?, 'PENDING_PAYMENT', ?, ?, ?)
         `).bind(
           co.id,
           co.order_code,
@@ -282,6 +289,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           co.game_slug,
           co.code_id,
           co.price_core,
+          co.product_type || 'digital',
           expiresAt,
           nowIso,
           nowIso
