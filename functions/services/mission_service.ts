@@ -421,23 +421,6 @@ export async function verifyMemberAuth(
     ).first<any>();
   }
 
-  if (!member && (token.startsWith('wcg_tok_muse_test_seller') || token.includes('muse-test-seller') || token.includes('usr_1795086871229_87qa'))) {
-    member = await env.DB.prepare(
-      "SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE id = 'usr_1795086871229_87qa' OR username = 'muse-test-seller' LIMIT 1"
-    ).first<any>();
-    if (!member) {
-      member = {
-        id: 'usr_1795086871229_87qa',
-        username: 'muse-test-seller',
-        display_name: 'Muse Test Seller',
-        email: 'muse-test-seller@example.com',
-        role: 'MEMBER',
-        status: 'ACTIVE',
-        balance: 1000000,
-      };
-    }
-  }
-
   if (!member) {
     return { authorized: false, error: 'Phiên đăng nhập đã hết hạn hoặc không tồn tại.' };
   }
