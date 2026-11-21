@@ -11,7 +11,6 @@ import { verifyToken } from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;
-  ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
   SEPAY_API_KEY?: string;
 }

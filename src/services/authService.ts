@@ -438,15 +438,13 @@ class AuthService {
       return { success: false, message: 'Vui lòng nhập đầy đủ mã OTP và mật khẩu mới.' };
     }
 
-    if (newPass.length < 6) {
-      return { success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự.' };
+    if (newPass.length < 8) {
+      return { success: false, message: 'Mật khẩu mới phải có ít nhất 8 ký tự.' };
     }
 
     const cleanIdentifier = identifier.trim().toLowerCase();
-    const salt = generateSalt(16);
-    const newPasswordHash = await hashPassword(newPass, salt);
 
-    // 1. Try Cloudflare Endpoint
+    // Call Cloudflare Endpoint
     try {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
@@ -458,53 +456,22 @@ class AuthService {
           newPassword: newPass,
         }),
       });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {}
 
-    // 2. Local Fallback
-    const savedOtpRaw = sessionStorage.getItem(`wcg_otp_${cleanIdentifier}`);
-    if (savedOtpRaw) {
-      try {
-        const saved = JSON.parse(savedOtpRaw);
-        if (Date.now() > saved.expiresAt) {
-          return { success: false, message: 'Mã OTP đã hết hạn (quá 10 phút). Vui lòng yêu cầu mã mới.' };
-        }
-        if (saved.code !== otpCode) {
-          return { success: false, message: 'Mã xác nhận OTP không chính xác.' };
-        }
-      } catch {
-        if (savedOtpRaw !== otpCode) {
-          return { success: false, message: 'Mã xác nhận OTP không chính xác.' };
-        }
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        sessionStorage.removeItem(`wcg_otp_${cleanIdentifier}`);
+        return data;
       }
+      return {
+        success: false,
+        message: data.message || 'Đặt lại mật khẩu thất bại, vui lòng kiểm tra lại mã OTP hoặc thử lại sau.',
+      };
+    } catch {
+      return {
+        success: false,
+        message: 'Không thể kết nối đến máy chủ xác thực OTP. Vui lòng thử lại sau.',
+      };
     }
-
-    try {
-      const membersRaw = localStorage.getItem('wcg_admin_members_v4');
-      if (membersRaw) {
-        const members: any[] = JSON.parse(membersRaw);
-        const member = members.find(
-          (m) =>
-            m.displayName?.toLowerCase() === cleanIdentifier ||
-            m.email?.toLowerCase() === cleanIdentifier
-        );
-        if (member) {
-          member.passwordHash = newPasswordHash;
-          member.salt = salt;
-          localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
-          this.notifyAdminRealtime(member);
-        }
-      }
-    } catch {}
-
-    sessionStorage.removeItem(`wcg_otp_${cleanIdentifier}`);
-
-    return {
-      success: true,
-      message: 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới ngay.',
-    };
   }
 
   // Session Management
@@ -600,20 +567,10 @@ class AuthService {
     this.notifyAdminRealtime(updatedUser, updatedUser);
 
     if (payload.newPassword) {
-      try {
-        const salt = generateSalt(16);
-        const passwordHash = await hashPassword(payload.newPassword, salt);
-        const membersRaw = localStorage.getItem('wcg_admin_members_v4');
-        if (membersRaw) {
-          const members = JSON.parse(membersRaw);
-          const idx = members.findIndex((m: any) => m.id === currentUser.id || m.email === currentUser.email);
-          if (idx !== -1) {
-            members[idx].passwordHash = passwordHash;
-            members[idx].salt = salt;
-            localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
-          }
-        }
-      } catch {}
+      return {
+        success: false,
+        message: 'Không thể kết nối đến máy chủ bảo mật để đổi mật khẩu. Vui lòng thử lại sau.',
+      };
     }
 
     window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: updatedUser }));

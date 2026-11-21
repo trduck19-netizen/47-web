@@ -8,7 +8,7 @@ import { validateInternalCoverUrl } from '../../services/news_validation_service
 
 interface Env {
   DB?: D1Database;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
   JWT_SECRET?: string;
 }
 
@@ -20,7 +20,7 @@ const CORS_HEADERS = {
 };
 
 async function verifyAuth(request: Request, env: Env): Promise<boolean> {
-  const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+  const configuredSecret = (env.ADMIN_API_KEY || '').trim();
   const syncKey = (request.headers.get('X-Sync-Key') || request.headers.get('X-Admin-Key') || '').trim();
   if (configuredSecret && configuredSecret.length >= 16 && syncKey === configuredSecret) {
     return true;
@@ -58,7 +58,7 @@ async function verifyAuth(request: Request, env: Env): Promise<boolean> {
 
     const adminAuth = await authenticateAdmin(env.DB, candidateKey, {
       JWT_SECRET: env.JWT_SECRET,
-      ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+      ADMIN_API_KEY: env.ADMIN_API_KEY,
     });
     if (adminAuth.authenticated) {
       return true;

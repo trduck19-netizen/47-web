@@ -42,7 +42,6 @@ import canonicalBackupState from '../data/canonical_backup_state.json';
 
 interface Env {
   SYNC_SECRET?: string;
-  ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
   DB: D1Database;
 }

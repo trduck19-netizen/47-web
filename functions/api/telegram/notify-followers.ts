@@ -26,7 +26,7 @@ interface Env {
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_GROUP_ID?: string;
   TELEGRAM_NOTIFY_KEY?: string;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
 }
 
 const CORS_HEADERS = {
@@ -66,7 +66,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
 
   if (notifyKey && rawKey === notifyKey.trim()) {
     isAuthorized = true;
-  } else if (env.ADMIN_SYNC_SECRET && rawKey === env.ADMIN_SYNC_SECRET.trim()) {
+  } else if (env.ADMIN_API_KEY && env.ADMIN_API_KEY.length >= 16 && rawKey === env.ADMIN_API_KEY.trim()) {
     isAuthorized = true;
   } else {
     const authResult = await verifyAiKeyAuth(request, env.DB, env as any, 'TELEGRAM_NOTIFY');

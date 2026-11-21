@@ -121,7 +121,7 @@ export interface MarketingAuditAuthResult {
  * - Hỗ trợ các nguồn cấu hình an toàn:
  *   1. Biến môi trường env.MUSE_MARKETING_AUDIT_KEY (Cloudflare Secrets)
  *   2. Bảng cấu hình D1 `wcg_marketing_auditor_api_config_v1`
- *   3. env.ADMIN_SYNC_SECRET (quản trị viên cấp cao nhất)
+ *   3. env.ADMIN_API_KEY (quản trị viên cấp cao nhất)
  */
 export async function authenticateMarketingAuditor(request: Request, env: any): Promise<MarketingAuditAuthResult> {
   const urlObj = new URL(request.url);

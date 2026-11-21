@@ -14,7 +14,6 @@ interface Env {
   DB: D1Database;
   JWT_SECRET?: string;
   PASSWORD_PEPPER?: string;
-  ADMIN_SYNC_SECRET?: string;
 }
 
 const CORS_HEADERS = {

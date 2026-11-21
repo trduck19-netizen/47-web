@@ -3,7 +3,7 @@ import { ensureNotificationTablesD1 } from './_emailHelper';
 
 interface Env {
   DB?: any;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
   JWT_SECRET?: string;
 }
 
@@ -15,7 +15,7 @@ const CORS_HEADERS = {
 };
 
 async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
-  const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+  const configuredSecret = (env.ADMIN_API_KEY || '').trim();
   const authHeader = request.headers.get('Authorization') || '';
   const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
 
@@ -26,7 +26,7 @@ async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
 
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (token) {
-    const secrets = [env.JWT_SECRET, env.ADMIN_SYNC_SECRET];
+    const secrets = [env.JWT_SECRET];
     const { valid, userId } = await verifyToken(token, secrets);
     if (valid && userId && env.DB) {
       const member = await env.DB.prepare('SELECT role FROM members WHERE id = ?').bind(userId).first<any>().catch(() => null);

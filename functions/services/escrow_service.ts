@@ -1,5 +1,14 @@
 import { recordLedgerTransaction } from './marketplace_service';
 
+function generateSecureIdSuffix(length = 4): string {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const bytes = new Uint8Array(length);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  return Date.now().toString(36).slice(-length);
+}
+
 export interface EscrowHoldParams {
   orderId: string;
   sellerId?: string;
@@ -201,7 +210,7 @@ export async function confirmReceivedAndRelease(
       }
     }
 
-    const logId1 = 'sec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    const logId1 = 'sec_' + Date.now().toString(36) + '_' + generateSecureIdSuffix(4);
     await db.prepare(`
       INSERT INTO security_logs (id, actor_name, action, target_id, severity, details, created_at)
       VALUES (?, ?, 'ESCROW_ORDER_CONFIRMED_RELEASE', ?, 'INFO', ?, ?)
@@ -297,7 +306,7 @@ export async function fileOrderDispute(
     }
 
     const nowIso = new Date().toISOString();
-    const disputeId = `dsp_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+    const disputeId = `dsp_${Date.now().toString(36)}_${generateSecureIdSuffix(4)}`;
     const sellerId = order.seller_id || (await ensureOfficialSeller(db));
 
     // Cập nhật trạng thái đơn sang DISPUTED (đóng băng giải ngân)
@@ -324,7 +333,7 @@ export async function fileOrderDispute(
       .run()
       .catch(() => {});
 
-    const logId2 = 'sec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    const logId2 = 'sec_' + Date.now().toString(36) + '_' + generateSecureIdSuffix(4);
     await db.prepare(`
       INSERT INTO security_logs (id, actor_name, action, target_id, severity, details, created_at)
       VALUES (?, ?, 'ESCROW_ORDER_DISPUTED', ?, 'INFO', ?, ?)
@@ -455,7 +464,7 @@ export async function resolveAdminDispute(
           .bind(amount, nowIso, order.member_id)
           .run();
 
-        const txId = `tx_refund_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const txId = `tx_refund_${Date.now()}_${generateSecureIdSuffix(4)}`;
         await db
           .prepare(`
             INSERT INTO wallet_transactions (

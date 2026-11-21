@@ -10,6 +10,20 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-307: Lạm Dụng Single Master Secret Đa Quyền Hạn (Multi-Role), Fallback Chuỗi Ghi Cứng & Rate Limiting Fail-Open
+- **Triệu chứng & Rủi ro**:
+  - Dùng chung một bí mật duy nhất (`ADMIN_SYNC_SECRET`) cho cả đồng bộ dữ liệu, ký session token, xác thực admin và gọi cron job tạo ra rủi ro leo thang đặc quyền nghiêm trọng: lộ một secret sẽ làm sụp đổ toàn bộ hệ thống phân quyền.
+  - Sử dụng chuỗi ghi cứng làm fallback khi biến môi trường chưa được đặt (như `'wcg_master_key_configured_in_env'`) vi phạm nguyên tắc bảo mật và Rule 10, khiến bất kỳ ai cũng có thể đoán được chuỗi xác thực.
+  - Đọc giới hạn tần suất (rate limiting) có khối catch nuốt lỗi (`.catch(() => null)`) sẽ biến cơ chế phòng vệ thành fail-open: khi CSDL bị quá tải hoặc lỗi, kẻ tấn công có thể spam OTP hoặc brute-force không giới hạn.
+  - Không reset bộ đếm số lần thử sau khi cửa sổ thời gian khóa (lockout) kết thúc sẽ dẫn tới hiện tượng người dùng vừa hết hạn khóa bị khóa lại ngay lập tức ở lần thử đầu tiên.
+  - Sử dụng `Math.random()` trong việc sinh muối mật mã hoặc mã giao dịch nhạy cảm có tính giả ngẫu nhiên yếu, dễ bị tấn công suy đoán trạng thái PRNG.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Phân tách rõ ràng và độc lập các biến môi trường theo đúng mục đích: `ADMIN_API_KEY` cho quyền quản trị tối cao, `SYNC_SECRET` cho tiến trình đồng bộ dữ liệu, `CRON_SECRET` cho tác vụ định kỳ tự động, `JWT_SECRET` cho chữ ký HMAC-SHA256 phiên đăng nhập.
+  - Tuyệt đối không để bất kỳ chuỗi fallback bí mật ghi cứng nào trong mã nguồn. Nếu biến môi trường chưa được cấu hình, hệ thống bắt buộc phải fail-closed (từ chối xác thực).
+  - Rate limiting phải fail-closed: Khi truy vấn CSDL rate limit gặp sự cố, trả về HTTP 503 thay vì bỏ qua kiểm tra.
+  - Khi `nowMs >= locked_until` hoặc thời gian cửa sổ đã trôi qua, bộ đếm `attempts` phải được reset về 1 để người dùng có thể thực hiện thao tác bình thường.
+  - Chỉ sử dụng Web Crypto API (`crypto.getRandomValues`) cho mọi thao tác sinh salt, token hoặc ID giao dịch.
+
 ### ISSUE-306: Rò Rỉ Phiên Khác Domain Khi Xác Thực, Bypass Token Chuỗi Tĩnh & Sai Lệch Băm Mật Khẩu Admin
 - **Triệu chứng & Rủi ro**:
   - Khi API quản trị gặp lỗi cấu hình (`JWT_SECRET` chưa đặt), việc client lặp qua danh sách fallback các domain cũ (`codegame.shop`, `web-code-game.pages.dev`, `admin-code-game-shop.pages.dev`) sẽ khiến client lưu trữ token được cấp bởi domain khác. Khi thực hiện các tác vụ nhạy cảm như đổi mật khẩu tại domain quản trị chính, yêu cầu sẽ bị từ chối với lỗi "Phiên đăng nhập không tồn tại hoặc đã hết hạn".

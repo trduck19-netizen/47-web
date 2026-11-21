@@ -209,10 +209,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
        ORDER BY created_at ASC`
     ).all<any>();
 
-    const masterSecret = env.ADMIN_SYNC_SECRET || env.JWT_SECRET || 'wcg_master_key_configured_in_env';
+    const masterSecret = (env.ADMIN_API_KEY || env.JWT_SECRET || '').trim();
     const masterPrefix = masterSecret.length > 10 
       ? `${masterSecret.slice(0, 6)}••••••••••••••••••••••••••••••••••••••••••••••••••••••${masterSecret.slice(-4)}`
-      : 'wcg_master••••key';
+      : (masterSecret ? '••••••••' : 'Chưa cấu hình');
 
     const masterKeyInfo = {
       id: 'key_system_master',

@@ -9,7 +9,7 @@ import {
 
 interface Env {
   DB?: any;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
   JWT_SECRET?: string;
 }
 
@@ -21,7 +21,7 @@ const CORS_HEADERS = {
 };
 
 async function isAuthorizedAdmin(request: Request, env: Env): Promise<{ authorized: boolean; adminId?: string }> {
-  const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+  const configuredSecret = (env.ADMIN_API_KEY || '').trim();
   const authHeader = request.headers.get('Authorization') || '';
   const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
 
@@ -36,7 +36,7 @@ async function isAuthorizedAdmin(request: Request, env: Env): Promise<{ authoriz
   if (token && env.DB) {
     const adminAuth = await authenticateAdmin(env.DB, token, {
       JWT_SECRET: env.JWT_SECRET,
-      ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+      ADMIN_API_KEY: env.ADMIN_API_KEY,
     });
     if (adminAuth.authenticated) {
       return { authorized: true, adminId: adminAuth.adminId || 'admin' };

@@ -7,6 +7,25 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-21]
 
+### 425. Tách Triệt Để Master Secret Theo Mục Đích (ADMIN_API_KEY/SYNC_SECRET/CRON_SECRET), Khóa Rate-Limit Fail-Closed & Dọn Sạch Tàn Dư Bảo Mật (21/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  1. *auth/single-master-secret-multi-role*: `ADMIN_SYNC_SECRET` còn được chấp nhận làm credential sống ở nhiều endpoint (`sync.ts`, `me.ts`, `temporary-token.ts`, `auth_service.ts`, `_worker.ts`, `create-qr.ts`, `crawler`, `events`, `news`, `upload-icon`, `giveaways/simulate`, `notifications`, `telegram`). Cần gỡ bỏ và phân tách rõ ràng theo mục đích: `SYNC_SECRET` cho sync, `JWT_SECRET` cho ký session token, `ADMIN_API_KEY` cho quyền admin, `CRON_SECRET` cho cron jobs.
+  2. *verifyTemporaryAuditToken & master key fallback*: Xóa bỏ fallback chuỗi ghi cứng `'wcg_master_key_configured_in_env'` trong `api-keys/index.ts`. Xác nhận `verifyTemporaryAuditToken` fail-closed 100% khi thiếu candidate secret.
+  3. *Tàn dư offline fallback password reset*: Loại bỏ fallback offline giả lập trong `confirmPasswordReset` và `updateProfile` (`authService.ts`), fail-closed khi server bảo mật không khả dụng.
+  4. *game-icon open proxy*: Thắt chặt whitelist MIME type trong `game-icon.ts`, từ chối nội dung không phải ảnh thay vì gắn nhãn lại `image/webp`. Đảm bảo timeout 10 giây và CSP/nosniff cho SVG fallback.
+  5. *Rate limit OTP fail-closed & Reset cửa sổ*: Trong `reset-password.ts`, bắt lỗi đọc CSDL D1 trả về HTTP 503 thay vì nuốt lỗi (fail-open); tự động reset bộ đếm khi hết thời gian khóa hoặc hết cửa sổ; xóa bỏ hoàn toàn `Math.random()` chuyển sang WebCrypto `crypto.getRandomValues`.
+  6. *Escrow rollback khi lỗi ghi sổ cái*: Xác nhận `escrow_service.ts` hoàn tác trạng thái đơn hàng về `HELD` và trả lỗi cứng khi ghi nhận sổ cái `RELEASE`/`FEE`/`REFUND` thất bại; thay thế toàn bộ `Math.random()` bằng `crypto.getRandomValues`.
+- **Giải pháp áp dụng (Solution)**:
+  - Cập nhật toàn bộ các endpoint sử dụng đúng secret đã tách bạch: `ADMIN_API_KEY` (quản trị), `SYNC_SECRET` (đồng bộ), `CRON_SECRET` (cron).
+  - Gỡ bỏ `ADMIN_SYNC_SECRET` khỏi `interface Env` và logic xác thực ở các API tương ứng.
+  - Sửa hàm `getSafeImageContentType` trong `game-icon.ts` trả về `null` cho các kiểu MIME không hợp lệ.
+  - Thêm try-catch fail-closed cho đọc rate limit trong `reset-password.ts`, reset số lần thử khi `nowMs >= locked_until`.
+  - Loại bỏ hoàn toàn `Math.random` trong `reset-password.ts` và `escrow_service.ts`.
+- **Kiểm thử & Nghiệm thu**:
+  - `check:i18n`: Đạt 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - Quét an toàn Rule 10: 0 secret, 0 private key, 0 mật khẩu hay hash ghi cứng.
+  - Build Vite Frontend & Cloudflare Pages Edge Worker bundle thành công 100%.
+
 ### 424. Chuẩn Hóa Xác Thực Quản Trị Độc Quyền Single-Domain, Sửa Lỗi Đổi Mật Khẩu Admin, Băm PBKDF2 100.000 Vòng & Xóa Bỏ Hoàn Toàn Auth Bypass (21/11/2026)
 - **Bối cảnh & Triệu chứng**:
   1. *Triệu chứng lỗi đổi mật khẩu*: Quản trị viên đổi mật khẩu tại `#/profile` báo "Đổi mật khẩu thất bại — Phiên đăng nhập không tồn tại hoặc đã hết hạn", kể cả sau khi đăng xuất và đăng nhập lại. Truy vấn D1 cho thấy lần đăng nhập cuối của `usr_admin` vẫn ở thời điểm cũ, chứng tỏ yêu cầu đăng nhập chưa từng chạm tới D1 của trang quản trị.

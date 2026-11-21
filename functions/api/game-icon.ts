@@ -53,13 +53,13 @@ function isAllowedIconHost(hostname: string): boolean {
 
 function getSafeImageContentType(rawContentType: string | null): string | null {
   const ct = (rawContentType || '').toLowerCase().trim();
-  if (!ct.startsWith('image/')) return null;
-  if (ct.includes('png')) return 'image/png';
-  if (ct.includes('jpeg') || ct.includes('jpg')) return 'image/jpeg';
-  if (ct.includes('gif')) return 'image/gif';
-  if (ct.includes('svg')) return 'image/svg+xml';
-  if (ct.includes('avif')) return 'image/avif';
-  return 'image/webp';
+  if (ct.startsWith('image/png') || ct.includes('png')) return 'image/png';
+  if (ct.startsWith('image/jpeg') || ct.includes('jpeg') || ct.includes('jpg')) return 'image/jpeg';
+  if (ct.startsWith('image/gif') || ct.includes('gif')) return 'image/gif';
+  if (ct.startsWith('image/svg+xml') || ct.includes('svg')) return 'image/svg+xml';
+  if (ct.startsWith('image/avif') || ct.includes('avif')) return 'image/avif';
+  if (ct.startsWith('image/webp') || ct.includes('webp')) return 'image/webp';
+  return null;
 }
 
 export const onRequestOptions = async () => {

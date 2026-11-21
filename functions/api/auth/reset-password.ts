@@ -221,10 +221,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Step 1: Request OTP Code
     if (action === 'request_otp') {
-      // 1. Rate limiting by IP: Max 3 OTP requests per 15 mins per IP
-      const otpRateLimit = await env.DB.prepare(
-        'SELECT attempts, locked_until, last_attempt FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
-      ).bind(clientIp, 'REQUEST_OTP').first<any>().catch(() => null);
+      const accountKey = `acct:${member.id}`;
+      let otpRateLimit: any = null;
+      let accountOtpRateLimit: any = null;
+
+      try {
+        otpRateLimit = await env.DB.prepare(
+          'SELECT attempts, locked_until, last_attempt FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
+        ).bind(clientIp, 'REQUEST_OTP').first<any>();
+
+        accountOtpRateLimit = await env.DB.prepare(
+          'SELECT attempts, locked_until, last_attempt FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
+        ).bind(accountKey, 'REQUEST_OTP_ACCOUNT').first<any>();
+      } catch (rateLimitReadErr) {
+        console.error('[RateLimit Read Error]', rateLimitReadErr);
+        return new Response(
+          JSON.stringify({ success: false, message: 'Lỗi hệ thống kiểm tra giới hạn yêu cầu. Vui lòng thử lại sau.' }),
+          { status: 503, headers: CORS_HEADERS }
+        );
+      }
 
       if (otpRateLimit && Number(otpRateLimit.locked_until) > nowMs) {
         const remainingMin = Math.max(1, Math.ceil((Number(otpRateLimit.locked_until) - nowMs) / 60000));
@@ -238,12 +253,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         );
       }
 
-      // 2. Rate limiting by Account/Email: Max 5 OTP requests per hour per account/email
-      const accountKey = `acct:${member.id}`;
-      const accountOtpRateLimit = await env.DB.prepare(
-        'SELECT attempts, locked_until, last_attempt FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
-      ).bind(accountKey, 'REQUEST_OTP_ACCOUNT').first<any>().catch(() => null);
-
       if (accountOtpRateLimit && Number(accountOtpRateLimit.locked_until) > nowMs) {
         const remainingMin = Math.max(1, Math.ceil((Number(accountOtpRateLimit.locked_until) - nowMs) / 60000));
         return new Response(
@@ -256,15 +265,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         );
       }
 
-      // Reset attempt counters if window has elapsed
+      // Reset attempt counters if window has elapsed or previous lockout has expired
       const ipWindowMs = 15 * 60 * 1000;
-      const isIpWindowExpired = otpRateLimit?.last_attempt && (nowMs - Number(otpRateLimit.last_attempt) > ipWindowMs);
+      const isIpLockExpired = otpRateLimit?.locked_until && Number(otpRateLimit.locked_until) > 0 && nowMs >= Number(otpRateLimit.locked_until);
+      const isIpWindowExpired = isIpLockExpired || !otpRateLimit?.last_attempt || (nowMs - Number(otpRateLimit.last_attempt) > ipWindowMs);
       const currentOtpAttempts = isIpWindowExpired ? 1 : ((Number(otpRateLimit?.attempts) || 0) + 1);
       const isLocked = currentOtpAttempts >= 3;
       const lockedUntil = isLocked ? nowMs + ipWindowMs : 0;
 
       const accountWindowMs = 60 * 60 * 1000;
-      const isAccountWindowExpired = accountOtpRateLimit?.last_attempt && (nowMs - Number(accountOtpRateLimit.last_attempt) > accountWindowMs);
+      const isAccountLockExpired = accountOtpRateLimit?.locked_until && Number(accountOtpRateLimit.locked_until) > 0 && nowMs >= Number(accountOtpRateLimit.locked_until);
+      const isAccountWindowExpired = isAccountLockExpired || !accountOtpRateLimit?.last_attempt || (nowMs - Number(accountOtpRateLimit.last_attempt) > accountWindowMs);
       const currentAccountAttempts = isAccountWindowExpired ? 1 : ((Number(accountOtpRateLimit?.attempts) || 0) + 1);
       const isAccountLocked = currentAccountAttempts >= 5;
       const accountLockedUntil = isAccountLocked ? nowMs + accountWindowMs : 0; // 1 hour lockout
@@ -321,7 +332,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       `).bind(otpHashVal, expiresAt, member.id).run();
 
       // Log OTP request into security_logs
-      const logId = `sec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const randBytes = new Uint8Array(4);
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(randBytes);
+      const randSuffix = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      const logId = `sec_${Date.now()}_${randSuffix}`;
       await env.DB.prepare(`
         INSERT INTO security_logs (id, actor_name, actor_email, action, target_id, ip_address, severity, details, created_at)
         VALUES (?, ?, ?, 'REQUEST_PASSWORD_OTP', ?, ?, 'INFO', ?, datetime('now'))
@@ -471,7 +485,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         WHERE id = ?
       `).bind(finalPasswordHash, finalSalt, member.id).run();
 
-      const logId = `sec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const randBytes2 = new Uint8Array(4);
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(randBytes2);
+      const randSuffix2 = Array.from(randBytes2).map(b => b.toString(16).padStart(2, '0')).join('');
+      const logId = `sec_${Date.now()}_${randSuffix2}`;
       await env.DB.prepare(`
         INSERT INTO security_logs (id, actor_name, actor_email, action, target_id, ip_address, severity, details, created_at)
         VALUES (?, ?, ?, 'RESET_PASSWORD_SUCCESS', ?, ?, 'WARN', ?, datetime('now'))

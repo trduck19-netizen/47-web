@@ -55,7 +55,7 @@ async function saveUpcomingGamesAndPropagate(
 
 export interface Env {
   DB?: D1Database;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
   JWT_SECRET?: string;
   MUSE_API_KEY?: string;
   PINE_API_KEY?: string;
@@ -555,9 +555,9 @@ async function authenticateRequest(
     return { authorized: false, botName: '', role: 'crawler', error: 'Thiếu API Key xác thực (Bearer Token, header X-API-Key hoặc trường apiKey trong JSON payload)' };
   }
 
-  // 1. Kiểm tra Admin Master Key (ADMIN_SYNC_SECRET)
-  if (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) {
-    return { authorized: true, botName: 'Admin Sync Secret', role: 'admin' };
+  // 1. Kiểm tra Admin Master Key (ADMIN_API_KEY)
+  if (env.ADMIN_API_KEY && env.ADMIN_API_KEY.length >= 16 && token === env.ADMIN_API_KEY.trim()) {
+    return { authorized: true, botName: 'Admin Master Key', role: 'admin' };
   }
 
   // 2. Kiểm tra tài khoản Quản trị viên trong Database D1
@@ -565,7 +565,7 @@ async function authenticateRequest(
     try {
       const adminAuth = await authenticateAdmin(env.DB, token, {
         JWT_SECRET: env.JWT_SECRET,
-        ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+        ADMIN_API_KEY: env.ADMIN_API_KEY,
       });
       if (adminAuth.authenticated) {
         return { authorized: true, botName: adminAuth.adminId || 'Admin Web Console', role: 'admin' };

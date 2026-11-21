@@ -240,7 +240,6 @@ interface Env {
   SYNC_SECRET?: string;
   ADMIN_API_KEY?: string;
   CRON_SECRET?: string;
-  ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
   PASSWORD_PEPPER?: string;
   ENVIRONMENT?: string;

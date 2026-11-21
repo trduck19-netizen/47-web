@@ -30,7 +30,7 @@ import { inspectImageBytes } from '../../services/icon_verifier_service';
 
 export interface Env {
   DB?: D1Database;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
   JWT_SECRET?: string;
   MUSE_API_KEY?: string;
   MUSE_MARKETING_AUDIT_KEY?: string;
@@ -105,11 +105,8 @@ async function authenticateRequest(request: Request, env: Env): Promise<CrawlerA
   }
 
   // 1. Kiểm tra Admin Master Key (toàn quyền)
-  if ((env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) || (env.JWT_SECRET && token === env.JWT_SECRET)) {
+  if (env.ADMIN_API_KEY && env.ADMIN_API_KEY.length >= 16 && token === env.ADMIN_API_KEY.trim()) {
     return { authorized: true, botName: 'Admin Master Key', role: 'admin' };
-  }
-  if (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) {
-    return { authorized: true, botName: 'Admin Sync Secret', role: 'admin' };
   }
 
   // 2. Kiểm tra Muse Master Bot / Pine Keys qua Environment Secrets

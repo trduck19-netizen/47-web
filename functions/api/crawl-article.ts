@@ -10,7 +10,7 @@ import { authenticateAdmin, authenticateCaller } from '../services/auth_service'
 interface Env {
   DB?: D1Database;
   JWT_SECRET?: string;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
 }
 
 function isSafeCrawlUrl(rawUrl: string): boolean {
@@ -80,7 +80,7 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
 
   const adminAuth = await authenticateAdmin(context.env.DB, token, {
     JWT_SECRET: context.env.JWT_SECRET,
-    ADMIN_SYNC_SECRET: context.env.ADMIN_SYNC_SECRET,
+    ADMIN_API_KEY: context.env.ADMIN_API_KEY,
   });
   if (!adminAuth.authenticated) {
     const callerAuth = await authenticateCaller(context.env.DB, token, context.env.JWT_SECRET);

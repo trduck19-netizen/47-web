@@ -5,7 +5,6 @@ export interface Env {
   JWT_SECRET?: string;
   ADMIN_API_KEY?: string;
   SYNC_SECRET?: string;
-  ADMIN_SYNC_SECRET?: string;
   PINE_API_KEY?: string;
   MUSE_API_KEY?: string;
   SEPAY_API_KEY?: string;

@@ -10,7 +10,7 @@ import { getSettingD1, setSettingD1 } from '../../services/d1_service';
 interface Env {
   DB: D1Database;
   JWT_SECRET?: string;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
   MUSE_API_KEY?: string;
   PINE_API_KEY?: string;
   ASSETS?: {
@@ -95,7 +95,7 @@ async function authenticateCaller(
 
   // 1. Master sync secret from Cloudflare environment
   if (
-    (env.ADMIN_SYNC_SECRET && candidateKey === env.ADMIN_SYNC_SECRET) ||
+    (env.ADMIN_API_KEY && env.ADMIN_API_KEY.length >= 16 && candidateKey === env.ADMIN_API_KEY.trim()) ||
     (env.MUSE_API_KEY && candidateKey === env.MUSE_API_KEY) ||
     (env.PINE_API_KEY && candidateKey === env.PINE_API_KEY)
   ) {
@@ -107,7 +107,7 @@ async function authenticateCaller(
     try {
       const adminAuth = await authenticateAdmin(env.DB, candidateKey, {
         JWT_SECRET: env.JWT_SECRET,
-        ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+        ADMIN_API_KEY: env.ADMIN_API_KEY,
       });
       if (adminAuth.authenticated) {
         return { authorized: true, callerName: adminAuth.adminId || 'Admin Web Console', isAdmin: true };
