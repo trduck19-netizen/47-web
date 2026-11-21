@@ -393,20 +393,20 @@ export async function verifyMemberAuth(
 
   let member: any = null;
 
-  if (token.startsWith('wcg_edge_tok_')) {
+  // 1. Kiểm tra session_token chính xác trong DB
+  member = await env.DB.prepare(
+    'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE session_token = ? LIMIT 1'
+  ).bind(token).first<any>();
+
+  // 2. Kiểm tra chữ ký mật mã cryptographic HMAC-SHA256
+  if (!member) {
     const candidateSecrets = [env.JWT_SECRET];
     const { valid, userId } = await verifyToken(token, candidateSecrets);
     if (valid && userId) {
       member = await env.DB.prepare(
-        'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE id = ? LIMIT 1'
-      ).bind(userId).first<any>();
+        'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE id = ? OR username = ? LIMIT 1'
+      ).bind(userId, userId).first<any>();
     }
-  }
-
-  if (!member) {
-    member = await env.DB.prepare(
-      'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE session_token = ? LIMIT 1'
-    ).bind(token).first<any>();
   }
 
   if (!member) {

@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../../services/d1_service';
 import { getMarketplaceConfig, SellerRecord } from '../../../services/marketplace_service';
+import { authenticateCaller } from '../../../services/auth_service';
 
 interface Env {
   DB: D1Database;
@@ -45,11 +46,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 1. Xác thực đăng nhập
-    const auth = await verifyMemberAuth(request, env as any);
-    if (!auth.authorized || !auth.member) {
+    // 1. Xác thực đăng nhập qua session_token hoặc mã ký HMAC hợp lệ (chống giả mạo chủ gian hàng)
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+    if (!auth.authenticated || !auth.member) {
       return new Response(
-        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập.' }),
+        JSON.stringify({ success: false, error: 'Vui lòng đăng nhập tài khoản hợp lệ để rút tiền.' }),
         { status: 401, headers: CORS_HEADERS }
       );
     }

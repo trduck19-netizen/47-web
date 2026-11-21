@@ -943,7 +943,13 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           }
           const authHeader = request.headers.get('Authorization') || '';
           const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-          const currentUserId = extractUserIdFromToken(token) || undefined;
+          let currentUserId: string | undefined = undefined;
+          if (token) {
+            const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+            if (auth.authenticated && auth.member) {
+              currentUserId = auth.member.id;
+            }
+          }
           const reviewsData = await getProductReviews(env.DB, productId, currentUserId);
           return new Response(JSON.stringify({ success: true, ...reviewsData }), {
             status: 200,
@@ -953,18 +959,19 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'POST') {
           const authHeader = request.headers.get('Authorization') || '';
           const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-          const userId = extractUserIdFromToken(token);
-          if (!userId) {
+          const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+          if (!auth.authenticated || !auth.member) {
             return new Response(JSON.stringify({ success: false, message: 'Vui lòng đăng nhập để gửi đánh giá sản phẩm.', code: 'UNAUTHORIZED' }), {
               status: 401,
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
             });
           }
+          const userId = auth.member.id;
           const body: any = await request.json().catch(() => ({}));
           const targetProductId = productId || body?.productId;
           const rating = Number(body?.rating);
           const comment = String(body?.comment || '');
-          const userName = body?.userName || undefined;
+          const userName = auth.member.display_name || auth.member.username || 'Khách hàng';
 
           if (!targetProductId) {
             return new Response(JSON.stringify({ success: false, message: 'Thiếu productId', code: 'MISSING_PRODUCT_ID' }), {
@@ -994,6 +1001,16 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': '*' } });
         }
         if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+
+        const authHeader = request.headers.get('Authorization') || '';
+        const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+        const adminAuth = await authenticateAdmin(env.DB, token, env);
+        if (!adminAuth.authenticated) {
+          return new Response(JSON.stringify({ success: false, message: 'Yêu cầu quyền Quản trị viên để kiểm duyệt đánh giá.' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
         if (pathname === '/api/admin/reviews' && method === 'GET') {
           const status = url.searchParams.get('status') || undefined;
           const listRes = await listAdminReviews(env.DB, status);

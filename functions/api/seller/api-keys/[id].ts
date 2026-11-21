@@ -32,9 +32,9 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (auth.authType === 'THIRD_PARTY_TOKEN') {
+    if (auth.authType === 'THIRD_PARTY_TOKEN' || (auth.authType === 'STORE_API_KEY' && auth.scope !== 'FULL')) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Ứng dụng bên thứ ba không có quyền thu hồi khóa API của gian hàng.' }),
+        JSON.stringify({ success: false, error: 'Khóa API phân quyền hoặc token bên thứ ba không có quyền thu hồi khóa API của gian hàng.' }),
         { status: 403, headers: CORS_HEADERS }
       );
     }
@@ -88,9 +88,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (auth.authType === 'THIRD_PARTY_TOKEN') {
+    if (auth.authType === 'THIRD_PARTY_TOKEN' || (auth.authType === 'STORE_API_KEY' && auth.scope !== 'FULL')) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Ứng dụng bên thứ ba không có quyền xoay khóa API của gian hàng.' }),
+        JSON.stringify({ success: false, error: 'Khóa API phân quyền hoặc token bên thứ ba không có quyền xoay khóa API của gian hàng.' }),
         { status: 403, headers: CORS_HEADERS }
       );
     }

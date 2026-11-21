@@ -99,6 +99,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
+    // Khóa API phân quyền (PRODUCTS/ORDERS/CODES/READ_ONLY) KHÔNG ĐƯỢC PHÉP tạo khóa API mới (chống leo thang đặc quyền)
+    if (auth.authType === 'STORE_API_KEY' && auth.scope !== 'FULL') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Khóa API phân quyền không có quyền quản lý hoặc tạo khóa API mới. Yêu cầu quyền FULL hoặc phiên đăng nhập của Chủ gian hàng.' }),
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
+
     const sellerId = auth.seller.id;
     const body = (await request.json().catch(() => ({}))) as any;
     const keyName = String(body.name || '').trim();

@@ -193,6 +193,16 @@ export async function verifyStoreApiAccess(
       };
     }
 
+    // Scope check: Scoped keys can never manage API keys, finance/withdraw, or staff/subaccounts
+    if (apiKey.scope !== 'FULL' && (pathname.includes('/api/seller/api-keys') || pathname.includes('/api/seller/finance') || pathname.includes('/api/seller/staff'))) {
+      await logStoreApiCall(env.DB, apiKey.seller_id, apiKey.id, 'STORE_API_KEY', pathname, method, 403, clientIp);
+      return {
+        authorized: false,
+        status: 403,
+        error: `Khóa API phân quyền (${apiKey.scope}) không được phép thao tác trên tài chính, nhân sự hoặc quản lý khóa API.`,
+      };
+    }
+
     // Scope check: READ_ONLY forbids write operations
     if (apiKey.scope === 'READ_ONLY' && (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH')) {
       await logStoreApiCall(env.DB, apiKey.seller_id, apiKey.id, 'STORE_API_KEY', pathname, method, 403, clientIp);
@@ -200,6 +210,36 @@ export async function verifyStoreApiAccess(
         authorized: false,
         status: 403,
         error: 'Khóa API này chỉ được cấp quyền đọc (READ_ONLY), không thể thực hiện thao tác sửa đổi dữ liệu.',
+      };
+    }
+
+    // Scope check: PRODUCTS only allows products & categories endpoints
+    if (apiKey.scope === 'PRODUCTS' && !pathname.includes('/products') && !pathname.includes('/categories') && !pathname.includes('/stats')) {
+      await logStoreApiCall(env.DB, apiKey.seller_id, apiKey.id, 'STORE_API_KEY', pathname, method, 403, clientIp);
+      return {
+        authorized: false,
+        status: 403,
+        error: 'Khóa API này chỉ có quyền thao tác trên Sản Phẩm (PRODUCTS).',
+      };
+    }
+
+    // Scope check: ORDERS only allows orders & disputes endpoints
+    if (apiKey.scope === 'ORDERS' && !pathname.includes('/orders') && !pathname.includes('/disputes')) {
+      await logStoreApiCall(env.DB, apiKey.seller_id, apiKey.id, 'STORE_API_KEY', pathname, method, 403, clientIp);
+      return {
+        authorized: false,
+        status: 403,
+        error: 'Khóa API này chỉ có quyền thao tác trên Đơn Hàng (ORDERS).',
+      };
+    }
+
+    // Scope check: CODES only allows codes & vault endpoints
+    if (apiKey.scope === 'CODES' && !pathname.includes('/codes') && !pathname.includes('/vault')) {
+      await logStoreApiCall(env.DB, apiKey.seller_id, apiKey.id, 'STORE_API_KEY', pathname, method, 403, clientIp);
+      return {
+        authorized: false,
+        status: 403,
+        error: 'Khóa API này chỉ có quyền thao tác trên Kho Mã (CODES).',
       };
     }
 
@@ -224,7 +264,7 @@ export async function verifyStoreApiAccess(
       keyId: apiKey.id,
       keyName: apiKey.name,
       scope: apiKey.scope,
-      role: 'OWNER',
+      role: apiKey.scope === 'FULL' ? 'OWNER' : 'MANAGE_STOCK',
     };
   }
 
