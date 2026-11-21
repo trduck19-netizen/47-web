@@ -3,20 +3,31 @@
  * Leverages Web Crypto API for zero-dependency client-side and edge cryptographic operations.
  */
 
-// Generate random cryptographic salt
+// Generate random cryptographic salt using Web Crypto API (Fail-closed)
 export function generateSalt(length = 16): string {
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     const array = new Uint8Array(length);
     crypto.getRandomValues(array);
     return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
-  return Array.from({ length }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  throw new Error('Web Crypto API (crypto.getRandomValues) is required to generate secure cryptographic salt. Failing closed.');
 }
 
-// SHA-256 Hashing with Salt using Web Crypto API
-export async function hashPassword(password: string, salt: string): Promise<string> {
+// SHA-256 Hashing with Salt & Pepper from Environment (Fail-closed if pepper unset)
+export async function hashPassword(password: string, salt: string, customPepper?: string): Promise<string> {
+  const pepper = (
+    customPepper ||
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_PASSWORD_PEPPER) ||
+    (typeof process !== 'undefined' ? ((process as any).env?.PASSWORD_PEPPER || (process as any).env?.VITE_PASSWORD_PEPPER) : '') ||
+    ''
+  ).trim();
+
+  if (!pepper || pepper.length < 8) {
+    throw new Error('PASSWORD_PEPPER is missing or too short. Failing closed.');
+  }
+
   const encoder = new TextEncoder();
-  const data = encoder.encode(password + salt + 'wcg_edge_sec_salt_2026');
+  const data = encoder.encode(password + salt + pepper);
 
   if (typeof crypto !== 'undefined' && crypto.subtle && crypto.subtle.digest) {
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -24,15 +35,7 @@ export async function hashPassword(password: string, salt: string): Promise<stri
     return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // Fallback for non-crypto environments (e.g. basic Node tests)
-  let hash = 0;
-  const str = password + salt + 'wcg_edge_sec_salt_2026';
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  return `h_${Math.abs(hash).toString(16).padStart(16, '0')}`;
+  throw new Error('crypto.subtle.digest is required for secure password hashing. Failing closed.');
 }
 
 // Generate Secure Session Token

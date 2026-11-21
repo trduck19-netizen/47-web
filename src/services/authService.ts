@@ -397,58 +397,17 @@ class AuthService {
       }
     } catch {}
 
-    // 2. Local Hybrid Fallback
+    // 2. Local Fallback (chỉ dùng khi offline và tài khoản đã lưu hợp lệ trong localStorage)
     try {
       const membersRaw = localStorage.getItem('wcg_admin_members_v4');
-      let members: any[] = membersRaw ? JSON.parse(membersRaw) : [];
+      const members: any[] = membersRaw ? JSON.parse(membersRaw) : [];
 
-      if (members.length === 0) {
-        members = [
-          {
-            id: 'usr_vip',
-            displayName: 'vip_gamer',
-            email: 'vip@webcodegame.vn',
-            role: 'VIP',
-            balance: 1000000,
-            status: 'ACTIVE',
-            salt: 'wcg_player_salt_seed_2026',
-            passwordHash: '8ce5f4ed91c6a9aa2f2781b6bf6dca99bb898de46071c6844c66eba23804f308',
-            avatar: generateAvatarUrl('vip_gamer'),
-          },
-        ];
-        localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
-      }
-
-      const isAdminLookup = cleanIdentifier === 'admin290200' || cleanIdentifier === 'admin2902' || cleanIdentifier === 'admin@codegame.store';
-
-      if (isAdminLookup) {
-        const adminIdx = members.findIndex(
-          (m) => m.id === 'usr_admin' || m.displayName?.toLowerCase() === 'admin290200' || m.email?.toLowerCase() === 'admin@codegame.store'
-        );
-        if (adminIdx >= 0) {
-          members[adminIdx] = {
-            ...members[adminIdx],
-            salt: adminSalt,
-            passwordHash: adminHash,
-            role: 'SUPER_ADMIN',
-            status: 'ACTIVE',
-          };
-        } else {
-          members.unshift(defaultAdmin);
-        }
-        localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
-      }
-
-      let member = members.find(
+      const member = members.find(
         (m) =>
           m.displayName?.toLowerCase() === cleanIdentifier ||
           m.email?.toLowerCase() === cleanIdentifier ||
           m.id?.toLowerCase() === cleanIdentifier
       );
-
-      if (!member && isAdminLookup) {
-        member = members.find((m) => m.id === 'usr_admin' || m.role === 'ADMIN' || m.role === 'SUPER_ADMIN');
-      }
 
       if (!member) {
         return {

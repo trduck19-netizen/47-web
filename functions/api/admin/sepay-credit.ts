@@ -5,6 +5,7 @@ import { verifyAdminAuth } from '../../services/mission_service';
 
 interface Env {
   DB: D1Database;
+  ADMIN_API_KEY?: string;
   ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
 }
@@ -67,7 +68,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const authHeader = request.headers.get('Authorization') || '';
       const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
       const cleanToken = authHeader.replace(/^Bearer\s+/i, '').trim();
-      const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+      const configuredSecret = (env.ADMIN_API_KEY || '').trim();
 
       if (configuredSecret && (syncKeyHeader === configuredSecret || cleanToken === configuredSecret)) {
         isAuthorized = true;

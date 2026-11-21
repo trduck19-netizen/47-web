@@ -440,7 +440,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       } catch {}
     }
 
-    if (!configuredApiKey && !env.ADMIN_SYNC_SECRET && !accountNumber) {
+    if (!configuredApiKey && !accountNumber) {
       return new Response(
         JSON.stringify({ success: false, message: 'Chưa cấu hình SePay API Key hoặc thông tin tài khoản nhận tiền trên máy chủ.' }),
         { status: 500, headers: CORS_HEADERS }

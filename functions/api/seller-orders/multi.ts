@@ -81,7 +81,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     } catch {}
 
-    if (!configuredApiKey && !env.ADMIN_SYNC_SECRET) {
+    if (!configuredApiKey) {
       return new Response(
         JSON.stringify({
           success: false,

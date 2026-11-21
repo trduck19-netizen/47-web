@@ -223,7 +223,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (action === 'request_otp') {
       // 1. Rate limiting by IP: Max 3 OTP requests per 15 mins per IP
       const otpRateLimit = await env.DB.prepare(
-        'SELECT attempts, locked_until FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
+        'SELECT attempts, locked_until, last_attempt FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
       ).bind(clientIp, 'REQUEST_OTP').first<any>().catch(() => null);
 
       if (otpRateLimit && Number(otpRateLimit.locked_until) > nowMs) {
@@ -241,7 +241,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // 2. Rate limiting by Account/Email: Max 5 OTP requests per hour per account/email
       const accountKey = `acct:${member.id}`;
       const accountOtpRateLimit = await env.DB.prepare(
-        'SELECT attempts, locked_until FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
+        'SELECT attempts, locked_until, last_attempt FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
       ).bind(accountKey, 'REQUEST_OTP_ACCOUNT').first<any>().catch(() => null);
 
       if (accountOtpRateLimit && Number(accountOtpRateLimit.locked_until) > nowMs) {
@@ -256,31 +256,57 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         );
       }
 
-      const currentOtpAttempts = (Number(otpRateLimit?.attempts) || 0) + 1;
+      // Reset attempt counters if window has elapsed
+      const ipWindowMs = 15 * 60 * 1000;
+      const isIpWindowExpired = otpRateLimit?.last_attempt && (nowMs - Number(otpRateLimit.last_attempt) > ipWindowMs);
+      const currentOtpAttempts = isIpWindowExpired ? 1 : ((Number(otpRateLimit?.attempts) || 0) + 1);
       const isLocked = currentOtpAttempts >= 3;
-      const lockedUntil = isLocked ? nowMs + 15 * 60 * 1000 : 0;
-      await env.DB.prepare(`
-        INSERT INTO ip_rate_limits (ip_address, action_type, attempts, locked_until, last_attempt)
-        VALUES (?, 'REQUEST_OTP', ?, ?, ?)
-        ON CONFLICT(ip_address, action_type) DO UPDATE SET
-          attempts = excluded.attempts,
-          locked_until = excluded.locked_until,
-          last_attempt = excluded.last_attempt
-      `).bind(clientIp, currentOtpAttempts, lockedUntil, nowMs).run().catch(() => {});
+      const lockedUntil = isLocked ? nowMs + ipWindowMs : 0;
 
-      const currentAccountAttempts = (Number(accountOtpRateLimit?.attempts) || 0) + 1;
+      const accountWindowMs = 60 * 60 * 1000;
+      const isAccountWindowExpired = accountOtpRateLimit?.last_attempt && (nowMs - Number(accountOtpRateLimit.last_attempt) > accountWindowMs);
+      const currentAccountAttempts = isAccountWindowExpired ? 1 : ((Number(accountOtpRateLimit?.attempts) || 0) + 1);
       const isAccountLocked = currentAccountAttempts >= 5;
-      const accountLockedUntil = isAccountLocked ? nowMs + 60 * 60 * 1000 : 0; // 1 hour lockout
-      await env.DB.prepare(`
-        INSERT INTO ip_rate_limits (ip_address, action_type, attempts, locked_until, last_attempt)
-        VALUES (?, 'REQUEST_OTP_ACCOUNT', ?, ?, ?)
-        ON CONFLICT(ip_address, action_type) DO UPDATE SET
-          attempts = excluded.attempts,
-          locked_until = excluded.locked_until,
-          last_attempt = excluded.last_attempt
-      `).bind(accountKey, currentAccountAttempts, accountLockedUntil, nowMs).run().catch(() => {});
+      const accountLockedUntil = isAccountLocked ? nowMs + accountWindowMs : 0; // 1 hour lockout
 
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      // Fail-closed on rate limit recording errors
+      try {
+        await env.DB.prepare(`
+          INSERT INTO ip_rate_limits (ip_address, action_type, attempts, locked_until, last_attempt)
+          VALUES (?, 'REQUEST_OTP', ?, ?, ?)
+          ON CONFLICT(ip_address, action_type) DO UPDATE SET
+            attempts = excluded.attempts,
+            locked_until = excluded.locked_until,
+            last_attempt = excluded.last_attempt
+        `).bind(clientIp, currentOtpAttempts, lockedUntil, nowMs).run();
+
+        await env.DB.prepare(`
+          INSERT INTO ip_rate_limits (ip_address, action_type, attempts, locked_until, last_attempt)
+          VALUES (?, 'REQUEST_OTP_ACCOUNT', ?, ?, ?)
+          ON CONFLICT(ip_address, action_type) DO UPDATE SET
+            attempts = excluded.attempts,
+            locked_until = excluded.locked_until,
+            last_attempt = excluded.last_attempt
+        `).bind(accountKey, currentAccountAttempts, accountLockedUntil, nowMs).run();
+      } catch (rateLimitErr) {
+        console.error('[RateLimit D1 Error]', rateLimitErr);
+        return new Response(
+          JSON.stringify({ success: false, message: 'Lỗi hệ thống giới hạn tần suất yêu cầu. Vui lòng thử lại sau.' }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
+
+      let generatedOtp: string;
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const otpArray = new Uint32Array(1);
+        crypto.getRandomValues(otpArray);
+        generatedOtp = String(100000 + (otpArray[0] % 900000));
+      } else {
+        return new Response(
+          JSON.stringify({ success: false, message: 'WebCrypto không khả dụng để tạo mã OTP an toàn.' }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
       const expiresAt = Date.now() + 10 * 60 * 1000; // 10 mins
       const otpHashVal = await hashOtp(generatedOtp, member.salt || 'wcg_otp_salt');
 
@@ -422,7 +448,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         );
       }
 
-      const finalSalt = 'wcg_salt_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : Math.random().toString(36).slice(2, 12));
+      if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'WebCrypto không khả dụng để sinh salt an toàn.' }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
+      const saltBytes = new Uint8Array(16);
+      crypto.getRandomValues(saltBytes);
+      const finalSalt = 'wcg_salt_' + Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
       const finalPasswordHash = await hashPasswordPBKDF2(newPassword, finalSalt, pepper);
 
       await env.DB.prepare(`

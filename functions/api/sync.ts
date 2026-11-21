@@ -62,11 +62,11 @@ interface AuthResult {
 
 /**
  * Strict Server-Side Authorization for Sync Endpoints.
- * FAIL CLOSED: If env.ADMIN_SYNC_SECRET is not configured or empty, secret header auth is disabled.
+ * FAIL CLOSED: If env.SYNC_SECRET is not configured or empty, secret header auth is disabled.
  * Differentiates 401 Unauthorized (unauthenticated / bad token) vs 403 Forbidden (authenticated non-admin).
  */
 async function isAuthorized(request: Request, env: Env): Promise<AuthResult> {
-  const configuredSecret = (env.SYNC_SECRET || env.ADMIN_SYNC_SECRET || '').trim();
+  const configuredSecret = (env.SYNC_SECRET || '').trim();
   const authHeader = request.headers.get('Authorization') || '';
   const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
 
@@ -84,7 +84,7 @@ async function isAuthorized(request: Request, env: Env): Promise<AuthResult> {
   // 1.5. Khóa Kiểm Toán Tạm Thời (Tự hủy sau 2 giờ - CHỈ CHO PHÉP ĐỌC GET)
   const incomingAuthToken = (syncKeyHeader || authHeader.replace(/^Bearer\s+/i, '')).trim();
   if (incomingAuthToken.startsWith('wcg_audit_temp_')) {
-    const candidateSecrets = [env.ADMIN_SYNC_SECRET, env.JWT_SECRET];
+    const candidateSecrets = [env.JWT_SECRET].filter(Boolean) as string[];
     const auditCheck = await verifyTemporaryAuditToken(incomingAuthToken, candidateSecrets, env.DB);
     if (auditCheck.valid) {
       if (request.method !== 'GET' && request.method !== 'HEAD' && request.method !== 'OPTIONS') {
@@ -4541,8 +4541,26 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         const cleanUser = String(m.username || m.displayName || '').trim().toLowerCase();
         const cleanEmail = String(m.email || '').trim().toLowerCase();
         const targetPass = String(m.password || '').trim();
-        const targetSalt = m.salt || ('wcg_salt_' + Math.random().toString(36).slice(2, 10));
-        const pepper = (env as any).PASSWORD_PEPPER || 'wcg_edge_sec_salt_2026';
+        const pepper = String((env as any).PASSWORD_PEPPER || '').trim();
+        if (!pepper || pepper.length < 8) {
+          return new Response(JSON.stringify({ success: false, error: 'PASSWORD_PEPPER chưa được cấu hình an toàn trên máy chủ' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        let targetSalt = m.salt;
+        if (!targetSalt) {
+          if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            const randBytes = new Uint8Array(16);
+            crypto.getRandomValues(randBytes);
+            targetSalt = 'wcg_salt_' + Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+          } else {
+            return new Response(JSON.stringify({ success: false, error: 'WebCrypto không khả dụng để sinh salt an toàn' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+        }
         const finalHash = targetPass ? await computeHash(targetPass, targetSalt, pepper) : (m.passwordHash || m.password_hash || '');
         const memberId = m.id || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
         const displayName = m.displayName || m.username || cleanUser;

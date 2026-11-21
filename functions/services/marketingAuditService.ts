@@ -162,7 +162,7 @@ export async function authenticateMarketingAuditor(request: Request, env: any): 
 
   // 1. Kiểm tra Admin Master Key (toàn quyền) & Admin Client Sync Key
   if (
-    (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET && env.ADMIN_SYNC_SECRET.length >= 16)
+    (env.ADMIN_API_KEY && token === env.ADMIN_API_KEY && env.ADMIN_API_KEY.length >= 16)
   ) {
     return {
       authorized: true,
@@ -173,7 +173,7 @@ export async function authenticateMarketingAuditor(request: Request, env: any): 
 
   // 1.5. Kiểm tra Khóa Kiểm Toán Tạm Thời (Tự hủy sau 2 giờ)
   if (token.startsWith('wcg_audit_temp_')) {
-    const candidateSecrets = [env.ADMIN_SYNC_SECRET, env.JWT_SECRET, env.MUSE_MARKETING_AUDIT_KEY];
+    const candidateSecrets = [env.ADMIN_API_KEY, env.JWT_SECRET, env.MUSE_MARKETING_AUDIT_KEY].filter(Boolean) as string[];
     const auditCheck = await verifyTemporaryAuditToken(token, candidateSecrets, env.DB);
     if (auditCheck.valid) {
       const minsLeft = Math.max(1, Math.round(auditCheck.remainingSeconds / 60));

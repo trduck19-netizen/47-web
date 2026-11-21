@@ -136,46 +136,50 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
   if (slug) {
     try {
       const localWebpUrl = `${urlObj.origin}/game_icons/${slug}.webp`;
-      const localRes = await fetch(localWebpUrl);
+      const localRes = await fetch(localWebpUrl, { signal: AbortSignal.timeout(10000) });
       if (localRes.ok) {
-        const safeContentType = getSafeImageContentType(localRes.headers.get('content-type')) || 'image/webp';
-        const proxyResponse = new Response(localRes.body, {
-          status: 200,
-          headers: new Headers({
-            ...CORS_HEADERS,
-            'Content-Type': safeContentType,
-            'X-Content-Type-Options': 'nosniff',
-            'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'X-Image-Proxy-By': 'CodeGame-Local-Static',
-          }),
-        });
-        try {
-          cache.put(cacheKey, proxyResponse.clone());
-        } catch {}
-        return proxyResponse;
+        const safeContentType = getSafeImageContentType(localRes.headers.get('content-type'));
+        if (safeContentType) {
+          const proxyResponse = new Response(localRes.body, {
+            status: 200,
+            headers: new Headers({
+              ...CORS_HEADERS,
+              'Content-Type': safeContentType,
+              'X-Content-Type-Options': 'nosniff',
+              'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'X-Image-Proxy-By': 'CodeGame-Local-Static',
+            }),
+          });
+          try {
+            cache.put(cacheKey, proxyResponse.clone());
+          } catch {}
+          return proxyResponse;
+        }
       }
 
       // Thử file .jpg
       const localJpgUrl = `${urlObj.origin}/game_icons/${slug}.jpg`;
-      const localJpgRes = await fetch(localJpgUrl);
+      const localJpgRes = await fetch(localJpgUrl, { signal: AbortSignal.timeout(10000) });
       if (localJpgRes.ok) {
-        const safeContentType = getSafeImageContentType(localJpgRes.headers.get('content-type')) || 'image/jpeg';
-        const proxyResponse = new Response(localJpgRes.body, {
-          status: 200,
-          headers: new Headers({
-            ...CORS_HEADERS,
-            'Content-Type': safeContentType,
-            'X-Content-Type-Options': 'nosniff',
-            'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'X-Image-Proxy-By': 'CodeGame-Local-JPG',
-          }),
-        });
-        try {
-          cache.put(cacheKey, proxyResponse.clone());
-        } catch {}
-        return proxyResponse;
+        const safeContentType = getSafeImageContentType(localJpgRes.headers.get('content-type'));
+        if (safeContentType) {
+          const proxyResponse = new Response(localJpgRes.body, {
+            status: 200,
+            headers: new Headers({
+              ...CORS_HEADERS,
+              'Content-Type': safeContentType,
+              'X-Content-Type-Options': 'nosniff',
+              'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'X-Image-Proxy-By': 'CodeGame-Local-JPG',
+            }),
+          });
+          try {
+            cache.put(cacheKey, proxyResponse.clone());
+          } catch {}
+          return proxyResponse;
+        }
       }
     } catch {}
   }
@@ -250,22 +254,24 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
             signal: AbortSignal.timeout(10000),
           });
           if (iconRes.ok) {
-            const safeContentType = getSafeImageContentType(iconRes.headers.get('content-type')) || 'image/webp';
-            const proxyResponse = new Response(iconRes.body, {
-              status: 200,
-              headers: new Headers({
-                ...CORS_HEADERS,
-                'Content-Type': safeContentType,
-                'X-Content-Type-Options': 'nosniff',
-                'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-                'Cache-Control': 'public, max-age=31536000, immutable',
-                'X-Image-Proxy-By': 'CodeGame-Edge-GooglePlay',
-              }),
-            });
-            try {
-              cache.put(cacheKey, proxyResponse.clone());
-            } catch {}
-            return proxyResponse;
+            const safeContentType = getSafeImageContentType(iconRes.headers.get('content-type'));
+            if (safeContentType) {
+              const proxyResponse = new Response(iconRes.body, {
+                status: 200,
+                headers: new Headers({
+                  ...CORS_HEADERS,
+                  'Content-Type': safeContentType,
+                  'X-Content-Type-Options': 'nosniff',
+                  'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+                  'Cache-Control': 'public, max-age=31536000, immutable',
+                  'X-Image-Proxy-By': 'CodeGame-Edge-GooglePlay',
+                }),
+              });
+              try {
+                cache.put(cacheKey, proxyResponse.clone());
+              } catch {}
+              return proxyResponse;
+            }
           }
         }
       }
@@ -300,6 +306,8 @@ function generateFallbackSvgResponse(seed: string) {
     headers: {
       ...CORS_HEADERS,
       'Content-Type': 'image/svg+xml;charset=utf-8',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });

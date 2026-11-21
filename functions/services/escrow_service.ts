@@ -149,11 +149,23 @@ export async function confirmReceivedAndRelease(
 
     if (!relRes.success) {
       console.warn('[Escrow Warning] Ghi sổ cái giải ngân gặp lỗi sau khi đã cập nhật trạng thái đơn:', relRes.error);
+      await db.prepare(`
+        UPDATE orders
+        SET status = 'PROCESSING',
+            escrow_status = 'HELD',
+            released_at = NULL,
+            updated_at = ?
+        WHERE id = ?
+      `).bind(nowIso, order.id).run();
+      return {
+        success: false,
+        message: `Lỗi khi ghi sổ cái giải ngân (${relRes.error}). Đã khôi phục trạng thái đơn hàng về HELD để bảo vệ số dư.`,
+      };
     }
 
     // 3. Ghi dòng FEE
     if (feeCore > 0) {
-      await recordLedgerTransaction(db, {
+      const feeRes = await recordLedgerTransaction(db, {
         sellerId,
         orderId: order.id,
         type: 'FEE',
@@ -161,6 +173,32 @@ export async function confirmReceivedAndRelease(
         actor: 'platform_fee',
         reason: `Thu phí hoa hồng sàn ${isPhysical ? '2%' : '5%'} cho đơn ${order.id}`,
       });
+
+      if (!feeRes.success) {
+        console.warn('[Escrow Warning] Ghi sổ cái phí sàn gặp lỗi:', feeRes.error);
+        await recordLedgerTransaction(db, {
+          sellerId,
+          orderId: order.id,
+          type: 'HOLD',
+          amountCore: amount,
+          actor: 'escrow_rollback',
+          reason: `Hoàn tác giải ngân do lỗi ghi nhận phí sàn đơn ${order.id}: ${feeRes.error}`,
+        }).catch(() => {});
+
+        await db.prepare(`
+          UPDATE orders
+          SET status = 'PROCESSING',
+              escrow_status = 'HELD',
+              released_at = NULL,
+              updated_at = ?
+        WHERE id = ?
+      `).bind(nowIso, order.id).run();
+
+        return {
+          success: false,
+          message: `Lỗi khi ghi nhận phí sàn (${feeRes.error}). Đã hoàn tác giải ngân và khôi phục đơn hàng về HELD.`,
+        };
+      }
     }
 
     const logId1 = 'sec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
@@ -392,6 +430,17 @@ export async function resolveAdminDispute(
 
       if (!refRes.success) {
         console.warn('[Escrow] Error recording ledger refund:', refRes.error);
+        await db.prepare(`
+          UPDATE orders
+          SET status = 'PROCESSING',
+              escrow_status = 'DISPUTED',
+              updated_at = ?
+          WHERE id = ?
+        `).bind(nowIso, order.id).run();
+        return {
+          success: false,
+          message: `Lỗi khi ghi sổ cái hoàn tiền (${refRes.error}). Đã khôi phục trạng thái khiếu nại.`,
+        };
       }
 
       // Hoàn tiền vào ví thành viên

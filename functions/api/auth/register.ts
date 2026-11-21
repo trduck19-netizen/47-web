@@ -1,5 +1,5 @@
 import { ensureSchemaUpgrades } from '../../services/d1_service';
-import { createSignedToken, getSigningSecret, computeHash } from '../../services/auth_service';
+import { createSignedToken, getSigningSecret, computeHash, hashPasswordPBKDF2 } from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;
@@ -135,11 +135,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const finalFullName = finalDisplayName || cleanUsername;
     const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(cleanUsername)}&backgroundColor=0b0d19,16192e,241a45`;
 
-    const finalSalt = salt || ('wcg_salt_' + Math.random().toString(36).slice(2, 10));
+    const finalSalt = salt || ('wcg_salt_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : ''));
+    if (!finalSalt || finalSalt === 'wcg_salt_') {
+      return new Response(JSON.stringify({ success: false, message: 'Lỗi sinh salt bảo mật' }), { status: 500, headers: CORS_HEADERS });
+    }
     let finalPasswordHash = passwordHash;
     if (!finalPasswordHash && password) {
-      const pepper = env.PASSWORD_PEPPER || 'wcg_edge_sec_salt_2026';
-      finalPasswordHash = await computeHash(password, finalSalt, pepper);
+      const pepper = (env.PASSWORD_PEPPER || '').trim();
+      if (!pepper || pepper.length < 8) {
+        return new Response(JSON.stringify({ success: false, message: 'Hệ thống bảo mật chưa sẵn sàng (thiếu pepper cấu hình).' }), { status: 500, headers: CORS_HEADERS });
+      }
+      finalPasswordHash = await hashPasswordPBKDF2(password, finalSalt, pepper);
     }
 
     await env.DB.prepare(`

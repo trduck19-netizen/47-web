@@ -10,6 +10,7 @@ import { getSettingD1 } from '../../services/d1_service';
 
 interface Env {
   DB: D1Database;
+  ADMIN_API_KEY?: string;
   ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
 }
@@ -22,17 +23,17 @@ const CORS_HEADERS = {
 };
 
 async function isAuthorizedAdmin(request: Request, env: Env): Promise<{ authorized: boolean; actor: string }> {
-  const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+  const configuredSecret = (env.ADMIN_API_KEY || '').trim();
   const authHeader = request.headers.get('Authorization') || '';
   const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
   const apiKeyHeader = request.headers.get('X-Api-Key') || request.headers.get('x-api-key') || '';
 
-  // 1. Sync Secret Key
+  // 1. Admin API Key
   if (configuredSecret && configuredSecret.length >= 16) {
-    if (syncKeyHeader && syncKeyHeader === configuredSecret) return { authorized: true, actor: 'sync_bot' };
-    if (apiKeyHeader && apiKeyHeader === configuredSecret) return { authorized: true, actor: 'admin_sync' };
+    if (syncKeyHeader && syncKeyHeader === configuredSecret) return { authorized: true, actor: 'admin_api' };
+    if (apiKeyHeader && apiKeyHeader === configuredSecret) return { authorized: true, actor: 'admin_api' };
     if (authHeader.startsWith('Bearer ') && authHeader.replace(/^Bearer\s+/i, '').trim() === configuredSecret) {
-      return { authorized: true, actor: 'admin_sync' };
+      return { authorized: true, actor: 'admin_api' };
     }
   }
 
@@ -60,7 +61,7 @@ async function isAuthorizedAdmin(request: Request, env: Env): Promise<{ authoriz
   if (token && env.DB) {
     const adminAuth = await authenticateAdmin(env.DB, token, {
       JWT_SECRET: env.JWT_SECRET,
-      ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+      ADMIN_API_KEY: env.ADMIN_API_KEY,
     });
     if (adminAuth.authenticated) {
       return { authorized: true, actor: adminAuth.adminId || 'admin' };

@@ -3,6 +3,7 @@ import { verifyToken, verifyTemporaryAuditToken } from '../../services/auth_serv
 
 interface Env {
   DB: D1Database;
+  ADMIN_API_KEY?: string;
   ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
 }
@@ -15,7 +16,7 @@ const CORS_HEADERS = {
 };
 
 async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
-  const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+  const configuredSecret = (env.ADMIN_API_KEY || '').trim();
   const authHeader = request.headers.get('Authorization') || '';
   const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
 

@@ -304,7 +304,7 @@ async function handleUpdateProfile(context: EventContext<Env, any, any>): Promis
       );
     }
 
-    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, env.ADMIN_SYNC_SECRET]);
+    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET]);
 
     let member: any = await env.DB.prepare(
       'SELECT * FROM members WHERE session_token = ? LIMIT 1'

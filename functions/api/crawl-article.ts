@@ -192,8 +192,7 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
       }
       html = chunks.join('');
     } else {
-      const rawText = await response.text();
-      html = rawText.slice(0, MAX_BYTES);
+      html = '';
     }
 
     // Check if social media login wall was served

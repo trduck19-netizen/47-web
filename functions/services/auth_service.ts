@@ -100,10 +100,10 @@ export async function verifyPasswordPBKDF2(
 export async function computeHash(
   password: string,
   salt: string,
-  pepper: string = 'wcg_edge_sec_salt_2026'
+  pepper: string = ''
 ): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(password + (salt || '') + pepper);
+  const data = encoder.encode(password + (salt || '') + (pepper || ''));
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -265,10 +265,15 @@ export async function verifyTemporaryAuditToken(
   }
 
   const candidateSecrets = (Array.isArray(secrets) ? secrets : [secrets])
-    .filter((s): s is string => typeof s === 'string' && s.length > 0);
+    .filter((s): s is string => typeof s === 'string' && s.length >= 16);
 
   if (candidateSecrets.length === 0) {
-    candidateSecrets.push('wcg_sec_worker_prod_edge_2026');
+    return {
+      valid: false,
+      expired: false,
+      remainingSeconds: 0,
+      error: 'Hệ thống chưa cấu hình secret xác thực kiểm toán hợp lệ (Fail-closed).',
+    };
   }
 
   const payload = `audit_temp.${expiresAtMs}.${random}`;
@@ -356,15 +361,15 @@ export async function authenticateCaller(
 export async function authenticateAdmin(
   db: D1Database,
   token: string,
-  env: { JWT_SECRET?: string; ADMIN_SYNC_SECRET?: string }
+  env: { JWT_SECRET?: string; ADMIN_API_KEY?: string }
 ): Promise<{ authenticated: boolean; adminId: string | null; isMasterSecret: boolean }> {
   if (!token) return { authenticated: false, adminId: null, isMasterSecret: false };
   const clean = token.replace(/^Bearer\s+/i, '').trim();
   if (!clean) return { authenticated: false, adminId: null, isMasterSecret: false };
 
-  // 1. Master sync secret match
-  if (env.ADMIN_SYNC_SECRET && clean === env.ADMIN_SYNC_SECRET) {
-    return { authenticated: true, adminId: 'admin_sync_master', isMasterSecret: true };
+  // 1. Master Admin API Key match (Tách bạch độc lập khỏi sync secret)
+  if (env.ADMIN_API_KEY && env.ADMIN_API_KEY.length >= 16 && clean === env.ADMIN_API_KEY.trim()) {
+    return { authenticated: true, adminId: 'admin_api_master', isMasterSecret: true };
   }
 
   // 2. Kiểm tra tài khoản Quản trị viên trong Database

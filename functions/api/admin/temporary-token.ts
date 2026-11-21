@@ -13,7 +13,7 @@ import { getSettingD1, setSettingD1 } from '../../services/d1_service';
 
 interface Env {
   DB: D1Database;
-  ADMIN_SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
   JWT_SECRET?: string;
 }
 
@@ -25,11 +25,11 @@ const CORS_HEADERS = {
 };
 
 async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
-  const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+  const configuredSecret = (env.ADMIN_API_KEY || '').trim();
   const authHeader = request.headers.get('Authorization') || '';
   const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
 
-  // 1. Sync Secret Key
+  // 1. Admin API Key
   if (configuredSecret && configuredSecret.length >= 16) {
     if (syncKeyHeader && syncKeyHeader === configuredSecret) return true;
     if (authHeader.startsWith('Bearer ') && authHeader.replace(/^Bearer\s+/i, '').trim() === configuredSecret) return true;

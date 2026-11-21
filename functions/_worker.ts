@@ -237,6 +237,9 @@ interface Env {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
+  SYNC_SECRET?: string;
+  ADMIN_API_KEY?: string;
+  CRON_SECRET?: string;
   ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
   PASSWORD_PEPPER?: string;
@@ -900,7 +903,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         const authHeader = request.headers.get('Authorization') || '';
         const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-        const isCronSecret = (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) || (env.CRON_SECRET && token === env.CRON_SECRET);
+        const isCronSecret = Boolean(env.CRON_SECRET && env.CRON_SECRET.length >= 16 && token === env.CRON_SECRET.trim());
         const adminAuth = await authenticateAdmin(env.DB, token, env);
         if (!isCronSecret && !adminAuth.authenticated) {
           return new Response(JSON.stringify({ success: false, message: 'Yêu cầu quyền Quản trị viên hoặc Cron Secret hợp lệ để chạy giải ngân tự động.' }), {

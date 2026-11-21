@@ -192,7 +192,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const codeSecretKey = env.MARKETPLACE_CODE_KEY || env.JWT_SECRET || env.ADMIN_SYNC_SECRET || 'wcg_marketplace_code_aes_key_default_32';
+    const codeSecretKey = env.MARKETPLACE_CODE_KEY || env.JWT_SECRET || 'wcg_marketplace_code_aes_key_default_32';
 
     const batchId = `bat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const nowIso = new Date().toISOString();
