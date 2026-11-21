@@ -16,6 +16,52 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Range',
 };
 
+const ALLOWED_ICON_HOSTS = [
+  'googleusercontent.com',
+  'ggpht.com',
+  'mzstatic.com',
+  'apple.com',
+  'steamcdn-a.akamaihd.net',
+  'steamstatic.com',
+  'fandom.com',
+  'nocookie.net',
+  'tapdb.net',
+  'taptap.io',
+  'apkpure.com',
+  'codegame.shop',
+  'universal-mall-shop.pages.dev',
+  'admin-universal-mall.pages.dev',
+];
+
+function isAllowedIconHost(hostname: string): boolean {
+  const host = (hostname || '').toLowerCase().trim();
+  if (!host) return false;
+  // Block private IPs / loopback
+  if (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '::1' ||
+    host.startsWith('10.') ||
+    host.startsWith('192.168.') ||
+    host.startsWith('169.254.') ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+  ) {
+    return false;
+  }
+  return ALLOWED_ICON_HOSTS.some((allowed) => host === allowed || host.endsWith('.' + allowed));
+}
+
+function getSafeImageContentType(rawContentType: string | null): string | null {
+  const ct = (rawContentType || '').toLowerCase().trim();
+  if (!ct.startsWith('image/')) return null;
+  if (ct.includes('png')) return 'image/png';
+  if (ct.includes('jpeg') || ct.includes('jpg')) return 'image/jpeg';
+  if (ct.includes('gif')) return 'image/gif';
+  if (ct.includes('svg')) return 'image/svg+xml';
+  if (ct.includes('avif')) return 'image/avif';
+  return 'image/webp';
+}
+
 export const onRequestOptions = async () => {
   return new Response(null, {
     status: 204,
@@ -43,37 +89,45 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
     }
   } catch {}
 
-  // 2. Nếu có targetUrl trực tiếp (URL remote hợp lệ)
-  if (targetUrl && targetUrl.startsWith('http') && !targetUrl.includes('codemoi.net')) {
+  // 2. Nếu có targetUrl trực tiếp (URL remote hợp lệ & allowlisted)
+  if (targetUrl && (targetUrl.startsWith('https://') || targetUrl.startsWith('http://')) && !targetUrl.includes('codemoi.net')) {
     try {
-      let referer = 'https://play.google.com/';
-      if (targetUrl.includes('apple.com') || targetUrl.includes('mzstatic.com')) {
-        referer = 'https://apps.apple.com/';
-      }
+      const parsedTarget = new URL(targetUrl);
+      if (isAllowedIconHost(parsedTarget.hostname)) {
+        let referer = 'https://play.google.com/';
+        if (targetUrl.includes('apple.com') || targetUrl.includes('mzstatic.com')) {
+          referer = 'https://apps.apple.com/';
+        }
 
-      const res = await fetch(targetUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-          'Referer': referer,
-        },
-      });
-
-      if (res.ok) {
-        const contentType = res.headers.get('content-type') || 'image/webp';
-        const proxyResponse = new Response(res.body, {
-          status: 200,
-          headers: new Headers({
-            ...CORS_HEADERS,
-            'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'X-Image-Proxy-By': 'CodeGame-Edge-CDN',
-          }),
+        const res = await fetch(targetUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Referer': referer,
+          },
+          signal: AbortSignal.timeout(8000),
         });
-        try {
-          cache.put(cacheKey, proxyResponse.clone());
-        } catch {}
-        return proxyResponse;
+
+        if (res.ok) {
+          const safeContentType = getSafeImageContentType(res.headers.get('content-type'));
+          if (safeContentType) {
+            const proxyResponse = new Response(res.body, {
+              status: 200,
+              headers: new Headers({
+                ...CORS_HEADERS,
+                'Content-Type': safeContentType,
+                'X-Content-Type-Options': 'nosniff',
+                'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+                'Cache-Control': 'public, max-age=31536000, immutable',
+                'X-Image-Proxy-By': 'CodeGame-Edge-CDN',
+              }),
+            });
+            try {
+              cache.put(cacheKey, proxyResponse.clone());
+            } catch {}
+            return proxyResponse;
+          }
+        }
       }
     } catch {}
   }
@@ -135,23 +189,33 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
             const m = row.google_play_url.match(/id=([a-zA-Z0-9._]+)/);
             if (m) pkg = m[1];
           }
-          if (row.icon_url && row.icon_url.startsWith('http') && !row.icon_url.includes('codemoi.net')) {
-            const remoteRes = await fetch(row.icon_url);
-            if (remoteRes.ok) {
-              const proxyResponse = new Response(remoteRes.body, {
-                status: 200,
-                headers: new Headers({
-                  ...CORS_HEADERS,
-                  'Content-Type': remoteRes.headers.get('content-type') || 'image/webp',
-                  'Cache-Control': 'public, max-age=31536000, immutable',
-                  'X-Image-Proxy-By': 'CodeGame-D1-RemoteIcon',
-                }),
-              });
-              try {
-                cache.put(cacheKey, proxyResponse.clone());
-              } catch {}
-              return proxyResponse;
-            }
+          if (row.icon_url && (row.icon_url.startsWith('https://') || row.icon_url.startsWith('http://')) && !row.icon_url.includes('codemoi.net')) {
+            try {
+              const parsedIconUrl = new URL(row.icon_url);
+              if (isAllowedIconHost(parsedIconUrl.hostname)) {
+                const remoteRes = await fetch(row.icon_url, { signal: AbortSignal.timeout(8000) });
+                if (remoteRes.ok) {
+                  const safeContentType = getSafeImageContentType(remoteRes.headers.get('content-type'));
+                  if (safeContentType) {
+                    const proxyResponse = new Response(remoteRes.body, {
+                      status: 200,
+                      headers: new Headers({
+                        ...CORS_HEADERS,
+                        'Content-Type': safeContentType,
+                        'X-Content-Type-Options': 'nosniff',
+                        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+                        'Cache-Control': 'public, max-age=31536000, immutable',
+                        'X-Image-Proxy-By': 'CodeGame-D1-RemoteIcon',
+                      }),
+                    });
+                    try {
+                      cache.put(cacheKey, proxyResponse.clone());
+                    } catch {}
+                    return proxyResponse;
+                  }
+                }
+              }
+            } catch {}
           }
         }
       } catch {}

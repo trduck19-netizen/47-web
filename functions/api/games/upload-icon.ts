@@ -4,6 +4,7 @@ import {
 } from '../../services/icon_verifier_service';
 import { convertToWebp } from '../../services/image_converter_service';
 import { computeSha256, hasScope } from '../../services/mission_service';
+import { authenticateAdmin } from '../../services/auth_service';
 import { getSettingD1, setSettingD1 } from '../../services/d1_service';
 
 interface Env {
@@ -24,6 +25,45 @@ const CORS_HEADERS = {
 };
 
 const MAX_ICON_SIZE_BYTES = 500 * 1024; // 500KB
+
+const ALLOWED_STORE_HOSTS = [
+  'googleusercontent.com',
+  'ggpht.com',
+  'mzstatic.com',
+  'apple.com',
+  'steamcdn-a.akamaihd.net',
+  'steamstatic.com',
+  'fandom.com',
+  'nocookie.net',
+  'tapdb.net',
+  'taptap.io',
+  'apkpure.com',
+  'codegame.shop',
+  'universal-mall-shop.pages.dev',
+  'admin-universal-mall.pages.dev',
+];
+
+function isSafeStoreUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '::1' ||
+      host.startsWith('10.') ||
+      host.startsWith('192.168.') ||
+      host.startsWith('169.254.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+    ) {
+      return false;
+    }
+    return ALLOWED_STORE_HOSTS.some((allowed) => host === allowed || host.endsWith('.' + allowed));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Xác thực người gọi: Quản trị viên (JWT / Master secret) hoặc API Key có quyền hợp lệ
@@ -62,9 +102,17 @@ async function authenticateCaller(
     return { authorized: true, callerName: 'Master Bot / Admin Secret', isAdmin: true };
   }
 
-  // 2. Admin JWT session
-  if (candidateKey.split('.').length === 3) {
-    return { authorized: true, callerName: 'Admin Web Console', isAdmin: true };
+  // 2. Admin Member session / cryptographic JWT verification
+  if (env.DB) {
+    try {
+      const adminAuth = await authenticateAdmin(env.DB, candidateKey, {
+        JWT_SECRET: env.JWT_SECRET,
+        ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+      });
+      if (adminAuth.authenticated) {
+        return { authorized: true, callerName: adminAuth.adminId || 'Admin Web Console', isAdmin: true };
+      }
+    } catch {}
   }
 
   // 3. Dynamic scoped API keys in D1 (mission_ai_api_keys)
@@ -254,6 +302,16 @@ export const onRequestPost = async (context: {
 
   // 5. Nếu chưa có bytes nhưng có candidateUrl -> Tải ảnh từ candidateUrl (Ưu tiên WebP thật từ Store CDN)
   if (!imageBytes && candidateUrl) {
+    if (!isSafeStoreUrl(candidateUrl)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'URL cung cấp không thuộc danh sách CDN cửa hàng cho phép hoặc trỏ tới địa chỉ nội bộ không hợp lệ.',
+        }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
     try {
       let finalFetchUrl = candidateUrl;
       // Google Play optimization: nếu URL googleusercontent chưa có -rw, thay bằng =s512-rw để lấy WebP thật từ Google CDN

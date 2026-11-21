@@ -569,23 +569,7 @@ export const App: React.FC = () => {
         const isTestClientDomain = host.toLowerCase().includes('universal-mall') || host.toLowerCase().includes('test-code-game-shop') || host.toLowerCase().includes('test-shopee');
         const urlParams = new URLSearchParams(window.location.search);
 
-        // Check for cross-origin sync_data payload in URL hash (from Admin "Xem Web Khách")
-        if (hash.includes('sync_data=')) {
-          try {
-            const encoded = hash.split('sync_data=')[1]?.split('&')[0];
-            if (encoded && encoded.length < 50000) {
-              const jsonStr = decodeURIComponent(atob(encoded));
-              const parsed = JSON.parse(jsonStr);
-              dataService.applyFullStateSnapshot(parsed);
-              showToast('Đã đồng bộ toàn bộ dữ liệu từ Admin!', undefined, 'success');
-            }
-          } catch (e) {
-            console.warn('Error parsing sync_data:', e);
-          }
-          try {
-            window.history.replaceState(null, '', window.location.pathname + '#store');
-          } catch {}
-        }
+        // URL-hash state import disabled for security (hashes carry no origin information)
 
         // 1. If on dedicated admin domain -> ALWAYS remain in admin app
         if (host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.includes('admin-test-code-game-shop') || host.startsWith('admin.')) {
@@ -858,8 +842,22 @@ export const App: React.FC = () => {
 
     loadInitialData();
 
-    // Listen to cross-origin snapshot messages from admin panel
+    // Listen to cross-origin snapshot messages from admin panel (strictly origin-checked)
+    const ALLOWED_ADMIN_ORIGINS = [
+      window.location.origin,
+      'https://admin-universal-mall.pages.dev',
+      'https://admin-code-game-shop.pages.dev',
+      'https://admin.codegame.shop',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:8788',
+      'http://127.0.0.1:5173',
+    ];
+
     const handleCrossMessage = (event: MessageEvent) => {
+      if (!ALLOWED_ADMIN_ORIGINS.includes(event.origin)) {
+        return;
+      }
       if (event.data?.type === 'WCG_TRANSFER_FULL_STATE' && event.data.payload) {
         dataService.applyFullStateSnapshot(event.data.payload);
         showToast('Đã đồng bộ tức thì toàn bộ dữ liệu từ Admin!', undefined, 'success');

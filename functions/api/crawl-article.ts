@@ -5,8 +5,35 @@
  * - Bóc tách Title, Meta Description, OG Image, Text content, Code patterns, và Image URLs
  */
 
+import { authenticateAdmin, authenticateCaller } from '../services/auth_service';
+
 interface Env {
   DB?: D1Database;
+  JWT_SECRET?: string;
+  ADMIN_SYNC_SECRET?: string;
+}
+
+function isSafeCrawlUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    const host = parsed.hostname.toLowerCase();
+    // Block loopback, RFC1918, link-local metadata
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '::1' ||
+      host.startsWith('10.') ||
+      host.startsWith('192.168.') ||
+      host.startsWith('169.254.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function onRequest(context: { request: Request; env: Env }): Promise<Response> {
@@ -31,28 +58,56 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
     });
   }
 
+  // 1. Authenticate caller (Admin session required for SSRF proxy)
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim() ||
+                (request.headers.get('X-Sync-Key') || '').trim() ||
+                (request.headers.get('X-Api-Key') || '').trim();
+
+  if (!token) {
+    return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Vui lòng đăng nhập quyền quản trị' }), {
+      status: 401,
+      headers,
+    });
+  }
+
+  if (context.env.DB) {
+    const adminAuth = await authenticateAdmin(context.env.DB, token, {
+      JWT_SECRET: context.env.JWT_SECRET,
+      ADMIN_SYNC_SECRET: context.env.ADMIN_SYNC_SECRET,
+    });
+    if (!adminAuth.authenticated) {
+      const callerAuth = await authenticateCaller(context.env.DB, token, context.env.JWT_SECRET);
+      if (!callerAuth.authenticated || (callerAuth.member?.role !== 'ADMIN' && callerAuth.member?.role !== 'SUPER_ADMIN')) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Quyền quản trị viên bắt buộc' }), {
+          status: 401,
+          headers,
+        });
+      }
+    }
+  }
+
   try {
     const body: any = await request.json().catch(() => ({}));
     const rawUrl = body.url?.trim();
 
-    if (!rawUrl || !rawUrl.startsWith('http')) {
+    if (!rawUrl || !isSafeCrawlUrl(rawUrl)) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Vui lòng cung cấp URL hợp lệ (bắt đầu bằng http/https)' }),
+        JSON.stringify({ success: false, error: 'Vui lòng cung cấp URL hợp lệ (bắt đầu bằng http/https và không trỏ vào địa chỉ IP nội bộ)' }),
         { status: 400, headers }
       );
     }
 
     const isSocialMedia = /facebook\.com|fb\.com|fb\.watch|instagram\.com|tiktok\.com|threads\.net|twitter\.com|x\.com/i.test(rawUrl);
 
-    // Fetch the target webpage with realistic browser User-Agent (or social crawler UA)
+    // Fetch the target webpage with realistic browser User-Agent
     const response = await fetch(rawUrl, {
       headers: {
-        'User-Agent': isSocialMedia
-          ? 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
-          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 (UniversalMall-ArticleBot/1.0)',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
         'Accept-Language': 'vi,en-US;q=0.9,en;q=0.8',
       },
+      signal: AbortSignal.timeout(10000),
       redirect: 'follow',
     });
 
@@ -76,7 +131,8 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
       );
     }
 
-    const html = await response.text();
+    const rawText = await response.text();
+    const html = rawText.length > 1024 * 1024 ? rawText.substring(0, 1024 * 1024) : rawText;
 
     // Check if social media login wall was served
     if (isSocialMedia && (html.includes('id="login_form"') || html.includes('login.php') || html.includes('Facebook – log in') || html.includes('Đăng nhập hoặc đăng ký'))) {

@@ -361,11 +361,17 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
           });
         }
+        const dbStatusToken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim() ||
+                              (request.headers.get('X-Sync-Key') || '').trim() ||
+                              (request.headers.get('X-Api-Key') || '').trim();
+        const adminAuth = await authenticateAdmin(env.DB, dbStatusToken, env);
+        if (!adminAuth.authenticated) {
+          return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Yêu cầu quyền quản trị viên' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
         try {
-          await ensureSchemaUpgrades(env.DB);
-          // Việc 3: Dọn sạch vĩnh viễn sản phẩm test khỏi store_products & inventory_codes
-          await env.DB.prepare("DELETE FROM store_products WHERE id = 'sp_test_1' OR LOWER(id) LIKE '%test%' OR LOWER(title) LIKE '%test%';").run().catch(() => {});
-          await env.DB.prepare("DELETE FROM inventory_codes WHERE product_id = 'sp_test_1' OR LOWER(product_id) LIKE '%test%';").run().catch(() => {});
           const res = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all<any>();
           const tables = (res.results || []).map((r: any) => r.name);
           const counts: Record<string, number> = {};
@@ -416,6 +422,16 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (!env.DB) {
           return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), {
             status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+        const initToken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim() ||
+                          (request.headers.get('X-Sync-Key') || '').trim() ||
+                          (request.headers.get('X-Api-Key') || '').trim();
+        const adminAuth = await authenticateAdmin(env.DB, initToken, env);
+        if (!adminAuth.authenticated) {
+          return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Yêu cầu quyền quản trị viên' }), {
+            status: 401,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
           });
         }

@@ -19,6 +19,8 @@
 import { getSettingD1, setSettingD1, invalidateSettingMemoryCache } from '../../services/d1_service';
 import { recordSoftDelete, isRecordTombstoned } from '../../services/soft_delete_service';
 import { invalidateCatalogEdgeCache } from '../../services/cache_service';
+import { authenticateAdmin } from '../../services/auth_service';
+import { computeSha256, hasScope } from '../../services/mission_service';
 
 async function saveUpcomingGamesAndPropagate(
   context: { request: Request; env: Env; waitUntil?: (p: Promise<any>) => void },
@@ -537,7 +539,11 @@ const DEFAULT_LAUNCHED_GAMES = [
   },
 ];
 
-async function authenticateRequest(request: Request, env: Env, bodyApiKey?: string): Promise<{ authorized: boolean; botName: string; error?: string }> {
+async function authenticateRequest(
+  request: Request,
+  env: Env,
+  bodyApiKey?: string
+): Promise<{ authorized: boolean; botName: string; role: 'admin' | 'crawler'; error?: string }> {
   const urlObj = new URL(request.url);
   const authHeader = request.headers.get('Authorization') || '';
   const apiKeyHeader = request.headers.get('X-API-Key') || request.headers.get('X-Sync-Key') || '';
@@ -546,37 +552,69 @@ async function authenticateRequest(request: Request, env: Env, bodyApiKey?: stri
   const token = authHeader.replace(/^Bearer\s+/i, '').trim() || apiKeyHeader.trim() || queryKey.trim() || (bodyApiKey ? String(bodyApiKey).trim() : '');
 
   if (!token) {
-    return { authorized: false, botName: '', error: 'Thiếu API Key xác thực (Bearer Token, header X-API-Key hoặc trường apiKey trong JSON payload)' };
+    return { authorized: false, botName: '', role: 'crawler', error: 'Thiếu API Key xác thực (Bearer Token, header X-API-Key hoặc trường apiKey trong JSON payload)' };
   }
 
-  // 1. Kiểm tra với ADMIN_SYNC_SECRET hoặc MUSE_API_KEY hoặc PINE_API_KEY
-  if ((env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) || (env.JWT_SECRET && token === env.JWT_SECRET)) {
-    return { authorized: true, botName: 'Admin Sync Secret' };
-  }
+  // 1. Kiểm tra Admin Master Key (ADMIN_SYNC_SECRET)
   if (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) {
-    return { authorized: true, botName: 'Admin Sync Secret' };
+    return { authorized: true, botName: 'Admin Sync Secret', role: 'admin' };
   }
+
+  // 2. Kiểm tra tài khoản Quản trị viên trong Database D1
+  if (env.DB) {
+    try {
+      const adminAuth = await authenticateAdmin(env.DB, token, {
+        JWT_SECRET: env.JWT_SECRET,
+        ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+      });
+      if (adminAuth.authenticated) {
+        return { authorized: true, botName: adminAuth.adminId || 'Admin Web Console', role: 'admin' };
+      }
+    } catch {}
+
+    // 3. Kiểm tra khóa mission_ai_api_keys
+    try {
+      const keyHash = await computeSha256(token);
+      const keyRecord = await env.DB
+        .prepare('SELECT * FROM mission_ai_api_keys WHERE api_key_hash = ? AND is_active = 1 LIMIT 1')
+        .bind(keyHash)
+        .first<any>();
+      if (keyRecord) {
+        if (!keyRecord.expires_at || Date.now() <= new Date(keyRecord.expires_at).getTime()) {
+          const s = keyRecord.scope || '';
+          if (hasScope(s, 'ADMIN_FULL') || hasScope(s, 'FULL') || hasScope(s, 'UPCOMING_GAMES_FULL')) {
+            return { authorized: true, botName: keyRecord.key_name || 'Admin Mission Key', role: 'admin' };
+          }
+          if (hasScope(s, 'GAMES_FULL') || hasScope(s, 'GAMES_MANAGE') || hasScope(s, 'CRAWLER_WRITE')) {
+            return { authorized: true, botName: keyRecord.key_name || 'Scoped API Key', role: 'crawler' };
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 4. Kiểm tra Muse / Pine Bot keys qua Environment
   if (env.MUSE_API_KEY && token === env.MUSE_API_KEY) {
-    return { authorized: true, botName: 'Muse Master Bot' };
+    return { authorized: true, botName: 'Muse Master Bot', role: 'crawler' };
   }
   if (env.PINE_API_KEY && token === env.PINE_API_KEY) {
-    return { authorized: true, botName: 'Trợ lý Pine' };
+    return { authorized: true, botName: 'Trợ lý Pine', role: 'crawler' };
   }
 
-  // 2. Xác thực với khóa cấu hình đang lưu trong cơ sở dữ liệu D1
+  // 5. Xác thực với khóa cấu hình đang lưu trong cơ sở dữ liệu D1
   if (env.DB) {
     try {
       const apiConfig = await getSettingD1(env.DB, 'wcg_crawler_api_config_v1');
       const configuredKey = apiConfig?.apiKey ? String(apiConfig.apiKey).trim() : '';
       if (configuredKey && token === configuredKey) {
-        return { authorized: true, botName: apiConfig?.botName || 'Trợ lý Pine & Muse Bot' };
+        return { authorized: true, botName: apiConfig?.botName || 'Trợ lý Pine & Muse Bot', role: 'crawler' };
       }
     } catch (err) {
       console.error('[IngestUpcomingGames] Lỗi đọc cấu hình API từ D1:', err);
     }
   }
 
-  return { authorized: false, botName: '', error: 'API Key không chính xác hoặc đã bị vô hiệu hóa.' };
+  return { authorized: false, botName: '', role: 'crawler', error: 'API Key không chính xác hoặc đã bị vô hiệu hóa.' };
 }
 
 function slugify(text: string): string {
@@ -1164,6 +1202,52 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const botName = payload?.botName || payload?.source || auth.botName || 'Trợ lý Pine & Muse Bot';
   const action = String(payload?.action || 'ingest').toLowerCase();
   const nowIso = new Date().toISOString();
+
+  // 1.5. Per-action Authorization Check: Yêu cầu quyền admin cho các thao tác phê duyệt, xóa, đổi trạng thái và quản lý icon
+  const ADMIN_REQUIRED_ACTIONS = [
+    'approve',
+    'approve_all',
+    'reject',
+    'delete',
+    'set_display_list',
+    'save_all',
+    'sync_all',
+    'set_status',
+    'update_status',
+    'change_status',
+    'set_release_date',
+    'update_release_date',
+    'change_release_date',
+    'update_icon',
+    'set_icon',
+    'change_icon',
+    'upload_icon',
+    'uploadicon',
+    'delete_icon',
+    'remove_icon',
+    'deleteicon',
+    'move_to_pending',
+    'reorder',
+  ];
+
+  if (ADMIN_REQUIRED_ACTIONS.includes(action) && auth.role !== 'admin') {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: `Quyền truy cập bị từ chối: Hành động "${action}" yêu cầu quyền quản trị viên (Admin). Khóa bot/crawler hiện tại không được phép thực thi.`,
+      }),
+      { status: 403, headers: CORS_HEADERS }
+    );
+  }
+
+  // Khóa các cờ đặc quyền override đối với bot/crawler không phải admin
+  if (auth.role !== 'admin' && payload) {
+    payload.admin_override = false;
+    payload.force_approve = false;
+    payload.force_bulk_delete = false;
+    payload.directPublish = false;
+    payload.autoApprove = false;
+  }
 
   // 2. Tải danh sách hiện tại từ D1
   let currentUpcomingGames: any[] = [];

@@ -38,6 +38,16 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { GameItem, GiftCode, UserProfile } from '../types/game';
+
+function isSafeHttpUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
 import { dataService } from '../services/dataService';
 import { marketingService } from '../services/marketingService';
 import { notificationService } from '../services/notificationService';
@@ -960,7 +970,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
                 </button>
               )}
             </div>
-            {currentGame.redeem_url && (
+            {isSafeHttpUrl(currentGame.redeem_url) && (
               <a
                 href={currentGame.redeem_url}
                 target="_blank"
@@ -1396,7 +1406,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
                 <div className="sm:col-span-2 pt-1 border-t border-border/40 flex items-center justify-between">
                   <span className="text-muted-foreground text-[11px]">Cơ quan cấp phép: Cục PTTH&TTĐT (ABEI)</span>
                   <a
-                    href={currentGame.license_source_url || 'https://abei.gov.vn/'}
+                    href={isSafeHttpUrl(currentGame.license_source_url) ? currentGame.license_source_url : 'https://abei.gov.vn/'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-primary-light hover:underline font-semibold text-[11px]"

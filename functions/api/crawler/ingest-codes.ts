@@ -48,9 +48,39 @@ export interface CrawlerAuthResult {
   authorized: boolean;
   botName: string;
   role: 'admin' | 'crawler_writer' | 'marketing_auditor';
+  scope?: string;
   error?: string;
   status?: number;
 }
+
+export function sanitizeWebUrl(url: any): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return trimmed;
+    }
+  } catch {}
+  return '';
+}
+
+const DESTRUCTIVE_AND_MODERATION_ACTIONS = [
+  'cleanup_test_codes',
+  'delete_codes',
+  'delete_code',
+  'delete_game',
+  'delete_game_d1',
+  'delete_pending_game',
+  'remove_pending_game',
+  'unpublish_game',
+  'publish_game',
+  'approve_codes',
+  'reject_codes',
+  'remove_from_deleted_giveaways',
+  'sync_all_instructions_to_d1',
+  'migrate_remove_fake_expiry_dates',
+];
 
 import canonicalBackupState from '../../data/canonical_backup_state.json';
 
@@ -131,14 +161,15 @@ async function authenticateRequest(request: Request, env: Env): Promise<CrawlerA
       if (keyRecord) {
         if (!keyRecord.expires_at || Date.now() <= new Date(keyRecord.expires_at).getTime()) {
           const s = keyRecord.scope || '';
+          if (hasScope(s, 'ADMIN_FULL') || hasScope(s, 'FULL')) {
+            return { authorized: true, botName: keyRecord.key_name || 'Admin Master API Key', role: 'admin', scope: s };
+          }
           if (
             hasScope(s, 'GAMES_FULL') ||
             hasScope(s, 'GAMES_MANAGE') ||
-            hasScope(s, 'CRAWLER_WRITE') ||
-            hasScope(s, 'ADMIN_FULL') ||
-            hasScope(s, 'FULL')
+            hasScope(s, 'CRAWLER_WRITE')
           ) {
-            return { authorized: true, botName: keyRecord.key_name || 'Scoped API Key', role: 'crawler_writer' };
+            return { authorized: true, botName: keyRecord.key_name || 'Scoped API Key', role: 'crawler_writer', scope: s };
           }
         }
       }
@@ -1221,6 +1252,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     );
   }
 
+  // 2.5. Phân quyền chi tiết theo từng Action (Per-Action Authorization Guard)
+  // Các hành động phá hủy hoặc duyệt xuất bản bắt buộc Role 'admin' hoặc Scope ADMIN_FULL/FULL
+  if (DESTRUCTIVE_AND_MODERATION_ACTIONS.includes(action)) {
+    if (auth.role !== 'admin' && !hasScope(auth.scope || '', 'ADMIN_FULL') && !hasScope(auth.scope || '', 'FULL')) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Quyền truy cập bị từ chối: Hành động "${action}" yêu cầu quyền quản trị viên tối cao (Role Admin hoặc Scope ADMIN_FULL). Khóa crawler hiện tại không có thẩm quyền thực thi hành động này.`,
+        }),
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
+  }
+
   try {
     // 3. Tối ưu hóa tải cài đặt từ D1 theo từng Action nhằm triệt tiêu lãng phí CPU & I/O (Error 1102)
     const requiredKeys = ['wcg_admin_games_v5'];
@@ -1567,7 +1612,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         google_play_url: gameToPublish.playStoreUrl || '',
         app_store_url: gameToPublish.app_store_url || '',
         android_package_name: gameToPublish.packageId || gameToPublish.packageName || '',
-        redeem_url: gameToPublish.redeem_url || '',
+        redeem_url: sanitizeWebUrl(gameToPublish.redeem_url),
         is_featured: false,
         is_hot: false,
         is_new: true,
@@ -1761,7 +1806,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         } else {
           instructions = '';
         }
-        const redeemUrl = String(item.redeemUrl || item.redeem_url || '').trim();
+        const redeemUrl = sanitizeWebUrl(item.redeemUrl || item.redeem_url);
         const source = String(item.source || item.sourceType || auth.botName || 'Crawler / Manual Queue').trim();
         const sourceUrl = String(item.sourceUrl || item.source_url || '').trim();
 
@@ -2970,13 +3015,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const updatedBannerUrl = body.banner_url !== undefined ? String(body.banner_url).trim() : (body.bannerUrl !== undefined ? String(body.bannerUrl).trim() : (currentGame.banner_url || currentGame.bannerUrl || ''));
       const updatedDescription = body.description !== undefined ? String(body.description).trim() : (currentGame.description || '');
       const updatedInstructions = body.instructions !== undefined ? String(body.instructions).trim() : (currentGame.instructions || '');
-      const updatedRedeemUrl = body.redeem_url !== undefined ? String(body.redeem_url).trim() : (body.redeemUrl !== undefined ? String(body.redeemUrl).trim() : (currentGame.redeem_url || currentGame.redeemUrl || ''));
+      const updatedRedeemUrl = sanitizeWebUrl(body.redeem_url !== undefined ? String(body.redeem_url).trim() : (body.redeemUrl !== undefined ? String(body.redeemUrl).trim() : (currentGame.redeem_url || currentGame.redeemUrl || '')));
 
       // 4 trường Giấy phép phát hành chính thức
       const updatedLicenseNumber = body.license_number !== undefined ? String(body.license_number).trim() : (currentGame.license_number || '');
       const updatedLicenseIssuedDate = body.license_issued_date !== undefined ? String(body.license_issued_date).trim() : (currentGame.license_issued_date || '');
       const updatedLicenseStatus = body.license_status !== undefined ? String(body.license_status).trim() : (currentGame.license_status || '');
-      const updatedLicenseSourceUrl = body.license_source_url !== undefined ? String(body.license_source_url).trim() : (currentGame.license_source_url || '');
+      const updatedLicenseSourceUrl = sanitizeWebUrl(body.license_source_url !== undefined ? String(body.license_source_url).trim() : (currentGame.license_source_url || ''));
 
       // Theo dõi chi tiết giá trị trước và sau của từng trường đã đổi
       const changes: Record<string, { before: any; after: any }> = {};
@@ -4567,7 +4612,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           body.redeemUrl !== undefined ? body.redeemUrl :
           body.redeem_url !== undefined ? body.redeem_url :
           '';
-        extractedRedeemUrl = (rawVal === null || rawVal === undefined) ? '' : String(rawVal).trim();
+        extractedRedeemUrl = (rawVal === null || rawVal === undefined) ? '' : sanitizeWebUrl(String(rawVal).trim());
       }
 
       const isUpdateInstructionsAction =

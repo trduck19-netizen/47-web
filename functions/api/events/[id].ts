@@ -1,4 +1,5 @@
 import { computeSha256, hasScope } from '../../services/mission_service';
+import { authenticateAdmin } from '../../services/auth_service';
 import { getSettingD1, setSettingD1, invalidateSettingMemoryCache } from '../../services/d1_service';
 import type { GameEventItem } from '../../../src/types/gameEvent';
 import { SEED_GAME_EVENTS } from '../../../src/data/seedGameEvents';
@@ -17,36 +18,47 @@ const CORS_HEADERS = {
 };
 
 async function verifyAuth(request: Request, env: Env): Promise<boolean> {
-  const secret = env.ADMIN_SYNC_SECRET || env.JWT_SECRET || '';
-  const syncKey = request.headers.get('X-Sync-Key') || request.headers.get('X-Admin-Key');
-  if (syncKey && syncKey === secret) return true;
+  const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+  const syncKey = (request.headers.get('X-Sync-Key') || request.headers.get('X-Admin-Key') || '').trim();
+  if (configuredSecret && configuredSecret.length >= 16 && syncKey === configuredSecret) {
+    return true;
+  }
 
-  const apiKeyHeader = request.headers.get('X-API-Key') || request.headers.get('x-api-key');
+  const apiKeyHeader = request.headers.get('X-API-Key') || request.headers.get('x-api-key') || '';
   const authHeader = request.headers.get('Authorization') || '';
   const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
 
   const candidateKey = (apiKeyHeader || bearerToken).trim();
-  if (candidateKey) {
-    if (candidateKey === secret || (env.JWT_SECRET && candidateKey === env.JWT_SECRET)) return true;
-    if (candidateKey.split('.').length === 3) return true;
+  if (!candidateKey) return false;
 
-    if (env.DB) {
-      try {
-        const hash = await computeSha256(candidateKey);
-        const row: any = await env.DB.prepare(
-          'SELECT id, scope, is_active, expires_at FROM mission_ai_api_keys WHERE api_key_hash = ? AND is_active = 1 LIMIT 1'
-        ).bind(hash).first();
-        if (row) {
-          if (row.expires_at) {
-            const expTime = new Date(row.expires_at).getTime();
-            if (!isNaN(expTime) && Date.now() > expTime) return false;
-          }
-          if (hasScope(row.scope, 'NEWS_FULL') || hasScope(row.scope, 'EVENTS_FULL') || hasScope(row.scope, 'ADMIN_FULL')) {
-            env.DB.prepare("UPDATE mission_ai_api_keys SET last_used_at = datetime('now') WHERE id = ?").bind(row.id).run().catch(() => {});
-            return true;
-          }
+  if (configuredSecret && configuredSecret.length >= 16 && candidateKey === configuredSecret) {
+    return true;
+  }
+
+  if (env.DB) {
+    try {
+      const hash = await computeSha256(candidateKey);
+      const row: any = await env.DB.prepare(
+        'SELECT id, scope, is_active, expires_at FROM mission_ai_api_keys WHERE api_key_hash = ? AND is_active = 1 LIMIT 1'
+      ).bind(hash).first();
+      if (row) {
+        if (row.expires_at) {
+          const expTime = new Date(row.expires_at).getTime();
+          if (!isNaN(expTime) && Date.now() > expTime) return false;
         }
-      } catch {}
+        if (hasScope(row.scope, 'NEWS_FULL') || hasScope(row.scope, 'EVENTS_FULL') || hasScope(row.scope, 'ADMIN_FULL')) {
+          env.DB.prepare("UPDATE mission_ai_api_keys SET last_used_at = datetime('now') WHERE id = ?").bind(row.id).run().catch(() => {});
+          return true;
+        }
+      }
+    } catch {}
+
+    const adminAuth = await authenticateAdmin(env.DB, candidateKey, {
+      JWT_SECRET: env.JWT_SECRET,
+      ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+    });
+    if (adminAuth.authenticated) {
+      return true;
     }
   }
   return false;
