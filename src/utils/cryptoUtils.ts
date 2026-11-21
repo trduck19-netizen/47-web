@@ -18,7 +18,7 @@ export async function hashPassword(password: string, salt: string, customPepper?
   const pepper = (
     customPepper ||
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_PASSWORD_PEPPER) ||
-    (typeof process !== 'undefined' ? ((process as any).env?.PASSWORD_PEPPER || (process as any).env?.VITE_PASSWORD_PEPPER) : '') ||
+    (typeof process !== 'undefined' ? (process as any).env?.VITE_PASSWORD_PEPPER : '') ||
     ''
   ).trim();
 

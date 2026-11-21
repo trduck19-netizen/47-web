@@ -6,6 +6,10 @@ console.log('🛡️ 0. Scanning UI code for hardcoded Vietnamese strings (i18n 
 execSync('node scripts/check-hardcoded-i18n.cjs', { stdio: 'inherit' });
 
 console.log('📦 1. Building Vite Frontend...');
+const distAssets = path.join(__dirname, '..', 'dist', 'assets');
+if (fs.existsSync(distAssets)) {
+  fs.rmSync(distAssets, { recursive: true, force: true });
+}
 execSync('npx vite build', { stdio: 'inherit' });
 
 console.log('⚡ 2. Compiling Cloudflare Pages Edge Worker bundle...');
