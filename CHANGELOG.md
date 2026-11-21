@@ -7,6 +7,16 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-21]
 
+### 428. Đồng Bộ Biến Môi Trường Bảo Mật Cloudflare Pages & Nâng Cấp Tài Khoản Super Admin Lên PBKDF2 100.000 Vòng (21/11/2026)
+- **Triệu chứng & Nguyên nhân**:
+  - Người dùng đăng nhập trang quản trị (`admin-universal-mall.pages.dev/admin#/profile`) bằng tài khoản `admin290200` gặp thông báo lỗi: *"Hệ thống bảo mật chưa sẵn sàng (Thiếu cấu hình pepper bảo mật). Vui lòng liên hệ quản trị viên."*
+  - Nguyên nhân 1: Hai dự án Cloudflare Pages mới (`universal-mall-shop` và `admin-universal-mall`) chưa được gán các biến môi trường và bí mật bảo mật trong `deployment_configs.production.env_vars` (đang rỗng `{}`).
+  - Nguyên nhân 2: Bản ghi tài khoản `usr_admin` trong CSDL D1 `47webdanganh` có trường `salt` mang giá trị `null`, khiến logic kiểm tra mật khẩu legacy SHA-256 không kích hoạt được bước so khớp và nâng cấp.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Cấu hình Cloudflare Pages Secrets via API*: Gán đầy đủ các biến môi trường chuẩn mật mã cho cả 2 dự án (`universal-mall-shop` và `admin-universal-mall`) qua Cloudflare API PATCH `deployment_configs` gồm: `PASSWORD_PEPPER`, `JWT_SECRET`, `ADMIN_API_KEY`, `SYNC_SECRET`, `CRON_SECRET`, `MARKETPLACE_CODE_KEY`, `ENVIRONMENT`.
+  2. *Cập nhật D1 & Nâng cấp Mật khẩu Tự động*: Cập nhật trường `salt` của `usr_admin` trong D1. Khi đăng nhập thành công với mật khẩu quản trị, hệ thống tự động băm lại mật khẩu và nâng cấp tài khoản `usr_admin` lên chuẩn **PBKDF2 SHA-256 100.000 vòng lặp** (`pbkdf2_sha256$100000$wcg_...`).
+  3. *Triển khai & Kiểm thử*: Tái deploy cả 2 website qua `npm run deploy:all`. Kiểm thử live xác thực `POST /api/auth/login` và `GET /api/auth/me` đạt HTTP 200 OK, trả về phiên đăng nhập Super Admin hợp lệ.
+
 ### 427. Bổ Sung Toàn Diện Bộ Nhớ Dự Án (PROJECT_MEMORY.md & KNOWN_ISSUES.md) Tránh Lặp Lại Các Sai Lầm Bảo Mật (21/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Người dùng yêu cầu bổ sung toàn bộ các bài học, nguyên nhân gốc rễ và cạm bẫy bảo mật đã xử lý từ chuỗi kiểm toán bảo mật (các đợt commit `85c50d8`, `a8bae5a`, `8e0ba46`, `4286cca`) vào hệ thống ghi nhớ dự án (`PROJECT_MEMORY.md` và `KNOWN_ISSUES.md`) nhằm đảm bảo không bao giờ tái phạm các sai lầm này.
