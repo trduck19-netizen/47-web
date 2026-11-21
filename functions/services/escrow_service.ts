@@ -117,33 +117,7 @@ export async function confirmReceivedAndRelease(
     const feeCore = Math.round(amount * feeRate);
     const nowIso = new Date().toISOString();
 
-    // 1. Ghi dòng RELEASE
-    const relRes = await recordLedgerTransaction(db, {
-      sellerId,
-      orderId: order.id,
-      type: 'RELEASE',
-      amountCore: amount,
-      actor,
-      reason: `Khách hàng xác nhận đã nhận hàng - Giải ngân thành công cho đơn ${order.id} (${isPhysical ? 'Hàng vật lý' : 'Hàng số'})`,
-    });
-
-    if (!relRes.success) {
-      return { success: false, message: relRes.error || 'Lỗi khi ghi sổ cái giải ngân.' };
-    }
-
-    // 2. Ghi dòng FEE
-    if (feeCore > 0) {
-      await recordLedgerTransaction(db, {
-        sellerId,
-        orderId: order.id,
-        type: 'FEE',
-        amountCore: feeCore,
-        actor: 'platform_fee',
-        reason: `Thu phí hoa hồng sàn ${isPhysical ? '2%' : '5%'} cho đơn ${order.id}`,
-      });
-    }
-
-    // 3. Cập nhật trạng thái đơn hàng sang COMPLETED & RELEASED (State-guarded)
+    // 1. Cập nhật trạng thái đơn hàng sang COMPLETED & RELEASED (State-guarded FIRST để chống race condition)
     const updateRes: any = await db
       .prepare(`
         UPDATE orders
@@ -158,8 +132,35 @@ export async function confirmReceivedAndRelease(
       .bind(nowIso, nowIso, order.id)
       .run();
 
-    if (!updateRes || updateRes.meta?.changes === 0) {
+    const changes = updateRes?.meta?.changes ?? updateRes?.changes ?? 0;
+    if (changes === 0) {
       return { success: false, message: 'Đơn hàng này đã được giải ngân hoặc hoàn tiền trước đó.' };
+    }
+
+    // 2. Ghi dòng RELEASE sau khi đã xác nhận state guard thành công
+    const relRes = await recordLedgerTransaction(db, {
+      sellerId,
+      orderId: order.id,
+      type: 'RELEASE',
+      amountCore: amount,
+      actor,
+      reason: `Khách hàng xác nhận đã nhận hàng - Giải ngân thành công cho đơn ${order.id} (${isPhysical ? 'Hàng vật lý' : 'Hàng số'})`,
+    });
+
+    if (!relRes.success) {
+      console.warn('[Escrow Warning] Ghi sổ cái giải ngân gặp lỗi sau khi đã cập nhật trạng thái đơn:', relRes.error);
+    }
+
+    // 3. Ghi dòng FEE
+    if (feeCore > 0) {
+      await recordLedgerTransaction(db, {
+        sellerId,
+        orderId: order.id,
+        type: 'FEE',
+        amountCore: feeCore,
+        actor: 'platform_fee',
+        reason: `Thu phí hoa hồng sàn ${isPhysical ? '2%' : '5%'} cho đơn ${order.id}`,
+      });
     }
 
     const logId1 = 'sec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
