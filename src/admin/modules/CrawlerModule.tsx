@@ -1960,7 +1960,13 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
   };
 
   const handleRegenerateApiKey = async () => {
-    const randomHex = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+      onShowToast('WebCrypto không khả dụng để tạo khóa API an toàn.', 'error');
+      return;
+    }
+    const randBytes = new Uint8Array(8);
+    crypto.getRandomValues(randBytes);
+    const randomHex = Array.from(randBytes).map((b) => b.toString(16).padStart(2, '0')).join('');
     const newKey = `wcg_muse_${randomHex}`;
     await handleSaveApiConfig({ apiKey: newKey });
     onShowToast(`Đã tạo API Key mới: ${newKey}`, 'success');

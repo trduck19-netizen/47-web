@@ -6,7 +6,7 @@
  * Xác thực:
  * - Khóa API mang scope TELEGRAM_NOTIFY hoặc TELEGRAM_FULL
  * - Hoặc khóa tĩnh TELEGRAM_NOTIFY_KEY từ env/config
- * - Hoặc Master Secret (ADMIN_SYNC_SECRET)
+ * - Hoặc Master Secret (ADMIN_API_KEY)
  */
 
 import {

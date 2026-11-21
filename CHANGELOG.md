@@ -7,6 +7,19 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-21]
 
+### 429. Triển Khai Cầu Nối Di Chuyển Hash Legacy Một Chiều, Chuẩn Hóa WebCrypto Fail-Closed & Triệt Tiêu Tàn Dư Bảo Mật (21/11/2026)
+- **Bối cảnh & Vấn đề**:
+  - Cần đảm bảo tài khoản người dùng cũ có hash SHA-256 legacy 64 ký tự vẫn có thể đăng nhập an toàn mà không bị kẹt khi hệ thống chuyển sang `PASSWORD_PEPPER` mới, đồng thời tự động nâng cấp lên PBKDF2 100.000 vòng lặp ngay trong lần đăng nhập đầu tiên.
+  - Ngăn ngừa tình trạng WebCrypto suy biến thành mảng byte `0x00` nếu thiếu `crypto.getRandomValues`.
+  - Triệt tiêu hoàn toàn `Math.random()` tại các vị trí sinh mã thưởng, API key, tracking code.
+  - Loại bỏ hoàn toàn trường `master_key.key_prefix` khỏi API response và dọn sạch comment cũ về `ADMIN_SYNC_SECRET`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Cầu nối di chuyển Legacy một chiều (`functions/api/auth/login.ts` & `me.ts`)*: Thêm `LEGACY_PEPPER_MIGRATION_ONLY`. Thứ tự xác thực: (1) Pepper môi trường hiện tại $\rightarrow$ (2) Pepper di chuyển cũ (chỉ áp dụng cho hash legacy 64 ký tự) $\rightarrow$ (3) Legacy không pepper. Khi đăng nhập thành công, tự động băm lại và nâng cấp lên PBKDF2 100.000 vòng dưới pepper môi trường mới.
+  2. *WebCrypto Fail-Closed 100%*: Cập nhật `login.ts`, `me.ts`, `auth_service.ts`, `soft_delete_service.ts`, `redeem.ts`, `reset-password.ts`, `escrow_service.ts`, `verify-email.ts`, `orders/create.ts`, `CrawlerModule.tsx`, `shippingService.ts`, `growthService.ts`: Bắt buộc ném ngoại lệ hoặc trả HTTP 500 khi không có `crypto.getRandomValues`, 0% mảng byte rỗng/0x00, 0% Math.random.
+  3. *Chặn 100% Client-computed Hash (`register.ts`)*: Trả HTTP 400 nếu client gửi `passwordHash` hoặc `salt`; server tự sinh salt WebCrypto và băm PBKDF2.
+  4. *Gỡ bỏ Key Prefix & Dọn Dẹp Comment*: Loại bỏ `master_key.key_prefix` khỏi `/api/api-keys`, cập nhật nhãn UI sang `ADMIN_API_KEY`, chuẩn hóa tài liệu khôi phục mật khẩu 3 bước an toàn trong `PROJECT_MEMORY.md` và `KNOWN_ISSUES.md`.
+  5. *Vite Config & Env Example*: Bổ sung define `VITE_PASSWORD_PEPPER` trong `vite.config.ts`, tạo `.env.example` mẫu cấu hình an toàn không chứa secret thực tế.
+
 ### 428. Đồng Bộ Biến Môi Trường Bảo Mật Cloudflare Pages & Nâng Cấp Tài Khoản Super Admin Lên PBKDF2 100.000 Vòng (21/11/2026)
 - **Triệu chứng & Nguyên nhân**:
   - Người dùng đăng nhập trang quản trị (`admin-universal-mall.pages.dev/admin#/profile`) bằng tài khoản `admin290200` gặp thông báo lỗi: *"Hệ thống bảo mật chưa sẵn sàng (Thiếu cấu hình pepper bảo mật). Vui lòng liên hệ quản trị viên."*

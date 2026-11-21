@@ -5,7 +5,7 @@
  * Authentication:
  * - Scoped Dynamic API Key: TELEGRAM_NOTIFY or TELEGRAM_FULL
  * - OR Static Secret: TELEGRAM_NOTIFY_KEY
- * - Master Secret (ADMIN_SYNC_SECRET)
+ * - Master Secret (ADMIN_API_KEY)
  */
 
 import {

@@ -370,11 +370,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const seedPrefix = (prodSku || product.id || 'CODE').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase();
       const insertStmts: D1PreparedStatement[] = [];
       for (let i = 0; i < neededCount; i++) {
-        const randId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-          ? crypto.randomUUID().slice(0, 8)
-          : Math.random().toString(36).substring(2, 8);
-        const randCodePart1 = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const randCodePart2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+        if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+          throw new Error('WebCrypto API không khả dụng để tự sinh mã sản phẩm an toàn.');
+        }
+        const randBytes = new Uint8Array(8);
+        crypto.getRandomValues(randBytes);
+        const hex = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+        const randId = (typeof crypto.randomUUID === 'function') ? crypto.randomUUID().slice(0, 8) : hex.slice(0, 8).toLowerCase();
+        const randCodePart1 = hex.slice(0, 4);
+        const randCodePart2 = hex.slice(4, 8);
         const autoCode = `${seedPrefix}-${randCodePart1}-${randCodePart2}`;
         const autoInvId = `inv_${Date.now()}_${i}_${randId}`;
         insertStmts.push(

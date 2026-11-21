@@ -1398,10 +1398,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                     </span>
                   </div>
                   <h3 className="text-base font-bold text-foreground">
-                    ADMIN_SYNC_SECRET (Toàn Quyền Quản Trị Tối Cao)
+                    ADMIN_API_KEY (Toàn Quyền Quản Trị Tối Cao)
                   </h3>
                   <p className="text-xs text-muted-foreground line-clamp-2">
-                    Cấp quyền tối cao: Đồng bộ dữ liệu hai chiều KV/D1, can thiệp mọi module, bỏ qua mọi giới hạn kiểm tra.
+                    Cấp quyền tối cao: Đồng bộ dữ liệu hai chiều KV/D1, can thiệp mọi module, bảo vệ bằng biến môi trường Cloudflare Pages.
                   </p>
                 </div>
 
@@ -1409,25 +1409,27 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                   <div className="flex items-center gap-2 bg-background/80 border border-border px-3 py-2 rounded-xl font-mono text-xs max-w-full overflow-hidden shadow-inner">
                     <span className="text-muted-foreground select-none shrink-0 font-bold">KEY:</span>
                     <span className="text-foreground select-all font-semibold truncate flex-1">
-                      {masterKey.key_prefix}
+                      {masterKey.key_prefix || 'Cloudflare Pages Secret (Không hiển thị)'}
                     </span>
-                    <button
-                      onClick={() => handleCopy(masterKey.key_prefix || '', 'master')}
-                      className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 border border-amber-500/30"
-                      title="Sao chép nhanh khóa này"
-                    >
-                      {copiedKeyId === 'master' ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-emerald-500">Đã Copy!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
+                    {masterKey.key_prefix && (
+                      <button
+                        onClick={() => handleCopy(masterKey.key_prefix || '', 'master')}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 border border-amber-500/30"
+                        title="Sao chép nhanh khóa này"
+                      >
+                        {copiedKeyId === 'master' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="text-emerald-500">Đã Copy!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -10,6 +10,24 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-311: Lỗi Thiếu Cấu Hình Pepper Khi Triển Khai Mới (Fail-Closed Misconfiguration), Tàn Dư Math.random & Quy Trình Khôi Phục Secret Chuẩn 3 Bước
+- **Triệu chứng & Rủi ro**:
+  - Khi triển khai môi trường Cloudflare Pages mới (`universal-mall-shop` và `admin-universal-mall`), nếu chưa cấu hình `PASSWORD_PEPPER` hoặc cấu hình rỗng, máy chủ thực thi cơ chế Fail-Closed từ chối toàn bộ yêu cầu đăng nhập và trả về HTTP 500: *"Hệ thống bảo mật chưa sẵn sàng (Thiếu cấu hình pepper bảo mật). Vui lòng liên hệ quản trị viên."*
+  - Nếu logic WebCrypto tạo salt hoặc random byte không kiểm tra `typeof crypto === 'undefined' || !crypto.getRandomValues` mà khởi tạo mảng `new Uint8Array(n)` mặc định chứa toàn byte `0x00`, salt sinh ra sẽ là chuỗi toàn số 0 cố định, làm mất hoàn toàn tính ngẫu nhiên và bảo mật của hàm băm mật khẩu.
+  - Sử dụng `Math.random()` trong việc sinh mã thưởng, API key hoặc tracking ID tạo ra giá trị có thể đoán trước (pseudorandom PRNG).
+- **Cạm bẫy đã thất bại**:
+  - Tạm thời gán pepper cũ đã bị lộ lên Cloudflare Pages rồi sau đó mới đổi: Gây rò rỉ và duy trì mật mã không an toàn.
+  - Sử dụng mảng byte 0x00 làm fallback khi thiếu WebCrypto: Khiến salt mật khẩu bị suy biến thành chuỗi cố định.
+  - Client tính toán `passwordHash` hoặc `salt` rồi gửi lên máy chủ: Cho phép client qua mặt các quy tắc băm và tạo hash yếu.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Quy trình khôi phục 3 bước chuẩn xác khi xoay secret:
+    1. Cấu hình biến môi trường `PASSWORD_PEPPER` mới an toàn trên cả 2 Cloudflare Pages Projects.
+    2. Người dùng sử dụng tính năng đặt lại mật khẩu bằng OTP (`/api/auth/reset-password`) để băm mật khẩu mới bằng PBKDF2 100.000 vòng lặp trực tiếp với pepper mới.
+    3. Đăng nhập với mật khẩu mới để tạo phiên làm việc JWT hợp lệ.
+  - Cầu nối di chuyển legacy một chiều (`LEGACY_PEPPER_MIGRATION_ONLY`): Chỉ áp dụng cho hash legacy SHA-256 64 ký tự hiện có trong D1, tự động nâng cấp tức thì lên PBKDF2 100.000 vòng lặp ngay khi người dùng đăng nhập lần đầu tiên thành công.
+  - WebCrypto Fail-Closed 100%: Mọi hàm sinh ngẫu nhiên mật mã bắt buộc ném ngoại lệ hoặc trả HTTP 500 nếu thiếu `crypto.getRandomValues`, tuyệt đối không dùng mảng byte 0.
+  - Triệt tiêu 100% `Math.random()` tại các vị trí nhạy cảm (mã thưởng VIP, API key crawler, mã vận đơn).
+
 ### ISSUE-310: Lỗ Hổng SSRF Proxy, Tràn Bộ Nhớ Payload Streaming (Memory Exhaustion DoS) & Thiếu Whitelist Content-Type Trong Proxy Ngoại Vi
 - **Triệu chứng & Rủi ro**:
   - Endpoint crawler (`/api/crawl-article`) và proxy icon (`/api/game-icon`) nếu tự động đi theo redirect (`redirect: 'follow'`) sẽ bị kẻ tấn công dùng HTTP 301/302 chuyển hướng tới các IP nội bộ nguy hiểm (`127.0.0.1`, `169.254.169.254`, `10.0.0.0/8`, `192.168.0.0/16`), vượt qua tầng kiểm tra IP ban đầu.

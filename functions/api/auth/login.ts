@@ -32,6 +32,13 @@ export const onRequestOptions: PagesFunction = async () => {
   });
 };
 
+/**
+ * Cầu nối di chuyển hash legacy một chiều.
+ * BẮT BUỘC XÓA HẰNG SỐ NÀY sau khi không còn hash legacy (SHA-256 64 ký tự) nào trong D1:
+ * Kiểm tra: SELECT COUNT(*) FROM members WHERE length(password_hash) = 64 AND password_hash NOT LIKE 'pbkdf2_%';
+ */
+const LEGACY_PEPPER_MIGRATION_ONLY = 'wcg_edge_sec_salt_2026';
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
@@ -240,11 +247,30 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           // Note: Bcrypt is a secure slow KDF, do NOT downgrade to fast SHA-256!
         }
       } else if (salt) {
-        // Legacy SHA-256 kèm salt + pepper
+        // Thứ tự kiểm tra hash legacy SHA-256:
+        // 1. Thử với pepper môi trường hiện tại (env.PASSWORD_PEPPER)
         const computedWithPepper = await computeHash(cleanPassword, salt, pepper);
         if (computedWithPepper === storedHash) {
           isPasswordValid = true;
           isLegacySha256Match = true;
+        } else if (storedHash.length === 64 && !storedHash.startsWith('pbkdf2_') && LEGACY_PEPPER_MIGRATION_ONLY !== pepper) {
+          // 2. Cầu nối di chuyển: Nếu hash cũ 64 ký tự và kiểm tra pepper mới thất bại, thử kiểm tra bằng pepper cũ duy nhất 1 lần để di chuyển
+          const computedLegacy = await computeHash(cleanPassword, salt, LEGACY_PEPPER_MIGRATION_ONLY);
+          if (computedLegacy === storedHash) {
+            isPasswordValid = true;
+            isLegacySha256Match = true;
+            console.log(`[Legacy Migration Bridge] Đang di chuyển hash tài khoản ${member.id} từ pepper cũ sang PBKDF2 với pepper môi trường mới`);
+          }
+        }
+
+        // 3. Nếu vẫn không khớp, kiểm tra hash legacy không pepper (phòng trường hợp tài khoản cũ không pepper)
+        if (!isPasswordValid) {
+          const computedWithoutPepper = await computeHash(cleanPassword, salt, '');
+          if (computedWithoutPepper === storedHash) {
+            isPasswordValid = true;
+            isLegacySha256Match = true;
+            console.log(`[Legacy Migration Bridge] Đang di chuyển hash tài khoản không pepper ${member.id} sang PBKDF2`);
+          }
         }
       }
     }
@@ -252,10 +278,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     // Tự động nâng cấp mã băm cũ (Fast SHA-256) sang chuẩn Slow KDF mới (PBKDF2)
     if (isLegacySha256Match && isPasswordValid) {
       try {
-        const saltBytes = new Uint8Array(16);
-        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-          crypto.getRandomValues(saltBytes);
+        if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+          throw new Error('WebCrypto API (crypto.getRandomValues) không khả dụng để sinh salt nâng cấp PBKDF2');
         }
+        const saltBytes = new Uint8Array(16);
+        crypto.getRandomValues(saltBytes);
         const upgradedSalt = 'wcg_salt_' + Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
         const upgradedHash = await hashPasswordPBKDF2(cleanPassword, upgradedSalt, pepper);
         await env.DB.prepare("UPDATE members SET salt = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?")
@@ -263,6 +290,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           .run();
         member.salt = upgradedSalt;
         member.password_hash = upgradedHash;
+        console.log(`[Auth Migration] Đã nâng cấp thành công tài khoản ${member.id} lên chuẩn PBKDF2 slow KDF`);
       } catch (upgradeErr) {
         console.warn('Lưu ý: Không thể tự động nâng cấp hash mật khẩu sang PBKDF2 cho thành viên:', member.id, upgradeErr);
       }
@@ -273,13 +301,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       String(member.role || '').toUpperCase() === 'ADMIN' ||
       String(member.role || '').toUpperCase() === 'SUPER_ADMIN';
 
-    // Hỗ trợ Master Recovery Password nếu cấu hình qua biến môi trường bí mật Cloudflare
-    if (!isPasswordValid && isMemberAdmin) {
-      const recoverySecret = ((env as any).ADMIN_RECOVERY_PASSWORD || (env as any).ADMIN_FALLBACK_PASSWORD || '').trim();
-      if (recoverySecret && cleanPassword === recoverySecret) {
-        isPasswordValid = true;
-      }
-    }
+    // REMOVED: Mật khẩu master ADMIN_RECOVERY_PASSWORD/ADMIN_FALLBACK_PASSWORD đã được gỡ bỏ per security audit. Khôi phục qua OTP reset-password.
 
     if (!isPasswordValid) {
       return await recordFailedAttempt(member.id, member.display_name || member.username);

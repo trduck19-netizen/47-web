@@ -38,12 +38,27 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     await ensureSchemaUpgrades(env.DB);
 
     const body: any = await request.json().catch(() => ({}));
-    const { username, email, passwordHash, salt, displayName, phone, turnstileToken, password } = body;
+    const { username, email, displayName, phone, turnstileToken, password } = body;
+
+    // 0. Chặn 100% việc gửi salt hoặc passwordHash từ client (Rule bảo mật bắt buộc băm tại máy chủ)
+    if (body.passwordHash !== undefined || body.salt !== undefined) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Yêu cầu không hợp lệ: Không chấp nhận mã băm hoặc salt từ máy khách. Mật khẩu phải được băm bảo mật tại máy chủ.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
 
     // 1. Validation
     if (!username || !email) {
       return new Response(
         JSON.stringify({ success: false, message: 'Vui lòng cung cấp đầy đủ tên đăng nhập và email.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Mật khẩu phải có độ dài tối thiểu 6 ký tự.' }),
         { status: 400, headers: CORS_HEADERS }
       );
     }
@@ -149,18 +164,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const finalFullName = finalDisplayName || cleanUsername;
     const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(cleanUsername)}&backgroundColor=0b0d19,16192e,241a45`;
 
-    const finalSalt = salt || ('wcg_salt_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : ''));
-    if (!finalSalt || finalSalt === 'wcg_salt_') {
-      return new Response(JSON.stringify({ success: false, message: 'Lỗi sinh salt bảo mật' }), { status: 500, headers: CORS_HEADERS });
+    // Sinh salt an toàn bằng WebCrypto (fail-closed, 0% Math.random)
+    if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Lỗi máy chủ: WebCrypto không khả dụng để sinh salt bảo mật.' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
     }
-    let finalPasswordHash = passwordHash;
-    if (!finalPasswordHash && password) {
-      const pepper = (env.PASSWORD_PEPPER || '').trim();
-      if (!pepper || pepper.length < 8) {
-        return new Response(JSON.stringify({ success: false, message: 'Hệ thống bảo mật chưa sẵn sàng (thiếu pepper cấu hình).' }), { status: 500, headers: CORS_HEADERS });
-      }
-      finalPasswordHash = await hashPasswordPBKDF2(password, finalSalt, pepper);
+    const saltBytes = new Uint8Array(16);
+    crypto.getRandomValues(saltBytes);
+    const finalSalt = 'wcg_salt_' + Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    const pepper = (env.PASSWORD_PEPPER || '').trim();
+    if (!pepper || pepper.length < 8) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Hệ thống bảo mật chưa sẵn sàng (thiếu pepper cấu hình).' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
     }
+    const finalPasswordHash = await hashPasswordPBKDF2(password, finalSalt, pepper);
 
     await env.DB.prepare(`
       INSERT INTO members (id, username, display_name, full_name, email, phone, role, balance, total_spent, status, salt, password_hash, avatar_url, session_token, last_login, created_at, registered_ip)

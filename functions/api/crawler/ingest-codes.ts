@@ -86,7 +86,7 @@ import canonicalBackupState from '../../data/canonical_backup_state.json';
 
 /**
  * Xác thực API Key
- * - Hỗ trợ Admin Master Key (ADMIN_SYNC_SECRET).
+ * - Hỗ trợ Admin Master Key (ADMIN_API_KEY).
  * - Hỗ trợ Muse Master Bot / Pine Keys.
  * - Hỗ trợ Muse Marketing Auditor Key (chỉ-đọc, bắt buộc Bearer header, từ chối ?api_key=).
  * - Xác thực duy nhất với khóa đang lưu trong D1 wcg_crawler_api_config_v1.

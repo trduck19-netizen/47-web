@@ -135,3 +135,10 @@
 - **Whitelist MIME Type & Header An Toàn Cho Proxy Ảnh**:
   - Whitelist nghiêm ngặt: `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/svg+xml`, `image/x-icon`. Từ chối mọi Content-Type khác.
   - Luôn đính kèm các header bảo vệ: `X-Content-Type-Options: nosniff` và `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox`.
+
+### Nguyên Tắc 9: Quy Trình Khôi Phục & Xoay Secret Chuẩn Mực 3 Bước (Zero-Leak Recovery Procedure)
+- **Trình tự khôi phục chuẩn xác khi xoay `PASSWORD_PEPPER`**:
+  1. *Bước 1 - Thiết lập biến bí mật mới*: Cấu hình biến môi trường `PASSWORD_PEPPER` mới có độ phức tạp cao (>= 32 ký tự ngẫu nhiên) đồng bộ trên cả 2 Cloudflare Pages Projects (`universal-mall-shop` và `admin-universal-mall`).
+  2. *Bước 2 - Đặt lại mật khẩu qua OTP*: Quản trị viên/người dùng sử dụng tính năng quên mật khẩu qua OTP `/api/auth/reset-password` để thiết lập mật khẩu mới. Máy chủ sẽ tự sinh muối WebCrypto mới và băm PBKDF2 100.000 vòng lặp trực tiếp với pepper mới.
+  3. *Bước 3 - Đăng nhập bằng mật khẩu mới*: Đăng nhập chính thức để xác thực và nhận JWT Token phiên làm việc mới.
+- **Cấm lặp lại sai lầm**: Tuyệt đối không đặt tạm pepper cũ đã lộ lên Cloudflare Pages rồi mới xoay, không lưu chuỗi bí mật trong code/commit history, và tuân thủ nguyên tắc di chuyển một chiều (One-way Legacy Migration Bridge).

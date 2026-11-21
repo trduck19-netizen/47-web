@@ -136,9 +136,10 @@ export function getSigningSecret(env: any): string {
 export async function createSignedToken(userId: string, secret: string): Promise<string> {
   const timestamp = Date.now().toString(36);
   const randBytes = new Uint8Array(6);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(randBytes);
+  if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+    throw new Error('WebCrypto API (crypto.getRandomValues) is required to generate secure tokens. Failing closed.');
   }
+  crypto.getRandomValues(randBytes);
   const random = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('');
   const payload = `${userId}.${timestamp}.${random}`;
   const encoder = new TextEncoder();
@@ -209,9 +210,17 @@ export async function createTemporaryAuditToken(
   expiresInMs: number = 2 * 3600 * 1000
 ): Promise<{ token: string; expiresAtMs: number; expiresAtIso: string; expiresAtVn: string; remainingSeconds: number }> {
   const expiresAtMs = Date.now() + Math.max(60000, expiresInMs);
-  const random = (typeof crypto !== 'undefined' && crypto.randomUUID)
-    ? crypto.randomUUID().replace(/-/g, '').substring(0, 12)
-    : Math.random().toString(36).substring(2, 14);
+  if (typeof crypto === 'undefined' || (!crypto.randomUUID && !crypto.getRandomValues)) {
+    throw new Error('WebCrypto API is required to generate secure audit tokens. Failing closed.');
+  }
+  let random: string;
+  if (typeof crypto.randomUUID === 'function') {
+    random = crypto.randomUUID().replace(/-/g, '').substring(0, 12);
+  } else {
+    const bytes = new Uint8Array(6);
+    crypto.getRandomValues(bytes);
+    random = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
   const payload = `audit_temp.${expiresAtMs}.${random}`;
   const encoder = new TextEncoder();
   const data = encoder.encode(`${payload}:${secret}`);

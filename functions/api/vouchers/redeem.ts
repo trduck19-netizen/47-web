@@ -179,7 +179,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 4. Ghi nhận nhật ký đổi mã nguyên tử
     const redBytes = new Uint8Array(4);
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(redBytes);
+    if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'WebCrypto không khả dụng để tạo mã giao dịch voucher an toàn.' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+    crypto.getRandomValues(redBytes);
     const redSuffix = Array.from(redBytes).map(b => b.toString(16).padStart(2, '0')).join('');
     const redId = `vred_${Date.now()}_${redSuffix}`;
     await env.DB.prepare(`

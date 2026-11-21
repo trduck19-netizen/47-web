@@ -205,7 +205,14 @@ class ShippingService {
   public generateTrackingCode(carrierCode: CarrierCode, address: string = ''): string {
     const now = new Date();
     const datePart = `${now.getFullYear() % 100}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-    const randDigits = Math.floor(100000 + Math.random() * 900000); // 6 số
+    let randDigits: number;
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const arr = new Uint32Array(1);
+      crypto.getRandomValues(arr);
+      randDigits = 100000 + (arr[0] % 900000);
+    } else {
+      throw new Error('WebCrypto API không khả dụng để tạo mã vận đơn an toàn.');
+    }
 
     if (carrierCode === 'GHTK') {
       const lower = address.toLowerCase();

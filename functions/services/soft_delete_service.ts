@@ -234,7 +234,10 @@ export async function recordSoftDelete(
   }
 
   const randBytes = new Uint8Array(4);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(randBytes);
+  if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+    throw new Error('WebCrypto API (crypto.getRandomValues) is required to generate secure delete ID. Failing closed.');
+  }
+  crypto.getRandomValues(randBytes);
   const randSuffix = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('');
   const id = `del_${recordType}_${Date.now()}_${randSuffix}`;
   const nowIso = new Date().toISOString();

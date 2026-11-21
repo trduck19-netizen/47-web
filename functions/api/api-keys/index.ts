@@ -209,17 +209,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
        ORDER BY created_at ASC`
     ).all<any>();
 
-    const masterSecret = (env.ADMIN_API_KEY || env.JWT_SECRET || '').trim();
-    const masterPrefix = masterSecret.length > 10 
-      ? `${masterSecret.slice(0, 6)}••••••••••••••••••••••••••••••••••••••••••••••••••••••${masterSecret.slice(-4)}`
-      : (masterSecret ? '••••••••' : 'Chưa cấu hình');
-
+    // Master Key hệ thống quản lý qua Cloudflare Secret, hoàn toàn không tiết lộ bất kỳ tiền tố hay hậu tố secret nào
     const masterKeyInfo = {
       id: 'key_system_master',
       key_name: 'Khóa Quản Trị Hệ Thống (Master Key)',
       scope: 'ADMIN_FULL',
-      description: 'Quyền tối cao: Toàn quyền đồng bộ hệ thống, quản lý cơ sở dữ liệu D1/KV, truy cập mọi API admin.',
-      key_prefix: masterPrefix,
+      description: 'Quyền tối cao: Toàn quyền đồng bộ hệ thống, quản lý cơ sở dữ liệu D1/KV, truy cập mọi API admin. Cấu hình bảo mật qua Cloudflare Secret.',
       is_master: true,
       is_active: 1,
       expires_at: '', // Permanent

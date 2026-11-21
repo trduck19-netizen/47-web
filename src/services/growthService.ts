@@ -500,7 +500,13 @@ class GrowthService {
       } else if (typeof wonSlice.value === 'string' && wonSlice.value.trim()) {
         awardedCode = wonSlice.value.trim();
       } else {
-        awardedCode = `WCG-VIP-LUCKY-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+          throw new Error('WebCrypto không khả dụng để sinh mã thưởng ngẫu nhiên an toàn.');
+        }
+        const randBytes = new Uint8Array(4);
+        crypto.getRandomValues(randBytes);
+        const suffix = Array.from(randBytes).map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 6).toUpperCase();
+        awardedCode = `WCG-VIP-LUCKY-${suffix}`;
       }
 
       // Tự động lưu vào danh sách "Mã đã nhận" của người dùng

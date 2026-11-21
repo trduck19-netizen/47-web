@@ -1,12 +1,12 @@
 import { recordLedgerTransaction } from './marketplace_service';
 
 function generateSecureIdSuffix(length = 4): string {
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    const bytes = new Uint8Array(length);
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+    throw new Error('WebCrypto API (crypto.getRandomValues) is required to generate secure ID suffix. Failing closed.');
   }
-  return Date.now().toString(36).slice(-length);
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export interface EscrowHoldParams {
@@ -185,14 +185,14 @@ export async function confirmReceivedAndRelease(
 
       if (!feeRes.success) {
         console.warn('[Escrow Warning] Ghi sổ cái phí sàn gặp lỗi:', feeRes.error);
-        await recordLedgerTransaction(db, {
+        const rollbackRes = await recordLedgerTransaction(db, {
           sellerId,
           orderId: order.id,
           type: 'HOLD',
           amountCore: amount,
           actor: 'escrow_rollback',
           reason: `Hoàn tác giải ngân do lỗi ghi nhận phí sàn đơn ${order.id}: ${feeRes.error}`,
-        }).catch(() => {});
+        });
 
         await db.prepare(`
           UPDATE orders
@@ -200,8 +200,16 @@ export async function confirmReceivedAndRelease(
               escrow_status = 'HELD',
               released_at = NULL,
               updated_at = ?
-        WHERE id = ?
-      `).bind(nowIso, order.id).run();
+          WHERE id = ?
+        `).bind(nowIso, order.id).run();
+
+        if (!rollbackRes.success) {
+          console.error('[Escrow Critical Error] Lỗi nghiêm trọng: Ghi entry HOLD bù trừ thất bại:', rollbackRes.error);
+          return {
+            success: false,
+            message: `Lỗi nghiêm trọng: Ghi phí sàn lỗi (${feeRes.error}) và ghi entry HOLD bù trừ thất bại (${rollbackRes.error}). Yêu cầu kiểm toán can thiệp.`,
+          };
+        }
 
         return {
           success: false,

@@ -30,6 +30,12 @@ export const onRequestOptions: PagesFunction = async () => {
   });
 };
 
+/**
+ * Cầu nối di chuyển hash legacy một chiều (đồng bộ với login.ts).
+ * BẮT BUỘC XÓA HẰNG SỐ NÀY sau khi không còn hash legacy (SHA-256 64 ký tự) nào trong D1.
+ */
+const LEGACY_PEPPER_MIGRATION_ONLY = 'wcg_edge_sec_salt_2026';
+
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
@@ -340,20 +346,28 @@ async function handleUpdateProfile(context: EventContext<Env, any, any>): Promis
     }
 
     const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET]);
-
-    let member: any = await env.DB.prepare(
-      'SELECT * FROM members WHERE session_token = ? LIMIT 1'
-    ).bind(token).first<any>();
-
-    if (!member && valid && tokenUserId) {
-      member = await env.DB.prepare(
-        'SELECT * FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
-      ).bind(tokenUserId, tokenUserId, tokenUserId).first<any>();
+    if (!valid || !tokenUserId) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.' }),
+        { status: 401, headers: CORS_HEADERS }
+      );
     }
+
+    const member: any = await env.DB.prepare(
+      'SELECT * FROM members WHERE id = ? LIMIT 1'
+    ).bind(tokenUserId).first<any>();
 
     if (!member) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Phiên đăng nhập không tồn tại hoặc đã hết hạn.' }),
+        JSON.stringify({ success: false, message: 'Tài khoản không tồn tại trong hệ thống.' }),
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+
+    // Ép kiểm tra thu hồi phiên như handler GET: nếu session_token là NULL hoặc không khớp token trình ra thì trả 401
+    if (!member.session_token || member.session_token !== token) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Phiên đăng nhập đã bị thu hồi hoặc không còn hiệu lực. Vui lòng đăng nhập lại.' }),
         { status: 401, headers: CORS_HEADERS }
       );
     }
@@ -425,10 +439,24 @@ async function handleUpdateProfile(context: EventContext<Env, any, any>): Promis
         } else if (isBcryptHash(storedHash)) {
           isOldPassMatch = await verifyBcryptPassword(oldPassword, storedHash);
         } else if (currentSalt) {
-          // Legacy fast SHA-256 (kiểm tra cả có pepper và không pepper để tương thích)
+          // Legacy fast SHA-256 (kiểm tra theo thứ tự: pepper môi trường, pepper cũ migration bridge, và không pepper)
           const oldHashWithPepper = await computeHash(oldPassword, currentSalt, pepper);
-          const oldHashWithoutPepper = await computeHash(oldPassword, currentSalt, '');
-          if (oldHashWithPepper === storedHash || oldHashWithoutPepper === storedHash) {
+          let oldLegacyMatch = false;
+          if (oldHashWithPepper === storedHash) {
+            oldLegacyMatch = true;
+          } else if (storedHash.length === 64 && !storedHash.startsWith('pbkdf2_') && LEGACY_PEPPER_MIGRATION_ONLY !== pepper) {
+            const oldHashLegacy = await computeHash(oldPassword, currentSalt, LEGACY_PEPPER_MIGRATION_ONLY);
+            if (oldHashLegacy === storedHash) {
+              oldLegacyMatch = true;
+            }
+          }
+          if (!oldLegacyMatch) {
+            const oldHashWithoutPepper = await computeHash(oldPassword, currentSalt, '');
+            if (oldHashWithoutPepper === storedHash) {
+              oldLegacyMatch = true;
+            }
+          }
+          if (oldLegacyMatch) {
             isOldPassMatch = true;
           }
         }

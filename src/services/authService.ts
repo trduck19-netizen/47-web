@@ -121,23 +121,20 @@ class AuthService {
       return { success: false, message: 'Mật khẩu phải có độ dài tối thiểu 6 ký tự.' };
     }
 
-    // 2. Compute Salt & Web Crypto Hash
-    const salt = generateSalt(16);
-    const passwordHash = await hashPassword(password, salt);
+    // 2. Client sends password to server for secure server-side salt generation and PBKDF2 hashing
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
 
-    // 3. Try Cloudflare Pages Backend Endpoints
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username,
-          email,
-          displayName: displayName || username,
+          username: cleanUsername,
+          email: cleanEmail,
+          displayName: displayName || cleanUsername,
           phone,
           password,
-          passwordHash,
-          salt,
           turnstileToken,
         }),
       });
@@ -150,163 +147,60 @@ class AuthService {
             message: errData.message,
           };
         }
-      }
-
-      if (res.ok) {
-        const data: AuthResponse = await res.json();
-        if (data.success && data.user) {
-          this.saveSession(data.user, data.token || '', true);
-
-          // Immediately notify admin in realtime
-          const memberRecord = data.member || {
-            id: data.user.id,
-            displayName: data.user.displayName || data.user.username,
-            email: data.user.email,
-            phone: data.user.phone || phone,
-            role: 'MEMBER',
-                balance: data.user.wallet_balance || 0,
-                totalSpent: 0,
-                status: 'ACTIVE',
-                avatar: data.user.avatar_url,
-                passwordHash,
-                salt,
-                createdAt: data.user.created_at || new Date().toISOString(),
-                lastLogin: new Date().toISOString(),
-              };
-
-              this.notifyAdminRealtime(memberRecord, data.user);
-
-              // Tự động kích hoạt ghi nhận mã giới thiệu nếu có
-              try {
-                const savedRef = typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_referrer_id') : null;
-                if (savedRef && data.user?.id) {
-                  growthService.recordReferral(savedRef, data.user.id);
-                  localStorage.removeItem('wcg_referrer_id');
-                }
-              } catch (refErr) {
-                console.warn('[AuthService] referral tracking error:', refErr);
-              }
-
-          return data;
-        } else if (data.message) {
-          return data;
-        }
-      }
-    } catch {}
-
-    // 4. Local Hybrid Fallback (Ensures 100% offline & local environment capability)
-    try {
-      const membersRaw = localStorage.getItem('wcg_admin_members_v4');
-      const members: any[] = membersRaw ? JSON.parse(membersRaw) : [];
-
-      const cleanUsername = username.trim().toLowerCase();
-      const cleanEmail = email.trim().toLowerCase();
-
-      // Check duplicates
-      const exists = members.find(
-        (m) =>
-          m.displayName?.toLowerCase() === cleanUsername ||
-          m.email?.toLowerCase() === cleanEmail ||
-          m.id === `usr_${cleanUsername}`
-      );
-
-      if (exists) {
         return {
           success: false,
-          message: 'Tên đăng nhập hoặc email này đã tồn tại trong hệ thống.',
+          message: 'Đăng ký thất bại. Máy chủ từ chối yêu cầu (mã lỗi ' + res.status + ').',
         };
       }
 
-      // Check daily IP rate limit (max 2 accounts / IP / day)
-      const today = new Date().toISOString().split('T')[0];
-      const ipRegsToday = members.filter((m) => {
-        const isToday = m.createdAt && typeof m.createdAt === 'string' && m.createdAt.startsWith(today);
-        return isToday && (m.registeredIp === '127.0.0.1' || m.registeredIp === 'client_local' || !m.registeredIp);
-      });
+      const data: AuthResponse = await res.json();
+      if (data.success && data.user) {
+        this.saveSession(data.user, data.token || '', true);
 
-      if (ipRegsToday.length >= 2) {
-        return {
-          success: false,
-          message: 'Địa chỉ IP của bạn đã đạt giới hạn tạo tối đa 2 tài khoản trong 1 ngày. Vui lòng quay lại vào ngày mai.',
+        // Immediately notify admin in realtime
+        const memberRecord = data.member || {
+          id: data.user.id,
+          displayName: data.user.displayName || data.user.username,
+          email: data.user.email,
+          phone: data.user.phone || phone,
+          role: 'MEMBER',
+          balance: data.user.wallet_balance || 0,
+          totalSpent: 0,
+          status: 'ACTIVE',
+          avatar: data.user.avatar_url,
+          createdAt: data.user.created_at || new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
         };
-      }
 
-      const newUserId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      const avatar = generateAvatarUrl(cleanUsername);
+        this.notifyAdminRealtime(memberRecord, data.user);
 
-      const newMember = {
-        id: newUserId,
-        displayName: displayName?.trim() || username.trim(),
-        email: cleanEmail,
-        phone: phone?.trim() || '',
-        role: 'MEMBER',
-        balance: 0,
-        totalSpent: 0,
-        status: 'ACTIVE',
-        avatar,
-        passwordHash,
-        salt,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
-
-      // Append Security Log
-      try {
-        const secRaw = localStorage.getItem('wcg_admin_security_logs_v4');
-        const secLogs = secRaw ? JSON.parse(secRaw) : [];
-        secLogs.unshift({
-          id: `sec_${Date.now()}`,
-          actorName: newMember.displayName,
-          actorEmail: newMember.email,
-          action: 'MEMBER_REGISTER',
-          targetId: newMember.id,
-          ipAddress: '127.0.0.1',
-          severity: 'INFO',
-          details: { platform: 'Web' },
-          createdAt: new Date().toISOString(),
-        });
-        localStorage.setItem('wcg_admin_security_logs_v4', JSON.stringify(secLogs));
-      } catch {}
-
-      const userProfile: UserProfile = {
-        id: newMember.id,
-        username: cleanUsername,
-        displayName: newMember.displayName,
-        email: newMember.email,
-        phone: newMember.phone,
-        role: 'user',
-        wallet_balance: newMember.balance,
-        avatar_url: newMember.avatar,
-        session_token: generateSessionToken(newMember.id),
-        created_at: newMember.createdAt,
-      };
-
-      this.saveSession(userProfile, userProfile.session_token || '', true);
-
-      // Realtime notification to admin
-      this.notifyAdminRealtime(newMember, userProfile);
-
-      // Tự động kích hoạt ghi nhận mã giới thiệu nếu có
-      try {
-        const savedRef = typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_referrer_id') : null;
-        if (savedRef && userProfile.id) {
-          growthService.recordReferral(savedRef, userProfile.id);
-          localStorage.removeItem('wcg_referrer_id');
+        // Tự động kích hoạt ghi nhận mã giới thiệu nếu có
+        try {
+          const savedRef = typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_referrer_id') : null;
+          if (savedRef && data.user?.id) {
+            growthService.recordReferral(savedRef, data.user.id);
+            localStorage.removeItem('wcg_referrer_id');
+          }
+        } catch (refErr) {
+          console.warn('[AuthService] referral tracking error:', refErr);
         }
-      } catch (refErr) {
-        console.warn('[AuthService] referral tracking error:', refErr);
-      }
 
-      return {
-        success: true,
-        message: 'Đăng ký tài khoản thành công!',
-        user: userProfile,
-        member: newMember,
-        token: userProfile.session_token,
-      };
+        return data;
+      } else if (data.message) {
+        return data;
+      }
     } catch (e: any) {
-      return { success: false, message: 'Lỗi đăng ký tài khoản.', error: String(e) } as any;
+      console.error('[AuthService] register network error:', e);
+      return {
+        success: false,
+        message: 'Không thể kết nối đến máy chủ xác thực. Vui lòng kiểm tra kết nối mạng và thử lại.',
+      };
     }
+
+    return {
+      success: false,
+      message: 'Không thể đăng ký tài khoản lúc này. Vui lòng thử lại sau.',
+    };
   }
 
   // Login Member
@@ -553,28 +447,18 @@ class AuthService {
           return { success: false, message: data.message || 'Không thể cập nhật thông tin.' };
         }
       }
-    } catch {}
-
-    // 2. Local Fallback & auto-heal
-    const updatedUser: UserProfile = {
-      ...currentUser,
-      displayName: payload.displayName !== undefined ? payload.displayName.trim() : currentUser.displayName,
-      avatar_url: payload.avatar_url !== undefined ? payload.avatar_url : currentUser.avatar_url,
-      phone: payload.phone !== undefined ? payload.phone.trim() : currentUser.phone,
-    };
-
-    dataService.saveCurrentUser(updatedUser);
-    this.notifyAdminRealtime(updatedUser, updatedUser);
-
-    if (payload.newPassword) {
+    } catch (e: any) {
+      console.error('[AuthService] updateProfile network error:', e);
       return {
         success: false,
-        message: 'Không thể kết nối đến máy chủ bảo mật để đổi mật khẩu. Vui lòng thử lại sau.',
+        message: 'Không thể kết nối đến máy chủ để cập nhật thông tin. Vui lòng kiểm tra kết nối mạng và thử lại.',
       };
     }
 
-    window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: updatedUser }));
-    return { success: true, message: 'Cập nhật thông tin nhân vật thành công!', user: updatedUser };
+    return {
+      success: false,
+      message: 'Không thể kết nối đến máy chủ để cập nhật thông tin. Vui lòng thử lại sau.',
+    };
   }
 
   logout(): void {

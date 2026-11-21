@@ -205,7 +205,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
       }
 
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'WebCrypto không khả dụng để tạo mã OTP xác minh an toàn.',
+          }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
+      const otpArray = new Uint32Array(1);
+      crypto.getRandomValues(otpArray);
+      const otpCode = String(100000 + (otpArray[0] % 900000));
       const codeHash = await hashOtp(otpCode, 'email_verify_' + (member.salt || 'wcg_email_salt'));
       const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 

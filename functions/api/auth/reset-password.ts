@@ -333,7 +333,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       // Log OTP request into security_logs
       const randBytes = new Uint8Array(4);
-      if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(randBytes);
+      if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+        throw new Error('WebCrypto API (crypto.getRandomValues) is required to generate secure log ID. Failing closed.');
+      }
+      crypto.getRandomValues(randBytes);
       const randSuffix = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('');
       const logId = `sec_${Date.now()}_${randSuffix}`;
       await env.DB.prepare(`
@@ -486,7 +489,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       `).bind(finalPasswordHash, finalSalt, member.id).run();
 
       const randBytes2 = new Uint8Array(4);
-      if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(randBytes2);
+      if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+        throw new Error('WebCrypto API (crypto.getRandomValues) is required to generate secure log ID. Failing closed.');
+      }
+      crypto.getRandomValues(randBytes2);
       const randSuffix2 = Array.from(randBytes2).map(b => b.toString(16).padStart(2, '0')).join('');
       const logId = `sec_${Date.now()}_${randSuffix2}`;
       await env.DB.prepare(`
