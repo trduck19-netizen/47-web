@@ -7,6 +7,28 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-21]
 
+### 427. Bổ Sung Toàn Diện Bộ Nhớ Dự Án (PROJECT_MEMORY.md & KNOWN_ISSUES.md) Tránh Lặp Lại Các Sai Lầm Bảo Mật (21/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Người dùng yêu cầu bổ sung toàn bộ các bài học, nguyên nhân gốc rễ và cạm bẫy bảo mật đã xử lý từ chuỗi kiểm toán bảo mật (các đợt commit `85c50d8`, `a8bae5a`, `8e0ba46`, `4286cca`) vào hệ thống ghi nhớ dự án (`PROJECT_MEMORY.md` và `KNOWN_ISSUES.md`) nhằm đảm bảo không bao giờ tái phạm các sai lầm này.
+- **Nội dung đã bổ sung vào `PROJECT_MEMORY.md`**:
+  - Thêm mới Mục `5. CÁC NGUYÊN TẮC BẢO MẬT & KIẾN TRÚC AN TOÀN BẮT BUỘC (MANDATORY SECURITY ARCHITECTURE)` gồm 8 nguyên tắc kiến trúc bất biến:
+    1. *Nguyên Tắc 1*: Phân tách Secret theo đúng mục đích (`ADMIN_API_KEY`, `SYNC_SECRET`, `CRON_SECRET`, `JWT_SECRET`, `PASSWORD_PEPPER`), triệt tiêu Single Master Key đa năng, cấm fallback chuỗi ghi cứng và xử lý Fail-Closed (HTTP 503).
+    2. *Nguyên Tắc 2*: Xác thực Single-Domain nội bộ duy nhất, xóa bỏ 100% bypass token tĩnh (`wcg_tok_usr_admin_`, `admin290200`) và cờ `cachedAdmin` phía trình duyệt; mọi phiên bắt buộc xác thực qua D1 `GET /api/auth/me`.
+    3. *Nguyên Tắc 3*: Băm mật khẩu chậm PBKDF2 100.000 vòng kèm pepper hệ thống, máy chủ tự sinh muối và băm, cấm nhận hash/salt từ client; tự động thu hồi phiên cũ `session_token = NULL` khi đổi mật khẩu; cấm hạ cấp về SHA-256 một vòng.
+    4. *Nguyên Tắc 4*: Giới hạn tần suất hai trục song song (IP + Tài khoản/Email), xử lý Fail-Closed khi lỗi CSDL rate limit, reset bộ đếm `attempts` về 1 khi hết hạn khóa/cửa sổ.
+    5. *Nguyên Tắc 5*: Rào trạng thái trước khi ghi sổ cái / cộng tiền (`State-Guard-First Concurrency`), kiểm tra `changes > 0`, cơ chế bồi hoàn (Compensatory Rollback) khi ghi sổ cái thất bại.
+    6. *Nguyên Tắc 6*: Thu thập dữ liệu gốc từ máy chủ D1 cho xóa mềm (`Server-Side Data Capture for Soft Delete`), từ chối `originalData` do client gửi lên.
+    7. *Nguyên Tắc 7*: Tuyệt đối không dùng `Math.random()` cho dữ liệu mật mã & định danh nhạy cảm, sử dụng Web Crypto `crypto.getRandomValues`.
+    8. *Nguyên Tắc 8*: Phòng thủ SSRF toàn diện, Pre-auth Fail-Closed, lọc dải IP cấm (`isSafeCrawlUrl`), chuyển hướng thủ công (manual redirect) tối đa 3 hops, streaming limit 1MB với `reader.cancel()` ngắt kết nối socket, whitelist MIME type ảnh kèm header `nosniff` và `sandbox`.
+- **Nội dung đã bổ sung vào `KNOWN_ISSUES.md`**:
+  - `ISSUE-310`: Lỗ hổng SSRF Proxy, tràn bộ nhớ payload streaming (Memory Exhaustion DoS) & thiếu whitelist Content-Type trong proxy ngoại vi.
+  - `ISSUE-309`: Race condition & lỗi toàn vẹn sổ cái (Ledger Integrity) trong Escrow Release/Dispute & bồi hoàn (Compensatory Rollback).
+  - Tích hợp và đồng bộ hoàn thiện `ISSUE-308`, `ISSUE-307`, `ISSUE-306`.
+- **Kiểm thử & Nghiệm thu**:
+  - Kiểm tra `check:i18n`: 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - Quét an toàn Rule 10: 0 secret, 0 private key, 0 mật khẩu ghi cứng.
+  - Build Vite Frontend & Cloudflare Pages Edge Worker bundle thành công 100%.
+
 ### 426. Hoàn Thiện & Xác Minh Toàn Diện Đợt 48 Lỗi Bảo Mật, Triệt Tiêu Math.random & Thắt Chặt Xác Thực (21/11/2026)
 - **Bối cảnh & Yêu cầu**:
   1. *Rà soát sau đợt 48 lỗi*: Đối chiếu bản kiểm chứng bảo mật tại commit `7a9f850` và xác nhận trạng thái từng nhóm:

@@ -10,6 +10,36 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-310: Lỗ Hổng SSRF Proxy, Tràn Bộ Nhớ Payload Streaming (Memory Exhaustion DoS) & Thiếu Whitelist Content-Type Trong Proxy Ngoại Vi
+- **Triệu chứng & Rủi ro**:
+  - Endpoint crawler (`/api/crawl-article`) và proxy icon (`/api/game-icon`) nếu tự động đi theo redirect (`redirect: 'follow'`) sẽ bị kẻ tấn công dùng HTTP 301/302 chuyển hướng tới các IP nội bộ nguy hiểm (`127.0.0.1`, `169.254.169.254`, `10.0.0.0/8`, `192.168.0.0/16`), vượt qua tầng kiểm tra IP ban đầu.
+  - Tải toàn bộ response bằng `res.arrayBuffer()` hoặc `res.text()` mà không giới hạn kích thước theo dòng truyền (stream) cho phép máy chủ bên ngoài trả về dữ liệu khổng lồ (hàng trăm MB hoặc GB), làm kiệt quệ RAM của Cloudflare Worker và gây crash Worker process (DoS).
+  - Proxy icon nếu trả về nguyên vẹn Content-Type từ máy chủ ngoài mà không có whitelist ảnh (`image/*`) và thiếu header bảo vệ (`X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox`) có thể bị lợi dụng để phát tán mã độc HTML/SVG XSS hoặc đánh lừa trình duyệt thực thi mã độc trong origin của sàn.
+  - Khi xác thực người dùng phụ thuộc vào CSDL D1: nếu CSDL chưa cấu hình hoặc gặp sự cố mà lại cho phép gọi proxy ngoại vi trước khi xác thực sẽ tạo ra lỗ hổng unauthenticated SSRF proxy cho kẻ tấn công bên ngoài lợi dụng làm proxy ẩn danh.
+- **Cạm bẫy đã thất bại**:
+  - Chỉ kiểm tra URL đầu vào một lần nhưng để `fetch` tự động chuyển hướng (`redirect: 'follow'`): Bị vượt qua dễ dàng bằng URL 302 chuyển tiếp sang IP nội bộ.
+  - Đọc header `Content-Length` để kiểm tra dung lượng: Kẻ tấn công dùng `Transfer-Encoding: chunked` không gửi `Content-Length` và bơm dữ liệu vô hạn.
+  - Cho phép tất cả Content-Type miễn là fetch thành công: Bị biến thành proxy trung chuyển file độc hại hoặc XSS qua SVG/HTML.
+  - Cho phép fetch ngoại vi chạy trước khi kiểm tra auth khi DB unconfigured: Lộ endpoint proxy cho cả Internet.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Pre-auth Fail-Closed: Bắt buộc xác thực quyền người gọi trước khi thực hiện bất kỳ lệnh fetch nào. Khi thiếu thông tin xác thực hoặc DB chưa cấu hình, lập tức trả về 401/403/503.
+  - Kiểm soát chuyển hướng thủ công (Manual Redirect Handling): Thiết lập `redirect: 'manual'`. Lặp tối đa 3 hops, ở mỗi hop trích xuất header `Location`, phân giải URL tuyệt đối và tái kiểm tra qua `isSafeCrawlUrl(nextUrl)` trước khi fetch tiếp.
+  - Streaming limit với Web Streams API: Đọc body qua `res.body.getReader()`, tích lũy độ dài từng chunk; ngay khi vượt 1MB (1.048.576 bytes), gọi `reader.cancel()` và ném lỗi `PAYLOAD_TOO_LARGE` (HTTP 413), ngắt ngay kết nối socket TCP.
+  - Whitelist Content-Type ảnh nghiêm ngặt: Chỉ chấp nhận `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/svg+xml`, `image/x-icon`. Luôn đính kèm `X-Content-Type-Options: nosniff` và `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox`.
+
+### ISSUE-309: Race Condition & Lỗi Toàn Vẹn Sổ Cái (Ledger Integrity) Trong Escrow Release/Dispute & Bồi Hoàn (Compensatory Rollback)
+- **Triệu chứng & Rủi ro**:
+  - Trong dịch vụ ký quỹ (`escrow_service.ts`), nếu tiến hành ghi nhận lịch sử vào sổ cái (`ledger_transactions`) trước khi rào trạng thái giao dịch cọc (`UPDATE escrow_deposits SET status = 'RELEASED' WHERE id = ? AND status = 'HELD'`), hai request đồng thời có thể cùng ghi hai dòng giải ngân vào sổ cái và cộng tiền ví 2 lần.
+  - Nếu câu lệnh cập nhật trạng thái cọc thành công nhưng câu lệnh ghi sổ cái (`db.prepare("INSERT INTO ledger_transactions...")`) bị lỗi mạng hoặc conflict SQL, hệ thống sẽ rơi vào trạng thái bất nhất: tiền cọc đã đổi trạng thái mà không có vết tích trong sổ cái tài chính.
+  - Trong duyệt thưởng nhiệm vụ (`mission_service.ts`): cộng thưởng ví trước khi rào trạng thái đơn nộp `mission_submissions` cho phép người dùng click nhanh hoặc spam đồng thời nhận thưởng gấp nhiều lần.
+- **Cạm bẫy đã thất bại**:
+  - Gói các câu lệnh vào `db.batch()` nhưng câu lệnh `UPDATE` không kiểm tra `changes`: `db.batch` vẫn chạy tuần tự nhưng nếu câu lệnh UPDATE không khớp điều kiện (0 changes), batch không tự động rollback trừ khi có lỗi cú pháp, dẫn tới việc các câu lệnh cộng tiền tiếp theo vẫn được thực thi!
+  - Đổi trạng thái sau khi đã ghi sổ cái: Gặp race condition ở khâu ghi sổ cái.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Rào trạng thái nguyên tử trước (State-Guard-First): Luôn chạy `UPDATE ... SET status = ? WHERE id = ? AND status = ?` trước tiên.
+  - Kiểm tra `res.meta?.changes`: Nếu `changes === 0`, ném lỗi hoặc trả về `false` ngay lập tức, ngắt toàn bộ luồng xử lý tiếp theo.
+  - Cơ chế bồi hoàn bù trừ (Compensatory Rollback): Nếu bước rào trạng thái thành công nhưng bước ghi sổ cái kế tiếp ném exception, khối `catch` bắt buộc phải thực thi câu lệnh bồi hoàn (khôi phục lại trạng thái ban đầu của bản ghi cọc) và ghi log kiểm toán trước khi ném lại lỗi ra ngoài.
+
 ### ISSUE-308: Race Condition Duyệt Thưởng Nhiệm Vụ (Double Reward) & Nhận Dữ Liệu Gốc Từ Máy Khách Khi Xóa Mềm
 - **Triệu chứng & Rủi ro**:
   - Khi duyệt hồ sơ nhiệm vụ (`mission_submissions`), nếu câu lệnh cập nhật số dư ví thành viên và câu lệnh rào trạng thái hồ sơ (`WHERE status = 'PENDING'`) nằm trong cùng một lô giao dịch không kiểm tra `changes === 0`, hai phiên làm việc đồng thời có thể cùng cộng tiền thưởng vào ví của thành viên hai lần.
