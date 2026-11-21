@@ -6,6 +6,7 @@
 import { listDeletedRecords, restoreSoftDeletedRecord, recordSoftDelete, getActiveTombstonesMap, SoftDeleteRecordType } from '../../services/soft_delete_service';
 import { verifyToken, authenticateAdmin } from '../../services/auth_service';
 import { computeSha256, hasScope } from '../../services/mission_service';
+import { getSettingD1 } from '../../services/d1_service';
 
 interface Env {
   DB: D1Database;
@@ -148,32 +149,77 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   // 2. Soft delete action
   if (action === 'soft_delete') {
-    const { recordType, recordId, recordSlug, title, deleteReason, originalData } = body;
+    const { recordType, recordId, recordSlug, title, deleteReason } = body;
     if (!recordType || !recordId) {
       return new Response(JSON.stringify({ success: false, error: 'Thiếu recordType hoặc recordId' }), { status: 400, headers: CORS_HEADERS });
     }
 
-    // Capture originalData server-side from live record to prevent caller injection
-    let capturedOriginalData = originalData || {};
-    if (env.DB) {
-      try {
-        if (recordType === 'game') {
-          const gameRow = await env.DB.prepare('SELECT * FROM games WHERE id = ? OR slug = ? LIMIT 1').bind(String(recordId), recordSlug ? String(recordSlug) : String(recordId)).first<any>().catch(() => null);
-          if (gameRow) capturedOriginalData = gameRow;
-        } else if (recordType === 'code') {
-          const codeRow = await env.DB.prepare('SELECT * FROM codes WHERE id = ? LIMIT 1').bind(String(recordId)).first<any>().catch(() => null);
-          if (codeRow) capturedOriginalData = codeRow;
-        } else if (recordType === 'giveaway') {
-          const giveawayRow = await env.DB.prepare('SELECT * FROM giveaways WHERE id = ? LIMIT 1').bind(String(recordId)).first<any>().catch(() => null);
-          if (giveawayRow) capturedOriginalData = giveawayRow;
-        } else if (recordType === 'mission') {
-          const missionRow = await env.DB.prepare('SELECT * FROM missions WHERE id = ? LIMIT 1').bind(String(recordId)).first<any>().catch(() => null);
-          if (missionRow) capturedOriginalData = missionRow;
-        } else if (recordType === 'news') {
-          const newsRow = await env.DB.prepare('SELECT * FROM news WHERE id = ? OR slug = ? LIMIT 1').bind(String(recordId), recordSlug ? String(recordSlug) : String(recordId)).first<any>().catch(() => null);
-          if (newsRow) capturedOriginalData = newsRow;
+    if (!env.DB) {
+      return new Response(JSON.stringify({ success: false, error: 'D1 Database chưa sẵn sàng' }), { status: 500, headers: CORS_HEADERS });
+    }
+
+    // Capture originalData STRICTLY server-side from live DB to prevent caller forgery/injection
+    let capturedOriginalData: any = null;
+    const cleanId = String(recordId);
+    const cleanSlug = recordSlug ? String(recordSlug) : cleanId;
+
+    try {
+      if (recordType === 'game') {
+        const row = await env.DB.prepare('SELECT * FROM games WHERE id = ? OR slug = ? LIMIT 1').bind(cleanId, cleanSlug).first<any>().catch(() => null);
+        if (row) {
+          capturedOriginalData = row;
+        } else {
+          const games = (await getSettingD1(env.DB, 'wcg_admin_games_v5', [], true)) || [];
+          capturedOriginalData = (games as any[]).find((g: any) => g && (g.id === cleanId || g.slug === cleanSlug));
         }
-      } catch {}
+      } else if (recordType === 'code') {
+        capturedOriginalData = await env.DB.prepare('SELECT * FROM codes WHERE id = ? LIMIT 1').bind(cleanId).first<any>().catch(() => null);
+      } else if (recordType === 'giveaway') {
+        const row = await env.DB.prepare('SELECT * FROM giveaways WHERE id = ? LIMIT 1').bind(cleanId).first<any>().catch(() => null);
+        if (row) {
+          capturedOriginalData = row;
+        } else {
+          const giveaways = (await getSettingD1(env.DB, 'wcg_giveaways_v1', [], true)) || [];
+          capturedOriginalData = (giveaways as any[]).find((gw: any) => gw && (gw.id === cleanId || gw.slug === cleanSlug));
+        }
+      } else if (recordType === 'mission') {
+        capturedOriginalData = await env.DB.prepare('SELECT * FROM missions WHERE id = ? LIMIT 1').bind(cleanId).first<any>().catch(() => null);
+      } else if (recordType === 'news') {
+        const row = await env.DB.prepare('SELECT * FROM news WHERE id = ? OR slug = ? LIMIT 1').bind(cleanId, cleanSlug).first<any>().catch(() => null);
+        if (row) {
+          capturedOriginalData = row;
+        } else {
+          const newsList = (await getSettingD1(env.DB, 'wcg_admin_news_v4', [], true)) || [];
+          capturedOriginalData = (newsList as any[]).find((n: any) => n && (n.id === cleanId || n.slug === cleanSlug));
+        }
+      } else if (recordType === 'pending_game') {
+        const pending = (await getSettingD1(env.DB, 'wcg_crawler_pending_games_v1', [], true)) || [];
+        capturedOriginalData = (pending as any[]).find((p: any) => p && (p.id === cleanId || p.slug === cleanSlug));
+      } else if (recordType === 'upcoming_game') {
+        const upcoming = (await getSettingD1(env.DB, 'wcg_crawler_upcoming_games_v1', [], true)) || [];
+        capturedOriginalData = (upcoming as any[]).find((u: any) => u && (u.id === cleanId || u.slug === cleanSlug));
+      } else if (recordType === 'utility') {
+        const row = await env.DB.prepare('SELECT * FROM utilities WHERE id = ? OR slug = ? LIMIT 1').bind(cleanId, cleanSlug).first<any>().catch(() => null);
+        if (row) {
+          capturedOriginalData = row;
+        } else {
+          const utilities = (await getSettingD1(env.DB, 'wcg_admin_utilities_v1', [], true)) || [];
+          capturedOriginalData = (utilities as any[]).find((ut: any) => ut && (ut.id === cleanId || ut.slug === cleanSlug));
+        }
+      }
+    } catch (err: any) {
+      console.warn('[History SoftDelete] Error fetching original data from D1:', err?.message);
+    }
+
+    // Fail closed: Never allow soft deleting if record does not exist in D1/live storage
+    if (!capturedOriginalData) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Không tìm thấy bản ghi ${recordType} "${cleanId}" trong hệ thống. Thao tác bị từ chối để chống giả mạo dữ liệu.`,
+        }),
+        { status: 404, headers: CORS_HEADERS }
+      );
     }
 
     const delRes = await recordSoftDelete(env.DB, {

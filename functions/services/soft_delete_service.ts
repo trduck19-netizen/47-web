@@ -223,7 +223,15 @@ export async function recordSoftDelete(
 
   const actor = params.actor || params.deletedBy || 'admin';
   const deleteReason = params.deleteReason || params.reason || null;
-  const originalData = params.originalData || params.originalPayload || {};
+  const originalData = params.originalData || params.originalPayload;
+
+  if (!originalData || (typeof originalData === 'object' && Object.keys(originalData).length === 0)) {
+    return {
+      success: false,
+      id: '',
+      message: `Bản ghi ${recordType} không có dữ liệu gốc hợp lệ trên máy chủ để xóa mềm. Thao tác bị từ chối.`,
+    };
+  }
 
   const id = `del_${recordType}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const nowIso = new Date().toISOString();

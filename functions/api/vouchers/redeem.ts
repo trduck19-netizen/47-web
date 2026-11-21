@@ -115,13 +115,60 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 3. Cập nhật tăng số lượt dùng trong D1 (Atomic check usage_limit)
+    // 2.5 Kiểm tra tính hợp lệ của Voucher (Active + Thời hạn hiệu lực start_date / end_date)
+    const targetVoucher = await env.DB.prepare(`
+      SELECT id, code, is_active, usage_count, usage_limit, start_date, end_date, voucher_type
+      FROM vouchers
+      WHERE UPPER(TRIM(code)) = ?
+      LIMIT 1
+    `).bind(cleanCode).first<any>();
+
+    if (!targetVoucher) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Mã voucher không tồn tại trên hệ thống.' }),
+        { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    if (!targetVoucher.is_active) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Mã voucher đang bị tạm khóa hoặc không còn hoạt động.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    const now = new Date();
+    if (targetVoucher.start_date && new Date(targetVoucher.start_date) > now) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Mã voucher chưa đến thời gian áp dụng.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    if (targetVoucher.end_date && new Date(targetVoucher.end_date) < now) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Mã voucher đã hết hạn sử dụng.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    if (targetVoucher.usage_limit && targetVoucher.usage_limit > 0 && targetVoucher.usage_count >= targetVoucher.usage_limit) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Mã voucher đã hết lượt sử dụng.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    // 3. Cập nhật tăng số lượt dùng trong D1 (Atomic check usage_limit & date validity)
+    const nowIso = now.toISOString();
     const updateRes: any = await env.DB.prepare(`
       UPDATE vouchers
       SET usage_count = usage_count + 1
       WHERE UPPER(TRIM(code)) = ? AND is_active = 1
         AND (usage_limit IS NULL OR usage_limit = 0 OR usage_count < usage_limit)
-    `).bind(cleanCode).run();
+        AND (start_date IS NULL OR start_date <= ?)
+        AND (end_date IS NULL OR end_date >= ?)
+    `).bind(cleanCode, nowIso, nowIso).run();
 
     if (!updateRes || updateRes.meta?.changes === 0) {
       return new Response(
