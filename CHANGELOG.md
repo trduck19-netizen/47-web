@@ -7,6 +7,23 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-21]
 
+### 426. Hoàn Thiện & Xác Minh Toàn Diện Đợt 48 Lỗi Bảo Mật, Triệt Tiêu Math.random & Thắt Chặt Xác Thực (21/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  1. *Rà soát sau đợt 48 lỗi*: Đối chiếu bản kiểm chứng bảo mật tại commit `7a9f850` và xác nhận trạng thái từng nhóm:
+     - Nhóm 1 (Gốc xác thực): Gỡ bỏ triệt để `ADMIN_SYNC_SECRET` khỏi `history.ts` và `sepay-credit.ts`; xác nhận không còn token test `'token_test_session_123'`, không còn `extractUserIdFromToken` và không còn chuỗi fallback suy ra được; thay thế `Math.random` trong `login.ts` (nâng cấp salt) và `auth_service.ts` (`createSignedToken`) bằng WebCrypto.
+     - Nhóm 2 (OTP & Reset mật khẩu): Xác nhận rate limit kép (IP: 3/15m, Account: 5/1h); server tự băm PBKDF2 100.000 vòng và từ chối 100% hash/salt từ client.
+     - Nhóm 3 (Escrow & Missions): Xác nhận UPDATE rào trạng thái nguyên tử chạy trước khi ghi ledger giải ngân và cộng ví; loại bỏ rủi ro double reward.
+     - Nhóm 4 (Voucher & Lịch sử admin): Xác nhận `redeem.ts` kiểm tra ngày hiệu lực trước và trong lệnh atomic UPDATE; thay thế `Math.random` trong `redeem.ts` và `soft_delete_service.ts` bằng WebCrypto; xác nhận capture server-side 100% cho 8 loại bản ghi xóa mềm.
+     - Nhóm 5 (SSRF): Xác nhận `game-icon.ts` và `crawl-article.ts` đã kiểm duyệt MIME type nghiêm ngặt, timeout 10 giây, CSP sandbox, nosniff, đọc stream 1MB có hủy reader, và kiểm tra URL đích tại từng bước redirect thủ công.
+- **Giải pháp áp dụng (Solution)**:
+  - Dọn sạch `ADMIN_SYNC_SECRET` khỏi `functions/api/admin/history.ts` và `functions/api/admin/sepay-credit.ts`.
+  - Thay thế toàn bộ các lời gọi `Math.random()` còn sót trong `functions/api/auth/login.ts`, `functions/services/auth_service.ts`, `functions/api/vouchers/redeem.ts`, `functions/services/soft_delete_service.ts` bằng Web Crypto `crypto.getRandomValues`.
+  - Giữ nguyên trạng thái 26 mục `needs_validation` per instruction.
+- **Kiểm thử & Nghiệm thu**:
+  - `check:i18n`: 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - Quét Rule 10: 0 secret, 0 private key, 0 token test hay mật khẩu ghi cứng.
+  - Build Vite Frontend & Cloudflare Pages Edge Worker bundle thành công 100%.
+
 ### 425. Tách Triệt Để Master Secret Theo Mục Đích (ADMIN_API_KEY/SYNC_SECRET/CRON_SECRET), Khóa Rate-Limit Fail-Closed & Dọn Sạch Tàn Dư Bảo Mật (21/11/2026)
 - **Bối cảnh & Yêu cầu**:
   1. *auth/single-master-secret-multi-role*: `ADMIN_SYNC_SECRET` còn được chấp nhận làm credential sống ở nhiều endpoint (`sync.ts`, `me.ts`, `temporary-token.ts`, `auth_service.ts`, `_worker.ts`, `create-qr.ts`, `crawler`, `events`, `news`, `upload-icon`, `giveaways/simulate`, `notifications`, `telegram`). Cần gỡ bỏ và phân tách rõ ràng theo mục đích: `SYNC_SECRET` cho sync, `JWT_SECRET` cho ký session token, `ADMIN_API_KEY` cho quyền admin, `CRON_SECRET` cho cron jobs.

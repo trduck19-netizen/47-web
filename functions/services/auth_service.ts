@@ -135,9 +135,11 @@ export function getSigningSecret(env: any): string {
 
 export async function createSignedToken(userId: string, secret: string): Promise<string> {
   const timestamp = Date.now().toString(36);
-  const random = (typeof crypto !== 'undefined' && crypto.randomUUID)
-    ? crypto.randomUUID().replace(/-/g, '').substring(0, 10)
-    : Math.random().toString(36).substring(2, 12);
+  const randBytes = new Uint8Array(6);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(randBytes);
+  }
+  const random = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('');
   const payload = `${userId}.${timestamp}.${random}`;
   const encoder = new TextEncoder();
   const data = encoder.encode(`${payload}:${secret}`);

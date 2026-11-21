@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-308: Race Condition Duyệt Thưởng Nhiệm Vụ (Double Reward) & Nhận Dữ Liệu Gốc Từ Máy Khách Khi Xóa Mềm
+- **Triệu chứng & Rủi ro**:
+  - Khi duyệt hồ sơ nhiệm vụ (`mission_submissions`), nếu câu lệnh cập nhật số dư ví thành viên và câu lệnh rào trạng thái hồ sơ (`WHERE status = 'PENDING'`) nằm trong cùng một lô giao dịch không kiểm tra `changes === 0`, hai phiên làm việc đồng thời có thể cùng cộng tiền thưởng vào ví của thành viên hai lần.
+  - Khi xóa mềm bản ghi (`soft_delete`), nếu hệ thống nhận `originalData` do client gửi lên thay vì truy vấn dữ liệu gốc thực tế từ CSDL D1, kẻ tấn công có thể tiêm các payload độc hại vào bảng lịch sử và phục hồi (`restore`) lại dữ liệu giả mạo vào CSDL chính.
+  - Khi áp dụng mã giảm giá (`redeem.ts`), nếu chỉ kiểm tra lượt dùng mà bỏ qua khoảng thời gian hiệu lực (`start_date`, `end_date`), voucher đã hết hạn hoặc chưa đến ngày phát hành vẫn có thể bị khai thác để giảm tiền đơn hàng.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Nguyên tắc rào trạng thái trước (State Guard First): Thực thi câu lệnh `UPDATE mission_submissions SET status = 'APPROVED' WHERE id = ? AND status = 'PENDING'` trước. Chỉ khi số dòng thay đổi `changes > 0`, hệ thống mới tiến hành cộng tiền vào ví thành viên hoặc trao mã code. Nếu `changes === 0`, từ chối ngay lập tức và hoàn tác mã trong kho.
+  - Server-Side Original Data Capture: Khi quản trị viên yêu cầu xóa mềm, máy chủ D1 bắt buộc phải tự truy vấn dữ liệu gốc từ bảng tương ứng (`games`, `codes`, `giveaways`, `missions`, `news`, `utilities`...). Nếu không tìm thấy bản ghi thực tế, trả lỗi HTTP 404 và hủy thao tác, tuyệt đối không lưu dữ liệu do client gửi lên.
+  - Rào hiệu lực thời gian nguyên tử: Thêm điều kiện `AND (start_date IS NULL OR start_date <= ?) AND (end_date IS NULL OR end_date >= ?)` vào cùng câu lệnh atomic `UPDATE vouchers SET usage_count = usage_count + 1`.
+
 ### ISSUE-307: Lạm Dụng Single Master Secret Đa Quyền Hạn (Multi-Role), Fallback Chuỗi Ghi Cứng & Rate Limiting Fail-Open
 - **Triệu chứng & Rủi ro**:
   - Dùng chung một bí mật duy nhất (`ADMIN_SYNC_SECRET`) cho cả đồng bộ dữ liệu, ký session token, xác thực admin và gọi cron job tạo ra rủi ro leo thang đặc quyền nghiêm trọng: lộ một secret sẽ làm sụp đổ toàn bộ hệ thống phân quyền.

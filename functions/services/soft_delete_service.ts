@@ -233,7 +233,10 @@ export async function recordSoftDelete(
     };
   }
 
-  const id = `del_${recordType}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const randBytes = new Uint8Array(4);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(randBytes);
+  const randSuffix = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  const id = `del_${recordType}_${Date.now()}_${randSuffix}`;
   const nowIso = new Date().toISOString();
 
   // 0. Ensure table exists

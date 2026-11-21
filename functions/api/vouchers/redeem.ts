@@ -178,7 +178,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // 4. Ghi nhận nhật ký đổi mã nguyên tử
-    const redId = `vred_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const redBytes = new Uint8Array(4);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(redBytes);
+    const redSuffix = Array.from(redBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    const redId = `vred_${Date.now()}_${redSuffix}`;
     await env.DB.prepare(`
       INSERT OR IGNORE INTO voucher_redemptions (id, order_id, code, member_id, created_at)
       VALUES (?, ?, ?, ?, datetime('now'))

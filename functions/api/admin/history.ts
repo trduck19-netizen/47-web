@@ -11,7 +11,6 @@ import { getSettingD1 } from '../../services/d1_service';
 interface Env {
   DB: D1Database;
   ADMIN_API_KEY?: string;
-  ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
 }
 

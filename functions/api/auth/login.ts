@@ -252,7 +252,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     // Tự động nâng cấp mã băm cũ (Fast SHA-256) sang chuẩn Slow KDF mới (PBKDF2)
     if (isLegacySha256Match && isPasswordValid) {
       try {
-        const upgradedSalt = 'wcg_salt_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : Math.random().toString(36).slice(2, 12));
+        const saltBytes = new Uint8Array(16);
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+          crypto.getRandomValues(saltBytes);
+        }
+        const upgradedSalt = 'wcg_salt_' + Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
         const upgradedHash = await hashPasswordPBKDF2(cleanPassword, upgradedSalt, pepper);
         await env.DB.prepare("UPDATE members SET salt = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?")
           .bind(upgradedSalt, upgradedHash, member.id)
