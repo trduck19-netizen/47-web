@@ -10,6 +10,19 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-306: Rò Rỉ Phiên Khác Domain Khi Xác Thực, Bypass Token Chuỗi Tĩnh & Sai Lệch Băm Mật Khẩu Admin
+- **Triệu chứng & Rủi ro**:
+  - Khi API quản trị gặp lỗi cấu hình (`JWT_SECRET` chưa đặt), việc client lặp qua danh sách fallback các domain cũ (`codegame.shop`, `web-code-game.pages.dev`, `admin-code-game-shop.pages.dev`) sẽ khiến client lưu trữ token được cấp bởi domain khác. Khi thực hiện các tác vụ nhạy cảm như đổi mật khẩu tại domain quản trị chính, yêu cầu sẽ bị từ chối với lỗi "Phiên đăng nhập không tồn tại hoặc đã hết hạn".
+  - Cho phép bypass xác thực trên frontend bằng tiền tố chuỗi tĩnh (`wcg_tok_usr_admin_`, `admin290200`) hoặc cờ `cachedAdmin` trong `localStorage` sẽ khiến giao diện quản trị mở được mà không có phiên làm việc thực sự trên máy chủ D1, che giấu các lỗi cấu hình backend.
+  - Băm mật khẩu người dùng bằng SHA-256 một vòng và sinh salt bằng `Math.random()` không đảm bảo độ an toàn trước tấn công từ điển / rainbow tables, đồng thời thiếu pepper sẽ khiến mật khẩu không đồng bộ với hàm xác thực đăng nhập.
+  - Sau khi đổi mật khẩu, nếu không xóa bỏ `session_token` trong D1 thì các token phiên đăng nhập cũ vẫn tiếp tục có hiệu lực, vi phạm nguyên tắc bảo mật phiên làm việc.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Giới hạn xác thực Single-Domain: Client chỉ giao tiếp duy nhất với các endpoint nội bộ cùng domain (`/api/auth/login`, `/api/auth/register`, `/api/auth/me`). Dừng ngay lập tức và hiển thị mã lỗi khi máy chủ gặp sự cố, tuyệt đối không gửi thông tin đăng nhập sang domain khác.
+  - Triệt tiêu 100% logic bypass chuỗi tĩnh trên frontend. Mọi phiên đăng trị bắt buộc phải được máy chủ xác nhận qua `GET /api/auth/me`. Khi phiên không hợp lệ, lập tức xóa sạch flags và tokens trong bộ nhớ trình duyệt, đưa người dùng về form đăng nhập.
+  - Chuẩn hóa thuật toán băm mật khẩu: Sử dụng PBKDF2 100.000 vòng kèm pepper bí mật của hệ thống (`PASSWORD_PEPPER`). Sinh muối ngẫu nhiên bằng `crypto.getRandomValues(new Uint8Array(16))`.
+  - Hủy phiên cũ tự động: Đặt `session_token = NULL` trong CSDL D1 ngay khi lệnh đổi mật khẩu thành công.
+  - Bắt lỗi cấu hình fail-closed: Khi thiếu `JWT_SECRET` (dưới 16 ký tự), API trả về HTTP 503 `SERVER_MISCONFIGURED` kèm thông báo hướng dẫn quản trị viên cấu hình trên Cloudflare Dashboard.
+
 ### ISSUE-305: Cờ Bộ Nhớ Tạm Runtime Reset Trạng Thái D1, Biến isEn Chưa Khai Báo Trong Component & Nguồn Đếm Sản Phẩm Trang Chủ
 - **Triệu chứng & Rủi ro**:
   - Dùng cờ trong bộ nhớ JavaScript (`let _flag = false`) để bảo vệ các câu lệnh `UPDATE sellers SET status = 'TRIAL'` khi khởi động máy chủ Worker sẽ khiến câu lệnh bị chạy lại sau mỗi lần deploy mới (vì Worker tái khởi động làm mất cờ trong RAM), ghi đè trạng thái `ACTIVE` của gian hàng người dùng.

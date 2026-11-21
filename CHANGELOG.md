@@ -5,6 +5,29 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-21]
+
+### 424. Chuẩn Hóa Xác Thực Quản Trị Độc Quyền Single-Domain, Sửa Lỗi Đổi Mật Khẩu Admin, Băm PBKDF2 100.000 Vòng & Xóa Bỏ Hoàn Toàn Auth Bypass (21/11/2026)
+- **Bối cảnh & Triệu chứng**:
+  1. *Triệu chứng lỗi đổi mật khẩu*: Quản trị viên đổi mật khẩu tại `#/profile` báo "Đổi mật khẩu thất bại — Phiên đăng nhập không tồn tại hoặc đã hết hạn", kể cả sau khi đăng xuất và đăng nhập lại. Truy vấn D1 cho thấy lần đăng nhập cuối của `usr_admin` vẫn ở thời điểm cũ, chứng tỏ yêu cầu đăng nhập chưa từng chạm tới D1 của trang quản trị.
+  2. *Nguyên nhân rò rỉ phiên khác domain (`src/services/authService.ts`)*: Hàm `login()` lặp qua danh sách 4 endpoint khác domain (`codegame.shop`, `web-code-game.pages.dev`, `admin-code-game-shop.pages.dev`). Khi endpoint quản trị trả lỗi do chưa cấu hình `JWT_SECRET`, client âm thầm chuyển sang đăng nhập ở domain khác và lưu token của domain đó vào `localStorage`.
+  3. *Nguyên nhân bypass xác thực giả lập (`src/admin/AdminApp.tsx`)*: `verifyAdminSession` chứa logic bypass token string (`wcg_tok_usr_admin_`, `usr_admin`, `admin290200`) và cờ `cachedAdmin && hasAdminFlag`, cho phép trang quản trị mở giao diện từ `localStorage` dù máy chủ D1 không có phiên đăng nhập thật.
+  4. *Nguyên nhân gửi mật khẩu phân tán (`src/admin/modules/ProfileModule.tsx`)*: `handleChangePassword` gửi mật khẩu qua 3 domain. Nếu gặp lỗi mạng, biến lỗi rỗng khiến client hiểu nhầm là thành công và tự ý ghi băm mật khẩu vào `localStorage`.
+  5. *Nguyên nhân bảo mật băm mật khẩu (`functions/api/auth/me.ts`)*: Mật khẩu mới băm bằng SHA-256 1 vòng thay vì PBKDF2 100.000 vòng; salt sinh bằng `Math.random()`; xác thực mật khẩu cũ thiếu pepper; và không xóa `session_token` trong D1 sau khi đổi mật khẩu để hủy các phiên cũ.
+  6. *Thiếu thông báo cấu hình (`functions/services/auth_service.ts`, `login.ts`, `register.ts`, `me.ts`)*: `getSigningSecret` ném `Error` chung chung khiến API trả 500 thay vì 503 với mã cấu hình rõ ràng.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Single-Domain Authentication (`src/services/authService.ts`)*: Loại bỏ 100% các endpoint fallback khác domain trong `login()` và `register()`. Bắt mã lỗi nghiêm ngặt (400, 401, 403, 429, 503, >=500) và dừng ngay lập tức. Xóa bỏ hoàn toàn đường fallback tạo token offline cho admin.
+  2. *Triệt tiêu Auth Bypass (`src/admin/AdminApp.tsx`, `AdminLoginGuard.tsx`)*: Xóa sạch toàn bộ logic kiểm tra token prefix và cached admin bypass. Chỉ xác thực phiên qua `GET /api/auth/me`. Khi phiên không hợp lệ hoặc máy chủ từ chối: gọi `clearAdminFlags()`, đặt `isAuthenticated(false)` và hiển thị cảnh báo hết hạn phiên trên form đăng nhập.
+  3. *Tối ưu đổi mật khẩu Profile (`src/admin/modules/ProfileModule.tsx`)*: Chỉ gọi `/api/auth/me` cùng domain; bổ sung pre-flight check phiên trước khi đổi mật khẩu; xóa bỏ việc ghi băm mật khẩu offline vào `localStorage`; tự động thu hồi token và chuyển về trang đăng nhập sau khi đổi thành công.
+  4. *Băm PBKDF2 chuẩn hóa & Thu hồi phiên cũ (`functions/api/auth/me.ts`)*: Băm mật khẩu mới bằng `hashPasswordPBKDF2(newPassword, targetSalt, pepper)` (100.000 vòng); sinh salt an toàn bằng `crypto.getRandomValues(new Uint8Array(16))`; kiểm tra mật khẩu cũ tương thích cả PBKDF2, Bcrypt và SHA-256 cũ; đặt `session_token = NULL` trong CSDL D1 khi đổi mật khẩu thành công.
+  5. *Cấu hình Fail-Closed & Thông báo 503 (`functions/services/auth_service.ts`, `login.ts`, `register.ts`, `me.ts`)*: Định nghĩa `ConfigurationError`. Trả về HTTP 503 kèm mã `SERVER_MISCONFIGURED` khi máy chủ chưa cấu hình `JWT_SECRET` (tối thiểu 16 ký tự).
+- **Kiểm thử & Nghiệm thu**:
+  - `check:i18n`: 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - Quét an toàn Rule 10: 0 secret, 0 token, 0 key rò rỉ trong git history và code.
+  - Live HTTP Probe: Cả 2 trang `admin-universal-mall.pages.dev` và `universal-mall-shop.pages.dev` trả về `X-Build-Id: 85c50d8`, phản hồi đúng HTTP 503 `SERVER_MISCONFIGURED` khi chưa có `JWT_SECRET`, và chặn 100% token giả mạo.
+
+---
+
 ## [2026-11-20]
 
 ### 423. Sửa Lỗi Sập Tab Sản Phẩm, Ngăn Gian Hàng Test Tự Về TRIAL, Bổ Sung Khóa Giỏ Hàng & Đồng Bộ Số Đếm Trang Chủ (20/11/2026)
