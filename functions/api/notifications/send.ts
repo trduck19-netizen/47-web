@@ -1,4 +1,4 @@
-import { verifyToken } from '../../services/auth_service';
+import { authenticateAdmin } from '../../services/auth_service';
 import {
   DEFAULT_EMAIL_CONFIG,
   EmailProviderConfig,
@@ -20,29 +20,30 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Key, X-Requested-With',
 };
 
-async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
+async function isAuthorizedAdmin(request: Request, env: Env): Promise<{ authorized: boolean; adminId?: string }> {
   const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
   const authHeader = request.headers.get('Authorization') || '';
   const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
 
   if (configuredSecret && configuredSecret.length >= 16) {
-    if (syncKeyHeader && syncKeyHeader === configuredSecret) return true;
-    if (authHeader.startsWith('Bearer ') && authHeader.replace('Bearer ', '').trim() === configuredSecret) return true;
-  }
-
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (token) {
-    const secrets = [env.JWT_SECRET, env.ADMIN_SYNC_SECRET];
-    const { valid, userId } = await verifyToken(token, secrets);
-    if (valid && userId && env.DB) {
-      const member = await env.DB.prepare('SELECT role FROM members WHERE id = ?').bind(userId).first<any>().catch(() => null);
-      if (member && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN')) {
-        return true;
-      }
+    if (syncKeyHeader && syncKeyHeader === configuredSecret) return { authorized: true, adminId: 'admin_sync' };
+    if (authHeader.startsWith('Bearer ') && authHeader.replace('Bearer ', '').trim() === configuredSecret) {
+      return { authorized: true, adminId: 'admin_sync' };
     }
   }
 
-  return false;
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (token && env.DB) {
+    const adminAuth = await authenticateAdmin(env.DB, token, {
+      JWT_SECRET: env.JWT_SECRET,
+      ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+    });
+    if (adminAuth.authenticated) {
+      return { authorized: true, adminId: adminAuth.adminId || 'admin' };
+    }
+  }
+
+  return { authorized: false };
 }
 
 export const onRequestOptions = async () => new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -54,7 +55,7 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
   const { request, env } = context;
 
   const auth = await isAuthorizedAdmin(request, env);
-  if (!auth) {
+  if (!auth.authorized) {
     return new Response(
       JSON.stringify({ success: false, message: 'Yêu cầu quyền quản trị viên.' }),
       { status: 401, headers: CORS_HEADERS }
@@ -84,6 +85,19 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
     }
 
     await ensureNotificationTablesD1(env.DB);
+
+    // Rate-limit broadcast: 1 broadcast per 60 seconds
+    if (type === 'BROADCAST') {
+      const recentBroadcast = await env.DB.prepare(
+        "SELECT created_at FROM email_notification_logs WHERE type = 'BROADCAST' AND created_at >= datetime('now', '-60 seconds') LIMIT 1"
+      ).first<any>().catch(() => null);
+      if (recentBroadcast) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Đã có chiến dịch gửi email hàng loạt vừa được gửi. Vui lòng chờ 60 giây trước khi gửi tiếp.' }),
+          { status: 429, headers: CORS_HEADERS }
+        );
+      }
+    }
 
     // 1. Lấy cấu hình email provider từ D1
     const row: any = await env.DB.prepare(
@@ -199,7 +213,7 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
     await env.DB.prepare(`
       INSERT INTO email_notification_logs 
       (id, type, title, subject, recipient_count, success_count, status, sent_by, error_message, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'ADMIN', ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       logId,
       type,
@@ -208,6 +222,7 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
       recipients.length,
       successCount,
       successCount > 0 ? 'SENT' : 'FAILED',
+      auth.adminId || 'ADMIN',
       lastError || null,
       new Date().toISOString()
     ).run().catch(() => {});

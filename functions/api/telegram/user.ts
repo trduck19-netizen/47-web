@@ -8,7 +8,7 @@
  */
 
 import { ensureTelegramSchema, getEffectiveTelegramConfig } from '../../services/telegram_service';
-import { verifyToken, extractUserIdFromToken } from '../../services/auth_service';
+import { verifyToken, authenticateCaller } from '../../services/auth_service';
 
 interface Env {
   DB?: D1Database;
@@ -36,29 +36,8 @@ async function authenticateMember(request: Request, env: Env): Promise<any | nul
   if (!token) return null;
 
   try {
-    let member: any = await env.DB.prepare(
-      'SELECT * FROM members WHERE session_token = ? LIMIT 1'
-    ).bind(token).first();
-
-    if (!member) {
-      const { valid, userId } = await verifyToken(token, [env.JWT_SECRET, env.ADMIN_SYNC_SECRET]);
-      if (valid && userId) {
-        member = await env.DB.prepare(
-          'SELECT * FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
-        ).bind(userId, userId, userId).first();
-      }
-    }
-
-    if (!member) {
-      const extractedUserId = extractUserIdFromToken(token);
-      if (extractedUserId) {
-        member = await env.DB.prepare(
-          'SELECT * FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
-        ).bind(extractedUserId, extractedUserId, extractedUserId).first();
-      }
-    }
-
-    return member || null;
+    const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+    return auth.authenticated ? auth.member : null;
   } catch {
     return null;
   }

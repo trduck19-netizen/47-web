@@ -1,4 +1,4 @@
-import { verifyToken } from './auth_service';
+import { verifyToken, authenticateCaller } from './auth_service';
 
 export interface Env {
   DB: D1Database;
@@ -341,31 +341,17 @@ export async function verifyAdminAuth(
   // 3. Admin Member Token Session
   if (env.DB) {
     for (const token of allTokens) {
-      let member: any = null;
-
-      if (token.startsWith('wcg_edge_tok_')) {
-        const candidateSecrets = [env.JWT_SECRET];
-        const { valid, userId } = await verifyToken(token, candidateSecrets);
-        if (valid && userId) {
-          member = await env.DB.prepare(
-            'SELECT id, username, display_name, role, status FROM members WHERE id = ? LIMIT 1'
-          ).bind(userId).first<any>();
+      const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+      if (auth.authenticated && auth.member) {
+        const member = auth.member;
+        if ((member.role === 'ADMIN' || member.role === 'SUPER_ADMIN') && member.status !== 'BANNED') {
+          return {
+            authorized: true,
+            adminId: member.id,
+            adminName: member.display_name || member.username || 'Admin',
+            scope: 'FULL',
+          };
         }
-      }
-
-      if (!member) {
-        member = await env.DB.prepare(
-          'SELECT id, username, display_name, role, status FROM members WHERE session_token = ? LIMIT 1'
-        ).bind(token).first<any>();
-      }
-
-      if (member && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN') && member.status !== 'BANNED') {
-        return {
-          authorized: true,
-          adminId: member.id,
-          adminName: member.display_name || member.username || 'Admin',
-          scope: 'FULL',
-        };
       }
     }
   }
@@ -391,33 +377,16 @@ export async function verifyMemberAuth(
     return { authorized: false, error: 'Cơ sở dữ liệu chưa sẵn sàng.' };
   }
 
-  let member: any = null;
-
-  // 1. Kiểm tra session_token chính xác trong DB
-  member = await env.DB.prepare(
-    'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE session_token = ? LIMIT 1'
-  ).bind(token).first<any>();
-
-  // 2. Kiểm tra chữ ký mật mã cryptographic HMAC-SHA256
-  if (!member) {
-    const candidateSecrets = [env.JWT_SECRET];
-    const { valid, userId } = await verifyToken(token, candidateSecrets);
-    if (valid && userId) {
-      member = await env.DB.prepare(
-        'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE id = ? OR username = ? LIMIT 1'
-      ).bind(userId, userId).first<any>();
-    }
-  }
-
-  if (!member) {
+  const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+  if (!auth.authenticated || !auth.member) {
     return { authorized: false, error: 'Phiên đăng nhập đã hết hạn hoặc không tồn tại.' };
   }
 
-  if (member.status === 'BANNED') {
+  if (auth.member.status === 'BANNED') {
     return { authorized: false, error: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên.' };
   }
 
-  return { authorized: true, member };
+  return { authorized: true, member: auth.member };
 }
 
 /**

@@ -1,5 +1,5 @@
 import { claimGiveawayD1, getSettingD1, setSettingD1 } from '../../services/d1_service';
-import { verifyToken, extractUserIdFromToken } from '../../services/auth_service';
+import { verifyToken, authenticateCaller } from '../../services/auth_service';
 import { getRealEventsHub, saveRealEventsHub } from '../../services/realEventsHub';
 
 interface Env {
@@ -56,29 +56,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const { valid: isSigValid, userId: verifiedUserId } = await verifyToken(token, [
-      env.JWT_SECRET,
-      env.ADMIN_SYNC_SECRET,
-    ]);
-
-    let member: any = await env.DB.prepare(
-      'SELECT * FROM members WHERE session_token = ? LIMIT 1'
-    ).bind(token).first<any>();
-
-    if (!member && isSigValid && verifiedUserId) {
-      member = await env.DB.prepare(
-        'SELECT * FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
-      ).bind(verifiedUserId, verifiedUserId, verifiedUserId).first<any>();
-    }
-
-    if (!member && token) {
-      const extractedUserId = extractUserIdFromToken(token);
-      if (extractedUserId) {
-        member = await env.DB.prepare(
-          'SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1'
-        ).bind(extractedUserId, extractedUserId).first<any>();
-      }
-    }
+    const authCaller = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+    const member = authCaller.authenticated ? authCaller.member : null;
 
     if (!member) {
       return new Response(

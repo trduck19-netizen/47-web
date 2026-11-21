@@ -4,7 +4,7 @@
  */
 
 import { listDeletedRecords, restoreSoftDeletedRecord, recordSoftDelete, getActiveTombstonesMap, SoftDeleteRecordType } from '../../services/soft_delete_service';
-import { verifyToken } from '../../services/auth_service';
+import { verifyToken, authenticateAdmin } from '../../services/auth_service';
 import { computeSha256, hasScope } from '../../services/mission_service';
 
 interface Env {
@@ -57,14 +57,12 @@ async function isAuthorizedAdmin(request: Request, env: Env): Promise<{ authoriz
   // 3. Admin Session Token
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (token && env.DB) {
-    const secrets = [env.JWT_SECRET];
-    const { valid, userId } = await verifyToken(token, secrets);
-    let member = await env.DB.prepare('SELECT username, role, status FROM members WHERE session_token = ?').bind(token).first<any>();
-    if (!member && valid && userId) {
-      member = await env.DB.prepare('SELECT username, role, status FROM members WHERE id = ?').bind(userId).first<any>();
-    }
-    if (member && member.status !== 'BANNED' && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN')) {
-      return { authorized: true, actor: member.username || 'admin' };
+    const adminAuth = await authenticateAdmin(env.DB, token, {
+      JWT_SECRET: env.JWT_SECRET,
+      ADMIN_SYNC_SECRET: env.ADMIN_SYNC_SECRET,
+    });
+    if (adminAuth.authenticated) {
+      return { authorized: true, actor: adminAuth.adminId || 'admin' };
     }
   }
 
@@ -155,6 +153,29 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       return new Response(JSON.stringify({ success: false, error: 'Thiếu recordType hoặc recordId' }), { status: 400, headers: CORS_HEADERS });
     }
 
+    // Capture originalData server-side from live record to prevent caller injection
+    let capturedOriginalData = originalData || {};
+    if (env.DB) {
+      try {
+        if (recordType === 'game') {
+          const gameRow = await env.DB.prepare('SELECT * FROM games WHERE id = ? OR slug = ? LIMIT 1').bind(String(recordId), recordSlug ? String(recordSlug) : String(recordId)).first<any>().catch(() => null);
+          if (gameRow) capturedOriginalData = gameRow;
+        } else if (recordType === 'code') {
+          const codeRow = await env.DB.prepare('SELECT * FROM codes WHERE id = ? LIMIT 1').bind(String(recordId)).first<any>().catch(() => null);
+          if (codeRow) capturedOriginalData = codeRow;
+        } else if (recordType === 'giveaway') {
+          const giveawayRow = await env.DB.prepare('SELECT * FROM giveaways WHERE id = ? LIMIT 1').bind(String(recordId)).first<any>().catch(() => null);
+          if (giveawayRow) capturedOriginalData = giveawayRow;
+        } else if (recordType === 'mission') {
+          const missionRow = await env.DB.prepare('SELECT * FROM missions WHERE id = ? LIMIT 1').bind(String(recordId)).first<any>().catch(() => null);
+          if (missionRow) capturedOriginalData = missionRow;
+        } else if (recordType === 'news') {
+          const newsRow = await env.DB.prepare('SELECT * FROM news WHERE id = ? OR slug = ? LIMIT 1').bind(String(recordId), recordSlug ? String(recordSlug) : String(recordId)).first<any>().catch(() => null);
+          if (newsRow) capturedOriginalData = newsRow;
+        }
+      } catch {}
+    }
+
     const delRes = await recordSoftDelete(env.DB, {
       recordType: recordType as SoftDeleteRecordType,
       recordId: String(recordId),
@@ -162,7 +183,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       title: title ? String(title) : null,
       actor: auth.actor,
       deleteReason,
-      originalData: originalData || {},
+      originalData: capturedOriginalData,
       context,
       request,
       env,
