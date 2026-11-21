@@ -41,6 +41,7 @@ import { computeSha256, hasScope } from '../services/mission_service';
 import canonicalBackupState from '../data/canonical_backup_state.json';
 
 interface Env {
+  SYNC_SECRET?: string;
   ADMIN_SYNC_SECRET?: string;
   JWT_SECRET?: string;
   DB: D1Database;
@@ -65,7 +66,7 @@ interface AuthResult {
  * Differentiates 401 Unauthorized (unauthenticated / bad token) vs 403 Forbidden (authenticated non-admin).
  */
 async function isAuthorized(request: Request, env: Env): Promise<AuthResult> {
-  const configuredSecret = (env.ADMIN_SYNC_SECRET || '').trim();
+  const configuredSecret = (env.SYNC_SECRET || env.ADMIN_SYNC_SECRET || '').trim();
   const authHeader = request.headers.get('Authorization') || '';
   const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
 

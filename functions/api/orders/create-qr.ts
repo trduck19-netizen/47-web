@@ -7,7 +7,7 @@ import {
   isMemberEmailVerified,
   getEscalatingPriceD1,
 } from '../../services/d1_service';
-import { verifyToken, extractUserIdFromToken } from '../../services/auth_service';
+import { verifyToken } from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;

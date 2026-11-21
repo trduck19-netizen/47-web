@@ -166,7 +166,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // 2. Tạo token mới (Generate)
-    const secret = (env.ADMIN_SYNC_SECRET || env.JWT_SECRET || getSigningSecret(env)).trim();
+    const secret = (env.JWT_SECRET || getSigningSecret(env)).trim();
     const durationHours = Math.max(0.5, Math.min(72, Number(body.expiresInHours) || 2));
     const expiresInMs = Math.round(durationHours * 3600 * 1000);
 

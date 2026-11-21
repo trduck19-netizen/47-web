@@ -3,6 +3,8 @@ import { verifyToken, authenticateCaller } from './auth_service';
 export interface Env {
   DB: D1Database;
   JWT_SECRET?: string;
+  ADMIN_API_KEY?: string;
+  SYNC_SECRET?: string;
   ADMIN_SYNC_SECRET?: string;
   PINE_API_KEY?: string;
   MUSE_API_KEY?: string;
@@ -185,7 +187,7 @@ export async function verifyAiKeyAuth(
 
   // Check Master Secrets
   const candidateMasterSecrets = [
-    env?.ADMIN_SYNC_SECRET,
+    env?.ADMIN_API_KEY,
     env?.PINE_API_KEY,
     env?.MUSE_API_KEY,
     ...MASTER_SYSTEM_KEYS,
@@ -283,7 +285,7 @@ export async function verifyAdminAuth(
 
   // 1. Direct Master Secret Match (Cấp toàn quyền tối cao)
   const candidateMasterSecrets = [
-    (env.ADMIN_SYNC_SECRET || '').trim(),
+    (env.ADMIN_API_KEY || '').trim(),
     (env.PINE_API_KEY || '').trim(),
     (env.MUSE_API_KEY || '').trim(),
     ...MASTER_SYSTEM_KEYS,

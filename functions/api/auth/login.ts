@@ -1,5 +1,13 @@
 import { ensureSchemaUpgrades } from '../../services/d1_service';
-import { computeHash, createSignedToken, getSigningSecret, isBcryptHash, verifyBcryptPassword } from '../../services/auth_service';
+import {
+  computeHash,
+  hashPasswordPBKDF2,
+  verifyPasswordPBKDF2,
+  createSignedToken,
+  getSigningSecret,
+  isBcryptHash,
+  verifyBcryptPassword,
+} from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;
@@ -205,41 +213,54 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 4. Verify Password securely (Hybrid Auth: PBKDF2/SHA-256 + Migrated Bcrypt)
-    const pepper = env.PASSWORD_PEPPER || 'wcg_edge_sec_salt_2026';
-    const salt = member.salt || 'wcg_admin_salt_seed_2026';
+    // 4. Verify Password securely (Hybrid Auth: PBKDF2/WebCrypto + Bcrypt + Legacy SHA-256)
+    const pepper = (env.PASSWORD_PEPPER || '').trim();
+    if (!pepper || pepper.length < 8) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Hệ thống bảo mật chưa sẵn sàng (Thiếu cấu hình pepper bảo mật). Vui lòng liên hệ quản trị viên.',
+        }),
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    const salt = member.salt || '';
     const storedHash = member.password_hash || member.passwordHash;
     let isPasswordValid = false;
-    let isBcryptMatch = false;
+    let isLegacySha256Match = false;
 
     if (storedHash) {
-      if (isBcryptHash(storedHash)) {
+      if (storedHash.startsWith('pbkdf2_sha256$')) {
+        isPasswordValid = await verifyPasswordPBKDF2(cleanPassword, storedHash, pepper);
+      } else if (isBcryptHash(storedHash)) {
         // Tài khoản đồng bộ từ codegame.store dùng mã băm Bcrypt ($2a$, $2b$, $2y$)
         if (await verifyBcryptPassword(cleanPassword, storedHash)) {
           isPasswordValid = true;
-          isBcryptMatch = true;
+          // Note: Bcrypt is a secure slow KDF, do NOT downgrade to fast SHA-256!
         }
       } else if (salt) {
-        // Tài khoản chuẩn của codegame.shop dùng PBKDF2/SHA-256 kèm salt + pepper
+        // Legacy SHA-256 kèm salt + pepper
         const computedWithPepper = await computeHash(cleanPassword, salt, pepper);
         if (computedWithPepper === storedHash) {
           isPasswordValid = true;
+          isLegacySha256Match = true;
         }
       }
     }
 
-    // Tự động nâng cấp mã băm Bcrypt sang chuẩn mật mã mới của shop (Zero-friction auto upgrade)
-    if (isBcryptMatch && isPasswordValid) {
+    // Tự động nâng cấp mã băm cũ (Fast SHA-256) sang chuẩn Slow KDF mới (PBKDF2)
+    if (isLegacySha256Match && isPasswordValid) {
       try {
-        const upgradedSalt = 'wcg_salt_' + Math.random().toString(36).slice(2, 10);
-        const upgradedHash = await computeHash(cleanPassword, upgradedSalt, pepper);
+        const upgradedSalt = 'wcg_salt_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : Math.random().toString(36).slice(2, 12));
+        const upgradedHash = await hashPasswordPBKDF2(cleanPassword, upgradedSalt, pepper);
         await env.DB.prepare("UPDATE members SET salt = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?")
           .bind(upgradedSalt, upgradedHash, member.id)
           .run();
         member.salt = upgradedSalt;
         member.password_hash = upgradedHash;
       } catch (upgradeErr) {
-        console.warn('Lưu ý: Không thể tự động nâng cấp hash mật khẩu cho thành viên:', member.id, upgradeErr);
+        console.warn('Lưu ý: Không thể tự động nâng cấp hash mật khẩu sang PBKDF2 cho thành viên:', member.id, upgradeErr);
       }
     }
 

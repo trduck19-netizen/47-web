@@ -6,7 +6,7 @@ import {
   isMemberEmailVerified,
   getEscalatingPriceD1,
 } from '../../services/d1_service';
-import { verifyToken, extractUserIdFromToken } from '../../services/auth_service';
+import { verifyToken } from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;
@@ -51,7 +51,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     let member: any = null;
     if (token) {
-      const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, env.ADMIN_SYNC_SECRET]);
+      const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET]);
       member = await env.DB.prepare(
         'SELECT * FROM members WHERE session_token = ? LIMIT 1'
       ).bind(token).first<any>();
@@ -60,15 +60,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         member = await env.DB.prepare(
           'SELECT * FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
         ).bind(tokenUserId, tokenUserId, tokenUserId).first<any>();
-      }
-
-      if (!member && token) {
-        const extractedUserId = extractUserIdFromToken(token);
-        if (extractedUserId) {
-          member = await env.DB.prepare(
-            'SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1'
-          ).bind(extractedUserId, extractedUserId).first<any>();
-        }
       }
     }
 

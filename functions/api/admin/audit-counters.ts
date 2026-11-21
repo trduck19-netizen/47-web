@@ -28,7 +28,7 @@ async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
   // 1.5. Khóa Kiểm Toán Tạm Thời (Tự hủy sau 2 giờ - CHỈ CHO PHÉP GET)
   const incomingAuthToken = (syncKeyHeader || authHeader.replace(/^Bearer\s+/i, '')).trim();
   if (incomingAuthToken.startsWith('wcg_audit_temp_')) {
-    const candidateSecrets = [env.ADMIN_SYNC_SECRET, env.JWT_SECRET];
+    const candidateSecrets = [env.JWT_SECRET].filter(Boolean) as string[];
     const auditCheck = await verifyTemporaryAuditToken(incomingAuthToken, candidateSecrets, env.DB);
     if (auditCheck.valid) {
       // Chỉ cho phép GET (DRY_RUN audit)
@@ -42,7 +42,7 @@ async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
   // 2. Bearer Admin Token
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (token) {
-    const secrets = [env.JWT_SECRET, env.ADMIN_SYNC_SECRET];
+    const secrets = [env.JWT_SECRET].filter(Boolean) as string[];
     const { valid, userId } = await verifyToken(token, secrets);
     if (valid && userId && env.DB) {
       const member = await env.DB.prepare('SELECT role FROM members WHERE id = ?').bind(userId).first<any>();

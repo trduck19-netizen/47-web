@@ -493,10 +493,6 @@ VALUES
   ('sp_4', 'Gói UC Battle Royale Pro', 'pubg-mobile', 'PUBG Mobile', 200000, 30, 140000, 0, 1),
   ('sp_5', 'Nạp Robux Premium 1000R$', 'roblox', 'Roblox', 300000, 33, 200000, 0, 1),
   ('sp_6', 'Gói Quân Huy Vĩnh Viễn Mùa 2026', 'lien-quan-mobile', 'Liên Quân Mobile', 150000, 20, 120000, 0, 1);
-
-INSERT OR IGNORE INTO members (id, username, display_name, full_name, email, role, balance, status, salt, password_hash)
-VALUES
-  ('usr_admin', 'admin290200', 'admin290200', 'admin290200', 'admin@codegame.store', 'SUPER_ADMIN', 0, 'ACTIVE', 'wcg_admin_salt_seed_2026', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac');
 `;
 
 function splitSqlStatements(sql: string): string[] {
@@ -1856,15 +1852,6 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
           await db.prepare("UPDATE orders SET buyer_email = customer_email WHERE (buyer_email IS NULL OR buyer_email = '') AND customer_email IS NOT NULL;").run();
         } catch {}
 
-        // Ensure super admin exists in members
-        const adminInDb = await db.prepare("SELECT id FROM members WHERE id = 'usr_admin' OR email = 'admin@codegame.store' LIMIT 1").first().catch(() => null);
-        if (!adminInDb) {
-          await db.prepare(`
-            INSERT OR IGNORE INTO members (id, email, phone, full_name, username, display_name, password_hash, role, balance, email_verified, status)
-            VALUES ('usr_admin', 'admin@codegame.store', '0988888888', 'Super Admin', 'admin290200', 'Super Admin', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac', 'SUPER_ADMIN', 0, 1, 'ACTIVE');
-          `).run().catch(() => {});
-        }
-
         await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0025_align_members_and_orders_v1');").run().catch(() => {});
       }
     } catch (e) {
@@ -2447,12 +2434,6 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
         status TEXT NOT NULL DEFAULT 'COMPLETED',
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
-    `).run().catch(() => {});
-  } catch {}
-  try {
-    await db.prepare(`
-      INSERT OR IGNORE INTO members (id, username, display_name, full_name, email, role, balance, status, session_token)
-      VALUES ('usr_admin', 'admin290200', 'admin290200', 'admin290200', 'admin@codegame.store', 'SUPER_ADMIN', 0, 'ACTIVE', 'token_test_session_123');
     `).run().catch(() => {});
   } catch {}
   try {

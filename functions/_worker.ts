@@ -1,7 +1,7 @@
 import * as syncApi from './api/sync';
 import { confirmReceivedAndRelease, fileOrderDispute, autoReleaseDueEscrow, resolveAdminDispute } from './services/escrow_service';
 import { getProductReviews, createProductReview, approveReview, rejectReview, deleteReview, listAdminReviews } from './services/review_service';
-import { extractUserIdFromToken, authenticateCaller, authenticateAdmin } from './services/auth_service';
+import { authenticateCaller, authenticateAdmin } from './services/auth_service';
 import * as syncLiteApi from './api/sync-lite';
 import * as statsApi from './api/stats';
 import * as voteApi from './api/vote';

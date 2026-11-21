@@ -1,5 +1,5 @@
 import { ensureSchemaUpgrades, getSettingD1, isMemberEmailVerified } from '../../services/d1_service';
-import { verifyToken, computeHash, extractUserIdFromToken, createSignedToken, getSigningSecret } from '../../services/auth_service';
+import { verifyToken, computeHash, createSignedToken, getSigningSecret } from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;

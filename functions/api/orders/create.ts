@@ -7,7 +7,7 @@ import {
   isMemberEmailVerified,
   getEscalatingPriceD1,
 } from '../../services/d1_service';
-import { verifyToken, extractUserIdFromToken } from '../../services/auth_service';
+import { verifyToken } from '../../services/auth_service';
 import { getRealEventsHub, saveRealEventsHub } from '../../services/realEventsHub';
 import { sendOutOfStockAlert, sendNewOrderAlert } from '../../services/telegram_service';
 

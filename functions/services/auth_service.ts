@@ -28,6 +28,75 @@ export async function verifyBcryptPassword(password: string, hash: string): Prom
   }
 }
 
+export async function hashPasswordPBKDF2(
+  password: string,
+  salt: string,
+  pepper: string = ''
+): Promise<string> {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(password + (pepper || '')),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+  const saltBytes = enc.encode(salt);
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: saltBytes,
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    256
+  );
+  const hex = Array.from(new Uint8Array(derivedBits))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `pbkdf2_sha256$100000$${salt}$${hex}`;
+}
+
+export async function verifyPasswordPBKDF2(
+  password: string,
+  storedHash: string,
+  pepper: string = ''
+): Promise<boolean> {
+  if (!password || !storedHash || typeof storedHash !== 'string') return false;
+  const parts = storedHash.split('$');
+  if (parts.length === 4 && parts[0] === 'pbkdf2_sha256') {
+    const iterations = parseInt(parts[1], 10) || 100000;
+    const salt = parts[2];
+    const expectedHex = parts[3];
+
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      enc.encode(password + (pepper || '')),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    );
+    const saltBytes = enc.encode(salt);
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: saltBytes,
+        iterations,
+        hash: 'SHA-256',
+      },
+      keyMaterial,
+      256
+    );
+    const computedHex = Array.from(new Uint8Array(derivedBits))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return computedHex === expectedHex;
+  }
+  return false;
+}
+
 export async function computeHash(
   password: string,
   salt: string,
@@ -53,8 +122,8 @@ export function getSigningSecret(env: any): string {
   if (secret && secret.length >= 16) {
     return secret;
   }
-  // Worker-level deterministic secret fallback if not configured in env
-  return 'wcg_jwt_sec_worker_' + (env?.ENVIRONMENT || 'prod') + '_edge_2026';
+  // Fail closed if JWT_SECRET is not configured or too short (minimum 16 characters required)
+  throw new Error('JWT_SECRET is not configured or too short (minimum 16 characters required). Failing closed for security.');
 }
 
 export async function createSignedToken(userId: string, secret: string): Promise<string> {
@@ -69,21 +138,6 @@ export async function createSignedToken(userId: string, secret: string): Promise
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const sig = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
   return `wcg_edge_tok_${userId}_${timestamp}_${random}_${sig}`;
-}
-
-export function extractUserIdFromToken(token: string): string | null {
-  if (!token || typeof token !== 'string') return null;
-  const clean = token.trim();
-  if (clean.startsWith('wcg_edge_tok_')) {
-    const parts = clean.replace('wcg_edge_tok_', '').split('_');
-    if (parts.length >= 4) {
-      parts.pop(); // sig
-      parts.pop(); // random
-      parts.pop(); // timestamp
-      return parts.join('_');
-    }
-  }
-  return null;
 }
 
 export async function verifyToken(

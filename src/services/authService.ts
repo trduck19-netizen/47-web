@@ -402,23 +402,8 @@ class AuthService {
       const membersRaw = localStorage.getItem('wcg_admin_members_v4');
       let members: any[] = membersRaw ? JSON.parse(membersRaw) : [];
 
-      const adminSalt = 'wcg_admin_salt_seed_2026';
-      const adminHash = '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac';
-      const defaultAdmin = {
-        id: 'usr_admin',
-        displayName: 'admin290200',
-        email: 'admin@codegame.store',
-        role: 'SUPER_ADMIN',
-        balance: 9999000,
-        status: 'ACTIVE',
-        salt: adminSalt,
-        passwordHash: adminHash,
-        avatar: generateAvatarUrl('admin290200'),
-      };
-
       if (members.length === 0) {
         members = [
-          defaultAdmin,
           {
             id: 'usr_vip',
             displayName: 'vip_gamer',
