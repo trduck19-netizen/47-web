@@ -557,8 +557,7 @@ class AuthService {
           action: 'reset_password',
           identifier: cleanIdentifier,
           otpCode,
-          newPasswordHash,
-          salt,
+          newPassword: newPass,
         }),
       });
       if (res.ok) {

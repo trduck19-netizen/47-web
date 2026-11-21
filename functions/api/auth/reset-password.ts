@@ -1,5 +1,5 @@
 import { ensureSchemaUpgrades, getSettingD1 } from '../../services/d1_service';
-import { hashOtp } from '../../services/auth_service';
+import { hashOtp, hashPasswordPBKDF2, computeHash } from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;
@@ -7,6 +7,7 @@ interface Env {
   SENDGRID_API_KEY?: string;
   BREVO_API_KEY?: string;
   EMAIL_FROM?: string;
+  PASSWORD_PEPPER?: string;
   ADMIN_SYNC_SECRET?: string;
 }
 
@@ -191,7 +192,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     await ensureSchemaUpgrades(env.DB);
 
     const body: any = await request.json().catch(() => ({}));
-    const { action, identifier, otpCode, newPasswordHash, salt } = body;
+    const { action, identifier, otpCode, newPassword, newPasswordHash, salt } = body;
 
     const cleanIdentifier = String(identifier || '').trim().toLowerCase();
     if (!cleanIdentifier) {
@@ -220,7 +221,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Step 1: Request OTP Code
     if (action === 'request_otp') {
-      // Rate limiting: Max 3 OTP requests per 15 mins per IP
+      // 1. Rate limiting by IP: Max 3 OTP requests per 15 mins per IP
       const otpRateLimit = await env.DB.prepare(
         'SELECT attempts, locked_until FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
       ).bind(clientIp, 'REQUEST_OTP').first<any>().catch(() => null);
@@ -230,7 +231,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         return new Response(
           JSON.stringify({
             success: false,
-            message: `Bạn đã yêu cầu gửi mã OTP quá nhiều lần. Vui lòng thử lại sau ${remainingMin} phút.`,
+            message: `Bạn đã yêu cầu gửi mã OTP quá nhiều lần từ IP này. Vui lòng thử lại sau ${remainingMin} phút.`,
+            remainingMinutes: remainingMin,
+          }),
+          { status: 429, headers: CORS_HEADERS }
+        );
+      }
+
+      // 2. Rate limiting by Account/Email: Max 5 OTP requests per hour per account/email
+      const accountKey = `acct:${member.id}`;
+      const accountOtpRateLimit = await env.DB.prepare(
+        'SELECT attempts, locked_until FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
+      ).bind(accountKey, 'REQUEST_OTP_ACCOUNT').first<any>().catch(() => null);
+
+      if (accountOtpRateLimit && Number(accountOtpRateLimit.locked_until) > nowMs) {
+        const remainingMin = Math.max(1, Math.ceil((Number(accountOtpRateLimit.locked_until) - nowMs) / 60000));
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Tài khoản này đã yêu cầu gửi mã OTP quá 5 lần trong 1 giờ. Vui lòng thử lại sau ${remainingMin} phút.`,
             remainingMinutes: remainingMin,
           }),
           { status: 429, headers: CORS_HEADERS }
@@ -248,6 +267,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           locked_until = excluded.locked_until,
           last_attempt = excluded.last_attempt
       `).bind(clientIp, currentOtpAttempts, lockedUntil, nowMs).run().catch(() => {});
+
+      const currentAccountAttempts = (Number(accountOtpRateLimit?.attempts) || 0) + 1;
+      const isAccountLocked = currentAccountAttempts >= 5;
+      const accountLockedUntil = isAccountLocked ? nowMs + 60 * 60 * 1000 : 0; // 1 hour lockout
+      await env.DB.prepare(`
+        INSERT INTO ip_rate_limits (ip_address, action_type, attempts, locked_until, last_attempt)
+        VALUES (?, 'REQUEST_OTP_ACCOUNT', ?, ?, ?)
+        ON CONFLICT(ip_address, action_type) DO UPDATE SET
+          attempts = excluded.attempts,
+          locked_until = excluded.locked_until,
+          last_attempt = excluded.last_attempt
+      `).bind(accountKey, currentAccountAttempts, accountLockedUntil, nowMs).run().catch(() => {});
 
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 10 * 60 * 1000; // 10 mins
@@ -365,15 +396,34 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         );
       }
 
-      if (!newPasswordHash || newPasswordHash.length < 10) {
+      // Reject client-provided hashes to prevent arbitrary hash injection
+      if (newPasswordHash || salt) {
         return new Response(
-          JSON.stringify({ success: false, message: 'Mật khẩu mới không hợp lệ.' }),
+          JSON.stringify({
+            success: false,
+            message: 'Yêu cầu không hợp lệ: Không chấp nhận hash mật khẩu từ máy khách. Mật khẩu thô phải được gửi qua HTTPS và băm bảo mật trên máy chủ.',
+          }),
           { status: 400, headers: CORS_HEADERS }
         );
       }
 
-      const finalPasswordHash = String(newPasswordHash).trim();
-      const finalSalt = salt || '';
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Mật khẩu mới phải có độ dài tối thiểu 8 ký tự.' }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+
+      const pepper = (env.PASSWORD_PEPPER || '').trim();
+      if (!pepper || pepper.length < 8) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Hệ thống bảo mật chưa sẵn sàng (Thiếu pepper cấu hình). Vui lòng liên hệ quản trị viên.' }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
+
+      const finalSalt = 'wcg_salt_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : Math.random().toString(36).slice(2, 12));
+      const finalPasswordHash = await hashPasswordPBKDF2(newPassword, finalSalt, pepper);
 
       await env.DB.prepare(`
         UPDATE members
