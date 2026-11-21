@@ -190,10 +190,15 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
   // Pending counts
   const [pendingGiftcodesCount, setPendingGiftcodesCount] = useState(0);
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string>('');
 
   const clearAdminFlags = () => {
     localStorage.removeItem('wcg_admin_authenticated');
     sessionStorage.removeItem('wcg_admin_authenticated');
+    localStorage.removeItem('wcg_auth_token');
+    sessionStorage.removeItem('wcg_auth_token');
+    localStorage.removeItem('wcg_auth_user');
+    sessionStorage.removeItem('wcg_auth_user');
   };
 
   /**
@@ -228,90 +233,67 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       return false;
     }
 
-    // Master admin session token fallback check first
-    if (
-      token.startsWith('wcg_tok_usr_admin_') ||
-      token.startsWith('wcg_edge_tok_usr_admin_') ||
-      token.includes('usr_admin') ||
-      token.includes('admin290200')
-    ) {
-      const current = adminDataService.getCurrentAdminUser();
-      if (current) setCurrentUser(current);
-      setIsAuthenticated(true);
-      return true;
-    }
+    try {
+      const res = await fetchWithTimeout('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      }, 3500);
 
-    const endpoints = [
-      '/api/auth/me',
-      'https://admin-code-game-shop.pages.dev/api/auth/me',
-      'https://codegame.shop/api/auth/me',
-    ];
-
-    for (const endpoint of endpoints) {
-      try {
-        const res = await fetchWithTimeout(endpoint, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: 'no-store',
-        }, 3000);
-
-        if (res.status === 401 || res.status === 403) {
-          // Token is rejected by backend - fail fast, do not loop other domains
-          clearAdminFlags();
-          setIsAuthenticated(false);
-          return false;
-        }
-
-        if (res.ok) {
-          const data: any = await res.json();
-          const roleUpper = String(data?.user?.role || '').toUpperCase();
-          if (data?.success && data?.user && (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN')) {
-            if (data?.syncKey) {
-              localStorage.setItem('wcg_admin_sync_key', data.syncKey);
-              sessionStorage.setItem('wcg_admin_sync_key', data.syncKey);
-            }
-            if (data.user) {
-              const adminUser: AdminUser = {
-                id: data.user.id || 'usr_admin',
-                displayName: data.user.displayName || data.user.username || 'Admin',
-                email: data.user.email || 'admin@codegame.shop',
-                role: 'SUPER_ADMIN',
-                avatar: data.user.avatar_url || '/logo.png',
-                permissions: [
-                  'ALL_PERMISSIONS',
-                  'GAMES_MANAGE',
-                  'FINANCE_LEDGER',
-                  'SEPAY_WEBHOOK',
-                  'SECURITY_AUDIT',
-                ],
-                createdAt: data.user.created_at || '2026-08-01T00:00:00Z',
-              };
-              setCurrentUser(adminUser);
-              adminDataService.updateCurrentAdminUser(adminUser);
-            }
-            setIsAuthenticated(true);
-            return true;
-          }
-        }
-      } catch {
-        // Network error / timeout on this endpoint, continue to next fallback
+      if (res.status === 401 || res.status === 403) {
+        // Token is rejected or session expired on server - fail fast
+        clearAdminFlags();
+        setIsAuthenticated(false);
+        setSessionExpiredNotice(
+          isEn
+            ? 'Session has expired, please log in again.'
+            : 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.'
+        );
+        return false;
       }
+
+      if (res.ok) {
+        const data: any = await res.json();
+        const roleUpper = String(data?.user?.role || '').toUpperCase();
+        if (data?.success && data?.user && (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN')) {
+          if (data?.syncKey) {
+            localStorage.setItem('wcg_admin_sync_key', data.syncKey);
+            sessionStorage.setItem('wcg_admin_sync_key', data.syncKey);
+          }
+          if (data.user) {
+            const adminUser: AdminUser = {
+              id: data.user.id || 'usr_admin',
+              displayName: data.user.displayName || data.user.username || 'Admin',
+              email: data.user.email || 'admin@codegame.shop',
+              role: 'SUPER_ADMIN',
+              avatar: data.user.avatar_url || '/logo.png',
+              permissions: [
+                'ALL_PERMISSIONS',
+                'GAMES_MANAGE',
+                'FINANCE_LEDGER',
+                'SEPAY_WEBHOOK',
+                'SECURITY_AUDIT',
+              ],
+              createdAt: data.user.created_at || '2026-08-01T00:00:00Z',
+            };
+            setCurrentUser(adminUser);
+            adminDataService.updateCurrentAdminUser(adminUser);
+          }
+          setIsAuthenticated(true);
+          return true;
+        }
+      }
+    } catch (netErr) {
+      console.warn('[Admin Verification Network Error]', netErr);
     }
 
-    // If endpoints failed due to network error/timeout (offline / transient network latency),
-    // do NOT clear admin credentials if we already have a valid cached admin user and token.
-    const cachedAdmin = adminDataService.getCurrentAdminUser();
-    const hasAdminFlag =
-      localStorage.getItem('wcg_admin_authenticated') === 'true' ||
-      sessionStorage.getItem('wcg_admin_authenticated') === 'true';
-
-    if (cachedAdmin && hasAdminFlag && token) {
-      setCurrentUser(cachedAdmin);
-      setIsAuthenticated(true);
-      return true;
-    }
-
+    // Fail-closed: Never allow admin session without verified server response
     clearAdminFlags();
     setIsAuthenticated(false);
+    setSessionExpiredNotice(
+      isEn
+        ? 'Session has expired or server connection failed, please log in again.'
+        : 'Phiên đăng nhập đã hết hạn hoặc không kết nối được máy chủ, vui lòng đăng nhập lại.'
+    );
     return false;
   };
 
@@ -611,6 +593,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
         <AdminLoginGuard
           onLoginSuccess={handleLoginSuccess}
           onGoToClientSite={handleGoToClientSite}
+          initialErrorMessage={sessionExpiredNotice}
         />
         <ToastContainer toasts={toasts} onDismiss={dismissToast} position="top-center" maxVisible={3} />
 

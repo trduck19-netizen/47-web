@@ -128,7 +128,21 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 5. Create new Member record in D1
     const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const signingSecret = getSigningSecret(env);
+    let signingSecret = '';
+    try {
+      signingSecret = getSigningSecret(env);
+    } catch (confErr: any) {
+      console.error('[Server Configuration Error] JWT_SECRET missing or too short:', confErr);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: 'SERVER_MISCONFIGURED',
+          message: 'Máy chủ chưa cấu hình JWT_SECRET, vui lòng liên hệ quản trị viên.',
+          error: confErr?.message,
+        }),
+        { status: 503, headers: CORS_HEADERS }
+      );
+    }
     const sessionToken = await createSignedToken(userId, signingSecret);
     const nowIso = new Date().toISOString();
     const finalDisplayName = (displayName ? String(displayName).replace(/<[^>]*>?/gm, '').trim() : '') || cleanUsername;

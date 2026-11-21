@@ -19,18 +19,26 @@ import { LanguageSelector } from '../../components/LanguageSelector';
 interface AdminLoginGuardProps {
   onLoginSuccess: (user: AdminUser) => void;
   onGoToClientSite: () => void;
+  initialErrorMessage?: string;
 }
 
 export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
   onLoginSuccess,
   onGoToClientSite,
+  initialErrorMessage,
 }) => {
   const { t, language } = useLanguage();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState(initialErrorMessage || '');
+
+  useEffect(() => {
+    if (initialErrorMessage) {
+      setErrorMessage(initialErrorMessage);
+    }
+  }, [initialErrorMessage]);
   const [rememberSession, setRememberSession] = useState(true);
 
   useEffect(() => {

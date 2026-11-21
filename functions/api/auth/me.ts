@@ -1,9 +1,19 @@
 import { ensureSchemaUpgrades, getSettingD1, isMemberEmailVerified } from '../../services/d1_service';
-import { verifyToken, computeHash, createSignedToken, getSigningSecret } from '../../services/auth_service';
+import {
+  verifyToken,
+  computeHash,
+  createSignedToken,
+  getSigningSecret,
+  hashPasswordPBKDF2,
+  verifyPasswordPBKDF2,
+  isBcryptHash,
+  verifyBcryptPassword,
+} from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;
   JWT_SECRET?: string;
+  PASSWORD_PEPPER?: string;
   ADMIN_SYNC_SECRET?: string;
 }
 
@@ -44,7 +54,22 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const signingSecret = getSigningSecret(env);
+    let signingSecret = '';
+    try {
+      signingSecret = getSigningSecret(env);
+    } catch (confErr: any) {
+      console.error('[Server Configuration Error] JWT_SECRET missing or too short:', confErr);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: 'SERVER_MISCONFIGURED',
+          message: 'Máy chủ chưa cấu hình JWT_SECRET, vui lòng liên hệ quản trị viên.',
+          error: confErr?.message,
+        }),
+        { status: 503, headers: CORS_HEADERS }
+      );
+    }
+
     const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, signingSecret]);
 
     let member: any = await env.DB.prepare(
@@ -274,6 +299,17 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       }
     );
   } catch (err: any) {
+    if (err?.name === 'ConfigurationError' || String(err).includes('JWT_SECRET')) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: 'SERVER_MISCONFIGURED',
+          message: 'Máy chủ chưa cấu hình JWT_SECRET, vui lòng liên hệ quản trị viên.',
+          error: err?.message || String(err),
+        }),
+        { status: 503, headers: CORS_HEADERS }
+      );
+    }
     return new Response(
       JSON.stringify({ success: false, message: 'Lỗi xác thực phiên trên Cloudflare Edge.', error: String(err) }),
       { status: 500, headers: CORS_HEADERS }
@@ -352,24 +388,53 @@ async function handleUpdateProfile(context: EventContext<Env, any, any>): Promis
     let targetSalt = member.salt;
 
     // Handle password change if requested
+    let isPasswordChanged = false;
     if (newPassword && typeof newPassword === 'string') {
-      if (newPassword.length < 6) {
+      if (newPassword.length < 8) {
         return new Response(
-          JSON.stringify({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự.' }),
+          JSON.stringify({ success: false, message: 'Mật khẩu mới phải có ít nhất 8 ký tự.' }),
           { status: 400, headers: CORS_HEADERS }
         );
       }
 
-      // If user had existing password hash and salt, verify old password
-      if (member.password_hash && member.salt) {
+      const pepper = (env.PASSWORD_PEPPER || '').trim();
+      if (!pepper || pepper.length < 8) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Hệ thống bảo mật chưa sẵn sàng (Thiếu cấu hình pepper bảo mật). Vui lòng liên hệ quản trị viên.',
+          }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
+
+      // If user had existing password hash, verify old password
+      if (member.password_hash) {
         if (!oldPassword) {
           return new Response(
             JSON.stringify({ success: false, message: 'Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu mới.' }),
             { status: 400, headers: CORS_HEADERS }
           );
         }
-        const oldHash = await computeHash(oldPassword, member.salt);
-        if (oldHash !== member.password_hash) {
+
+        const storedHash = member.password_hash;
+        const currentSalt = member.salt || '';
+        let isOldPassMatch = false;
+
+        if (storedHash.startsWith('pbkdf2_sha256$')) {
+          isOldPassMatch = await verifyPasswordPBKDF2(oldPassword, storedHash, pepper);
+        } else if (isBcryptHash(storedHash)) {
+          isOldPassMatch = await verifyBcryptPassword(oldPassword, storedHash);
+        } else if (currentSalt) {
+          // Legacy fast SHA-256 (kiểm tra cả có pepper và không pepper để tương thích)
+          const oldHashWithPepper = await computeHash(oldPassword, currentSalt, pepper);
+          const oldHashWithoutPepper = await computeHash(oldPassword, currentSalt, '');
+          if (oldHashWithPepper === storedHash || oldHashWithoutPepper === storedHash) {
+            isOldPassMatch = true;
+          }
+        }
+
+        if (!isOldPassMatch) {
           return new Response(
             JSON.stringify({ success: false, message: 'Mật khẩu hiện tại không chính xác.' }),
             { status: 400, headers: CORS_HEADERS }
@@ -377,14 +442,23 @@ async function handleUpdateProfile(context: EventContext<Env, any, any>): Promis
         }
       }
 
-      const newSalt = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID().replace(/-/g, '').substring(0, 16)
-        : Math.random().toString(36).substring(2, 18);
-      targetPasswordHash = await computeHash(newPassword, newSalt);
+      // Sinh salt an toàn bằng WebCrypto (fail-closed, 0% Math.random)
+      if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'WebCrypto không khả dụng để sinh salt an toàn.' }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
+      const saltBytes = new Uint8Array(16);
+      crypto.getRandomValues(saltBytes);
+      const newSalt = 'wcg_salt_' + Array.from(saltBytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+
+      targetPasswordHash = await hashPasswordPBKDF2(newPassword, newSalt, pepper);
       targetSalt = newSalt;
+      isPasswordChanged = true;
     }
 
-    // Execute update in D1
+    // Execute update in D1 (thu hồi toàn bộ session_token = NULL nếu đổi mật khẩu)
     await env.DB.prepare(`
       UPDATE members
       SET display_name = ?,
@@ -392,6 +466,7 @@ async function handleUpdateProfile(context: EventContext<Env, any, any>): Promis
           phone = ?,
           password_hash = ?,
           salt = ?,
+          session_token = CASE WHEN ? = 1 THEN NULL ELSE session_token END,
           updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
       WHERE id = ?
     `).bind(
@@ -400,12 +475,38 @@ async function handleUpdateProfile(context: EventContext<Env, any, any>): Promis
       targetPhone,
       targetPasswordHash,
       targetSalt,
+      isPasswordChanged ? 1 : 0,
       member.id
     ).run();
 
+    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
+
+    if (isPasswordChanged) {
+      const logId = `sec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      await env.DB.prepare(`
+        INSERT INTO security_logs (id, actor_name, actor_email, action, target_id, ip_address, severity, details, created_at)
+        VALUES (?, ?, ?, 'PASSWORD_CHANGE_SUCCESS', ?, ?, 'WARN', ?, datetime('now'))
+      `).bind(
+        logId,
+        member.display_name || member.username,
+        member.email,
+        member.id,
+        clientIp,
+        JSON.stringify({ note: 'Đổi mật khẩu thành công, toàn bộ phiên cũ đã được thu hồi' })
+      ).run().catch(() => {});
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          passwordChanged: true,
+          message: 'Đổi mật khẩu thành công! Toàn bộ phiên đăng nhập cũ đã được thu hồi. Vui lòng đăng nhập lại bằng mật khẩu mới.',
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
     const roleUpper = String(member.role || '').toUpperCase();
     const isAdmin = roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN';
-    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
 
     const updatedUser = {
       id: member.id,

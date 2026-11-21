@@ -117,13 +117,20 @@ export async function hashOtp(otp: string, salt: string = 'wcg_otp_salt'): Promi
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+export class ConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConfigurationError';
+  }
+}
+
 export function getSigningSecret(env: any): string {
   const secret = (env?.JWT_SECRET || '').trim();
   if (secret && secret.length >= 16) {
     return secret;
   }
   // Fail closed if JWT_SECRET is not configured or too short (minimum 16 characters required)
-  throw new Error('JWT_SECRET is not configured or too short (minimum 16 characters required). Failing closed for security.');
+  throw new ConfigurationError('JWT_SECRET is not configured or too short (minimum 16 characters required). Failing closed for security.');
 }
 
 export async function createSignedToken(userId: string, secret: string): Promise<string> {

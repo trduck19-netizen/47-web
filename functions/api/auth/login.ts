@@ -287,7 +287,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       .run()
       .catch(() => {});
 
-    const signingSecret = getSigningSecret(env);
+    let signingSecret = '';
+    try {
+      signingSecret = getSigningSecret(env);
+    } catch (confErr: any) {
+      console.error('[Server Configuration Error] JWT_SECRET is missing or too short (<16 chars):', confErr);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: 'SERVER_MISCONFIGURED',
+          message: 'Máy chủ chưa cấu hình JWT_SECRET, vui lòng liên hệ quản trị viên.',
+          error: confErr?.message,
+        }),
+        { status: 503, headers: CORS_HEADERS }
+      );
+    }
+
     const sessionToken = await createSignedToken(member.id, signingSecret);
     const nowIso = new Date().toISOString();
 
@@ -338,6 +353,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       { status: 200, headers: CORS_HEADERS }
     );
   } catch (err: any) {
+    if (err?.name === 'ConfigurationError' || String(err).includes('JWT_SECRET')) {
+      console.error('[Server Configuration Error] JWT_SECRET error:', err);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: 'SERVER_MISCONFIGURED',
+          message: 'Máy chủ chưa cấu hình JWT_SECRET, vui lòng liên hệ quản trị viên.',
+          error: err?.message || String(err),
+        }),
+        { status: 503, headers: CORS_HEADERS }
+      );
+    }
     return new Response(
       JSON.stringify({ success: false, message: 'Lỗi xử lý đăng nhập trên Cloudflare Edge.', error: String(err) }),
       { status: 500, headers: CORS_HEADERS }

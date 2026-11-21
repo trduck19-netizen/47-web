@@ -127,52 +127,43 @@ class AuthService {
 
     // 3. Try Cloudflare Pages Backend Endpoints
     try {
-      const endpoints = [
-        '/api/auth/register',
-        'https://codegame.shop/api/auth/register',
-        'https://web-code-game.pages.dev/api/auth/register',
-        'https://admin-code-game-shop.pages.dev/api/auth/register',
-      ];
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          email,
+          displayName: displayName || username,
+          phone,
+          password,
+          passwordHash,
+          salt,
+          turnstileToken,
+        }),
+      });
 
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              username,
-              email,
-              displayName: displayName || username,
-              phone,
-              password,
-              passwordHash,
-              salt,
-              turnstileToken,
-            }),
-          });
+      if (!res.ok) {
+        const errData: any = await res.json().catch(() => null);
+        if (errData && errData.message) {
+          return {
+            success: false,
+            message: errData.message,
+          };
+        }
+      }
 
-          if (!res.ok) {
-            const errData: any = await res.json().catch(() => null);
-            if (errData && errData.message) {
-              return {
-                success: false,
-                message: errData.message,
-              };
-            }
-          }
+      if (res.ok) {
+        const data: AuthResponse = await res.json();
+        if (data.success && data.user) {
+          this.saveSession(data.user, data.token || '', true);
 
-          if (res.ok) {
-            const data: AuthResponse = await res.json();
-            if (data.success && data.user) {
-              this.saveSession(data.user, data.token || '', true);
-
-              // Immediately notify admin in realtime
-              const memberRecord = data.member || {
-                id: data.user.id,
-                displayName: data.user.displayName || data.user.username,
-                email: data.user.email,
-                phone: data.user.phone || phone,
-                role: 'MEMBER',
+          // Immediately notify admin in realtime
+          const memberRecord = data.member || {
+            id: data.user.id,
+            displayName: data.user.displayName || data.user.username,
+            email: data.user.email,
+            phone: data.user.phone || phone,
+            role: 'MEMBER',
                 balance: data.user.wallet_balance || 0,
                 totalSpent: 0,
                 status: 'ACTIVE',
@@ -196,12 +187,10 @@ class AuthService {
                 console.warn('[AuthService] referral tracking error:', refErr);
               }
 
-              return data;
-            } else if (data.message) {
-              return data;
-            }
-          }
-        } catch {}
+          return data;
+        } else if (data.message) {
+          return data;
+        }
       }
     } catch {}
 
@@ -334,135 +323,85 @@ class AuthService {
 
     const cleanIdentifier = identifier.trim().toLowerCase();
 
-    // 1. Try Cloudflare Pages Backend Endpoint
+    // 1. Chỉ gọi duy nhất endpoint cùng domain (/api/auth/login)
     try {
-      const endpoints = [
-        '/api/auth/login',
-        'https://codegame.shop/api/auth/login',
-        'https://web-code-game.pages.dev/api/auth/login',
-        'https://admin-code-game-shop.pages.dev/api/auth/login',
-      ];
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: cleanIdentifier,
+          password,
+          rememberMe,
+          turnstileToken,
+        }),
+      });
 
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              identifier: cleanIdentifier,
-              password,
-              rememberMe,
-              turnstileToken,
-            }),
-          });
-
-          if (res.status === 429) {
-            const data: any = await res.json().catch(() => ({}));
-            return {
-              success: false,
-              message: data?.message || 'Địa chỉ IP của bạn đã bị tạm khóa do thử sai quá nhiều lần. Vui lòng thử lại sau 15 phút.',
-            };
-          }
-
-          if (res.status === 401 || res.status === 403) {
-            const data: any = await res.json().catch(() => ({}));
-            return {
-              success: false,
-              message: data?.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.',
-            };
-          }
-
-          if (res.status === 400) {
-            const data: any = await res.json().catch(() => ({}));
-            return {
-              success: false,
-              message: data?.message || 'Dữ liệu đăng nhập không hợp lệ.',
-            };
-          }
-
-          if (res.ok) {
-            const data: AuthResponse = await res.json();
-            if (data.success && data.user) {
-              if (data.syncKey) {
-                localStorage.setItem('wcg_admin_sync_key', data.syncKey);
-                sessionStorage.setItem('wcg_admin_sync_key', data.syncKey);
-              }
-              this.saveSession(data.user, data.token || '', Boolean(rememberMe));
-              return data;
-            } else if (data.message) {
-              return data;
-            }
-          }
-        } catch {}
-      }
-    } catch {}
-
-    // 2. Local Fallback (chỉ dùng khi offline và tài khoản đã lưu hợp lệ trong localStorage)
-    try {
-      const membersRaw = localStorage.getItem('wcg_admin_members_v4');
-      const members: any[] = membersRaw ? JSON.parse(membersRaw) : [];
-
-      const member = members.find(
-        (m) =>
-          m.displayName?.toLowerCase() === cleanIdentifier ||
-          m.email?.toLowerCase() === cleanIdentifier ||
-          m.id?.toLowerCase() === cleanIdentifier
-      );
-
-      if (!member) {
+      if (res.status === 429) {
+        const data: any = await res.json().catch(() => ({}));
         return {
           success: false,
-          message: 'Tài khoản không tồn tại. Vui lòng kiểm tra lại thông tin đăng nhập.',
+          message: data?.message || 'Địa chỉ IP của bạn đã bị tạm khóa do thử sai quá nhiều lần. Vui lòng thử lại sau 15 phút.',
         };
       }
 
-      if (member.status === 'BANNED') {
+      if (res.status === 401 || res.status === 403) {
+        const data: any = await res.json().catch(() => ({}));
         return {
           success: false,
-          message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên.',
+          message: data?.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.',
         };
       }
 
-      // Verify Password strictly via cryptographic salt + SHA-256 hash
-      let isMatch = false;
-      if (member.passwordHash && member.salt) {
-        const computed = await hashPassword(password, member.salt);
-        if (computed === member.passwordHash) isMatch = true;
-      }
-
-      if (!isMatch) {
+      if (res.status === 400) {
+        const data: any = await res.json().catch(() => ({}));
         return {
           success: false,
-          message: 'Tên đăng nhập hoặc mật khẩu không chính xác.',
+          message: data?.message || 'Dữ liệu đăng nhập không hợp lệ.',
         };
       }
 
-      const isAdmin = member.role === 'ADMIN' || member.role === 'SUPER_ADMIN';
-      const token = generateSessionToken(member.id);
+      if (res.status === 503) {
+        const data: any = await res.json().catch(() => ({}));
+        return {
+          success: false,
+          message: data?.message || 'Máy chủ chưa cấu hình JWT_SECRET, vui lòng liên hệ quản trị viên.',
+          error: data?.error,
+        };
+      }
 
-      const userProfile: UserProfile = {
-        id: member.id,
-        username: member.displayName || cleanIdentifier,
-        displayName: member.displayName || cleanIdentifier,
-        email: member.email || `${cleanIdentifier}@webcodegame.vn`,
-        phone: member.phone,
-        role: isAdmin ? 'admin' : member.role === 'VIP' ? 'VIP' : 'user',
-        wallet_balance: member.balance || 0,
-        avatar_url: member.avatar || generateAvatarUrl(member.displayName || cleanIdentifier),
-        session_token: token,
-        last_login: new Date().toISOString(),
-      };
+      if (res.status >= 500) {
+        const data: any = await res.json().catch(() => ({}));
+        return {
+          success: false,
+          message: data?.message || 'Không kết nối được máy chủ quản trị, vui lòng thử lại sau.',
+          error: data?.error,
+        };
+      }
 
-      this.saveSession(userProfile, token, Boolean(rememberMe));
+      if (res.ok) {
+        const data: AuthResponse = await res.json();
+        if (data.success && data.user) {
+          if (data.syncKey) {
+            localStorage.setItem('wcg_admin_sync_key', data.syncKey);
+            sessionStorage.setItem('wcg_admin_sync_key', data.syncKey);
+          }
+          this.saveSession(data.user, data.token || '', Boolean(rememberMe));
+          return data;
+        } else if (data.message) {
+          return data;
+        }
+      }
 
+      const errData: any = await res.json().catch(() => ({}));
       return {
-        success: true,
-        message: `Đăng nhập thành công! Chào mừng ${userProfile.displayName || userProfile.username}.`,
-        user: userProfile,
-        token,
+        success: false,
+        message: errData?.message || 'Không kết nối được máy chủ quản trị, vui lòng thử lại sau.',
       };
-    } catch (e: any) {
-      return { success: false, message: 'Lỗi đăng nhập hệ thống.', error: String(e) } as any;
+    } catch (networkErr: any) {
+      return {
+        success: false,
+        message: 'Không kết nối được máy chủ quản trị, vui lòng thử lại sau.',
+      };
     }
   }
 

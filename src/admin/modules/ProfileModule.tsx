@@ -11,8 +11,7 @@ import {
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { adminDataService } from '../services/adminDataService';
 import { AdminUser } from '../types/adminTypes';
-
-import { generateSalt, hashPassword } from '../../utils/cryptoUtils';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ProfileModuleProps {
   onShowToast: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -23,6 +22,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({
   onShowToast,
   onUpdateCurrentUser,
 }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
   // Profile Form
@@ -68,16 +69,28 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!oldPassword) {
-      onShowToast('Lỗi', 'Vui lòng nhập mật khẩu hiện tại.', 'error');
+    if (!oldPassword || !newPassword) {
+      onShowToast(
+        isEn ? 'Error' : 'Lỗi',
+        isEn ? 'Please enter both current and new passwords.' : 'Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới.',
+        'error'
+      );
       return;
     }
-    if (newPassword.length < 6) {
-      onShowToast('Lỗi', 'Mật khẩu mới phải có ít nhất 6 ký tự.', 'error');
+    if (newPassword.length < 8) {
+      onShowToast(
+        isEn ? 'Error' : 'Lỗi',
+        isEn ? 'New password must be at least 8 characters long.' : 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+        'error'
+      );
       return;
     }
     if (newPassword !== confirmPassword) {
-      onShowToast('Lỗi', 'Xác nhận mật khẩu mới không khớp.', 'error');
+      onShowToast(
+        isEn ? 'Error' : 'Lỗi',
+        isEn ? 'New password confirmation does not match.' : 'Xác nhận mật khẩu mới không khớp.',
+        'error'
+      );
       return;
     }
 
@@ -87,81 +100,98 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({
         localStorage.getItem('wcg_auth_token') ||
         sessionStorage.getItem('wcg_auth_token');
 
-      const endpoints = [
-        '/api/auth/me',
-        'https://codegame.shop/api/auth/me',
-        'https://admin-code-game-shop.pages.dev/api/auth/me',
-      ];
-
-      let isSuccess = false;
-      let lastErrorMessage = '';
-
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({
-              oldPassword,
-              newPassword,
-            }),
-          });
-
-          const data = await res.json().catch(() => ({}));
-          if (res.ok && data.success) {
-            isSuccess = true;
-            break;
-          } else if (data.message) {
-            lastErrorMessage = data.message;
-            if (res.status === 400 || res.status === 401 || res.status === 403) {
-              break;
-            }
-          }
-        } catch {}
-      }
-
-      // Also update local cache for hybrid offline support
-      const salt = generateSalt(16);
-      const newHash = await hashPassword(newPassword, salt);
-      const membersRaw = localStorage.getItem('wcg_admin_members_v4');
-      if (membersRaw) {
-        try {
-          const members: any[] = JSON.parse(membersRaw);
-          const adminIdx = members.findIndex(
-            (m) =>
-              m.id === currentUser?.id ||
-              m.id === 'usr_admin' ||
-              m.email === currentUser?.email
-          );
-          if (adminIdx >= 0) {
-            members[adminIdx].passwordHash = newHash;
-            members[adminIdx].salt = salt;
-            localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
-          }
-        } catch {}
-      }
-
-      if (isSuccess || !lastErrorMessage) {
+      if (!token) {
         onShowToast(
-          'Đổi mật khẩu thành công!',
-          'Mật khẩu đăng nhập quản trị đã được lưu vào hệ thống.',
+          isEn ? 'Session Expired' : 'Phiên đăng nhập hết hạn',
+          isEn ? 'Your session has expired. Please log in again.' : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+          'error'
+        );
+        localStorage.removeItem('wcg_admin_authenticated');
+        sessionStorage.removeItem('wcg_admin_authenticated');
+        setTimeout(() => window.location.reload(), 1500);
+        return;
+      }
+
+      // 1. Pre-flight session check strictly on current domain
+      const checkRes = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+
+      if (checkRes.status === 401 || checkRes.status === 403 || !checkRes.ok) {
+        onShowToast(
+          isEn ? 'Session Expired' : 'Phiên đăng nhập hết hạn',
+          isEn
+            ? 'Session does not exist or has expired on server. Please log in again.'
+            : 'Phiên đăng nhập không tồn tại hoặc đã hết hạn trên máy chủ. Vui lòng đăng nhập lại.',
+          'error'
+        );
+        localStorage.removeItem('wcg_admin_authenticated');
+        sessionStorage.removeItem('wcg_admin_authenticated');
+        localStorage.removeItem('wcg_auth_token');
+        sessionStorage.removeItem('wcg_auth_token');
+        localStorage.removeItem('wcg_auth_user');
+        sessionStorage.removeItem('wcg_auth_user');
+        setTimeout(() => window.location.reload(), 1500);
+        return;
+      }
+
+      // 2. Execute password change strictly on current domain
+      const res = await fetch('/api/auth/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          oldPassword,
+          newPassword,
+        }),
+      });
+
+      const data: any = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        onShowToast(
+          isEn ? 'Password Changed Successfully!' : 'Đổi mật khẩu thành công!',
+          isEn
+            ? 'All previous sessions have been revoked. Please log in again with your new password.'
+            : 'Đã thu hồi toàn bộ phiên đăng nhập cũ. Vui lòng đăng nhập lại bằng mật khẩu mới.',
           'success'
         );
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        localStorage.removeItem('wcg_admin_authenticated');
+        sessionStorage.removeItem('wcg_admin_authenticated');
+        localStorage.removeItem('wcg_auth_token');
+        sessionStorage.removeItem('wcg_auth_token');
+        localStorage.removeItem('wcg_auth_user');
+        sessionStorage.removeItem('wcg_auth_user');
+        setTimeout(() => window.location.reload(), 1500);
+        return;
       } else {
         onShowToast(
-          'Đổi mật khẩu thất bại',
-          lastErrorMessage || 'Mật khẩu hiện tại không chính xác.',
+          isEn ? 'Password Change Failed' : 'Đổi mật khẩu thất bại',
+          data?.message || (isEn ? 'Current password is incorrect.' : 'Mật khẩu hiện tại không chính xác.'),
           'error'
         );
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('wcg_admin_authenticated');
+          sessionStorage.removeItem('wcg_admin_authenticated');
+          localStorage.removeItem('wcg_auth_token');
+          sessionStorage.removeItem('wcg_auth_token');
+          localStorage.removeItem('wcg_auth_user');
+          sessionStorage.removeItem('wcg_auth_user');
+          setTimeout(() => window.location.reload(), 1500);
+        }
       }
     } catch (err: any) {
-      onShowToast('Lỗi kết nối', 'Không thể kết nối đến máy chủ để đổi mật khẩu.', 'error');
+      onShowToast(
+        isEn ? 'Connection Error' : 'Lỗi kết nối',
+        isEn ? 'Unable to reach the server to change password.' : 'Không thể kết nối đến máy chủ để đổi mật khẩu.',
+        'error'
+      );
     } finally {
       setIsChangingPassword(false);
     }
