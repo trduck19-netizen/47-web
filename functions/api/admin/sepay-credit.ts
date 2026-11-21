@@ -81,19 +81,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         if (member && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN') && member.status !== 'BANNED') {
           isAuthorized = true;
         }
-
-        if (!isAuthorized) {
-          const signingSecret = getSigningSecret(env);
-          const { valid, userId } = await verifyToken(cleanToken, [signingSecret, configuredSecret]);
-          if (valid && userId) {
-            const verifiedMember = await env.DB.prepare(
-              "SELECT id, role, status FROM members WHERE id = ? LIMIT 1"
-            ).bind(userId).first<any>();
-            if (verifiedMember && (verifiedMember.role === 'ADMIN' || verifiedMember.role === 'SUPER_ADMIN') && verifiedMember.status !== 'BANNED') {
-              isAuthorized = true;
-            }
-          }
-        }
       }
     }
 

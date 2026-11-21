@@ -135,12 +135,12 @@ async function isAuthorized(request: Request, env: Env): Promise<AuthResult> {
     let member: any = null;
     if (env.DB) {
       if (token.startsWith('wcg_edge_tok_')) {
-        const candidateSecrets = [env.JWT_SECRET, env.ADMIN_SYNC_SECRET];
+        const candidateSecrets = [env.JWT_SECRET];
         const { valid, userId } = await verifyToken(token, candidateSecrets);
         if (valid && userId) {
           member = await env.DB.prepare(
-            'SELECT id, role, status FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
-          ).bind(userId, userId, userId).first<any>();
+            'SELECT id, role, status FROM members WHERE id = ? LIMIT 1'
+          ).bind(userId).first<any>();
         }
       }
       if (!member) {
@@ -148,18 +148,9 @@ async function isAuthorized(request: Request, env: Env): Promise<AuthResult> {
           'SELECT id, role, status FROM members WHERE session_token = ? LIMIT 1'
         ).bind(token).first<any>();
       }
-      if (!member && (token.startsWith('wcg_tok_usr_admin_') || token.includes('usr_admin') || token.includes('admin290200'))) {
-        member = await env.DB.prepare(
-          "SELECT id, role, status FROM members WHERE id = 'usr_admin' OR username = 'admin290200' OR email = 'admin@codegame.store' OR role IN ('ADMIN', 'SUPER_ADMIN') LIMIT 1"
-        ).first<any>();
-      }
     }
 
     if (!member) {
-      // In dev/hybrid fallback without DB session, allow recognized master admin session tokens
-      if (token.startsWith('wcg_tok_usr_admin_') || token.includes('usr_admin') || token.includes('admin290200')) {
-        return { authorized: true, status: 200 };
-      }
       return { authorized: false, status: 401, error: 'Phiên đăng nhập không tồn tại hoặc đã hết hạn.' };
     }
 

@@ -344,12 +344,12 @@ export async function verifyAdminAuth(
       let member: any = null;
 
       if (token.startsWith('wcg_edge_tok_')) {
-        const candidateSecrets = [env.JWT_SECRET, env.ADMIN_SYNC_SECRET];
+        const candidateSecrets = [env.JWT_SECRET];
         const { valid, userId } = await verifyToken(token, candidateSecrets);
         if (valid && userId) {
           member = await env.DB.prepare(
-            'SELECT id, username, display_name, role, status FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
-          ).bind(userId, userId, userId).first<any>();
+            'SELECT id, username, display_name, role, status FROM members WHERE id = ? LIMIT 1'
+          ).bind(userId).first<any>();
         }
       }
 
@@ -357,12 +357,6 @@ export async function verifyAdminAuth(
         member = await env.DB.prepare(
           'SELECT id, username, display_name, role, status FROM members WHERE session_token = ? LIMIT 1'
         ).bind(token).first<any>();
-      }
-
-      if (!member && (token.startsWith('wcg_tok_usr_admin_') || token.includes('usr_admin') || token.includes('admin290200'))) {
-        member = await env.DB.prepare(
-          "SELECT id, username, display_name, role, status FROM members WHERE id = 'usr_admin' OR username = 'admin290200' OR email = 'admin@codegame.store' OR role IN ('ADMIN', 'SUPER_ADMIN') LIMIT 1"
-        ).first<any>();
       }
 
       if (member && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN') && member.status !== 'BANNED') {
@@ -400,12 +394,12 @@ export async function verifyMemberAuth(
   let member: any = null;
 
   if (token.startsWith('wcg_edge_tok_')) {
-    const candidateSecrets = [env.JWT_SECRET, env.ADMIN_SYNC_SECRET];
+    const candidateSecrets = [env.JWT_SECRET];
     const { valid, userId } = await verifyToken(token, candidateSecrets);
     if (valid && userId) {
       member = await env.DB.prepare(
-        'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
-      ).bind(userId, userId, userId).first<any>();
+        'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE id = ? LIMIT 1'
+      ).bind(userId).first<any>();
     }
   }
 
@@ -413,12 +407,6 @@ export async function verifyMemberAuth(
     member = await env.DB.prepare(
       'SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE session_token = ? LIMIT 1'
     ).bind(token).first<any>();
-  }
-
-  if (!member && (token.startsWith('wcg_tok_usr_admin_') || token.includes('usr_admin'))) {
-    member = await env.DB.prepare(
-      "SELECT id, username, display_name, email, role, balance, status, created_at FROM members WHERE id = 'usr_admin' OR role IN ('ADMIN', 'SUPER_ADMIN') LIMIT 1"
-    ).first<any>();
   }
 
   if (!member) {

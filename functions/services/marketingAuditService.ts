@@ -162,10 +162,7 @@ export async function authenticateMarketingAuditor(request: Request, env: any): 
 
   // 1. Kiểm tra Admin Master Key (toàn quyền) & Admin Client Sync Key
   if (
-    (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) ||
-    token.startsWith('wcg_tok_usr_admin_') ||
-    token.includes('usr_admin') ||
-    token.includes('admin290200')
+    (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET && env.ADMIN_SYNC_SECRET.length >= 16)
   ) {
     return {
       authorized: true,

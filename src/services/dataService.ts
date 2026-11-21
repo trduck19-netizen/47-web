@@ -4831,7 +4831,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     }
   }
 
-  async verifyEmail(): Promise<{ success: boolean; message: string; email_verified?: boolean }> {
+  async verifyEmail(code?: string, action?: string): Promise<{ success: boolean; message: string; email_verified?: boolean; maskedEmail?: string }> {
     const user = this.getCurrentUser();
     if (!user) {
       return { success: false, message: 'Vui lòng đăng nhập trước khi xác minh email.' };
@@ -4846,23 +4846,31 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
 
+    const payload: any = {};
+    if (code) payload.code = code;
+    if (action) payload.action = action;
+
     try {
       const res = await fetch('/api/auth/verify-email', {
         method: 'POST',
         headers,
+        body: JSON.stringify(payload),
       });
       const data: any = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
-        const updatedUser: UserProfile = {
-          ...user,
-          email_verified: true,
-          email_verified_at: data.email_verified_at || new Date().toISOString(),
-        };
-        this.saveCurrentUser(updatedUser);
+        if (data.email_verified) {
+          const updatedUser: UserProfile = {
+            ...user,
+            email_verified: true,
+            email_verified_at: data.email_verified_at || new Date().toISOString(),
+          };
+          this.saveCurrentUser(updatedUser);
+        }
         return {
           success: true,
           message: data.message || 'Xác minh email thành công!',
-          email_verified: true,
+          email_verified: !!data.email_verified,
+          maskedEmail: data.maskedEmail,
         };
       }
       return {

@@ -49,12 +49,12 @@ export async function hashOtp(otp: string, salt: string = 'wcg_otp_salt'): Promi
 }
 
 export function getSigningSecret(env: any): string {
-  const secret = (env?.JWT_SECRET || env?.ADMIN_SYNC_SECRET || '').trim();
+  const secret = (env?.JWT_SECRET || '').trim();
   if (secret && secret.length >= 16) {
     return secret;
   }
   // Worker-level deterministic secret fallback if not configured in env
-  return 'wcg_sec_worker_' + (env?.ENVIRONMENT || 'prod') + '_edge_2026';
+  return 'wcg_jwt_sec_worker_' + (env?.ENVIRONMENT || 'prod') + '_edge_2026';
 }
 
 export async function createSignedToken(userId: string, secret: string): Promise<string> {
@@ -83,14 +83,6 @@ export function extractUserIdFromToken(token: string): string | null {
       return parts.join('_');
     }
   }
-  if (clean.startsWith('wcg_tok_')) {
-    const parts = clean.replace('wcg_tok_', '').split('_');
-    if (parts.length >= 3) {
-      parts.pop(); // random
-      parts.pop(); // timestamp
-      return parts.join('_');
-    }
-  }
   return null;
 }
 
@@ -98,13 +90,13 @@ export async function verifyToken(
   token: string,
   secrets: (string | undefined)[] | string
 ): Promise<{ valid: boolean; userId: string | null }> {
-  if (!token) return { valid: false, userId: null };
+  if (!token || typeof token !== 'string') return { valid: false, userId: null };
 
   const candidateSecrets = (Array.isArray(secrets) ? secrets : [secrets])
-    .filter((s): s is string => typeof s === 'string' && s.length > 0);
+    .filter((s): s is string => typeof s === 'string' && s.length >= 16);
 
   if (candidateSecrets.length === 0) {
-    candidateSecrets.push('wcg_sec_worker_prod_edge_2026');
+    return { valid: false, userId: null };
   }
 
   if (token.startsWith('wcg_edge_tok_')) {
@@ -115,6 +107,12 @@ export async function verifyToken(
       const random = parts.pop()!;
       const timestamp = parts.pop()!;
       const userId = parts.join('_');
+
+      // Verify token lifetime (max 30 days, clock skew tolerance 1 min)
+      const tokenTimeMs = parseInt(timestamp, 36);
+      if (isNaN(tokenTimeMs) || tokenTimeMs <= 0 || Date.now() - tokenTimeMs > 30 * 24 * 3600 * 1000 || tokenTimeMs > Date.now() + 60000) {
+        return { valid: false, userId: null };
+      }
 
       const payload = `${userId}.${timestamp}.${random}`;
       const encoder = new TextEncoder();
@@ -134,12 +132,7 @@ export async function verifyToken(
     }
   }
 
-  // Fallback for valid client-generated session token
-  const extracted = extractUserIdFromToken(token);
-  if (extracted) {
-    return { valid: true, userId: extracted };
-  }
-
+  // FAIL CLOSED: Never accept unsigned or forged tokens
   return { valid: false, userId: null };
 }
 

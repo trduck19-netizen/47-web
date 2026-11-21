@@ -44,7 +44,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, env.ADMIN_SYNC_SECRET]);
+    const signingSecret = getSigningSecret(env);
+    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, signingSecret]);
 
     let member: any = await env.DB.prepare(
       'SELECT * FROM members WHERE session_token = ? LIMIT 1'
@@ -52,32 +53,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     if (!member && valid && tokenUserId) {
       member = await env.DB.prepare(
-        'SELECT * FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
-      ).bind(tokenUserId, tokenUserId, tokenUserId).first<any>();
-    }
-
-    if (!member && token) {
-      const extractedUserId = extractUserIdFromToken(token);
-      if (extractedUserId) {
-        member = await env.DB.prepare(
-          'SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1'
-        ).bind(extractedUserId, extractedUserId).first<any>();
-      }
-    }
-
-    const headerUserId = request.headers.get('X-Member-Id')?.trim();
-    const headerEmail = request.headers.get('X-Member-Email')?.trim().toLowerCase();
-    if (!member && (headerUserId || headerEmail)) {
-      if (headerUserId && (token.includes(headerUserId) || token === headerUserId)) {
-        member = await env.DB.prepare(
-          'SELECT * FROM members WHERE id = ? LIMIT 1'
-        ).bind(headerUserId).first<any>();
-      }
-      if (!member && headerEmail && token.includes(headerEmail)) {
-        member = await env.DB.prepare(
-          'SELECT * FROM members WHERE LOWER(email) = ? LIMIT 1'
-        ).bind(headerEmail).first<any>();
-      }
+        'SELECT * FROM members WHERE id = ? LIMIT 1'
+      ).bind(tokenUserId).first<any>();
     }
 
     if (!member) {
@@ -95,10 +72,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Tự động gia hạn và đồng bộ lại token nếu cần để đảm bảo phiên trên thiết bị này luôn hợp lệ
+    // Tự động gia hạn và đồng bộ lại token nếu cần để đảm bảo phiên trên thiết bị này luôn hợp lệ (chỉ khi token hợp lệ và khớp)
     let activeToken = token;
-    if (member.session_token !== token) {
-      const signingSecret = getSigningSecret(env);
+    if (valid && member.session_token !== token) {
       const renewedToken = await createSignedToken(member.id, signingSecret);
       await env.DB.prepare('UPDATE members SET session_token = ?, last_login = ? WHERE id = ?')
         .bind(renewedToken, new Date().toISOString(), member.id)
@@ -266,7 +242,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       JSON.stringify({
         success: true,
         token: activeToken,
-        syncKey: isAdmin ? (env.ADMIN_SYNC_SECRET || '') : undefined,
         client_ip: clientIp,
         user: {
           id: member.id,

@@ -37,17 +37,14 @@ async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
 
   // 2. Admin Session Token
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (token) {
-    const secrets = [env.JWT_SECRET, env.ADMIN_SYNC_SECRET];
+  if (token && env.DB) {
+    const secrets = [env.JWT_SECRET];
     const { valid, userId } = await verifyToken(token, secrets);
-    if (valid && userId && env.DB) {
-      const member = await env.DB.prepare('SELECT role, status FROM members WHERE id = ?').bind(userId).first<any>();
-      if (member && member.status !== 'BANNED' && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN')) {
-        return true;
-      }
+    let member = await env.DB.prepare('SELECT role, status FROM members WHERE session_token = ?').bind(token).first<any>();
+    if (!member && valid && userId) {
+      member = await env.DB.prepare('SELECT role, status FROM members WHERE id = ?').bind(userId).first<any>();
     }
-    // Master admin session fallback
-    if (token.startsWith('wcg_tok_usr_admin_') || token.includes('usr_admin') || token.includes('admin290200')) {
+    if (member && member.status !== 'BANNED' && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN')) {
       return true;
     }
   }

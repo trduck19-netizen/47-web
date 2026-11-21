@@ -56,18 +56,15 @@ async function isAuthorizedAdmin(request: Request, env: Env): Promise<{ authoriz
 
   // 3. Admin Session Token
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (token) {
-    const secrets = [env.JWT_SECRET, env.ADMIN_SYNC_SECRET];
+  if (token && env.DB) {
+    const secrets = [env.JWT_SECRET];
     const { valid, userId } = await verifyToken(token, secrets);
-    if (valid && userId && env.DB) {
-      const member = await env.DB.prepare('SELECT username, role, status FROM members WHERE id = ?').bind(userId).first<any>();
-      if (member && member.status !== 'BANNED' && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN')) {
-        return { authorized: true, actor: member.username || 'admin' };
-      }
+    let member = await env.DB.prepare('SELECT username, role, status FROM members WHERE session_token = ?').bind(token).first<any>();
+    if (!member && valid && userId) {
+      member = await env.DB.prepare('SELECT username, role, status FROM members WHERE id = ?').bind(userId).first<any>();
     }
-    // Master admin session token fallback
-    if (token.startsWith('wcg_tok_usr_admin_') || token.includes('usr_admin') || token.includes('admin290200')) {
-      return { authorized: true, actor: 'master_admin' };
+    if (member && member.status !== 'BANNED' && (member.role === 'ADMIN' || member.role === 'SUPER_ADMIN')) {
+      return { authorized: true, actor: member.username || 'admin' };
     }
   }
 

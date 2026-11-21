@@ -49,6 +49,7 @@ import type { Mission } from '../types/mission';
 import { MissionDetailModal } from './MissionDetailModal';
 import { formatCore, formatFullDateTime } from '../utils/textUtils';
 import { LanguageSelector } from './LanguageSelector';
+import { useLanguage } from '../context/LanguageContext';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -97,6 +98,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onOpenAuth,
   onNavigateToSellerCenter,
 }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'telegram' | 'missions'>(initialTab);
 
   // Sync initialTab when modal opens
@@ -181,14 +184,51 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [isCopiedUid, setIsCopiedUid] = useState(false);
   const [customAvatarInput, setCustomAvatarInput] = useState('');
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [showEmailOtpInput, setShowEmailOtpInput] = useState(false);
+  const [emailOtpCode, setEmailOtpCode] = useState('');
+  const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
 
-  const handleVerifyEmail = async () => {
+  const handleRequestEmailOtp = async () => {
     if (!currentUser) return;
+    setIsSendingEmailOtp(true);
+    try {
+      const res = await dataService.verifyEmail(undefined, 'send_code');
+      if (res.success) {
+        setShowEmailOtpInput(true);
+        onShowToast(
+          isEn ? 'OTP Code Sent' : 'Đã gửi mã OTP',
+          res.message,
+          'success'
+        );
+      } else {
+        onShowToast(
+          isEn ? 'Failed to send OTP' : 'Gửi OTP thất bại',
+          res.message,
+          'error'
+        );
+      }
+    } catch (e: any) {
+      onShowToast(
+        isEn ? 'Error' : 'Lỗi',
+        e?.message || (isEn ? 'Cannot send verification code right now.' : 'Không thể gửi mã xác minh lúc này.'),
+        'error'
+      );
+    } finally {
+      setIsSendingEmailOtp(false);
+    }
+  };
+
+  const handleConfirmEmailOtp = async () => {
+    if (!currentUser || !emailOtpCode.trim()) return;
     setIsVerifyingEmail(true);
     try {
-      const res = await dataService.verifyEmail();
-      if (res.success) {
-        onShowToast('Thành công!', res.message, 'success');
+      const res = await dataService.verifyEmail(emailOtpCode.trim());
+      if (res.success && res.email_verified) {
+        onShowToast(
+          isEn ? 'Success!' : 'Thành công!',
+          res.message,
+          'success'
+        );
         confetti({
           particleCount: 50,
           spread: 60,
@@ -197,13 +237,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         });
         const updated = dataService.getCurrentUser();
         if (updated) {
-          onUpdateUser(updated);
+          onUpdateUser?.(updated);
         }
+        setShowEmailOtpInput(false);
+        setEmailOtpCode('');
       } else {
-        onShowToast('Xác minh thất bại', res.message, 'error');
+        onShowToast(
+          isEn ? 'Verification Failed' : 'Xác minh thất bại',
+          res.message,
+          'error'
+        );
       }
     } catch (e: any) {
-      onShowToast('Lỗi', e?.message || 'Không thể xác minh email lúc này.', 'error');
+      onShowToast(
+        isEn ? 'Error' : 'Lỗi',
+        e?.message || (isEn ? 'Cannot verify code right now.' : 'Không thể xác minh mã lúc này.'),
+        'error'
+      );
     } finally {
       setIsVerifyingEmail(false);
     }
@@ -835,35 +885,70 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       ) : (
                         <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          <span>Chưa xác minh</span>
+                          <span>{isEn ? 'Unverified' : 'Chưa xác minh'}</span>
                         </span>
                       )}
                     </div>
                     <input
                       type="text"
                       disabled
-                      value={currentUser.email || 'Chưa cập nhật'}
+                      value={currentUser.email || (isEn ? 'Not updated' : 'Chưa cập nhật')}
                       className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-muted-foreground font-mono text-xs cursor-not-allowed"
                     />
                     {!currentUser.email_verified && (
-                      <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 mt-1.5">
-                        <div className="text-[11px] text-amber-300 leading-tight">
-                          Xác minh email để hưởng <strong>Ưu Đãi Mua Lần Đầu 2.000 Core</strong>
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 mt-1.5 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[11px] text-amber-300 leading-tight">
+                            {isEn
+                              ? <>Verify email to unlock <strong>First Purchase Offer 2,000 Core</strong></>
+                              : <>Xác minh email để hưởng <strong>Ưu Đãi Mua Lần Đầu 2.000 Core</strong></>}
+                          </div>
+                          {!showEmailOtpInput && (
+                            <button
+                              type="button"
+                              disabled={isSendingEmailOtp || !currentUser.email}
+                              onClick={handleRequestEmailOtp}
+                              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                            >
+                              {isSendingEmailOtp ? (isEn ? 'Sending...' : 'Đang gửi...') : (isEn ? 'Verify Now' : 'Xác minh ngay')}
+                            </button>
+                          )}
                         </div>
-                        <button
-                          type="button"
-                          disabled={isVerifyingEmail || !currentUser.email}
-                          onClick={handleVerifyEmail}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-                        >
-                          {isVerifyingEmail ? 'Đang gửi...' : 'Xác minh ngay'}
-                        </button>
+
+                        {showEmailOtpInput && (
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-amber-500/20">
+                            <input
+                              type="text"
+                              maxLength={6}
+                              value={emailOtpCode}
+                              onChange={(e) => setEmailOtpCode(e.target.value)}
+                              placeholder={isEn ? "6-digit OTP..." : "Nhập 6 số OTP..."}
+                              className="w-32 px-2.5 py-1 text-center font-mono text-xs rounded-lg bg-card border border-primary/50 text-foreground"
+                            />
+                            <button
+                              type="button"
+                              disabled={isVerifyingEmail || emailOtpCode.trim().length !== 6}
+                              onClick={handleConfirmEmailOtp}
+                              className="px-2.5 py-1 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                            >
+                              {isVerifyingEmail ? (isEn ? 'Verifying...' : 'Đang kiểm tra...') : (isEn ? 'Confirm OTP' : 'Xác nhận OTP')}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isSendingEmailOtp}
+                              onClick={handleRequestEmailOtp}
+                              className="text-[11px] text-muted-foreground hover:text-foreground underline px-1 cursor-pointer"
+                            >
+                              {isSendingEmailOtp ? (isEn ? 'Sending...' : 'Đang gửi...') : (isEn ? 'Resend' : 'Gửi lại')}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                     {currentUser.email_verified && (
                       <p className="text-[10px] text-emerald-400 flex items-center gap-1 mt-1 font-medium">
                         <Check className="w-3 h-3 shrink-0" />
-                        <span>Email hợp lệ • Đã kích hoạt quyền nhận Ưu Đãi Mua Lần Đầu.</span>
+                        <span>{isEn ? 'Valid Email • First Purchase Offer activated.' : 'Email hợp lệ • Đã kích hoạt quyền nhận Ưu Đãi Mua Lần Đầu.'}</span>
                       </p>
                     )}
                   </div>

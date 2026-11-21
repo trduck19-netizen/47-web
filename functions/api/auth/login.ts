@@ -101,7 +101,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       'SELECT attempts, locked_until, last_attempt FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
     ).bind(clientIp, 'LOGIN').first<any>().catch(() => null);
 
-    const isLockedOut = !isAdminLookup && rateLimitRow && Number(rateLimitRow.locked_until) > nowMs;
+    const isLockedOut = Boolean(rateLimitRow && Number(rateLimitRow.locked_until) > nowMs);
     if (isLockedOut) {
       const remainingMin = Math.max(1, Math.ceil((Number(rateLimitRow.locked_until) - nowMs) / 60000));
       return new Response(
@@ -181,17 +181,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           LIMIT 1
         `).first<any>();
       } catch {}
-
-      // Auto-seed initial admin in D1 members table if not yet present
-      if (!member) {
-        try {
-          await env.DB.prepare(`
-            INSERT OR IGNORE INTO members (id, email, phone, full_name, username, display_name, password_hash, role, balance, email_verified, status)
-            VALUES ('usr_admin', 'admin@codegame.store', '0988888888', 'Super Admin', 'admin290200', 'Super Admin', '69ea02563957ebf469d695bd94910669ace925bbeceffc0f3dffecce2ce51aac', 'admin', 0, 1, 'active')
-          `).run();
-          member = await env.DB.prepare("SELECT * FROM members WHERE id = 'usr_admin' LIMIT 1").first<any>();
-        } catch {}
-      }
     } else {
       try {
         member = await env.DB.prepare(`
@@ -235,16 +224,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         const computedWithPepper = await computeHash(cleanPassword, salt, pepper);
         if (computedWithPepper === storedHash) {
           isPasswordValid = true;
-        } else {
-          const computedDefault = await computeHash(cleanPassword, salt, 'wcg_edge_sec_salt_2026');
-          if (computedDefault === storedHash) {
-            isPasswordValid = true;
-          } else {
-            const computedPlain = await computeHash(cleanPassword, salt, '');
-            if (computedPlain === storedHash) {
-              isPasswordValid = true;
-            }
-          }
         }
       }
     }
@@ -275,19 +254,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       if (recoverySecret && cleanPassword === recoverySecret) {
         isPasswordValid = true;
       }
-    }
-
-    if (!isPasswordValid && (!storedHash || String(storedHash).trim() === '') && cleanPassword && cleanPassword.length >= 6) {
-      // Uninitialized account first login
-      const newSalt = member.salt || ('wcg_salt_' + Math.random().toString(36).slice(2, 10));
-      const newHash = await computeHash(cleanPassword, newSalt, pepper);
-      await env.DB.prepare('UPDATE members SET salt = ?, password_hash = ? WHERE id = ?')
-        .bind(newSalt, newHash, member.id)
-        .run()
-        .catch(() => {});
-      member.salt = newSalt;
-      member.password_hash = newHash;
-      isPasswordValid = true;
     }
 
     if (!isPasswordValid) {
@@ -332,7 +298,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         success: true,
         message: `Đăng nhập thành công! Chào mừng ${member.display_name || member.username} quay trở lại.`,
         token: sessionToken,
-        syncKey: isAdmin ? (env.ADMIN_SYNC_SECRET || '') : undefined,
         client_ip: clientIp,
         user: {
           id: member.id,

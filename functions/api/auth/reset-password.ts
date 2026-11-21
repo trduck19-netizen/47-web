@@ -215,21 +215,53 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     const emailConfig = await getSettingD1(env.DB, 'wcg_admin_email_config_v4').catch(() => null);
+    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const nowMs = Date.now();
 
     // Step 1: Request OTP Code
     if (action === 'request_otp') {
+      // Rate limiting: Max 3 OTP requests per 15 mins per IP
+      const otpRateLimit = await env.DB.prepare(
+        'SELECT attempts, locked_until FROM ip_rate_limits WHERE ip_address = ? AND action_type = ?'
+      ).bind(clientIp, 'REQUEST_OTP').first<any>().catch(() => null);
+
+      if (otpRateLimit && Number(otpRateLimit.locked_until) > nowMs) {
+        const remainingMin = Math.max(1, Math.ceil((Number(otpRateLimit.locked_until) - nowMs) / 60000));
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Bạn đã yêu cầu gửi mã OTP quá nhiều lần. Vui lòng thử lại sau ${remainingMin} phút.`,
+            remainingMinutes: remainingMin,
+          }),
+          { status: 429, headers: CORS_HEADERS }
+        );
+      }
+
+      const currentOtpAttempts = (Number(otpRateLimit?.attempts) || 0) + 1;
+      const isLocked = currentOtpAttempts >= 3;
+      const lockedUntil = isLocked ? nowMs + 15 * 60 * 1000 : 0;
+      await env.DB.prepare(`
+        INSERT INTO ip_rate_limits (ip_address, action_type, attempts, locked_until, last_attempt)
+        VALUES (?, 'REQUEST_OTP', ?, ?, ?)
+        ON CONFLICT(ip_address, action_type) DO UPDATE SET
+          attempts = excluded.attempts,
+          locked_until = excluded.locked_until,
+          last_attempt = excluded.last_attempt
+      `).bind(clientIp, currentOtpAttempts, lockedUntil, nowMs).run().catch(() => {});
+
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 10 * 60 * 1000; // 10 mins
       const otpHashVal = await hashOtp(generatedOtp, member.salt || 'wcg_otp_salt');
 
+      // Never store plaintext OTP; store only the cryptographic hash
       await env.DB.prepare(`
         UPDATE members
-        SET recovery_otp = ?,
+        SET recovery_otp = NULL,
             recovery_otp_hash = ?,
             otp_expires_at = ?,
             otp_attempts = 0
         WHERE id = ?
-      `).bind(generatedOtp, otpHashVal, expiresAt, member.id).run();
+      `).bind(otpHashVal, expiresAt, member.id).run();
 
       // Log OTP request into security_logs
       const logId = `sec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -315,9 +347,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       const isOtpExpired = !member.otp_expires_at || Date.now() > Number(member.otp_expires_at);
       const computedInputHash = await hashOtp(inputOtp, member.salt || 'wcg_otp_salt');
-      const isOtpInvalid = member.recovery_otp_hash
-        ? computedInputHash !== member.recovery_otp_hash
-        : String(member.recovery_otp || '').trim() !== inputOtp;
+      const isOtpInvalid = !member.recovery_otp_hash || computedInputHash !== member.recovery_otp_hash;
 
       if (isOtpExpired || isOtpInvalid) {
         await env.DB.prepare('UPDATE members SET otp_attempts = ? WHERE id = ?')

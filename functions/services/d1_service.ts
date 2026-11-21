@@ -2529,6 +2529,15 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     await db.prepare('ALTER TABLE members ADD COLUMN recovery_otp_hash TEXT;').run().catch(() => {});
   } catch {}
   try {
+    await db.prepare('ALTER TABLE members ADD COLUMN email_verify_code_hash TEXT;').run().catch(() => {});
+  } catch {}
+  try {
+    await db.prepare('ALTER TABLE members ADD COLUMN email_verify_expires_at INTEGER;').run().catch(() => {});
+  } catch {}
+  try {
+    await db.prepare('ALTER TABLE members ADD COLUMN email_verify_attempts INTEGER;').run().catch(() => {});
+  } catch {}
+  try {
     await db.prepare('ALTER TABLE members ADD COLUMN updated_at TEXT;').run().catch(() => {});
   } catch {}
   try {
@@ -5396,12 +5405,11 @@ export async function loadAllMembersD1(db: D1Database, stripSensitive: boolean =
         status, 
         avatar_url, 
         avatar_url AS avatar,
-        session_token, 
+        ${stripSensitive ? 'NULL AS session_token,' : 'session_token,'}
         last_login, 
         created_at, 
         created_at AS createdAt,
         registered_ip
-      ${stripSensitive ? '' : ', salt, password_hash, recovery_otp, otp_expires_at, otp_attempts'}
       FROM members
       ORDER BY created_at DESC
     `).all();
