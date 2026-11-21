@@ -138,12 +138,14 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
       const localWebpUrl = `${urlObj.origin}/game_icons/${slug}.webp`;
       const localRes = await fetch(localWebpUrl);
       if (localRes.ok) {
-        const contentType = localRes.headers.get('content-type') || 'image/webp';
+        const safeContentType = getSafeImageContentType(localRes.headers.get('content-type')) || 'image/webp';
         const proxyResponse = new Response(localRes.body, {
           status: 200,
           headers: new Headers({
             ...CORS_HEADERS,
-            'Content-Type': contentType,
+            'Content-Type': safeContentType,
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
             'Cache-Control': 'public, max-age=31536000, immutable',
             'X-Image-Proxy-By': 'CodeGame-Local-Static',
           }),
@@ -158,11 +160,14 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
       const localJpgUrl = `${urlObj.origin}/game_icons/${slug}.jpg`;
       const localJpgRes = await fetch(localJpgUrl);
       if (localJpgRes.ok) {
+        const safeContentType = getSafeImageContentType(localJpgRes.headers.get('content-type')) || 'image/jpeg';
         const proxyResponse = new Response(localJpgRes.body, {
           status: 200,
           headers: new Headers({
             ...CORS_HEADERS,
-            'Content-Type': 'image/jpeg',
+            'Content-Type': safeContentType,
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
             'Cache-Control': 'public, max-age=31536000, immutable',
             'X-Image-Proxy-By': 'CodeGame-Local-JPG',
           }),
@@ -228,6 +233,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           'Accept-Language': 'vi,en;q=0.9',
         },
+        signal: AbortSignal.timeout(10000),
       });
 
       if (gpRes.ok) {
@@ -241,14 +247,17 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
               'Referer': 'https://play.google.com/',
             },
+            signal: AbortSignal.timeout(10000),
           });
           if (iconRes.ok) {
-            const contentType = iconRes.headers.get('content-type') || 'image/webp';
+            const safeContentType = getSafeImageContentType(iconRes.headers.get('content-type')) || 'image/webp';
             const proxyResponse = new Response(iconRes.body, {
               status: 200,
               headers: new Headers({
                 ...CORS_HEADERS,
-                'Content-Type': contentType,
+                'Content-Type': safeContentType,
+                'X-Content-Type-Options': 'nosniff',
+                'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
                 'Cache-Control': 'public, max-age=31536000, immutable',
                 'X-Image-Proxy-By': 'CodeGame-Edge-GooglePlay',
               }),

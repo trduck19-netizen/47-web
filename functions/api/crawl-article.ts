@@ -71,19 +71,24 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
     });
   }
 
-  if (context.env.DB) {
-    const adminAuth = await authenticateAdmin(context.env.DB, token, {
-      JWT_SECRET: context.env.JWT_SECRET,
-      ADMIN_SYNC_SECRET: context.env.ADMIN_SYNC_SECRET,
+  if (!context.env.DB) {
+    return new Response(JSON.stringify({ success: false, error: 'Internal Error: D1 Database binding is missing' }), {
+      status: 500,
+      headers,
     });
-    if (!adminAuth.authenticated) {
-      const callerAuth = await authenticateCaller(context.env.DB, token, context.env.JWT_SECRET);
-      if (!callerAuth.authenticated || (callerAuth.member?.role !== 'ADMIN' && callerAuth.member?.role !== 'SUPER_ADMIN')) {
-        return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Quyền quản trị viên bắt buộc' }), {
-          status: 401,
-          headers,
-        });
-      }
+  }
+
+  const adminAuth = await authenticateAdmin(context.env.DB, token, {
+    JWT_SECRET: context.env.JWT_SECRET,
+    ADMIN_SYNC_SECRET: context.env.ADMIN_SYNC_SECRET,
+  });
+  if (!adminAuth.authenticated) {
+    const callerAuth = await authenticateCaller(context.env.DB, token, context.env.JWT_SECRET);
+    if (!callerAuth.authenticated || (callerAuth.member?.role !== 'ADMIN' && callerAuth.member?.role !== 'SUPER_ADMIN')) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Quyền quản trị viên bắt buộc' }), {
+        status: 401,
+        headers,
+      });
     }
   }
 
@@ -100,18 +105,43 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
 
     const isSocialMedia = /facebook\.com|fb\.com|fb\.watch|instagram\.com|tiktok\.com|threads\.net|twitter\.com|x\.com/i.test(rawUrl);
 
-    // Fetch the target webpage with realistic browser User-Agent
-    const response = await fetch(rawUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 (UniversalMall-ArticleBot/1.0)',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'vi,en-US;q=0.9,en;q=0.8',
-      },
-      signal: AbortSignal.timeout(10000),
-      redirect: 'follow',
-    });
+    // Fetch the target webpage with realistic browser User-Agent and manual redirects (max 3)
+    let currentUrl = rawUrl;
+    let redirectCount = 0;
+    const maxRedirects = 3;
+    let response: Response | null = null;
 
-    if (!response.ok) {
+    while (redirectCount <= maxRedirects) {
+      if (!isSafeCrawlUrl(currentUrl)) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Redirect bị chặn: URL chuyển hướng trỏ vào địa chỉ IP nội bộ không hợp lệ' }),
+          { status: 400, headers }
+        );
+      }
+
+      response = await fetch(currentUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 (UniversalMall-ArticleBot/1.0)',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'vi,en-US;q=0.9,en;q=0.8',
+        },
+        signal: AbortSignal.timeout(10000),
+        redirect: 'manual',
+      });
+
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        const location = response.headers.get('location');
+        if (!location) break;
+        const nextUrl = new URL(location, currentUrl).toString();
+        currentUrl = nextUrl;
+        redirectCount++;
+        continue;
+      }
+
+      break;
+    }
+
+    if (!response || !response.ok) {
       if (isSocialMedia) {
         return new Response(
           JSON.stringify({
@@ -125,14 +155,46 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Không thể tải trang web (HTTP ${response.status}). Bạn có thể copy và dán trực tiếp nội dung bài viết vào ô bên dưới.`,
+          error: `Không thể tải trang web (HTTP ${response?.status || 'Error'}). Bạn có thể copy và dán trực tiếp nội dung bài viết vào ô bên dưới.`,
         }),
         { status: 200, headers }
       );
     }
 
-    const rawText = await response.text();
-    const html = rawText.length > 1024 * 1024 ? rawText.substring(0, 1024 * 1024) : rawText;
+    // Read streaming body with byte counter abort when exceeding 1MB (1048576 bytes)
+    const MAX_BYTES = 1024 * 1024;
+    let html = '';
+    if (response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let totalBytes = 0;
+      const chunks: string[] = [];
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) {
+            totalBytes += value.byteLength;
+            if (totalBytes > MAX_BYTES) {
+              const remaining = MAX_BYTES - (totalBytes - value.byteLength);
+              if (remaining > 0) {
+                chunks.push(decoder.decode(value.subarray(0, remaining), { stream: false }));
+              }
+              await reader.cancel().catch(() => {});
+              break;
+            }
+            chunks.push(decoder.decode(value, { stream: true }));
+          }
+        }
+      } catch (streamErr) {
+        console.warn('[CrawlArticle Stream Notice]', streamErr);
+      }
+      html = chunks.join('');
+    } else {
+      const rawText = await response.text();
+      html = rawText.slice(0, MAX_BYTES);
+    }
 
     // Check if social media login wall was served
     if (isSocialMedia && (html.includes('id="login_form"') || html.includes('login.php') || html.includes('Facebook – log in') || html.includes('Đăng nhập hoặc đăng ký'))) {
