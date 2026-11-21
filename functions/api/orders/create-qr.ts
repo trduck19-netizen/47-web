@@ -178,7 +178,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, env.ADMIN_SYNC_SECRET]);
+    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET]);
 
     let member: any = null;
     if (token) {
@@ -191,15 +191,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       member = await env.DB.prepare(
         'SELECT * FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
       ).bind(tokenUserId, tokenUserId, tokenUserId).first<any>();
-    }
-
-    if (!member && token) {
-      const extractedUserId = extractUserIdFromToken(token);
-      if (extractedUserId) {
-        member = await env.DB.prepare(
-          'SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1'
-        ).bind(extractedUserId, extractedUserId).first<any>();
-      }
     }
 
     if (!member) {
@@ -358,28 +349,53 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
-    // 3.1 Áp dụng Voucher giảm giá nếu khách hàng cung cấp
+    // 3.1 Áp dụng Voucher giảm giá nếu khách hàng cung cấp (Server-Authoritative Validation)
     const effectiveVoucherCode = String(body?.voucherCode || body?.voucher_code || '').trim().toUpperCase();
+    let appliedVoucherCode: string | null = null;
+    let appliedVoucherDiscount = 0;
     if (effectiveVoucherCode) {
       try {
         const vRec = await env.DB.prepare(
-          'SELECT * FROM vouchers WHERE UPPER(code) = ? AND is_active = 1 LIMIT 1'
+          'SELECT * FROM vouchers WHERE UPPER(TRIM(code)) = ? AND is_active = 1 LIMIT 1'
         ).bind(effectiveVoucherCode).first<any>();
+
         if (vRec) {
-          let vDiscount = 0;
-          if (vRec.discount_type === 'percent') {
-            vDiscount = Math.round((finalTotalAmount * Number(vRec.discount_value)) / 100);
-          } else {
-            vDiscount = Number(vRec.discount_value) || 0;
-          }
-          if (vRec.max_discount && Number(vRec.max_discount) > 0 && vDiscount > Number(vRec.max_discount)) {
-            vDiscount = Number(vRec.max_discount);
-          }
-          if (vDiscount > 0) {
-            discountAmount += vDiscount;
-            finalTotalAmount = Math.max(2000, finalTotalAmount - vDiscount);
-            pricePaidTotal = finalTotalAmount;
-            discountType = `voucher:${vRec.code}`;
+          const now = new Date();
+          const isDateValid = (!vRec.start_date || new Date(vRec.start_date) <= now) &&
+                              (!vRec.end_date || new Date(vRec.end_date) >= now);
+          const isUsageValid = !vRec.usage_limit || Number(vRec.usage_count || 0) < Number(vRec.usage_limit);
+          const minOrder = Number(vRec.min_order_amount) || 0;
+          const isMinOrderMet = finalTotalAmount >= minOrder;
+
+          if (isDateValid && isUsageValid && isMinOrderMet) {
+            let vDiscount = 0;
+            const maxCap = vRec.max_discount_amount ? Number(vRec.max_discount_amount) : Infinity;
+
+            if (vRec.voucher_type === 'freeship') {
+              const shippingFee = Number(body?.shipping_fee || body?.shippingFee || 0);
+              if (shippingFee > 0) {
+                if (vRec.discount_type === 'percent') {
+                  vDiscount = Math.min(Math.round((shippingFee * Number(vRec.discount_value)) / 100), maxCap, shippingFee);
+                } else {
+                  vDiscount = Math.min(Number(vRec.discount_value) || 0, maxCap, shippingFee);
+                }
+              }
+            } else {
+              if (vRec.discount_type === 'percent') {
+                vDiscount = Math.min(Math.round((finalTotalAmount * Number(vRec.discount_value)) / 100), maxCap, finalTotalAmount);
+              } else {
+                vDiscount = Math.min(Number(vRec.discount_value) || 0, maxCap, finalTotalAmount);
+              }
+            }
+
+            if (vDiscount > 0) {
+              discountAmount += vDiscount;
+              finalTotalAmount = Math.max(2000, finalTotalAmount - vDiscount);
+              pricePaidTotal = finalTotalAmount;
+              discountType = `voucher:${vRec.code}`;
+              appliedVoucherCode = vRec.code;
+              appliedVoucherDiscount = vDiscount;
+            }
           }
         }
       } catch (e) {
@@ -479,6 +495,26 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }),
         { status: 400, headers: CORS_HEADERS }
       );
+    }
+
+    // Ghi nhận trừ lượt dùng voucher nguyên tử trong D1 nếu có áp dụng
+    if (appliedVoucherCode && appliedVoucherDiscount > 0) {
+      try {
+        await env.DB.prepare(`
+          UPDATE vouchers
+          SET usage_count = usage_count + 1
+          WHERE UPPER(TRIM(code)) = ? AND is_active = 1
+            AND (usage_limit IS NULL OR usage_limit = 0 OR usage_count < usage_limit)
+        `).bind(appliedVoucherCode).run();
+
+        const redId = `vred_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await env.DB.prepare(`
+          INSERT OR IGNORE INTO voucher_redemptions (id, order_id, code, member_id, discount_amount, created_at)
+          VALUES (?, ?, ?, ?, ?, datetime('now'))
+        `).bind(redId, orderId, appliedVoucherCode, member.id, appliedVoucherDiscount).run();
+      } catch (e) {
+        console.warn('[Voucher redemption error]', e);
+      }
     }
 
     // 7. Tạo thông tin VietQR (1 VND = 1 Core) & Chuỗi Payload EMVCo chuẩn (§4.1)

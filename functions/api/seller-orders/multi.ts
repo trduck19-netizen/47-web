@@ -1,5 +1,5 @@
 import { verifyMemberAuth } from '../../services/mission_service';
-import { ensureMarketplaceSchema, logAdminAudit } from '../../services/d1_service';
+import { ensureMarketplaceSchema, logAdminAudit, checkAndExpireSellerOrdersD1 } from '../../services/d1_service';
 import {
   getMarketplaceConfig,
   isTestSellerAllowed,
@@ -99,6 +99,32 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       return new Response(
         JSON.stringify({ success: false, error: 'Giỏ hàng trống. Vui lòng chọn sản phẩm.' }),
         { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    if (items.length > 10) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Mỗi đơn hàng chỉ được chứa tối đa 10 sản phẩm.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    // Tự động quét và hoàn trả mã cho các đơn hàng đã hết hạn trước khi kiểm kho
+    await checkAndExpireSellerOrdersD1(env.DB);
+
+    // Giới hạn số đơn hàng chờ thanh toán tối đa của 1 tài khoản (chống DoS chiếm giữ mã kho)
+    const pendingOrdersCount = await env.DB.prepare(`
+      SELECT COUNT(*) as count FROM seller_parent_orders
+      WHERE buyer_member_id = ? AND status = 'PENDING_PAYMENT' AND datetime(expires_at) > datetime('now')
+    `).bind(buyer.id).first<any>();
+
+    if (Number(pendingOrdersCount?.count || 0) >= 3) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Bạn đang có 3 đơn hàng đang chờ thanh toán. Vui lòng thanh toán hoặc chờ đơn hết hạn trước khi tạo đơn mới.',
+        }),
+        { status: 429, headers: CORS_HEADERS }
       );
     }
 

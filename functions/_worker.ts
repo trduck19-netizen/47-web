@@ -1,7 +1,7 @@
 import * as syncApi from './api/sync';
 import { confirmReceivedAndRelease, fileOrderDispute, autoReleaseDueEscrow, resolveAdminDispute } from './services/escrow_service';
 import { getProductReviews, createProductReview, approveReview, rejectReview, deleteReview, listAdminReviews } from './services/review_service';
-import { extractUserIdFromToken } from './services/auth_service';
+import { extractUserIdFromToken, authenticateCaller, authenticateAdmin } from './services/auth_service';
 import * as syncLiteApi from './api/sync-lite';
 import * as statsApi from './api/stats';
 import * as voteApi from './api/vote';
@@ -826,11 +826,18 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         }
         if (method === 'POST') {
           if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-          const match = pathname.match(/^\/api\/orders\/([^\/]+)\/confirm-received$/);
-          const orderId = match ? match[1] : '';
           const authHeader = request.headers.get('Authorization') || '';
           const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-          const userId = extractUserIdFromToken(token) || 'customer';
+          const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+          if (!auth.authenticated || !auth.member) {
+            return new Response(JSON.stringify({ success: false, message: 'Yêu cầu đăng nhập hợp lệ để xác nhận nhận hàng.', code: 'UNAUTHORIZED' }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+          const match = pathname.match(/^\/api\/orders\/([^\/]+)\/confirm-received$/);
+          const orderId = match ? match[1] : '';
+          const userId = auth.member.id;
           const result = await confirmReceivedAndRelease(env.DB, orderId, userId, `user_${userId}`);
           return new Response(JSON.stringify(result), {
             status: result.success ? 200 : 400,
@@ -846,11 +853,18 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         }
         if (method === 'POST') {
           if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-          const match = pathname.match(/^\/api\/orders\/([^\/]+)\/dispute$/);
-          const orderId = match ? match[1] : '';
           const authHeader = request.headers.get('Authorization') || '';
           const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-          const userId = extractUserIdFromToken(token) || 'customer';
+          const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+          if (!auth.authenticated || !auth.member) {
+            return new Response(JSON.stringify({ success: false, message: 'Yêu cầu đăng nhập hợp lệ để khiếu nại đơn hàng.', code: 'UNAUTHORIZED' }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+          const match = pathname.match(/^\/api\/orders\/([^\/]+)\/dispute$/);
+          const orderId = match ? match[1] : '';
+          const userId = auth.member.id;
           const body: any = await request.json().catch(() => ({}));
           const reason = body?.reason || 'Hàng lỗi hoặc không nhận được hàng';
           const detail = body?.detail || '';
@@ -868,6 +882,16 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, GET, OPTIONS', 'Access-Control-Allow-Headers': '*' } });
         }
         if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        const authHeader = request.headers.get('Authorization') || '';
+        const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+        const isCronSecret = (env.ADMIN_SYNC_SECRET && token === env.ADMIN_SYNC_SECRET) || (env.CRON_SECRET && token === env.CRON_SECRET);
+        const adminAuth = await authenticateAdmin(env.DB, token, env);
+        if (!isCronSecret && !adminAuth.authenticated) {
+          return new Response(JSON.stringify({ success: false, message: 'Yêu cầu quyền Quản trị viên hoặc Cron Secret hợp lệ để chạy giải ngân tự động.' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
         const result = await autoReleaseDueEscrow(env.DB, 'system_auto_release_168h');
         return new Response(JSON.stringify({ success: true, ...result }), {
           status: 200,
@@ -882,11 +906,18 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         }
         if (method === 'POST') {
           if (!env.DB) return new Response(JSON.stringify({ success: false, message: 'D1 binding DB is missing' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-          const match = pathname.match(/^\/api\/admin\/orders\/([^\/]+)\/resolve-dispute$/);
-          const orderId = match ? match[1] : '';
           const authHeader = request.headers.get('Authorization') || '';
           const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-          const adminId = extractUserIdFromToken(token) || 'admin';
+          const adminAuth = await authenticateAdmin(env.DB, token, env);
+          if (!adminAuth.authenticated) {
+            return new Response(JSON.stringify({ success: false, message: 'Yêu cầu quyền Quản trị viên để xử lý khiếu nại đơn hàng.' }), {
+              status: 403,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+          const match = pathname.match(/^\/api\/admin\/orders\/([^\/]+)\/resolve-dispute$/);
+          const orderId = match ? match[1] : '';
+          const adminId = adminAuth.adminId || 'admin';
           const body: any = await request.json().catch(() => ({}));
           const resolution = body?.resolution === 'REFUND' ? 'REFUND' : 'RELEASE';
           const note = body?.note || '';

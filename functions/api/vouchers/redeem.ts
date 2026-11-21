@@ -1,4 +1,6 @@
 import { CORS_HEADERS, Env } from '../../services/mission_service';
+import { authenticateCaller, authenticateAdmin } from '../../services/auth_service';
+import { ensureSchemaUpgrades } from '../../services/d1_service';
 
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -6,7 +8,9 @@ export const onRequestOptions: PagesFunction = async () => {
 
 /**
  * POST /api/vouchers/redeem
- * Ghi nhận trừ lượt dùng voucher trong Cloudflare D1 khi đơn hàng hoàn tất
+ * Ghi nhận trừ lượt dùng voucher trong Cloudflare D1 khi đơn hàng hoàn tất.
+ * Bảo vệ: Bắt buộc xác thực danh tính người mua sở hữu đơn hàng, kiểm tra giới hạn lượt dùng nguyên tử,
+ * và ràng buộc tính duy nhất (UNIQUE) trên cặp (order_id, code) để chống cạn kiệt quota trái phép.
  */
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -16,6 +20,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       return new Response(
         JSON.stringify({ success: false, message: 'D1 Database chưa được cấu hình.' }),
         { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    await ensureSchemaUpgrades(env.DB);
+
+    const authHeader = request.headers.get('Authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    const callerAuth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+    const adminAuth = await authenticateAdmin(env.DB, token, env);
+    const isAdmin = adminAuth.authenticated;
+    const callerMember = callerAuth.member;
+
+    if (!isAdmin && !callerMember) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Yêu cầu đăng nhập để áp dụng voucher.' }),
+        { status: 401, headers: CORS_HEADERS }
       );
     }
 
@@ -29,14 +50,92 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
+    const cleanOrderId = String(order_id || '').trim();
+    if (!cleanOrderId) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Thiếu mã đơn hàng (order_id).' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
     const cleanCode = code.trim().toUpperCase();
 
-    // Cập nhật tăng số lượt dùng trong D1
-    const res = await env.DB.prepare(`
+    // 1. Kiểm tra đơn hàng có tồn tại và thuộc quyền sở hữu của người gọi
+    let orderOwnerId: string | null = null;
+    const directOrder = await env.DB.prepare(
+      'SELECT id, member_id FROM orders WHERE id = ? LIMIT 1'
+    ).bind(cleanOrderId).first<any>();
+
+    if (directOrder) {
+      orderOwnerId = directOrder.member_id;
+    } else {
+      const parentOrder = await env.DB.prepare(
+        'SELECT id, buyer_member_id FROM seller_parent_orders WHERE (id = ? OR parent_order_code = ?) LIMIT 1'
+      ).bind(cleanOrderId, cleanOrderId).first<any>();
+
+      if (parentOrder) {
+        orderOwnerId = parentOrder.buyer_member_id;
+      } else {
+        const sellerChild = await env.DB.prepare(
+          'SELECT id, buyer_member_id FROM seller_orders WHERE (id = ? OR order_code = ?) LIMIT 1'
+        ).bind(cleanOrderId, cleanOrderId).first<any>();
+        if (sellerChild) {
+          orderOwnerId = sellerChild.buyer_member_id;
+        }
+      }
+    }
+
+    if (!orderOwnerId) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Không tìm thấy đơn hàng tương ứng.' }),
+        { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    if (!isAdmin && callerMember.id !== orderOwnerId) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Bạn không có quyền áp dụng voucher cho đơn hàng của người khác.' }),
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
+
+    // 2. Chống lặp: Kiểm tra đơn hàng đã áp dụng voucher này chưa
+    const existing = await env.DB.prepare(
+      'SELECT id FROM voucher_redemptions WHERE order_id = ? AND UPPER(code) = ? LIMIT 1'
+    ).bind(cleanOrderId, cleanCode).first<any>();
+
+    if (existing) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Voucher đã được áp dụng cho đơn hàng này.',
+          already_redeemed: true,
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
+    // 3. Cập nhật tăng số lượt dùng trong D1 (Atomic check usage_limit)
+    const updateRes: any = await env.DB.prepare(`
       UPDATE vouchers
       SET usage_count = usage_count + 1
       WHERE UPPER(TRIM(code)) = ? AND is_active = 1
+        AND (usage_limit IS NULL OR usage_limit = 0 OR usage_count < usage_limit)
     `).bind(cleanCode).run();
+
+    if (!updateRes || updateRes.meta?.changes === 0) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Mã voucher đã hết lượt sử dụng hoặc không còn hiệu lực.' }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    // 4. Ghi nhận nhật ký đổi mã nguyên tử
+    const redId = `vred_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO voucher_redemptions (id, order_id, code, member_id, created_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+    `).bind(redId, cleanOrderId, cleanCode, callerMember ? callerMember.id : 'admin').run();
 
     const voucher = await env.DB.prepare(`
       SELECT id, code, usage_count, usage_limit, voucher_type
@@ -53,7 +152,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           code: cleanCode,
           usage_count: voucher?.usage_count || 1,
           usage_limit: voucher?.usage_limit || 1000,
-          order_id: order_id || null,
+          order_id: cleanOrderId,
         },
       }),
       { status: 200, headers: CORS_HEADERS }

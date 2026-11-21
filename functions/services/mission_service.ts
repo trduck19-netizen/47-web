@@ -482,7 +482,7 @@ export async function executeApproveReward(
         "UPDATE missions SET completed_count = completed_count + 1, updated_at = ? WHERE id = ?"
       ).bind(nowIso, mission.id),
       db.prepare(
-        "UPDATE mission_submissions SET status = 'APPROVED', reward_delivered = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ? WHERE id = ?"
+        "UPDATE mission_submissions SET status = 'APPROVED', reward_delivered = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ? WHERE id = ? AND status = 'PENDING'"
       ).bind(rewardDelivered, reviewerActor, nowIso, nowIso, submission.id),
       db.prepare(
         "INSERT INTO mission_audit_logs (id, mission_id, mission_title, submission_id, user_id, action, actor, details, created_at) VALUES (?, ?, ?, ?, ?, 'APPROVE', ?, ?, ?)"
@@ -542,7 +542,7 @@ export async function executeApproveReward(
         "UPDATE missions SET completed_count = completed_count + 1, updated_at = ? WHERE id = ?"
       ).bind(nowIso, mission.id),
       db.prepare(
-        "UPDATE mission_submissions SET status = 'APPROVED', reward_delivered = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ? WHERE id = ?"
+        "UPDATE mission_submissions SET status = 'APPROVED', reward_delivered = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ? WHERE id = ? AND status = 'PENDING'"
       ).bind(rewardDelivered, reviewerActor, nowIso, nowIso, submission.id),
       db.prepare(
         "INSERT INTO mission_audit_logs (id, mission_id, mission_title, submission_id, user_id, action, actor, details, created_at) VALUES (?, ?, ?, ?, ?, 'APPROVE', ?, ?, ?)"
@@ -584,8 +584,12 @@ export async function executeRejectSubmission(
     return { success: false, error: 'Không tìm thấy hồ sơ nộp bài.' };
   }
 
+  if (submission.status === 'REJECTED') {
+    return { success: true };
+  }
+
   const mission = await db
-    .prepare('SELECT id, title FROM missions WHERE id = ? LIMIT 1')
+    .prepare('SELECT id, title, reward_type, reward_value FROM missions WHERE id = ? LIMIT 1')
     .bind(submission.mission_id)
     .first<any>();
   const missionTitle = mission?.title || '';
@@ -593,10 +597,50 @@ export async function executeRejectSubmission(
   const nowIso = new Date().toISOString();
   const nextResubmissionCount = (Number(submission.resubmission_count) || 0) + 1;
   const reasonText = (rejectionReason || '').trim() || 'Link bài đăng không đáp ứng yêu cầu nhiệm vụ.';
+  const batchOps: any[] = [];
 
-  const batchOps = [
+  // Nếu hồ sơ trước đó đã được duyệt (APPROVED), bắt buộc thu hồi phần thưởng (Clawback) để chống double reward
+  if (submission.status === 'APPROVED') {
+    if (mission?.reward_type === 'WALLET_BALANCE') {
+      const rewardAmount = Math.max(0, Math.floor(Number(mission.reward_value) || 0));
+      if (rewardAmount > 0) {
+        const member = await db.prepare('SELECT id, balance, email FROM members WHERE id = ? LIMIT 1')
+          .bind(submission.user_id).first<any>();
+        if (member) {
+          const balBefore = Number(member.balance) || 0;
+          const balAfter = Math.max(0, balBefore - rewardAmount);
+          const clawbackTxId = `tx_claw_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+          batchOps.push(
+            db.prepare('UPDATE members SET balance = ?, updated_at = ? WHERE id = ?')
+              .bind(balAfter, nowIso, member.id),
+            db.prepare(
+              `INSERT INTO wallet_transactions (id, member_id, member_email, type, amount, balance_before, balance_after, description, status, created_at)
+               VALUES (?, ?, ?, 'MISSION_CLAWBACK', ?, ?, ?, ?, 'COMPLETED', ?)`
+            ).bind(clawbackTxId, member.id, member.email || '', -rewardAmount, balBefore, balAfter, `Thu hồi thưởng do từ chối hồ sơ nhiệm vụ: ${missionTitle}`, nowIso)
+          );
+        }
+      }
+    } else if (mission?.reward_type === 'CODE') {
+      // Trả lại mã code về trạng thái AVAILABLE trong kho
+      batchOps.push(
+        db.prepare(
+          "UPDATE mission_reward_pools SET status = 'AVAILABLE', claimed_by_user_id = NULL, claimed_at = NULL, submission_id = NULL WHERE submission_id = ?"
+        ).bind(submission.id)
+      );
+    }
+
+    if (mission) {
+      batchOps.push(
+        db.prepare(
+          "UPDATE missions SET completed_count = MAX(0, completed_count - 1), updated_at = ? WHERE id = ?"
+        ).bind(nowIso, mission.id)
+      );
+    }
+  }
+
+  batchOps.push(
     db.prepare(
-      "UPDATE mission_submissions SET status = 'REJECTED', rejection_reason = ?, resubmission_count = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ? WHERE id = ?"
+      "UPDATE mission_submissions SET status = 'REJECTED', reward_delivered = NULL, rejection_reason = ?, resubmission_count = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ? WHERE id = ?"
     ).bind(reasonText, nextResubmissionCount, reviewerActor, nowIso, nowIso, submission.id),
     db.prepare(
       "INSERT INTO mission_audit_logs (id, mission_id, mission_title, submission_id, user_id, action, actor, details, created_at) VALUES (?, ?, ?, ?, ?, 'REJECT', ?, ?, ?)"
@@ -607,10 +651,10 @@ export async function executeRejectSubmission(
       submission.id,
       submission.user_id,
       reviewerActor,
-      `Từ chối hồ sơ (Lần nộp lại thứ ${nextResubmissionCount}): ${reasonText}`,
+      `Từ chối hồ sơ (Lần nộp lại thứ ${nextResubmissionCount}${submission.status === 'APPROVED' ? ' - ĐÃ THU HỒI THƯỞNG CŨ' : ''}): ${reasonText}`,
       nowIso
-    ),
-  ];
+    )
+  );
 
   await db.batch(batchOps);
   return { success: true };

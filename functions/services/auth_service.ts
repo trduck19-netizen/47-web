@@ -254,3 +254,73 @@ export async function verifyTemporaryAuditToken(
 
   return { valid: false, expired: false, remainingSeconds: 0, error: 'Chữ ký mật mã của token kiểm toán không chính xác.' };
 }
+
+/**
+ * Xác thực danh tính người dùng dựa trên D1 Database session_token hoặc mã ký JWT hợp lệ.
+ * Tuyệt đối không chấp nhận token giả mạo, token rỗng hoặc unsigned token.
+ */
+export async function authenticateCaller(
+  db: D1Database,
+  token: string,
+  envSecret?: string
+): Promise<{ authenticated: boolean; member: any | null }> {
+  if (!token || !db) return { authenticated: false, member: null };
+  const clean = token.replace(/^Bearer\s+/i, '').trim();
+  if (!clean) return { authenticated: false, member: null };
+
+  // 1. Kiểm tra session_token chính xác trong bảng members
+  try {
+    const memberBySession = await db.prepare(
+      'SELECT * FROM members WHERE session_token = ? LIMIT 1'
+    ).bind(clean).first<any>();
+
+    if (memberBySession && memberBySession.status !== 'BANNED') {
+      return { authenticated: true, member: memberBySession };
+    }
+  } catch {}
+
+  // 2. Xác thực chữ ký cryptographic HMAC-SHA256
+  try {
+    const secret = envSecret || getSigningSecret({});
+    const { valid, userId } = await verifyToken(clean, [secret]);
+    if (valid && userId) {
+      const memberById = await db.prepare(
+        'SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1'
+      ).bind(userId, userId).first<any>();
+      if (memberById && memberById.status !== 'BANNED') {
+        return { authenticated: true, member: memberById };
+      }
+    }
+  } catch {}
+
+  return { authenticated: false, member: null };
+}
+
+/**
+ * Xác thực quyền Quản trị viên (Admin) cho các thao tác nhạy cảm.
+ */
+export async function authenticateAdmin(
+  db: D1Database,
+  token: string,
+  env: { JWT_SECRET?: string; ADMIN_SYNC_SECRET?: string }
+): Promise<{ authenticated: boolean; adminId: string | null; isMasterSecret: boolean }> {
+  if (!token) return { authenticated: false, adminId: null, isMasterSecret: false };
+  const clean = token.replace(/^Bearer\s+/i, '').trim();
+  if (!clean) return { authenticated: false, adminId: null, isMasterSecret: false };
+
+  // 1. Master sync secret match
+  if (env.ADMIN_SYNC_SECRET && clean === env.ADMIN_SYNC_SECRET) {
+    return { authenticated: true, adminId: 'admin_sync_master', isMasterSecret: true };
+  }
+
+  // 2. Kiểm tra tài khoản Quản trị viên trong Database
+  const auth = await authenticateCaller(db, clean, env.JWT_SECRET);
+  if (auth.authenticated && auth.member) {
+    const role = String(auth.member.role || '').toUpperCase();
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || auth.member.username === 'admin') {
+      return { authenticated: true, adminId: auth.member.id, isMasterSecret: false };
+    }
+  }
+
+  return { authenticated: false, adminId: null, isMasterSecret: false };
+}

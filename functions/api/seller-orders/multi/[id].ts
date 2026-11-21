@@ -1,8 +1,11 @@
 import { ensureMarketplaceSchema, checkAndExpireSellerOrdersD1 } from '../../../services/d1_service';
 import { generateVietQrPayload, getMarketplaceConfig, isTestSellerAllowed } from '../../../services/marketplace_service';
+import { authenticateCaller, authenticateAdmin } from '../../../services/auth_service';
 
 interface Env {
   DB: D1Database;
+  JWT_SECRET?: string;
+  ADMIN_SYNC_SECRET?: string;
 }
 
 const CORS_HEADERS = {
@@ -49,6 +52,21 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       return new Response(
         JSON.stringify({ success: false, error: 'Không tìm thấy đơn hàng đa gian hàng.' }),
         { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    // Xác thực quyền sở hữu đơn hàng
+    const authHeader = request.headers.get('Authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const callerAuth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+    const adminAuth = await authenticateAdmin(env.DB, token, env);
+    const isAdmin = adminAuth.authenticated;
+    const currentMemberId = callerAuth.member?.id;
+
+    if (!isAdmin && (!currentMemberId || currentMemberId !== parentOrder.buyer_member_id)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Bạn không có quyền xem thông tin đơn hàng này.' }),
+        { status: currentMemberId ? 403 : 401, headers: CORS_HEADERS }
       );
     }
 

@@ -1,7 +1,10 @@
 import { checkAndExpireOrdersD1, checkAndExpireSellerOrdersD1, ensureMarketplaceSchema, ensureSchemaUpgrades } from '../../services/d1_service';
+import { authenticateCaller, authenticateAdmin } from '../../services/auth_service';
 
 interface Env {
   DB: D1Database;
+  JWT_SECRET?: string;
+  ADMIN_SYNC_SECRET?: string;
 }
 
 const CORS_HEADERS = {
@@ -45,6 +48,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     await checkAndExpireOrdersD1(env.DB, orderId);
     await checkAndExpireSellerOrdersD1(env.DB, orderId);
 
+    // Xác thực danh tính người gọi để chống lộ mã code và thông tin thanh toán cho người lạ
+    const authHeader = request.headers.get('Authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const callerAuth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+    const adminAuth = await authenticateAdmin(env.DB, token, env);
+    const isAdmin = adminAuth.authenticated;
+    const currentMemberId = callerAuth.member?.id;
+
     const order = await env.DB.prepare(
       'SELECT * FROM orders WHERE id = ? COLLATE NOCASE LIMIT 1'
     ).bind(orderId).first<any>();
@@ -57,6 +68,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       ).bind(orderId, orderId).first<any>();
 
       if (parentOrder) {
+        if (!isAdmin && (!currentMemberId || currentMemberId !== parentOrder.buyer_member_id)) {
+          return new Response(
+            JSON.stringify({ success: false, message: 'Bạn không có quyền xem thông tin chi tiết đơn hàng này.' }),
+            { status: currentMemberId ? 403 : 401, headers: CORS_HEADERS }
+          );
+        }
+
         const childOrdersRes = await env.DB.prepare(
           'SELECT * FROM seller_orders WHERE parent_order_id = ? ORDER BY created_at ASC'
         ).bind(parentOrder.id).all<any>();
@@ -110,6 +128,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       ).bind(orderId, orderId).first<any>();
 
       if (sellerOrder) {
+        if (!isAdmin && (!currentMemberId || (currentMemberId !== sellerOrder.buyer_member_id && currentMemberId !== sellerOrder.seller_id))) {
+          return new Response(
+            JSON.stringify({ success: false, message: 'Bạn không có quyền xem thông tin chi tiết đơn hàng này.' }),
+            { status: currentMemberId ? 403 : 401, headers: CORS_HEADERS }
+          );
+        }
+
         const expiresAtMs = sellerOrder.expires_at ? new Date(sellerOrder.expires_at).getTime() : Date.now() + 15 * 60 * 1000;
         const secondsLeft = Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000));
         const isCompleted = sellerOrder.status === 'PAID' || sellerOrder.status === 'COMPLETED' || sellerOrder.status === 'DELIVERED';
@@ -150,6 +175,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       return new Response(
         JSON.stringify({ success: false, message: 'Không tìm thấy đơn hàng.', orderId }),
         { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    // Kiểm tra quyền sở hữu đơn hàng trực tiếp
+    if (!isAdmin && (!currentMemberId || currentMemberId !== order.member_id)) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Bạn không có quyền xem thông tin chi tiết đơn hàng này.' }),
+        { status: currentMemberId ? 403 : 401, headers: CORS_HEADERS }
       );
     }
 

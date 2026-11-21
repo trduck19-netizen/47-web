@@ -729,7 +729,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
     pollTimerRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`/api/orders/status?order_id=${encodeURIComponent(orderId)}&t=${Date.now()}`);
+        const token = authService.getToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        const res = await fetch(`/api/orders/status?order_id=${encodeURIComponent(orderId)}&t=${Date.now()}`, { headers });
         if (!res.ok) return;
         const data = await res.json().catch(() => ({}));
         if (data.status === 'COMPLETED') {

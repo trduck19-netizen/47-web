@@ -153,7 +153,9 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
 
     const pollStatus = async () => {
       try {
-        const res = await fetch(`/api/seller-orders/multi/${activeParentOrder.id}`);
+        const res = await fetch(`/api/seller-orders/multi/${activeParentOrder.id}`, {
+          headers: getHeaders(),
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (data.success && data.parent_order) {

@@ -143,8 +143,8 @@ export async function confirmReceivedAndRelease(
       });
     }
 
-    // 3. Cập nhật trạng thái đơn hàng sang COMPLETED & RELEASED
-    await db
+    // 3. Cập nhật trạng thái đơn hàng sang COMPLETED & RELEASED (State-guarded)
+    const updateRes: any = await db
       .prepare(`
         UPDATE orders
         SET status = 'COMPLETED',
@@ -152,9 +152,15 @@ export async function confirmReceivedAndRelease(
             released_at = ?,
             updated_at = ?
         WHERE id = ?
+          AND escrow_status != 'RELEASED'
+          AND escrow_status != 'REFUNDED'
       `)
       .bind(nowIso, nowIso, order.id)
       .run();
+
+    if (!updateRes || updateRes.meta?.changes === 0) {
+      return { success: false, message: 'Đơn hàng này đã được giải ngân hoặc hoàn tiền trước đó.' };
+    }
 
     const logId1 = 'sec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
     await db.prepare(`
@@ -348,6 +354,32 @@ export async function resolveAdminDispute(
       };
     } else {
       // Quản trị viên phán quyết hoàn tiền cho khách (khách thắng khiếu nại)
+      if (order.escrow_status === 'REFUNDED' || order.status === 'REFUNDED') {
+        return { success: false, message: 'Đơn hàng này đã được hoàn tiền trước đó.' };
+      }
+      if (order.escrow_status === 'RELEASED' || order.status === 'COMPLETED') {
+        return { success: false, message: 'Đơn hàng này đã được giải ngân hoàn tất, không thể hoàn tiền.' };
+      }
+
+      // Cập nhật trạng thái đơn sang REFUNDED (State-guarded update first để chống hoàn trùng lặp)
+      const updateRes: any = await db
+        .prepare(`
+          UPDATE orders
+          SET status = 'REFUNDED',
+              escrow_status = 'REFUNDED',
+              updated_at = ?
+          WHERE id = ?
+            AND escrow_status != 'REFUNDED'
+            AND escrow_status != 'RELEASED'
+            AND status != 'COMPLETED'
+        `)
+        .bind(nowIso, order.id)
+        .run();
+
+      if (!updateRes || updateRes.meta?.changes === 0) {
+        return { success: false, message: 'Đơn hàng này đã được xử lý hoàn tiền hoặc giải ngân trước đó.' };
+      }
+
       const refRes = await recordLedgerTransaction(db, {
         sellerId,
         orderId: order.id,
@@ -358,7 +390,7 @@ export async function resolveAdminDispute(
       });
 
       if (!refRes.success) {
-        return { success: false, message: refRes.error || 'Lỗi khi ghi sổ cái hoàn tiền.' };
+        console.warn('[Escrow] Error recording ledger refund:', refRes.error);
       }
 
       // Hoàn tiền vào ví thành viên
@@ -394,18 +426,6 @@ export async function resolveAdminDispute(
           .run()
           .catch(() => {});
       }
-
-      // Cập nhật trạng thái đơn sang REFUNDED
-      await db
-        .prepare(`
-          UPDATE orders
-          SET status = 'REFUNDED',
-              escrow_status = 'REFUNDED',
-              updated_at = ?
-          WHERE id = ?
-        `)
-        .bind(nowIso, order.id)
-        .run();
 
       await db
         .prepare(`

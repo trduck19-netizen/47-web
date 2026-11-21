@@ -2538,6 +2538,21 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     await db.prepare('ALTER TABLE members ADD COLUMN email_verify_attempts INTEGER;').run().catch(() => {});
   } catch {}
   try {
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS voucher_redemptions (
+        id TEXT PRIMARY KEY,
+        order_id TEXT NOT NULL,
+        code TEXT NOT NULL,
+        member_id TEXT,
+        discount_amount INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        UNIQUE(order_id, code)
+      );
+    `).run().catch(() => {});
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_voucher_redemptions_order ON voucher_redemptions(order_id);').run().catch(() => {});
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_voucher_redemptions_code ON voucher_redemptions(code);').run().catch(() => {});
+  } catch {}
+  try {
     await db.prepare('ALTER TABLE members ADD COLUMN updated_at TEXT;').run().catch(() => {});
   } catch {}
   try {

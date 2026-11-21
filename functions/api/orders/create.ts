@@ -98,10 +98,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, env.ADMIN_SYNC_SECRET]);
+    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET]);
 
     let member: any = null;
-    // Look up member by session token or verified token user ID
+    // Look up member by stored session_token or verified cryptographic token
     if (token) {
       member = await env.DB.prepare(
         'SELECT * FROM members WHERE session_token = ? LIMIT 1'
@@ -112,15 +112,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       member = await env.DB.prepare(
         'SELECT * FROM members WHERE id = ? OR username = ? OR email = ? LIMIT 1'
       ).bind(tokenUserId, tokenUserId, tokenUserId).first<any>();
-    }
-
-    if (!member && token) {
-      const extractedUserId = extractUserIdFromToken(token);
-      if (extractedUserId) {
-        member = await env.DB.prepare(
-          'SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1'
-        ).bind(extractedUserId, extractedUserId).first<any>();
-      }
     }
 
     if (!member) {
