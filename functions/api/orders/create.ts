@@ -410,9 +410,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // 5. Execute 100% Atomic Purchase via purchaseOrderD1 (Single db.batch ACID transaction)
-    const randSuffix = (typeof crypto !== 'undefined' && crypto.randomUUID)
-      ? crypto.randomUUID().slice(0, 8)
-      : Math.random().toString(36).substring(2, 8);
+    let randSuffix = '';
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      randSuffix = crypto.randomUUID().slice(0, 8);
+    } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const b = new Uint8Array(4);
+      crypto.getRandomValues(b);
+      randSuffix = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+    } else {
+      throw new Error('WebCrypto API is required for order generation. Failing closed.');
+    }
     const newOrderId = (isUtility ? 'UTL-' : 'ORD-') + Date.now() + '-' + randSuffix;
     const newTxId = 'tx_' + Date.now() + '_' + randSuffix;
 

@@ -142,12 +142,12 @@ export const TelegramModule: React.FC = () => {
   };
 
   const generateRandomHex = (length = 32): string => {
-    const chars = '0123456789abcdef';
-    let res = '';
-    for (let i = 0; i < length; i++) {
-      res += chars[Math.floor(Math.random() * chars.length)];
+    if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+      throw new Error('WebCrypto API (crypto.getRandomValues) is required to generate secure Telegram keys. Failing closed.');
     }
-    return res;
+    const bytes = new Uint8Array(Math.ceil(length / 2));
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('').slice(0, length);
   };
 
   const loadTelegramData = async () => {

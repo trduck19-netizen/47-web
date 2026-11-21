@@ -102,9 +102,19 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
           { headers: CORS_HEADERS }
         );
       } else {
-        // Tạo mới subscriber
-        const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-        const unsubToken = `unsub_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
+        // Tạo mới subscriber bằng WebCrypto fail-closed
+        if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'WebCrypto không khả dụng để sinh token bảo mật. Fail-closed.' }),
+            { status: 500, headers: CORS_HEADERS }
+          );
+        }
+        const tokenBytes = new Uint8Array(16);
+        crypto.getRandomValues(tokenBytes);
+        const subBytes = new Uint8Array(4);
+        crypto.getRandomValues(subBytes);
+        const subId = `sub_${Date.now()}_${Array.from(subBytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
+        const unsubToken = `unsub_${Date.now()}_${Array.from(tokenBytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
 
         await env.DB.prepare(`
           INSERT INTO email_subscribers 

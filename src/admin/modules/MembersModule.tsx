@@ -20,7 +20,6 @@ import { Step2VerificationModal } from '../components/ui/Step2VerificationModal'
 import { adminDataService } from '../services/adminDataService';
 import { MemberRecord, UserRole } from '../types/adminTypes';
 import { formatCore } from '../../utils/textUtils';
-import { generateSalt, hashPassword } from '../../utils/cryptoUtils';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface MembersModuleProps {
@@ -267,32 +266,44 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
     e.preventDefault();
     if (!resetPassMember) return;
     if (newMemberPassword.length < 6) {
-      onShowToast('Lỗi', 'Mật khẩu mới phải có ít nhất 6 ký tự.', 'error');
+      onShowToast(isEn ? 'Error' : 'Lỗi', isEn ? 'New password must be at least 6 characters.' : 'Mật khẩu mới phải có ít nhất 6 ký tự.', 'error');
       return;
     }
 
     setIsResettingPassword(true);
     try {
-      const salt = generateSalt(16);
-      const passwordHash = await hashPassword(newMemberPassword, salt);
-      const updated = adminDataService.updateMember(resetPassMember.id, {
-        salt,
-        passwordHash,
+      const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+      const res = await fetch(`/api/admin/members/${encodeURIComponent(resetPassMember.id)}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify({ newPassword: newMemberPassword }),
       });
 
-      if (updated) {
-        await adminDataService.pushToCloudflareKV();
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
         onShowToast(
-          'Đã đổi mật khẩu thành viên',
-          `Mật khẩu mới cho tài khoản ${resetPassMember.displayName} đã được lưu thành công.`,
+          isEn ? 'Password Reset' : 'Đã đổi mật khẩu thành viên',
+          isEn
+            ? `New password for account ${resetPassMember.displayName} saved successfully.`
+            : `Mật khẩu mới cho tài khoản ${resetPassMember.displayName} đã được lưu thành công.`,
           'success'
         );
         setResetPassMember(null);
         setNewMemberPassword('');
         setRefreshTrigger((prev) => prev + 1);
+      } else {
+        onShowToast(
+          isEn ? 'Error' : 'Lỗi',
+          data.error || data.message || (isEn ? 'Failed to reset member password.' : 'Không thể đổi mật khẩu cho thành viên.'),
+          'error'
+        );
       }
     } catch {
-      onShowToast('Lỗi', 'Không thể đổi mật khẩu cho thành viên.', 'error');
+      onShowToast(isEn ? 'Error' : 'Lỗi', isEn ? 'Server connection error.' : 'Không thể kết nối đến máy chủ để đổi mật khẩu.', 'error');
     } finally {
       setIsResettingPassword(false);
     }

@@ -3218,10 +3218,17 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(updatedProducts));
       localStorage.setItem(this.STORE_PRODUCTS_KEY, JSON.stringify(updatedProducts));
 
-      // Generate Physical Order
-      const randSuffix = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID().slice(0, 6).toUpperCase()
-        : Math.random().toString(36).substring(2, 6).toUpperCase();
+      // Generate Physical Order with WebCrypto fail-closed
+      let randSuffix = '';
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        randSuffix = crypto.randomUUID().slice(0, 6).toUpperCase();
+      } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const b = new Uint8Array(3);
+        crypto.getRandomValues(b);
+        randSuffix = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+      } else {
+        throw new Error('WebCrypto API is required for physical order generation. Failing closed.');
+      }
       const orderId = `ORD-PHY-${Date.now()}-${randSuffix}`;
 
       const physicalOrder: OrderRecord = {
@@ -3338,11 +3345,18 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     }
 
     // --- XỬ LÝ ĐẶT HÀNG MÃ SỐ / GAME DIGITAL (NGUYÊN BẢN CODEGAME.SHOP) ---
-    const finalKey = idempotencyKey || (
-      (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9)
-    );
+    let finalKey = idempotencyKey;
+    if (!finalKey) {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        finalKey = crypto.randomUUID();
+      } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const b = new Uint8Array(8);
+        crypto.getRandomValues(b);
+        finalKey = 'key_' + Date.now() + '_' + Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+      } else {
+        throw new Error('WebCrypto API is required for idempotency key. Failing closed.');
+      }
+    }
 
     // Submit strictly to Cloudflare Pages Functions Server for KV inventory fulfillment
     let serverRes: any = null;
@@ -3656,11 +3670,18 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       };
     }
 
-    const finalKey = idempotencyKey || (
-      (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9)
-    );
+    let finalKey = idempotencyKey;
+    if (!finalKey) {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        finalKey = crypto.randomUUID();
+      } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const b = new Uint8Array(8);
+        crypto.getRandomValues(b);
+        finalKey = 'key_' + Date.now() + '_' + Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+      } else {
+        throw new Error('WebCrypto API is required for idempotency key. Failing closed.');
+      }
+    }
 
     // Submit strictly to Cloudflare Pages Functions Server for KV inventory fulfillment
     let serverRes: any = null;

@@ -1,7 +1,5 @@
 import type { UserProfile } from '../types/game';
 import {
-  generateSalt,
-  hashPassword,
   generateSessionToken,
   generateAvatarUrl,
   isValidUsername,

@@ -90,9 +90,17 @@ export const VouchersModule: React.FC<VouchersModuleProps> = ({ onShowToast }) =
   }, [vouchers, typeFilter, scopeFilter, statusFilter, searchQuery]);
 
   const handleOpenCreate = () => {
+    if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+      onShowToast('Lỗi', 'WebCrypto không khả dụng để sinh mã giảm giá an toàn.', 'error');
+      return;
+    }
+    const randBytes = new Uint8Array(4);
+    crypto.getRandomValues(randBytes);
+    const codeSuffix = Array.from(randBytes, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+
     setEditingVoucher(null);
     setFormData({
-      code: `VOUCHER${Math.floor(1000 + Math.random() * 9000)}`,
+      code: `MALL${codeSuffix}`,
       title: 'Mã Giảm Giá Mới',
       description: 'Giảm giá đơn hàng khi mua sắm tại sàn',
       voucherType: 'platform',

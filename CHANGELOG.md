@@ -7,18 +7,41 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-21]
 
+### 430. Khắc Phục Rò Rỉ Pepper Client, Chuyển Đổi Đặt Lại Mật Khẩu Admin Sang Server-Side PBKDF2 & Triệt Tiêu Math.random Còn Sót (21/11/2026)
+- **Bối cảnh & Vấn đề**:
+  - `vite.config.ts` fallback `PASSWORD_PEPPER` vào `define` khiến giá trị bí mật máy chủ có nguy cơ bị inline thành chuỗi literal vào bundle client trong môi trường build.
+  - `MembersModule.tsx` đặt lại mật khẩu thành viên bằng SHA-256 nhanh phía client (`generateSalt(16) + hashPassword(...)`), vòng qua guard máy chủ.
+  - Một số vị trí nhạy cảm vẫn sử dụng `Math.random()`: Webhook secret & notify key Telegram, token hủy đăng ký nhận tin (`unsub_`), mã voucher mặc định (chỉ 4 chữ số), và các hậu tố ID đơn/idempotency key fallback trong `dataService.ts`, `ProductCheckoutModal.tsx`, `UtilitiesView.tsx`, `orders/create.ts`.
+  - Khối nâng cấp PBKDF2 trong `login.ts` chỉ `console.warn` khi thất bại thay vì dừng phiên; INSERT tranh chấp trong `escrow_service.ts` nuốt lỗi bằng `.catch(() => {})` nhưng vẫn báo thành công.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Khắc phục Define Vite*: Bỏ fallback `PASSWORD_PEPPER` trong `vite.config.ts`. Chỉ sử dụng `VITE_PASSWORD_PEPPER` nếu được đặt riêng cho build client. Nếu không có biến build, client mặc định rỗng và hàm băm máy chủ thực hiện 100%.
+  2. *Chuyển đổi Đặt lại Mật khẩu Admin sang Server-Side*: Tạo endpoint `POST /api/admin/members/:id/reset-password` và cập nhật `MembersModule.tsx`. Máy chủ sinh salt an toàn bằng WebCrypto và băm PBKDF2 100.000 vòng lặp với pepper môi trường. Loại bỏ hoàn toàn `hashPassword` và `generateSalt` khỏi `src/admin/`.
+  3. *WebCrypto Chuẩn Hóa Fail-Closed Cho Dữ Liệu Nhạy Cảm*:
+     - `TelegramModule.tsx`: `generateRandomHex` dùng `crypto.getRandomValues` fail-closed cho Webhook secret và Notify key.
+     - `notifications/subscribe.ts`: Sinh `unsubToken` và `subId` bằng WebCrypto fail-closed.
+     - `VouchersModule.tsx`: Mã voucher mặc định sinh 8 ký tự hex ngẫu nhiên bằng WebCrypto.
+     - Hậu tố đơn hàng & Idempotency key fallback: Chuyển đổi sang `crypto.randomUUID()` / `crypto.getRandomValues()` trong `orders/create.ts`, `dataService.ts`, `ProductCheckoutModal.tsx`, `UtilitiesView.tsx`.
+  4. *Fail-Closed Khi Nâng Cấp Thất Bại & Rollback Khiếu Nại*:
+     - `login.ts`: Trả HTTP 500 và dừng đăng nhập nếu nâng cấp PBKDF2 thất bại, ngăn chặn việc để tài khoản ở lại hash legacy yếu.
+     - `escrow_service.ts`: Xóa bỏ `.catch(() => {})` ở lệnh INSERT `seller_disputes`; kiểm tra `insertDisputeRes.success` và tự động rollback trạng thái đơn hàng nếu ghi nhận khiếu nại thất bại.
+  5. *Quy Trình Khôi Phục 3 Bước Chuẩn Xác & Cơ Chế Pepper-Binding*:
+     - Bổ sung quy trình khôi phục: (1) Cấu hình `PASSWORD_PEPPER` mới trên cả 2 Cloudflare Pages project, (2) Đặt lại mật khẩu bằng OTP (`/api/auth/reset-password`) để băm PBKDF2 trực tiếp với pepper mới, (3) Đăng nhập bằng mật khẩu mới.
+     - Lý do Pepper-Binding: Hash PBKDF2 gắn liền với pepper tại thời điểm băm. Nếu đặt pepper cũ tạm thời để nâng cấp rồi mới xoay, hash vừa tạo vẫn gắn pepper cũ và lần đăng nhập sau khi xoay sẽ thất bại hoàn toàn. Tuyệt đối không đặt tạm pepper cũ đã lộ rồi mới xoay.
+     - ⚠️ CẢNH BÁO BẢO MẬT BẮT BUỘC: Việc đăng nhập-nâng cấp chỉ băm lại cùng một mật khẩu cũ — nó KHÔNG sửa việc hash SHA-256 cũ đã công khai trong lịch sử git và vẫn bẻ offline được. BẮT BUỘC Quản trị viên phải thực hiện ĐỔI MẬT KHẨU MỚI (trong form quản trị hoặc qua OTP) để đóng hoàn toàn rủi ro lộ mật khẩu.
+
 ### 429. Triển Khai Cầu Nối Di Chuyển Hash Legacy Một Chiều, Chuẩn Hóa WebCrypto Fail-Closed & Triệt Tiêu Tàn Dư Bảo Mật (21/11/2026)
 - **Bối cảnh & Vấn đề**:
   - Cần đảm bảo tài khoản người dùng cũ có hash SHA-256 legacy 64 ký tự vẫn có thể đăng nhập an toàn mà không bị kẹt khi hệ thống chuyển sang `PASSWORD_PEPPER` mới, đồng thời tự động nâng cấp lên PBKDF2 100.000 vòng lặp ngay trong lần đăng nhập đầu tiên.
   - Ngăn ngừa tình trạng WebCrypto suy biến thành mảng byte `0x00` nếu thiếu `crypto.getRandomValues`.
-  - Triệt tiêu hoàn toàn `Math.random()` tại các vị trí sinh mã thưởng, API key, tracking code.
+  - Thay thế `Math.random()` tại các vị trí mật mã và định danh nhạy cảm sang WebCrypto.
   - Loại bỏ hoàn toàn trường `master_key.key_prefix` khỏi API response và dọn sạch comment cũ về `ADMIN_SYNC_SECRET`.
 - **Giải pháp áp dụng (Solution)**:
   1. *Cầu nối di chuyển Legacy một chiều (`functions/api/auth/login.ts` & `me.ts`)*: Thêm `LEGACY_PEPPER_MIGRATION_ONLY`. Thứ tự xác thực: (1) Pepper môi trường hiện tại $\rightarrow$ (2) Pepper di chuyển cũ (chỉ áp dụng cho hash legacy 64 ký tự) $\rightarrow$ (3) Legacy không pepper. Khi đăng nhập thành công, tự động băm lại và nâng cấp lên PBKDF2 100.000 vòng dưới pepper môi trường mới.
-  2. *WebCrypto Fail-Closed 100%*: Cập nhật `login.ts`, `me.ts`, `auth_service.ts`, `soft_delete_service.ts`, `redeem.ts`, `reset-password.ts`, `escrow_service.ts`, `verify-email.ts`, `orders/create.ts`, `CrawlerModule.tsx`, `shippingService.ts`, `growthService.ts`: Bắt buộc ném ngoại lệ hoặc trả HTTP 500 khi không có `crypto.getRandomValues`, 0% mảng byte rỗng/0x00, 0% Math.random.
-  3. *Chặn 100% Client-computed Hash (`register.ts`)*: Trả HTTP 400 nếu client gửi `passwordHash` hoặc `salt`; server tự sinh salt WebCrypto và băm PBKDF2.
-  4. *Gỡ bỏ Key Prefix & Dọn Dẹp Comment*: Loại bỏ `master_key.key_prefix` khỏi `/api/api-keys`, cập nhật nhãn UI sang `ADMIN_API_KEY`, chuẩn hóa tài liệu khôi phục mật khẩu 3 bước an toàn trong `PROJECT_MEMORY.md` và `KNOWN_ISSUES.md`.
-  5. *Vite Config & Env Example*: Bổ sung define `VITE_PASSWORD_PEPPER` trong `vite.config.ts`, tạo `.env.example` mẫu cấu hình an toàn không chứa secret thực tế.
+  2. *Lưu ý Quan Trọng Về Bảo Mật*: Việc đăng nhập-nâng cấp chỉ tính toán lại mã băm cho cùng một mật khẩu cũ — nó KHÔNG loại bỏ rủi ro khi chuỗi hash SHA-256 cũ của chính mật khẩu đó đã bị lộ công khai trong lịch sử repo và vẫn có thể bị bẻ khóa offline bằng rainbow table/từ điển. Chỉ khi người dùng thực hiện ĐỔI MẬT KHẨU MỚI thì rủi ro này mới được khắc phục triệt để.
+  3. *WebCrypto Fail-Closed*: Cập nhật các hàm sinh salt, token và mã định danh nhạy cảm trong `login.ts`, `me.ts`, `auth_service.ts`, `soft_delete_service.ts`, `redeem.ts`, `reset-password.ts`, `escrow_service.ts`, `verify-email.ts`, `orders/create.ts`, `CrawlerModule.tsx`, `shippingService.ts`, `growthService.ts`: Bắt buộc ném ngoại lệ hoặc trả HTTP 500 khi không có `crypto.getRandomValues`, loại bỏ việc khởi tạo mảng byte rỗng/0x00.
+  4. *Chặn 100% Client-computed Hash (`register.ts`)*: Trả HTTP 400 nếu client gửi `passwordHash` hoặc `salt`; server tự sinh salt WebCrypto và băm PBKDF2.
+  5. *Gỡ bỏ Key Prefix & Dọn Dẹp Comment*: Loại bỏ `master_key.key_prefix` khỏi `/api/api-keys`, cập nhật nhãn UI sang `ADMIN_API_KEY`.
+  6. *Vite Config & Env Example*: Bổ sung define `VITE_PASSWORD_PEPPER` trong `vite.config.ts`, tạo `.env.example` mẫu cấu hình an toàn không chứa secret thực tế.
 
 ### 428. Đồng Bộ Biến Môi Trường Bảo Mật Cloudflare Pages & Nâng Cấp Tài Khoản Super Admin Lên PBKDF2 100.000 Vòng (21/11/2026)
 - **Triệu chứng & Nguyên nhân**:
@@ -28,7 +51,8 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 - **Giải pháp áp dụng (Solution)**:
   1. *Cấu hình Cloudflare Pages Secrets via API*: Gán đầy đủ các biến môi trường chuẩn mật mã cho cả 2 dự án (`universal-mall-shop` và `admin-universal-mall`) qua Cloudflare API PATCH `deployment_configs` gồm: `PASSWORD_PEPPER`, `JWT_SECRET`, `ADMIN_API_KEY`, `SYNC_SECRET`, `CRON_SECRET`, `MARKETPLACE_CODE_KEY`, `ENVIRONMENT`.
   2. *Cập nhật D1 & Nâng cấp Mật khẩu Tự động*: Cập nhật trường `salt` của `usr_admin` trong D1. Khi đăng nhập thành công với mật khẩu quản trị, hệ thống tự động băm lại mật khẩu và nâng cấp tài khoản `usr_admin` lên chuẩn **PBKDF2 SHA-256 100.000 vòng lặp** (`pbkdf2_sha256$100000$wcg_...`).
-  3. *Triển khai & Kiểm thử*: Tái deploy cả 2 website qua `npm run deploy:all`. Kiểm thử live xác thực `POST /api/auth/login` và `GET /api/auth/me` đạt HTTP 200 OK, trả về phiên đăng nhập Super Admin hợp lệ.
+  3. *Lưu ý Rủi Ro*: Việc tự động nâng cấp mã băm khi đăng nhập chỉ băm lại mật khẩu cũ hiện tại, không làm vô hiệu hóa chuỗi hash SHA-256 cũ đã lộ trong lịch sử repo. Quản trị viên bắt buộc phải đổi mật khẩu mới trong cổng quản trị hoặc qua OTP để đóng hoàn toàn lỗ hổng mật khẩu đã lộ.
+  4. *Triển khai & Kiểm thử*: Tái deploy cả 2 website qua `npm run deploy:all`. Kiểm thử live xác thực `POST /api/auth/login` và `GET /api/auth/me` đạt HTTP 200 OK, trả về phiên đăng nhập Super Admin hợp lệ.
 
 ### 427. Bổ Sung Toàn Diện Bộ Nhớ Dự Án (PROJECT_MEMORY.md & KNOWN_ISSUES.md) Tránh Lặp Lại Các Sai Lầm Bảo Mật (21/11/2026)
 - **Bối cảnh & Yêu cầu**:

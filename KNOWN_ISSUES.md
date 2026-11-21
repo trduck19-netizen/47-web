@@ -10,23 +10,26 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
-### ISSUE-311: Lỗi Thiếu Cấu Hình Pepper Khi Triển Khai Mới (Fail-Closed Misconfiguration), Tàn Dư Math.random & Quy Trình Khôi Phục Secret Chuẩn 3 Bước
+### ISSUE-311: Lỗi Thiếu Cấu Hình Pepper Khi Triển Khai Mới (Fail-Closed Misconfiguration), Cơ Chế Pepper-Binding, Tàn Dư Math.random & Quy Trình Khôi Phục Secret Chuẩn 3 Bước
 - **Triệu chứng & Rủi ro**:
   - Khi triển khai môi trường Cloudflare Pages mới (`universal-mall-shop` và `admin-universal-mall`), nếu chưa cấu hình `PASSWORD_PEPPER` hoặc cấu hình rỗng, máy chủ thực thi cơ chế Fail-Closed từ chối toàn bộ yêu cầu đăng nhập và trả về HTTP 500: *"Hệ thống bảo mật chưa sẵn sàng (Thiếu cấu hình pepper bảo mật). Vui lòng liên hệ quản trị viên."*
   - Nếu logic WebCrypto tạo salt hoặc random byte không kiểm tra `typeof crypto === 'undefined' || !crypto.getRandomValues` mà khởi tạo mảng `new Uint8Array(n)` mặc định chứa toàn byte `0x00`, salt sinh ra sẽ là chuỗi toàn số 0 cố định, làm mất hoàn toàn tính ngẫu nhiên và bảo mật của hàm băm mật khẩu.
-  - Sử dụng `Math.random()` trong việc sinh mã thưởng, API key hoặc tracking ID tạo ra giá trị có thể đoán trước (pseudorandom PRNG).
-- **Cạm bẫy đã thất bại**:
-  - Tạm thời gán pepper cũ đã bị lộ lên Cloudflare Pages rồi sau đó mới đổi: Gây rò rỉ và duy trì mật mã không an toàn.
+  - Sử dụng `Math.random()` trong việc sinh mã thưởng, webhook secret, Telegram notify key, idempotency key hoặc tracking ID tạo ra giá trị có thể đoán trước (pseudorandom PRNG).
+  - Khối define trong `vite.config.ts` fallback `PASSWORD_PEPPER` máy chủ vào `VITE_PASSWORD_PEPPER` có thể khiến secret bị inline vào bundle JavaScript phân phối tới mọi trình duyệt người dùng.
+- **Cạm bẫy đã thất bại & Cơ chế Pepper-Binding**:
+  - *Cơ chế Pepper-Binding*: Mã băm PBKDF2 gắn liền với pepper tại thời điểm băm. Nếu tạm thời đặt pepper cũ đã lộ lên Cloudflare Pages để người dùng đăng nhập nâng cấp rồi sau đó mới xoay pepper mới, mã băm PBKDF2 vừa tạo trong D1 vẫn gắn với pepper cũ. Khi đó, lần đăng nhập tiếp theo với pepper mới sẽ bị từ chối 100% (tài khoản bị khóa vĩnh viễn). **TUYỆT ĐỐI KHÔNG đặt tạm pepper cũ đã lộ rồi mới xoay**.
+  - *Cạm bẫy hiểu nhầm việc nâng cấp hash tự động*: Việc tự động nâng cấp mã băm khi đăng nhập chỉ băm lại mật khẩu cũ hiện tại bằng PBKDF2 — nó KHÔNG sửa việc chuỗi hash SHA-256 cũ của chính mật khẩu đó đã bị lộ công khai trong lịch sử repo và vẫn có thể bị bẻ khóa offline bằng rainbow table/từ điển. **BẮT BUỘC Quản trị viên/Người dùng phải thực hiện ĐỔI MẬT KHẨU MỚI** để đóng hoàn toàn rủi ro lộ mật khẩu.
   - Sử dụng mảng byte 0x00 làm fallback khi thiếu WebCrypto: Khiến salt mật khẩu bị suy biến thành chuỗi cố định.
-  - Client tính toán `passwordHash` hoặc `salt` rồi gửi lên máy chủ: Cho phép client qua mặt các quy tắc băm và tạo hash yếu.
+  - Client tính toán `passwordHash` hoặc `salt` rồi gửi lên máy chủ (hoặc qua trang quản trị): Cho phép client qua mặt các quy tắc băm và tạo hash yếu.
 - **Giải pháp chuẩn đã kiểm chứng**:
   - Quy trình khôi phục 3 bước chuẩn xác khi xoay secret:
     1. Cấu hình biến môi trường `PASSWORD_PEPPER` mới an toàn trên cả 2 Cloudflare Pages Projects.
     2. Người dùng sử dụng tính năng đặt lại mật khẩu bằng OTP (`/api/auth/reset-password`) để băm mật khẩu mới bằng PBKDF2 100.000 vòng lặp trực tiếp với pepper mới.
     3. Đăng nhập với mật khẩu mới để tạo phiên làm việc JWT hợp lệ.
-  - Cầu nối di chuyển legacy một chiều (`LEGACY_PEPPER_MIGRATION_ONLY`): Chỉ áp dụng cho hash legacy SHA-256 64 ký tự hiện có trong D1, tự động nâng cấp tức thì lên PBKDF2 100.000 vòng lặp ngay khi người dùng đăng nhập lần đầu tiên thành công.
-  - WebCrypto Fail-Closed 100%: Mọi hàm sinh ngẫu nhiên mật mã bắt buộc ném ngoại lệ hoặc trả HTTP 500 nếu thiếu `crypto.getRandomValues`, tuyệt đối không dùng mảng byte 0.
-  - Triệt tiêu 100% `Math.random()` tại các vị trí nhạy cảm (mã thưởng VIP, API key crawler, mã vận đơn).
+  - Cầu nối di chuyển legacy một chiều (`LEGACY_PEPPER_MIGRATION_ONLY`): Chỉ áp dụng cho hash legacy SHA-256 64 ký tự hiện có trong D1, tự động nâng cấp tức thì lên PBKDF2 100.000 vòng lặp ngay khi người dùng đăng nhập lần đầu tiên thành công. Nếu nâng cấp thất bại, trả HTTP 500 fail-closed để ngăn chặn duy trì hash yếu.
+  - WebCrypto Fail-Closed 100%: Mọi hàm sinh ngẫu nhiên mật mã bắt buộc ném ngoại lệ hoặc trả HTTP 500 nếu thiếu `crypto.getRandomValues`, tuyệt đối không dùng mảng byte 0 và không fallback Math.random.
+  - Chuyển đổi đặt lại mật khẩu thành viên trong trang quản trị (`MembersModule.tsx`) sang endpoint máy chủ `POST /api/admin/members/:id/reset-password` băm PBKDF2 với pepper hệ thống.
+  - Loại bỏ fallback `PASSWORD_PEPPER` máy chủ khỏi `vite.config.ts`, đảm bảo bundle client không bao giờ chứa secret máy chủ.
 
 ### ISSUE-310: Lỗ Hổng SSRF Proxy, Tràn Bộ Nhớ Payload Streaming (Memory Exhaustion DoS) & Thiếu Whitelist Content-Type Trong Proxy Ngoại Vi
 - **Triệu chứng & Rủi ro**:

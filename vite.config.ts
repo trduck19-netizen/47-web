@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   define: {
-    'import.meta.env.VITE_PASSWORD_PEPPER': JSON.stringify(process.env.VITE_PASSWORD_PEPPER || process.env.PASSWORD_PEPPER || ''),
+    'import.meta.env.VITE_PASSWORD_PEPPER': JSON.stringify(process.env.VITE_PASSWORD_PEPPER || ''),
   },
   server: {
     port: 3000,

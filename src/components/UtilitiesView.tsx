@@ -61,6 +61,18 @@ interface UtilitiesViewProps {
   onClearSelectedUtility?: () => void;
 }
 
+const generateSecureIdempotencyKey = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const b = new Uint8Array(8);
+    crypto.getRandomValues(b);
+    return 'key_' + Date.now() + '_' + Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  }
+  throw new Error('WebCrypto API is required for idempotency key. Failing closed.');
+};
+
 export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
   onShowToast,
   currentUser,
@@ -261,9 +273,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
     setCompletedOrder(null);
     setCopiedCodeIdx(null);
     setCopiedAll(false);
-    const newKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
-      ? crypto.randomUUID()
-      : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+    const newKey = generateSecureIdempotencyKey();
     setIdempotencyKey(newKey);
   };
 
@@ -335,11 +345,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
       return;
     }
 
-    const activeKey = idempotencyKey || (
-      (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10)
-    );
+    const activeKey = idempotencyKey || generateSecureIdempotencyKey();
     if (!idempotencyKey) setIdempotencyKey(activeKey);
 
     setIsProcessing(true);

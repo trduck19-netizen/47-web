@@ -70,6 +70,18 @@ interface ProductCheckoutModalProps {
   onOpenWallet?: () => void;
 }
 
+const generateSecureIdempotencyKey = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const b = new Uint8Array(8);
+    crypto.getRandomValues(b);
+    return 'key_' + Date.now() + '_' + Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  }
+  throw new Error('WebCrypto API is required for idempotency key. Failing closed.');
+};
+
 export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   product,
   selectedPackage,
@@ -507,9 +519,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
       setCompletedOrder(null);
       setCopiedCodeIdx(null);
       setCopiedAll(false);
-      const newKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+      const newKey = generateSecureIdempotencyKey();
       setIdempotencyKey(newKey);
     }
   }, [product?.id]);
@@ -1010,11 +1020,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
       saveShippingCache(shippingName.trim(), shippingPhone.trim(), shippingAddress.trim());
     }
 
-    const activeKey = idempotencyKey || (
-      (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10)
-    );
+    const activeKey = idempotencyKey || generateSecureIdempotencyKey();
     if (!idempotencyKey) setIdempotencyKey(activeKey);
 
     setIsProcessing(true);
@@ -1146,9 +1152,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
       selectedPackage.escalating_current_price = newPrice;
       selectedPackage.price = newPrice;
     }
-    const newKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
-      ? crypto.randomUUID()
-      : 'key_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+    const newKey = generateSecureIdempotencyKey();
     setIdempotencyKey(newKey);
     setIsProcessing(true);
 

@@ -285,14 +285,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         crypto.getRandomValues(saltBytes);
         const upgradedSalt = 'wcg_salt_' + Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
         const upgradedHash = await hashPasswordPBKDF2(cleanPassword, upgradedSalt, pepper);
-        await env.DB.prepare("UPDATE members SET salt = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?")
+        const upgradeRes = await env.DB.prepare("UPDATE members SET salt = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?")
           .bind(upgradedSalt, upgradedHash, member.id)
           .run();
+        if (!upgradeRes.success) {
+          throw new Error('Cơ sở dữ liệu D1 từ chối ghi nhận nâng cấp mật khẩu PBKDF2.');
+        }
         member.salt = upgradedSalt;
         member.password_hash = upgradedHash;
         console.log(`[Auth Migration] Đã nâng cấp thành công tài khoản ${member.id} lên chuẩn PBKDF2 slow KDF`);
-      } catch (upgradeErr) {
-        console.warn('Lưu ý: Không thể tự động nâng cấp hash mật khẩu sang PBKDF2 cho thành viên:', member.id, upgradeErr);
+      } catch (upgradeErr: any) {
+        console.error('Lỗi nghiêm trọng: Nâng cấp hash mật khẩu sang PBKDF2 thất bại cho thành viên:', member.id, upgradeErr);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Nâng cấp chuẩn mật mã tài khoản sang PBKDF2 thất bại. Phiên đăng nhập bị dừng để ngăn chặn duy trì hash yếu.',
+            error: upgradeErr?.message || String(upgradeErr),
+          }),
+          { status: 500, headers: CORS_HEADERS }
+        );
       }
     }
 

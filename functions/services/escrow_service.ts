@@ -318,28 +318,48 @@ export async function fileOrderDispute(
     const sellerId = order.seller_id || (await ensureOfficialSeller(db));
 
     // Cập nhật trạng thái đơn sang DISPUTED (đóng băng giải ngân)
-    await db
+    const updateOrderRes = await db
       .prepare(`
         UPDATE orders
         SET escrow_status = 'DISPUTED',
             dispute_reason = ?,
             dispute_detail = ?,
             updated_at = ?
-        WHERE id = ?
+        WHERE id = ? AND escrow_status != 'DISPUTED'
       `)
       .bind(reason, detail || '', nowIso, order.id)
       .run();
 
-    // Ghi vào bảng seller_disputes
-    await db
+    if (!updateOrderRes.success || (updateOrderRes.meta?.changes ?? 0) === 0) {
+      return { success: false, message: 'Không thể chuyển trạng thái đơn hàng sang khiếu nại hoặc đơn hàng đã bị khiếu nại trước đó.' };
+    }
+
+    // Ghi vào bảng seller_disputes (Hard error nếu thất bại, không nuốt lỗi)
+    const insertDisputeRes = await db
       .prepare(`
         INSERT INTO seller_disputes (
           id, order_id, buyer_member_id, seller_id, reason, detail, status, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)
       `)
       .bind(disputeId, order.id, userId, sellerId, reason, detail || '', nowIso, nowIso)
-      .run()
-      .catch(() => {});
+      .run();
+
+    if (!insertDisputeRes.success) {
+      // Rollback trạng thái đơn hàng để đảm bảo toàn vẹn dữ liệu
+      await db.prepare(`
+        UPDATE orders
+        SET escrow_status = 'HELD',
+            dispute_reason = NULL,
+            dispute_detail = NULL,
+            updated_at = ?
+        WHERE id = ? AND escrow_status = 'DISPUTED'
+      `).bind(nowIso, order.id).run().catch(() => {});
+
+      return {
+        success: false,
+        message: 'Lỗi ghi nhận khiếu nại vào cơ sở dữ liệu. Yêu cầu khiếu nại không thành công.',
+      };
+    }
 
     const logId2 = 'sec_' + Date.now().toString(36) + '_' + generateSecureIdSuffix(4);
     await db.prepare(`
