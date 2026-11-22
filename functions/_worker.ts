@@ -194,6 +194,7 @@ import * as homepageSectionsUploadImageApi from './api/admin/homepage-sections/u
 import * as homepageSectionsAiSuggestApi from './api/admin/homepage-sections/ai-suggest';
 import * as homepageSectionsAiGenerateImageApi from './api/admin/homepage-sections/ai-generate-image';
 import * as homepageImagesApi from './api/homepage-images/[file]';
+import * as homepageImagesProbeApi from './api/homepage-images/probe';
 import * as homepageSectionsPublicApi from './api/homepage-sections';
 // Universal Commerce Platform RESTful APIs
 import * as productsIndexApi from './api/products/index';
@@ -2397,6 +2398,34 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return new Response('Method Not Allowed', { status: 405 });
       }
 
+      // Probe trạng thái lưu trữ & nén ảnh mục trang chủ
+      if (pathname === '/api/homepage-images/probe') {
+        if (method === 'OPTIONS') {
+          return new Response(null, {
+            status: 204,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type',
+            },
+          });
+        }
+        if (method === 'GET') return await homepageImagesProbeApi.onRequestGet(context as any);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      // Phục vụ ảnh mục trang chủ tại /api/homepage-images/<file>
+      if (pathname.startsWith('/api/homepage-images/')) {
+        const fileParam = pathname.replace(/^\/api\/homepage-images\//, '');
+        const imageContext = {
+          ...context,
+          params: { file: fileParam },
+        };
+        if (method === 'OPTIONS') return await homepageImagesApi.onRequestOptions();
+        if (method === 'GET' || method === 'HEAD') return await homepageImagesApi.onRequestGet(imageContext);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
       // Fallback for any unknown /api route
       if (pathname.startsWith('/api')) {
         return new Response(
@@ -2610,18 +2639,6 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       // Phục vụ icon game động và tĩnh tại /game_icons/<slug>.<ext>
       if (pathname.startsWith('/game_icons/') && (method === 'GET' || method === 'HEAD')) {
         return await handleGameIconRequest(request, env, ctx, pathname);
-      }
-
-      // Phục vụ ảnh mục trang chủ tại /api/homepage-images/<file>
-      if (pathname.startsWith('/api/homepage-images/')) {
-        const fileParam = pathname.replace(/^\/api\/homepage-images\//, '');
-        const imageContext = {
-          ...context,
-          params: { file: fileParam },
-        };
-        if (method === 'OPTIONS') return await homepageImagesApi.onRequestOptions();
-        if (method === 'GET' || method === 'HEAD') return await homepageImagesApi.onRequestGet(imageContext);
-        return new Response('Method Not Allowed', { status: 405 });
       }
 
       // Server-side resilience layer for missing JS chunks (Stale deployments)
