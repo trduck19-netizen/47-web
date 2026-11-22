@@ -907,147 +907,299 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     }
   }, [newsCount]);
 
-  // Helper render các nút lối tắt dịch vụ theo mã con
-  const renderShortcutItem = (shortcutId: string) => {
+  // Helper điều hướng liên kết an toàn cho mọi mục trang chủ (Nhóm 3)
+  const handleNavigation = (linkUrl?: string, linkTarget: '_self' | '_blank' = '_self', linkType: string = 'internal') => {
+    if (!linkUrl || !linkUrl.trim()) return;
+    const url = linkUrl.trim();
+
+    if (linkTarget === '_blank' || linkType === 'external' || /^https?:\/\//i.test(url)) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // System & Internal Routing
+    if (url === '/' || url === '/home') {
+      setSubView('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (url === '/store') {
+      setSubView('home');
+      setSelectedCategory('all');
+      setSelectedProductType('all');
+      document.getElementById('shopee-products-grid')?.scrollIntoView({ behavior: 'smooth' });
+    } else if (url === '/seller-center') {
+      if (onOpenSellerCenter) onOpenSellerCenter();
+      else setSubView('seller-center' as any);
+    } else if (url === '/game') {
+      setSubView('game-zone');
+    } else if (url === '/news') {
+      setSubView('news');
+    } else if (url === '/giveaways') {
+      if (onOpenGiveaways) onOpenGiveaways();
+      else onShowToast(language === 'en' ? 'Open Giveaways' : 'Mở Quà Tặng Giveaways', 'info');
+    } else if (url === '/utilities') {
+      if (onOpenUtilities) onOpenUtilities();
+      else onShowToast(language === 'en' ? 'Open Utilities' : 'Mở Kho Tiện Ích', 'info');
+    } else if (url === '/missions') {
+      if (onOpenMissions) onOpenMissions();
+      else onShowToast(language === 'en' ? 'Open Missions' : 'Mở Trung Tâm Nhiệm Vụ', 'info');
+    } else if (url === '/telegram') {
+      if (onOpenTelegram) onOpenTelegram();
+      else window.open('https://t.me/UniversalMallSupport', '_blank', 'noopener,noreferrer');
+    } else if (url === '#/orders' || url === '/orders') {
+      if (onOpenReceivedCodes) onOpenReceivedCodes('orders');
+      else onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem đơn hàng', 'info');
+    } else if (url === '#/profile' || url === '/profile') {
+      if (onOpenProfile) onOpenProfile();
+      else onShowToast(language === 'en' ? 'Open Profile' : 'Mở Hồ Sơ Cá Nhân', 'info');
+    } else if (url === '#/vouchers' || url === '/vouchers') {
+      setIsCouponModalOpen(true);
+    } else if (url === '#/spin' || url === '/spin') {
+      if (onOpenGrowth) onOpenGrowth();
+      else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu', 'info');
+    } else if (url === '#/guarantee' || url === '/guarantee') {
+      setIsGuaranteeOpen(true);
+    } else if (url === '#/terms' || url === '/terms') {
+      setSubView('terms');
+    } else if (url === '#/privacy' || url === '/privacy') {
+      setSubView('privacy');
+    } else if (url.startsWith('#')) {
+      window.location.hash = url;
+    } else {
+      window.location.href = url;
+    }
+  };
+
+  // Helper render các nút lối tắt dịch vụ theo mã con (Hỗ trợ tiêu đề tùy chỉnh & link hoạt động - Nhóm 3)
+  const renderShortcutItem = (subInput: any) => {
+    const sub = typeof subInput === 'object' && subInput ? subInput : (getOrderedSubsections('categories_grid', 'shortcuts').find((s) => s.id === subInput) || { id: String(subInput) });
+    const shortcutId = sub.id;
+    const customTitle = isEn ? sub.title_en : sub.title_vi;
+    const customBadge = isEn ? sub.badge_en : sub.badge_vi;
+
+    // Nếu có link_url được cấu hình, ưu tiên xử lý link_url
+    const handleShortcutClick = (defaultAction?: () => void) => {
+      if (sub.link_url) {
+        handleNavigation(sub.link_url, sub.link_target, sub.link_type);
+      } else if (defaultAction) {
+        defaultAction();
+      }
+    };
+
     switch (shortcutId) {
       case 'shortcut_instant_delivery':
         return (
           <button 
-            key="shortcut_instant_delivery"
-            onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('orders') : onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem mã giao 0s', 'info')} 
-            className="group flex flex-col items-center cursor-pointer"
+            key={shortcutId}
+            onClick={() => handleShortcutClick(() => onOpenReceivedCodes ? onOpenReceivedCodes('orders') : onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem mã giao 0s', 'info'))} 
+            className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-orange-500">
+            <div className="w-11 h-11 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-orange-500 relative">
               ⚡
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              {t('mall.services.instantDelivery')}
+              {customTitle || sub.internal_name || t('mall.services.instantDelivery')}
             </span>
           </button>
         );
       case 'shortcut_courier_shipping':
         return (
           <button 
-            key="shortcut_courier_shipping"
-            onClick={() => {
+            key={shortcutId}
+            onClick={() => handleShortcutClick(() => {
               setSelectedCategory('all');
               setSelectedProductType('all');
               const el = document.getElementById('shopee-products-grid');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }} 
-            className="group flex flex-col items-center cursor-pointer"
+            })} 
+            className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-red-500">
+            <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-red-500 relative">
               🚚
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              {t('mall.services.courierShipping')}
+              {customTitle || sub.internal_name || t('mall.services.courierShipping')}
             </span>
           </button>
         );
       case 'shortcut_protection_168h':
         return (
           <button 
-            key="shortcut_protection_168h"
-            onClick={() => setIsGuaranteeOpen(true)} 
-            className="group flex flex-col items-center cursor-pointer"
+            key={shortcutId}
+            onClick={() => handleShortcutClick(() => setIsGuaranteeOpen(true))} 
+            className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-amber-500">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-amber-500 relative">
               🛡️
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              {t('mall.services.protection168h')}
+              {customTitle || sub.internal_name || t('mall.services.protection168h')}
             </span>
           </button>
         );
       case 'shortcut_vietqr_topup':
         return (
-          <button key="shortcut_vietqr_topup" onClick={onOpenWallet} className="group flex flex-col items-center cursor-pointer">
-            <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-blue-500">
+          <button key={shortcutId} onClick={() => handleShortcutClick(onOpenWallet)} className="group flex flex-col items-center cursor-pointer relative">
+            <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-blue-500 relative">
               💳
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              {t('mall.services.vietqrTopup')}
+              {customTitle || sub.internal_name || t('mall.services.vietqrTopup')}
             </span>
           </button>
         );
       case 'shortcut_lucky_wheel':
         return (
           <button
-            key="shortcut_lucky_wheel"
-            onClick={() => {
+            key={shortcutId}
+            onClick={() => handleShortcutClick(() => {
               setHeroSlide(1);
               if (onOpenGrowth) onOpenGrowth();
               else onShowToast(language === 'en' ? 'Open Lucky Wheel' : 'Mở Vòng Quay Xu May Mắn', 'info');
-            }}
-            className="group flex flex-col items-center cursor-pointer"
+            })}
+            className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-purple-500">
+            <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-purple-500 relative">
               🎡
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              {t('mall.services.luckyWheel')}
+              {customTitle || sub.internal_name || t('mall.services.luckyWheel')}
             </span>
           </button>
         );
       case 'shortcut_vouchers':
         return (
           <button 
-            key="shortcut_vouchers"
-            onClick={() => setIsCouponModalOpen(true)} 
-            className="group flex flex-col items-center cursor-pointer"
+            key={shortcutId}
+            onClick={() => handleShortcutClick(() => setIsCouponModalOpen(true))} 
+            className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-emerald-500">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-emerald-500 relative">
               🎟️
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              {t('mall.services.vouchers')}
+              {customTitle || sub.internal_name || t('mall.services.vouchers')}
             </span>
           </button>
         );
       case 'shortcut_game_zone':
         return (
           <button 
-            key="shortcut_game_zone"
-            onClick={() => setSubView('game-zone')} 
-            className="group flex flex-col items-center cursor-pointer"
+            key={shortcutId}
+            onClick={() => handleShortcutClick(() => setSubView('game-zone'))} 
+            className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500 relative">
               🎮
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              Game Zone
+              {customTitle || sub.internal_name || 'Game Zone'}
             </span>
           </button>
         );
       case 'shortcut_support_247':
         return (
           <button 
-            key="shortcut_support_247"
-            onClick={() => setIsSupportOpen(true)} 
-            className="group flex flex-col items-center cursor-pointer"
+            key={shortcutId}
+            onClick={() => handleShortcutClick(() => setIsSupportOpen(true))} 
+            className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-pink-500">
+            <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-pink-500 relative">
               💬
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              {t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
+              {customTitle || sub.internal_name || t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
             </span>
           </button>
         );
       default:
-        return null;
+        // Render mục con tùy chỉnh do admin tự thêm (is_custom: true)
+        return (
+          <button
+            key={sub.id}
+            onClick={() => {
+              if (sub.link_url) {
+                handleNavigation(sub.link_url, sub.link_target, sub.link_type);
+              }
+            }}
+            className={`group flex flex-col items-center relative ${sub.link_url ? 'cursor-pointer' : 'cursor-default'}`}
+          >
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500 relative">
+              ✨
+              {customBadge && (
+                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
+                  {customBadge}
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] font-medium mt-2 leading-tight truncate max-w-[70px]" title={customTitle || sub.internal_name || sub.nameVi}>
+              {customTitle || sub.internal_name || sub.nameVi || 'Mục mới'}
+            </span>
+          </button>
+        );
     }
   };
 
-  // Helper render các nút thanh điều hướng theo mã con
-  const renderNavButton = (navId: string) => {
+  // Helper render các nút thanh điều hướng theo mã con (Hỗ trợ tiêu đề tùy chỉnh & link hoạt động - Nhóm 3)
+  const renderNavButton = (navInput: any) => {
+    const sub = typeof navInput === 'object' && navInput ? navInput : (getOrderedSubsections('top_announcement', 'navigation').find((s) => s.id === navInput) || { id: String(navInput) });
+    const navId = sub.id;
+    const customTitle = isEn ? sub.title_en : sub.title_vi;
+    const customBadge = isEn ? sub.badge_en : sub.badge_vi;
+
+    const handleNavClick = (defaultAction?: () => void) => {
+      if (sub.link_url) {
+        handleNavigation(sub.link_url, sub.link_target, sub.link_type);
+      } else if (defaultAction) {
+        defaultAction();
+      }
+    };
+
     switch (navId) {
       case 'nav_home':
         return (
           <button
-            key="nav_home"
-            onClick={() => setSubView('home')}
+            key={navId}
+            onClick={() => handleNavClick(() => setSubView('home'))}
             className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
               subView === 'home'
                 ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
@@ -1055,14 +1207,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }`}
           >
             <Store className="w-3.5 h-3.5 shrink-0" />
-            <span>{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ Sàn')}</span>
+            <span>{customTitle || sub.internal_name || t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ Sàn')}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
       case 'nav_store':
         return (
           <button
-            key="nav_store"
-            onClick={() => setSubView('store')}
+            key={navId}
+            onClick={() => handleNavClick(() => setSubView('store'))}
             className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
               subView === 'store'
                 ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
@@ -1070,14 +1223,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }`}
           >
             <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
-            <span>{t.mall?.subnav?.store || (language === 'en' ? 'Multi-Industry Store' : 'Cửa Hàng Đa Ngành')}</span>
+            <span>{customTitle || sub.internal_name || t.mall?.subnav?.store || (language === 'en' ? 'Multi-Industry Store' : 'Cửa Hàng Đa Ngành')}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
       case 'nav_seller':
         return (
           <button
-            key="nav_seller"
-            onClick={() => setSubView('seller')}
+            key={navId}
+            onClick={() => handleNavClick(() => setSubView('seller'))}
             className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
               subView === 'seller'
                 ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
@@ -1085,14 +1239,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }`}
           >
             <Store className="w-3.5 h-3.5 shrink-0" />
-            <span>{t.mall?.subnav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}</span>
+            <span>{customTitle || sub.internal_name || t.mall?.subnav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
       case 'nav_account':
         return (
           <button
-            key="nav_account"
-            onClick={() => setSubView('account')}
+            key={navId}
+            onClick={() => handleNavClick(() => setSubView('account'))}
             className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
               subView === 'account'
                 ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
@@ -1100,14 +1255,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }`}
           >
             <User className="w-3.5 h-3.5 shrink-0" />
-            <span>{t.mall?.subnav?.account || (language === 'en' ? 'Account & Wallet' : 'Tài Khoản & Ví')}</span>
+            <span>{customTitle || sub.internal_name || t.mall?.subnav?.account || (language === 'en' ? 'Account & Wallet' : 'Tài Khoản & Ví')}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
       case 'nav_game_zone':
         return (
           <button
-            key="nav_game_zone"
-            onClick={() => setSubView('game-zone' as any)}
+            key={navId}
+            onClick={() => handleNavClick(() => setSubView('game-zone' as any))}
             className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
               subView === ('game-zone' as any)
                 ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
@@ -1115,14 +1271,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span>Game Zone</span>
+            <span>{customTitle || sub.internal_name || 'Game Zone'}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
       case 'nav_missions':
         return (
           <button
-            key="nav_missions"
-            onClick={() => setSubView('missions')}
+            key={navId}
+            onClick={() => handleNavClick(() => setSubView('missions'))}
             className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
               subView === 'missions'
                 ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
@@ -1130,14 +1287,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }`}
           >
             <Trophy className="w-3.5 h-3.5 shrink-0" />
-            <span>{t.mall?.subnav?.missions || (language === 'en' ? 'Missions' : 'Nhiệm Vụ')}</span>
+            <span>{customTitle || sub.internal_name || t.mall?.subnav?.missions || (language === 'en' ? 'Missions' : 'Nhiệm Vụ')}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
       case 'nav_telegram':
         return (
           <button
-            key="nav_telegram"
-            onClick={() => setSubView('telegram')}
+            key={navId}
+            onClick={() => handleNavClick(() => setSubView('telegram'))}
             className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
               subView === 'telegram'
                 ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
@@ -1145,14 +1303,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }`}
           >
             <Send className="w-3.5 h-3.5 shrink-0" />
-            <span>Telegram</span>
+            <span>{customTitle || sub.internal_name || 'Telegram'}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
       case 'nav_a_z':
         return (
           <button
-            key="nav_a_z"
-            onClick={() => setSubView('a-z')}
+            key={navId}
+            onClick={() => handleNavClick(() => setSubView('a-z'))}
             className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
               subView === 'a-z'
                 ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
@@ -1160,35 +1319,75 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }`}
           >
             <List className="w-3.5 h-3.5 shrink-0" />
-            <span>{t.mall?.subnav?.azIndex || (language === 'en' ? 'A-Z Index' : 'Mục Lục A-Z')}</span>
+            <span>{customTitle || sub.internal_name || t.mall?.subnav?.azIndex || (language === 'en' ? 'A-Z Index' : 'Mục Lục A-Z')}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
       case 'nav_submit_code':
         return (
           <button
-            key="nav_submit_code"
-            onClick={() => setIsSubmitCodeOpen(true)}
+            key={navId}
+            onClick={() => handleNavClick(() => setIsSubmitCodeOpen(true))}
             className="px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold transition flex items-center gap-1 shadow-sm shrink-0 whitespace-nowrap cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 shrink-0" />
-            <span>{t.mall?.subnav?.submitCode || (language === 'en' ? 'Submit Code' : 'Gửi Mã Mới')}</span>
+            <span>{customTitle || sub.internal_name || t.mall?.subnav?.submitCode || (language === 'en' ? 'Submit Code' : 'Gửi Mã Mới')}</span>
+            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-black text-amber-400">{customBadge}</span>}
           </button>
         );
       default:
-        return null;
+        // Render mục con tùy chỉnh trên thanh điều hướng
+        return (
+          <button
+            key={sub.id}
+            onClick={() => {
+              if (sub.link_url) {
+                handleNavigation(sub.link_url, sub.link_target, sub.link_type);
+              }
+            }}
+            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              sub.link_url ? 'cursor-pointer hover:bg-white/15 text-white/95' : 'cursor-default text-white/70'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
+            <span>{customTitle || sub.internal_name || sub.nameVi || 'Mục mới'}</span>
+            {customBadge && (
+              <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">
+                {customBadge}
+              </span>
+            )}
+          </button>
+        );
     }
   };
 
   // Dynamic homepage section renderer
   const renderHomeSection = (sectionId: string) => {
     switch (sectionId) {
-      case 'main_hero_banner':
+      case 'main_hero_banner': {
+        const heroSection = orderedSections.find((s) => s.id === 'main_hero_banner');
+        const customHeroTitle = isEn ? heroSection?.title_en : heroSection?.title_vi;
+        const customHeroDesc = isEn ? heroSection?.description_en : heroSection?.description_vi;
+        const customHeroBadge = isEn ? heroSection?.badge_en : heroSection?.badge_vi;
+        const heroLinkUrl = heroSection?.link_url;
+        const heroLinkTarget = heroSection?.link_target || '_self';
+        const heroLinkType = heroSection?.link_type || 'internal';
+
         return (
           <>
             {/* 3.1. HERO BANNER GRID (2/3 + 1/3) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
               {/* Banner Chính Lớn - Dynamic Carousel 3 Slides */}
-              <div className="md:col-span-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] shadow-sm group">
+              <div 
+                onClick={() => {
+                  if (heroLinkUrl) {
+                    handleNavigation(heroLinkUrl, heroLinkTarget, heroLinkType);
+                  }
+                }}
+                className={`md:col-span-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] shadow-sm group ${
+                  heroLinkUrl ? 'cursor-pointer hover:shadow-md' : ''
+                }`}
+              >
                 {/* Nút lùi slide */}
                 <button
                   onClick={(e) => {
@@ -1220,13 +1419,13 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   {heroSlide === 0 && (
                     <>
                       <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
-                        {t.mall?.hero?.slide0Badge || (language === 'en' ? '🛍️ UNIVERSAL MALL SHOPPING FESTIVAL' : '🛍️ ĐẠI HỘI MUA SẮM UNIVERSAL MALL')}
+                        {customHeroBadge || t.mall?.hero?.slide0Badge || (language === 'en' ? '🛍️ UNIVERSAL MALL SHOPPING FESTIVAL' : '🛍️ ĐẠI HỘI MUA SẮM UNIVERSAL MALL')}
                       </div>
                       <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
-                        {t.mall?.hero?.slide0Title || (language === 'en' ? 'OFFICIAL MULTI-INDUSTRY MARKETPLACE' : 'SÀN THƯƠNG MẠI ĐA NGÀNH CHÍNH HÃNG')}
+                        {customHeroTitle || t.mall?.hero?.slide0Title || (language === 'en' ? 'OFFICIAL MULTI-INDUSTRY MARKETPLACE' : 'SÀN THƯƠNG MẠI ĐA NGÀNH CHÍNH HÃNG')}
                       </h2>
                       <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-md">
-                        {t.mall?.hero?.slide0Desc || (language === 'en' ? 'Fashion • Beauty • Digital Devices • Services • Gaming • Courier Shipping & Instant 0s Delivery' : 'Thời trang • Mỹ phẩm • Thiết bị số • Dịch vụ • Gaming • Giao hàng bưu chính & Giao mã tự động 0s')}
+                        {customHeroDesc || t.mall?.hero?.slide0Desc || (language === 'en' ? 'Fashion • Beauty • Digital Devices • Services • Gaming • Courier Shipping & Instant 0s Delivery' : 'Thời trang • Mỹ phẩm • Thiết bị số • Dịch vụ • Gaming • Giao hàng bưu chính & Giao mã tự động 0s')}
                       </p>
                     </>
                   )}
@@ -1261,9 +1460,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 <div className="z-10 flex items-center justify-between mt-4">
                   {heroSlide === 0 && (
                     <button 
-                      onClick={() => {
-                        const el = document.getElementById('shopee-products-grid');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (heroLinkUrl) {
+                          handleNavigation(heroLinkUrl, heroLinkTarget, heroLinkType);
+                        } else {
+                          const el = document.getElementById('shopee-products-grid');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }
                       }}
                       className="bg-white text-[#ee4d2d] font-bold px-4 sm:px-5 py-2 rounded shadow-md hover:bg-amber-50 text-xs transition cursor-pointer"
                     >
@@ -1357,6 +1561,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             </div>
           </>
         );
+      }
       case 'categories_grid': {
         const shortcutSubsections = getOrderedSubsections('categories_grid', 'shortcuts');
         const activeShortcuts = shortcutSubsections.filter((s) => s.enabled);
@@ -1390,7 +1595,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             {activeShortcuts.length > 0 && (
               <div className={`rounded-xl p-4 shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-4 text-center">
-                  {activeShortcuts.map((sub) => renderShortcutItem(sub.id))}
+                  {activeShortcuts.map((sub) => renderShortcutItem(sub))}
                 </div>
               </div>
             )}
@@ -1460,7 +1665,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           </div>
         );
       }
-      case 'flash_sale':
+      case 'flash_sale': {
+        const flashSection = orderedSections.find((s) => s.id === 'flash_sale');
+        const customFlashTitle = isEn ? flashSection?.title_en : flashSection?.title_vi;
+        const customFlashBadge = isEn ? flashSection?.badge_en : flashSection?.badge_vi;
+        const flashLinkUrl = flashSection?.link_url;
+        const flashLinkTarget = flashSection?.link_target || '_self';
+        const flashLinkType = flashSection?.link_type || 'internal';
+
         return (
           <div className="space-y-3">
             <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
@@ -1468,7 +1680,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   <div className="flex items-center gap-3">
                     <div className="text-lg sm:text-xl font-black text-[#ee4d2d] flex items-center tracking-tight">
                       <Flame className="w-5 h-5 sm:w-6 sm:h-6 mr-1 fill-current" />
-                      <span>{t.mall?.flashSale?.title || (language === 'en' ? 'GOLDEN HOUR FLASH SALE' : 'FLASH SALE GIỜ VÀNG')}</span>
+                      <span>{customFlashTitle || t.mall?.flashSale?.title || (language === 'en' ? 'GOLDEN HOUR FLASH SALE' : 'FLASH SALE GIỜ VÀNG')}</span>
+                      {customFlashBadge && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950 ml-1.5">
+                          {customFlashBadge}
+                        </span>
+                      )}
                     </div>
                     {/* Countdown Box */}
                     <div className="flex items-center gap-1 font-mono text-xs font-bold">
@@ -1482,8 +1699,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
 
                   <button 
                     onClick={() => {
-                      const el = document.getElementById('shopee-products-grid');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      if (flashLinkUrl) {
+                        handleNavigation(flashLinkUrl, flashLinkTarget, flashLinkType);
+                      } else {
+                        const el = document.getElementById('shopee-products-grid');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }
                     }}
                     className="text-xs text-[#ee4d2d] hover:underline font-semibold flex items-center cursor-pointer"
                   >
@@ -1530,7 +1751,16 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               </div>
           </div>
         );
-      case 'vouchers_section':
+      }
+      case 'vouchers_section': {
+        const voucherSec = orderedSections.find((s) => s.id === 'vouchers_section');
+        const customVoucherTitle = isEn ? voucherSec?.title_en : voucherSec?.title_vi;
+        const customVoucherDesc = isEn ? voucherSec?.description_en : voucherSec?.description_vi;
+        const customVoucherBadge = isEn ? voucherSec?.badge_en : voucherSec?.badge_vi;
+        const voucherLinkUrl = voucherSec?.link_url;
+        const voucherLinkTarget = voucherSec?.link_target || '_self';
+        const voucherLinkType = voucherSec?.link_type || 'internal';
+
         return (
           <>
             <div className={`rounded-xl shadow-sm border p-4 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
@@ -1540,16 +1770,27 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       🎟️
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-white">
-                        {t.mall?.vouchers?.exclusiveTitle || (language === 'en' ? 'Universal Mall Exclusive Deals' : 'Ưu Đãi Độc Quyền Sàn Universal Mall')}
+                      <h4 className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+                        <span>{customVoucherTitle || t.mall?.vouchers?.exclusiveTitle || (language === 'en' ? 'Universal Mall Exclusive Deals' : 'Ưu Đãi Độc Quyền Sàn Universal Mall')}</span>
+                        {customVoucherBadge && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950">
+                            {customVoucherBadge}
+                          </span>
+                        )}
                       </h4>
                       <p className="text-xs text-slate-500">
-                        {t.mall?.vouchers?.exclusiveDesc || (language === 'en' ? 'Apply vouchers FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 to all orders' : 'Áp dụng mã FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 cho toàn bộ đơn hàng')}
+                        {customVoucherDesc || t.mall?.vouchers?.exclusiveDesc || (language === 'en' ? 'Apply vouchers FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 to all orders' : 'Áp dụng mã FREESHIP30K, FREESHIPMAX, MALL50K, UNIVERSAL10 cho toàn bộ đơn hàng')}
                       </p>
                     </div>
                   </div>
                   <button
-                    onClick={() => setIsCouponModalOpen(true)}
+                    onClick={() => {
+                      if (voucherLinkUrl) {
+                        handleNavigation(voucherLinkUrl, voucherLinkTarget, voucherLinkType);
+                      } else {
+                        setIsCouponModalOpen(true);
+                      }
+                    }}
                     className="px-4 py-2 rounded-lg bg-[#ee4d2d] hover:bg-orange-600 text-white font-bold text-xs transition cursor-pointer shadow-sm"
                   >
                     {t.mall?.vouchers?.viewAllBtn || (language === 'en' ? 'View Mall Vouchers' : 'Xem Kho Voucher Sàn')}
@@ -1558,6 +1799,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               </div>
           </>
         );
+      }
       case 'games_and_codes':
         return (
           <div className="space-y-4">
@@ -1802,14 +2044,26 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             </div>
           </div>
         );
-      case 'news_section':
+      case 'news_section': {
+        const newsSec = orderedSections.find((s) => s.id === 'news_section');
+        const customNewsTitle = isEn ? newsSec?.title_en : newsSec?.title_vi;
+        const customNewsBadge = isEn ? newsSec?.badge_en : newsSec?.badge_vi;
+        const newsLinkUrl = newsSec?.link_url;
+        const newsLinkTarget = newsSec?.link_target || '_self';
+        const newsLinkType = newsSec?.link_type || 'internal';
+
         return (
           <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <Newspaper className="w-5 h-5 text-[#ee4d2d]" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d]">
-                  {isEn ? 'GAMING & TECH NEWS' : 'TIN TỨC GAME & CẨM NANG MUA SẮM'}
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d] flex items-center gap-1.5">
+                  <span>{customNewsTitle || (isEn ? 'GAMING & TECH NEWS' : 'TIN TỨC GAME & CẨM NANG MUA SẮM')}</span>
+                  {customNewsBadge && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950">
+                      {customNewsBadge}
+                    </span>
+                  )}
                 </h3>
                 <span className="text-xs text-slate-500 font-medium">
                   ({newsCount} {isEn ? 'Articles' : 'Bài viết'})
@@ -1817,8 +2071,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               </div>
               <button
                 onClick={() => {
-                  setSubView('news');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  if (newsLinkUrl) {
+                    handleNavigation(newsLinkUrl, newsLinkTarget, newsLinkType);
+                  } else {
+                    setSubView('news');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }}
                 className="text-xs text-[#ee4d2d] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
               >
@@ -1850,6 +2108,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             </div>
           </div>
         );
+      }
       default:
         return null;
     }
@@ -1859,39 +2118,57 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     <div className={`min-h-screen transition-colors duration-200 font-sans pb-16 ${isShopeeDark ? 'bg-[#0a0f1d] text-slate-100' : 'bg-[#f5f5f5] text-slate-800'}`}>
       
       {/* 0. TOP BAR BÁO HIỆU WEB TEST 1 */}
-      {isSectionEnabled('top_announcement') && (
+      {isSectionEnabled('top_announcement') && (() => {
+        const topSec = orderedSections.find((s) => s.id === 'top_announcement');
+        const customTopTitle = isEn ? topSec?.title_en : topSec?.title_vi;
+        const customTopDesc = isEn ? topSec?.description_en : topSec?.description_vi;
+        const customTopBadge = isEn ? topSec?.badge_en : topSec?.badge_vi;
+        const topLinkUrl = topSec?.link_url;
+        const topLinkTarget = topSec?.link_target || '_self';
+        const topLinkType = topSec?.link_type || 'internal';
 
-      <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold flex items-center justify-between shadow-sm sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <span className="bg-black text-amber-400 px-2 py-0.5 rounded uppercase text-[10px] tracking-wider font-mono">
-            {t.mall?.topNav?.marketplace || (language === 'en' ? 'Comprehensive Marketplace' : 'Bản Sàn Toàn Diện')}
-          </span>
-          <span className="truncate">
-            {language === 'en'
-              ? (t.mall?.topNav?.editionDesc || 'Running full Shopee Game edition at ')
-              : (t.mall?.topNav?.editionDesc || 'Đang chạy phiên bản sàn Shopee Game tại đường dẫn ')}
-            <code className="bg-amber-600/30 px-1.5 py-0.5 rounded font-mono">codegame.shop/test1</code>
-            {language === 'en'
-              ? (t.mall?.topNav?.mainSiteUnaffected || ' (Main site unaffected)')
-              : (t.mall?.topNav?.mainSiteUnaffected || ' (Web chính không bị ảnh hưởng)')}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button 
-            onClick={() => {
-              setSubView('home');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="flex items-center gap-1.5 bg-black hover:bg-slate-900 text-white px-3 py-1 rounded text-xs transition active:scale-95 cursor-pointer font-bold"
-          >
-            <Store className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t.mall?.topNav?.mallHomepage || (language === 'en' ? 'Universal Mall Homepage' : 'Trang Chủ Sàn CodeGame Mall')}</span>
-            <span className="sm:hidden">{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ')}</span>
-          </button>
-        </div>
-      </div>
-
-            )}
+        return (
+          <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold flex items-center justify-between shadow-sm sticky top-0 z-50">
+            <div className="flex items-center gap-2">
+              <span className="bg-black text-amber-400 px-2 py-0.5 rounded uppercase text-[10px] tracking-wider font-mono">
+                {customTopBadge || t.mall?.topNav?.marketplace || (language === 'en' ? 'Comprehensive Marketplace' : 'Bản Sàn Toàn Diện')}
+              </span>
+              <span className="truncate">
+                {customTopTitle ? (
+                  <span>{customTopTitle}{customTopDesc ? ` - ${customTopDesc}` : ''}</span>
+                ) : (
+                  <>
+                    {language === 'en'
+                      ? (t.mall?.topNav?.editionDesc || 'Running full Shopee Game edition at ')
+                      : (t.mall?.topNav?.editionDesc || 'Đang chạy phiên bản sàn Shopee Game tại đường dẫn ')}
+                    <code className="bg-amber-600/30 px-1.5 py-0.5 rounded font-mono">codegame.shop/test1</code>
+                    {language === 'en'
+                      ? (t.mall?.topNav?.mainSiteUnaffected || ' (Main site unaffected)')
+                      : (t.mall?.topNav?.mainSiteUnaffected || ' (Web chính không bị ảnh hưởng)')}
+                  </>
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button 
+                onClick={() => {
+                  if (topLinkUrl) {
+                    handleNavigation(topLinkUrl, topLinkTarget, topLinkType);
+                  } else {
+                    setSubView('home');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="flex items-center gap-1.5 bg-black hover:bg-slate-900 text-white px-3 py-1 rounded text-xs transition active:scale-95 cursor-pointer font-bold"
+              >
+                <Store className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{customTopBadge || t.mall?.topNav?.mallHomepage || (language === 'en' ? 'Universal Mall Homepage' : 'Trang Chủ Sàn CodeGame Mall')}</span>
+                <span className="sm:hidden">{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ')}</span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 1. SHOPEE TOPBAR (Giữ người dùng ở lại test1) */}
       <div className="bg-[#ee4d2d] text-white text-[12px] py-1 px-4 border-b border-white/10">
@@ -2140,7 +2417,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 onScroll={checkNavScroll}
                 className="flex-1 flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none whitespace-nowrap scroll-smooth py-0.5"
               >
-                {activeNavSubsections.map((sub) => renderNavButton(sub.id))}
+                {activeNavSubsections.map((sub) => renderNavButton(sub))}
               </div>
 
               {/* Mũi tên cuộn phải */}

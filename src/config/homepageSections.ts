@@ -71,6 +71,16 @@ export interface HomepageSubsectionDefinition {
   defaultEnabled: boolean;
   defaultOrder: number;
   icon?: string;
+  // Trường mở rộng tùy chỉnh
+  internal_name?: string;
+  title_vi?: string;
+  title_en?: string;
+  link_url?: string;
+  link_type?: 'internal' | 'system' | 'external';
+  link_target?: '_self' | '_blank';
+  badge_vi?: string;
+  badge_en?: string;
+  is_custom?: boolean;
 }
 
 export interface HomepageSubsectionState {
@@ -86,6 +96,18 @@ export interface HomepageSubsectionState {
   groupNameVi?: string;
   groupNameEn?: string;
   icon?: string;
+  // Trường mở rộng tùy chỉnh (Nhóm 1)
+  internal_name?: string;
+  title_vi?: string;
+  title_en?: string;
+  link_url?: string;
+  link_type?: 'internal' | 'system' | 'external';
+  link_target?: '_self' | '_blank';
+  description_vi?: string;
+  description_en?: string;
+  badge_vi?: string;
+  badge_en?: string;
+  is_custom?: boolean;
 }
 
 export type HomepageSubsectionConfig = HomepageSubsectionState & Partial<HomepageSubsectionDefinition>;
@@ -100,6 +122,17 @@ export interface HomepageSectionState {
   descriptionEn?: string;
   icon?: string;
   subsections?: HomepageSubsectionState[];
+  // Trường mở rộng tùy chỉnh (Nhóm 1)
+  internal_name?: string;
+  title_vi?: string;
+  title_en?: string;
+  link_url?: string;
+  link_type?: 'internal' | 'system' | 'external';
+  link_target?: '_self' | '_blank';
+  description_vi?: string;
+  description_en?: string;
+  badge_vi?: string;
+  badge_en?: string;
 }
 
 export type HomepageSectionConfig = HomepageSectionState & Partial<HomepageSectionDefinition> & {
@@ -597,34 +630,134 @@ export function getDefaultHomepageSectionsState(): HomepageSectionConfig[] {
 }
 
 /**
+ * Danh sách trang hệ thống có sẵn phục vụ việc chọn nhanh (Khỏi gõ tay sai)
+ */
+export interface SystemPageOption {
+  value: string;
+  labelVi: string;
+  labelEn: string;
+  category: 'core' | 'catalog' | 'services' | 'account' | 'legal';
+}
+
+export const SYSTEM_PAGE_OPTIONS: readonly SystemPageOption[] = [
+  { value: '/', labelVi: 'Trang Chủ Sàn (Universal Mall)', labelEn: 'Mall Homepage', category: 'core' },
+  { value: '/store', labelVi: 'Cửa Hàng Đa Ngành Chính Hãng', labelEn: 'Multi-Industry Store', category: 'core' },
+  { value: '/seller-center', labelVi: 'Kênh Người Bán (Seller Center)', labelEn: 'Seller Center Portal', category: 'core' },
+  { value: '/game', labelVi: 'Game Zone (593 Game Bản Quyền)', labelEn: 'Game Zone Portal', category: 'catalog' },
+  { value: '/news', labelVi: 'Tin Tức & Bài Viết', labelEn: 'News & Articles', category: 'catalog' },
+  { value: '/giveaways', labelVi: 'Giveaways & Quà Tặng VIP', labelEn: 'VIP Giveaways', category: 'catalog' },
+  { value: '/utilities', labelVi: 'Kho Tiện Ích & Dịch Vụ Số', labelEn: 'Digital Utilities', category: 'services' },
+  { value: '/missions', labelVi: 'Trung Tâm Nhiệm Vụ & Điểm Danh', labelEn: 'Mission Center', category: 'services' },
+  { value: '/telegram', labelVi: 'Cộng Đồng Telegram & Bot Alert', labelEn: 'Telegram Community', category: 'services' },
+  { value: '#/profile', labelVi: 'Hồ Sơ Cá Nhân & Số Dư Ví', labelEn: 'User Profile & Wallet', category: 'account' },
+  { value: '#/orders', labelVi: 'Đơn Hàng & Tủ Mã Cá Nhân (Giao 0s)', labelEn: 'My Orders & Vault (0s)', category: 'account' },
+  { value: '#/vouchers', labelVi: 'Kho Mã Giảm Giá & Freeship', labelEn: 'Voucher & Freeship Vault', category: 'services' },
+  { value: '#/spin', labelVi: 'Vòng Quay Xu May Mắn', labelEn: 'Lucky Wheel Spin', category: 'services' },
+  { value: '#/guarantee', labelVi: 'Bảo Chứng Giao Dịch Sàn 168 Giờ', labelEn: '168H Escrow Protection', category: 'legal' },
+  { value: '#/terms', labelVi: 'Điều Khoản Dịch Vụ', labelEn: 'Terms of Service', category: 'legal' },
+  { value: '#/privacy', labelVi: 'Chính Sách Bảo Mật Thông Tin', labelEn: 'Privacy Policy', category: 'legal' },
+];
+
+/**
+ * Kiểm tra tính hợp lệ của đường dẫn liên kết
+ */
+export function validateLinkUrl(url?: string, type: 'internal' | 'system' | 'external' = 'internal'): {
+  valid: boolean;
+  warning?: string;
+} {
+  if (!url || !url.trim()) return { valid: true };
+  const trimmed = url.trim();
+  if (type === 'external') {
+    if (!/^https?:\/\//i.test(trimmed)) {
+      return { valid: false, warning: 'Link ngoài phải bắt đầu bằng http:// hoặc https://' };
+    }
+    return { valid: true };
+  }
+  if (type === 'internal' || type === 'system') {
+    if (!trimmed.startsWith('/') && !trimmed.startsWith('#')) {
+      return { valid: false, warning: 'Link nội bộ phải bắt đầu bằng "/" hoặc "#"' };
+    }
+    return { valid: true };
+  }
+  return { valid: true };
+}
+
+/**
  * Hợp nhất an toàn cấu hình mục con đã lưu trong D1 với registry mã nguồn
+ * Bảo toàn các trường mở rộng và hỗ trợ các mục con tự thêm (is_custom: true)
  */
 export function mergeSubsectionsConfig(
   parentId: string,
   savedSubsections: any
 ): HomepageSubsectionConfig[] {
   const registeredDefs = HOMEPAGE_SUBSECTIONS_REGISTRY.filter((s) => s.parentId === parentId);
-  if (registeredDefs.length === 0) return [];
 
   if (!Array.isArray(savedSubsections) || savedSubsections.length === 0) {
     return getDefaultSubsectionsForParent(parentId);
   }
 
-  const savedMap = new Map<string, { enabled: boolean; order: number }>();
+  const savedMap = new Map<string, any>();
+  const customItems: HomepageSubsectionConfig[] = [];
+
   savedSubsections.forEach((item, index) => {
-    if (item && typeof item.id === 'string' && VALID_HOMEPAGE_SUBSECTION_IDS.has(item.id)) {
+    if (!item || typeof item !== 'object' || typeof item.id !== 'string') return;
+    const isCustom = Boolean(item.is_custom || item.id.startsWith('custom_') || !VALID_HOMEPAGE_SUBSECTION_IDS.has(item.id));
+
+    if (VALID_HOMEPAGE_SUBSECTION_IDS.has(item.id) && !isCustom) {
       savedMap.set(item.id, {
         enabled: typeof item.enabled === 'boolean' ? item.enabled : true,
         order: typeof item.order === 'number' ? item.order : index + 1,
+        internal_name: item.internal_name,
+        title_vi: item.title_vi,
+        title_en: item.title_en,
+        link_url: item.link_url,
+        link_type: item.link_type,
+        link_target: item.link_target,
+        description_vi: item.description_vi,
+        description_en: item.description_en,
+        badge_vi: item.badge_vi,
+        badge_en: item.badge_en,
+      });
+    } else if (isCustom && (item.parentId === parentId || !item.parentId)) {
+      // Bảo toàn mục con tùy chỉnh do người dùng thêm
+      customItems.push({
+        id: item.id,
+        parentId,
+        group: item.group || 'shortcuts',
+        groupNameVi: item.groupNameVi || 'Mục Tự Thêm',
+        groupNameEn: item.groupNameEn || 'Custom Items',
+        nameVi: item.title_vi || item.internal_name || item.nameVi || 'Mục con mới',
+        nameEn: item.title_en || item.internal_name || item.nameEn || 'New Subsection',
+        descriptionVi: item.description_vi || item.descriptionVi || '',
+        descriptionEn: item.description_en || item.descriptionEn || '',
+        enabled: typeof item.enabled === 'boolean' ? item.enabled : true,
+        order: typeof item.order === 'number' ? item.order : 99 + index,
+        icon: item.icon || 'Sparkles',
+        internal_name: item.internal_name,
+        title_vi: item.title_vi,
+        title_en: item.title_en,
+        link_url: item.link_url,
+        link_type: item.link_type || 'internal',
+        link_target: item.link_target || '_self',
+        description_vi: item.description_vi,
+        description_en: item.description_en,
+        badge_vi: item.badge_vi,
+        badge_en: item.badge_en,
+        is_custom: true,
       });
     }
   });
 
-  const groups = new Set<string>(registeredDefs.map((d) => d.group));
+  const allGroups = new Set<string>([
+    ...registeredDefs.map((d) => d.group),
+    ...customItems.map((c) => c.group),
+  ]);
+
   const result: HomepageSubsectionConfig[] = [];
 
-  groups.forEach((groupKey) => {
+  allGroups.forEach((groupKey) => {
     const groupDefs = registeredDefs.filter((d) => d.group === groupKey);
+    const groupCustoms = customItems.filter((c) => c.group === groupKey);
     let maxOrder = 0;
     const groupItems: HomepageSubsectionConfig[] = [];
 
@@ -635,6 +768,16 @@ export function mergeSubsectionsConfig(
           ...def,
           enabled: saved.enabled,
           order: saved.order,
+          internal_name: saved.internal_name,
+          title_vi: saved.title_vi,
+          title_en: saved.title_en,
+          link_url: saved.link_url,
+          link_type: saved.link_type,
+          link_target: saved.link_target,
+          description_vi: saved.description_vi,
+          description_en: saved.description_en,
+          badge_vi: saved.badge_vi,
+          badge_en: saved.badge_en,
         });
         if (saved.order > maxOrder) maxOrder = saved.order;
       } else {
@@ -647,6 +790,11 @@ export function mergeSubsectionsConfig(
       }
     });
 
+    groupCustoms.forEach((c) => {
+      groupItems.push(c);
+      if (c.order > maxOrder) maxOrder = c.order;
+    });
+
     groupItems.sort((a, b) => a.order - b.order);
     result.push(...groupItems);
   });
@@ -656,7 +804,7 @@ export function mergeSubsectionsConfig(
 
 /**
  * Hợp nhất an toàn cấu hình đã lưu trong D1 với registry mã nguồn
- * Giữ nguyên thứ tự và trạng thái đã lưu; tự động bổ sung mục mới và mục con nếu chưa có
+ * Giữ nguyên thứ tự, trạng thái và toàn bộ các trường mở rộng đã lưu
  */
 export function mergeHomepageSectionsConfig(
   savedConfig: any
@@ -665,13 +813,23 @@ export function mergeHomepageSectionsConfig(
     return getDefaultHomepageSectionsState();
   }
 
-  const savedMap = new Map<string, { enabled: boolean; order: number; subsections?: any[] }>();
+  const savedMap = new Map<string, any>();
   savedConfig.forEach((item, index) => {
     if (item && typeof item.id === 'string' && VALID_HOMEPAGE_SECTION_IDS.has(item.id)) {
       savedMap.set(item.id, {
         enabled: typeof item.enabled === 'boolean' ? item.enabled : true,
         order: typeof item.order === 'number' ? item.order : index + 1,
         subsections: Array.isArray(item.subsections) ? item.subsections : undefined,
+        internal_name: item.internal_name,
+        title_vi: item.title_vi,
+        title_en: item.title_en,
+        link_url: item.link_url,
+        link_type: item.link_type,
+        link_target: item.link_target,
+        description_vi: item.description_vi,
+        description_en: item.description_en,
+        badge_vi: item.badge_vi,
+        badge_en: item.badge_en,
       });
     }
   });
@@ -690,6 +848,16 @@ export function mergeHomepageSectionsConfig(
         enabled: saved.enabled,
         order: saved.order,
         subsections,
+        internal_name: saved.internal_name,
+        title_vi: saved.title_vi,
+        title_en: saved.title_en,
+        link_url: saved.link_url,
+        link_type: saved.link_type,
+        link_target: saved.link_target,
+        description_vi: saved.description_vi,
+        description_en: saved.description_en,
+        badge_vi: saved.badge_vi,
+        badge_en: saved.badge_en,
       });
       if (saved.order > maxOrder) maxOrder = saved.order;
     } else {
@@ -710,6 +878,7 @@ export function mergeHomepageSectionsConfig(
 
 /**
  * Kiểm tra tính hợp lệ của dữ liệu khi quản trị viên gửi lệnh lưu (cả mục lớn và mục con)
+ * Bảo toàn và làm sạch an toàn các trường mở rộng mới
  */
 export function validateHomepageSectionsPayload(body: any): {
   valid: boolean;
@@ -750,32 +919,51 @@ export function validateHomepageSectionsPayload(body: any): {
     let sanitizedSubs: HomepageSubsectionState[] | undefined = undefined;
     const registeredSubDefs = HOMEPAGE_SUBSECTIONS_REGISTRY.filter((s) => s.parentId === id);
 
-    if (registeredSubDefs.length > 0) {
+    if (Array.isArray(item.subsections)) {
       sanitizedSubs = [];
       const seenSubIds = new Set<string>();
-      const rawSubs = Array.isArray(item.subsections) ? item.subsections : [];
+      const rawSubs = item.subsections;
 
       for (let j = 0; j < rawSubs.length; j++) {
         const subItem = rawSubs[j];
         if (!subItem || typeof subItem !== 'object') continue;
         const subId = String(subItem.id || '').trim();
+        if (!subId || seenSubIds.has(subId)) continue;
+
+        const isCustom = Boolean(subItem.is_custom || subId.startsWith('custom_') || !VALID_HOMEPAGE_SUBSECTION_IDS.has(subId));
         const def = registeredSubDefs.find((d) => d.id === subId);
-        if (!def || seenSubIds.has(subId)) continue;
+
+        // Bỏ qua nếu không phải mục con đăng ký và cũng không phải mục con tùy chỉnh hợp lệ
+        if (!def && !isCustom) continue;
         seenSubIds.add(subId);
 
         const subEnabled = typeof subItem.enabled === 'boolean' ? subItem.enabled : true;
         const subOrder = typeof subItem.order === 'number' && !isNaN(subItem.order) ? Math.round(subItem.order) : j + 1;
 
         sanitizedSubs.push({
-          id: def.id,
-          parentId: def.parentId,
-          group: def.group,
+          id: subId,
+          parentId: id,
+          group: String(subItem.group || def?.group || 'shortcuts').slice(0, 50),
           enabled: subEnabled,
           order: subOrder,
+          internal_name: typeof subItem.internal_name === 'string' ? subItem.internal_name.trim().slice(0, 100) : undefined,
+          title_vi: typeof subItem.title_vi === 'string' ? subItem.title_vi.trim().slice(0, 100) : undefined,
+          title_en: typeof subItem.title_en === 'string' ? subItem.title_en.trim().slice(0, 100) : undefined,
+          link_url: typeof subItem.link_url === 'string' ? subItem.link_url.trim().slice(0, 500) : undefined,
+          link_type: ['internal', 'system', 'external'].includes(subItem.link_type) ? subItem.link_type : 'internal',
+          link_target: ['_self', '_blank'].includes(subItem.link_target) ? subItem.link_target : '_self',
+          description_vi: typeof subItem.description_vi === 'string' ? subItem.description_vi.trim().slice(0, 255) : undefined,
+          description_en: typeof subItem.description_en === 'string' ? subItem.description_en.trim().slice(0, 255) : undefined,
+          badge_vi: typeof subItem.badge_vi === 'string' ? subItem.badge_vi.trim().slice(0, 30) : undefined,
+          badge_en: typeof subItem.badge_en === 'string' ? subItem.badge_en.trim().slice(0, 30) : undefined,
+          is_custom: isCustom || undefined,
+          icon: typeof subItem.icon === 'string' ? subItem.icon.slice(0, 50) : undefined,
+          groupNameVi: typeof subItem.groupNameVi === 'string' ? subItem.groupNameVi.slice(0, 50) : undefined,
+          groupNameEn: typeof subItem.groupNameEn === 'string' ? subItem.groupNameEn.slice(0, 50) : undefined,
         });
       }
 
-      // Đảm bảo không bỏ sót mục con nào thuộc parent
+      // Đảm bảo không bỏ sót mục con đăng ký gốc nào thuộc parent
       registeredSubDefs.forEach((def, subIdx) => {
         if (!seenSubIds.has(def.id)) {
           sanitizedSubs!.push({
@@ -789,9 +977,9 @@ export function validateHomepageSectionsPayload(body: any): {
       });
 
       // Sắp xếp lại thứ tự mục con chuẩn theo group
-      const groups = new Set<string>(registeredSubDefs.map((d) => d.group));
+      const allGroups = Array.from(new Set(sanitizedSubs.map((s) => s.group)));
       const sortedSubs: HomepageSubsectionState[] = [];
-      groups.forEach((g) => {
+      allGroups.forEach((g) => {
         const inGroup = sanitizedSubs!.filter((s) => s.group === g);
         inGroup.sort((a, b) => a.order - b.order);
         inGroup.forEach((sub, idx) => {
@@ -800,6 +988,8 @@ export function validateHomepageSectionsPayload(body: any): {
         sortedSubs.push(...inGroup);
       });
       sanitizedSubs = sortedSubs;
+    } else if (registeredSubDefs.length > 0) {
+      sanitizedSubs = getDefaultSubsectionsForParent(id);
     }
 
     sanitized.push({
@@ -807,6 +997,16 @@ export function validateHomepageSectionsPayload(body: any): {
       enabled: item.enabled,
       order,
       ...(sanitizedSubs ? { subsections: sanitizedSubs } : {}),
+      internal_name: typeof item.internal_name === 'string' ? item.internal_name.trim().slice(0, 100) : undefined,
+      title_vi: typeof item.title_vi === 'string' ? item.title_vi.trim().slice(0, 100) : undefined,
+      title_en: typeof item.title_en === 'string' ? item.title_en.trim().slice(0, 100) : undefined,
+      link_url: typeof item.link_url === 'string' ? item.link_url.trim().slice(0, 500) : undefined,
+      link_type: ['internal', 'system', 'external'].includes(item.link_type) ? item.link_type : 'internal',
+      link_target: ['_self', '_blank'].includes(item.link_target) ? item.link_target : '_self',
+      description_vi: typeof item.description_vi === 'string' ? item.description_vi.trim().slice(0, 255) : undefined,
+      description_en: typeof item.description_en === 'string' ? item.description_en.trim().slice(0, 255) : undefined,
+      badge_vi: typeof item.badge_vi === 'string' ? item.badge_vi.trim().slice(0, 30) : undefined,
+      badge_en: typeof item.badge_en === 'string' ? item.badge_en.trim().slice(0, 30) : undefined,
     });
   }
 
