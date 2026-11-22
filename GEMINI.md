@@ -106,4 +106,15 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, AI Agent
   - Mọi bản build và kiểm thử trước khi deploy phải được xác minh trên cả 2 chế độ Tiếng Việt (`/`) và Tiếng Anh (`/en/`).
   - Xác nhận 0% chuỗi tiếng Việt sót lại ở chế độ Anh, và 0% chuỗi tiếng Anh bị vỡ/sót ở chế độ Việt.
 
+### 🎯 13. NGUYÊN TẮC BÁM SÁT 100% YÊU CẦU NGƯỜI DÙNG & CHỐNG PHÂN TÂM TẠP ÂM NGỮ CẢNH (ZERO DISTRACTION, STRICT USER REQUEST FOCUS & NO RESIDUAL ARTIFACT CONFUSION)
+- **1. Ưu tiên tuyệt đối yêu cầu bằng văn bản hiện tại (Strict User Request Primacy)**:
+  - Khi người dùng gửi yêu cầu, tác nhân BẮT BUỘC phải đọc kỹ nội dung trong thẻ `<USER_REQUEST>`, tập trung 100% vào việc giải quyết nhiệm vụ được giao. Tuyệt đối không được trả lời lạc đề hoặc tự ý chuyển hướng mục tiêu.
+- **2. Chống phân tâm bởi tàn dư tệp đính kèm cũ sau nén ngữ cảnh (No Residual Context/Attachment Confusion)**:
+  - Khi ngữ cảnh hội thoại được nén lại (context compaction), hệ thống có thể tự động mang theo tệp hình ảnh hoặc tài liệu đính kèm từ các lượt trao đổi trước.
+  - Tác nhân PHẢI đối chiếu ngày giờ và nội dung: nếu người dùng đang giao một nhiệm vụ phát triển/sửa lỗi mới bằng văn bản, tệp đính kèm cũ đó là tạp âm mang theo từ quá khứ, TUYỆT ĐỐI KHÔNG được bỏ rơi nhiệm vụ chính để đi phân tích hoặc trả lời về tệp đính kèm cũ đó.
+- **3. Thực hiện đến nơi đến chốn và báo cáo đầy đủ (Execution & Reporting Completeness)**:
+  - Luôn thực hiện từng bước có kiểm soát, tuân thủ nghiêm ngặt giới hạn thời gian (tối đa 10 phút/bước, tối đa 3 lần thử).
+  - Hoàn thành đầy đủ các tiêu chí thành công, kiểm thử toàn diện trước khi báo cáo kết quả cho người dùng.
+
+
 

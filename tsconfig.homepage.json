@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/config/homepageSections.ts",
+    "src/admin/modules/HomepageSectionsModule.tsx",
+    "src/utils/clientImageCompressor.ts",
+    "src/services/homepageSectionsService.ts"
+  ]
+}

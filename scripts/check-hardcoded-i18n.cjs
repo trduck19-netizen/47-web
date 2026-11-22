@@ -27,6 +27,7 @@ const IN_SCOPE_UI_FILES = [
   'src/admin/modules/DashboardModule.tsx',
   'src/admin/modules/OrdersModule.tsx',
   'src/admin/modules/MembersModule.tsx',
+  'src/admin/modules/HomepageSectionsModule.tsx',
 ];
 
 // Danh mục toàn bộ các thư mục giao diện UI (khi chạy ở chế độ audit toàn sàn --all)

@@ -5,6 +5,14 @@ const path = require('path');
 console.log('🛡️ 0. Scanning UI code for hardcoded Vietnamese strings (i18n Guard)...');
 execSync('node scripts/check-hardcoded-i18n.cjs', { stdio: 'inherit' });
 
+console.log('🔍 0.5. Running TypeScript Type Check on Homepage Sections (tsc --noEmit)...');
+try {
+  execSync('cmd /c npx -y tsc -p tsconfig.homepage.json --noEmit', { stdio: 'inherit' });
+} catch (err) {
+  console.error('❌ [Build Error] TypeScript strict type check failed! Please fix all type errors before building.');
+  process.exit(1);
+}
+
 console.log('📦 1. Building Vite Frontend...');
 const distAssets = path.join(__dirname, '..', 'dist', 'assets');
 if (fs.existsSync(distAssets)) {

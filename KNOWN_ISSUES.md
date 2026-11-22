@@ -10,6 +10,18 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-313: Cạm Bẫy Phân Tâm Bởi Tệp Đính Kèm Cũ Sau Nén Ngữ Cảnh Dẫn Đến Trả Lời Lạc Đề & Không Bám Sát Yêu Cầu Hiện Tại
+- **Triệu chứng & Rủi ro**:
+  - Khi ngữ cảnh hội thoại vượt quá giới hạn và kích hoạt tóm tắt/nén ngữ cảnh (context compaction), nền tảng tự động mang theo tệp hình ảnh đính kèm từ quá khứ (ví dụ: ảnh chụp màn hình lỗi đăng nhập cũ từ hôm trước).
+  - Tác nhân AI nhìn vào tệp đính kèm cũ đó mà không đọc kỹ nội dung trong `<USER_REQUEST>`, dẫn đến việc trả lời hoàn toàn lạc đề (đi giải thích lỗi đăng nhập cũ trong khi người dùng yêu cầu sửa tính năng quản trị trang chủ).
+  - Gây lãng phí thời gian của người dùng và làm gián đoạn tiến độ dự án.
+- **Cạm bẫy đã thất bại**:
+  - Tự suy diễn mục tiêu dựa trên ảnh đính kèm cũ mà bỏ qua nội dung văn bản trong yêu cầu người dùng.
+- **Giải pháp chuẩn đã kiểm chứng (Rule 13)**:
+  - Bắt buộc kiểm tra ngày giờ và đối chiếu: yêu cầu văn bản trong `<USER_REQUEST>` là mệnh lệnh tối thượng.
+  - Phớt lờ mọi tệp đính kèm cũ không thuộc phạm vi yêu cầu hiện tại.
+  - Luôn tập trung 100% vào việc giải quyết nhiệm vụ người dùng yêu cầu, không chuyển hướng, không sửa lan man.
+
 ### ISSUE-312: Cạm Bẫy Lưu Ảnh Trực Tiếp Base64 Vào Bảng Cấu Hình D1 (Database Ballooning), Lỗ Hổng SVG Stored XSS & Thiết Kế Fallback Đa Tầng Cho API Nén Ngoại Vi
 - **Triệu chứng & Rủi ro**:
   - Lưu trực tiếp chuỗi base64 của ảnh vào trường cấu hình `system_settings` làm phình kích thước dữ liệu từ vài KB lên hàng chục MB, gây chậm hoặc sập Cloudflare Worker (Payload Too Large/CPU Time Exceeded) mỗi khi tải trang chủ.

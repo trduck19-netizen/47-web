@@ -8,8 +8,10 @@
  * - Fallback an toàn: nếu trình duyệt không hỗ trợ WebP canvas, trả về bản gốc
  */
 
+export type TargetImageType = 'banner' | 'icon';
+
 export interface CompressionOptions {
-  targetType: 'banner' | 'icon';
+  targetType: TargetImageType;
   maxBannerDimension?: number;   // default: 1200
   maxIconDimension?: number;     // default: 400
   maxBannerSizeBytes?: number;   // default: 300 * 1024 (300KB)
@@ -21,6 +23,7 @@ export interface ClientCompressionResult {
   success: boolean;
   blob: Blob;
   base64: string;
+  dataUrl: string; // Đồng bộ alias với base64 để chống lỗi wiring
   fileName: string;
   originalSizeBytes: number;
   compressedSizeBytes: number;
@@ -45,6 +48,22 @@ export const DISALLOWED_IMAGE_TYPES = [
   'image/svg+xml',
   'image/svg',
 ];
+
+/**
+ * Chuyển đổi dataUrl (base64) thành File object chuẩn của trình duyệt
+ */
+export function dataUrlToFile(dataUrl: string, filename = 'image.webp'): File {
+  const parts = dataUrl.split(',');
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/webp';
+  const binaryStr = atob(parts[1] || parts[0]);
+  let len = binaryStr.length;
+  const u8arr = new Uint8Array(len);
+  while (len--) {
+    u8arr[len] = binaryStr.charCodeAt(len);
+  }
+  return new File([u8arr], filename, { type: mime });
+}
 
 /**
  * Kiểm tra tính hợp lệ và an toàn của tệp ảnh trước khi xử lý
@@ -95,9 +114,18 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
  * Nén và chuyển đổi ảnh sang WebP phía Client bằng HTML5 Canvas
  */
 export async function compressImageOnClient(
-  file: File,
-  options: CompressionOptions
+  fileInput: File | Blob | string,
+  optionsInput: CompressionOptions | TargetImageType
 ): Promise<ClientCompressionResult> {
+  const options: CompressionOptions = typeof optionsInput === 'string'
+    ? { targetType: optionsInput }
+    : optionsInput;
+  const file: File = typeof fileInput === 'string'
+    ? dataUrlToFile(fileInput, `client_img_${Date.now()}.png`)
+    : fileInput instanceof File
+    ? fileInput
+    : new File([fileInput], `client_img_${Date.now()}.png`, { type: fileInput.type || 'image/png' });
+
   const originalSize = file.size;
   const isBanner = options.targetType === 'banner';
   const maxDim = isBanner
@@ -119,6 +147,7 @@ export async function compressImageOnClient(
       success: true,
       blob: file,
       base64,
+      dataUrl: base64,
       fileName: file.name,
       originalSizeBytes: originalSize,
       compressedSizeBytes: originalSize,
@@ -234,6 +263,7 @@ export async function compressImageOnClient(
       success: true,
       blob: compressedBlob,
       base64,
+      dataUrl: base64,
       fileName: newFileName,
       originalSizeBytes: originalSize,
       compressedSizeBytes: compressedSize,

@@ -1741,9 +1741,19 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             <div className={`rounded-xl shadow-sm border p-4 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-[#ee4d2d] flex items-center justify-center font-bold text-xl">
-                      🎟️
-                    </div>
+                    {voucherSec?.image_url ? (
+                      <img 
+                        src={voucherSec.image_url} 
+                        alt={customVoucherTitle || 'Vouchers'} 
+                        width={40} 
+                        height={40} 
+                        className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700" 
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-[#ee4d2d] flex items-center justify-center font-bold text-xl">
+                        🎟️
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
                         <span>{customVoucherTitle || t.mall?.vouchers?.exclusiveTitle || (language === 'en' ? 'Universal Mall Exclusive Deals' : 'Ưu Đãi Độc Quyền Sàn Universal Mall')}</span>
@@ -2031,7 +2041,17 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <Newspaper className="w-5 h-5 text-[#ee4d2d]" />
+                {newsSec?.image_url ? (
+                  <img 
+                    src={newsSec.image_url} 
+                    alt={customNewsTitle || 'News'} 
+                    width={20} 
+                    height={20} 
+                    className="w-5 h-5 rounded object-cover shrink-0" 
+                  />
+                ) : (
+                  <Newspaper className="w-5 h-5 text-[#ee4d2d]" />
+                )}
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#ee4d2d] flex items-center gap-1.5">
                   <span>{customNewsTitle || (isEn ? 'GAMING & TECH NEWS' : 'TIN TỨC GAME & CẨM NANG MUA SẮM')}</span>
                   {customNewsBadge && (
@@ -2105,6 +2125,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         return (
           <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold flex items-center justify-between shadow-sm sticky top-0 z-50">
             <div className="flex items-center gap-2">
+              {topSec?.image_url && (
+                <img 
+                  src={topSec.image_url} 
+                  alt="" 
+                  width={16} 
+                  height={16} 
+                  className="w-4 h-4 rounded object-cover shrink-0" 
+                />
+              )}
               <span className="bg-black text-amber-400 px-2 py-0.5 rounded uppercase text-[10px] tracking-wider font-mono">
                 {customTopBadge || t.mall?.topNav?.marketplace || (language === 'en' ? 'Comprehensive Marketplace' : 'Bản Sàn Toàn Diện')}
               </span>

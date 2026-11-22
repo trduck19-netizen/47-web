@@ -7,6 +7,20 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-22]
 
+### 432. Hoàn Tất 13 Mục Dở Dang Sau Kiểm Chứng 3 Đợt Tùy Chỉnh Trang Chủ (22/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục triệt để 13 mục dở dang thuộc 5 nhóm sau đợt kiểm chứng độc lập (commit 04e8a5a và 0f71661):
+    * Nhóm 1: Bổ sung 10+ trường mở rộng vào `HomepageSectionDefinition` / `HomepageSubsectionDefinition`, hàm `validateLinkUrl` cảnh báo route nội bộ chưa tồn tại, cơ chế lưu bỏ huy hiệu giả, sửa comment cache latency 1–2 phút.
+    * Nhóm 2: Kéo-thả thật cho mục lớn và mục con, hiển thị mô tả mục trong khung xem trước mini, điều hướng link nội bộ thật tới web khách.
+    * Nhóm 3 (Ưu tiên cao nhất): Sửa lỗi wiring nghiêm trọng `clientRes.dataUrl` vs `clientRes.base64` trong `HomepageSectionsModule.tsx`; sửa nhánh AI chuyển dataUrl sang File blob trước khi nén; cấu hình kiểm tra kiểu `tsc -p tsconfig.homepage.json --noEmit` trước khi build; thêm vùng kéo-thả file ảnh (dropzone).
+    * Nhóm 4: Nâng cấp SSRF guard chống IP octal, hex, dword, IPv6-mapped, link-local, cloud metadata; kiểm tra HEAD request kích thước và content-type ảnh; manual redirect tối đa 3 hops; giới hạn tối đa 10 ảnh/mục; render ảnh cho `vouchers_section`, `news_section`, `top_announcement`.
+    * Nhóm 5: Cấu hình số lượng ảnh AI (2–4 ảnh), sửa lỗi gán nhầm TinyPNG string vào `compression_error`, đưa `HomepageSectionsModule.tsx` vào kiểm i18n Guard và dịch 17 chuỗi tiếng Việt sang từ điển; giới hạn quota TinyPNG 20 ảnh/ngày và cache SHA-256; thêm endpoint probe `/api/homepage-images/probe`.
+    * Bổ sung Rule 13 vào `AGENTS.md` và `GEMINI.md`: Nguyên tắc bám sát 100% yêu cầu người dùng & chống phân tâm bởi tàn dư tệp đính kèm cũ sau nén ngữ cảnh.
+- **Kết quả**:
+  - `npm run check:i18n`: PASS 100% (0 chuỗi tiếng Việt ghi cứng ngoài từ điển).
+  - TypeScript strict type check: PASS 100% (0 lỗi).
+  - Build Edge Worker & Frontend Vite: Hoàn tất 100%.
+
 ### 431. Tối Ưu Quản Trị Trang Chủ Đợt 2 & 3: Quản Lý Ảnh, Nén Client HTML5 Canvas, Bảng D1 Chống Phình, Tích Hợp TinyPNG API & Trợ Lý AI Gợi Ý/Tạo Ảnh (22/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Hoàn tất chuỗi nâng cấp 3 đợt cho module "Tùy Chỉnh Hiển Thị Trang Chủ" (`HomepageSectionsModule.tsx` và `ShopeeTestView.tsx`):

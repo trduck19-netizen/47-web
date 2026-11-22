@@ -7,7 +7,6 @@ import {
   ACTIVE_LANGUAGES,
   DEFAULT_LANGUAGE,
   type LanguageMeta,
-  type SupportedLanguage,
 } from '../i18n/config';
 import { formatCurrency, formatDateTime, formatNumber } from '../utils/formatUtils';
 
@@ -342,7 +341,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
         return Reflect.get(target, prop, receiver);
       },
-      apply(target, thisArg, argArray) {
+      apply(_target, _thisArg, argArray) {
         const [key, params] = argArray;
         return translateFn(key, params);
       },

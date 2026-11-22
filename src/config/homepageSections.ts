@@ -56,6 +56,24 @@ export interface HomepageSectionDefinition {
   defaultEnabled: boolean;
   defaultOrder: number;
   icon: string;
+  // Trường mở rộng tùy chỉnh (Đợt 1/3 & 2/3)
+  internal_name?: string;
+  title_vi?: string;
+  title_en?: string;
+  link_url?: string;
+  link_type?: 'internal' | 'system' | 'external';
+  link_target?: '_self' | '_blank';
+  description_vi?: string;
+  description_en?: string;
+  badge_vi?: string;
+  badge_en?: string;
+  image_url?: string;
+  image_alt_vi?: string;
+  image_alt_en?: string;
+  image_compression_status?: 'uncompressed' | 'compressing' | 'compressed' | 'original_fallback' | 'failed';
+  image_original_size?: number;
+  image_compressed_size?: number;
+  image_compression_error?: string;
 }
 
 export interface HomepageSubsectionDefinition {
@@ -78,6 +96,8 @@ export interface HomepageSubsectionDefinition {
   link_url?: string;
   link_type?: 'internal' | 'system' | 'external';
   link_target?: '_self' | '_blank';
+  description_vi?: string;
+  description_en?: string;
   badge_vi?: string;
   badge_en?: string;
   is_custom?: boolean;
@@ -85,7 +105,7 @@ export interface HomepageSubsectionDefinition {
   image_url?: string;
   image_alt_vi?: string;
   image_alt_en?: string;
-  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_compression_status?: 'uncompressed' | 'compressing' | 'compressed' | 'original_fallback' | 'failed';
   image_original_size?: number;
   image_compressed_size?: number;
   image_compression_error?: string;
@@ -120,7 +140,7 @@ export interface HomepageSubsectionState {
   image_url?: string;
   image_alt_vi?: string;
   image_alt_en?: string;
-  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_compression_status?: 'uncompressed' | 'compressing' | 'compressed' | 'original_fallback' | 'failed';
   image_original_size?: number;
   image_compressed_size?: number;
   image_compression_error?: string;
@@ -153,7 +173,7 @@ export interface HomepageSectionState {
   image_url?: string;
   image_alt_vi?: string;
   image_alt_en?: string;
-  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_compression_status?: 'uncompressed' | 'compressing' | 'compressed' | 'original_fallback' | 'failed';
   image_original_size?: number;
   image_compressed_size?: number;
   image_compression_error?: string;
@@ -682,12 +702,38 @@ export const SYSTEM_PAGE_OPTIONS: readonly SystemPageOption[] = [
   { value: '#/privacy', labelVi: 'Chính Sách Bảo Mật Thông Tin', labelEn: 'Privacy Policy', category: 'legal' },
 ];
 
+const VALID_INTERNAL_PREFIXES = [
+  '/',
+  '/store',
+  '/seller-center',
+  '/game',
+  '/news',
+  '/giveaways',
+  '/utilities',
+  '/missions',
+  '/telegram',
+  '#/profile',
+  '#/orders',
+  '#/vouchers',
+  '#/spin',
+  '#/guarantee',
+  '#/terms',
+  '#/privacy',
+  '#/cart',
+  '#/security',
+  '#/help',
+  '/download',
+  '/auth',
+  '/admin',
+];
+
 /**
  * Kiểm tra tính hợp lệ của đường dẫn liên kết
  */
 export function validateLinkUrl(url?: string, type: 'internal' | 'system' | 'external' = 'internal'): {
   valid: boolean;
   warning?: string;
+  isUnknownRoute?: boolean;
 } {
   if (!url || !url.trim()) return { valid: true };
   const trimmed = url.trim();
@@ -700,6 +746,17 @@ export function validateLinkUrl(url?: string, type: 'internal' | 'system' | 'ext
   if (type === 'internal' || type === 'system') {
     if (!trimmed.startsWith('/') && !trimmed.startsWith('#')) {
       return { valid: false, warning: 'Link nội bộ phải bắt đầu bằng "/" hoặc "#"' };
+    }
+    const isKnownSystemPage = SYSTEM_PAGE_OPTIONS.some((opt) => opt.value === trimmed);
+    const matchesPrefix = VALID_INTERNAL_PREFIXES.some((prefix) =>
+      prefix === '/' ? trimmed === '/' : trimmed.startsWith(prefix)
+    );
+    if (!isKnownSystemPage && !matchesPrefix) {
+      return {
+        valid: true,
+        warning: 'Trang nội bộ này có thể chưa tồn tại trên hệ thống. Vui lòng kiểm tra lại đường dẫn.',
+        isUnknownRoute: true,
+      };
     }
     return { valid: true };
   }

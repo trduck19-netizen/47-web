@@ -78,30 +78,234 @@ function detectImageMime(bytes: Uint8Array): { mime: string; ext: string } | nul
   return null;
 }
 
-// Chống SSRF khi fetch ảnh từ URL ngoài (Nhóm 3 & Nhóm 5)
+// Phân tích IP dạng chuỗi (hỗ trợ cả dword, octal, hex, dot-decimal)
+function parseIpv4ToNumber(ipStr: string): number | null {
+  const parts = ipStr.split('.');
+  if (parts.length === 1) {
+    // Dword format (vd: 2130706433 cho 127.0.0.1)
+    const num = Number(parts[0]);
+    if (!isNaN(num) && num >= 0 && num <= 0xffffffff) return num;
+    return null;
+  }
+  if (parts.length === 4) {
+    let num = 0;
+    for (let i = 0; i < 4; i++) {
+      const p = parts[i].trim();
+      let partNum = 0;
+      if (p.startsWith('0x') || p.startsWith('0X')) {
+        partNum = parseInt(p, 16);
+      } else if (p.startsWith('0') && p.length > 1) {
+        partNum = parseInt(p, 8);
+      } else {
+        partNum = parseInt(p, 10);
+      }
+      if (isNaN(partNum) || partNum < 0 || partNum > 255) return null;
+      num = (num << 8) | partNum;
+    }
+    return num >>> 0;
+  }
+  return null;
+}
+
+function isPrivateIpv4(num: number): boolean {
+  const a = (num >>> 24) & 0xff;
+  const b = (num >>> 16) & 0xff;
+  // 0.0.0.0/8
+  if (a === 0) return true;
+  // 10.0.0.0/8
+  if (a === 10) return true;
+  // 127.0.0.0/8
+  if (a === 127) return true;
+  // 169.254.0.0/16
+  if (a === 169 && b === 254) return true;
+  // 172.16.0.0/12
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  // 192.168.0.0/16
+  if (a === 192 && b === 168) return true;
+  // 224.0.0.0/4 (multicast) & 240.0.0.0/4 (reserved)
+  if (a >= 224) return true;
+  return false;
+}
+
+// Chống SSRF nâng cao khi tải ảnh từ URL ngoài (Nhóm 4)
 function isSafeExternalUrl(urlStr: string): boolean {
   try {
     const parsed = new URL(urlStr);
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
-    const host = parsed.hostname.toLowerCase();
+    let host = parsed.hostname.toLowerCase().trim();
+    if (host.startsWith('[') && host.endsWith(']')) {
+      host = host.slice(1, -1);
+    }
+    // Chặn tên miền nội bộ, localhost, cloud metadata
     if (
       host === 'localhost' ||
-      host === '127.0.0.1' ||
       host === '::1' ||
-      host === '0.0.0.0' ||
+      host === '0:0:0:0:0:0:0:1' ||
       host.endsWith('.local') ||
       host.endsWith('.internal') ||
-      host.startsWith('10.') ||
-      host.startsWith('192.168.') ||
-      host.startsWith('169.254.') ||
-      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+      host.endsWith('.localhost') ||
+      host === 'metadata.google.internal' ||
+      host === 'instance-data'
     ) {
+      return false;
+    }
+    // Chặn IPv6 Link-local, Unique local, IPv4-mapped
+    if (host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd00:')) {
+      return false;
+    }
+    if (host.includes('::ffff:')) {
+      const parts = host.split('::ffff:');
+      const ip = parts[1];
+      if (ip) {
+        const num = parseIpv4ToNumber(ip);
+        if (num !== null && isPrivateIpv4(num)) return false;
+      }
+      return false;
+    }
+    // Kiểm tra IPv4 mã hóa
+    const ipv4Num = parseIpv4ToNumber(host);
+    if (ipv4Num !== null && isPrivateIpv4(ipv4Num)) {
       return false;
     }
     return true;
   } catch {
     return false;
   }
+}
+
+// Tải an toàn ảnh ngoài: HEAD request kiểm tra kích thước & Content-Type, follow redirect an toàn
+async function fetchSafeExternalImage(
+  initialUrl: string,
+  maxHops = 3
+): Promise<{ ok: boolean; bytes?: Uint8Array; contentType?: string; error?: string }> {
+  let currentUrl = initialUrl;
+  for (let hop = 0; hop < maxHops; hop++) {
+    if (!isSafeExternalUrl(currentUrl)) {
+      return { ok: false, error: 'Đường dẫn ảnh bị chặn vì lý do bảo mật (chặn private IP / SSRF).' };
+    }
+
+    // 1. Kiểm tra nhanh bằng HEAD
+    try {
+      const headRes = await fetch(currentUrl, {
+        method: 'HEAD',
+        headers: {
+          'User-Agent': 'UniversalMall-ImageOptimizer/1.0',
+          Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8',
+        },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(4000),
+      });
+
+      if ([301, 302, 303, 307, 308].includes(headRes.status)) {
+        const nextLoc = headRes.headers.get('Location');
+        if (!nextLoc) return { ok: false, error: 'Chuyển hướng thiếu header Location.' };
+        currentUrl = new URL(nextLoc, currentUrl).toString();
+        continue;
+      }
+
+      const contentLength = headRes.headers.get('Content-Length');
+      if (contentLength && parseInt(contentLength, 10) > 10 * 1024 * 1024) {
+        return { ok: false, error: 'Ảnh ngoài vượt quá giới hạn 10MB.' };
+      }
+      const cType = headRes.headers.get('Content-Type') || '';
+      if (cType && !cType.toLowerCase().startsWith('image/')) {
+        return { ok: false, error: `Link không trả về ảnh hợp lệ (Content-Type: ${cType}).` };
+      }
+    } catch {
+      // Fallback sang GET nếu máy chủ không hỗ trợ HEAD
+    }
+
+    // 2. Tải toàn bộ bằng GET với redirect manual
+    const getRes = await fetch(currentUrl, {
+      headers: {
+        'User-Agent': 'UniversalMall-ImageOptimizer/1.0',
+        Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8',
+      },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if ([301, 302, 303, 307, 308].includes(getRes.status)) {
+      const nextLoc = getRes.headers.get('Location');
+      if (!nextLoc) return { ok: false, error: 'Chuyển hướng thiếu header Location.' };
+      currentUrl = new URL(nextLoc, currentUrl).toString();
+      continue;
+    }
+
+    if (!getRes.ok) {
+      return { ok: false, error: `Máy chủ ngoài trả lỗi HTTP ${getRes.status}: ${getRes.statusText}` };
+    }
+
+    const cType = getRes.headers.get('Content-Type') || '';
+    if (cType && !cType.toLowerCase().startsWith('image/')) {
+      return { ok: false, error: `Link ngoài không phải định dạng ảnh (Content-Type: ${cType}).` };
+    }
+
+    const ab = await getRes.arrayBuffer();
+    if (ab.byteLength > 10 * 1024 * 1024) {
+      return { ok: false, error: 'Ảnh tải về vượt quá giới hạn 10MB.' };
+    }
+
+    return {
+      ok: true,
+      bytes: new Uint8Array(ab),
+      contentType: cType,
+    };
+  }
+
+  return { ok: false, error: 'Quá nhiều lần chuyển hướng (vượt quá 3 lần).' };
+}
+
+// Băm SHA-256 dùng WebCrypto native trên Cloudflare Worker
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Kiểm tra cache ảnh đã tối ưu qua TinyPNG
+async function getCachedTinyPng(db: D1Database, hash: string): Promise<Uint8Array | null> {
+  try {
+    const row = await db
+      .prepare('SELECT image_base64 FROM homepage_section_images WHERE source = ? AND is_compressed = 1 LIMIT 1')
+      .bind(`tinypng_cache_${hash}`)
+      .first<any>();
+    if (row?.image_base64) {
+      return base64ToUint8(row.image_base64);
+    }
+  } catch {}
+  return null;
+}
+
+// Lưu cache ảnh TinyPNG theo hash SHA-256
+async function saveCachedTinyPng(db: D1Database, hash: string, bytes: Uint8Array): Promise<void> {
+  try {
+    const b64 = uint8ToBase64(bytes);
+    await db
+      .prepare(`
+        INSERT INTO homepage_section_images (id, file_name, content_type, image_base64, original_size_bytes, size_bytes, width, height, is_compressed, source, created_at, updated_at)
+        VALUES (?, ?, 'image/webp', ?, ?, ?, 0, 0, 1, ?, datetime('now'), datetime('now'))
+        ON CONFLICT(id) DO UPDATE SET image_base64 = excluded.image_base64
+      `)
+      .bind(`tinypng_${hash.slice(0, 16)}`, `tinypng_${hash.slice(0, 8)}.webp`, b64, bytes.length, bytes.length, `tinypng_cache_${hash}`)
+      .run();
+  } catch {}
+}
+
+// Kiểm tra hạn mức TinyPNG theo ngày (tối đa 20 ảnh/ngày ~ 500 ảnh/tháng)
+async function checkTinyPngQuota(db: D1Database): Promise<boolean> {
+  try {
+    const todayRow = await db
+      .prepare(`
+        SELECT COUNT(*) as cnt FROM homepage_section_images 
+        WHERE created_at >= date('now', 'start of day') AND source LIKE '%tinypng%'
+      `)
+      .first<any>();
+    if (todayRow && Number(todayRow.cnt) >= 20) {
+      return false;
+    }
+  } catch {}
+  return true;
 }
 
 // Nén WebP máy chủ bằng ImageScript (Nhóm 1 & 2)
@@ -361,55 +565,24 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       sourceMode = 'url_mirror';
       const targetUrl = String(body.url || '').trim();
 
-      if (!targetUrl || !isSafeExternalUrl(targetUrl)) {
+      const mirrorRes = await fetchSafeExternalImage(targetUrl);
+      if (!mirrorRes.ok || !mirrorRes.bytes) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: 'Đường dẫn ảnh ngoài không hợp lệ hoặc bị chặn vì lý do an toàn mạng (chỉ nhận http/https công khai).',
+            error: mirrorRes.error || 'Không thể tải ảnh từ link ngoài.',
           }),
           { status: 400, headers: CORS_HEADERS }
         );
       }
+      rawBytes = mirrorRes.bytes;
 
-      // Tải bản sao ảnh về máy chủ với giới hạn thời gian (Timeout 8s)
       try {
-        const fetchRes = await fetch(targetUrl, {
-          headers: {
-            'User-Agent': 'UniversalMall-ImageOptimizer/1.0',
-            Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8',
-          },
-          signal: AbortSignal.timeout(8000),
-        });
-
-        if (!fetchRes.ok) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: `Không thể tải ảnh từ link ngoài (HTTP ${fetchRes.status}: ${fetchRes.statusText}).`,
-            }),
-            { status: 400, headers: CORS_HEADERS }
-          );
-        }
-
-        const arrayBuffer = await fetchRes.arrayBuffer();
-        rawBytes = new Uint8Array(arrayBuffer);
-
-        // Trích xuất tên tệp từ URL
-        try {
-          const urlPath = new URL(targetUrl).pathname;
-          const extractedName = urlPath.split('/').pop() || 'mirrored-image';
-          fileName = decodeURIComponent(extractedName);
-        } catch {
-          fileName = 'mirrored-image';
-        }
-      } catch (fetchErr: any) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Lỗi kết nối tải ảnh từ link ngoài: ${fetchErr?.message || 'Hết thời gian chờ (Timeout)'}.`,
-          }),
-          { status: 400, headers: CORS_HEADERS }
-        );
+        const urlPath = new URL(targetUrl).pathname;
+        const extractedName = urlPath.split('/').pop() || 'mirrored-image';
+        fileName = decodeURIComponent(extractedName);
+      } catch {
+        fileName = 'mirrored-image';
       }
     } else {
       // Tải ảnh trực tiếp (Base64 Data URL hoặc raw base64)
@@ -449,6 +622,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
+    // Giới hạn số lượng ảnh cho mỗi mục (tối đa 10 ảnh / mục)
+    const sectionId = String(body.section_id || body.item_id || '').trim();
+    if (sectionId) {
+      try {
+        const countRow = await env.DB.prepare('SELECT COUNT(*) as count FROM homepage_section_images WHERE id LIKE ?')
+          .bind(`%${sectionId}%`)
+          .first<any>();
+        if (countRow && Number(countRow.count) >= 10) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'Mục này đã đạt giới hạn tối đa 10 ảnh. Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.',
+            }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+      } catch {}
+    }
+
     // Kiểm tra Magic Bytes để xác thực định dạng ảnh thật (Nhóm 5)
     const detected = detectImageMime(rawBytes);
     if (!detected) {
@@ -477,12 +669,27 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const tinyPngKey = (env.TINYPNG_API_KEY || env.TINIFY_API_KEY || '').trim();
 
     if (tinyPngKey) {
-      const tinyResult = await compressWithTinyPng(rawBytes, tinyPngKey);
-      if (tinyResult.success && tinyResult.bytes) {
-        bytesToCompress = tinyResult.bytes;
-        compressionNotes.push('Đã tối ưu sơ bộ qua TinyPNG API');
+      // 1. Kiểm tra cache SHA-256 của ảnh để không gọi trùng
+      const imgHash = await sha256Hex(rawBytes);
+      const cached = await getCachedTinyPng(env.DB, imgHash);
+      if (cached) {
+        bytesToCompress = cached;
+        compressionNotes.push('Đã tối ưu qua TinyPNG (từ cache SHA-256)');
       } else {
-        compressionNotes.push(`TinyPNG (${tinyResult.error || 'Lỗi'}). Tự động fallback dùng bộ nén nội bộ.`);
+        const quotaOk = await checkTinyPngQuota(env.DB);
+        if (quotaOk) {
+          const tinyResult = await compressWithTinyPng(rawBytes, tinyPngKey);
+          if (tinyResult.success && tinyResult.bytes) {
+            bytesToCompress = tinyResult.bytes;
+            await saveCachedTinyPng(env.DB, imgHash, tinyResult.bytes);
+            compressionNotes.push('Đã tối ưu sơ bộ qua TinyPNG API');
+          } else {
+            console.warn(`[TinyPNG API Error] ${tinyResult.error}`);
+            compressionNotes.push(`TinyPNG (${tinyResult.error || 'Lỗi'}). Tự động fallback dùng bộ nén nội bộ.`);
+          }
+        } else {
+          compressionNotes.push('Hạn mức TinyPNG trong ngày đã chạm ngưỡng, dùng bộ nén nội bộ ImageScript.');
+        }
       }
     }
 
@@ -499,7 +706,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       finalBytes = serverCompress.webpBytes;
       finalContentType = 'image/webp';
       isCompressed = true;
-      compressionError = serverCompress.error;
+      compressionError = serverCompress.error; // Chỉ gán nếu serverCompress thực tế có warning/error
       imageWidth = serverCompress.width || 0;
       imageHeight = serverCompress.height || 0;
     } else {
@@ -508,7 +715,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       compressionError = serverCompress.error || 'Máy chủ chưa thể nén sang WebP, đã lưu bản gốc.';
     }
 
-    if (compressionNotes.length > 0) {
+    // Sửa lỗi: Chỉ ghép compressionNotes vào compressionError khi thực tế có lỗi (isCompressed === false)!
+    // Khi nén thành công, không bao giờ gán chuỗi "Đã tối ưu sơ bộ qua TinyPNG API" vào compressionError!
+    if (!isCompressed && compressionNotes.length > 0) {
       compressionError = compressionError
         ? `${compressionNotes.join(' | ')} - ${compressionError}`
         : compressionNotes.join(' | ');

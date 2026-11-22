@@ -41,7 +41,7 @@ class HomepageSectionsService {
     // 1. Tải ngay lần đầu tiên
     this.fetchSections(true);
 
-    // 2. Tự động kiểm tra cập nhật mỗi 20 giây (đáp ứng điều kiện cập nhật trong vòng tối đa 30 giây)
+    // 2. Tự động kiểm tra cập nhật định kỳ (đồng bộ lên web khách khoảng 1–2 phút do cơ chế cache CDN và trình duyệt)
     if (!this.pollTimer) {
       this.pollTimer = setInterval(() => {
         this.fetchSections(false);

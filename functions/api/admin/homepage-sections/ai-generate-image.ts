@@ -51,6 +51,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const userPrompt = String(body.prompt || '').trim();
     const aspectRatio = body.aspect_ratio === '16:9' ? '16:9' : '1:1';
     const sectionId = String(body.section_id || '').trim();
+    const sampleCount = Math.min(4, Math.max(2, parseInt(body.sample_count || body.count || '2', 10) || 2));
 
     if (!userPrompt) {
       return new Response(
@@ -80,7 +81,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           },
         ],
         parameters: {
-          sampleCount: 2,
+          sampleCount,
           aspectRatio: aspectRatio === '16:9' ? '16:9' : '1:1',
           outputMimeType: 'image/jpeg',
         },

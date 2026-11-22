@@ -22,10 +22,8 @@ import {
   ChevronRight,
   CornerDownRight,
   Link as LinkIcon,
-  Globe,
   Monitor,
   X,
-  Tag,
   AlertTriangle,
   Image as ImageIcon,
   UploadCloud,
@@ -71,7 +69,7 @@ interface EditFormState {
   image_url?: string;
   image_alt_vi?: string;
   image_alt_en?: string;
-  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_compression_status?: 'uncompressed' | 'compressing' | 'compressed' | 'original_fallback' | 'failed';
   image_original_size?: number;
   image_compressed_size?: number;
   image_compression_error?: string;
@@ -95,7 +93,7 @@ interface AddSubsectionFormState {
   image_url?: string;
   image_alt_vi?: string;
   image_alt_en?: string;
-  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_compression_status?: 'uncompressed' | 'compressing' | 'compressed' | 'original_fallback' | 'failed';
   image_original_size?: number;
   image_compressed_size?: number;
   image_compression_error?: string;
@@ -121,6 +119,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     top_announcement: true,
     categories_grid: true,
   });
+
+  // Kéo-thả trạng thái (Nhóm 2)
+  const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
+  const [draggedSubInfo, setDraggedSubInfo] = useState<{ parentId: string; subId: string } | null>(null);
 
   // Modal Sửa
   const [editingItem, setEditingItem] = useState<EditFormState | null>(null);
@@ -149,6 +151,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
 
   // Trạng thái xử lý ảnh (Đợt 2/3 - Nhóm 1, 2, 3)
   const [imageUploading, setImageUploading] = useState<boolean>(false);
+  const [isDraggingFile, setIsDraggingFile] = useState<boolean>(false);
   const [imageMirroring, setImageMirroring] = useState<boolean>(false);
   const [mirrorUrlInput, setMirrorUrlInput] = useState<string>('');
   const [imageTab, setImageTab] = useState<'upload' | 'mirror' | 'ai_image'>('upload');
@@ -172,6 +175,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   // Trạng thái AI tạo ảnh (Đợt 3/3 - Nhóm 2)
   const [aiImagePrompt, setAiImagePrompt] = useState<string>('');
   const [aiImageRatio, setAiImageRatio] = useState<'16:9' | '1:1'>('16:9');
+  const [aiImageCount, setAiImageCount] = useState<number>(2);
   const [aiImageLoading, setAiImageLoading] = useState<boolean>(false);
   const [aiImageCandidates, setAiImageCandidates] = useState<
     Array<{ id: string; data_url: string; alt_vi: string; alt_en: string }>
@@ -279,7 +283,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             })
           );
         } else {
-          triggerToast('warning', data.compression_error || 'Chưa đạt chuẩn nén.');
+          triggerToast('info', data.compression_error || 'Chưa đạt chuẩn nén.');
         }
       } else {
         triggerToast('error', data?.error || 'Nén lại thất bại.');
@@ -443,6 +447,71 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         };
       })
     );
+  };
+
+  // Xử lý kéo-thả thứ tự mục chính (Nhóm 2)
+  const handleDragStartSection = (index: number) => {
+    setDraggedSectionIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDropSection = (targetIndex: number) => {
+    if (draggedSectionIndex === null || draggedSectionIndex === targetIndex) {
+      setDraggedSectionIndex(null);
+      return;
+    }
+    const updated = [...sections];
+    const [draggedItem] = updated.splice(draggedSectionIndex, 1);
+    updated.splice(targetIndex, 0, draggedItem);
+    const reordered = updated.map((item, idx) => ({
+      ...item,
+      order: idx + 1,
+    }));
+    setSections(reordered);
+    setDraggedSectionIndex(null);
+  };
+
+  // Xử lý kéo-thả thứ tự mục con (Nhóm 2)
+  const handleDragStartSub = (parentId: string, subId: string) => {
+    setDraggedSubInfo({ parentId, subId });
+  };
+
+  const handleDropSub = (targetParentId: string, targetSubId: string) => {
+    if (!draggedSubInfo || draggedSubInfo.parentId !== targetParentId || draggedSubInfo.subId === targetSubId) {
+      setDraggedSubInfo(null);
+      return;
+    }
+    setSections((prev) =>
+      prev.map((sec) => {
+        if (sec.id !== targetParentId || !sec.subsections) return sec;
+        const sourceSub = sec.subsections.find((s) => s.id === draggedSubInfo.subId);
+        const targetSub = sec.subsections.find((s) => s.id === targetSubId);
+        if (!sourceSub || !targetSub || sourceSub.group !== targetSub.group) return sec;
+
+        const group = sourceSub.group;
+        const groupSubs = sec.subsections.filter((s) => s.group === group);
+        const sourceIdx = groupSubs.findIndex((s) => s.id === draggedSubInfo.subId);
+        const targetIdx = groupSubs.findIndex((s) => s.id === targetSubId);
+        if (sourceIdx < 0 || targetIdx < 0) return sec;
+
+        const reorderedGroup = [...groupSubs];
+        const [removed] = reorderedGroup.splice(sourceIdx, 1);
+        reorderedGroup.splice(targetIdx, 0, removed);
+        reorderedGroup.forEach((item, idx) => {
+          item.order = idx + 1;
+        });
+
+        const otherSubs = sec.subsections.filter((s) => s.group !== group);
+        return {
+          ...sec,
+          subsections: [...otherSubs, ...reorderedGroup],
+        };
+      })
+    );
+    setDraggedSubInfo(null);
   };
 
   const handleResetDefaults = () => {
@@ -672,10 +741,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       const targetType = editingItem?.isParent ? 'banner' : 'icon';
 
       // 1. Thử nén phía client bằng HTML5 Canvas (chuyển WebP, giảm quality nếu vượt dung lượng)
-      const clientRes = await compressImageOnClient(file, targetType);
+      const clientRes = await compressImageOnClient(file, { targetType });
 
       // 2. Gửi bản nén (hoặc bản gốc nếu nén client không khả dụng) lên máy chủ
-      const uploadBase64 = clientRes.success && clientRes.dataUrl ? clientRes.dataUrl : await new Promise<string>((resolve) => {
+      const uploadBase64 = clientRes.success && (clientRes.base64 || clientRes.dataUrl) ? (clientRes.base64 || clientRes.dataUrl) : await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.readAsDataURL(file);
@@ -843,6 +912,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         body: JSON.stringify({
           prompt: aiImagePrompt,
           aspect_ratio: aiImageRatio,
+          sample_count: aiImageCount,
           section_id: editingItem.id,
         }),
       });
@@ -873,7 +943,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       // 1. Nén thử phía client bằng HTML5 Canvas
       let clientBase64 = candidate.data_url;
       try {
-        const clientRes = await compressImageOnClient(candidate.data_url, targetType);
+        const clientRes = await compressImageOnClient(candidate.data_url, { targetType });
         if (clientRes.success && clientRes.dataUrl) {
           clientBase64 = clientRes.dataUrl;
         }
@@ -1050,14 +1120,12 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                     {t('homepageSectionsModule.unsavedChangesNotice') || 'Có thay đổi chưa lưu (Nhấn "Lưu Cấu Hình" để áp dụng)'}
                   </span>
-                ) : (
+                ) : lastSavedTime ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                    {lastSavedTime
-                      ? t('homepageSectionsModule.savedStatusWithTime', { time: lastSavedTime }) || `Đã lưu lúc ${lastSavedTime}`
-                      : t('homepageSectionsModule.savedStatus') || 'Cấu hình đã đồng bộ'}
+                    {t('homepageSectionsModule.savedStatusWithTime', { time: lastSavedTime }) || `Đã lưu lúc ${lastSavedTime}`}
                   </span>
-                )}
+                ) : null}
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                 {t('homepageSectionsModule.subtitle') ||
@@ -1263,7 +1331,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   return (
                     <React.Fragment key={section.id}>
                       <tr
-                        className={`transition-colors text-xs ${
+                        draggable
+                        onDragStart={() => handleDragStartSection(idx)}
+                        onDragOver={handleDragOver}
+                        onDrop={() => handleDropSection(idx)}
+                        className={`transition-colors text-xs cursor-move ${
+                          draggedSectionIndex === idx ? 'opacity-40 bg-primary-50 dark:bg-primary-950/40' : ''
+                        } ${
                           section.enabled
                             ? 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
                             : 'bg-neutral-50/60 dark:bg-neutral-900/40 opacity-70 hover:opacity-100'
@@ -1342,6 +1416,11 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                   [{section.internal_name}]
                                 </div>
                               )}
+                              {displayDesc && (
+                                <div className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate max-w-[220px]" title={displayDesc}>
+                                  {displayDesc}
+                                </div>
+                              )}
 
                               {/* Nút mở rộng mục con */}
                               {hasSubsections && (
@@ -1383,7 +1462,9 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                 <span className="text-[10px] text-neutral-400 shrink-0 font-mono">↗</span>
                               )}
                               {!linkValidation.valid && (
-                                <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" title={linkValidation.warning} />
+                                <span title={linkValidation.warning} className="shrink-0">
+                                  <AlertTriangle className="w-3 h-3 text-amber-500" />
+                                </span>
                               )}
                             </div>
                           ) : (
@@ -1524,7 +1605,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                             return (
                                               <tr
                                                 key={sub.id}
-                                                className={`text-xs transition-colors ${
+                                                draggable
+                                                onDragStart={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDragStartSub(section.id, sub.id);
+                                                }}
+                                                onDragOver={handleDragOver}
+                                                onDrop={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDropSub(section.id, sub.id);
+                                                }}
+                                                className={`text-xs transition-colors cursor-move ${
+                                                  draggedSubInfo?.subId === sub.id ? 'opacity-40 bg-primary-50 dark:bg-primary-950/40' : ''
+                                                } ${
                                                   !section.enabled
                                                     ? 'opacity-50'
                                                     : sub.enabled
@@ -1630,7 +1723,9 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                         <span className="text-[9px] text-neutral-400 shrink-0 font-mono">↗</span>
                                                       )}
                                                       {!subLinkValidation.valid && (
-                                                        <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" title={subLinkValidation.warning} />
+                                                        <span title={subLinkValidation.warning} className="shrink-0">
+                                                          <AlertTriangle className="w-3 h-3 text-amber-500" />
+                                                        </span>
                                                       )}
                                                     </div>
                                                   ) : (
@@ -1763,6 +1858,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               {sections.map((sec, sIdx) => {
                 const isSecEn = previewLang === 'en';
                 const sTitle = (isSecEn ? sec.title_en : sec.title_vi) || sec.internal_name || (isSecEn ? sec.nameEn : sec.nameVi) || sec.id;
+                const sDesc = (isSecEn ? sec.description_en : sec.description_vi) || (isSecEn ? sec.descriptionEn : sec.descriptionVi);
                 const sBadge = isSecEn ? sec.badge_en : sec.badge_vi;
                 const isEnabled = sec.enabled;
 
@@ -1773,7 +1869,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                       className="p-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-800 bg-neutral-200/40 dark:bg-neutral-900/40 opacity-50 flex items-center justify-between text-[11px]"
                     >
                       <span className="line-through text-neutral-400">{sIdx + 1}. {sTitle}</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-300 dark:bg-neutral-800 text-neutral-500">ẨN</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-300 dark:bg-neutral-800 text-neutral-500">{t('homepageSectionsModule.hiddenBadge') || (isEn ? 'HIDDEN' : 'ẨN')}</span>
                     </div>
                   );
                 }
@@ -1798,23 +1894,31 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         )}
                       </div>
                       {sec.link_url && (
-                        <a
-                          href={sec.link_url}
-                          target={sec.link_target || '_self'}
-                          rel="noreferrer"
-                          onClick={(e) => {
-                            if (sec.link_type !== 'external') {
-                              e.preventDefault();
-                              triggerToast('info', `Link thử nghiệm: ${sec.link_url}`);
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (sec.link_url?.startsWith('http://') || sec.link_url?.startsWith('https://')) {
+                              window.open(sec.link_url, sec.link_target || '_blank', 'noopener,noreferrer');
+                            } else {
+                              const clientOrigin = 'https://universal-mall-shop.pages.dev';
+                              const cleanPath = sec.link_url?.startsWith('/') ? sec.link_url : `/${sec.link_url}`;
+                              window.open(`${clientOrigin}${cleanPath}`, sec.link_target || '_blank', 'noopener,noreferrer');
                             }
                           }}
-                          className="text-[10px] text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5"
+                          className="text-[10px] text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5 cursor-pointer"
                         >
                           <LinkIcon className="w-2.5 h-2.5" />
                           <span>Link ↗</span>
-                        </a>
+                        </button>
                       )}
                     </div>
+
+                    {/* Mô tả mục lớn nếu có */}
+                    {sDesc && (
+                      <p className="text-[10px] text-neutral-500 dark:text-neutral-400 line-clamp-1 italic">
+                        {sDesc}
+                      </p>
+                    )}
 
                     {/* Danh sách mục con trong preview */}
                     {sec.subsections && sec.subsections.length > 0 && (
@@ -1830,10 +1934,12 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                               type="button"
                               onClick={() => {
                                 if (sub.link_url) {
-                                  if (sub.link_target === '_blank') {
-                                    window.open(sub.link_url, '_blank', 'noopener,noreferrer');
+                                  if (sub.link_url.startsWith('http://') || sub.link_url.startsWith('https://')) {
+                                    window.open(sub.link_url, sub.link_target || '_blank', 'noopener,noreferrer');
                                   } else {
-                                    triggerToast('info', `Điều hướng đến: ${sub.link_url}`);
+                                    const clientOrigin = 'https://universal-mall-shop.pages.dev';
+                                    const cleanPath = sub.link_url.startsWith('/') ? sub.link_url : `/${sub.link_url}`;
+                                    window.open(`${clientOrigin}${cleanPath}`, sub.link_target || '_blank', 'noopener,noreferrer');
                                   }
                                 } else {
                                   triggerToast('info', `Mục "${subTitle}" chưa gắn link`);
@@ -1905,7 +2011,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   type="text"
                   value={editingItem.internal_name}
                   onChange={(e) => setEditingItem({ ...editingItem, internal_name: e.target.value })}
-                  placeholder="Ví dụ: Banner Chiến Dịch Tết, Lối Tắt Nạp Tiền..."
+                  placeholder={t('homepageSectionsModule.placeholderInternalName') || (isEn ? 'E.g. Campaign Banner, Quick Top-up...' : 'Ví dụ: Banner Chiến Dịch Tết, Lối Tắt Nạp Tiền...')}
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
@@ -1975,7 +2081,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                             <span className="text-neutral-400">Title (EN):</span> <b className="text-neutral-800 dark:text-neutral-100">{aiResult.title_en}</b>
                           </div>
                           <div className="sm:col-span-2">
-                            <span className="text-neutral-400">Mô tả (VI):</span> <span className="text-neutral-700 dark:text-neutral-300">{aiResult.description_vi}</span>
+                            <span className="text-neutral-400">{t('homepageSectionsModule.aiDescViLabel') || (isEn ? 'Desc (VI):' : 'Mô tả (VI):')}</span> <span className="text-neutral-700 dark:text-neutral-300">{aiResult.description_vi}</span>
                           </div>
                           <div className="sm:col-span-2">
                             <span className="text-neutral-400">Desc (EN):</span> <span className="text-neutral-700 dark:text-neutral-300">{aiResult.description_en}</span>
@@ -2019,7 +2125,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     type="text"
                     value={editingItem.title_vi}
                     onChange={(e) => setEditingItem({ ...editingItem, title_vi: e.target.value })}
-                    placeholder="Tiêu đề hiển thị tiếng Việt"
+                    placeholder={t('homepageSectionsModule.placeholderTitleVi') || (isEn ? 'Display title in Vietnamese' : 'Tiêu đề hiển thị tiếng Việt')}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
@@ -2047,7 +2153,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     rows={2}
                     value={editingItem.description_vi}
                     onChange={(e) => setEditingItem({ ...editingItem, description_vi: e.target.value })}
-                    placeholder="Mô tả 1 câu về mục này..."
+                    placeholder={t('homepageSectionsModule.placeholderDescVi') || (isEn ? '1-sentence description...' : 'Mô tả 1 câu về mục này...')}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
                   />
                 </div>
@@ -2075,7 +2181,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     type="text"
                     value={editingItem.badge_vi}
                     onChange={(e) => setEditingItem({ ...editingItem, badge_vi: e.target.value })}
-                    placeholder="HOT, MỚI, -30%..."
+                    placeholder={t('homepageSectionsModule.placeholderBadge') || 'HOT, NEW, -30%...'}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
@@ -2168,6 +2274,20 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                       placeholder={editingItem.link_type === 'external' ? 'https://zalo.me/...' : '/danh-muc/thoi-trang'}
                       className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-mono text-xs focus:outline-none"
                     />
+                    {(() => {
+                      const val = validateLinkUrl(editingItem.link_url, editingItem.link_type);
+                      if (!val.valid && val.warning) {
+                        return <p className="mt-1 text-[11px] text-red-500">{val.warning}</p>;
+                      }
+                      if (val.valid && val.warning) {
+                        return (
+                          <p className="mt-1 text-[11px] text-amber-500 dark:text-amber-400 flex items-center gap-1">
+                            <span>⚠️</span> {val.warning}
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 )}
 
@@ -2185,7 +2305,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         onChange={() => setEditingItem({ ...editingItem, link_target: '_self' })}
                         className="text-primary-600"
                       />
-                      <span>Cùng tab (_self)</span>
+                      <span>{t('homepageSectionsModule.targetSelfOption') || (isEn ? 'Same tab (_self)' : 'Cùng tab (_self)')}</span>
                     </label>
                     <label className="inline-flex items-center gap-1 cursor-pointer">
                       <input
@@ -2195,7 +2315,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         onChange={() => setEditingItem({ ...editingItem, link_target: '_blank' })}
                         className="text-primary-600"
                       />
-                      <span>Tab mới (_blank)</span>
+                      <span>{t('homepageSectionsModule.targetBlankOption') || (isEn ? 'New tab (_blank)' : 'Tab mới (_blank)')}</span>
                     </label>
                   </div>
                 </div>
@@ -2279,7 +2399,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                       type="text"
                       value={editingItem.image_alt_vi || ''}
                       onChange={(e) => setEditingItem({ ...editingItem, image_alt_vi: e.target.value })}
-                      placeholder="Mô tả ảnh cho khách khiếm thị / SEO..."
+                      placeholder={t('homepageSectionsModule.placeholderAltVi') || (isEn ? 'Image description for accessibility / SEO...' : 'Mô tả ảnh cho khách khiếm thị / SEO...')}
                       className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs focus:outline-none"
                     />
                   </div>
@@ -2339,10 +2459,37 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   {/* Tab 1: Upload File */}
                   {imageTab === 'upload' && (
                     <div className="space-y-1.5">
-                      <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl hover:border-primary-500 cursor-pointer bg-white/50 dark:bg-neutral-900/40 transition">
+                      <label
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDraggingFile(true);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDraggingFile(false);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDraggingFile(false);
+                          const f = e.dataTransfer.files?.[0];
+                          if (f) handleFileSelect(f);
+                        }}
+                        className={`flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl cursor-pointer transition ${
+                          isDraggingFile
+                            ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/40'
+                            : 'border-neutral-300 dark:border-neutral-700 hover:border-primary-500 bg-white/50 dark:bg-neutral-900/40'
+                        }`}
+                      >
                         <UploadCloud className="w-6 h-6 text-primary-500 mb-1" />
                         <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                          {imageUploading ? t('homepageSectionsModule.uploadingImage') : t('homepageSectionsModule.dragDropHint')}
+                          {imageUploading
+                            ? t('homepageSectionsModule.uploadingImage')
+                            : isDraggingFile
+                            ? (isEn ? 'Drop image file here...' : 'Thả tệp ảnh vào đây...')
+                            : t('homepageSectionsModule.dragDropHint')}
                         </span>
                         <span className="text-[10px] text-neutral-400 mt-0.5">
                           {t('homepageSectionsModule.imageFormats')}
@@ -2369,7 +2516,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                           type="text"
                           value={mirrorUrlInput}
                           onChange={(e) => setMirrorUrlInput(e.target.value)}
-                          placeholder="https://images.unsplash.com/... (ảnh JPG/PNG/WebP)"
+                          placeholder={t('homepageSectionsModule.placeholderMirrorUrl') || 'https://images.unsplash.com/... (JPG/PNG/WebP)'}
                           className="flex-1 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-neutral-900 dark:text-white font-mono focus:outline-none"
                         />
                         <button
@@ -2415,6 +2562,17 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                           >
                             <option value="16:9">{t('homepageSectionsModule.aiImageRatioBanner')}</option>
                             <option value="1:1">{t('homepageSectionsModule.aiImageRatioIcon')}</option>
+                          </select>
+
+                          <span className="text-[10px] text-neutral-500 font-medium ml-1">{isEn ? 'Count' : 'Số ảnh'}</span>
+                          <select
+                            value={aiImageCount}
+                            onChange={(e) => setAiImageCount(Number(e.target.value))}
+                            className="px-2 py-1 rounded border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[10px]"
+                          >
+                            <option value={2}>2</option>
+                            <option value={3}>3</option>
+                            <option value={4}>4</option>
                           </select>
                         </div>
                         <button
@@ -2513,7 +2671,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
                     {t('homepageSectionsModule.addSubsectionModalTitle') || 'Thêm Mục Con Mới'}
                   </h3>
-                  <p className="text-[10px] text-neutral-500">Tạo mục con tùy chỉnh xuất hiện trên giao diện trang chủ</p>
+                  <p className="text-[10px] text-neutral-500">{t('homepageSectionsModule.customSubsectionDesc') || (isEn ? 'Create custom subsection appearing on homepage storefront' : 'Tạo mục con tùy chỉnh xuất hiện trên giao diện trang chủ')}</p>
                 </div>
               </div>
               <button
@@ -2560,7 +2718,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   type="text"
                   value={newSubForm.internal_name}
                   onChange={(e) => setNewSubForm({ ...newSubForm, internal_name: e.target.value })}
-                  placeholder="Ví dụ: Lối tắt hỗ trợ Zalo, Nút nạp ví nhanh..."
+                  placeholder={t('homepageSectionsModule.placeholderSubInternalName') || (isEn ? 'E.g. Zalo support shortcut...' : 'Ví dụ: Lối tắt hỗ trợ Zalo, Nút nạp ví nhanh...')}
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none"
                 />
               </div>
@@ -2575,7 +2733,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     type="text"
                     value={newSubForm.title_vi}
                     onChange={(e) => setNewSubForm({ ...newSubForm, title_vi: e.target.value })}
-                    placeholder="Tên hiển thị khách thấy"
+                    placeholder={t('homepageSectionsModule.placeholderSubTitleVi') || (isEn ? 'Display name' : 'Tên hiển thị khách thấy')}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none"
                   />
                 </div>
@@ -2603,7 +2761,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     type="text"
                     value={newSubForm.badge_vi}
                     onChange={(e) => setNewSubForm({ ...newSubForm, badge_vi: e.target.value })}
-                    placeholder="HOT, MỚI..."
+                    placeholder={t('homepageSectionsModule.placeholderSubBadge') || 'HOT, NEW...'}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none"
                   />
                 </div>
@@ -2692,7 +2850,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 )}
 
                 <div className="flex items-center justify-between pt-1 text-xs">
-                  <span className="text-neutral-600 dark:text-neutral-400 font-medium">Mở liên kết trong:</span>
+                  <span className="text-neutral-600 dark:text-neutral-400 font-medium">{t('homepageSectionsModule.linkTargetLabel') || (isEn ? 'Open link in:' : 'Mở liên kết trong:')}</span>
                   <div className="flex items-center gap-2">
                     <label className="inline-flex items-center gap-1 cursor-pointer">
                       <input
@@ -2702,7 +2860,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         onChange={() => setNewSubForm({ ...newSubForm, link_target: '_self' })}
                         className="text-primary-600"
                       />
-                      <span>Cùng tab (_self)</span>
+                      <span>{t('homepageSectionsModule.targetSelfOption') || (isEn ? 'Same tab (_self)' : 'Cùng tab (_self)')}</span>
                     </label>
                     <label className="inline-flex items-center gap-1 cursor-pointer">
                       <input
@@ -2712,7 +2870,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         onChange={() => setNewSubForm({ ...newSubForm, link_target: '_blank' })}
                         className="text-primary-600"
                       />
-                      <span>Tab mới (_blank)</span>
+                      <span>{t('homepageSectionsModule.targetBlankOption') || (isEn ? 'New tab (_blank)' : 'Tab mới (_blank)')}</span>
                     </label>
                   </div>
                 </div>
