@@ -7,6 +7,16 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-22]
 
+### 433. Khắc Phục Triệt Để Đợt 6 Trang Chủ: Giới Hạn 10 Ảnh/Mục, Build Cross-Platform, SSRF DoH Rebinding Guard & TinyPNG Quota Tracker (22/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục các tồn đọng sau kiểm chứng đợt 5 (commit 2f5eb27 và 82f9b36):
+    * Nhóm 1: Nhúng `safeSectionId` vào `imageId` và truyền `section_id` ở cả 3 luồng tải ảnh, kích hoạt chính xác giới hạn tối đa 10 ảnh/mục; chuyển lệnh build `tsc` sang đa nền tảng (`shell: true`); bổ sung phân giải DNS qua Cloudflare DoH (`cloudflare-dns.com`) chống DNS rebinding và private IP bypass; tích hợp `validateImageUrl` vào `validateHomepageSectionsPayload` phía server; tạo Alt text AI sinh theo nội dung thật bằng Gemini kèm logging bền vững `security_logs`.
+    * Nhóm 2: Bổ sung `width`, `height`, `srcSet`, `sizes` cho banner hero; render ảnh cho 4 mục còn lại (`flash_sale`, `games_and_codes`, `categories_grid`, `footer`); xóa sạch 3 khóa chết khỏi từ điển (`imageSizeComparison`, `tinypngOptimized`, `tinypngFallback`); thiết lập hạn mức kép cho TinyPNG (20 ảnh/ngày và 500 ảnh/tháng) đếm theo lượt gọi thực tế trong `system_settings`.
+- **Kết quả**:
+  - `npm run check:i18n`: PASS 100% trên 15 file phạm vi chuẩn.
+  - `tsc -p tsconfig.homepage.json --noEmit`: PASS 100% trên mọi môi trường (Windows/Linux CI).
+  - Rule 10 Zero secrets in git: Đạt chuẩn 100% (0 secrets).
+
 ### 432. Hoàn Tất 13 Mục Dở Dang Sau Kiểm Chứng 3 Đợt Tùy Chỉnh Trang Chủ (22/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục triệt để 13 mục dở dang thuộc 5 nhóm sau đợt kiểm chứng độc lập (commit 04e8a5a và 0f71661):

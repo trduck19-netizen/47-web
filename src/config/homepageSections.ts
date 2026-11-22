@@ -1042,6 +1042,14 @@ export function validateHomepageSectionsPayload(body: any): {
         const subEnabled = typeof subItem.enabled === 'boolean' ? subItem.enabled : true;
         const subOrder = typeof subItem.order === 'number' && !isNaN(subItem.order) ? Math.round(subItem.order) : j + 1;
 
+        const subImageUrl = typeof subItem.image_url === 'string' ? subItem.image_url.trim().slice(0, 1000) : undefined;
+        if (subImageUrl) {
+          const imgCheck = validateImageUrl(subImageUrl);
+          if (!imgCheck.valid) {
+            return { valid: false, error: `Mục con "${subId}": ${imgCheck.error}` };
+          }
+        }
+
         sanitizedSubs.push({
           id: subId,
           parentId: id,
@@ -1062,10 +1070,10 @@ export function validateHomepageSectionsPayload(body: any): {
           icon: typeof subItem.icon === 'string' ? subItem.icon.slice(0, 50) : undefined,
           groupNameVi: typeof subItem.groupNameVi === 'string' ? subItem.groupNameVi.slice(0, 50) : undefined,
           groupNameEn: typeof subItem.groupNameEn === 'string' ? subItem.groupNameEn.slice(0, 50) : undefined,
-          image_url: typeof subItem.image_url === 'string' ? subItem.image_url.trim().slice(0, 1000) : undefined,
+          image_url: subImageUrl,
           image_alt_vi: typeof subItem.image_alt_vi === 'string' ? subItem.image_alt_vi.trim().slice(0, 200) : undefined,
           image_alt_en: typeof subItem.image_alt_en === 'string' ? subItem.image_alt_en.trim().slice(0, 200) : undefined,
-          image_compression_status: ['compressed', 'original_fallback', 'failed'].includes(subItem.image_compression_status) ? subItem.image_compression_status : undefined,
+          image_compression_status: ['uncompressed', 'compressing', 'compressed', 'original_fallback', 'failed'].includes(subItem.image_compression_status) ? subItem.image_compression_status : undefined,
           image_original_size: typeof subItem.image_original_size === 'number' ? subItem.image_original_size : undefined,
           image_compressed_size: typeof subItem.image_compressed_size === 'number' ? subItem.image_compressed_size : undefined,
           image_compression_error: typeof subItem.image_compression_error === 'string' ? subItem.image_compression_error.trim().slice(0, 500) : undefined,
@@ -1101,6 +1109,14 @@ export function validateHomepageSectionsPayload(body: any): {
       sanitizedSubs = getDefaultSubsectionsForParent(id);
     }
 
+    const secImageUrl = typeof item.image_url === 'string' ? item.image_url.trim().slice(0, 1000) : undefined;
+    if (secImageUrl) {
+      const imgCheck = validateImageUrl(secImageUrl);
+      if (!imgCheck.valid) {
+        return { valid: false, error: `Mục "${id}": ${imgCheck.error}` };
+      }
+    }
+
     sanitized.push({
       id,
       enabled: item.enabled,
@@ -1116,10 +1132,10 @@ export function validateHomepageSectionsPayload(body: any): {
       description_en: typeof item.description_en === 'string' ? item.description_en.trim().slice(0, 255) : undefined,
       badge_vi: typeof item.badge_vi === 'string' ? item.badge_vi.trim().slice(0, 30) : undefined,
       badge_en: typeof item.badge_en === 'string' ? item.badge_en.trim().slice(0, 30) : undefined,
-      image_url: typeof item.image_url === 'string' ? item.image_url.trim().slice(0, 1000) : undefined,
+      image_url: secImageUrl,
       image_alt_vi: typeof item.image_alt_vi === 'string' ? item.image_alt_vi.trim().slice(0, 200) : undefined,
       image_alt_en: typeof item.image_alt_en === 'string' ? item.image_alt_en.trim().slice(0, 200) : undefined,
-      image_compression_status: ['compressed', 'original_fallback', 'failed'].includes(item.image_compression_status) ? item.image_compression_status : undefined,
+      image_compression_status: ['uncompressed', 'compressing', 'compressed', 'original_fallback', 'failed'].includes(item.image_compression_status) ? item.image_compression_status : undefined,
       image_original_size: typeof item.image_original_size === 'number' ? item.image_original_size : undefined,
       image_compressed_size: typeof item.image_compressed_size === 'number' ? item.image_compressed_size : undefined,
       image_compression_error: typeof item.image_compression_error === 'string' ? item.image_compression_error.trim().slice(0, 500) : undefined,

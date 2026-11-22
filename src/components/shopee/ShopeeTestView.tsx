@@ -1353,10 +1353,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   heroLinkUrl ? 'cursor-pointer hover:shadow-md' : ''
                 }`}
               >
-                {/* Ảnh Banner tùy chỉnh từ cấu hình (Đợt 2 & 3: WebP, Eager Loading, Chống CLS) */}
+                {/* Ảnh Banner tùy chỉnh từ cấu hình (Đợt 2 & 3: WebP, Eager Loading, Chống CLS, srcset đa thiết bị) */}
                 {heroSection?.image_url && (
                   <img
                     src={heroSection.image_url}
+                    srcSet={`${heroSection.image_url} 1200w`}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
+                    width={1200}
+                    height={450}
                     alt={isEn ? (heroSection.image_alt_en || customHeroTitle || 'Hero Banner') : (heroSection.image_alt_vi || customHeroTitle || 'Banner lớn')}
                     loading="eager"
                     className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:scale-102 transition duration-500"
@@ -1538,6 +1542,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         );
       }
       case 'categories_grid': {
+        const categoriesSection = orderedSections.find((s) => s.id === 'categories_grid');
+        const customCategoriesTitle = isEn ? categoriesSection?.title_en : categoriesSection?.title_vi;
+        const categoriesLinkUrl = categoriesSection?.link_url;
+        const categoriesLinkTarget = categoriesSection?.link_target || '_self';
+        const categoriesLinkType = categoriesSection?.link_type || 'internal';
+
         const shortcutSubsections = getOrderedSubsections('categories_grid', 'shortcuts');
         const activeShortcuts = shortcutSubsections.filter((s) => s.enabled);
 
@@ -1566,6 +1576,25 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
 
         return (
           <div className="space-y-3">
+            {/* Banner Danh Mục / Lối Tắt tùy chỉnh nếu admin cấu hình */}
+            {categoriesSection?.image_url && (
+              <div
+                onClick={() => categoriesLinkUrl && handleNavigation(categoriesLinkUrl, categoriesLinkTarget, categoriesLinkType)}
+                className={`rounded-xl overflow-hidden shadow-sm ${categoriesLinkUrl ? 'cursor-pointer hover:opacity-95' : ''}`}
+              >
+                <img
+                  src={categoriesSection.image_url}
+                  srcSet={`${categoriesSection.image_url} 1200w`}
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                  width={1200}
+                  height={220}
+                  loading="lazy"
+                  alt={isEn ? (categoriesSection.image_alt_en || customCategoriesTitle || 'Categories Banner') : (categoriesSection.image_alt_vi || customCategoriesTitle || 'Banner Danh Mục')}
+                  className="w-full h-auto max-h-[160px] sm:max-h-[200px] object-cover"
+                />
+              </div>
+            )}
+
             {/* 3.2. DỊCH VỤ NHANH SHOPEE (8 Icon Dịch Vụ) */}
             {activeShortcuts.length > 0 && (
               <div className={`rounded-xl p-4 shadow-sm border ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
@@ -1650,6 +1679,24 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
 
         return (
           <div className="space-y-3">
+            {/* Banner Flash Sale tùy chỉnh nếu admin cấu hình */}
+            {flashSection?.image_url && (
+              <div
+                onClick={() => flashLinkUrl && handleNavigation(flashLinkUrl, flashLinkTarget, flashLinkType)}
+                className={`rounded-xl overflow-hidden shadow-sm ${flashLinkUrl ? 'cursor-pointer hover:opacity-95' : ''}`}
+              >
+                <img
+                  src={flashSection.image_url}
+                  srcSet={`${flashSection.image_url} 1200w`}
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                  width={1200}
+                  height={220}
+                  loading="lazy"
+                  alt={isEn ? (flashSection.image_alt_en || customFlashTitle || 'Flash Sale Banner') : (flashSection.image_alt_vi || customFlashTitle || 'Banner Flash Sale')}
+                  className="w-full h-auto max-h-[160px] sm:max-h-[200px] object-cover"
+                />
+              </div>
+            )}
             <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
                   <div className="flex items-center gap-3">
@@ -1785,9 +1832,33 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           </>
         );
       }
-      case 'games_and_codes':
+      case 'games_and_codes': {
+        const gamesSection = orderedSections.find((s) => s.id === 'games_and_codes');
+        const customGamesTitle = isEn ? gamesSection?.title_en : gamesSection?.title_vi;
+        const gamesLinkUrl = gamesSection?.link_url;
+        const gamesLinkTarget = gamesSection?.link_target || '_self';
+        const gamesLinkType = gamesSection?.link_type || 'internal';
+
         return (
           <div className="space-y-4">
+            {/* Banner Kệ Hàng Hóa tùy chỉnh nếu admin cấu hình */}
+            {gamesSection?.image_url && (
+              <div
+                onClick={() => gamesLinkUrl && handleNavigation(gamesLinkUrl, gamesLinkTarget, gamesLinkType)}
+                className={`rounded-xl overflow-hidden shadow-sm ${gamesLinkUrl ? 'cursor-pointer hover:opacity-95' : ''}`}
+              >
+                <img
+                  src={gamesSection.image_url}
+                  srcSet={`${gamesSection.image_url} 1200w`}
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                  width={1200}
+                  height={220}
+                  loading="lazy"
+                  alt={isEn ? (gamesSection.image_alt_en || customGamesTitle || 'Games & Codes Banner') : (gamesSection.image_alt_vi || customGamesTitle || 'Banner Kệ Hàng Sàn')}
+                  className="w-full h-auto max-h-[160px] sm:max-h-[200px] object-cover"
+                />
+              </div>
+            )}
             {/* 3.5. KỆ HÀNG HÓA SÀN ĐA NGÀNH: PHÂN LOẠI & SẢN PHẨM */}
             <div id="shopee-products-grid" className="space-y-3 scroll-mt-28">
               
@@ -2029,6 +2100,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             </div>
           </div>
         );
+      }
       case 'news_section': {
         const newsSec = orderedSections.find((s) => s.id === 'news_section');
         const customNewsTitle = isEn ? newsSec?.title_en : newsSec?.title_vi;
@@ -3450,9 +3522,34 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         )}
 
         {/* 3.6. FOOTER ĐẦY ĐỦ 4 CỘT CHUẨN WEB CHÍNH (ĐỘ TƯƠNG PHẢN CAO CHO THEME TRẮNG) */}
-        {isSectionEnabled('footer') && (
-        <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 mt-8 shadow-xs space-y-6 text-xs text-slate-700 dark:text-slate-300">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {isSectionEnabled('footer') && (() => {
+          const footerSection = orderedSections.find((s) => s.id === 'footer');
+          const customFooterTitle = isEn ? footerSection?.title_en : footerSection?.title_vi;
+          const footerLinkUrl = footerSection?.link_url;
+          const footerLinkTarget = footerSection?.link_target || '_self';
+          const footerLinkType = footerSection?.link_type || 'internal';
+
+          return (
+            <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 mt-8 shadow-xs space-y-6 text-xs text-slate-700 dark:text-slate-300">
+              {/* Banner Chân Trang hoặc Logo Đối tác tùy chỉnh nếu admin cấu hình */}
+              {footerSection?.image_url && (
+                <div
+                  onClick={() => footerLinkUrl && handleNavigation(footerLinkUrl, footerLinkTarget, footerLinkType)}
+                  className={`rounded-xl overflow-hidden shadow-xs mb-4 ${footerLinkUrl ? 'cursor-pointer hover:opacity-95' : ''}`}
+                >
+                  <img
+                    src={footerSection.image_url}
+                    srcSet={`${footerSection.image_url} 1200w`}
+                    sizes="(max-width: 768px) 100vw, 1200px"
+                    width={1200}
+                    height={160}
+                    loading="lazy"
+                    alt={isEn ? (footerSection.image_alt_en || customFooterTitle || 'Footer Partner Banner') : (footerSection.image_alt_vi || customFooterTitle || 'Banner Chân Trang')}
+                    className="w-full h-auto max-h-[140px] sm:max-h-[180px] object-cover"
+                  />
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             
             {/* Cột 1: Về Universal Mall */}
             <div className="space-y-2.5">
@@ -3586,7 +3683,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               : `© 2026 ${shopBrand.name} - Giao Diện Sàn Thương Mại Điện Tử Tiện Ích & Code Game`}
           </div>
         </div>
-        )}
+          );
+        })()}
 
       </div>
 

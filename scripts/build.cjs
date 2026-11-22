@@ -7,7 +7,7 @@ execSync('node scripts/check-hardcoded-i18n.cjs', { stdio: 'inherit' });
 
 console.log('🔍 0.5. Running TypeScript Type Check on Homepage Sections (tsc --noEmit)...');
 try {
-  execSync('cmd /c npx -y tsc -p tsconfig.homepage.json --noEmit', { stdio: 'inherit' });
+  execSync('npx tsc -p tsconfig.homepage.json --noEmit', { stdio: 'inherit', shell: true });
 } catch (err) {
   console.error('❌ [Build Error] TypeScript strict type check failed! Please fix all type errors before building.');
   process.exit(1);

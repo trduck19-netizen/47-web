@@ -173,6 +173,44 @@ function isSafeExternalUrl(urlStr: string): boolean {
   }
 }
 
+// Phân giải DNS qua Cloudflare DoH để chống tấn công DNS Rebinding và tên miền trỏ về IP nội bộ
+async function resolveAndValidateHostDns(hostname: string): Promise<{ ok: boolean; error?: string }> {
+  // Nếu host đã là địa chỉ IP trực tiếp, isSafeExternalUrl đã thẩm định
+  if (parseIpv4ToNumber(hostname) !== null || hostname.includes(':')) {
+    return { ok: true };
+  }
+
+  try {
+    const dohUrl = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=A`;
+    const res = await fetch(dohUrl, {
+      headers: { Accept: 'application/dns-json' },
+      signal: AbortSignal.timeout(3500),
+    });
+    if (!res.ok) {
+      return { ok: false, error: 'Không thể phân giải tên miền (DNS failure).' };
+    }
+    const data: any = await res.json().catch(() => null);
+    if (!data || data.Status !== 0 || !Array.isArray(data.Answer) || data.Answer.length === 0) {
+      return { ok: false, error: `Tên miền không tồn tại hoặc không thể phân giải: ${hostname}` };
+    }
+    for (const record of data.Answer) {
+      if (record.type === 1 && typeof record.data === 'string') {
+        const ip = record.data.trim();
+        const ipv4Num = parseIpv4ToNumber(ip);
+        if (ipv4Num === null || isPrivateIpv4(ipv4Num)) {
+          return {
+            ok: false,
+            error: `Tên miền ${hostname} trỏ về IP nội bộ (${ip}) bị chặn (Chống SSRF / DNS Rebinding).`,
+          };
+        }
+      }
+    }
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: `Kiểm tra DNS chống DNS rebinding thất bại: ${err?.message || 'timeout'}` };
+  }
+}
+
 // Tải an toàn ảnh ngoài: HEAD request kiểm tra kích thước & Content-Type, follow redirect an toàn
 async function fetchSafeExternalImage(
   initialUrl: string,
@@ -182,6 +220,16 @@ async function fetchSafeExternalImage(
   for (let hop = 0; hop < maxHops; hop++) {
     if (!isSafeExternalUrl(currentUrl)) {
       return { ok: false, error: 'Đường dẫn ảnh bị chặn vì lý do bảo mật (chặn private IP / SSRF).' };
+    }
+
+    try {
+      const urlObj = new URL(currentUrl);
+      const dnsCheck = await resolveAndValidateHostDns(urlObj.hostname);
+      if (!dnsCheck.ok) {
+        return { ok: false, error: dnsCheck.error };
+      }
+    } catch {
+      return { ok: false, error: 'URL không hợp lệ.' };
     }
 
     // 1. Kiểm tra nhanh bằng HEAD
@@ -292,20 +340,98 @@ async function saveCachedTinyPng(db: D1Database, hash: string, bytes: Uint8Array
   } catch {}
 }
 
-// Kiểm tra hạn mức TinyPNG theo ngày (tối đa 20 ảnh/ngày ~ 500 ảnh/tháng)
-async function checkTinyPngQuota(db: D1Database): Promise<boolean> {
+// Cấu trúc theo dõi hạn mức gọi API TinyPNG thực tế
+interface TinyPngUsageTracker {
+  month: string;        // e.g. "2026-11"
+  monthlyCalls: number; // max 500 ảnh/tháng
+  day: string;          // e.g. "2026-11-22"
+  dailyCalls: number;   // max 20 ảnh/ngày
+}
+
+// Kiểm tra hạn mức TinyPNG kép (tối đa 20 ảnh/ngày và tối đa 500 ảnh/tháng)
+async function checkTinyPngQuota(db: D1Database): Promise<{ allowed: boolean; reason?: string }> {
   try {
-    const todayRow = await db
-      .prepare(`
-        SELECT COUNT(*) as cnt FROM homepage_section_images 
-        WHERE created_at >= date('now', 'start of day') AND source LIKE '%tinypng%'
-      `)
-      .first<any>();
-    if (todayRow && Number(todayRow.cnt) >= 20) {
-      return false;
+    const now = new Date();
+    const curMonth = now.toISOString().slice(0, 7);
+    const curDay = now.toISOString().slice(0, 10);
+
+    const setting = await db.prepare("SELECT value FROM system_settings WHERE key = 'tinypng_usage_tracker' LIMIT 1")
+      .first<{ value: string }>();
+
+    let tracker: TinyPngUsageTracker = {
+      month: curMonth,
+      monthlyCalls: 0,
+      day: curDay,
+      dailyCalls: 0,
+    };
+
+    if (setting?.value) {
+      try {
+        const parsed = JSON.parse(setting.value);
+        if (parsed.month === curMonth) {
+          tracker.monthlyCalls = Number(parsed.monthlyCalls) || 0;
+        }
+        if (parsed.day === curDay) {
+          tracker.dailyCalls = Number(parsed.dailyCalls) || 0;
+        }
+      } catch {}
     }
-  } catch {}
-  return true;
+
+    if (tracker.monthlyCalls >= 500) {
+      return { allowed: false, reason: 'Đã đạt giới hạn hạn mức TinyPNG 500 ảnh/tháng.' };
+    }
+    if (tracker.dailyCalls >= 20) {
+      return { allowed: false, reason: 'Đã đạt giới hạn hạn mức TinyPNG 20 ảnh/ngày.' };
+    }
+    return { allowed: true };
+  } catch {
+    return { allowed: true };
+  }
+}
+
+// Ghi nhận lần gọi API TinyPNG thực tế và lưu log bền vững nếu có lỗi
+async function recordTinyPngCall(db: D1Database, isSuccess: boolean, errorMessage?: string): Promise<void> {
+  try {
+    const now = new Date();
+    const curMonth = now.toISOString().slice(0, 7);
+    const curDay = now.toISOString().slice(0, 10);
+
+    const setting = await db.prepare("SELECT value FROM system_settings WHERE key = 'tinypng_usage_tracker' LIMIT 1")
+      .first<{ value: string }>();
+
+    let tracker: TinyPngUsageTracker = {
+      month: curMonth,
+      monthlyCalls: 0,
+      day: curDay,
+      dailyCalls: 0,
+    };
+
+    if (setting?.value) {
+      try {
+        const parsed = JSON.parse(setting.value);
+        if (parsed.month === curMonth) tracker.monthlyCalls = Number(parsed.monthlyCalls) || 0;
+        if (parsed.day === curDay) tracker.dailyCalls = Number(parsed.dailyCalls) || 0;
+      } catch {}
+    }
+
+    tracker.monthlyCalls += 1;
+    tracker.dailyCalls += 1;
+
+    await db.prepare(`
+      INSERT INTO system_settings (key, value, description, updated_at)
+      VALUES ('tinypng_usage_tracker', ?, 'TinyPNG API Usage Stats (Monthly max 500, Daily max 20)', datetime('now'))
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `).bind(JSON.stringify(tracker)).run();
+
+    if (!isSuccess && errorMessage) {
+      await db.prepare(`
+        INSERT INTO security_logs (action, details, ip_address, created_at)
+        VALUES ('TINYPNG_API_ERROR', ?, '127.0.0.1', datetime('now'))
+      `).bind(JSON.stringify({ error: errorMessage, tracker, timestamp: now.toISOString() })).run().catch(() => null);
+    }
+  } catch (e) {
+    console.warn('[TinyPNG Tracker] Failed to record call:', e);
+  }
 }
 
 // Nén WebP máy chủ bằng ImageScript (Nhóm 1 & 2)
@@ -624,10 +750,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Giới hạn số lượng ảnh cho mỗi mục (tối đa 10 ảnh / mục)
     const sectionId = String(body.section_id || body.item_id || '').trim();
+    const safeSectionId = sectionId ? sectionId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) : 'sec';
     if (sectionId) {
       try {
         const countRow = await env.DB.prepare('SELECT COUNT(*) as count FROM homepage_section_images WHERE id LIKE ?')
-          .bind(`%${sectionId}%`)
+          .bind(`sec_${safeSectionId}_%`)
           .first<any>();
         if (countRow && Number(countRow.count) >= 10) {
           return new Response(
@@ -655,11 +782,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const originalSizeBytes = rawBytes.length;
 
-    // Sinh ID duy nhất cho tệp lưu trữ
+    // Sinh ID duy nhất cho tệp lưu trữ có gắn tiền tố mục để đếm quota và quản lý chính xác
     const timestamp = Date.now();
     const randomHex = Math.random().toString(36).substring(2, 10);
-    const safeBaseName = fileName.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30) || 'sec';
-    const imageId = `${safeBaseName}_${timestamp}_${randomHex}.webp`;
+    const imageId = `sec_${safeSectionId}_${timestamp}_${randomHex}.webp`;
 
     // =========================================================================
     // NÉN ẢNH PHÍA MÁY CHỦ (TinyPNG API ngoài + ImageScript WebP máy chủ + Fallback an toàn)
@@ -676,19 +802,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         bytesToCompress = cached;
         compressionNotes.push('Đã tối ưu qua TinyPNG (từ cache SHA-256)');
       } else {
-        const quotaOk = await checkTinyPngQuota(env.DB);
-        if (quotaOk) {
+        const quotaCheck = await checkTinyPngQuota(env.DB);
+        if (quotaCheck.allowed) {
           const tinyResult = await compressWithTinyPng(rawBytes, tinyPngKey);
+          await recordTinyPngCall(env.DB, tinyResult.success, tinyResult.error);
           if (tinyResult.success && tinyResult.bytes) {
             bytesToCompress = tinyResult.bytes;
             await saveCachedTinyPng(env.DB, imgHash, tinyResult.bytes);
             compressionNotes.push('Đã tối ưu sơ bộ qua TinyPNG API');
           } else {
-            console.warn(`[TinyPNG API Error] ${tinyResult.error}`);
+            console.error(`[TinyPNG API Error] ${tinyResult.error}`);
             compressionNotes.push(`TinyPNG (${tinyResult.error || 'Lỗi'}). Tự động fallback dùng bộ nén nội bộ.`);
           }
         } else {
-          compressionNotes.push('Hạn mức TinyPNG trong ngày đã chạm ngưỡng, dùng bộ nén nội bộ ImageScript.');
+          compressionNotes.push(`${quotaCheck.reason || 'Hạn mức TinyPNG đã chạm ngưỡng'}, dùng bộ nén nội bộ ImageScript.`);
         }
       }
     }

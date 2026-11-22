@@ -762,6 +762,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           image_base64: uploadBase64,
           file_name: file.name,
           target_type: targetType,
+          section_id: editingItem?.id,
         }),
       });
 
@@ -813,6 +814,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           action: 'mirror_url',
           url: mirrorUrlInput.trim(),
           target_type: targetType,
+          section_id: editingItem?.id,
         }),
       });
 
@@ -964,6 +966,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           file_name: `ai_${editingItem.id}.webp`,
           target_type: targetType,
           source: 'ai_generated',
+          section_id: editingItem.id,
         }),
       });
 
