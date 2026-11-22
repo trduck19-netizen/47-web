@@ -243,7 +243,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               <div className="w-7 h-7 rounded-xl flex items-center justify-center group-hover:bg-muted/60 transition-all text-muted-foreground group-hover:text-foreground">
                 <User className="w-4 h-4 transition-transform group-hover:scale-110" />
               </div>
-              <span className="text-[10px] font-bold mt-0.5 tracking-tight whitespace-nowrap">Tài Khoản</span>
+              <span className="text-[10px] font-bold mt-0.5 tracking-tight whitespace-nowrap">{t('header.account')}</span>
             </>
           )}
         </button>

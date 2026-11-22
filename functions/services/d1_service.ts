@@ -2371,6 +2371,25 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0039 homepage_section_images error]', e);
     }
 
+    // Migration 0040: Add section_id column to homepage_section_images for exact 10-image limit tracking
+    try {
+      const mig0040 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0040_homepage_section_images_section_id_v1' LIMIT 1").first().catch(() => null);
+      if (!mig0040) {
+        await db.prepare("ALTER TABLE homepage_section_images ADD COLUMN section_id TEXT;").run().catch(() => {});
+        await db.prepare(`
+          UPDATE homepage_section_images 
+          SET section_id = CASE 
+            WHEN id LIKE 'sec_%_%_%' THEN substr(id, 5, instr(substr(id, 5), '_') - 1)
+            ELSE NULL
+          END
+          WHERE section_id IS NULL AND id LIKE 'sec_%_%_%';
+        `).run().catch(() => {});
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0040_homepage_section_images_section_id_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0040 homepage_section_images_section_id error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);

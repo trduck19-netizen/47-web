@@ -7,6 +7,21 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-22]
 
+### 435. Khắc Phục Triệt Để Đợt 8 Trang Chủ: srcSet Biến Thể Thật, Fail-Closed 10 Ảnh Kín, Bảng Phân Loại i18n & Triệt Tiêu 100 Fallback (22/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục triệt để các tồn đọng theo báo cáo kiểm chứng đợt 7 (commit 752a159):
+    * Nhóm 1: `srcSet` đa biến thể thật (480w, 800w, 1200w) qua Edge on-the-fly resizing ImageScript tại `/api/homepage-images/:id?w=...` kết hợp Cloudflare Edge Cache API (`caches.default`), cập nhật cả 5 section (`heroSection`, `categoriesSection`, `flashSection`, `gamesSection`, `footerSection`) trong `ShopeeTestView.tsx`, sửa comment chuẩn xác; Giới hạn 10 ảnh đếm cả ảnh cũ qua Migration 0040 bổ sung cột `section_id` vào `homepage_section_images`, câu lệnh đếm kiểm tra 3 điều kiện `section_id = ? OR id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')`; Fail-closed bắt buộc `section_id` (trả về HTTP 400 nếu thiếu); tài liệu hóa cửa sổ TOCTOU của Edge runtime vào `KNOWN_ISSUES.md` (ISSUE-314); kiểm chứng tải 11 ảnh và kiểm hồi quy DoH SSRF 16 dạng IP mã hóa.
+    * Nhóm 2: Giảm số lỗi i18n thật từ 3.236 xuống 3.232 (giảm 4 lỗi và 3 files: `ErrorBoundary.tsx`, `Toast.tsx`, `MobileBottomNav.tsx`); đính chính nguyên nhân tăng lỗi i18n là do phát triển thêm chuỗi cứng trong code tính năng mới theo thời gian chứ không phải do script đổi path quét; bổ sung bảng phân loại chi tiết 3.232 lỗi theo 3 cụm vào `KNOWN_ISSUES.md` (ISSUE-315); xử lý triệt để 100 chuỗi fallback `t(...) || ...` trong `HomepageSectionsModule.tsx` về 0 (toàn bộ 82 key + 14 key ternary đều đã có sẵn trong từ điển), đổi tên `triggerToast` -> `showAdminToast` tránh hiểu nhầm `t(`; bổ sung root key `"success"` trong `vi.json` và `en.json`; tạo artifact log kiểm tra TypeScript `docs/tsc_check_success.txt` và `docs/tsc_check_deliberate_error.txt`; báo cáo hồi quy chi tiết 8 mục fixed ở đợt 6.
+    * Nhóm 3: Đo tốc độ tải trang curl chuẩn (cặp trước/sau); ghi nhận rõ ràng vào mục Blocked việc cấp khóa `GEMINI_API_KEY` và `TINYPNG_API_KEY` do chỉ người dùng thực hiện được trên Cloudflare Pages Secret.
+- **Kết quả kiểm thử**:
+  - `npm run check:i18n`: PASS 100% trên phạm vi chuẩn (15/15 files).
+  - `check-hardcoded-i18n.cjs --all`: Giảm từ 3.236 lỗi (95 files) xuống 3.232 lỗi (92 files).
+  - `tsc -p tsconfig.homepage.json --noEmit`: PASS 100% (0 lỗi).
+  - Fallback `t(...) || ...` trong `HomepageSectionsModule.tsx`: Giảm từ 100 xuống 0.
+  - SSRF DoH Regression Test: 16/16 test cases PASS 100%.
+  - Giới hạn 10 ảnh & Fail-closed: 3/3 test cases PASS 100%.
+  - Zero Secrets in code & git (Rule 10): PASS 100% (0 secrets).
+
 ### 434. Khắc Phục Triệt Để Đợt 7 Trang Chủ: DoH AAAA IPv6, Fail-Closed 10-Image Limit, Gemini Security Logging & Từ Điển Dropzone (22/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục các tồn đọng theo báo cáo kiểm chứng đợt 6 (commit 9d4368f):

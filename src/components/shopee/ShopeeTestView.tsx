@@ -83,6 +83,16 @@ interface ShopeeTestViewProps {
   onUpdateUser?: (user: UserProfile) => void;
 }
 
+// Tạo danh sách biến thể độ phân giải responsive srcSet cho ảnh tối ưu hóa (480w cho mobile, 800w cho tablet, 1200w cho desktop)
+const getResponsiveSrcSet = (url?: string, widths: number[] = [480, 800, 1200]): string => {
+  if (!url) return '';
+  const cleanUrl = url.trim();
+  if (cleanUrl.startsWith('/api/homepage-images/')) {
+    return widths.map((w) => `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}w=${w} ${w}w`).join(', ');
+  }
+  return `${cleanUrl} 1200w`;
+};
+
 // 6 Danh mục Game Chuẩn Web Chính (Dùng regex đối sánh chính xác)
 const MAIN_GAME_CATEGORIES = [
   { id: 'all', label: 'Tất Cả Game', icon: '🎮', match: () => true },
@@ -1353,12 +1363,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   heroLinkUrl ? 'cursor-pointer hover:shadow-md' : ''
                 }`}
               >
-                {/* Ảnh Banner tùy chỉnh từ cấu hình (Đợt 2 & 3: WebP, Eager Loading, Chống CLS, srcset đa thiết bị) */}
+                {/* Ảnh Banner tùy chỉnh từ cấu hình (WebP, Eager Loading, Chống CLS, srcset đa biến thể 480w/800w/1200w) */}
                 {heroSection?.image_url && (
                   <img
                     src={heroSection.image_url}
-                    srcSet={`${heroSection.image_url} 1200w`}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
+                    srcSet={getResponsiveSrcSet(heroSection.image_url, [480, 800, 1200])}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 70vw, 1200px"
                     width={1200}
                     height={450}
                     alt={isEn ? (heroSection.image_alt_en || customHeroTitle || 'Hero Banner') : (heroSection.image_alt_vi || customHeroTitle || 'Banner lớn')}
@@ -1584,7 +1594,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               >
                 <img
                   src={categoriesSection.image_url}
-                  srcSet={`${categoriesSection.image_url} 1200w`}
+                  srcSet={getResponsiveSrcSet(categoriesSection.image_url, [480, 800, 1200])}
                   sizes="(max-width: 768px) 100vw, 1200px"
                   width={1200}
                   height={220}
@@ -1687,7 +1697,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               >
                 <img
                   src={flashSection.image_url}
-                  srcSet={`${flashSection.image_url} 1200w`}
+                  srcSet={getResponsiveSrcSet(flashSection.image_url, [480, 800, 1200])}
                   sizes="(max-width: 768px) 100vw, 1200px"
                   width={1200}
                   height={220}
@@ -1849,7 +1859,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               >
                 <img
                   src={gamesSection.image_url}
-                  srcSet={`${gamesSection.image_url} 1200w`}
+                  srcSet={getResponsiveSrcSet(gamesSection.image_url, [480, 800, 1200])}
                   sizes="(max-width: 768px) 100vw, 1200px"
                   width={1200}
                   height={220}
@@ -3539,7 +3549,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 >
                   <img
                     src={footerSection.image_url}
-                    srcSet={`${footerSection.image_url} 1200w`}
+                    srcSet={getResponsiveSrcSet(footerSection.image_url, [480, 800, 1200])}
                     sizes="(max-width: 768px) 100vw, 1200px"
                     width={1200}
                     height={160}

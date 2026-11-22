@@ -832,37 +832,44 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Giới hạn số lượng ảnh cho mỗi mục (tối đa 10 ảnh / mục)
+    // Giới hạn số lượng ảnh cho mỗi mục (tối đa 10 ảnh / mục) - Yêu cầu bắt buộc section_id (Fail-Closed)
     const sectionId = String(body.section_id || body.item_id || '').trim();
-    const safeSectionId = sectionId ? sectionId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) : 'sec';
-    if (sectionId) {
-      try {
-        // Đếm cả ảnh mới (tiền tố sec_${safeSectionId}_) và ảnh cũ (có chứa safeSectionId trong id)
-        const countRow = await env.DB.prepare(`
-          SELECT COUNT(*) as count FROM homepage_section_images 
-          WHERE id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')
-        `)
-          .bind(safeSectionId, safeSectionId)
-          .first<any>();
-        if (countRow && Number(countRow.count) >= 10) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: `Mục này đã đạt giới hạn tối đa 10 ảnh (${countRow.count}/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.`,
-            }),
-            { status: 400, headers: CORS_HEADERS }
-          );
-        }
-      } catch (err: any) {
-        console.error('[Upload Image Error] Failed to verify 10-image limit (fail-closed):', err);
+    if (!sectionId) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Yêu cầu mã định danh mục (section_id) để tải ảnh và kiểm soát hạn mức ảnh.',
+        }),
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+    const safeSectionId = sectionId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'sec';
+    try {
+      // Đếm cả 3 trường hợp: (1) Cột section_id chuẩn; (2) Tiền tố sec_${safeSectionId}_; (3) Ảnh cũ có chứa id mục
+      const countRow = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM homepage_section_images 
+        WHERE section_id = ? OR id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')
+      `)
+        .bind(sectionId, safeSectionId, safeSectionId)
+        .first<any>();
+      if (countRow && Number(countRow.count) >= 10) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: 'Không thể xác thực số lượng ảnh hiện có trong mục (Lỗi cơ sở dữ liệu). Thao tác tải ảnh bị chặn vì lý do an toàn (Fail-closed).',
+            error: `Mục này đã đạt giới hạn tối đa 10 ảnh (${countRow.count}/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.`,
           }),
-          { status: 500, headers: CORS_HEADERS }
+          { status: 400, headers: CORS_HEADERS }
         );
       }
+    } catch (err: any) {
+      console.error('[Upload Image Error] Failed to verify 10-image limit (fail-closed):', err);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Không thể xác thực số lượng ảnh hiện có trong mục (Lỗi cơ sở dữ liệu). Thao tác tải ảnh bị chặn vì lý do an toàn (Fail-closed).',
+        }),
+        { status: 500, headers: CORS_HEADERS }
+      );
     }
 
     // Kiểm tra Magic Bytes để xác thực định dạng ảnh thật (Nhóm 5)
@@ -955,9 +962,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       .prepare(`
         INSERT INTO homepage_section_images (
           id, file_name, content_type, image_base64, original_size_bytes, size_bytes,
-          width, height, is_compressed, compression_error, source, created_at, updated_at
+          width, height, is_compressed, compression_error, source, section_id, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
       `)
       .bind(
         imageId,
@@ -970,7 +977,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         imageHeight,
         isCompressed ? 1 : 0,
         compressionError || null,
-        sourceMode
+        sourceMode,
+        sectionId
       )
       .run();
 

@@ -8,6 +8,8 @@
  * - Header bất biến: Cache-Control: public, max-age=31536000, immutable
  */
 
+import { decode } from 'imagescript';
+
 interface Env {
   DB?: D1Database;
   ASSETS?: {
@@ -91,17 +93,36 @@ export const onRequestGet = async (context: {
       bytes[i] = binaryStr.charCodeAt(i);
     }
 
-    const contentType = row.content_type || (rawFile.endsWith('.webp') ? 'image/webp' : 'image/jpeg');
+    let finalBytes = bytes;
+    let finalContentType = row.content_type || (rawFile.endsWith('.webp') ? 'image/webp' : 'image/jpeg');
+
+    // Hỗ trợ tham số resize linh hoạt ?w= (vd: ?w=480, ?w=800, ?w=1200) cho responsive srcSet
+    const reqWidth = parseInt(urlObj.searchParams.get('w') || '0', 10);
+    if (reqWidth > 0 && reqWidth <= 2000) {
+      try {
+        const decoded: any = await decode(bytes);
+        if (decoded && decoded.width > reqWidth) {
+          const targetHeight = Math.max(1, Math.round((decoded.height * reqWidth) / decoded.width));
+          decoded.resize(reqWidth, targetHeight);
+          finalBytes = await decoded.encodeWebP(80);
+          finalContentType = 'image/webp';
+        }
+      } catch (resizeErr) {
+        // Fallback an toàn về ảnh gốc nếu không thể resize
+        console.warn('[Image Resize] Fallback to original image:', resizeErr);
+      }
+    }
+
     const headers = new Headers({
       ...CORS_HEADERS,
-      'Content-Type': contentType,
-      'Content-Length': len.toString(),
+      'Content-Type': finalContentType,
+      'Content-Length': finalBytes.length.toString(),
       'Cache-Control': 'public, max-age=31536000, immutable',
       'X-Image-Source': 'd1-homepage-section-images',
       'X-Image-Compressed': String(row.is_compressed || 0),
     });
 
-    const imageResponse = new Response(bytes, { status: 200, headers });
+    const imageResponse = new Response(finalBytes, { status: 200, headers });
 
     // Lưu vào Edge Cache cho các lượt tải tiếp theo
     if (cache && cacheKey && !bypassCache) {

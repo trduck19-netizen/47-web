@@ -254,7 +254,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       const data = await res.json().catch(() => null);
       if (res.ok && data?.success) {
         if (data.is_compressed) {
-          triggerToast('success', t('homepageSectionsModule.retrySuccess') || 'Đã nén lại thành công!');
+          showAdminToast('success', t('homepageSectionsModule.retrySuccess'));
           setSections((prev) =>
             prev.map((sec) => {
               if (item.isParent && sec.id === item.id) {
@@ -284,13 +284,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             })
           );
         } else {
-          triggerToast('info', data.compression_error || 'Chưa đạt chuẩn nén.');
+          showAdminToast('info', data.compression_error || 'Chưa đạt chuẩn nén.');
         }
       } else {
-        triggerToast('error', data?.error || 'Nén lại thất bại.');
+        showAdminToast('error', data?.error || 'Nén lại thất bại.');
       }
     } catch (e: any) {
-      triggerToast('error', e?.message || 'Lỗi mạng khi nén lại ảnh.');
+      showAdminToast('error', e?.message || 'Lỗi mạng khi nén lại ảnh.');
     } finally {
       setRetryingId(null);
     }
@@ -300,7 +300,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const triggerToast = useCallback(
+  const showAdminToast = useCallback(
     (type: 'success' | 'error' | 'info', title: string, message?: string) => {
       if (typeof onShowToast === 'function') {
         try {
@@ -531,9 +531,9 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   const handleResetDefaults = () => {
     const defaults = getDefaultHomepageSectionsState();
     setSections(defaults);
-    triggerToast(
+    showAdminToast(
       'info',
-      t('homepageSectionsModule.resetSuccess') || 'Đã khôi phục cài đặt mặc định.'
+      t('homepageSectionsModule.resetSuccess')
     );
   };
 
@@ -619,19 +619,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         setLastSavedTime(timeStr);
 
-        triggerToast(
+        showAdminToast(
           'success',
-          t('homepageSectionsModule.saveSuccess') || 'Đã lưu cấu hình hiển thị trang chủ!'
+          t('homepageSectionsModule.saveSuccess')
         );
       } else {
         const errMsg =
-          data?.error || t('homepageSectionsModule.saveError') || 'Lỗi lưu cấu hình hiển thị.';
-        triggerToast('error', errMsg);
+          data?.error || t('homepageSectionsModule.saveError');
+        showAdminToast('error', errMsg);
       }
     } catch {
-      triggerToast(
+      showAdminToast(
         'error',
-        t('homepageSectionsModule.saveError') || 'Lỗi kết nối máy chủ khi lưu cấu hình.'
+        t('homepageSectionsModule.saveError')
       );
     } finally {
       setSaving(false);
@@ -745,14 +745,14 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     }
 
     setEditingItem(null);
-    triggerToast('info', isEn ? 'Item details updated in local state.' : 'Đã cập nhật thông tin mục vào bảng.');
+    showAdminToast('info', isEn ? 'Item details updated in local state.' : 'Đã cập nhật thông tin mục vào bảng.');
   };
 
   // Xử lý nén ảnh phía client & tải lên (Nhóm 1 & 2)
   const handleFileSelect = async (file: File) => {
     const val = validateImageFile(file);
     if (!val.valid) {
-      triggerToast('error', val.error || 'Tệp ảnh không hợp lệ.');
+      showAdminToast('error', val.error || 'Tệp ảnh không hợp lệ.');
       return;
     }
 
@@ -800,12 +800,12 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               }
             : null
         );
-        triggerToast('success', t('homepageSectionsModule.uploadSuccess') || 'Đã tải và nén ảnh thành công!');
+        showAdminToast('success', t('homepageSectionsModule.uploadSuccess'));
       } else {
-        triggerToast('error', data?.error || t('homepageSectionsModule.uploadFailed') || 'Tải ảnh thất bại.');
+        showAdminToast('error', data?.error || t('homepageSectionsModule.uploadFailed'));
       }
     } catch (err: any) {
-      triggerToast('error', err?.message || 'Lỗi kết nối khi tải ảnh.');
+      showAdminToast('error', err?.message || 'Lỗi kết nối khi tải ảnh.');
     } finally {
       setImageUploading(false);
     }
@@ -816,7 +816,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     if (!mirrorUrlInput.trim()) return;
     const urlVal = validateImageUrl(mirrorUrlInput);
     if (!urlVal.valid) {
-      triggerToast('error', urlVal.error || 'URL ảnh không an toàn.');
+      showAdminToast('error', urlVal.error || 'URL ảnh không an toàn.');
       return;
     }
 
@@ -853,12 +853,12 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             : null
         );
         setMirrorUrlInput('');
-        triggerToast('success', t('homepageSectionsModule.mirrorSuccess') || 'Đã tải bản sao và nén WebP!');
+        showAdminToast('success', t('homepageSectionsModule.mirrorSuccess'));
       } else {
-        triggerToast('error', data?.error || t('homepageSectionsModule.mirrorFailed') || 'Lỗi tải ảnh từ link ngoài.');
+        showAdminToast('error', data?.error || t('homepageSectionsModule.mirrorFailed'));
       }
     } catch (err: any) {
-      triggerToast('error', err?.message || 'Lỗi kết nối khi tải ảnh ngoài.');
+      showAdminToast('error', err?.message || 'Lỗi kết nối khi tải ảnh ngoài.');
     } finally {
       setImageMirroring(false);
     }
@@ -894,10 +894,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         setAiUnconfigured(true);
         setAiConfigured(false);
       } else {
-        triggerToast('error', data?.error || 'Lỗi gọi dịch vụ AI.');
+        showAdminToast('error', data?.error || 'Lỗi gọi dịch vụ AI.');
       }
     } catch (err: any) {
-      triggerToast('error', err?.message || 'Lỗi mạng khi gọi AI.');
+      showAdminToast('error', err?.message || 'Lỗi mạng khi gọi AI.');
     } finally {
       setAiLoading(false);
     }
@@ -917,7 +917,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     });
     setAiSuggestOpen(false);
     setAiResult(null);
-    triggerToast('success', t('homepageSectionsModule.aiSuccess') || 'Đã áp dụng nội dung do AI gợi ý!');
+    showAdminToast('success', t('homepageSectionsModule.aiSuccess'));
   };
 
   // Xử lý tạo ảnh AI từ câu lệnh (Đợt 3/3 - Nhóm 2)
@@ -950,10 +950,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         setAiImageUnconfigured(true);
         setAiConfigured(false);
       } else {
-        triggerToast('error', data?.error || 'Lỗi tạo ảnh AI.');
+        showAdminToast('error', data?.error || 'Lỗi tạo ảnh AI.');
       }
     } catch (err: any) {
-      triggerToast('error', err?.message || 'Lỗi kết nối dịch vụ tạo ảnh AI.');
+      showAdminToast('error', err?.message || 'Lỗi kết nối dịch vụ tạo ảnh AI.');
     } finally {
       setAiImageLoading(false);
     }
@@ -1011,12 +1011,12 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               }
             : null
         );
-        triggerToast('success', t('homepageSectionsModule.uploadSuccess') || 'Đã áp dụng ảnh AI và nén WebP!');
+        showAdminToast('success', t('homepageSectionsModule.uploadSuccess'));
       } else {
-        triggerToast('error', data?.error || 'Lỗi lưu ảnh AI.');
+        showAdminToast('error', data?.error || 'Lỗi lưu ảnh AI.');
       }
     } catch (err: any) {
-      triggerToast('error', err?.message || 'Lỗi xử lý ảnh AI.');
+      showAdminToast('error', err?.message || 'Lỗi xử lý ảnh AI.');
     } finally {
       setImageUploading(false);
     }
@@ -1053,7 +1053,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   const handleCreateSubsection = () => {
     const title = newSubForm.title_vi.trim() || newSubForm.internal_name.trim();
     if (!title) {
-      triggerToast('error', isEn ? 'Please enter a title or internal name.' : 'Vui lòng nhập tiêu đề hoặc tên nội bộ.');
+      showAdminToast('error', isEn ? 'Please enter a title or internal name.' : 'Vui lòng nhập tiêu đề hoặc tên nội bộ.');
       return;
     }
 
@@ -1099,7 +1099,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     // Tự động mở rộng mục cha
     setExpandedSections((prev) => ({ ...prev, [newSubForm.parentId]: true }));
     setIsAddingSub(false);
-    triggerToast('success', isEn ? 'New subsection added!' : 'Đã thêm mục con mới vào nhóm!');
+    showAdminToast('success', isEn ? 'New subsection added!' : 'Đã thêm mục con mới vào nhóm!');
   };
 
   // Xác nhận xóa mục con
@@ -1122,7 +1122,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     );
 
     setDeletingSub(null);
-    triggerToast('info', isEn ? 'Subsection deleted.' : 'Đã xóa mục con khỏi cấu hình.');
+    showAdminToast('info', isEn ? 'Subsection deleted.' : 'Đã xóa mục con khỏi cấu hình.');
   };
 
   const handleViewStorefront = () => {
@@ -1141,23 +1141,22 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
-                  {t('homepageSectionsModule.title') || 'Tùy Chỉnh Hiển Thị Trang Chủ'}
+                  {t('homepageSectionsModule.title')}
                 </h2>
                 {hasChanges ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                    {t('homepageSectionsModule.unsavedChangesNotice') || 'Có thay đổi chưa lưu (Nhấn "Lưu Cấu Hình" để áp dụng)'}
+                    {t('homepageSectionsModule.unsavedChangesNotice')}
                   </span>
                 ) : lastSavedTime ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                    {t('homepageSectionsModule.savedStatusWithTime', { time: lastSavedTime }) || `Đã lưu lúc ${lastSavedTime}`}
+                    {t('homepageSectionsModule.savedStatusWithTime', { time: lastSavedTime })}
                   </span>
                 ) : null}
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                {t('homepageSectionsModule.subtitle') ||
-                  'Quản trị bật/tắt, sắp xếp thứ tự, đổi tên, gắn link và thêm mục con hiển thị trên trang chủ web khách theo thời gian thực.'}
+                {t('homepageSectionsModule.subtitle')}
               </p>
             </div>
           </div>
@@ -1182,7 +1181,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             className="px-3 py-1.5 text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5 text-neutral-500" />
-            <span>{t('homepageSectionsModule.resetDefaults') || 'Khôi Phục Mặc Định'}</span>
+            <span>{t('homepageSectionsModule.resetDefaults')}</span>
           </button>
 
           <button
@@ -1191,7 +1190,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             className="px-3 py-1.5 bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40 border border-primary-200 dark:border-primary-800 rounded-lg transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>{t('homepageSectionsModule.addSubsection') || 'Thêm Mục Con'}</span>
+            <span>{t('homepageSectionsModule.addSubsection')}</span>
           </button>
 
           <button
@@ -1204,7 +1203,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             }`}
           >
             <Monitor className="w-3.5 h-3.5" />
-            <span>{showPreview ? (t('homepageSectionsModule.hidePreview') || 'Đóng Xem Trước') : (t('homepageSectionsModule.togglePreview') || 'Khung Xem Trước')}</span>
+            <span>{showPreview ? (t('homepageSectionsModule.hidePreview')) : (t('homepageSectionsModule.togglePreview'))}</span>
           </button>
 
           <button
@@ -1213,7 +1212,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-300 dark:border-neutral-700 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer"
           >
             <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
-            <span>{t('homepageSectionsModule.viewStorefront') || 'Xem Trang Chủ'}</span>
+            <span>{t('homepageSectionsModule.viewStorefront')}</span>
           </button>
 
           <button
@@ -1233,8 +1232,8 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             )}
             <span>
               {saving
-                ? t('homepageSectionsModule.saving') || 'Đang Lưu...'
-                : t('homepageSectionsModule.saveChanges') || 'Lưu Cấu Hình'}
+                ? t('homepageSectionsModule.saving')
+                : t('homepageSectionsModule.saveChanges')}
             </span>
           </button>
         </div>
@@ -1244,8 +1243,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       <div className="bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/50 rounded-xl p-3 text-xs text-sky-800 dark:text-sky-300 flex items-center gap-2">
         <Info className="w-4 h-4 shrink-0 text-sky-600 dark:text-sky-400" />
         <span>
-          {t('homepageSectionsModule.rule9Notice') ||
-            'Các thay đổi sẽ phản ánh trên web khách trong vòng tối đa 2 phút.'}
+          {t('homepageSectionsModule.rule9Notice')}
         </span>
       </div>
 
@@ -1318,19 +1316,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 <tr className="text-[11px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
                   {/* Total: 14% + 28% + 26% + 12% + 20% = 100% */}
                   <th className="w-[14%] py-3 px-3 text-center">
-                    {t('homepageSectionsModule.colOrder') || 'Thứ Tự'}
+                    {t('homepageSectionsModule.colOrder')}
                   </th>
                   <th className="w-[28%] py-3 px-3 text-left">
-                    {t('homepageSectionsModule.colName') || 'Khu Vực / Thành Phần'}
+                    {t('homepageSectionsModule.colName')}
                   </th>
                   <th className="w-[26%] py-3 px-3 text-left">
                     {isEn ? 'Link / Target' : 'Liên Kết Đích'}
                   </th>
                   <th className="w-[12%] py-3 px-3 text-center">
-                    {t('homepageSectionsModule.colStatus') || 'Trạng Thái'}
+                    {t('homepageSectionsModule.colStatus')}
                   </th>
                   <th className="w-[20%] py-3 px-3 text-center">
-                    {t('homepageSectionsModule.colActions') || 'Thao Tác'}
+                    {t('homepageSectionsModule.colActions')}
                   </th>
                 </tr>
               </thead>
@@ -1375,7 +1373,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         <td className="py-2.5 px-3 text-center">
                           <div className="inline-flex items-center gap-1">
                             <span
-                              title={t('homepageSectionsModule.dragTooltip') || 'Kéo thả hoặc dùng mũi tên để đổi thứ tự'}
+                              title={t('homepageSectionsModule.dragTooltip')}
                               className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 cursor-grab active:cursor-grabbing p-0.5"
                             >
                               <GripVertical className="w-4 h-4" />
@@ -1388,7 +1386,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                 type="button"
                                 onClick={() => handleMove(idx, 'up')}
                                 disabled={isFirst}
-                                title={t('homepageSectionsModule.moveUp') || 'Chuyển lên'}
+                                title={t('homepageSectionsModule.moveUp')}
                                 className="p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
                               >
                                 <ArrowUp className="w-3 h-3" />
@@ -1397,7 +1395,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                 type="button"
                                 onClick={() => handleMove(idx, 'down')}
                                 disabled={isLast}
-                                title={t('homepageSectionsModule.moveDown') || 'Chuyển xuống'}
+                                title={t('homepageSectionsModule.moveDown')}
                                 className="p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
                               >
                                 <ArrowDown className="w-3 h-3" />
@@ -1458,8 +1456,8 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                   className="mt-1 text-[11px] font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 inline-flex items-center gap-1 cursor-pointer transition-colors"
                                   title={
                                     isExpanded
-                                      ? t('homepageSectionsModule.collapseSubsections') || 'Thu gọn mục con'
-                                      : t('homepageSectionsModule.expandSubsections') || 'Mở rộng mục con'
+                                      ? t('homepageSectionsModule.collapseSubsections')
+                                      : t('homepageSectionsModule.expandSubsections')
                                   }
                                 >
                                   {isExpanded ? (
@@ -1470,7 +1468,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                   <span>
                                     {t('homepageSectionsModule.subsectionsCount', {
                                       count: section.subsections!.length,
-                                    }) || `${section.subsections!.length} mục con`}
+                                    })}
                                   </span>
                                 </button>
                               )}
@@ -1497,7 +1495,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                             </div>
                           ) : (
                             <span className="text-neutral-400 dark:text-neutral-500 italic text-[11px]">
-                              {t('homepageSectionsModule.noLink') || 'Chưa gắn link'}
+                              {t('homepageSectionsModule.noLink')}
                             </span>
                           )}
                         </td>
@@ -1507,12 +1505,12 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                           {section.enabled ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                               <Eye className="w-3 h-3" />
-                              <span>{t('homepageSectionsModule.statusVisible') || 'Đang Hiện'}</span>
+                              <span>{t('homepageSectionsModule.statusVisible')}</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-500/10 text-neutral-500 dark:text-neutral-400 border border-neutral-500/20">
                               <EyeOff className="w-3 h-3" />
-                              <span>{t('homepageSectionsModule.statusHidden') || 'Đang Ẩn'}</span>
+                              <span>{t('homepageSectionsModule.statusHidden')}</span>
                             </span>
                           )}
                         </td>
@@ -1523,7 +1521,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                             <button
                               type="button"
                               onClick={() => handleOpenEdit(true, section)}
-                              title={t('homepageSectionsModule.editItem') || 'Chỉnh sửa mục'}
+                              title={t('homepageSectionsModule.editItem')}
                               className="p-1.5 rounded-lg text-neutral-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                             >
                               <Pencil className="w-3.5 h-3.5" />
@@ -1532,7 +1530,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                             <button
                               type="button"
                               onClick={() => handleToggle(section.id)}
-                              title={t('homepageSectionsModule.toggleVisibility') || 'Bật/Tắt hiển thị'}
+                              title={t('homepageSectionsModule.toggleVisibility')}
                               className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                                 section.enabled ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-700'
                               }`}
@@ -1557,8 +1555,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                 <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
                                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                                   <span>
-                                    {t('homepageSectionsModule.parentDisabledNotice') ||
-                                      'Mục lớn đang tắt — các mục con sẽ bị ẩn đồng thời trên web khách.'}
+                                    {t('homepageSectionsModule.parentDisabledNotice')}
                                   </span>
                                 </div>
                               )}
@@ -1590,7 +1587,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                             {t('homepageSectionsModule.parentGroupHeader', {
                                               parent: displayName,
                                               group: grpName,
-                                            }) || `Thuộc mục: ${displayName} ➔ Phân nhóm: ${grpName}`}
+                                            })}
                                           </span>
                                         </span>
                                         <div className="flex items-center gap-2">
@@ -1600,7 +1597,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                             className="text-[10px] text-primary-600 hover:text-primary-700 dark:text-primary-400 font-bold inline-flex items-center gap-0.5 cursor-pointer"
                                           >
                                             <Plus className="w-3 h-3" />
-                                            <span>{t('homepageSectionsModule.addSubsection') || 'Thêm mục con'}</span>
+                                            <span>{t('homepageSectionsModule.addSubsection')}</span>
                                           </button>
                                           <span className="text-[10px] text-neutral-400 font-normal">
                                             ({groupSubs.length} mục)
@@ -1657,7 +1654,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                 <td className="w-[14%] py-2 px-3 text-center">
                                                   <div className="inline-flex items-center gap-1">
                                                     <span
-                                                      title={t('homepageSectionsModule.dragTooltip') || 'Kéo thả hoặc dùng mũi tên để đổi thứ tự'}
+                                                      title={t('homepageSectionsModule.dragTooltip')}
                                                       className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 cursor-grab p-0.5"
                                                     >
                                                       <GripVertical className="w-3.5 h-3.5" />
@@ -1676,7 +1673,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                           )
                                                         }
                                                         disabled={isSubFirst}
-                                                        title={t('homepageSectionsModule.moveUp') || 'Chuyển lên'}
+                                                        title={t('homepageSectionsModule.moveUp')}
                                                         className="p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                                       >
                                                         <ArrowUp className="w-2.5 h-2.5" />
@@ -1691,7 +1688,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                           )
                                                         }
                                                         disabled={isSubLast}
-                                                        title={t('homepageSectionsModule.moveDown') || 'Chuyển xuống'}
+                                                        title={t('homepageSectionsModule.moveDown')}
                                                         className="p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                                       >
                                                         <ArrowDown className="w-2.5 h-2.5" />
@@ -1719,7 +1716,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                       </span>
                                                       {sub.is_custom && (
                                                         <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                                                          {t('homepageSectionsModule.customBadge') || 'Tự thêm'}
+                                                          {t('homepageSectionsModule.customBadge')}
                                                         </span>
                                                       )}
                                                       {subBadge && (
@@ -1758,7 +1755,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                     </div>
                                                   ) : (
                                                     <span className="text-neutral-400 dark:text-neutral-500 italic text-[10px]">
-                                                      {t('homepageSectionsModule.noLink') || 'Chưa gắn link'}
+                                                      {t('homepageSectionsModule.noLink')}
                                                     </span>
                                                   )}
                                                 </td>
@@ -1768,12 +1765,12 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                   {isEffectivelyEnabled ? (
                                                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                                       <Eye className="w-2.5 h-2.5" />
-                                                      <span>{t('homepageSectionsModule.statusVisible') || 'Đang Hiện'}</span>
+                                                      <span>{t('homepageSectionsModule.statusVisible')}</span>
                                                     </span>
                                                   ) : (
                                                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-neutral-500/10 text-neutral-500 dark:text-neutral-400 border border-neutral-500/20">
                                                       <EyeOff className="w-2.5 h-2.5" />
-                                                      <span>{t('homepageSectionsModule.statusHidden') || 'Đang Ẩn'}</span>
+                                                      <span>{t('homepageSectionsModule.statusHidden')}</span>
                                                     </span>
                                                   )}
                                                 </td>
@@ -1784,7 +1781,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                     <button
                                                       type="button"
                                                       onClick={() => handleOpenEdit(false, sub, section.id)}
-                                                      title={t('homepageSectionsModule.editItem') || 'Chỉnh sửa mục con'}
+                                                      title={t('homepageSectionsModule.editItem')}
                                                       className="p-1 rounded text-neutral-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                                                     >
                                                       <Pencil className="w-3 h-3" />
@@ -1794,7 +1791,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                     <button
                                                       type="button"
                                                       onClick={() => setDeletingSub({ parentId: section.id, sub })}
-                                                      title={t('homepageSectionsModule.deleteSubsection') || 'Xóa mục con'}
+                                                      title={t('homepageSectionsModule.deleteSubsection')}
                                                       className="p-1 rounded text-neutral-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                                                     >
                                                       <Trash2 className="w-3 h-3" />
@@ -1803,7 +1800,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                     <button
                                                       type="button"
                                                       onClick={() => handleSubsectionToggle(section.id, sub.id)}
-                                                      title={t('homepageSectionsModule.toggleVisibility') || 'Bật/Tắt hiển thị'}
+                                                      title={t('homepageSectionsModule.toggleVisibility')}
                                                       className={`relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                                                         sub.enabled ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-700'
                                                       }`}
@@ -1846,11 +1843,11 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 <div className="flex items-center gap-1.5">
                   <Monitor className="w-4 h-4 text-primary-500" />
                   <span className="text-xs font-bold text-neutral-900 dark:text-white">
-                    {t('homepageSectionsModule.previewTitle') || 'Xem Trước Trang Chủ Thu Nhỏ'}
+                    {t('homepageSectionsModule.previewTitle')}
                   </span>
                 </div>
                 <div className="text-[10px] text-neutral-500 dark:text-neutral-400">
-                  {t('homepageSectionsModule.previewSubtitle') || 'Mô phỏng thời gian thực theo cấu hình đang chỉnh'}
+                  {t('homepageSectionsModule.previewSubtitle')}
                 </div>
               </div>
 
@@ -1880,7 +1877,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             {/* Thân Preview Container */}
             <div className="p-3 overflow-y-auto space-y-2.5 bg-neutral-50 dark:bg-neutral-950 flex-1 text-xs">
               <div className="text-[10px] text-neutral-400 italic">
-                {t('homepageSectionsModule.previewClickNotice') || 'Bấm thử vào mục có link để kiểm tra đích đến:'}
+                {t('homepageSectionsModule.previewClickNotice')}
               </div>
 
               {sections.map((sec, sIdx) => {
@@ -1897,7 +1894,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                       className="p-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-800 bg-neutral-200/40 dark:bg-neutral-900/40 opacity-50 flex items-center justify-between text-[11px]"
                     >
                       <span className="line-through text-neutral-400">{sIdx + 1}. {sTitle}</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-300 dark:bg-neutral-800 text-neutral-500">{t('homepageSectionsModule.hiddenBadge') || (isEn ? 'HIDDEN' : 'ẨN')}</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-300 dark:bg-neutral-800 text-neutral-500">{t('homepageSectionsModule.hiddenBadge')}</span>
                     </div>
                   );
                 }
@@ -1970,7 +1967,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                     window.open(`${clientOrigin}${cleanPath}`, sub.link_target || '_blank', 'noopener,noreferrer');
                                   }
                                 } else {
-                                  triggerToast('info', `Mục "${subTitle}" chưa gắn link`);
+                                  showAdminToast('info', `Mục "${subTitle}" chưa gắn link`);
                                 }
                               }}
                               className={`px-2 py-1 rounded text-[10px] font-medium border transition flex items-center gap-1 cursor-pointer ${
@@ -2014,7 +2011,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
-                    {t('homepageSectionsModule.editModalTitle') || 'Chỉnh Sửa Thông Tin Hiển Thị & Link'}
+                    {t('homepageSectionsModule.editModalTitle')}
                   </h3>
                   <p className="text-[10px] font-mono text-neutral-400">{editingItem.id}</p>
                 </div>
@@ -2033,13 +2030,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               {/* Tên nội bộ */}
               <div>
                 <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                  {t('homepageSectionsModule.internalName') || 'Tên nội bộ (Chỉ Admin thấy)'}
+                  {t('homepageSectionsModule.internalName')}
                 </label>
                 <input
                   type="text"
                   value={editingItem.internal_name}
                   onChange={(e) => setEditingItem({ ...editingItem, internal_name: e.target.value })}
-                  placeholder={t('homepageSectionsModule.placeholderInternalName') || (isEn ? 'E.g. Campaign Banner, Quick Top-up...' : 'Ví dụ: Banner Chiến Dịch Tết, Lối Tắt Nạp Tiền...')}
+                  placeholder={t('homepageSectionsModule.placeholderInternalName')}
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
@@ -2109,7 +2106,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                             <span className="text-neutral-400">Title (EN):</span> <b className="text-neutral-800 dark:text-neutral-100">{aiResult.title_en}</b>
                           </div>
                           <div className="sm:col-span-2">
-                            <span className="text-neutral-400">{t('homepageSectionsModule.aiDescViLabel') || (isEn ? 'Desc (VI):' : 'Mô tả (VI):')}</span> <span className="text-neutral-700 dark:text-neutral-300">{aiResult.description_vi}</span>
+                            <span className="text-neutral-400">{t('homepageSectionsModule.aiDescViLabel')}</span> <span className="text-neutral-700 dark:text-neutral-300">{aiResult.description_vi}</span>
                           </div>
                           <div className="sm:col-span-2">
                             <span className="text-neutral-400">Desc (EN):</span> <span className="text-neutral-700 dark:text-neutral-300">{aiResult.description_en}</span>
@@ -2147,19 +2144,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.titleVi') || 'Tiêu đề Tiếng Việt (Khách thấy)'}
+                    {t('homepageSectionsModule.titleVi')}
                   </label>
                   <input
                     type="text"
                     value={editingItem.title_vi}
                     onChange={(e) => setEditingItem({ ...editingItem, title_vi: e.target.value })}
-                    placeholder={t('homepageSectionsModule.placeholderTitleVi') || (isEn ? 'Display title in Vietnamese' : 'Tiêu đề hiển thị tiếng Việt')}
+                    placeholder={t('homepageSectionsModule.placeholderTitleVi')}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.titleEn') || 'Tiêu đề Tiếng Anh (Khách thấy)'}
+                    {t('homepageSectionsModule.titleEn')}
                   </label>
                   <input
                     type="text"
@@ -2175,19 +2172,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.descriptionVi') || 'Mô tả ngắn Tiếng Việt'}
+                    {t('homepageSectionsModule.descriptionVi')}
                   </label>
                   <textarea
                     rows={2}
                     value={editingItem.description_vi}
                     onChange={(e) => setEditingItem({ ...editingItem, description_vi: e.target.value })}
-                    placeholder={t('homepageSectionsModule.placeholderDescVi') || (isEn ? '1-sentence description...' : 'Mô tả 1 câu về mục này...')}
+                    placeholder={t('homepageSectionsModule.placeholderDescVi')}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.descriptionEn') || 'Mô tả ngắn Tiếng Anh'}
+                    {t('homepageSectionsModule.descriptionEn')}
                   </label>
                   <textarea
                     rows={2}
@@ -2203,19 +2200,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.badgeVi') || 'Huy hiệu Tiếng Việt (vd: Mới, Hot, -50%)'}
+                    {t('homepageSectionsModule.badgeVi')}
                   </label>
                   <input
                     type="text"
                     value={editingItem.badge_vi}
                     onChange={(e) => setEditingItem({ ...editingItem, badge_vi: e.target.value })}
-                    placeholder={t('homepageSectionsModule.placeholderBadge') || 'HOT, NEW, -30%...'}
+                    placeholder={t('homepageSectionsModule.placeholderBadge')}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.badgeEn') || 'Huy hiệu Tiếng Anh (vd: New, Hot, -50%)'}
+                    {t('homepageSectionsModule.badgeEn')}
                   </label>
                   <input
                     type="text"
@@ -2231,7 +2228,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-3">
                 <div className="font-bold text-neutral-900 dark:text-white flex items-center gap-1.5 text-xs">
                   <LinkIcon className="w-3.5 h-3.5 text-primary-500" />
-                  <span>{t('homepageSectionsModule.linkType') || 'Cấu hình liên kết điều hướng'}</span>
+                  <span>{t('homepageSectionsModule.linkType')}</span>
                 </div>
 
                 {/* Chọn loại link */}
@@ -2275,14 +2272,14 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 {editingItem.link_type === 'system' ? (
                   <div>
                     <label className="block text-[11px] font-medium text-neutral-600 dark:text-neutral-400 mb-1">
-                      {t('homepageSectionsModule.selectSystemPage') || 'Chọn trang hệ thống có sẵn:'}
+                      {t('homepageSectionsModule.selectSystemPage')}
                     </label>
                     <select
                       value={editingItem.link_url}
                       onChange={(e) => setEditingItem({ ...editingItem, link_url: e.target.value })}
                       className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white text-xs focus:outline-none"
                     >
-                      <option value="">-- {t('homepageSectionsModule.noLink') || 'Chưa gắn link'} --</option>
+                      <option value="">-- {t('homepageSectionsModule.noLink')} --</option>
                       {SYSTEM_PAGE_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {isEn ? opt.labelEn : opt.labelVi} ({opt.value})
@@ -2322,7 +2319,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 {/* Cách mở liên kết Target */}
                 <div className="flex items-center justify-between pt-1 text-xs">
                   <span className="text-neutral-600 dark:text-neutral-400 font-medium">
-                    {t('homepageSectionsModule.linkTarget') || 'Mở liên kết trong:'}
+                    {t('homepageSectionsModule.linkTarget')}
                   </span>
                   <div className="flex items-center gap-2">
                     <label className="inline-flex items-center gap-1 cursor-pointer">
@@ -2333,7 +2330,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         onChange={() => setEditingItem({ ...editingItem, link_target: '_self' })}
                         className="text-primary-600"
                       />
-                      <span>{t('homepageSectionsModule.targetSelfOption') || (isEn ? 'Same tab (_self)' : 'Cùng tab (_self)')}</span>
+                      <span>{t('homepageSectionsModule.targetSelfOption')}</span>
                     </label>
                     <label className="inline-flex items-center gap-1 cursor-pointer">
                       <input
@@ -2343,7 +2340,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         onChange={() => setEditingItem({ ...editingItem, link_target: '_blank' })}
                         className="text-primary-600"
                       />
-                      <span>{t('homepageSectionsModule.targetBlankOption') || (isEn ? 'New tab (_blank)' : 'Tab mới (_blank)')}</span>
+                      <span>{t('homepageSectionsModule.targetBlankOption')}</span>
                     </label>
                   </div>
                 </div>
@@ -2427,7 +2424,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                       type="text"
                       value={editingItem.image_alt_vi || ''}
                       onChange={(e) => setEditingItem({ ...editingItem, image_alt_vi: e.target.value })}
-                      placeholder={t('homepageSectionsModule.placeholderAltVi') || (isEn ? 'Image description for accessibility / SEO...' : 'Mô tả ảnh cho khách khiếm thị / SEO...')}
+                      placeholder={t('homepageSectionsModule.placeholderAltVi')}
                       className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs focus:outline-none"
                     />
                   </div>
@@ -2544,7 +2541,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                           type="text"
                           value={mirrorUrlInput}
                           onChange={(e) => setMirrorUrlInput(e.target.value)}
-                          placeholder={t('homepageSectionsModule.placeholderMirrorUrl') || 'https://images.unsplash.com/... (JPG/PNG/WebP)'}
+                          placeholder={t('homepageSectionsModule.placeholderMirrorUrl')}
                           className="flex-1 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-neutral-900 dark:text-white font-mono focus:outline-none"
                         />
                         <button
@@ -2671,14 +2668,14 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 onClick={() => setEditingItem(null)}
                 className="px-3.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-medium transition cursor-pointer"
               >
-                {t('homepageSectionsModule.cancel') || 'Hủy bỏ'}
+                {t('homepageSectionsModule.cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleSaveEdit}
                 className="px-4 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-bold transition shadow-sm cursor-pointer"
               >
-                {t('homepageSectionsModule.saveItem') || 'Cập nhật mục'}
+                {t('homepageSectionsModule.saveItem')}
               </button>
             </div>
           </div>
@@ -2697,9 +2694,9 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
-                    {t('homepageSectionsModule.addSubsectionModalTitle') || 'Thêm Mục Con Mới'}
+                    {t('homepageSectionsModule.addSubsectionModalTitle')}
                   </h3>
-                  <p className="text-[10px] text-neutral-500">{t('homepageSectionsModule.customSubsectionDesc') || (isEn ? 'Create custom subsection appearing on homepage storefront' : 'Tạo mục con tùy chỉnh xuất hiện trên giao diện trang chủ')}</p>
+                  <p className="text-[10px] text-neutral-500">{t('homepageSectionsModule.customSubsectionDesc')}</p>
                 </div>
               </div>
               <button
@@ -2716,7 +2713,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               {/* Chọn mục cha */}
               <div>
                 <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                  {t('homepageSectionsModule.parentSection') || 'Mục cha'}
+                  {t('homepageSectionsModule.parentSection')}
                 </label>
                 <select
                   value={newSubForm.parentId}
@@ -2740,13 +2737,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               {/* Tên nội bộ */}
               <div>
                 <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                  {t('homepageSectionsModule.internalName') || 'Tên nội bộ (Chỉ Admin thấy)'}
+                  {t('homepageSectionsModule.internalName')}
                 </label>
                 <input
                   type="text"
                   value={newSubForm.internal_name}
                   onChange={(e) => setNewSubForm({ ...newSubForm, internal_name: e.target.value })}
-                  placeholder={t('homepageSectionsModule.placeholderSubInternalName') || (isEn ? 'E.g. Zalo support shortcut...' : 'Ví dụ: Lối tắt hỗ trợ Zalo, Nút nạp ví nhanh...')}
+                  placeholder={t('homepageSectionsModule.placeholderSubInternalName')}
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none"
                 />
               </div>
@@ -2755,19 +2752,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.titleVi') || 'Tiêu đề Tiếng Việt (Khách thấy)'} *
+                    {t('homepageSectionsModule.titleVi')} *
                   </label>
                   <input
                     type="text"
                     value={newSubForm.title_vi}
                     onChange={(e) => setNewSubForm({ ...newSubForm, title_vi: e.target.value })}
-                    placeholder={t('homepageSectionsModule.placeholderSubTitleVi') || (isEn ? 'Display name' : 'Tên hiển thị khách thấy')}
+                    placeholder={t('homepageSectionsModule.placeholderSubTitleVi')}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.titleEn') || 'Tiêu đề Tiếng Anh (Khách thấy)'}
+                    {t('homepageSectionsModule.titleEn')}
                   </label>
                   <input
                     type="text"
@@ -2783,19 +2780,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.badgeVi') || 'Huy hiệu Tiếng Việt'}
+                    {t('homepageSectionsModule.badgeVi')}
                   </label>
                   <input
                     type="text"
                     value={newSubForm.badge_vi}
                     onChange={(e) => setNewSubForm({ ...newSubForm, badge_vi: e.target.value })}
-                    placeholder={t('homepageSectionsModule.placeholderSubBadge') || 'HOT, NEW...'}
+                    placeholder={t('homepageSectionsModule.placeholderSubBadge')}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    {t('homepageSectionsModule.badgeEn') || 'Huy hiệu Tiếng Anh'}
+                    {t('homepageSectionsModule.badgeEn')}
                   </label>
                   <input
                     type="text"
@@ -2811,7 +2808,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-3">
                 <div className="font-bold text-neutral-900 dark:text-white flex items-center gap-1.5 text-xs">
                   <LinkIcon className="w-3.5 h-3.5 text-primary-500" />
-                  <span>{t('homepageSectionsModule.linkType') || 'Cấu hình liên kết điều hướng'}</span>
+                  <span>{t('homepageSectionsModule.linkType')}</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -2857,7 +2854,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                       onChange={(e) => setNewSubForm({ ...newSubForm, link_url: e.target.value })}
                       className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white text-xs focus:outline-none"
                     >
-                      <option value="">-- {t('homepageSectionsModule.selectSystemPage') || 'Chọn trang hệ thống có sẵn'} --</option>
+                      <option value="">-- {t('homepageSectionsModule.selectSystemPage')} --</option>
                       {SYSTEM_PAGE_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {isEn ? opt.labelEn : opt.labelVi} ({opt.value})
@@ -2878,7 +2875,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 )}
 
                 <div className="flex items-center justify-between pt-1 text-xs">
-                  <span className="text-neutral-600 dark:text-neutral-400 font-medium">{t('homepageSectionsModule.linkTargetLabel') || (isEn ? 'Open link in:' : 'Mở liên kết trong:')}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400 font-medium">{t('homepageSectionsModule.linkTargetLabel')}</span>
                   <div className="flex items-center gap-2">
                     <label className="inline-flex items-center gap-1 cursor-pointer">
                       <input
@@ -2888,7 +2885,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         onChange={() => setNewSubForm({ ...newSubForm, link_target: '_self' })}
                         className="text-primary-600"
                       />
-                      <span>{t('homepageSectionsModule.targetSelfOption') || (isEn ? 'Same tab (_self)' : 'Cùng tab (_self)')}</span>
+                      <span>{t('homepageSectionsModule.targetSelfOption')}</span>
                     </label>
                     <label className="inline-flex items-center gap-1 cursor-pointer">
                       <input
@@ -2898,7 +2895,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         onChange={() => setNewSubForm({ ...newSubForm, link_target: '_blank' })}
                         className="text-primary-600"
                       />
-                      <span>{t('homepageSectionsModule.targetBlankOption') || (isEn ? 'New tab (_blank)' : 'Tab mới (_blank)')}</span>
+                      <span>{t('homepageSectionsModule.targetBlankOption')}</span>
                     </label>
                   </div>
                 </div>
@@ -2912,14 +2909,14 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 onClick={() => setIsAddingSub(false)}
                 className="px-3.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-medium transition cursor-pointer"
               >
-                {t('homepageSectionsModule.cancel') || 'Hủy bỏ'}
+                {t('homepageSectionsModule.cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleCreateSubsection}
                 className="px-4 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-bold transition shadow-sm cursor-pointer"
               >
-                {t('homepageSectionsModule.createSubsection') || 'Tạo mục con'}
+                {t('homepageSectionsModule.createSubsection')}
               </button>
             </div>
           </div>
@@ -2936,12 +2933,12 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               </div>
               <div>
                 <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
-                  {t('homepageSectionsModule.confirmDeleteTitle') || 'Xác Nhận Xóa Mục Con'}
+                  {t('homepageSectionsModule.confirmDeleteTitle')}
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">
                   {t('homepageSectionsModule.confirmDeleteMessage', {
                     name: deletingSub.sub.title_vi || deletingSub.sub.internal_name || deletingSub.sub.nameVi || deletingSub.sub.id,
-                  }) || `Bạn có chắc chắn muốn xóa mục con "${deletingSub.sub.title_vi || deletingSub.sub.nameVi || deletingSub.sub.id}" khỏi cấu hình?`}
+                  })}
                 </p>
               </div>
             </div>
@@ -2956,14 +2953,14 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 onClick={() => setDeletingSub(null)}
                 className="px-3.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium cursor-pointer"
               >
-                {t('homepageSectionsModule.cancel') || 'Hủy bỏ'}
+                {t('homepageSectionsModule.cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDelete}
                 className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
               >
-                {t('homepageSectionsModule.confirm') || 'Xác nhận xóa'}
+                {t('homepageSectionsModule.confirm')}
               </button>
             </div>
           </div>

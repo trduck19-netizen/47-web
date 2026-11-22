@@ -10,6 +10,32 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-314: Cửa Sổ TOCTOU (Time-of-Check to Time-of-Use) Trong Cloudflare Workers & Giới Hạn Tự Nhiên Khi Kiểm Tra DNS Over HTTPS (DoH) Trước Khi Fetch URL Ngoài
+- **Bản chất kỹ thuật & Giới hạn nền tảng (Known Platform Limitation)**:
+  - Khi tải ảnh từ link ngoài (Mirror URL), ứng dụng giải quyết bài toán chống tấn công SSRF / DNS Rebinding bằng cách gọi Cloudflare DNS-over-HTTPS (`https://cloudflare-dns.com/dns-query`) để thẩm định trước các địa chỉ IP phân giải được (cả bản ghi A và AAAA).
+  - Tuy nhiên, trong môi trường serverless Cloudflare Workers, hàm chuẩn `fetch(url)` của Edge runtime V8 tự động thực hiện tầng DNS lookup riêng khi khởi tạo kết nối TLS/HTTP và không cung cấp API socket cấp thấp để ép buộc `fetch` tới địa chỉ IP cụ thể đã phân giải trước.
+  - Do đó, luôn tồn tại một cửa sổ thời gian TOCTOU (khoảng 50–150ms) giữa thời điểm kiểm tra DNS (Check) và thời điểm thực thi `fetch()` (Use). Kẻ tấn công có máy chủ DNS tùy biến có thể thay đổi bản ghi từ IP công khai sang IP nội bộ (ví dụ: `127.0.0.1` hoặc `::1`) ngay trong tích tắc này.
+  - Đây là **giới hạn kiến trúc đã biết** của toàn bộ hệ sinh thái Serverless Edge Worker (không phải lỗi mã nguồn chưa sửa).
+- **Hệ thống phòng vệ đa tầng giảm thiểu rủi ro (Mitigation Stack)**:
+  1. *Timeout cực ngắn*: AbortSignal timeout 3.5s cho bước DoH, 4s cho HEAD probe, 8s cho GET tải ảnh.
+  2. *Thẩm định kép A + AAAA + CNAME recursion*: Đệ quy theo dõi tối đa 3 hops CNAME, kiểm tra toàn bộ IPv4 và IPv6 thuộc dải private/loopback/link-local/metadata/documentation.
+  3. *Kiểm tra HEAD probe an toàn*: Kiểm tra trước `Content-Type` phải là `image/*` và `Content-Length` không quá 10MB trước khi GET.
+  4. *Kiểm định Magic Bytes nhị phân*: Sau khi tải về, kiểm tra trực tiếp magic bytes của mảng byte thật (chỉ nhận JPEG, PNG, WebP, GIF, AVIF; chặn 100% SVG, HTML và file thực thi).
+  5. *Nén lại WebP độc lập*: Mọi ảnh tải về đều được giải mã và tái mã hóa thành WebP mới hoàn toàn qua ImageScript, triệt tiêu mọi payload mã độc nhúng trong metadata ảnh.
+
+### ISSUE-315: Bảng Phân Loại Toàn Bộ 3.232 Lỗi Chuỗi Tiếng Việt Ghi Cứng Toàn Sàn (i18n Backlog Audit)
+- **Bối cảnh & Nguyên nhân gốc rễ**:
+  - Khi chạy máy quét tự động ở chế độ mở rộng toàn sàn (`node scripts/check-hardcoded-i18n.cjs --all`), phát hiện tổng cộng **3.232 lỗi** trên **92 file** (sau khi đã di chuyển thành công 3 component: `ErrorBoundary.tsx`, `Toast.tsx`, `MobileBottomNav.tsx`).
+  - *Đính chính nguyên nhân tăng số lỗi:* Mức tăng từ 1.222 lỗi (ở các lần kiểm trước) lên 3.236 lỗi đến từ việc phát triển mở rộng tính năng mới và thêm chuỗi cứng trong mã nguồn theo thời gian, hoàn toàn không phải do thay đổi phạm vi quét (script `check-hardcoded-i18n.cjs` có cấu hình `ALL_SCAN_PATHS` không đổi).
+- **Bảng phân loại chi tiết theo cụm tính năng**:
+
+| STT | Cụm tính năng | Số lỗi | Số file | Top Module vi phạm nhiều nhất | Kế hoạch xử lý |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| 1 | **Admin Modules** (Quản Trị Chuyên Sâu: `src/admin/modules/`) | **2.153** | 28 | `CrawlerModule.tsx` (255), `NewsModule.tsx` (188), `MarketingModule.tsx` (171), `PrivateCodesModule.tsx` (147), `CodeInventoryModule.tsx` (128), `UpcomingGamesSection.tsx` (113) | Ưu tiên đợt 1: Trích xuất các module nghiệp vụ cốt lõi sang `vi.json`/`en.json`. |
+| 2 | **Client Components** (Khách & Modals Mua Hàng: `src/components/`, `src/App.tsx`) | **925** | 53 | `UserProfileModal.tsx` (69), `GiveawaysView.tsx` (67), `ProductCheckoutModal.tsx` (67), `ProductDetailModal.tsx` (48), `MyReceivedCodesModal.tsx` (44) | Ưu tiên đợt 2: Trích xuất chuỗi trong các modal mua hàng, thanh toán và giỏ hàng để phục vụ người mua quốc tế. |
+| 3 | **Admin Components** (Widgets & Modals Phụ: `src/admin/components/`, `src/admin/AdminApp.tsx`) | **154** | 11 | `UniversalTemplateModal.tsx` (46), `QuickFomoAdjustModal.tsx` (31), `LuckyWheelAdminManager.tsx` (20), `TemporaryAuditTokenManager.tsx` (17), `ProductGalleryUpload.tsx` (10) | Ưu tiên đợt 3: Trích xuất các hộp thoại xác nhận và thanh điều hướng quản trị. |
+| **Tổng** | **Toàn sàn (3 Cụm)** | **3.232** | **92** | *(Giảm 4 lỗi và 3 files so với mức đỉnh 3.236 lỗi / 95 files)* | |
+
 ### ISSUE-313: Cạm Bẫy Phân Tâm Bởi Tệp Đính Kèm Cũ Sau Nén Ngữ Cảnh Dẫn Đến Trả Lời Lạc Đề & Không Bám Sát Yêu Cầu Hiện Tại
 - **Triệu chứng & Rủi ro**:
   - Khi ngữ cảnh hội thoại vượt quá giới hạn và kích hoạt tóm tắt/nén ngữ cảnh (context compaction), nền tảng tự động mang theo tệp hình ảnh đính kèm từ quá khứ (ví dụ: ảnh chụp màn hình lỗi đăng nhập cũ từ hôm trước).
