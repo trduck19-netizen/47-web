@@ -1015,6 +1015,20 @@
         "name": "Thanh Sắp Xếp (Mới nhất / Bán chạy)",
         "description": "Cụm nút chuyển đổi thứ tự sắp xếp sản phẩm theo Mới nhất hoặc Bán chạy nhất."
       }
-    }
+    },
+    "itemUpdated": "Đã cập nhật thông tin mục vào bảng.",
+    "validationTitleRequired": "Vui lòng nhập tiêu đề hoặc tên nội bộ.",
+    "subAdded": "Đã thêm mục con mới vào nhóm!",
+    "subDeleted": "Đã xóa mục con khỏi cấu hình.",
+    "itemHasNoLink": "Mục \"{title}\" chưa gắn link"
+  },
+  "errorBoundary": {
+    "title": "Đã xảy ra sự cố khi tải phân hệ này",
+    "desc": "Có lỗi phát sinh trong quá trình kết xuất giao diện.",
+    "retry": "Thử lại",
+    "reload": "Tải lại trang"
+  },
+  "toast": {
+    "closeNotification": "Đóng thông báo"
   }
 }

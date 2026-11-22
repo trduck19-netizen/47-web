@@ -745,7 +745,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     }
 
     setEditingItem(null);
-    showAdminToast('info', isEn ? 'Item details updated in local state.' : 'Đã cập nhật thông tin mục vào bảng.');
+    showAdminToast('info', t('homepageSectionsModule.itemUpdated'));
   };
 
   // Xử lý nén ảnh phía client & tải lên (Nhóm 1 & 2)
@@ -1053,7 +1053,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   const handleCreateSubsection = () => {
     const title = newSubForm.title_vi.trim() || newSubForm.internal_name.trim();
     if (!title) {
-      showAdminToast('error', isEn ? 'Please enter a title or internal name.' : 'Vui lòng nhập tiêu đề hoặc tên nội bộ.');
+      showAdminToast('error', t('homepageSectionsModule.validationTitleRequired'));
       return;
     }
 
@@ -1099,7 +1099,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     // Tự động mở rộng mục cha
     setExpandedSections((prev) => ({ ...prev, [newSubForm.parentId]: true }));
     setIsAddingSub(false);
-    showAdminToast('success', isEn ? 'New subsection added!' : 'Đã thêm mục con mới vào nhóm!');
+    showAdminToast('success', t('homepageSectionsModule.subAdded'));
   };
 
   // Xác nhận xóa mục con
@@ -1122,7 +1122,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     );
 
     setDeletingSub(null);
-    showAdminToast('info', isEn ? 'Subsection deleted.' : 'Đã xóa mục con khỏi cấu hình.');
+    showAdminToast('info', t('homepageSectionsModule.subDeleted'));
   };
 
   const handleViewStorefront = () => {
@@ -1339,12 +1339,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   const displayName =
                     customTitle ||
                     section.internal_name ||
-                    t(`homepageSectionsModule.sections.${section.id}.name`) ||
                     (isEn ? (section.nameEn || reg?.nameEn) : (section.nameVi || reg?.nameVi)) ||
                     section.id;
                   const displayDesc =
                     (isEn ? section.description_en : section.description_vi) ||
-                    t(`homepageSectionsModule.sections.${section.id}.description`) ||
                     (isEn ? (section.descriptionEn || reg?.descriptionEn) : (section.descriptionVi || reg?.descriptionVi)) ||
                     '';
                   const badge = isEn ? section.badge_en : section.badge_vi;
@@ -1465,7 +1463,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                   ) : (
                                     <ChevronRight className="w-3.5 h-3.5 text-primary-500" />
                                   )}
-                                  <span>
+                                    <span>
                                     {t('homepageSectionsModule.subsectionsCount', {
                                       count: section.subsections!.length,
                                     })}
@@ -1570,9 +1568,9 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                     (s) => s.group === grpKey
                                   );
                                   const grpName =
-                                    t(`homepageSectionsModule.groups.${grpKey}`) ||
-                                    groupSubs[0]?.groupNameVi ||
-                                    grpKey;
+                                    (isEn
+                                      ? groupSubs[0]?.groupNameEn || grpKey
+                                      : groupSubs[0]?.groupNameVi || grpKey);
 
                                   return (
                                     <div
@@ -1615,7 +1613,6 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                             const subName =
                                               customSubTitle ||
                                               sub.internal_name ||
-                                              t(`homepageSectionsModule.subsections.${sub.id}.name`) ||
                                               (isEn
                                                 ? sub.nameEn || subReg?.nameEn
                                                 : sub.nameVi || subReg?.nameVi) ||
@@ -1967,7 +1964,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                     window.open(`${clientOrigin}${cleanPath}`, sub.link_target || '_blank', 'noopener,noreferrer');
                                   }
                                 } else {
-                                  showAdminToast('info', `Mục "${subTitle}" chưa gắn link`);
+                                  showAdminToast('info', t('homepageSectionsModule.itemHasNoLink', { title: subTitle }));
                                 }
                               }}
                               className={`px-2 py-1 rounded text-[10px] font-medium border transition flex items-center gap-1 cursor-pointer ${

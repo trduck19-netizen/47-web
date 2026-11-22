@@ -1014,6 +1014,20 @@
         "name": "Sorting Bar (Newest / Best Selling)",
         "description": "Toggle controls for sorting products by Newest arrival or Best Selling."
       }
-    }
+    },
+    "itemUpdated": "Item details updated in local state.",
+    "validationTitleRequired": "Please enter a title or internal name.",
+    "subAdded": "New subsection added to group!",
+    "subDeleted": "Subsection deleted from configuration.",
+    "itemHasNoLink": "Item \"{title}\" has no link attached"
+  },
+  "errorBoundary": {
+    "title": "An issue occurred while loading this section",
+    "desc": "An error occurred during UI rendering.",
+    "retry": "Try Again",
+    "reload": "Reload Page"
+  },
+  "toast": {
+    "closeNotification": "Close notification"
   }
 }

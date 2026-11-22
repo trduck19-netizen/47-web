@@ -425,3 +425,23 @@ export const useLanguage = (): LanguageContextType => {
   }
   return context;
 };
+
+/**
+ * Hàm dịch tĩnh tra cứu từ điển trực tiếp cho non-hook contexts (như React Class Component ErrorBoundary)
+ */
+export function tStatic(key: string, lang?: string, params?: Record<string, any>): string {
+  const currentLang =
+    lang ||
+    (typeof document !== 'undefined' && document.documentElement.lang) ||
+    detectInitialLanguage();
+  const activeDict = dictionaries[currentLang] || dictionaries.vi;
+  let val = getNestedValue(activeDict, key);
+  if (!val && currentLang !== 'vi') {
+    val = getNestedValue(dictionaries.vi, key);
+  }
+  if (!val) {
+    val = key.split('.').pop() || key;
+  }
+  return interpolate(val, params);
+}
+

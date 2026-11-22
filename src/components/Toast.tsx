@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface ToastMessage {
   id: string;
@@ -20,10 +21,10 @@ const ToastItem: React.FC<{
   toast: ToastMessage;
   onDismiss: (id: string) => void;
 }> = ({ toast, onDismiss }) => {
+  const { t } = useLanguage();
   const duration = toast.duration ?? (toast.type === 'error' ? 3500 : 2500);
   const [isHovered, setIsHovered] = useState(false);
   const timerRef = useRef<any>(null);
-  const isEn = typeof document !== 'undefined' && (document.documentElement.lang === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en')));
 
   useEffect(() => {
     if (duration <= 0) return;
@@ -75,7 +76,7 @@ const ToastItem: React.FC<{
           onDismiss(toast.id);
         }}
         className="text-slate-400 hover:text-white p-0.5 rounded-md transition-colors cursor-pointer shrink-0 ml-1 opacity-70 group-hover:opacity-100"
-        aria-label={isEn ? "Close notification" : "Đóng thông báo"}
+        aria-label={t('toast.closeNotification')}
       >
         <X className="w-3.5 h-3.5" />
       </button>

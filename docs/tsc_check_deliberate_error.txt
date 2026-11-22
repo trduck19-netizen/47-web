@@ -1,4 +1,4 @@
-=== TSC HOMEPAGE DELIBERATE ERROR PROOF: FAIL (EXIT 1) ===
+=== TSC HOMEPAGE DELIBERATE ERROR PROOF: FAIL (EXIT 2) ===
 Timestamp: 2026-11-22T13:41:54.098Z
 Command: npx tsc -p tsconfig.homepage.json --noEmit
 Exit Code: 2

@@ -23,18 +23,33 @@
   4. *Kiểm định Magic Bytes nhị phân*: Sau khi tải về, kiểm tra trực tiếp magic bytes của mảng byte thật (chỉ nhận JPEG, PNG, WebP, GIF, AVIF; chặn 100% SVG, HTML và file thực thi).
   5. *Nén lại WebP độc lập*: Mọi ảnh tải về đều được giải mã và tái mã hóa thành WebP mới hoàn toàn qua ImageScript, triệt tiêu mọi payload mã độc nhúng trong metadata ảnh.
 
-### ISSUE-315: Bảng Phân Loại Toàn Bộ 3.232 Lỗi Chuỗi Tiếng Việt Ghi Cứng Toàn Sàn (i18n Backlog Audit)
+### ISSUE-315: Bảng Phân Loại Toàn Bộ 3.232 Lỗi Chuỗi Tiếng Việt Ghi Cứng Toàn Sàn (i18n Backlog Audit) & Kế Hoạch Xử Lý Từng Cụm
 - **Bối cảnh & Nguyên nhân gốc rễ**:
   - Khi chạy máy quét tự động ở chế độ mở rộng toàn sàn (`node scripts/check-hardcoded-i18n.cjs --all`), phát hiện tổng cộng **3.232 lỗi** trên **92 file** (sau khi đã di chuyển thành công 3 component: `ErrorBoundary.tsx`, `Toast.tsx`, `MobileBottomNav.tsx`).
   - *Đính chính nguyên nhân tăng số lỗi:* Mức tăng từ 1.222 lỗi (ở các lần kiểm trước) lên 3.236 lỗi đến từ việc phát triển mở rộng tính năng mới và thêm chuỗi cứng trong mã nguồn theo thời gian, hoàn toàn không phải do thay đổi phạm vi quét (script `check-hardcoded-i18n.cjs` có cấu hình `ALL_SCAN_PATHS` không đổi).
+  - *Làm rõ cặp số 86/82 về chuỗi fallback:* Trong báo cáo kiểm đếm trước, số liệu 82 là số khóa từ điển duy nhất (distinct keys) có fallback, trong khi 86 là tổng số lần xuất hiện mẫu biểu thức fallback (total pattern occurrences, do 4 khóa lặp lại 2 lần), cộng thêm 14 toán tử ba ngôi (`isEn ? ... : ...`) đưa tổng số biểu thức dự phòng lên đúng 100 fallbacks.
 - **Bảng phân loại chi tiết theo cụm tính năng**:
 
-| STT | Cụm tính năng | Số lỗi | Số file | Top Module vi phạm nhiều nhất | Kế hoạch xử lý |
+| STT | Cụm tính năng | Số lỗi | Số file | Top Module vi phạm nhiều nhất | Kế hoạch xử lý & Mốc thời gian |
 | :---: | :--- | :---: | :---: | :--- | :--- |
-| 1 | **Admin Modules** (Quản Trị Chuyên Sâu: `src/admin/modules/`) | **2.153** | 28 | `CrawlerModule.tsx` (255), `NewsModule.tsx` (188), `MarketingModule.tsx` (171), `PrivateCodesModule.tsx` (147), `CodeInventoryModule.tsx` (128), `UpcomingGamesSection.tsx` (113) | Ưu tiên đợt 1: Trích xuất các module nghiệp vụ cốt lõi sang `vi.json`/`en.json`. |
-| 2 | **Client Components** (Khách & Modals Mua Hàng: `src/components/`, `src/App.tsx`) | **925** | 53 | `UserProfileModal.tsx` (69), `GiveawaysView.tsx` (67), `ProductCheckoutModal.tsx` (67), `ProductDetailModal.tsx` (48), `MyReceivedCodesModal.tsx` (44) | Ưu tiên đợt 2: Trích xuất chuỗi trong các modal mua hàng, thanh toán và giỏ hàng để phục vụ người mua quốc tế. |
-| 3 | **Admin Components** (Widgets & Modals Phụ: `src/admin/components/`, `src/admin/AdminApp.tsx`) | **154** | 11 | `UniversalTemplateModal.tsx` (46), `QuickFomoAdjustModal.tsx` (31), `LuckyWheelAdminManager.tsx` (20), `TemporaryAuditTokenManager.tsx` (17), `ProductGalleryUpload.tsx` (10) | Ưu tiên đợt 3: Trích xuất các hộp thoại xác nhận và thanh điều hướng quản trị. |
-| **Tổng** | **Toàn sàn (3 Cụm)** | **3.232** | **92** | *(Giảm 4 lỗi và 3 files so với mức đỉnh 3.236 lỗi / 95 files)* | |
+| 1 | **Admin Modules** (Quản Trị Chuyên Sâu: `src/admin/modules/`) | **2.153** | 28 | `CrawlerModule.tsx` (255), `NewsModule.tsx` (188), `MarketingModule.tsx` (171), `PrivateCodesModule.tsx` (147), `CodeInventoryModule.tsx` (128), `UpcomingGamesSection.tsx` (113) | **Đợt 10 (23/11/2026)**: Trích xuất toàn bộ chuỗi của Top 3 modules (`CrawlerModule`, `NewsModule`, `MarketingModule` - tổng 614 chuỗi) sang `vi.json`/`en.json`, thay bằng hook `useLanguage()`, bảo đảm Rule 9 không tràn khung. |
+| 2 | **Client Components** (Khách & Modals Mua Hàng: `src/components/`, `src/App.tsx`) | **925** | 53 | `UserProfileModal.tsx` (69), `GiveawaysView.tsx` (67), `ProductCheckoutModal.tsx` (67), `ProductDetailModal.tsx` (48), `MyReceivedCodesModal.tsx` (44) | **Đợt 11 (24/11/2026)**: Trích xuất chuỗi của Top 3 modules (`UserProfileModal`, `GiveawaysView`, `ProductCheckoutModal` - tổng 203 chuỗi) phục vụ người mua quốc tế, thanh toán và giỏ hàng chuẩn song ngữ. |
+| 3 | **Admin Components** (Widgets & Modals Phụ: `src/admin/components/`, `src/admin/AdminApp.tsx`) | **154** | 11 | `UniversalTemplateModal.tsx` (46), `QuickFomoAdjustModal.tsx` (31), `LuckyWheelAdminManager.tsx` (20), `TemporaryAuditTokenManager.tsx` (17), `ProductGalleryUpload.tsx` (10) | **Đợt 12 (25/11/2026)**: Trích xuất chuỗi của Top 3 modules (`UniversalTemplateModal`, `QuickFomoAdjustModal`, `LuckyWheelAdminManager` - tổng 97 chuỗi) cho các hộp thoại cấu hình nhanh và vòng quay may mắn. |
+| **Tổng** | **Toàn sàn (3 Cụm)** | **3.232** | **92** | *(Giảm 4 lỗi và 3 files so với mức đỉnh 3.236 lỗi / 95 files)* | Hoàn tất lộ trình di chuyển dứt điểm trong 3 đợt liên tiếp (Đợt 10–12). |
+
+- **Chi tiết lộ trình xử lý dứt điểm Top 3 Modules mỗi cụm**:
+  1. **Cụm 1 - Admin Modules (Mốc: 23/11/2026 - Đợt 10)**:
+     - `CrawlerModule.tsx` (255 chuỗi): Gom nhóm từ vựng quét tự động, cấu hình nguồn ABEI/GameVN, trạng thái crawler và thông báo log.
+     - `NewsModule.tsx` (188 chuỗi): Trích xuất danh mục tin tức, form tạo bài viết, SEO metadata editor và bảng quản lý bài đăng.
+     - `MarketingModule.tsx` (171 chuỗi): Chuyển hóa banner marketing, popup khuyến mãi, flash sale countdown và cấu hình voucher.
+  2. **Cụm 2 - Client Components (Mốc: 24/11/2026 - Đợt 11)**:
+     - `UserProfileModal.tsx` (69 chuỗi): Thông tin cá nhân, bảo mật 2 lớp, lịch sử giao dịch và liên kết tài khoản mạng xã hội.
+     - `GiveawaysView.tsx` (67 chuỗi): Danh sách sự kiện nhận code miễn phí, điều kiện tham gia, bộ đếm ngược và modal nhận thưởng.
+     - `ProductCheckoutModal.tsx` (67 chuỗi): Form điền thông tin người nhận, chọn phương thức vận chuyển (GHTK/GHN/Viettel Post) và bảo chứng 168 giờ.
+  3. **Cụm 3 - Admin Components (Mốc: 25/11/2026 - Đợt 12)**:
+     - `UniversalTemplateModal.tsx` (46 chuỗi): Modal áp dụng template mẫu giao diện, bộ lọc preset ngành hàng và nút xác nhận.
+     - `QuickFomoAdjustModal.tsx` (31 chuỗi): Modal điều chỉnh nhanh thông báo đơn hàng ảo/thật, tần suất pop-up và thanh trượt độ trễ.
+     - `LuckyWheelAdminManager.tsx` (20 chuỗi): Bảng tỉ lệ trúng thưởng vòng quay, cấu hình phần thưởng và lịch sử quay của khách.
 
 ### ISSUE-313: Cạm Bẫy Phân Tâm Bởi Tệp Đính Kèm Cũ Sau Nén Ngữ Cảnh Dẫn Đến Trả Lời Lạc Đề & Không Bám Sát Yêu Cầu Hiện Tại
 - **Triệu chứng & Rủi ro**:

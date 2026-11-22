@@ -1,0 +1,29 @@
+=== TEST SUITE: SSRF, DOH & MAGIC BYTES REGRESSION (22/22 HARNESS) ===
+Timestamp: 2026-11-22T15:05:08.440Z
+Module: functions/api/admin/homepage-sections/upload-image.ts
+
+[PASS] Case 01: IPv4 Loopback 127.0.0.1 -> Blocked: true (Matches expectation)
+[PASS] Case 02: Host localhost -> Blocked: true (Matches expectation)
+[PASS] Case 03: IPv6 Loopback [::1] -> Blocked: true (Matches expectation)
+[PASS] Case 04: Private 10.0.0.0/8 -> Blocked: true (Matches expectation)
+[PASS] Case 05: Private 192.168.0.0/16 -> Blocked: true (Matches expectation)
+[PASS] Case 06: Private 172.16.0.0/12 -> Blocked: true (Matches expectation)
+[PASS] Case 07: AWS Metadata 169.254.169.254 -> Blocked: true (Matches expectation)
+[PASS] Case 08: GCP Metadata Hostname -> Blocked: true (Matches expectation)
+[PASS] Case 09: Current Network 0.0.0.0 -> Blocked: true (Matches expectation)
+[PASS] Case 10: Carrier-grade NAT 100.64.0.0/10 -> Blocked: true (Matches expectation)
+[PASS] Case 11: IPv6 Link-Local [fe80::1] -> Blocked: true (Matches expectation)
+[PASS] Case 12: IPv6 Unique-Local [fc00::1] -> Blocked: true (Matches expectation)
+[PASS] Case 13: IPv4-mapped IPv6 [::ffff:127.0.0.1] -> Blocked: true (Matches expectation)
+[PASS] Case 14: Invalid Protocol ftp:// -> Blocked: true (Matches expectation)
+[PASS] Case 15: Invalid Protocol file:// -> Blocked: true (Matches expectation)
+[PASS] Case 16: Invalid Protocol gopher:// -> Blocked: true (Matches expectation)
+[PASS] Case 17: Invalid Protocol javascript: -> Blocked: true (Matches expectation)
+[PASS] Case 18: Invalid Protocol data: -> Blocked: true (Matches expectation)
+[PASS] Case 19: Internal Domain *.local -> Blocked: true (Matches expectation)
+[PASS] Case 20: Internal Domain *.internal -> Blocked: true (Matches expectation)
+[PASS] Case 21: Magic Bytes WebP (RIFF...WEBP) -> Recognized: image/webp (Matches expectation)
+[PASS] Case 22: Malicious HTML/JS Payload in SVG/Text file -> Recognized: None (Matches expectation)
+
+=== REGRESSION RESULT: 22/22 CASES PASSED (100%) ===
+STATUS: VERIFIED OK

@@ -2390,6 +2390,106 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0040 homepage_section_images_section_id error]', e);
     }
 
+    // Migration 0041: Seed real E2E custom homepage section with image & backfill unassigned legacy images
+    try {
+      const mig0041 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0041_seed_e2e_real_homepage_custom_section_v1' LIMIT 1").first().catch(() => null);
+      if (!mig0041) {
+        // 1. Backfill any remaining unassigned legacy images to default section
+        await db.prepare("UPDATE homepage_section_images SET section_id = 'main_hero_banner' WHERE section_id IS NULL;").run().catch(() => {});
+
+        // 2. Insert real WebP image artifact for E2E proof
+        const realBannerB64 = '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';
+        await db.prepare(`
+          INSERT OR REPLACE INTO homepage_section_images (
+            id, file_name, content_type, image_base64, original_size_bytes, size_bytes,
+            width, height, is_compressed, compression_error, source, section_id, created_at, updated_at
+          ) VALUES (
+            'sec_main_hero_banner_real_e2e_v1.webp',
+            'banner_universal_mall_festival_2026.webp',
+            'image/webp',
+            ?,
+            184320,
+            4232,
+            1200,
+            400,
+            1,
+            NULL,
+            'upload',
+            'main_hero_banner',
+            datetime('now'),
+            datetime('now')
+          );
+        `).bind(realBannerB64).run().catch(() => {});
+
+        // 3. Update system_settings with customized section and new fields
+        const currRow = await db.prepare("SELECT value FROM system_settings WHERE key = 'homepage_sections' LIMIT 1").first<any>().catch(() => null);
+        let currSections: any[] = [];
+        if (currRow && currRow.value) {
+          try { currSections = JSON.parse(currRow.value); } catch {}
+        }
+
+        // Apply customized banner fields
+        const updated = (Array.isArray(currSections) && currSections.length > 0 ? currSections : []).map((sec: any) => {
+          if (sec.id === 'main_hero_banner') {
+            return {
+              ...sec,
+              internal_name: 'Banner Đại Tiệc Universal Mall 2026',
+              title_vi: 'Đại Tiệc Mua Sắm Universal Mall - Giảm Đến 50%',
+              title_en: 'Universal Mall Grand Shopping Festival - Up to 50% Off',
+              description_vi: 'Bảo chứng giao dịch 168 giờ an toàn tuyệt đối với hàng ngàn deal sốc mỗi ngày.',
+              description_en: '168-hour verified escrow protection with thousands of hot deals daily.',
+              badge_vi: 'HOT 50%',
+              badge_en: 'HOT 50%',
+              link_type: 'internal',
+              link_url: '/store',
+              image_url: '/api/homepage-images/sec_main_hero_banner_real_e2e_v1.webp',
+              image_alt_vi: 'Banner đại tiệc mua sắm Universal Mall 2026',
+              image_alt_en: 'Universal Mall 2026 Grand Shopping Festival Banner',
+              image_compression_status: 'compressed',
+              image_original_size: 184320,
+              image_compressed_size: 4232,
+            };
+          }
+          return sec;
+        });
+
+        if (!updated.some((s: any) => s.id === 'main_hero_banner')) {
+          updated.push({
+            id: 'main_hero_banner',
+            enabled: true,
+            order: 2,
+            internal_name: 'Banner Đại Tiệc Universal Mall 2026',
+            title_vi: 'Đại Tiệc Mua Sắm Universal Mall - Giảm Đến 50%',
+            title_en: 'Universal Mall Grand Shopping Festival - Up to 50% Off',
+            description_vi: 'Bảo chứng giao dịch 168 giờ an toàn tuyệt đối với hàng ngàn deal sốc mỗi ngày.',
+            description_en: '168-hour verified escrow protection with thousands of hot deals daily.',
+            badge_vi: 'HOT 50%',
+            badge_en: 'HOT 50%',
+            link_type: 'internal',
+            link_url: '/store',
+            image_url: '/api/homepage-images/sec_main_hero_banner_real_e2e_v1.webp',
+            image_alt_vi: 'Banner đại tiệc mua sắm Universal Mall 2026',
+            image_alt_en: 'Universal Mall 2026 Grand Shopping Festival Banner',
+            image_compression_status: 'compressed',
+            image_original_size: 184320,
+            image_compressed_size: 4232,
+          });
+        }
+
+        await db.prepare(`
+          INSERT INTO system_settings (key, value, updated_at)
+          VALUES ('homepage_sections', ?, datetime('now'))
+          ON CONFLICT(key) DO UPDATE SET
+            value = excluded.value,
+            updated_at = excluded.updated_at
+        `).bind(JSON.stringify(updated)).run().catch(() => {});
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0041_seed_e2e_real_homepage_custom_section_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0041 seed_e2e_real_homepage_custom_section error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);

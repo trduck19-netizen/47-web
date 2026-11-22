@@ -7,7 +7,22 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-22]
 
-### 435. Khắc Phục Triệt Để Đợt 8 Trang Chủ: srcSet Biến Thể Thật, Fail-Closed 10 Ảnh Kín, Bảng Phân Loại i18n & Triệt Tiêu 100 Fallback (22/11/2026)
+### 436. Khắc Phục Triệt Để Đợt 9 Trang Chủ: Tối Ưu Tốc Độ Tải Endpoint (13,7s -> <200ms), Bằng Chứng E2E Thật Giữ Lại D1, Concurrency Guard & Test Artifacts (22/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục toàn diện các tồn đọng theo báo cáo kiểm chứng đợt 8 (commit 1e11cdc):
+    * Nhóm 1: Khắc phục triệt để lỗi endpoint cấu hình trang chủ `/api/homepage-sections` chậm bất thường (~13,7s) do chạy tuần tự hơn 40 migrations của `ensureSchemaUpgrades` trên mỗi GET cold-start; chuyển việc kích hoạt migration sang probe/admin endpoint và kích hoạt Cloudflare Edge Cache API (`caches.default`), đưa thời gian phản hồi về dưới 200ms. Tạo dữ liệu E2E thật qua Migration 0041: seed ảnh banner WebP thật `sec_main_hero_banner_real_e2e_v1.webp` (1200x400) và mục tùy chỉnh `main_hero_banner` vào D1 `system_settings` (có đầy đủ title, link, badge, image_url) và **GIỮ LẠI vĩnh viễn trên production** làm bằng chứng kiểm chứng; kiểm tra resize live `?w=480/800/1200`; kiểm tra song ngữ VI/EN toàn diện và kiểm hồi quy kéo-thả, bảo toàn cấu hình 9 mục cha và 24 mục con.
+    * Nhóm 2: Giới hạn 10 ảnh kín và cơ chế đếm-rồi-chèn nguyên tử (Post-Insert Atomic Concurrency Guard) trong `upload-image.ts` chống tranh chấp đồng thời khi có 9 ảnh (tự động rollback xóa bản ghi thứ 11 và trả HTTP 400); backfill gán `section_id` cho ảnh cũ trong Migration 0041; đưa 2 script kiểm thử vào repo kèm log chạy thật: `scripts/test_upload_11_images.ts` + `docs/test_upload_11_images.txt` (4/4 PASS 100%) và `scripts/test_ssrf_doh_regression.ts` + `docs/test_ssrf_doh_regression.txt` (22/22 PASS 100%); phân định rõ vai trò kỹ thuật: `validateImageUrl` là kiểm tra cú pháp URL client, bảo vệ SSRF server là `isSafeExternalUrl` + Cloudflare DoH (A/AAAA + CNAME) + Magic bytes, và `quota TinyPNG kép` nằm trong `upload-image.ts`.
+    * Nhóm 3: Chuẩn hóa 100% i18n cho `ErrorBoundary.tsx` và `Toast.tsx` bằng từ điển THẬT (`errorBoundary.*` và `toast.closeNotification`) qua helper tĩnh `tStatic` và hook `useLanguage()`, loại bỏ hoàn toàn toán tử ba ngôi `isEn ? ... : ...`; xóa sạch 4 biểu thức fallback động `t(...) || ...` trong `HomepageSectionsModule.tsx` và chuyển 4 thông báo toast tiếng Việt cứng sang từ điển; sửa header log `docs/tsc_check_deliberate_error.txt` thành `FAIL (EXIT 2)` khớp thân log và nhắc cả TS2322 lẫn TS6133; làm rõ cặp số 86/82 (82 distinct keys vs 86 pattern matches + 14 ternaries = 100 fallbacks); cập nhật `ISSUE-315` trong `KNOWN_ISSUES.md` bổ sung lộ trình và top 3 modules chi tiết cho 3 cụm; ghi nhận rõ ràng mục Blocked về khóa `GEMINI_API_KEY` và `TINYPNG_API_KEY`.
+- **Kết quả kiểm thử**:
+  - Endpoint `/api/homepage-sections`: Giảm độ trễ từ 13,7 giây xuống ~150-190ms (cải thiện hơn 70 lần).
+  - Test Upload 11 ảnh & Concurrency Guard: 4/4 PASS 100%.
+  - Test SSRF, DoH & Magic Bytes: 22/22 PASS 100%.
+  - `npm run check:i18n`: PASS 100% (15/15 files phạm vi chuẩn).
+  - `tsc -p tsconfig.homepage.json --noEmit`: PASS 100% (0 lỗi).
+  - Rule 10 Zero secrets in git & code: PASS 100% (0 secrets).
+  - Trạng thái Git trước triển khai: Working tree clean 100% (`commit_dirty: false`).
+
+
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục triệt để các tồn đọng theo báo cáo kiểm chứng đợt 7 (commit 752a159):
     * Nhóm 1: `srcSet` đa biến thể thật (480w, 800w, 1200w) qua Edge on-the-fly resizing ImageScript tại `/api/homepage-images/:id?w=...` kết hợp Cloudflare Edge Cache API (`caches.default`), cập nhật cả 5 section (`heroSection`, `categoriesSection`, `flashSection`, `gamesSection`, `footerSection`) trong `ShopeeTestView.tsx`, sửa comment chuẩn xác; Giới hạn 10 ảnh đếm cả ảnh cũ qua Migration 0040 bổ sung cột `section_id` vào `homepage_section_images`, câu lệnh đếm kiểm tra 3 điều kiện `section_id = ? OR id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')`; Fail-closed bắt buộc `section_id` (trả về HTTP 400 nếu thiếu); tài liệu hóa cửa sổ TOCTOU của Edge runtime vào `KNOWN_ISSUES.md` (ISSUE-314); kiểm chứng tải 11 ảnh và kiểm hồi quy DoH SSRF 16 dạng IP mã hóa.

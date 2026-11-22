@@ -1,3 +1,5 @@
+import { ensureSchemaUpgrades } from '../../services/d1_service';
+
 interface Env {
   DB: D1Database;
   TINYPNG_API_KEY?: string;
@@ -17,6 +19,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     if (env.DB) {
       try {
+        await ensureSchemaUpgrades(env.DB).catch(() => {});
         const stats = await env.DB.prepare(`
           SELECT 
             COUNT(*) as total,

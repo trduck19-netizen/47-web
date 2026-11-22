@@ -982,6 +982,35 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       )
       .run();
 
+    // Kiểm tra nguyên tử chống tranh chấp đồng thời (Post-Insert Atomic Concurrency Guard)
+    // Nếu 2 upload chạy đồng thời khi đã có 9 ảnh, cả 2 đều vượt qua kiểm tra trước chèn.
+    // Kiểm tra lại sau chèn: nếu tổng số ảnh vượt quá 10, tự động hoàn tác (xóa bản ghi vừa chèn) và trả 400.
+    try {
+      const postCountRow = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM homepage_section_images 
+        WHERE section_id = ? OR id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')
+      `)
+        .bind(sectionId, safeSectionId, safeSectionId)
+        .first<any>();
+
+      if (postCountRow && Number(postCountRow.count) > 10) {
+        await env.DB.prepare('DELETE FROM homepage_section_images WHERE id = ?')
+          .bind(imageId)
+          .run()
+          .catch(() => {});
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Mục này đã đạt giới hạn tối đa 10 ảnh (${Number(postCountRow.count) - 1}/10). Thao tác tải ảnh bị hủy để bảo đảm tính nguyên tử và chống tranh chấp đồng thời.`,
+          }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+    } catch (atomicErr) {
+      console.warn('[Upload Image] Post-insert concurrency check warning:', atomicErr);
+    }
+
     const imageUrl = `/api/homepage-images/${imageId}`;
 
     return new Response(

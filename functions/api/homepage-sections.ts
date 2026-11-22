@@ -26,10 +26,27 @@ export const onRequestOptions: PagesFunction = async () => {
 
 // GET: Cấu hình hiển thị trang chủ công khai cho Web Khách
 export const onRequestGet: PagesFunction<Env> = async (context) => {
-  const { env } = context;
-  try {
-    await ensureSchemaUpgrades(env.DB);
+  const { request, env, waitUntil } = context;
 
+  // 1. Kiểm tra Cloudflare Edge Cache (Tránh đọc D1 liên tục, phản hồi cực nhanh ~20-50ms)
+  const urlObj = new URL(request.url);
+  const bypassCache = urlObj.searchParams.has('fresh') ||
+                      urlObj.searchParams.has('nocache') ||
+                      request.headers.get('Cache-Control')?.includes('no-cache');
+  const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
+  const cacheKey = cache ? new Request(request.url, { method: 'GET' }) : null;
+
+  if (cache && cacheKey && !bypassCache) {
+    try {
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } catch {}
+  }
+
+  try {
+    // KHÔNG gọi ensureSchemaUpgrades trên route GET công khai (nguyên nhân gây nghẽn 10-16s do chạy 40+ migration)
     const row = await env.DB
       .prepare("SELECT value, updated_at FROM system_settings WHERE key = 'homepage_sections' LIMIT 1")
       .first<any>();
@@ -43,7 +60,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const sections = mergeHomepageSectionsConfig(rawSections);
 
-    return new Response(
+    const response = new Response(
       JSON.stringify({
         success: true,
         sections,
@@ -57,6 +74,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         },
       }
     );
+
+    if (cache && cacheKey && !bypassCache && typeof waitUntil === 'function') {
+      try {
+        waitUntil(cache.put(cacheKey, response.clone()));
+      } catch {}
+    }
+
+    return response;
   } catch (err: any) {
     // Fallback an toàn tuyệt đối khi lỗi: Trả về cấu hình mặc định (100% mục đều bật)
     return new Response(
