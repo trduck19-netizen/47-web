@@ -127,6 +127,45 @@ function isPrivateIpv4(num: number): boolean {
   return false;
 }
 
+// Kiểm tra địa chỉ IPv6 có thuộc dải nội bộ / loopback / link-local / unique-local / metadata không
+function isPrivateIpv6(ipStr: string): boolean {
+  let cleanIp = ipStr.toLowerCase().trim();
+  if (cleanIp.startsWith('[') && cleanIp.endsWith(']')) {
+    cleanIp = cleanIp.slice(1, -1);
+  }
+  // Loopback / Unspecified
+  if (cleanIp === '::1' || cleanIp === '0:0:0:0:0:0:0:1' || cleanIp === '::' || cleanIp === '0:0:0:0:0:0:0:0') {
+    return true;
+  }
+  // Link-local unicast (fe80::/10 -> fe80:, fe90:, fea0:, feb0:)
+  if (/^fe[89ab][0-9a-f]:/i.test(cleanIp) || cleanIp.startsWith('fe80:')) {
+    return true;
+  }
+  // Unique local addresses (fc00::/7 -> fc00:, fd00:)
+  if (/^f[cd][0-9a-f]{2}:/i.test(cleanIp) || cleanIp.startsWith('fc00:') || cleanIp.startsWith('fd00:')) {
+    return true;
+  }
+  // Multicast (ff00::/8)
+  if (/^ff[0-9a-f]{2}:/i.test(cleanIp) || cleanIp.startsWith('ff')) {
+    return true;
+  }
+  // Documentation (2001:db8::/32)
+  if (cleanIp.startsWith('2001:db8:') || cleanIp.startsWith('2001:0db8:')) {
+    return true;
+  }
+  // IPv4-mapped IPv6 (::ffff:w.x.y.z)
+  if (cleanIp.includes('::ffff:')) {
+    const parts = cleanIp.split('::ffff:');
+    const v4 = parts[1];
+    if (v4) {
+      const num = parseIpv4ToNumber(v4);
+      if (num !== null && isPrivateIpv4(num)) return true;
+    }
+    return true;
+  }
+  return false;
+}
+
 // Chống SSRF nâng cao khi tải ảnh từ URL ngoài (Nhóm 4)
 function isSafeExternalUrl(urlStr: string): boolean {
   try {
@@ -150,16 +189,7 @@ function isSafeExternalUrl(urlStr: string): boolean {
       return false;
     }
     // Chặn IPv6 Link-local, Unique local, IPv4-mapped
-    if (host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd00:')) {
-      return false;
-    }
-    if (host.includes('::ffff:')) {
-      const parts = host.split('::ffff:');
-      const ip = parts[1];
-      if (ip) {
-        const num = parseIpv4ToNumber(ip);
-        if (num !== null && isPrivateIpv4(num)) return false;
-      }
+    if (isPrivateIpv6(host)) {
       return false;
     }
     // Kiểm tra IPv4 mã hóa
@@ -173,38 +203,92 @@ function isSafeExternalUrl(urlStr: string): boolean {
   }
 }
 
-// Phân giải DNS qua Cloudflare DoH để chống tấn công DNS Rebinding và tên miền trỏ về IP nội bộ
-async function resolveAndValidateHostDns(hostname: string): Promise<{ ok: boolean; error?: string }> {
+// Phân giải DNS qua Cloudflare DoH để chống tấn công DNS Rebinding và tên miền trỏ về IP nội bộ (cả IPv4 và IPv6)
+async function resolveAndValidateHostDns(hostname: string, depth = 0): Promise<{ ok: boolean; error?: string }> {
+  if (depth > 3) {
+    return { ok: false, error: `Chuỗi chuyển hướng DNS CNAME vượt quá giới hạn (Loop detected: ${hostname})` };
+  }
+
   // Nếu host đã là địa chỉ IP trực tiếp, isSafeExternalUrl đã thẩm định
-  if (parseIpv4ToNumber(hostname) !== null || hostname.includes(':')) {
+  if (parseIpv4ToNumber(hostname) !== null) {
+    return { ok: true };
+  }
+  if (hostname.includes(':')) {
+    if (isPrivateIpv6(hostname)) {
+      return { ok: false, error: `Địa chỉ IPv6 ${hostname} thuộc dải nội bộ/bị chặn.` };
+    }
     return { ok: true };
   }
 
   try {
-    const dohUrl = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=A`;
-    const res = await fetch(dohUrl, {
-      headers: { Accept: 'application/dns-json' },
-      signal: AbortSignal.timeout(3500),
-    });
-    if (!res.ok) {
-      return { ok: false, error: 'Không thể phân giải tên miền (DNS failure).' };
+    const dohA = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=A`;
+    const dohAAAA = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=AAAA`;
+
+    const [resA, resAAAA] = await Promise.all([
+      fetch(dohA, { headers: { Accept: 'application/dns-json' }, signal: AbortSignal.timeout(3500) }).catch(() => null),
+      fetch(dohAAAA, { headers: { Accept: 'application/dns-json' }, signal: AbortSignal.timeout(3500) }).catch(() => null),
+    ]);
+
+    const dataA: any = resA?.ok ? await resA.json().catch(() => null) : null;
+    const dataAAAA: any = resAAAA?.ok ? await resAAAA.json().catch(() => null) : null;
+
+    const answersA = Array.isArray(dataA?.Answer) ? dataA.Answer : [];
+    const answersAAAA = Array.isArray(dataAAAA?.Answer) ? dataAAAA.Answer : [];
+    const allAnswers = [...answersA, ...answersAAAA];
+
+    if (allAnswers.length === 0) {
+      return { ok: false, error: `Tên miền không tồn tại hoặc không thể phân giải qua DNS: ${hostname}` };
     }
-    const data: any = await res.json().catch(() => null);
-    if (!data || data.Status !== 0 || !Array.isArray(data.Answer) || data.Answer.length === 0) {
-      return { ok: false, error: `Tên miền không tồn tại hoặc không thể phân giải: ${hostname}` };
-    }
-    for (const record of data.Answer) {
+
+    let hasValidIp = false;
+    const cnamesToFollow: string[] = [];
+
+    for (const record of allAnswers) {
+      // Type 1: A (IPv4)
       if (record.type === 1 && typeof record.data === 'string') {
         const ip = record.data.trim();
         const ipv4Num = parseIpv4ToNumber(ip);
         if (ipv4Num === null || isPrivateIpv4(ipv4Num)) {
           return {
             ok: false,
-            error: `Tên miền ${hostname} trỏ về IP nội bộ (${ip}) bị chặn (Chống SSRF / DNS Rebinding).`,
+            error: `Tên miền ${hostname} phân giải về IPv4 nội bộ (${ip}) bị chặn (Chống SSRF / DNS Rebinding).`,
           };
+        }
+        hasValidIp = true;
+      }
+      // Type 28: AAAA (IPv6)
+      else if (record.type === 28 && typeof record.data === 'string') {
+        const ip6 = record.data.trim();
+        if (isPrivateIpv6(ip6)) {
+          return {
+            ok: false,
+            error: `Tên miền ${hostname} phân giải về IPv6 nội bộ (${ip6}) bị chặn (Chống SSRF / DNS Rebinding).`,
+          };
+        }
+        hasValidIp = true;
+      }
+      // Type 5: CNAME
+      else if (record.type === 5 && typeof record.data === 'string') {
+        const targetCname = record.data.trim().replace(/\.$/, '');
+        if (targetCname && targetCname.toLowerCase() !== hostname.toLowerCase()) {
+          cnamesToFollow.push(targetCname);
         }
       }
     }
+
+    // Nếu chỉ có CNAME mà chưa có bản ghi A/AAAA trong câu trả lời, đệ quy kiểm tra CNAME đích
+    if (!hasValidIp && cnamesToFollow.length > 0) {
+      for (const target of cnamesToFollow) {
+        const cnameCheck = await resolveAndValidateHostDns(target, depth + 1);
+        if (!cnameCheck.ok) return cnameCheck;
+      }
+      return { ok: true };
+    }
+
+    if (!hasValidIp) {
+      return { ok: false, error: `Tên miền ${hostname} không có bản ghi A hoặc AAAA hợp lệ.` };
+    }
+
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: `Kiểm tra DNS chống DNS rebinding thất bại: ${err?.message || 'timeout'}` };
@@ -753,19 +837,32 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const safeSectionId = sectionId ? sectionId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) : 'sec';
     if (sectionId) {
       try {
-        const countRow = await env.DB.prepare('SELECT COUNT(*) as count FROM homepage_section_images WHERE id LIKE ?')
-          .bind(`sec_${safeSectionId}_%`)
+        // Đếm cả ảnh mới (tiền tố sec_${safeSectionId}_) và ảnh cũ (có chứa safeSectionId trong id)
+        const countRow = await env.DB.prepare(`
+          SELECT COUNT(*) as count FROM homepage_section_images 
+          WHERE id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')
+        `)
+          .bind(safeSectionId, safeSectionId)
           .first<any>();
         if (countRow && Number(countRow.count) >= 10) {
           return new Response(
             JSON.stringify({
               success: false,
-              error: 'Mục này đã đạt giới hạn tối đa 10 ảnh. Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.',
+              error: `Mục này đã đạt giới hạn tối đa 10 ảnh (${countRow.count}/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.`,
             }),
             { status: 400, headers: CORS_HEADERS }
           );
         }
-      } catch {}
+      } catch (err: any) {
+        console.error('[Upload Image Error] Failed to verify 10-image limit (fail-closed):', err);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Không thể xác thực số lượng ảnh hiện có trong mục (Lỗi cơ sở dữ liệu). Thao tác tải ảnh bị chặn vì lý do an toàn (Fail-closed).',
+          }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
     }
 
     // Kiểm tra Magic Bytes để xác thực định dạng ảnh thật (Nhóm 5)

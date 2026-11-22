@@ -7,6 +7,16 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-22]
 
+### 434. Khắc Phục Triệt Để Đợt 7 Trang Chủ: DoH AAAA IPv6, Fail-Closed 10-Image Limit, Gemini Security Logging & Từ Điển Dropzone (22/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục các tồn đọng theo báo cáo kiểm chứng đợt 6 (commit 9d4368f):
+    * Nhóm 1: DoH DNS Rebinding Guard nâng cấp kiểm tra cả A (IPv4) và AAAA (IPv6), đệ quy theo dõi CNAME, chặn toàn bộ dải private/loopback/link-local/metadata cả v4 và v6; Giới hạn 10 ảnh đếm cả ảnh mới và ảnh cũ, chuyển khối kiểm tra D1 sang fail-closed (HTTP 500 khi DB lỗi); bổ sung 2 khóa `dragDropHint` và `imageFormats` vào cả `vi.json` và `en.json`; ghi log bảo mật bền vững vào `security_logs` cho các nhánh lỗi Gemini (`GEMINI_AI_NETWORK_ERROR`, `GEMINI_ALT_GEN_ERROR`, `GEMINI_ALT_FALLBACK_USED`) và đánh dấu `is_fallback: true` cho alt text dự phòng.
+    * Nhóm 2: Kết nối render `image_url` từ `homepageSectionsService` vào `FloatingAnnouncement.tsx` cho mục `floating_notification`; kết nối endpoint probe vào `HomepageSectionsModule.tsx` tự động hiển thị cảnh báo chưa cấu hình API Key AI khi mở modal; giải trình và phân loại chi tiết backlog 3.236 lỗi i18n toàn sàn theo cụm tính năng và 86 chuỗi fallback; kiểm chứng `tsc` bằng bài test cố ý gây lỗi kiểu.
+- **Kết quả**:
+  - `npm run check:i18n`: PASS 100% trên 15 file phạm vi chuẩn.
+  - `npx tsc -p tsconfig.homepage.json --noEmit`: PASS 100% (0 lỗi).
+  - Rule 10 Zero secrets in git: Đạt chuẩn 100% (0 secrets).
+
 ### 433. Khắc Phục Triệt Để Đợt 6 Trang Chủ: Giới Hạn 10 Ảnh/Mục, Build Cross-Platform, SSRF DoH Rebinding Guard & TinyPNG Quota Tracker (22/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục các tồn đọng sau kiểm chứng đợt 5 (commit 2f5eb27 và 82f9b36):

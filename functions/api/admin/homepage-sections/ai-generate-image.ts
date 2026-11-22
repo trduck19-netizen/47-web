@@ -97,6 +97,12 @@ Output strictly JSON format:
       }
     } catch (e: any) {
       console.warn('[Gemini Alt Text Generation] Fallback to contextual generator:', e?.message);
+      if (env.DB) {
+        await env.DB.prepare(`
+          INSERT INTO security_logs (action, details, ip_address, created_at)
+          VALUES ('GEMINI_ALT_GEN_ERROR', ?, '127.0.0.1', datetime('now'))
+        `).bind(JSON.stringify({ error: e?.message, prompt: userPrompt })).run().catch(() => null);
+      }
     }
 
     const getFallbackAlt = (idx: number) => {
@@ -108,6 +114,7 @@ Output strictly JSON format:
       return {
         alt_vi: `${styleVi} cho ${typeVi}: ${cleanPrompt}`,
         alt_en: `${styleEn} for ${typeEn}: ${cleanPrompt}`,
+        is_fallback: true,
       };
     };
 
@@ -134,9 +141,15 @@ Output strictly JSON format:
         },
       }),
       signal: controller.signal,
-    }).catch((err) => {
+    }).catch(async (err) => {
       clearTimeout(timeoutId);
       console.error('[Gemini AI Image Network Error]:', err?.message || err);
+      if (env.DB) {
+        await env.DB.prepare(`
+          INSERT INTO security_logs (action, details, ip_address, created_at)
+          VALUES ('GEMINI_AI_NETWORK_ERROR', ?, '127.0.0.1', datetime('now'))
+        `).bind(JSON.stringify({ error: err?.message || String(err), prompt: userPrompt })).run().catch(() => null);
+      }
       throw new Error(`Lỗi kết nối dịch vụ tạo ảnh AI: ${err.message || err}`);
     });
 
@@ -170,6 +183,14 @@ Output strictly JSON format:
       );
     }
 
+    const isFallbackUsed = generatedAlts.length === 0;
+    if (isFallbackUsed && env.DB) {
+      await env.DB.prepare(`
+        INSERT INTO security_logs (action, details, ip_address, created_at)
+        VALUES ('GEMINI_ALT_FALLBACK_USED', ?, '127.0.0.1', datetime('now'))
+      `).bind(JSON.stringify({ reason: 'AI alt generation failed or returned empty; used contextual fallback', prompt: userPrompt })).run().catch(() => null);
+    }
+
     // Chuyển danh sách ảnh thành candidates dạng data URL kèm Alt text sinh bởi AI
     const images = predictions.map((p: any, idx: number) => {
       const b64 = p.bytesBase64Encoded || p.image?.imageBytes;
@@ -180,6 +201,7 @@ Output strictly JSON format:
         data_url: b64 ? `data:${mime};base64,${b64}` : '',
         alt_vi: altPair.alt_vi,
         alt_en: altPair.alt_en,
+        is_fallback_alt: !generatedAlts[idx],
       };
     }).filter((img: any) => Boolean(img.data_url));
 
@@ -190,6 +212,7 @@ Output strictly JSON format:
         images,
         alt_vi: defaultAlt.alt_vi,
         alt_en: defaultAlt.alt_en,
+        is_fallback_alt: isFallbackUsed,
       }),
       { status: 200, headers: CORS_HEADERS }
     );

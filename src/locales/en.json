@@ -798,6 +798,8 @@
     "imageUploadTab": "Upload Image (Auto Compress)",
     "imageMirrorTab": "Paste External URL",
     "imageDropPrompt": "Drag and drop image here or click to browse",
+    "dragDropHint": "Drag and drop image here or click to browse",
+    "imageFormats": "Supports WebP, PNG, JPG, GIF, AVIF (Auto-compressed)",
     "imageUploadHint": "Supports WebP, PNG, JPG, GIF, AVIF (Auto-compressed to WebP, max 300KB for banners, 100KB for icons). SVG files are blocked for security.",
     "imageUrlPlaceholder": "Paste external image URL (https://...)",
     "imageMirrorBtn": "Import Copy & Optimize",

@@ -19,6 +19,7 @@ import {
   FloatingNotificationTheme,
 } from '../types/floatingNotification';
 import { RichTextRenderer } from './RichTextRenderer';
+import { homepageSectionsService } from '../services/homepageSectionsService';
 
 interface FloatingAnnouncementProps {
   onNavigateTab?: (tab: string) => void;
@@ -31,6 +32,16 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
   const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [doNotShowAgainChecked, setDoNotShowAgainChecked] = useState(false);
+  const [sectionImageUrl, setSectionImageUrl] = useState<string | undefined>(() => {
+    return homepageSectionsService.getSection('floating_notification')?.image_url;
+  });
+
+  useEffect(() => {
+    const unsub = homepageSectionsService.subscribe(() => {
+      setSectionImageUrl(homepageSectionsService.getSection('floating_notification')?.image_url);
+    });
+    return unsub;
+  }, []);
 
   // Helper: check time-of-day condition
   const checkTimeSchedule = useCallback((cfg: FloatingNotificationConfig): boolean => {
@@ -409,11 +420,22 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
           <button
             type="button"
             onClick={handleDismiss}
-            className="absolute top-4 right-4 p-1.5 rounded-xl text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+            className="absolute top-4 right-4 p-1.5 rounded-xl text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors z-10"
             title="Đóng thông báo"
           >
             <X className="w-5 h-5" />
           </button>
+
+          {/* Banner tùy chỉnh từ cấu hình mục floating_notification */}
+          {sectionImageUrl && (
+            <div className="w-full h-32 rounded-xl overflow-hidden mb-4 border border-white/10 shadow-inner">
+              <img
+                src={sectionImageUrl}
+                alt={config.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
 
           <div className="flex items-start gap-4 mb-4">
             <div className="p-3 rounded-2xl bg-black/40 border border-white/10 shrink-0">
@@ -557,11 +579,22 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
         <button
           type="button"
           onClick={handleDismiss}
-          className="absolute top-3 right-3 p-1 rounded-lg text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+          className="absolute top-3 right-3 p-1 rounded-lg text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors z-10"
           title="Đóng thông báo"
         >
           <X className="w-4 h-4" />
         </button>
+
+        {/* Banner tùy chỉnh từ cấu hình mục floating_notification */}
+        {sectionImageUrl && (
+          <div className="w-full h-24 rounded-xl overflow-hidden mb-3 border border-white/10 shadow-inner">
+            <img
+              src={sectionImageUrl}
+              alt={config.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
 
         <div className="flex items-start gap-3 mb-2.5">
           <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 shrink-0">

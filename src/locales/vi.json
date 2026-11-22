@@ -799,6 +799,8 @@
     "imageUploadTab": "Tải Ảnh Lên (Tự Nén)",
     "imageMirrorTab": "Dán Link Ảnh Ngoài",
     "imageDropPrompt": "Kéo thả ảnh vào đây hoặc bấm để chọn tệp",
+    "dragDropHint": "Kéo thả ảnh vào đây hoặc bấm để chọn tệp",
+    "imageFormats": "Hỗ trợ WebP, PNG, JPG, GIF, AVIF (Tự nén tối ưu)",
     "imageUploadHint": "Hỗ trợ WebP, PNG, JPG, GIF, AVIF (Tự động nén WebP, tối đa 300KB cho banner, 100KB cho icon). File SVG bị chặn để đảm bảo an toàn.",
     "imageUrlPlaceholder": "Dán link ảnh ngoài (https://...)",
     "imageMirrorBtn": "Tải Bản Sao & Tối Ưu",

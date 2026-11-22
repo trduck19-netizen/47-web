@@ -171,6 +171,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     badge_en: string;
   } | null>(null);
   const [aiUnconfigured, setAiUnconfigured] = useState<boolean>(false);
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
   // Trạng thái AI tạo ảnh (Đợt 3/3 - Nhóm 2)
   const [aiImagePrompt, setAiImagePrompt] = useState<string>('');
@@ -359,6 +360,19 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       setInitialSnapshot(JSON.stringify(local));
     } finally {
       setLoading(false);
+      // Kiểm tra trạng thái AI qua probe endpoint (hiển thị thông báo trạng thái khóa AI chính xác)
+      fetch('/api/homepage-images/probe')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && typeof d.external_gemini_configured === 'boolean') {
+            setAiConfigured(d.external_gemini_configured);
+            if (!d.external_gemini_configured) {
+              setAiUnconfigured(true);
+              setAiImageUnconfigured(true);
+            }
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -655,8 +669,14 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     setAiPrompt('');
     setAiImagePrompt('');
     setAiImageCandidates([]);
-    setAiUnconfigured(false);
-    setAiImageUnconfigured(false);
+    // Duy trì cảnh báo chưa cấu hình khóa AI nếu probe đã phát hiện
+    if (aiConfigured === false) {
+      setAiUnconfigured(true);
+      setAiImageUnconfigured(true);
+    } else {
+      setAiUnconfigured(false);
+      setAiImageUnconfigured(false);
+    }
   };
 
   // Lưu thông tin từ modal sửa
@@ -868,8 +888,11 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       const data = await res.json().catch(() => null);
       if (res.ok && data?.success) {
         setAiResult(data.data);
-      } else if (data?.unconfigured) {
+        setAiUnconfigured(false);
+        setAiConfigured(true);
+      } else if (data?.unconfigured || res.status === 503) {
         setAiUnconfigured(true);
+        setAiConfigured(false);
       } else {
         triggerToast('error', data?.error || 'Lỗi gọi dịch vụ AI.');
       }
@@ -901,7 +924,6 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   const handleGenerateAiImage = async () => {
     if (!editingItem || !aiImagePrompt.trim()) return;
     setAiImageLoading(true);
-    setAiImageUnconfigured(false);
     setAiImageCandidates([]);
     try {
       const token = getAdminAuthToken();
@@ -922,8 +944,11 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       const data = await res.json().catch(() => null);
       if (res.ok && data?.success && Array.isArray(data.images)) {
         setAiImageCandidates(data.images);
-      } else if (data?.unconfigured) {
+        setAiImageUnconfigured(false);
+        setAiConfigured(true);
+      } else if (data?.unconfigured || res.status === 503 || (data?.error && data.error.includes('API Key'))) {
         setAiImageUnconfigured(true);
+        setAiConfigured(false);
       } else {
         triggerToast('error', data?.error || 'Lỗi tạo ảnh AI.');
       }
