@@ -1,6 +1,11 @@
 import { verifyAdminAuth } from '../../../services/mission_service';
 import { ensureSchemaUpgrades } from '../../../services/d1_service';
 import { decode } from 'imagescript';
+import {
+  checkSectionImageLimit,
+  insertSectionImage,
+  postInsertAtomicCheckAndRollback,
+} from '../../../services/homepage_image_service';
 
 interface Env {
   DB: D1Database;
@@ -22,278 +27,24 @@ export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 };
 
-// Phân tích bytes ảnh an toàn bằng Magic Bytes (Nhóm 5)
-function detectImageMime(bytes: Uint8Array): { mime: string; ext: string } | null {
-  if (bytes.length < 12) return null;
+import {
+  parseIpv4ToNumber,
+  isPrivateIpv4,
+  isPrivateIpv6,
+  isSafeExternalUrl,
+  resolveAndValidateHostDns,
+  validateImageMagicBytes,
+} from '../../../services/ssrf_service';
 
-  // JPEG: FF D8 FF
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return { mime: 'image/jpeg', ext: 'jpg' };
-  }
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (
-    bytes[0] === 0x89 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x4e &&
-    bytes[3] === 0x47 &&
-    bytes[4] === 0x0d &&
-    bytes[5] === 0x0a &&
-    bytes[6] === 0x1a &&
-    bytes[7] === 0x0a
-  ) {
-    return { mime: 'image/png', ext: 'png' };
-  }
-  // WebP: RIFF ... WEBP
-  if (
-    bytes[0] === 0x52 &&
-    bytes[1] === 0x49 &&
-    bytes[2] === 0x46 &&
-    bytes[3] === 0x46 &&
-    bytes[8] === 0x57 &&
-    bytes[9] === 0x45 &&
-    bytes[10] === 0x42 &&
-    bytes[11] === 0x50
-  ) {
-    return { mime: 'image/webp', ext: 'webp' };
-  }
-  // GIF: GIF87a hoặc GIF89a
-  if (
-    bytes[0] === 0x47 &&
-    bytes[1] === 0x49 &&
-    bytes[2] === 0x46 &&
-    bytes[3] === 0x38 &&
-    (bytes[4] === 0x37 || bytes[4] === 0x39) &&
-    bytes[5] === 0x61
-  ) {
-    return { mime: 'image/gif', ext: 'gif' };
-  }
-  // AVIF: ftypavif hoặc ftypavis
-  if (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
-    const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
-    if (brand === 'avif' || brand === 'avis') {
-      return { mime: 'image/avif', ext: 'avif' };
-    }
-  }
-
-  return null;
-}
-
-// Phân tích IP dạng chuỗi (hỗ trợ cả dword, octal, hex, dot-decimal)
-function parseIpv4ToNumber(ipStr: string): number | null {
-  const parts = ipStr.split('.');
-  if (parts.length === 1) {
-    // Dword format (vd: 2130706433 cho 127.0.0.1)
-    const num = Number(parts[0]);
-    if (!isNaN(num) && num >= 0 && num <= 0xffffffff) return num;
-    return null;
-  }
-  if (parts.length === 4) {
-    let num = 0;
-    for (let i = 0; i < 4; i++) {
-      const p = parts[i].trim();
-      let partNum = 0;
-      if (p.startsWith('0x') || p.startsWith('0X')) {
-        partNum = parseInt(p, 16);
-      } else if (p.startsWith('0') && p.length > 1) {
-        partNum = parseInt(p, 8);
-      } else {
-        partNum = parseInt(p, 10);
-      }
-      if (isNaN(partNum) || partNum < 0 || partNum > 255) return null;
-      num = (num << 8) | partNum;
-    }
-    return num >>> 0;
-  }
-  return null;
-}
-
-function isPrivateIpv4(num: number): boolean {
-  const a = (num >>> 24) & 0xff;
-  const b = (num >>> 16) & 0xff;
-  // 0.0.0.0/8
-  if (a === 0) return true;
-  // 10.0.0.0/8
-  if (a === 10) return true;
-  // 127.0.0.0/8
-  if (a === 127) return true;
-  // 169.254.0.0/16
-  if (a === 169 && b === 254) return true;
-  // 172.16.0.0/12
-  if (a === 172 && b >= 16 && b <= 31) return true;
-  // 192.168.0.0/16
-  if (a === 192 && b === 168) return true;
-  // 224.0.0.0/4 (multicast) & 240.0.0.0/4 (reserved)
-  if (a >= 224) return true;
-  return false;
-}
-
-// Kiểm tra địa chỉ IPv6 có thuộc dải nội bộ / loopback / link-local / unique-local / metadata không
-function isPrivateIpv6(ipStr: string): boolean {
-  let cleanIp = ipStr.toLowerCase().trim();
-  if (cleanIp.startsWith('[') && cleanIp.endsWith(']')) {
-    cleanIp = cleanIp.slice(1, -1);
-  }
-  // Loopback / Unspecified
-  if (cleanIp === '::1' || cleanIp === '0:0:0:0:0:0:0:1' || cleanIp === '::' || cleanIp === '0:0:0:0:0:0:0:0') {
-    return true;
-  }
-  // Link-local unicast (fe80::/10 -> fe80:, fe90:, fea0:, feb0:)
-  if (/^fe[89ab][0-9a-f]:/i.test(cleanIp) || cleanIp.startsWith('fe80:')) {
-    return true;
-  }
-  // Unique local addresses (fc00::/7 -> fc00:, fd00:)
-  if (/^f[cd][0-9a-f]{2}:/i.test(cleanIp) || cleanIp.startsWith('fc00:') || cleanIp.startsWith('fd00:')) {
-    return true;
-  }
-  // Multicast (ff00::/8)
-  if (/^ff[0-9a-f]{2}:/i.test(cleanIp) || cleanIp.startsWith('ff')) {
-    return true;
-  }
-  // Documentation (2001:db8::/32)
-  if (cleanIp.startsWith('2001:db8:') || cleanIp.startsWith('2001:0db8:')) {
-    return true;
-  }
-  // IPv4-mapped IPv6 (::ffff:w.x.y.z)
-  if (cleanIp.includes('::ffff:')) {
-    const parts = cleanIp.split('::ffff:');
-    const v4 = parts[1];
-    if (v4) {
-      const num = parseIpv4ToNumber(v4);
-      if (num !== null && isPrivateIpv4(num)) return true;
-    }
-    return true;
-  }
-  return false;
-}
-
-// Chống SSRF nâng cao khi tải ảnh từ URL ngoài (Nhóm 4)
-function isSafeExternalUrl(urlStr: string): boolean {
-  try {
-    const parsed = new URL(urlStr);
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
-    let host = parsed.hostname.toLowerCase().trim();
-    if (host.startsWith('[') && host.endsWith(']')) {
-      host = host.slice(1, -1);
-    }
-    // Chặn tên miền nội bộ, localhost, cloud metadata
-    if (
-      host === 'localhost' ||
-      host === '::1' ||
-      host === '0:0:0:0:0:0:0:1' ||
-      host.endsWith('.local') ||
-      host.endsWith('.internal') ||
-      host.endsWith('.localhost') ||
-      host === 'metadata.google.internal' ||
-      host === 'instance-data'
-    ) {
-      return false;
-    }
-    // Chặn IPv6 Link-local, Unique local, IPv4-mapped
-    if (isPrivateIpv6(host)) {
-      return false;
-    }
-    // Kiểm tra IPv4 mã hóa
-    const ipv4Num = parseIpv4ToNumber(host);
-    if (ipv4Num !== null && isPrivateIpv4(ipv4Num)) {
-      return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Phân giải DNS qua Cloudflare DoH để chống tấn công DNS Rebinding và tên miền trỏ về IP nội bộ (cả IPv4 và IPv6)
-async function resolveAndValidateHostDns(hostname: string, depth = 0): Promise<{ ok: boolean; error?: string }> {
-  if (depth > 3) {
-    return { ok: false, error: `Chuỗi chuyển hướng DNS CNAME vượt quá giới hạn (Loop detected: ${hostname})` };
-  }
-
-  // Nếu host đã là địa chỉ IP trực tiếp, isSafeExternalUrl đã thẩm định
-  if (parseIpv4ToNumber(hostname) !== null) {
-    return { ok: true };
-  }
-  if (hostname.includes(':')) {
-    if (isPrivateIpv6(hostname)) {
-      return { ok: false, error: `Địa chỉ IPv6 ${hostname} thuộc dải nội bộ/bị chặn.` };
-    }
-    return { ok: true };
-  }
-
-  try {
-    const dohA = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=A`;
-    const dohAAAA = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=AAAA`;
-
-    const [resA, resAAAA] = await Promise.all([
-      fetch(dohA, { headers: { Accept: 'application/dns-json' }, signal: AbortSignal.timeout(3500) }).catch(() => null),
-      fetch(dohAAAA, { headers: { Accept: 'application/dns-json' }, signal: AbortSignal.timeout(3500) }).catch(() => null),
-    ]);
-
-    const dataA: any = resA?.ok ? await resA.json().catch(() => null) : null;
-    const dataAAAA: any = resAAAA?.ok ? await resAAAA.json().catch(() => null) : null;
-
-    const answersA = Array.isArray(dataA?.Answer) ? dataA.Answer : [];
-    const answersAAAA = Array.isArray(dataAAAA?.Answer) ? dataAAAA.Answer : [];
-    const allAnswers = [...answersA, ...answersAAAA];
-
-    if (allAnswers.length === 0) {
-      return { ok: false, error: `Tên miền không tồn tại hoặc không thể phân giải qua DNS: ${hostname}` };
-    }
-
-    let hasValidIp = false;
-    const cnamesToFollow: string[] = [];
-
-    for (const record of allAnswers) {
-      // Type 1: A (IPv4)
-      if (record.type === 1 && typeof record.data === 'string') {
-        const ip = record.data.trim();
-        const ipv4Num = parseIpv4ToNumber(ip);
-        if (ipv4Num === null || isPrivateIpv4(ipv4Num)) {
-          return {
-            ok: false,
-            error: `Tên miền ${hostname} phân giải về IPv4 nội bộ (${ip}) bị chặn (Chống SSRF / DNS Rebinding).`,
-          };
-        }
-        hasValidIp = true;
-      }
-      // Type 28: AAAA (IPv6)
-      else if (record.type === 28 && typeof record.data === 'string') {
-        const ip6 = record.data.trim();
-        if (isPrivateIpv6(ip6)) {
-          return {
-            ok: false,
-            error: `Tên miền ${hostname} phân giải về IPv6 nội bộ (${ip6}) bị chặn (Chống SSRF / DNS Rebinding).`,
-          };
-        }
-        hasValidIp = true;
-      }
-      // Type 5: CNAME
-      else if (record.type === 5 && typeof record.data === 'string') {
-        const targetCname = record.data.trim().replace(/\.$/, '');
-        if (targetCname && targetCname.toLowerCase() !== hostname.toLowerCase()) {
-          cnamesToFollow.push(targetCname);
-        }
-      }
-    }
-
-    // Nếu chỉ có CNAME mà chưa có bản ghi A/AAAA trong câu trả lời, đệ quy kiểm tra CNAME đích
-    if (!hasValidIp && cnamesToFollow.length > 0) {
-      for (const target of cnamesToFollow) {
-        const cnameCheck = await resolveAndValidateHostDns(target, depth + 1);
-        if (!cnameCheck.ok) return cnameCheck;
-      }
-      return { ok: true };
-    }
-
-    if (!hasValidIp) {
-      return { ok: false, error: `Tên miền ${hostname} không có bản ghi A hoặc AAAA hợp lệ.` };
-    }
-
-    return { ok: true };
-  } catch (err: any) {
-    return { ok: false, error: `Kiểm tra DNS chống DNS rebinding thất bại: ${err?.message || 'timeout'}` };
-  }
-}
+export {
+  parseIpv4ToNumber,
+  isPrivateIpv4,
+  isPrivateIpv6,
+  isSafeExternalUrl,
+  resolveAndValidateHostDns,
+  validateImageMagicBytes,
+};
+const detectImageMime = validateImageMagicBytes;
 
 // Tải an toàn ảnh ngoài: HEAD request kiểm tra kích thước & Content-Type, follow redirect an toàn
 async function fetchSafeExternalImage(
@@ -834,43 +585,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Giới hạn số lượng ảnh cho mỗi mục (tối đa 10 ảnh / mục) - Yêu cầu bắt buộc section_id (Fail-Closed)
     const sectionId = String(body.section_id || body.item_id || '').trim();
-    if (!sectionId) {
+    const quotaCheck = await checkSectionImageLimit(env.DB, sectionId);
+    if (!quotaCheck.allowed) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Yêu cầu mã định danh mục (section_id) để tải ảnh và kiểm soát hạn mức ảnh.',
+          error: quotaCheck.error,
         }),
-        { status: 400, headers: CORS_HEADERS }
+        { status: quotaCheck.status, headers: CORS_HEADERS }
       );
     }
     const safeSectionId = sectionId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'sec';
-    try {
-      // Đếm cả 3 trường hợp: (1) Cột section_id chuẩn; (2) Tiền tố sec_${safeSectionId}_; (3) Ảnh cũ có chứa id mục
-      const countRow = await env.DB.prepare(`
-        SELECT COUNT(*) as count FROM homepage_section_images 
-        WHERE section_id = ? OR id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')
-      `)
-        .bind(sectionId, safeSectionId, safeSectionId)
-        .first<any>();
-      if (countRow && Number(countRow.count) >= 10) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Mục này đã đạt giới hạn tối đa 10 ảnh (${countRow.count}/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.`,
-          }),
-          { status: 400, headers: CORS_HEADERS }
-        );
-      }
-    } catch (err: any) {
-      console.error('[Upload Image Error] Failed to verify 10-image limit (fail-closed):', err);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Không thể xác thực số lượng ảnh hiện có trong mục (Lỗi cơ sở dữ liệu). Thao tác tải ảnh bị chặn vì lý do an toàn (Fail-closed).',
-        }),
-        { status: 500, headers: CORS_HEADERS }
-      );
-    }
 
     // Kiểm tra Magic Bytes để xác thực định dạng ảnh thật (Nhóm 5)
     const detected = detectImageMime(rawBytes);
@@ -958,57 +683,31 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const finalBase64 = uint8ToBase64(finalBytes);
 
     // Lưu vào D1 bảng homepage_section_images (Không lưu vào system_settings để chống phình CSDL)
-    await env.DB
-      .prepare(`
-        INSERT INTO homepage_section_images (
-          id, file_name, content_type, image_base64, original_size_bytes, size_bytes,
-          width, height, is_compressed, compression_error, source, section_id, created_at, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      `)
-      .bind(
-        imageId,
-        fileName,
-        finalContentType,
-        finalBase64,
-        originalSizeBytes,
-        finalSizeBytes,
-        imageWidth,
-        imageHeight,
-        isCompressed ? 1 : 0,
-        compressionError || null,
-        sourceMode,
-        sectionId
-      )
-      .run();
+    await insertSectionImage(env.DB, {
+      id: imageId,
+      file_name: fileName,
+      content_type: finalContentType,
+      image_base64: finalBase64,
+      original_size_bytes: originalSizeBytes,
+      size_bytes: finalSizeBytes,
+      width: imageWidth,
+      height: imageHeight,
+      is_compressed: isCompressed ? 1 : 0,
+      compression_error: compressionError || null,
+      source: sourceMode,
+      section_id: sectionId,
+    });
 
     // Kiểm tra nguyên tử chống tranh chấp đồng thời (Post-Insert Atomic Concurrency Guard)
-    // Nếu 2 upload chạy đồng thời khi đã có 9 ảnh, cả 2 đều vượt qua kiểm tra trước chèn.
-    // Kiểm tra lại sau chèn: nếu tổng số ảnh vượt quá 10, tự động hoàn tác (xóa bản ghi vừa chèn) và trả 400.
-    try {
-      const postCountRow = await env.DB.prepare(`
-        SELECT COUNT(*) as count FROM homepage_section_images 
-        WHERE section_id = ? OR id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')
-      `)
-        .bind(sectionId, safeSectionId, safeSectionId)
-        .first<any>();
-
-      if (postCountRow && Number(postCountRow.count) > 10) {
-        await env.DB.prepare('DELETE FROM homepage_section_images WHERE id = ?')
-          .bind(imageId)
-          .run()
-          .catch(() => {});
-
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Mục này đã đạt giới hạn tối đa 10 ảnh (${Number(postCountRow.count) - 1}/10). Thao tác tải ảnh bị hủy để bảo đảm tính nguyên tử và chống tranh chấp đồng thời.`,
-          }),
-          { status: 400, headers: CORS_HEADERS }
-        );
-      }
-    } catch (atomicErr) {
-      console.warn('[Upload Image] Post-insert concurrency check warning:', atomicErr);
+    const postCheck = await postInsertAtomicCheckAndRollback(env.DB, sectionId, imageId);
+    if (!postCheck.valid) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: postCheck.error,
+        }),
+        { status: 400, headers: CORS_HEADERS }
+      );
     }
 
     const imageUrl = `/api/homepage-images/${imageId}`;

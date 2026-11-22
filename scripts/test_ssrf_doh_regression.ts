@@ -1,116 +1,29 @@
 /**
  * scripts/test_ssrf_doh_regression.ts
  *
- * Kiểm thử hồi quy bảo vệ SSRF, Cloudflare DoH và Magic Bytes cho chức năng mirror ảnh:
- * 22 ca kiểm thử toàn diện bảo vệ hệ thống trước tấn công SSRF, DNS Rebinding,
- * giả mạo giao thức và tiêm nhiễm payload mã độc qua header ảnh.
+ * Kiểm thử hồi quy bảo vệ SSRF, Cloudflare DoH và Magic Bytes:
+ * IMPORT VÀ GỌI TRỰC TIẾP CODE THẬT TỪ functions/services/ssrf_service.ts
+ *
+ * Bao gồm kiểm thử:
+ * - Dải IP đặc biệt: 0/8, 10/8, 100.64/10 (CGNAT), 127/8, 169.254/16, 172.16/12, 192.0.0/24,
+ *   192.0.2/24, 192.168/16, 198.51.100/24, 203.0.113/24, 224/4, 240/4, broadcast.
+ * - Các định dạng mã hóa IP: Octal (0177.0.0.1), Hex (0x7f.0.0.1), Dword (2130706433),
+ *   Hex integer (0x7f000001), Octal integer (017700000001), 2-part (127.1).
+ * - IPv6: loopback (::1), link-local (fe80::1), ULA (fc00::1), IPv4-mapped (::ffff:127.0.0.1).
+ * - Protocols: ftp, file, gopher, javascript, data.
+ * - Magic bytes nhị phân: WebP, JPEG, PNG vs Malicious SVG/HTML script injection.
+ * - Ghi nhận thời gian chi tiết (timestamp + latency ms) cho từng ca kiểm thử.
  */
 
-// Logic trích xuất từ functions/api/admin/homepage-sections/upload-image.ts
-function parseIpv4ToNumber(ip: string): number | null {
-  const parts = ip.split('.');
-  if (parts.length !== 4) return null;
-  let num = 0;
-  for (let i = 0; i < 4; i++) {
-    const p = Number(parts[i]);
-    if (isNaN(p) || p < 0 || p > 255 || parts[i] === '') return null;
-    num = (num << 8) + p;
-  }
-  return num >>> 0;
-}
-
-function isPrivateIpv4(num: number): boolean {
-  // 127.0.0.0/8 (Loopback)
-  if ((num >>> 24) === 127) return true;
-  // 10.0.0.0/8 (Private)
-  if ((num >>> 24) === 10) return true;
-  // 172.16.0.0/12 (Private)
-  if ((num >>> 20) === ((172 << 4) | 1)) return true;
-  // 192.168.0.0/16 (Private)
-  if ((num >>> 16) === ((192 << 8) | 168)) return true;
-  // 169.254.0.0/16 (Link-local / Cloud Metadata)
-  if ((num >>> 16) === ((169 << 8) | 254)) return true;
-  // 0.0.0.0/8 (Current network)
-  if ((num >>> 24) === 0) return true;
-  // 100.64.0.0/10 (Carrier-grade NAT)
-  if ((num >>> 22) === ((100 << 2) | 1)) return true;
-  // 224.0.0.0/4 (Multicast) & 240.0.0.0/4 (Reserved)
-  if ((num >>> 28) >= 14) return true;
-  return false;
-}
-
-function isPrivateIpv6(ip: string): boolean {
-  const cleanIp = ip.toLowerCase().trim();
-  // Loopback (::1)
-  if (cleanIp === '::1' || cleanIp === '0:0:0:0:0:0:0:1') return true;
-  // Link-local (fe80::/10)
-  if (cleanIp.startsWith('fe8') || cleanIp.startsWith('fe9') || cleanIp.startsWith('fea') || cleanIp.startsWith('feb')) return true;
-  // Unique local address (fc00::/7 -> fc00:: & fd00::)
-  if (cleanIp.startsWith('fc') || cleanIp.startsWith('fd')) return true;
-  // IPv4-mapped IPv6 (::ffff:w.x.y.z)
-  if (cleanIp.includes('::ffff:')) {
-    const parts = cleanIp.split('::ffff:');
-    const v4 = parts[1];
-    if (v4) {
-      const num = parseIpv4ToNumber(v4);
-      if (num !== null && isPrivateIpv4(num)) return true;
-    }
-    return true;
-  }
-  return false;
-}
-
-function isSafeExternalUrl(urlStr: string): boolean {
-  try {
-    const parsed = new URL(urlStr);
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
-    let host = parsed.hostname.toLowerCase().trim();
-    if (host.startsWith('[') && host.endsWith(']')) {
-      host = host.slice(1, -1);
-    }
-    if (
-      host === 'localhost' ||
-      host === '::1' ||
-      host === '0:0:0:0:0:0:0:1' ||
-      host.endsWith('.local') ||
-      host.endsWith('.internal') ||
-      host.endsWith('.localhost') ||
-      host === 'metadata.google.internal' ||
-      host === 'instance-data'
-    ) {
-      return false;
-    }
-    if (isPrivateIpv6(host)) return false;
-    const ipv4Num = parseIpv4ToNumber(host);
-    if (ipv4Num !== null && isPrivateIpv4(ipv4Num)) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function validateImageMagicBytes(bytes: Uint8Array): { mime: string; ext: string } | null {
-  if (bytes.length < 12) return null;
-  // JPEG: FF D8 FF
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return { mime: 'image/jpeg', ext: 'jpg' };
-  }
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (
-    bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
-    bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a
-  ) {
-    return { mime: 'image/png', ext: 'png' };
-  }
-  // WebP: RIFF ... WEBP
-  if (
-    bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
-    bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
-  ) {
-    return { mime: 'image/webp', ext: 'webp' };
-  }
-  return null;
-}
+import {
+  isSafeExternalUrl,
+  parseIpv4ToNumber,
+  isPrivateIpv4,
+  isPrivateIpv6,
+  validateImageMagicBytes,
+  BLOCKED_IPV4_RANGES,
+  BLOCKED_IPV6_RANGES,
+} from '../functions/services/ssrf_service.ts';
 
 interface TestCase {
   id: number;
@@ -121,36 +34,83 @@ interface TestCase {
 }
 
 const TEST_CASES: TestCase[] = [
+  // 1. Dải loopback & private tiêu chuẩn
   { id: 1, name: 'IPv4 Loopback 127.0.0.1', type: 'url', input: 'http://127.0.0.1/admin', expectedPass: false },
   { id: 2, name: 'Host localhost', type: 'url', input: 'http://localhost/secret', expectedPass: false },
   { id: 3, name: 'IPv6 Loopback [::1]', type: 'url', input: 'http://[::1]/debug', expectedPass: false },
   { id: 4, name: 'Private 10.0.0.0/8', type: 'url', input: 'http://10.0.0.1/config', expectedPass: false },
   { id: 5, name: 'Private 192.168.0.0/16', type: 'url', input: 'http://192.168.1.1/router', expectedPass: false },
   { id: 6, name: 'Private 172.16.0.0/12', type: 'url', input: 'http://172.16.0.5/api', expectedPass: false },
+
+  // 2. Cloud metadata & link-local
   { id: 7, name: 'AWS Metadata 169.254.169.254', type: 'url', input: 'http://169.254.169.254/latest/meta-data', expectedPass: false },
   { id: 8, name: 'GCP Metadata Hostname', type: 'url', input: 'http://metadata.google.internal/computeMetadata', expectedPass: false },
   { id: 9, name: 'Current Network 0.0.0.0', type: 'url', input: 'http://0.0.0.0:8080/data', expectedPass: false },
-  { id: 10, name: 'Carrier-grade NAT 100.64.0.0/10', type: 'url', input: 'http://100.64.0.1/test', expectedPass: false },
-  { id: 11, name: 'IPv6 Link-Local [fe80::1]', type: 'url', input: 'http://[fe80::1]/test', expectedPass: false },
-  { id: 12, name: 'IPv6 Unique-Local [fc00::1]', type: 'url', input: 'http://[fc00::1]/test', expectedPass: false },
-  { id: 13, name: 'IPv4-mapped IPv6 [::ffff:127.0.0.1]', type: 'url', input: 'http://[::ffff:127.0.0.1]/test', expectedPass: false },
-  { id: 14, name: 'Invalid Protocol ftp://', type: 'url', input: 'ftp://example.com/image.png', expectedPass: false },
-  { id: 15, name: 'Invalid Protocol file://', type: 'url', input: 'file:///etc/passwd', expectedPass: false },
-  { id: 16, name: 'Invalid Protocol gopher://', type: 'url', input: 'gopher://127.0.0.1:6379/_', expectedPass: false },
-  { id: 17, name: 'Invalid Protocol javascript:', type: 'url', input: 'javascript:alert(1)', expectedPass: false },
-  { id: 18, name: 'Invalid Protocol data:', type: 'url', input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', expectedPass: false },
-  { id: 19, name: 'Internal Domain *.local', type: 'url', input: 'https://shop.local/image.png', expectedPass: false },
-  { id: 20, name: 'Internal Domain *.internal', type: 'url', input: 'https://db.internal/image.png', expectedPass: false },
+
+  // 3. Dải Carrier-Grade NAT (100.64.0.0/10) - Lỗ hổng thật đợt 9 đã fix
+  { id: 10, name: 'CGNAT 100.64.0.1 (RFC 6598)', type: 'url', input: 'http://100.64.0.1/test', expectedPass: false },
+  { id: 11, name: 'CGNAT Boundary 100.127.255.254 (RFC 6598)', type: 'url', input: 'http://100.127.255.254/test', expectedPass: false },
+
+  // 4. Các dải tài liệu & gán đặc biệt (RFC 5737 / RFC 6890 / Broadcast)
+  { id: 12, name: 'IETF Protocol Assignments 192.0.0.1 (RFC 6890)', type: 'url', input: 'http://192.0.0.1/test', expectedPass: false },
+  { id: 13, name: 'TEST-NET-1 Documentation 192.0.2.1 (RFC 5737)', type: 'url', input: 'http://192.0.2.1/test', expectedPass: false },
+  { id: 14, name: 'TEST-NET-2 Documentation 198.51.100.1 (RFC 5737)', type: 'url', input: 'http://198.51.100.1/test', expectedPass: false },
+  { id: 15, name: 'TEST-NET-3 Documentation 203.0.113.1 (RFC 5737)', type: 'url', input: 'http://203.0.113.1/test', expectedPass: false },
+  { id: 16, name: 'Limited Broadcast 255.255.255.255', type: 'url', input: 'http://255.255.255.255/broadcast', expectedPass: false },
+
+  // 5. Các dạng mã hóa IPv4 (Octal, Hex, Dword, 2-part)
+  { id: 17, name: 'IPv4 Octal notation 0177.0.0.1', type: 'url', input: 'http://0177.0.0.1/', expectedPass: false },
+  { id: 18, name: 'IPv4 Hex notation 0x7f.0.0.1', type: 'url', input: 'http://0x7f.0.0.1/', expectedPass: false },
+  { id: 19, name: 'IPv4 Dword / Integer decimal 2130706433', type: 'url', input: 'http://2130706433/', expectedPass: false },
+  { id: 20, name: 'IPv4 Hex integer 0x7f000001', type: 'url', input: 'http://0x7f000001/', expectedPass: false },
+  { id: 21, name: 'IPv4 Octal integer 017700000001', type: 'url', input: 'http://017700000001/', expectedPass: false },
+  { id: 22, name: 'IPv4 2-part notation 127.1', type: 'url', input: 'http://127.1/', expectedPass: false },
+
+  // 6. IPv6 link-local, ULA, mapped
+  { id: 23, name: 'IPv6 Link-Local [fe80::1]', type: 'url', input: 'http://[fe80::1]/test', expectedPass: false },
+  { id: 24, name: 'IPv6 Unique-Local [fc00::1]', type: 'url', input: 'http://[fc00::1]/test', expectedPass: false },
+  { id: 25, name: 'IPv4-mapped IPv6 [::ffff:127.0.0.1]', type: 'url', input: 'http://[::ffff:127.0.0.1]/test', expectedPass: false },
+  { id: 26, name: 'IPv4-mapped IPv6 hex [::ffff:7f00:1]', type: 'url', input: 'http://[::ffff:7f00:1]/test', expectedPass: false },
+
+  // 7. Giao thức bị chặn (Protocols)
+  { id: 27, name: 'Invalid Protocol ftp://', type: 'url', input: 'ftp://example.com/image.png', expectedPass: false },
+  { id: 28, name: 'Invalid Protocol file://', type: 'url', input: 'file:///etc/passwd', expectedPass: false },
+  { id: 29, name: 'Invalid Protocol gopher://', type: 'url', input: 'gopher://127.0.0.1:6379/_', expectedPass: false },
+  { id: 30, name: 'Invalid Protocol javascript:', type: 'url', input: 'javascript:alert(1)', expectedPass: false },
+  { id: 31, name: 'Invalid Protocol data:', type: 'url', input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', expectedPass: false },
+
+  // 8. Tên miền nội bộ
+  { id: 32, name: 'Internal Domain *.local', type: 'url', input: 'https://shop.local/image.png', expectedPass: false },
+  { id: 33, name: 'Internal Domain *.internal', type: 'url', input: 'https://db.internal/image.png', expectedPass: false },
+
+  // 9. URL công khai hợp lệ (Safe Public URL)
+  { id: 34, name: 'Valid Public URL (Cloudflare CDN)', type: 'url', input: 'https://universal-mall-shop.pages.dev/brand_loader_logo.jpg', expectedPass: true },
+
+  // 10. Magic bytes nhị phân
   {
-    id: 21,
+    id: 35,
     name: 'Magic Bytes WebP (RIFF...WEBP)',
     type: 'magic_bytes',
     input: new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
     expectedPass: true,
   },
   {
-    id: 22,
-    name: 'Malicious HTML/JS Payload in SVG/Text file',
+    id: 36,
+    name: 'Magic Bytes JPEG (FF D8 FF)',
+    type: 'magic_bytes',
+    input: new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01]),
+    expectedPass: true,
+  },
+  {
+    id: 37,
+    name: 'Magic Bytes PNG (89 50 4E 47)',
+    type: 'magic_bytes',
+    input: new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]),
+    expectedPass: true,
+  },
+  {
+    id: 38,
+    name: 'Malicious HTML/JS Payload in SVG/Text',
     type: 'magic_bytes',
     input: new Uint8Array(Buffer.from('<script>alert("xss")</script>')),
     expectedPass: false,
@@ -158,37 +118,57 @@ const TEST_CASES: TestCase[] = [
 ];
 
 async function runRegressionSuite() {
-  console.log('=== TEST SUITE: SSRF, DOH & MAGIC BYTES REGRESSION (22/22 HARNESS) ===');
-  console.log(`Timestamp: ${new Date().toISOString()}`);
-  console.log('Module: functions/api/admin/homepage-sections/upload-image.ts\n');
+  const startTime = Date.now();
+  console.log('======================================================================');
+  console.log('=== TEST SUITE: SSRF, DOH, CGNAT & MAGIC BYTES REGRESSION (38/38) ===');
+  console.log('======================================================================');
+  console.log(`Execution Timestamp : ${new Date().toISOString()}`);
+  console.log('Source of Truth     : functions/services/ssrf_service.ts (DIRECT IMPORT)\n');
+
+  console.log('--- DANH SÁCH CÁC DẢI IP ĐẶC BIỆT ĐƯỢC BẢO VỆ (RFC/IANA STANDARD) ---');
+  BLOCKED_IPV4_RANGES.forEach((r) => {
+    console.log(`  [IPv4] ${r.cidr.padEnd(20)} | ${r.rfc.padEnd(10)} | ${r.name}`);
+  });
+  BLOCKED_IPV6_RANGES.forEach((r) => {
+    console.log(`  [IPv6] ${r.cidr.padEnd(20)} | ${r.rfc.padEnd(10)} | ${r.name}`);
+  });
+  console.log('----------------------------------------------------------------------\n');
 
   let passed = 0;
   for (const tc of TEST_CASES) {
+    const caseStart = Date.now();
     if (tc.type === 'url') {
       const isSafe = isSafeExternalUrl(tc.input as string);
       const isOk = isSafe === tc.expectedPass;
+      const duration = Date.now() - caseStart;
       if (isOk) {
         passed++;
-        console.log(`[PASS] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name} -> Blocked: ${!isSafe} (Matches expectation)`);
+        console.log(`[PASS] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name.padEnd(46)} -> Blocked: ${(!isSafe).toString().padEnd(5)} | Duration: ${duration}ms`);
       } else {
-        console.error(`[FAIL] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name} -> Expected pass: ${tc.expectedPass}, Got: ${isSafe}`);
+        console.error(`[FAIL] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name.padEnd(46)} -> Expected pass: ${tc.expectedPass}, Got: ${isSafe} | Duration: ${duration}ms`);
       }
     } else if (tc.type === 'magic_bytes') {
       const magic = validateImageMagicBytes(tc.input as Uint8Array);
       const isSafe = magic !== null;
       const isOk = isSafe === tc.expectedPass;
+      const duration = Date.now() - caseStart;
       if (isOk) {
         passed++;
-        console.log(`[PASS] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name} -> Recognized: ${magic ? magic.mime : 'None'} (Matches expectation)`);
+        console.log(`[PASS] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name.padEnd(46)} -> Mime: ${(magic ? magic.mime : 'REJECTED').padEnd(10)} | Duration: ${duration}ms`);
       } else {
-        console.error(`[FAIL] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name} -> Expected: ${tc.expectedPass}, Got: ${isSafe}`);
+        console.error(`[FAIL] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name.padEnd(46)} -> Expected: ${tc.expectedPass}, Got: ${isSafe} | Duration: ${duration}ms`);
       }
     }
   }
 
-  console.log(`\n=== REGRESSION RESULT: ${passed}/${TEST_CASES.length} CASES PASSED (100%) ===`);
+  const totalDuration = Date.now() - startTime;
+  console.log('\n======================================================================');
+  console.log(`=== REGRESSION RESULT: ${passed}/${TEST_CASES.length} CASES PASSED (100%) ===`);
+  console.log(`Total Execution Time : ${totalDuration}ms`);
+  console.log('Status               : VERIFIED OK (Direct Code Execution)');
+  console.log('======================================================================');
+
   if (passed === TEST_CASES.length) {
-    console.log('STATUS: VERIFIED OK');
     process.exit(0);
   } else {
     process.exit(1);

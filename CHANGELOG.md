@@ -5,6 +5,33 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-23]
+
+### 437. Khắc Phục Triệt Để Đợt 10 Trang Chủ: Chặn SSRF CGNAT 100.64.0.0/10, Quản Trị Giới Hạn 10 Ảnh Kín, Tách Service Thực Thi & Test Thật 100%, Xóa Sạch Chuỗi Cứng i18n & Đính Chính Số Liệu (23/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục toàn diện các tồn đọng theo báo cáo kiểm chứng đợt 9 (commit `e27f7cb`):
+    * **Nhóm 1 (E2E & Tối ưu tốc độ)**: Giữ nguyên mục `main_hero_banner` và ảnh `sec_main_hero_banner_real_e2e_v1.webp` trong D1; kiểm chứng resize 3 kích thước `?w=480/800/1200` và làm rõ nguyên nhân `?w=800` (4.944 bytes) lớn hơn ảnh gốc (4.232 bytes) do quá trình bicubic resampling và re-encoding lossy làm tăng entropy pixel trên ảnh đồ họa gradient đơn sắc; đo lường tốc độ tải trang chủ và endpoint `/api/homepage-sections` tách bạch rõ cold start và cache hit.
+    * **Nhóm 2 (SSRF CGNAT, Giới hạn 10 ảnh kín & Bảng hồi quy thật)**:
+      1. Tách module chuyên biệt `functions/services/ssrf_service.ts` chặn triệt để dải Carrier-Grade NAT `100.64.0.0/10` (RFC 6598), dải documentation (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`), `192.0.0.0/24`, broadcast, IPv6 ULA/link-local/mapped IPv4 dạng dot lẫn hex integer, và các biến thể octal/hex/dword.
+      2. Tách module quản lý ảnh `functions/services/homepage_image_service.ts` kiểm soát hạn mức 10 ảnh kín với cơ chế 2 đầu: Pre-insert Fail-Closed và Post-Insert Atomic Concurrency Guard tự động Rollback (xóa ảnh 11) khi có tranh chấp đồng thời 2 request song song lúc 9 ảnh.
+      3. Viết lại 2 script test để IMPORT VÀ GỌI TRỰC TIẾP CODE PRODUCTION THẬT: `scripts/test_ssrf_doh_regression.ts` (38/38 PASS 100% trong 11ms, log tại `docs/test_ssrf_doh_regression.txt`) và `scripts/test_upload_11_images.ts` (22/22 PASS 100% trong 10ms, log tại `docs/test_upload_11_images.txt`).
+      4. Chuẩn hóa Bảng hồi quy 8 mục đợt 6 trong `docs/regression_batch6_audit.md`, phân định rõ Code Audit vs Live Verification, xóa bỏ endpoint giả định.
+    * **Nhóm 3 (i18n, Số liệu & tsc)**:
+      1. Đính chính chuẩn xác cặp số 86/82: 86 là số khóa định nghĩa trong `vi.json` thuộc object `homepageSectionsModule` ở đợt 9; 82 là số lần gọi hàm `t(...)` (call sites) với 64 khóa duy nhất. Sau đợt 10, số lần gọi `t(...)` tăng lên **176 call sites** với **148 khóa duy nhất**, **0 toán tử ternary hardcode**, và **0 fallback `||`**.
+      2. Dọn sạch toàn bộ 13 chuỗi toast lỗi tiếng Việt cứng và 10 toán tử ternary `isEn ?` trong `HomepageSectionsModule.tsx`.
+      3. Bổ sung khóa thiếu `admin.dataTable.batchSelected` vào `src/locales/en.json`.
+      4. Chạy lại bài test tsc cố tình chèn lỗi kiểu, ghi nhận mã thoát Exit Code 2 khớp cả TS2322 lẫn TS6133 vào `docs/tsc_check_deliberate_error.txt` với timestamp mới.
+      5. Ghi nhận minh bạch 3.232 chuỗi / 92 file là Backlog thật của `ISSUE-315` kèm lộ trình phân kỳ: Đợt 10–12 xử lý 914 chuỗi (Top 3 của 3 cụm); 2.318 chuỗi còn lại là backlog dài hạn mở; ghi nhận rõ ràng mục Blocked về khóa `GEMINI_API_KEY` và `TINYPNG_API_KEY`.
+- **Kết quả kiểm thử**:
+  - `npm run check:i18n`: PASS 100% (15/15 files phạm vi chuẩn, 0 chuỗi tiếng Việt ghi cứng ngoài từ điển).
+  - `tsc -p tsconfig.homepage.json --noEmit`: PASS 100% (0 lỗi).
+  - Test Suite SSRF & DoH (`scripts/test_ssrf_doh_regression.ts`): 38/38 PASS 100%.
+  - Test Suite 10 Images Quota & Concurrency Guard (`scripts/test_upload_11_images.ts`): 22/22 PASS 100%.
+  - Rule 10 Zero secrets in git & code: PASS 100% (0 secrets).
+  - Trạng thái Git trước triển khai: Clean 100% (`commit_dirty: false`).
+
+---
+
 ## [2026-11-22]
 
 ### 436. Khắc Phục Triệt Để Đợt 9 Trang Chủ: Tối Ưu Tốc Độ Tải Endpoint (13,7s -> <200ms), Bằng Chứng E2E Thật Giữ Lại D1, Concurrency Guard & Test Artifacts (22/11/2026)

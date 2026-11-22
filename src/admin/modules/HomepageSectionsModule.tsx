@@ -284,13 +284,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             })
           );
         } else {
-          showAdminToast('info', data.compression_error || 'Chưa đạt chuẩn nén.');
+          showAdminToast('info', data.compression_error || t('homepageSectionsModule.notCompressed'));
         }
       } else {
-        showAdminToast('error', data?.error || 'Nén lại thất bại.');
+        showAdminToast('error', data?.error || t('homepageSectionsModule.recompressFailed'));
       }
     } catch (e: any) {
-      showAdminToast('error', e?.message || 'Lỗi mạng khi nén lại ảnh.');
+      showAdminToast('error', e?.message || t('homepageSectionsModule.recompressNetworkError'));
     } finally {
       setRetryingId(null);
     }
@@ -752,7 +752,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   const handleFileSelect = async (file: File) => {
     const val = validateImageFile(file);
     if (!val.valid) {
-      showAdminToast('error', val.error || 'Tệp ảnh không hợp lệ.');
+      showAdminToast('error', val.error || t('homepageSectionsModule.invalidImageFile'));
       return;
     }
 
@@ -805,7 +805,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         showAdminToast('error', data?.error || t('homepageSectionsModule.uploadFailed'));
       }
     } catch (err: any) {
-      showAdminToast('error', err?.message || 'Lỗi kết nối khi tải ảnh.');
+      showAdminToast('error', err?.message || t('homepageSectionsModule.uploadConnectionError'));
     } finally {
       setImageUploading(false);
     }
@@ -816,7 +816,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     if (!mirrorUrlInput.trim()) return;
     const urlVal = validateImageUrl(mirrorUrlInput);
     if (!urlVal.valid) {
-      showAdminToast('error', urlVal.error || 'URL ảnh không an toàn.');
+      showAdminToast('error', urlVal.error || t('homepageSectionsModule.unsafeImageUrl'));
       return;
     }
 
@@ -858,7 +858,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         showAdminToast('error', data?.error || t('homepageSectionsModule.mirrorFailed'));
       }
     } catch (err: any) {
-      showAdminToast('error', err?.message || 'Lỗi kết nối khi tải ảnh ngoài.');
+      showAdminToast('error', err?.message || t('homepageSectionsModule.mirrorConnectionError'));
     } finally {
       setImageMirroring(false);
     }
@@ -894,10 +894,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         setAiUnconfigured(true);
         setAiConfigured(false);
       } else {
-        showAdminToast('error', data?.error || 'Lỗi gọi dịch vụ AI.');
+        showAdminToast('error', data?.error || t('homepageSectionsModule.aiServiceError'));
       }
     } catch (err: any) {
-      showAdminToast('error', err?.message || 'Lỗi mạng khi gọi AI.');
+      showAdminToast('error', err?.message || t('homepageSectionsModule.aiNetworkError'));
     } finally {
       setAiLoading(false);
     }
@@ -950,10 +950,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         setAiImageUnconfigured(true);
         setAiConfigured(false);
       } else {
-        showAdminToast('error', data?.error || 'Lỗi tạo ảnh AI.');
+        showAdminToast('error', data?.error || t('homepageSectionsModule.aiImageGenError'));
       }
     } catch (err: any) {
-      showAdminToast('error', err?.message || 'Lỗi kết nối dịch vụ tạo ảnh AI.');
+      showAdminToast('error', err?.message || t('homepageSectionsModule.aiImageConnectionError'));
     } finally {
       setAiImageLoading(false);
     }
@@ -1013,10 +1013,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         );
         showAdminToast('success', t('homepageSectionsModule.uploadSuccess'));
       } else {
-        showAdminToast('error', data?.error || 'Lỗi lưu ảnh AI.');
+        showAdminToast('error', data?.error || t('homepageSectionsModule.aiSaveError'));
       }
     } catch (err: any) {
-      showAdminToast('error', err?.message || 'Lỗi xử lý ảnh AI.');
+      showAdminToast('error', err?.message || t('homepageSectionsModule.aiProcessError'));
     } finally {
       setImageUploading(false);
     }
@@ -1168,7 +1168,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             type="button"
             onClick={loadData}
             disabled={loading || saving}
-            title={isEn ? 'Reload layout from server' : 'Tải lại cấu hình từ máy chủ'}
+            title={t('homepageSectionsModule.reloadServerConfig')}
             className="p-2 text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors text-xs flex items-center gap-1.5 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -1260,7 +1260,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
               onClick={() => setShowUncompressedList(!showUncompressedList)}
               className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
             >
-              {showUncompressedList ? (isEn ? 'Hide Details' : 'Thu gọn') : (isEn ? 'Show Details' : 'Xem chi tiết')}
+              {showUncompressedList ? t('homepageSectionsModule.hideDetails') : t('homepageSectionsModule.showDetails')}
             </button>
           </div>
           <p className="text-[11px] text-amber-700 dark:text-amber-300/90">
@@ -1322,7 +1322,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     {t('homepageSectionsModule.colName')}
                   </th>
                   <th className="w-[26%] py-3 px-3 text-left">
-                    {isEn ? 'Link / Target' : 'Liên Kết Đích'}
+                    {t('homepageSectionsModule.linkOrTarget')}
                   </th>
                   <th className="w-[12%] py-3 px-3 text-center">
                     {t('homepageSectionsModule.colStatus')}
@@ -1598,7 +1598,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                             <span>{t('homepageSectionsModule.addSubsection')}</span>
                                           </button>
                                           <span className="text-[10px] text-neutral-400 font-normal">
-                                            ({groupSubs.length} mục)
+                                            ({groupSubs.length} {t('homepageSectionsModule.itemsCountSuffix')})
                                           </span>
                                         </div>
                                       </div>
@@ -2050,7 +2050,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     onClick={() => setAiSuggestOpen(!aiSuggestOpen)}
                     className="text-[10px] font-semibold text-primary-600 dark:text-primary-400 hover:underline cursor-pointer"
                   >
-                    {aiSuggestOpen ? (isEn ? 'Collapse' : 'Thu gọn') : (isEn ? 'Open AI Assistant' : 'Mở trợ lý AI')}
+                    {aiSuggestOpen ? t('homepageSectionsModule.collapse') : t('homepageSectionsModule.openAiAssistant')}
                   </button>
                 </div>
 
@@ -2093,11 +2093,11 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     {aiResult && (
                       <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-primary-200 dark:border-primary-800 space-y-2">
                         <div className="text-[11px] font-bold text-neutral-800 dark:text-neutral-200 border-b border-neutral-100 dark:border-neutral-800 pb-1">
-                          {isEn ? 'AI Generated Preview:' : 'Kết quả AI đề xuất (Xem trước):'}
+                          {t('homepageSectionsModule.aiGeneratedPreview')}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
                           <div>
-                            <span className="text-neutral-400">Tiêu đề (VI):</span> <b className="text-neutral-800 dark:text-neutral-100">{aiResult.title_vi}</b>
+                            <span className="text-neutral-400">{t('homepageSectionsModule.titleViLabel')}:</span> <b className="text-neutral-800 dark:text-neutral-100">{aiResult.title_vi}</b>
                           </div>
                           <div>
                             <span className="text-neutral-400">Title (EN):</span> <b className="text-neutral-800 dark:text-neutral-100">{aiResult.title_en}</b>
@@ -2239,7 +2239,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
                     }`}
                   >
-                    Trang Hệ Thống
+                    {t('homepageSectionsModule.systemPage')}
                   </button>
                   <button
                     type="button"
@@ -2250,7 +2250,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
                     }`}
                   >
-                    Đường Dẫn Nội Bộ
+                    {t('homepageSectionsModule.internalPath')}
                   </button>
                   <button
                     type="button"
@@ -2261,7 +2261,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
                     }`}
                   >
-                    Liên Kết Ngoài
+                    {t('homepageSectionsModule.externalLink')}
                   </button>
                 </div>
 
@@ -2287,7 +2287,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 ) : (
                   <div>
                     <label className="block text-[11px] font-medium text-neutral-600 dark:text-neutral-400 mb-1">
-                      {editingItem.link_type === 'external' ? 'URL liên kết ngoài (https://...):' : 'Đường dẫn nội bộ (/...):'}
+                      {editingItem.link_type === 'external' ? t('homepageSectionsModule.externalUrlPrompt') : t('homepageSectionsModule.internalPathPrompt')}
                     </label>
                     <input
                       type="text"
@@ -2415,7 +2415,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                   <div>
                     <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-400 mb-0.5">
-                      Alt text Tiếng Việt:
+                      {t('homepageSectionsModule.altTextVi')}
                     </label>
                     <input
                       type="text"
@@ -2510,7 +2510,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                           {imageUploading
                             ? t('homepageSectionsModule.uploadingImage')
                             : isDraggingFile
-                            ? (isEn ? 'Drop image file here...' : 'Thả tệp ảnh vào đây...')
+                            ? t('homepageSectionsModule.dropImagePrompt')
                             : t('homepageSectionsModule.dragDropHint')}
                         </span>
                         <span className="text-[10px] text-neutral-400 mt-0.5">
@@ -2586,7 +2586,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                             <option value="1:1">{t('homepageSectionsModule.aiImageRatioIcon')}</option>
                           </select>
 
-                          <span className="text-[10px] text-neutral-500 font-medium ml-1">{isEn ? 'Count' : 'Số ảnh'}</span>
+                          <span className="text-[10px] text-neutral-500 font-medium ml-1">{t('homepageSectionsModule.imageCount')}</span>
                           <select
                             value={aiImageCount}
                             onChange={(e) => setAiImageCount(Number(e.target.value))}
@@ -2627,7 +2627,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                       {aiImageCandidates.length > 0 && (
                         <div className="space-y-1.5 pt-1">
                           <div className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400">
-                            {isEn ? 'Select an image to compress and use:' : 'Nhấp chọn ảnh bên dưới để nén và sử dụng:'}
+                            {t('homepageSectionsModule.selectImageToUse')}
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             {aiImageCandidates.map((c) => (
@@ -2818,7 +2818,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
                     }`}
                   >
-                    Trang Hệ Thống
+                    {t('homepageSectionsModule.systemPage')}
                   </button>
                   <button
                     type="button"
@@ -2829,7 +2829,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
                     }`}
                   >
-                    Đường Dẫn Nội Bộ
+                    {t('homepageSectionsModule.internalPath')}
                   </button>
                   <button
                     type="button"
@@ -2840,7 +2840,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
                     }`}
                   >
-                    Liên Kết Ngoài
+                    {t('homepageSectionsModule.externalLink')}
                   </button>
                 </div>
 
@@ -2941,7 +2941,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             </div>
 
             <div className="p-3 rounded-lg bg-neutral-100 dark:bg-neutral-800/60 text-[11px] font-mono text-neutral-600 dark:text-neutral-400">
-              ID: {deletingSub.sub.id} (Thuộc: {deletingSub.parentId})
+              ID: {deletingSub.sub.id} ({t('homepageSectionsModule.parentSection')}: {deletingSub.parentId})
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">

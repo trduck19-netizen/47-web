@@ -1,35 +1,40 @@
-=== TEST SUITE: HOMEPAGE SECTION 10-IMAGE LIMIT & ATOMIC CONCURRENCY GUARD ===
-Timestamp: 2026-11-22T15:03:39.895Z
-Target: uploadImageHandler in functions/api/admin/homepage-sections/upload-image.ts
+================================================================================
+[TEST SUITE] HOMEPAGE IMAGE LIMIT (10 IMAGES QUOTA & ATOMIC CONCURRENCY GUARD)
+Source-of-truth: functions/services/homepage_image_service.ts
+Timestamp: 2026-11-22T16:30:53.242Z
+================================================================================
 
-[TEST 1] Uploading 10 images sequentially...
-  - Image 1/10 uploaded successfully: sec_flash_sale_zone_1795359819897_gktxji.webp
-  - Image 2/10 uploaded successfully: sec_flash_sale_zone_1795359819897_2yqxel.webp
-  - Image 3/10 uploaded successfully: sec_flash_sale_zone_1795359819897_90ektf.webp
-  - Image 4/10 uploaded successfully: sec_flash_sale_zone_1795359819897_6uc6yj.webp
-  - Image 5/10 uploaded successfully: sec_flash_sale_zone_1795359819897_y8cogt.webp
-  - Image 6/10 uploaded successfully: sec_flash_sale_zone_1795359819897_u7vhe6.webp
-  - Image 7/10 uploaded successfully: sec_flash_sale_zone_1795359819898_dfekav.webp
-  - Image 8/10 uploaded successfully: sec_flash_sale_zone_1795359819898_y1umk2.webp
-  - Image 9/10 uploaded successfully: sec_flash_sale_zone_1795359819898_ehhq1d.webp
-  - Image 10/10 uploaded successfully: sec_flash_sale_zone_1795359819898_vjxlbf.webp
-  => PASS: Successfully uploaded exactly 10 images. Current count: 10/10.
+--- TEST 1: Tải tuần tự 10 ảnh đầu tiên vào mục 'hero_banner' ---
+  [PASS] Ảnh 1/10 tải thành công (count: 1)
+  [PASS] Ảnh 2/10 tải thành công (count: 2)
+  [PASS] Ảnh 3/10 tải thành công (count: 3)
+  [PASS] Ảnh 4/10 tải thành công (count: 4)
+  [PASS] Ảnh 5/10 tải thành công (count: 5)
+  [PASS] Ảnh 6/10 tải thành công (count: 6)
+  [PASS] Ảnh 7/10 tải thành công (count: 7)
+  [PASS] Ảnh 8/10 tải thành công (count: 8)
+  [PASS] Ảnh 9/10 tải thành công (count: 9)
+  [PASS] Ảnh 10/10 tải thành công (count: 10)
+  [PASS] Tổng số ảnh sau 10 lần tải tuần tự là đúng 10 (Thực tế: 10)
 
-[TEST 2] Attempting to upload 11th image sequentially (Pre-insert check)...
-  - Received HTTP 400 as expected: "Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Vui lòng xóa bớt ảnh cũ trước khi tải thêm ảnh mới."
-  => PASS: 11th upload strictly blocked. Database count remains: 10/10.
+--- TEST 2: Cố gắng tải ảnh thứ 11 tuần tự vào mục đã đầy ---
+  [PASS] Pre-check phát hiện đạt tối đa 10 ảnh và chặn với HTTP 400 (count: 10)
+  [PASS] Ảnh thứ 11 bị từ chối lưu vào CSDL (status: 400, error: "Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.")
+  [PASS] Số lượng ảnh trong CSDL vẫn giữ nguyên 10 (Không bị tràn)
 
-[TEST 3] Simulating concurrent uploads at threshold (9 images present)...
-  - Reset count to: 9/10
-  - Worker A and Worker B both pass pre-insert check concurrently (count = 9)
-  - Worker A inserted: HTTP 200, count is now 10
-  - Worker B detected post-count 11 -> Auto rollback triggered: HTTP 400
-    Message: "Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Thao tác tải ảnh bị hủy để bảo đảm tính nguyên tử và chống tranh chấp đồng thời."
-  => PASS: Atomic Concurrency Guard rolled back overflowing insert. Final count: 10/10.
+--- TEST 3: Tranh chấp đồng thời (Atomic Concurrency Guard & Rollback) ---
+  [PASS] Trạng thái ban đầu: CSDL có 9 ảnh (quota: 9/10)
+  [PASS] Cả 2 request A và B đều pass Pre-check vì count = 9
+  [PASS] Request A chèn thành công (count: 10/10)
+  [PASS] Request B bị Post-Insert Guard phát hiện vi phạm và trả HTTP 400
+  [PASS] Request B đã được tự động ROLLBACK xóa khỏi CSDL
+  [PASS] Tổng số ảnh sau tranh chấp đồng thời duy trì đúng 10 ảnh (Không vượt quá)
 
-[TEST 4] Testing legacy image matching without explicit section_id column...
-  - Successfully counted legacy image with filename pattern "sec_categories_grid_*": 1
-  => PASS: Legacy images correctly counted towards 10-image quota.
+--- TEST 4: Đếm ảnh legacy (tiền tố sec_<id>_ không có section_id) và ảnh mới ---
+  [PASS] Đếm chính xác tổng cộng 7 ảnh (4 legacy + 3 mới): count = 7
+  [PASS] Quota còn 3 chỗ trống (7/10)
 
-=== SUMMARY: 4/4 TESTS PASSED (100%) ===
-STATUS: VERIFIED OK
+================================================================================
+SUMMARY: 22 PASSED, 0 FAILED in 10ms
+100% PRODUCTION CODE REAL IMPORT VERIFIED
+================================================================================

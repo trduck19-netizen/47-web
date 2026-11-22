@@ -1,29 +1,74 @@
-=== TEST SUITE: SSRF, DOH & MAGIC BYTES REGRESSION (22/22 HARNESS) ===
-Timestamp: 2026-11-22T15:05:08.440Z
-Module: functions/api/admin/homepage-sections/upload-image.ts
+======================================================================
+=== TEST SUITE: SSRF, DOH, CGNAT & MAGIC BYTES REGRESSION (38/38) ===
+======================================================================
+Execution Timestamp : 2026-11-22T16:20:23.832Z
+Source of Truth     : functions/services/ssrf_service.ts (DIRECT IMPORT)
 
-[PASS] Case 01: IPv4 Loopback 127.0.0.1 -> Blocked: true (Matches expectation)
-[PASS] Case 02: Host localhost -> Blocked: true (Matches expectation)
-[PASS] Case 03: IPv6 Loopback [::1] -> Blocked: true (Matches expectation)
-[PASS] Case 04: Private 10.0.0.0/8 -> Blocked: true (Matches expectation)
-[PASS] Case 05: Private 192.168.0.0/16 -> Blocked: true (Matches expectation)
-[PASS] Case 06: Private 172.16.0.0/12 -> Blocked: true (Matches expectation)
-[PASS] Case 07: AWS Metadata 169.254.169.254 -> Blocked: true (Matches expectation)
-[PASS] Case 08: GCP Metadata Hostname -> Blocked: true (Matches expectation)
-[PASS] Case 09: Current Network 0.0.0.0 -> Blocked: true (Matches expectation)
-[PASS] Case 10: Carrier-grade NAT 100.64.0.0/10 -> Blocked: true (Matches expectation)
-[PASS] Case 11: IPv6 Link-Local [fe80::1] -> Blocked: true (Matches expectation)
-[PASS] Case 12: IPv6 Unique-Local [fc00::1] -> Blocked: true (Matches expectation)
-[PASS] Case 13: IPv4-mapped IPv6 [::ffff:127.0.0.1] -> Blocked: true (Matches expectation)
-[PASS] Case 14: Invalid Protocol ftp:// -> Blocked: true (Matches expectation)
-[PASS] Case 15: Invalid Protocol file:// -> Blocked: true (Matches expectation)
-[PASS] Case 16: Invalid Protocol gopher:// -> Blocked: true (Matches expectation)
-[PASS] Case 17: Invalid Protocol javascript: -> Blocked: true (Matches expectation)
-[PASS] Case 18: Invalid Protocol data: -> Blocked: true (Matches expectation)
-[PASS] Case 19: Internal Domain *.local -> Blocked: true (Matches expectation)
-[PASS] Case 20: Internal Domain *.internal -> Blocked: true (Matches expectation)
-[PASS] Case 21: Magic Bytes WebP (RIFF...WEBP) -> Recognized: image/webp (Matches expectation)
-[PASS] Case 22: Malicious HTML/JS Payload in SVG/Text file -> Recognized: None (Matches expectation)
+--- DANH SÁCH CÁC DẢI IP ĐẶC BIỆT ĐƯỢC BẢO VỆ (RFC/IANA STANDARD) ---
+  [IPv4] 0.0.0.0/8            | RFC 1122   | Current network (this host on this network)
+  [IPv4] 10.0.0.0/8           | RFC 1918   | Private-Use Networks
+  [IPv4] 100.64.0.0/10        | RFC 6598   | Shared Address Space / Carrier-Grade NAT (CGNAT)
+  [IPv4] 127.0.0.0/8          | RFC 1122   | Loopback
+  [IPv4] 169.254.0.0/16       | RFC 3927   | Link-Local / Cloud Metadata (AWS/GCP/Azure)
+  [IPv4] 172.16.0.0/12        | RFC 1918   | Private-Use Networks
+  [IPv4] 192.0.0.0/24         | RFC 6890   | IETF Protocol Assignments
+  [IPv4] 192.0.2.0/24         | RFC 5737   | TEST-NET-1 Documentation
+  [IPv4] 192.168.0.0/16       | RFC 1918   | Private-Use Networks
+  [IPv4] 198.51.100.0/24      | RFC 5737   | TEST-NET-2 Documentation
+  [IPv4] 203.0.113.0/24       | RFC 5737   | TEST-NET-3 Documentation
+  [IPv4] 224.0.0.0/4          | RFC 5771   | Multicast
+  [IPv4] 240.0.0.0/4          | RFC 1112   | Reserved for Future Use
+  [IPv4] 255.255.255.255/32   | RFC 919    | Limited Broadcast
+  [IPv6] ::1/128              | RFC 4291   | IPv6 Loopback
+  [IPv6] ::/128               | RFC 4291   | IPv6 Unspecified address
+  [IPv6] fe80::/10            | RFC 4291   | Link-Local Unicast
+  [IPv6] fc00::/7             | RFC 4193   | Unique Local Address (ULA - fc00::/8 & fd00::/8)
+  [IPv6] ff00::/8             | RFC 4291   | Multicast
+  [IPv6] 2001:db8::/32        | RFC 3849   | Documentation
+  [IPv6] ::ffff:0:0/96        | RFC 4291   | IPv4-mapped IPv6 Address
+----------------------------------------------------------------------
 
-=== REGRESSION RESULT: 22/22 CASES PASSED (100%) ===
-STATUS: VERIFIED OK
+[PASS] Case 01: IPv4 Loopback 127.0.0.1                        -> Blocked: true  | Duration: 1ms
+[PASS] Case 02: Host localhost                                 -> Blocked: true  | Duration: 0ms
+[PASS] Case 03: IPv6 Loopback [::1]                            -> Blocked: true  | Duration: 0ms
+[PASS] Case 04: Private 10.0.0.0/8                             -> Blocked: true  | Duration: 1ms
+[PASS] Case 05: Private 192.168.0.0/16                         -> Blocked: true  | Duration: 0ms
+[PASS] Case 06: Private 172.16.0.0/12                          -> Blocked: true  | Duration: 0ms
+[PASS] Case 07: AWS Metadata 169.254.169.254                   -> Blocked: true  | Duration: 0ms
+[PASS] Case 08: GCP Metadata Hostname                          -> Blocked: true  | Duration: 0ms
+[PASS] Case 09: Current Network 0.0.0.0                        -> Blocked: true  | Duration: 0ms
+[PASS] Case 10: CGNAT 100.64.0.1 (RFC 6598)                    -> Blocked: true  | Duration: 0ms
+[PASS] Case 11: CGNAT Boundary 100.127.255.254 (RFC 6598)      -> Blocked: true  | Duration: 0ms
+[PASS] Case 12: IETF Protocol Assignments 192.0.0.1 (RFC 6890) -> Blocked: true  | Duration: 1ms
+[PASS] Case 13: TEST-NET-1 Documentation 192.0.2.1 (RFC 5737)  -> Blocked: true  | Duration: 0ms
+[PASS] Case 14: TEST-NET-2 Documentation 198.51.100.1 (RFC 5737) -> Blocked: true  | Duration: 0ms
+[PASS] Case 15: TEST-NET-3 Documentation 203.0.113.1 (RFC 5737) -> Blocked: true  | Duration: 0ms
+[PASS] Case 16: Limited Broadcast 255.255.255.255              -> Blocked: true  | Duration: 0ms
+[PASS] Case 17: IPv4 Octal notation 0177.0.0.1                 -> Blocked: true  | Duration: 0ms
+[PASS] Case 18: IPv4 Hex notation 0x7f.0.0.1                   -> Blocked: true  | Duration: 0ms
+[PASS] Case 19: IPv4 Dword / Integer decimal 2130706433        -> Blocked: true  | Duration: 0ms
+[PASS] Case 20: IPv4 Hex integer 0x7f000001                    -> Blocked: true  | Duration: 0ms
+[PASS] Case 21: IPv4 Octal integer 017700000001                -> Blocked: true  | Duration: 0ms
+[PASS] Case 22: IPv4 2-part notation 127.1                     -> Blocked: true  | Duration: 0ms
+[PASS] Case 23: IPv6 Link-Local [fe80::1]                      -> Blocked: true  | Duration: 0ms
+[PASS] Case 24: IPv6 Unique-Local [fc00::1]                    -> Blocked: true  | Duration: 0ms
+[PASS] Case 25: IPv4-mapped IPv6 [::ffff:127.0.0.1]            -> Blocked: true  | Duration: 0ms
+[PASS] Case 26: IPv4-mapped IPv6 hex [::ffff:7f00:1]           -> Blocked: true  | Duration: 0ms
+[PASS] Case 27: Invalid Protocol ftp://                        -> Blocked: true  | Duration: 0ms
+[PASS] Case 28: Invalid Protocol file://                       -> Blocked: true  | Duration: 0ms
+[PASS] Case 29: Invalid Protocol gopher://                     -> Blocked: true  | Duration: 0ms
+[PASS] Case 30: Invalid Protocol javascript:                   -> Blocked: true  | Duration: 0ms
+[PASS] Case 31: Invalid Protocol data:                         -> Blocked: true  | Duration: 0ms
+[PASS] Case 32: Internal Domain *.local                        -> Blocked: true  | Duration: 0ms
+[PASS] Case 33: Internal Domain *.internal                     -> Blocked: true  | Duration: 0ms
+[PASS] Case 34: Valid Public URL (Cloudflare CDN)              -> Blocked: false | Duration: 0ms
+[PASS] Case 35: Magic Bytes WebP (RIFF...WEBP)                 -> Mime: image/webp | Duration: 1ms
+[PASS] Case 36: Magic Bytes JPEG (FF D8 FF)                    -> Mime: image/jpeg | Duration: 0ms
+[PASS] Case 37: Magic Bytes PNG (89 50 4E 47)                  -> Mime: image/png  | Duration: 0ms
+[PASS] Case 38: Malicious HTML/JS Payload in SVG/Text          -> Mime: REJECTED   | Duration: 0ms
+
+======================================================================
+=== REGRESSION RESULT: 38/38 CASES PASSED (100%) ===
+Total Execution Time : 11ms
+Status               : VERIFIED OK (Direct Code Execution)
+======================================================================
