@@ -5,6 +5,35 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-22]
+
+### 431. Tối Ưu Quản Trị Trang Chủ Đợt 2 & 3: Quản Lý Ảnh, Nén Client HTML5 Canvas, Bảng D1 Chống Phình, Tích Hợp TinyPNG API & Trợ Lý AI Gợi Ý/Tạo Ảnh (22/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Hoàn tất chuỗi nâng cấp 3 đợt cho module "Tùy Chỉnh Hiển Thị Trang Chủ" (`HomepageSectionsModule.tsx` và `ShopeeTestView.tsx`):
+    * Đợt 1: Tùy chỉnh tên nội bộ, tiêu đề VI/EN, link điều hướng, mô tả, huy hiệu và tự thêm mục con.
+    * Đợt 2: Quản lý ảnh (tải file lên, dán link ngoài Zero-Hotlink mirror), nén giảm dung lượng phía trình duyệt bằng HTML5 Canvas, bảng D1 riêng biệt `homepage_section_images` (chống phình JSON `system_settings`), và nén tự động WebP máy chủ qua ImageScript.
+    * Đợt 3: Trợ lý AI gợi ý tiêu đề/mô tả/huy hiệu song ngữ VI/EN (Gemini API), AI tạo ảnh từ câu lệnh (Imagen/AI Image Generation) kèm alt text VI/EN, và tích hợp API nén ảnh ngoài chuyên dụng TinyPNG (Tinify API) với cơ chế phòng vệ Fallback 100% không bao giờ làm mất ảnh.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — AI Gợi Ý Tiêu Đề, Mô Tả & Huy Hiệu Song Ngữ*:
+     - Viết mới endpoint `POST /api/admin/homepage-sections/ai-suggest`: Nhận ý chính chiến dịch từ admin, gọi Gemini API (`gemini-1.5-flash`), xuất JSON song ngữ `{ title_vi, title_en, description_vi, description_en, badge_vi, badge_en }`.
+     - Phía admin: Hiển thị thanh "Gợi ý bằng AI" trong modal sửa. AI chỉ đề xuất cho admin xem trước, có nút "Áp Dụng" và "Bỏ Qua".
+     - Bảo mật & Fail-Safe: Khóa API để trong `GEMINI_API_KEY` (Cloudflare Secret). Nếu chưa cấu hình, báo trạng thái thân thiện, toàn bộ form sửa mục vẫn dùng bình thường 100%.
+  2. *Nhóm 2 — AI Tạo Ảnh Từ Câu Lệnh & Tự Động Nén WebP*:
+     - Viết mới endpoint `POST /api/admin/homepage-sections/ai-generate-image`: Nhận prompt mô tả + tỉ lệ khung hình (16:9 banner hoặc 1:1 icon), trả về danh sách 2–4 ảnh ứng viên kèm sẵn alt text VI/EN.
+     - Khi admin chọn ảnh, hệ thống tự động đưa qua luồng nén client canvas + nén máy chủ WebP trước khi lưu vào D1.
+  3. *Nhóm 3 & 4 — API Nén Ảnh Ngoài TinyPNG & Kiểm Soát Chi Phí*:
+     - Dịch vụ lựa chọn: **TinyPNG (Tinify API)** — Chuẩn công nghiệp về nén ảnh WebP/PNG/JPEG.
+     - Cấu hình qua Cloudflare Secret `TINYPNG_API_KEY`. Khi lưu ảnh mới: Gửi ảnh sang `https://api.tinify.com/shrink`, nhận về ảnh tối ưu, máy chủ tiếp tục kiểm tra và chuẩn hóa WebP.
+     - Cơ chế phòng vệ Fallback bắt buộc: Nếu TinyPNG hết hạn mức (429), lỗi mạng, hoặc chưa cấu hình khóa, hệ thống tự động fallback sang bộ nén nội bộ ImageScript của máy chủ và Canvas của client. Không bao giờ chặn việc lưu mục và không bao giờ để mất ảnh.
+  4. *Nhóm 5 — Hiển Thị Web Khách, Bảo Mật & 100% Song Ngữ*:
+     - `ShopeeTestView.tsx`: Banner chính hiển thị `heroSection.image_url` với `loading="eager"` và aspect-ratio chống CLS. Toàn bộ shortcuts/subsections hiển thị `sub.image_url` với `loading="lazy"` kích thước chuẩn 44x44px.
+     - Bảo mật Magic Bytes: Chỉ nhận JPEG, PNG, WebP, GIF, AVIF. Chặn hoàn toàn file SVG (chống XSS). Chặn SSRF private IP khi mirror URL.
+     - Khai báo 32 translation keys đối xứng trong `vi.json` và `en.json`. Quét `check:i18n` đạt 0 chuỗi hardcoded.
+  5. *Quy Trình Triển Khai (Mệnh Lệnh Rule 6)*:
+     - Build Edge Worker bundle và Vite frontend thành công 100%. Deploy đồng bộ lên cả 2 Cloudflare Pages `universal-mall-shop` và `admin-universal-mall`.
+
+---
+
 ## [2026-11-21]
 
 ### 430. Khắc Phục Rò Rỉ Pepper Client, Chuyển Đổi Đặt Lại Mật Khẩu Admin Sang Server-Side PBKDF2 & Triệt Tiêu Math.random Còn Sót (21/11/2026)

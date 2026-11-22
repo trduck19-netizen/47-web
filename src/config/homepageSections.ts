@@ -81,6 +81,14 @@ export interface HomepageSubsectionDefinition {
   badge_vi?: string;
   badge_en?: string;
   is_custom?: boolean;
+  // Trường ảnh mở rộng (Đợt 2/3 - Nhóm 1)
+  image_url?: string;
+  image_alt_vi?: string;
+  image_alt_en?: string;
+  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_original_size?: number;
+  image_compressed_size?: number;
+  image_compression_error?: string;
 }
 
 export interface HomepageSubsectionState {
@@ -108,6 +116,14 @@ export interface HomepageSubsectionState {
   badge_vi?: string;
   badge_en?: string;
   is_custom?: boolean;
+  // Trường ảnh mở rộng (Đợt 2/3 - Nhóm 1)
+  image_url?: string;
+  image_alt_vi?: string;
+  image_alt_en?: string;
+  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_original_size?: number;
+  image_compressed_size?: number;
+  image_compression_error?: string;
 }
 
 export type HomepageSubsectionConfig = HomepageSubsectionState & Partial<HomepageSubsectionDefinition>;
@@ -133,6 +149,14 @@ export interface HomepageSectionState {
   description_en?: string;
   badge_vi?: string;
   badge_en?: string;
+  // Trường ảnh mở rộng (Đợt 2/3 - Nhóm 1)
+  image_url?: string;
+  image_alt_vi?: string;
+  image_alt_en?: string;
+  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_original_size?: number;
+  image_compressed_size?: number;
+  image_compression_error?: string;
 }
 
 export type HomepageSectionConfig = HomepageSectionState & Partial<HomepageSectionDefinition> & {
@@ -778,6 +802,13 @@ export function mergeSubsectionsConfig(
           description_en: saved.description_en,
           badge_vi: saved.badge_vi,
           badge_en: saved.badge_en,
+          image_url: saved.image_url,
+          image_alt_vi: saved.image_alt_vi,
+          image_alt_en: saved.image_alt_en,
+          image_compression_status: saved.image_compression_status,
+          image_original_size: saved.image_original_size,
+          image_compressed_size: saved.image_compressed_size,
+          image_compression_error: saved.image_compression_error,
         });
         if (saved.order > maxOrder) maxOrder = saved.order;
       } else {
@@ -830,6 +861,13 @@ export function mergeHomepageSectionsConfig(
         description_en: item.description_en,
         badge_vi: item.badge_vi,
         badge_en: item.badge_en,
+        image_url: item.image_url,
+        image_alt_vi: item.image_alt_vi,
+        image_alt_en: item.image_alt_en,
+        image_compression_status: item.image_compression_status,
+        image_original_size: item.image_original_size,
+        image_compressed_size: item.image_compressed_size,
+        image_compression_error: item.image_compression_error,
       });
     }
   });
@@ -858,6 +896,13 @@ export function mergeHomepageSectionsConfig(
         description_en: saved.description_en,
         badge_vi: saved.badge_vi,
         badge_en: saved.badge_en,
+        image_url: saved.image_url,
+        image_alt_vi: saved.image_alt_vi,
+        image_alt_en: saved.image_alt_en,
+        image_compression_status: saved.image_compression_status,
+        image_original_size: saved.image_original_size,
+        image_compressed_size: saved.image_compressed_size,
+        image_compression_error: saved.image_compression_error,
       });
       if (saved.order > maxOrder) maxOrder = saved.order;
     } else {
@@ -960,6 +1005,13 @@ export function validateHomepageSectionsPayload(body: any): {
           icon: typeof subItem.icon === 'string' ? subItem.icon.slice(0, 50) : undefined,
           groupNameVi: typeof subItem.groupNameVi === 'string' ? subItem.groupNameVi.slice(0, 50) : undefined,
           groupNameEn: typeof subItem.groupNameEn === 'string' ? subItem.groupNameEn.slice(0, 50) : undefined,
+          image_url: typeof subItem.image_url === 'string' ? subItem.image_url.trim().slice(0, 1000) : undefined,
+          image_alt_vi: typeof subItem.image_alt_vi === 'string' ? subItem.image_alt_vi.trim().slice(0, 200) : undefined,
+          image_alt_en: typeof subItem.image_alt_en === 'string' ? subItem.image_alt_en.trim().slice(0, 200) : undefined,
+          image_compression_status: ['compressed', 'original_fallback', 'failed'].includes(subItem.image_compression_status) ? subItem.image_compression_status : undefined,
+          image_original_size: typeof subItem.image_original_size === 'number' ? subItem.image_original_size : undefined,
+          image_compressed_size: typeof subItem.image_compressed_size === 'number' ? subItem.image_compressed_size : undefined,
+          image_compression_error: typeof subItem.image_compression_error === 'string' ? subItem.image_compression_error.trim().slice(0, 500) : undefined,
         });
       }
 
@@ -1007,6 +1059,13 @@ export function validateHomepageSectionsPayload(body: any): {
       description_en: typeof item.description_en === 'string' ? item.description_en.trim().slice(0, 255) : undefined,
       badge_vi: typeof item.badge_vi === 'string' ? item.badge_vi.trim().slice(0, 30) : undefined,
       badge_en: typeof item.badge_en === 'string' ? item.badge_en.trim().slice(0, 30) : undefined,
+      image_url: typeof item.image_url === 'string' ? item.image_url.trim().slice(0, 1000) : undefined,
+      image_alt_vi: typeof item.image_alt_vi === 'string' ? item.image_alt_vi.trim().slice(0, 200) : undefined,
+      image_alt_en: typeof item.image_alt_en === 'string' ? item.image_alt_en.trim().slice(0, 200) : undefined,
+      image_compression_status: ['compressed', 'original_fallback', 'failed'].includes(item.image_compression_status) ? item.image_compression_status : undefined,
+      image_original_size: typeof item.image_original_size === 'number' ? item.image_original_size : undefined,
+      image_compressed_size: typeof item.image_compressed_size === 'number' ? item.image_compressed_size : undefined,
+      image_compression_error: typeof item.image_compression_error === 'string' ? item.image_compression_error.trim().slice(0, 500) : undefined,
     });
   }
 
@@ -1029,6 +1088,22 @@ export function validateHomepageSectionsPayload(body: any): {
   });
 
   return { valid: true, sanitized };
+}
+
+/**
+ * Kiểm tra tính an toàn và hợp lệ của đường dẫn ảnh
+ * Ngăn chặn tuyệt đối các đường dẫn thực thi script (javascript:, data: nguy hiểm)
+ */
+export function validateImageUrl(url?: string): { valid: boolean; error?: string } {
+  if (!url || !url.trim()) return { valid: true };
+  const trimmed = url.trim();
+  if (/^(javascript:|data:|vbscript:)/i.test(trimmed)) {
+    return { valid: false, error: 'URL ảnh không an toàn (chặn javascript/data URL).' };
+  }
+  if (!/^(\/|https?:\/\/)/i.test(trimmed)) {
+    return { valid: false, error: 'Đường dẫn ảnh phải bắt đầu bằng / hoặc https://' };
+  }
+  return { valid: true };
 }
 
 /**

@@ -985,6 +985,34 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       }
     };
 
+    const renderIconBox = (emoji: string, colorBorderBg: string) => {
+      const altText = isEn
+        ? sub.image_alt_en || customTitle || sub.nameEn || 'Shortcut'
+        : sub.image_alt_vi || customTitle || sub.nameVi || 'Lối tắt';
+
+      return (
+        <div className={`w-11 h-11 rounded-2xl ${colorBorderBg} flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm relative overflow-hidden`}>
+          {sub.image_url ? (
+            <img
+              src={sub.image_url}
+              alt={altText}
+              loading="lazy"
+              width="44"
+              height="44"
+              className="w-full h-full object-cover rounded-2xl"
+            />
+          ) : (
+            emoji
+          )}
+          {customBadge && (
+            <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs z-10">
+              {customBadge}
+            </span>
+          )}
+        </div>
+      );
+    };
+
     switch (shortcutId) {
       case 'shortcut_instant_delivery':
         return (
@@ -993,14 +1021,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             onClick={() => handleShortcutClick(() => onOpenReceivedCodes ? onOpenReceivedCodes('orders') : onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem mã giao 0s', 'info'))} 
             className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-orange-500 relative">
-              ⚡
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('⚡', 'bg-orange-500/10 border border-orange-500/30 text-orange-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
               {customTitle || sub.internal_name || t('mall.services.instantDelivery')}
             </span>
@@ -1018,14 +1039,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             })} 
             className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-red-500 relative">
-              🚚
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('🚚', 'bg-red-500/10 border border-red-500/30 text-red-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
               {customTitle || sub.internal_name || t('mall.services.courierShipping')}
             </span>
@@ -1038,14 +1052,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             onClick={() => handleShortcutClick(() => setIsGuaranteeOpen(true))} 
             className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-amber-500 relative">
-              🛡️
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('🛡️', 'bg-amber-500/10 border border-amber-500/30 text-amber-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
               {customTitle || sub.internal_name || t('mall.services.protection168h')}
             </span>
@@ -1054,14 +1061,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       case 'shortcut_vietqr_topup':
         return (
           <button key={shortcutId} onClick={() => handleShortcutClick(onOpenWallet)} className="group flex flex-col items-center cursor-pointer relative">
-            <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-blue-500 relative">
-              💳
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('💳', 'bg-blue-500/10 border border-blue-500/30 text-blue-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
               {customTitle || sub.internal_name || t('mall.services.vietqrTopup')}
             </span>
@@ -1078,14 +1078,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             })}
             className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-purple-500 relative">
-              🎡
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('🎡', 'bg-purple-500/10 border border-purple-500/30 text-purple-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
               {customTitle || sub.internal_name || t('mall.services.luckyWheel')}
             </span>
@@ -1098,14 +1091,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             onClick={() => handleShortcutClick(() => setIsCouponModalOpen(true))} 
             className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-emerald-500 relative">
-              🎟️
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('🎟️', 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
               {customTitle || sub.internal_name || t('mall.services.vouchers')}
             </span>
@@ -1118,14 +1104,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             onClick={() => handleShortcutClick(() => setSubView('game-zone'))} 
             className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500 relative">
-              🎮
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('🎮', 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
               {customTitle || sub.internal_name || 'Game Zone'}
             </span>
@@ -1138,14 +1117,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             onClick={() => handleShortcutClick(() => setIsSupportOpen(true))} 
             className="group flex flex-col items-center cursor-pointer relative"
           >
-            <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-pink-500 relative">
-              💬
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('💬', 'bg-pink-500/10 border border-pink-500/30 text-pink-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
               {customTitle || sub.internal_name || t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
             </span>
@@ -1163,14 +1135,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             }}
             className={`group flex flex-col items-center relative ${sub.link_url ? 'cursor-pointer' : 'cursor-default'}`}
           >
-            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl group-hover:-translate-y-1 transition duration-200 shadow-sm text-indigo-500 relative">
-              ✨
-              {customBadge && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500 text-white shadow-xs">
-                  {customBadge}
-                </span>
-              )}
-            </div>
+            {renderIconBox('✨', 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight truncate max-w-[70px]" title={customTitle || sub.internal_name || sub.nameVi}>
               {customTitle || sub.internal_name || sub.nameVi || 'Mục mới'}
             </span>
@@ -1388,6 +1353,16 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   heroLinkUrl ? 'cursor-pointer hover:shadow-md' : ''
                 }`}
               >
+                {/* Ảnh Banner tùy chỉnh từ cấu hình (Đợt 2 & 3: WebP, Eager Loading, Chống CLS) */}
+                {heroSection?.image_url && (
+                  <img
+                    src={heroSection.image_url}
+                    alt={isEn ? (heroSection.image_alt_en || customHeroTitle || 'Hero Banner') : (heroSection.image_alt_vi || customHeroTitle || 'Banner lớn')}
+                    loading="eager"
+                    className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:scale-102 transition duration-500"
+                  />
+                )}
+
                 {/* Nút lùi slide */}
                 <button
                   onClick={(e) => {

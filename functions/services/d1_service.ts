@@ -2344,6 +2344,33 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0038 error]', e);
     }
 
+    // Migration 0039: Homepage Section Images Table (Phase 2/3 - WebP storage & anti-ballooning)
+    try {
+      const mig0039 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0039_homepage_section_images_v1' LIMIT 1").first().catch(() => null);
+      if (!mig0039) {
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS homepage_section_images (
+            id TEXT PRIMARY KEY,
+            file_name TEXT NOT NULL,
+            content_type TEXT NOT NULL,
+            image_base64 TEXT NOT NULL,
+            original_size_bytes INTEGER DEFAULT 0,
+            size_bytes INTEGER DEFAULT 0,
+            width INTEGER DEFAULT 0,
+            height INTEGER DEFAULT 0,
+            is_compressed INTEGER DEFAULT 1,
+            compression_error TEXT,
+            source TEXT DEFAULT 'upload',
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0039_homepage_section_images_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0039 homepage_section_images error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);

@@ -27,6 +27,9 @@ import {
   X,
   Tag,
   AlertTriangle,
+  Image as ImageIcon,
+  UploadCloud,
+  Download,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import {
@@ -36,10 +39,16 @@ import {
   HomepageSubsectionConfig,
   SYSTEM_PAGE_OPTIONS,
   validateLinkUrl,
+  validateImageUrl,
   mergeHomepageSectionsConfig,
   getDefaultHomepageSectionsState,
 } from '../../config/homepageSections';
 import { homepageSectionsService } from '../../services/homepageSectionsService';
+import {
+  compressImageOnClient,
+  validateImageFile,
+  formatFileSize,
+} from '../../utils/clientImageCompressor';
 
 interface HomepageSectionsModuleProps {
   onShowToast?: (...args: any[]) => void;
@@ -59,6 +68,13 @@ interface EditFormState {
   link_type: 'system' | 'internal' | 'external';
   link_url: string;
   link_target: '_self' | '_blank';
+  image_url?: string;
+  image_alt_vi?: string;
+  image_alt_en?: string;
+  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_original_size?: number;
+  image_compressed_size?: number;
+  image_compression_error?: string;
 }
 
 interface AddSubsectionFormState {
@@ -76,6 +92,13 @@ interface AddSubsectionFormState {
   link_type: 'system' | 'internal' | 'external';
   link_url: string;
   link_target: '_self' | '_blank';
+  image_url?: string;
+  image_alt_vi?: string;
+  image_alt_en?: string;
+  image_compression_status?: 'compressed' | 'original_fallback' | 'failed';
+  image_original_size?: number;
+  image_compressed_size?: number;
+  image_compression_error?: string;
 }
 
 export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ onShowToast }) => {
@@ -123,6 +146,150 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
 
   // Modal Xác nhận xóa
   const [deletingSub, setDeletingSub] = useState<{ parentId: string; sub: HomepageSubsectionConfig } | null>(null);
+
+  // Trạng thái xử lý ảnh (Đợt 2/3 - Nhóm 1, 2, 3)
+  const [imageUploading, setImageUploading] = useState<boolean>(false);
+  const [imageMirroring, setImageMirroring] = useState<boolean>(false);
+  const [mirrorUrlInput, setMirrorUrlInput] = useState<string>('');
+  const [imageTab, setImageTab] = useState<'upload' | 'mirror' | 'ai_image'>('upload');
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [showUncompressedList, setShowUncompressedList] = useState<boolean>(true);
+
+  // Trạng thái AI gợi ý nội dung (Đợt 3/3 - Nhóm 1)
+  const [aiSuggestOpen, setAiSuggestOpen] = useState<boolean>(false);
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [aiResult, setAiResult] = useState<{
+    title_vi: string;
+    title_en: string;
+    description_vi: string;
+    description_en: string;
+    badge_vi: string;
+    badge_en: string;
+  } | null>(null);
+  const [aiUnconfigured, setAiUnconfigured] = useState<boolean>(false);
+
+  // Trạng thái AI tạo ảnh (Đợt 3/3 - Nhóm 2)
+  const [aiImagePrompt, setAiImagePrompt] = useState<string>('');
+  const [aiImageRatio, setAiImageRatio] = useState<'16:9' | '1:1'>('16:9');
+  const [aiImageLoading, setAiImageLoading] = useState<boolean>(false);
+  const [aiImageCandidates, setAiImageCandidates] = useState<
+    Array<{ id: string; data_url: string; alt_vi: string; alt_en: string }>
+  >([]);
+  const [aiImageUnconfigured, setAiImageUnconfigured] = useState<boolean>(false);
+
+  // Danh sách các mục/mục con có ảnh chưa đạt chuẩn nén WebP (Nhóm 1)
+  const uncompressedItems = useMemo(() => {
+    const list: Array<{
+      id: string;
+      name: string;
+      parentId?: string;
+      isParent: boolean;
+      imageUrl: string;
+      originalSize?: number;
+      compressedSize?: number;
+      status?: string;
+      error?: string;
+    }> = [];
+
+    sections.forEach((sec) => {
+      if (sec.image_url && sec.image_compression_status !== 'compressed') {
+        list.push({
+          id: sec.id,
+          name: (isEn ? sec.title_en : sec.title_vi) || sec.internal_name || sec.nameVi || sec.id,
+          isParent: true,
+          imageUrl: sec.image_url,
+          originalSize: sec.image_original_size,
+          compressedSize: sec.image_compressed_size,
+          status: sec.image_compression_status,
+          error: sec.image_compression_error,
+        });
+      }
+      if (sec.subsections) {
+        sec.subsections.forEach((sub) => {
+          if (sub.image_url && sub.image_compression_status !== 'compressed') {
+            list.push({
+              id: sub.id,
+              name: (isEn ? sub.title_en : sub.title_vi) || sub.internal_name || sub.nameVi || sub.id,
+              parentId: sec.id,
+              isParent: false,
+              imageUrl: sub.image_url,
+              originalSize: sub.image_original_size,
+              compressedSize: sub.image_compressed_size,
+              status: sub.image_compression_status,
+              error: sub.image_compression_error,
+            });
+          }
+        });
+      }
+    });
+
+    return list;
+  }, [sections, isEn]);
+
+  // Nén lại ảnh chưa đạt chuẩn (Nhóm 1)
+  const handleRetryCompress = async (item: { id: string; parentId?: string; isParent: boolean; imageUrl: string }) => {
+    const imageId = item.imageUrl.replace(/^\/api\/homepage-images\//, '');
+    setRetryingId(item.id);
+    try {
+      const token = getAdminAuthToken();
+      const res = await fetch('/api/admin/homepage-sections/upload-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'retry_compress',
+          image_id: imageId,
+          target_type: item.isParent ? 'banner' : 'icon',
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        if (data.is_compressed) {
+          triggerToast('success', t('homepageSectionsModule.retrySuccess') || 'Đã nén lại thành công!');
+          setSections((prev) =>
+            prev.map((sec) => {
+              if (item.isParent && sec.id === item.id) {
+                return {
+                  ...sec,
+                  image_compression_status: 'compressed',
+                  image_compressed_size: data.compressed_size,
+                  image_compression_error: undefined,
+                };
+              }
+              if (!item.isParent && sec.id === item.parentId && sec.subsections) {
+                return {
+                  ...sec,
+                  subsections: sec.subsections.map((sub) =>
+                    sub.id === item.id
+                      ? {
+                          ...sub,
+                          image_compression_status: 'compressed',
+                          image_compressed_size: data.compressed_size,
+                          image_compression_error: undefined,
+                        }
+                      : sub
+                  ),
+                };
+              }
+              return sec;
+            })
+          );
+        } else {
+          triggerToast('warning', data.compression_error || 'Chưa đạt chuẩn nén.');
+        }
+      } else {
+        triggerToast('error', data?.error || 'Nén lại thất bại.');
+      }
+    } catch (e: any) {
+      triggerToast('error', e?.message || 'Lỗi mạng khi nén lại ảnh.');
+    } finally {
+      setRetryingId(null);
+    }
+  };
 
   const toggleExpand = (id: string) => {
     setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -306,6 +473,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           description_en: s.description_en,
           badge_vi: s.badge_vi,
           badge_en: s.badge_en,
+          image_url: s.image_url,
+          image_alt_vi: s.image_alt_vi,
+          image_alt_en: s.image_alt_en,
+          image_compression_status: s.image_compression_status,
+          image_original_size: s.image_original_size,
+          image_compressed_size: s.image_compressed_size,
+          image_compression_error: s.image_compression_error,
           ...(s.subsections
             ? {
                 subsections: s.subsections.map((sub, sIdx) => ({
@@ -324,6 +498,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   description_en: sub.description_en,
                   badge_vi: sub.badge_vi,
                   badge_en: sub.badge_en,
+                  image_url: sub.image_url,
+                  image_alt_vi: sub.image_alt_vi,
+                  image_alt_en: sub.image_alt_en,
+                  image_compression_status: sub.image_compression_status,
+                  image_original_size: sub.image_original_size,
+                  image_compressed_size: sub.image_compressed_size,
+                  image_compression_error: sub.image_compression_error,
                   is_custom: sub.is_custom,
                   icon: sub.icon,
                   groupNameVi: sub.groupNameVi,
@@ -390,7 +571,23 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       link_type: (item.link_type as any) || (item.link_url?.startsWith('http') ? 'external' : item.link_url?.startsWith('/') || item.link_url?.startsWith('#') ? 'system' : 'internal'),
       link_url: item.link_url || '',
       link_target: item.link_target || (item.link_url?.startsWith('http') ? '_blank' : '_self'),
+      image_url: item.image_url || '',
+      image_alt_vi: item.image_alt_vi || '',
+      image_alt_en: item.image_alt_en || '',
+      image_compression_status: item.image_compression_status,
+      image_original_size: item.image_original_size,
+      image_compressed_size: item.image_compressed_size,
+      image_compression_error: item.image_compression_error,
     });
+    setMirrorUrlInput('');
+    setImageTab('upload');
+    setAiSuggestOpen(false);
+    setAiResult(null);
+    setAiPrompt('');
+    setAiImagePrompt('');
+    setAiImageCandidates([]);
+    setAiUnconfigured(false);
+    setAiImageUnconfigured(false);
   };
 
   // Lưu thông tin từ modal sửa
@@ -413,6 +610,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
             link_type: editingItem.link_type,
             link_url: editingItem.link_url.trim() || undefined,
             link_target: editingItem.link_target,
+            image_url: editingItem.image_url || undefined,
+            image_alt_vi: editingItem.image_alt_vi?.trim() || undefined,
+            image_alt_en: editingItem.image_alt_en?.trim() || undefined,
+            image_compression_status: editingItem.image_compression_status,
+            image_original_size: editingItem.image_original_size,
+            image_compressed_size: editingItem.image_compressed_size,
+            image_compression_error: editingItem.image_compression_error,
           };
         })
       );
@@ -437,6 +641,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                 link_type: editingItem.link_type,
                 link_url: editingItem.link_url.trim() || undefined,
                 link_target: editingItem.link_target,
+                image_url: editingItem.image_url || undefined,
+                image_alt_vi: editingItem.image_alt_vi?.trim() || undefined,
+                image_alt_en: editingItem.image_alt_en?.trim() || undefined,
+                image_compression_status: editingItem.image_compression_status,
+                image_original_size: editingItem.image_original_size,
+                image_compressed_size: editingItem.image_compressed_size,
+                image_compression_error: editingItem.image_compression_error,
               };
             }),
           };
@@ -446,6 +657,271 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
 
     setEditingItem(null);
     triggerToast('info', isEn ? 'Item details updated in local state.' : 'Đã cập nhật thông tin mục vào bảng.');
+  };
+
+  // Xử lý nén ảnh phía client & tải lên (Nhóm 1 & 2)
+  const handleFileSelect = async (file: File) => {
+    const val = validateImageFile(file);
+    if (!val.valid) {
+      triggerToast('error', val.error || 'Tệp ảnh không hợp lệ.');
+      return;
+    }
+
+    setImageUploading(true);
+    try {
+      const targetType = editingItem?.isParent ? 'banner' : 'icon';
+
+      // 1. Thử nén phía client bằng HTML5 Canvas (chuyển WebP, giảm quality nếu vượt dung lượng)
+      const clientRes = await compressImageOnClient(file, targetType);
+
+      // 2. Gửi bản nén (hoặc bản gốc nếu nén client không khả dụng) lên máy chủ
+      const uploadBase64 = clientRes.success && clientRes.dataUrl ? clientRes.dataUrl : await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      const token = getAdminAuthToken();
+      const res = await fetch('/api/admin/homepage-sections/upload-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'upload',
+          image_base64: uploadBase64,
+          file_name: file.name,
+          target_type: targetType,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        setEditingItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                image_url: data.image_url,
+                image_original_size: data.original_size,
+                image_compressed_size: data.compressed_size,
+                image_compression_status: data.compression_status,
+                image_compression_error: data.compression_error || clientRes.warning,
+              }
+            : null
+        );
+        triggerToast('success', t('homepageSectionsModule.uploadSuccess') || 'Đã tải và nén ảnh thành công!');
+      } else {
+        triggerToast('error', data?.error || t('homepageSectionsModule.uploadFailed') || 'Tải ảnh thất bại.');
+      }
+    } catch (err: any) {
+      triggerToast('error', err?.message || 'Lỗi kết nối khi tải ảnh.');
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  // Xử lý dán link ngoài và tải bản sao về (Nhóm 3 - Zero Hotlink)
+  const handleMirrorUrl = async () => {
+    if (!mirrorUrlInput.trim()) return;
+    const urlVal = validateImageUrl(mirrorUrlInput);
+    if (!urlVal.valid) {
+      triggerToast('error', urlVal.error || 'URL ảnh không an toàn.');
+      return;
+    }
+
+    setImageMirroring(true);
+    try {
+      const targetType = editingItem?.isParent ? 'banner' : 'icon';
+      const token = getAdminAuthToken();
+      const res = await fetch('/api/admin/homepage-sections/upload-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'mirror_url',
+          url: mirrorUrlInput.trim(),
+          target_type: targetType,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        setEditingItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                image_url: data.image_url,
+                image_original_size: data.original_size,
+                image_compressed_size: data.compressed_size,
+                image_compression_status: data.compression_status,
+                image_compression_error: data.compression_error,
+              }
+            : null
+        );
+        setMirrorUrlInput('');
+        triggerToast('success', t('homepageSectionsModule.mirrorSuccess') || 'Đã tải bản sao và nén WebP!');
+      } else {
+        triggerToast('error', data?.error || t('homepageSectionsModule.mirrorFailed') || 'Lỗi tải ảnh từ link ngoài.');
+      }
+    } catch (err: any) {
+      triggerToast('error', err?.message || 'Lỗi kết nối khi tải ảnh ngoài.');
+    } finally {
+      setImageMirroring(false);
+    }
+  };
+
+  // Xử lý gọi AI gợi ý tiêu đề/mô tả/huy hiệu (Đợt 3/3 - Nhóm 1)
+  const handleFetchAiSuggest = async () => {
+    if (!editingItem) return;
+    setAiLoading(true);
+    setAiUnconfigured(false);
+    try {
+      const token = getAdminAuthToken();
+      const res = await fetch('/api/admin/homepage-sections/ai-suggest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          section_id: editingItem.id,
+          current_name: editingItem.internal_name || editingItem.title_vi,
+          is_subsection: Boolean(editingItem.parentId),
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        setAiResult(data.data);
+      } else if (data?.unconfigured) {
+        setAiUnconfigured(true);
+      } else {
+        triggerToast('error', data?.error || 'Lỗi gọi dịch vụ AI.');
+      }
+    } catch (err: any) {
+      triggerToast('error', err?.message || 'Lỗi mạng khi gọi AI.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Áp dụng kết quả AI gợi ý vào form (Nhóm 1)
+  const handleApplyAiSuggest = () => {
+    if (!aiResult || !editingItem) return;
+    setEditingItem({
+      ...editingItem,
+      title_vi: aiResult.title_vi || editingItem.title_vi,
+      title_en: aiResult.title_en || editingItem.title_en,
+      description_vi: aiResult.description_vi || editingItem.description_vi,
+      description_en: aiResult.description_en || editingItem.description_en,
+      badge_vi: aiResult.badge_vi || editingItem.badge_vi,
+      badge_en: aiResult.badge_en || editingItem.badge_en,
+    });
+    setAiSuggestOpen(false);
+    setAiResult(null);
+    triggerToast('success', t('homepageSectionsModule.aiSuccess') || 'Đã áp dụng nội dung do AI gợi ý!');
+  };
+
+  // Xử lý tạo ảnh AI từ câu lệnh (Đợt 3/3 - Nhóm 2)
+  const handleGenerateAiImage = async () => {
+    if (!editingItem || !aiImagePrompt.trim()) return;
+    setAiImageLoading(true);
+    setAiImageUnconfigured(false);
+    setAiImageCandidates([]);
+    try {
+      const token = getAdminAuthToken();
+      const res = await fetch('/api/admin/homepage-sections/ai-generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          prompt: aiImagePrompt,
+          aspect_ratio: aiImageRatio,
+          section_id: editingItem.id,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success && Array.isArray(data.images)) {
+        setAiImageCandidates(data.images);
+      } else if (data?.unconfigured) {
+        setAiImageUnconfigured(true);
+      } else {
+        triggerToast('error', data?.error || 'Lỗi tạo ảnh AI.');
+      }
+    } catch (err: any) {
+      triggerToast('error', err?.message || 'Lỗi kết nối dịch vụ tạo ảnh AI.');
+    } finally {
+      setAiImageLoading(false);
+    }
+  };
+
+  // Chọn ảnh AI và tự động nén WebP trước khi lưu (Nhóm 2)
+  const handleSelectAiImage = async (candidate: { id: string; data_url: string; alt_vi: string; alt_en: string }) => {
+    if (!editingItem) return;
+    setImageUploading(true);
+    try {
+      const token = getAdminAuthToken();
+      const targetType = editingItem.parentId ? 'icon' : 'banner';
+
+      // 1. Nén thử phía client bằng HTML5 Canvas
+      let clientBase64 = candidate.data_url;
+      try {
+        const clientRes = await compressImageOnClient(candidate.data_url, targetType);
+        if (clientRes.success && clientRes.dataUrl) {
+          clientBase64 = clientRes.dataUrl;
+        }
+      } catch {
+        // Fallback gửi nguyên bản lên server nén
+      }
+
+      // 2. Tải lên máy chủ (máy chủ luôn nén lại WebP qua TinyPNG + ImageScript)
+      const res = await fetch('/api/admin/homepage-sections/upload-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'upload',
+          image_base64: clientBase64,
+          file_name: `ai_${editingItem.id}.webp`,
+          target_type: targetType,
+          source: 'ai_generated',
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        setEditingItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                image_url: data.image_url,
+                image_alt_vi: candidate.alt_vi,
+                image_alt_en: candidate.alt_en,
+                image_original_size: data.original_size,
+                image_compressed_size: data.compressed_size,
+                image_compression_status: data.compression_status,
+                image_compression_error: data.compression_error,
+              }
+            : null
+        );
+        triggerToast('success', t('homepageSectionsModule.uploadSuccess') || 'Đã áp dụng ảnh AI và nén WebP!');
+      } else {
+        triggerToast('error', data?.error || 'Lỗi lưu ảnh AI.');
+      }
+    } catch (err: any) {
+      triggerToast('error', err?.message || 'Lỗi xử lý ảnh AI.');
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   // Mở modal thêm mục con
@@ -677,6 +1153,65 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         </span>
       </div>
 
+      {/* Uncompressed images alert banner (Nhóm 1) */}
+      {uncompressedItems.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 rounded-xl p-3 text-xs text-amber-900 dark:text-amber-200 space-y-2 shadow-2xs">
+          <div className="flex items-center justify-between font-bold">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>{t('homepageSectionsModule.uncompressedAlertTitle', { count: uncompressedItems.length })}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowUncompressedList(!showUncompressedList)}
+              className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
+            >
+              {showUncompressedList ? (isEn ? 'Hide Details' : 'Thu gọn') : (isEn ? 'Show Details' : 'Xem chi tiết')}
+            </button>
+          </div>
+          <p className="text-[11px] text-amber-700 dark:text-amber-300/90">
+            {t('homepageSectionsModule.uncompressedAlertDesc')}
+          </p>
+
+          {showUncompressedList && (
+            <div className="space-y-1.5 pt-1 border-t border-amber-200 dark:border-amber-800/60 max-h-40 overflow-y-auto">
+              {uncompressedItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between bg-white/70 dark:bg-neutral-900/60 p-2 rounded-lg border border-amber-200/60 dark:border-amber-800/40 text-[11px]"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <img src={item.imageUrl} alt="" className="w-6 h-6 object-cover rounded shrink-0 border border-amber-200" />
+                    <span className="font-bold truncate">{item.name}</span>
+                    <span className="text-neutral-500 dark:text-neutral-400 font-mono text-[10px]">
+                      ({formatFileSize(item.compressedSize || item.originalSize)})
+                    </span>
+                    {item.error && (
+                      <span className="text-rose-600 dark:text-rose-400 text-[10px] truncate max-w-xs" title={item.error}>
+                        - {item.error}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={retryingId === item.id}
+                    onClick={() => handleRetryCompress(item)}
+                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold shrink-0 transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    {retryingId === item.id ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3" />
+                    )}
+                    <span>{retryingId === item.id ? t('homepageSectionsModule.retrying') : t('homepageSectionsModule.retryCompress')}</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main Grid View (Table + Mini Preview) */}
       <div className={`grid grid-cols-1 ${showPreview ? 'lg:grid-cols-12' : ''} gap-4 items-start`}>
         {/* Table Container */}
@@ -773,13 +1308,17 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         <td className="py-2.5 px-3">
                           <div className="flex items-start gap-2 min-w-0">
                             <div
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 mt-0.5 ${
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 mt-0.5 overflow-hidden ${
                                 section.enabled
                                   ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400'
                                   : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400'
                               }`}
                             >
-                              <Layers className="w-3.5 h-3.5" />
+                              {section.image_url ? (
+                                <img src={section.image_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Layers className="w-3.5 h-3.5" />
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5 flex-wrap">
@@ -1044,6 +1583,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                                 <td className="w-[28%] py-2 px-3">
                                                   <div className="min-w-0">
                                                     <div className="flex items-center gap-1.5 flex-wrap">
+                                                      {sub.image_url && (
+                                                        <img
+                                                          src={sub.image_url}
+                                                          alt=""
+                                                          className="w-4 h-4 object-cover rounded shrink-0 border border-neutral-200 dark:border-neutral-700"
+                                                        />
+                                                      )}
                                                       <span
                                                         className="font-medium text-neutral-900 dark:text-white truncate max-w-[160px]"
                                                         title={subName}
@@ -1240,6 +1786,9 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                     {/* Header mục */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 font-bold text-neutral-900 dark:text-white text-[11px]">
+                        {sec.image_url && (
+                          <img src={sec.image_url} alt="" className="w-4 h-4 object-cover rounded shrink-0 border border-neutral-200" />
+                        )}
                         <span>{sIdx + 1}.</span>
                         <span>{sTitle}</span>
                         {sBadge && (
@@ -1296,6 +1845,9 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                                   : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-400 border-neutral-200 dark:border-neutral-800 cursor-default'
                               }`}
                             >
+                              {sub.image_url && (
+                                <img src={sub.image_url} alt="" className="w-3.5 h-3.5 object-cover rounded shrink-0 border border-neutral-200" />
+                              )}
                               <span>{subTitle}</span>
                               {subBadge && (
                                 <span className="text-[8px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-600 font-bold">
@@ -1356,6 +1908,105 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   placeholder="Ví dụ: Banner Chiến Dịch Tết, Lối Tắt Nạp Tiền..."
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
+              </div>
+
+              {/* Thanh AI Gợi Ý Nội Dung (Đợt 3/3 - Nhóm 1) */}
+              <div className="rounded-xl border border-primary-200 dark:border-primary-800/60 bg-primary-50/50 dark:bg-primary-950/20 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-[11px] text-primary-700 dark:text-primary-300">
+                    <Sparkles className="w-3.5 h-3.5 text-primary-500 animate-pulse" />
+                    <span>{t('homepageSectionsModule.aiSuggest')}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAiSuggestOpen(!aiSuggestOpen)}
+                    className="text-[10px] font-semibold text-primary-600 dark:text-primary-400 hover:underline cursor-pointer"
+                  >
+                    {aiSuggestOpen ? (isEn ? 'Collapse' : 'Thu gọn') : (isEn ? 'Open AI Assistant' : 'Mở trợ lý AI')}
+                  </button>
+                </div>
+
+                {aiSuggestOpen && (
+                  <div className="space-y-2 pt-1 border-t border-primary-200/60 dark:border-primary-800/40 text-xs">
+                    <p className="text-[10px] text-neutral-600 dark:text-neutral-400">
+                      {t('homepageSectionsModule.aiSuggestDesc')}
+                    </p>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        placeholder={t('homepageSectionsModule.aiPromptPlaceholder')}
+                        className="flex-1 px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      />
+                      <button
+                        type="button"
+                        disabled={aiLoading}
+                        onClick={handleFetchAiSuggest}
+                        className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50"
+                      >
+                        {aiLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        <span>{aiLoading ? t('homepageSectionsModule.aiGenerating') : t('homepageSectionsModule.aiGenerate')}</span>
+                      </button>
+                    </div>
+
+                    {/* Cảnh báo chưa cấu hình API Key */}
+                    {aiUnconfigured && (
+                      <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-[10px] text-amber-800 dark:text-amber-200 flex items-start gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="font-bold">{t('homepageSectionsModule.aiUnconfigured')}</div>
+                          <div>{t('homepageSectionsModule.aiUnconfiguredDesc')}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Kết quả AI gợi ý (chỉ xem trước, không ghi thẳng) */}
+                    {aiResult && (
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-primary-200 dark:border-primary-800 space-y-2">
+                        <div className="text-[11px] font-bold text-neutral-800 dark:text-neutral-200 border-b border-neutral-100 dark:border-neutral-800 pb-1">
+                          {isEn ? 'AI Generated Preview:' : 'Kết quả AI đề xuất (Xem trước):'}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                          <div>
+                            <span className="text-neutral-400">Tiêu đề (VI):</span> <b className="text-neutral-800 dark:text-neutral-100">{aiResult.title_vi}</b>
+                          </div>
+                          <div>
+                            <span className="text-neutral-400">Title (EN):</span> <b className="text-neutral-800 dark:text-neutral-100">{aiResult.title_en}</b>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <span className="text-neutral-400">Mô tả (VI):</span> <span className="text-neutral-700 dark:text-neutral-300">{aiResult.description_vi}</span>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <span className="text-neutral-400">Desc (EN):</span> <span className="text-neutral-700 dark:text-neutral-300">{aiResult.description_en}</span>
+                          </div>
+                          <div>
+                            <span className="text-neutral-400">Badge (VI):</span> <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 font-bold">{aiResult.badge_vi}</span>
+                          </div>
+                          <div>
+                            <span className="text-neutral-400">Badge (EN):</span> <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 font-bold">{aiResult.badge_en}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-neutral-100 dark:border-neutral-800">
+                          <button
+                            type="button"
+                            onClick={() => setAiResult(null)}
+                            className="px-2.5 py-1 rounded border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 text-[10px] font-medium cursor-pointer"
+                          >
+                            {t('homepageSectionsModule.aiDiscard')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleApplyAiSuggest}
+                            className="px-3 py-1 rounded bg-primary-600 hover:bg-primary-700 text-white font-bold text-[10px] cursor-pointer"
+                          >
+                            {t('homepageSectionsModule.aiApply')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Tiêu đề VI / EN */}
@@ -1547,6 +2198,282 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                       <span>Tab mới (_blank)</span>
                     </label>
                   </div>
+                </div>
+              </div>
+
+              {/* Cấu hình Ảnh (Đợt 2/3 & Đợt 3/3: Upload, Mirror URL, AI Tạo Ảnh, Nén WebP) */}
+              <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-3">
+                <div className="font-bold text-neutral-900 dark:text-white flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-primary-500" />
+                    <span>{t('homepageSectionsModule.imageThumbnail')}</span>
+                  </div>
+                  {editingItem.image_url && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingItem({
+                          ...editingItem,
+                          image_url: undefined,
+                          image_original_size: undefined,
+                          image_compressed_size: undefined,
+                          image_compression_status: undefined,
+                          image_compression_error: undefined,
+                        })
+                      }
+                      className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold hover:underline cursor-pointer"
+                    >
+                      {t('homepageSectionsModule.removeImage')}
+                    </button>
+                  )}
+                </div>
+
+                {/* Preview ảnh hiện tại nếu có */}
+                {editingItem.image_url ? (
+                  <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+                    <img
+                      src={editingItem.image_url}
+                      alt={editingItem.image_alt_vi || ''}
+                      className="w-14 h-14 object-cover rounded-lg border border-neutral-200 dark:border-neutral-800 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1 space-y-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {editingItem.image_compression_status === 'compressed' ? (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            {t('homepageSectionsModule.statusCompressed')}
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            {t('homepageSectionsModule.statusFallback')}
+                          </span>
+                        )}
+                      </div>
+                      {editingItem.image_compressed_size && (
+                        <div className="text-[10px] text-neutral-500 font-mono">
+                          {formatFileSize(editingItem.image_compressed_size)}
+                          {editingItem.image_original_size && editingItem.image_original_size > editingItem.image_compressed_size && (
+                            <span className="text-emerald-600 ml-1">
+                              (-{Math.round(((editingItem.image_original_size - editingItem.image_compressed_size) / editingItem.image_original_size) * 100)}%)
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <div className="text-[10px] font-mono text-neutral-400 truncate" title={editingItem.image_url}>
+                        {editingItem.image_url}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-3 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-400 text-[11px]">
+                    {t('homepageSectionsModule.noImage')}
+                  </div>
+                )}
+
+                {/* Alt Text VI & EN */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-400 mb-0.5">
+                      Alt text Tiếng Việt:
+                    </label>
+                    <input
+                      type="text"
+                      value={editingItem.image_alt_vi || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, image_alt_vi: e.target.value })}
+                      placeholder="Mô tả ảnh cho khách khiếm thị / SEO..."
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-400 mb-0.5">
+                      Alt text English:
+                    </label>
+                    <input
+                      type="text"
+                      value={editingItem.image_alt_en || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, image_alt_en: e.target.value })}
+                      placeholder="Image description in English..."
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Nguồn Ảnh Tabs */}
+                <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700 space-y-2.5">
+                  <div className="flex rounded-lg bg-neutral-200/70 dark:bg-neutral-800 p-0.5 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setImageTab('upload')}
+                      className={`flex-1 py-1 rounded-md text-center transition cursor-pointer ${
+                        imageTab === 'upload'
+                          ? 'bg-white dark:bg-neutral-900 text-primary-600 shadow-2xs'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900'
+                      }`}
+                    >
+                      {t('homepageSectionsModule.tabUpload')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageTab('mirror')}
+                      className={`flex-1 py-1 rounded-md text-center transition cursor-pointer ${
+                        imageTab === 'mirror'
+                          ? 'bg-white dark:bg-neutral-900 text-primary-600 shadow-2xs'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900'
+                      }`}
+                    >
+                      {t('homepageSectionsModule.tabMirror')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageTab('ai_image')}
+                      className={`flex-1 py-1 rounded-md text-center transition flex items-center justify-center gap-1 cursor-pointer ${
+                        imageTab === 'ai_image'
+                          ? 'bg-white dark:bg-neutral-900 text-primary-600 shadow-2xs'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900'
+                      }`}
+                    >
+                      <Sparkles className="w-3 h-3 text-primary-500" />
+                      <span>{t('homepageSectionsModule.tabAiImage')}</span>
+                    </button>
+                  </div>
+
+                  {/* Tab 1: Upload File */}
+                  {imageTab === 'upload' && (
+                    <div className="space-y-1.5">
+                      <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl hover:border-primary-500 cursor-pointer bg-white/50 dark:bg-neutral-900/40 transition">
+                        <UploadCloud className="w-6 h-6 text-primary-500 mb-1" />
+                        <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                          {imageUploading ? t('homepageSectionsModule.uploadingImage') : t('homepageSectionsModule.dragDropHint')}
+                        </span>
+                        <span className="text-[10px] text-neutral-400 mt-0.5">
+                          {t('homepageSectionsModule.imageFormats')}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                          disabled={imageUploading}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleFileSelect(f);
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Tab 2: Mirror URL */}
+                  {imageTab === 'mirror' && (
+                    <div className="space-y-2">
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={mirrorUrlInput}
+                          onChange={(e) => setMirrorUrlInput(e.target.value)}
+                          placeholder="https://images.unsplash.com/... (ảnh JPG/PNG/WebP)"
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-neutral-900 dark:text-white font-mono focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          disabled={imageMirroring || !mirrorUrlInput.trim()}
+                          onClick={handleMirrorUrl}
+                          className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50"
+                        >
+                          {imageMirroring ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Download className="w-3 h-3" />
+                          )}
+                          <span>{imageMirroring ? t('homepageSectionsModule.mirroringImage') : t('homepageSectionsModule.tabMirror')}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tab 3: AI Tạo Ảnh (Đợt 3/3 - Nhóm 2) */}
+                  {imageTab === 'ai_image' && (
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="block text-[10px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                          {t('homepageSectionsModule.aiImagePromptLabel')}
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={aiImagePrompt}
+                          onChange={(e) => setAiImagePrompt(e.target.value)}
+                          placeholder={t('homepageSectionsModule.aiImagePromptPlaceholder')}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-900 dark:text-white focus:outline-none resize-none"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-neutral-500 font-medium">{t('homepageSectionsModule.aiImageRatio')}</span>
+                          <select
+                            value={aiImageRatio}
+                            onChange={(e) => setAiImageRatio(e.target.value as any)}
+                            className="px-2 py-1 rounded border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[10px]"
+                          >
+                            <option value="16:9">{t('homepageSectionsModule.aiImageRatioBanner')}</option>
+                            <option value="1:1">{t('homepageSectionsModule.aiImageRatioIcon')}</option>
+                          </select>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={aiImageLoading || !aiImagePrompt.trim()}
+                          onClick={handleGenerateAiImage}
+                          className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        >
+                          {aiImageLoading ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-3 h-3" />
+                          )}
+                          <span>{aiImageLoading ? t('homepageSectionsModule.aiImageGenerating') : t('homepageSectionsModule.aiImageButton')}</span>
+                        </button>
+                      </div>
+
+                      {/* Cảnh báo chưa cấu hình API Key */}
+                      {aiImageUnconfigured && (
+                        <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-[10px] text-amber-800 dark:text-amber-200 flex items-start gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold">{t('homepageSectionsModule.aiImageUnconfigured')}</div>
+                            <div>{t('homepageSectionsModule.aiImageUnconfiguredDesc')}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Danh sách ảnh ứng viên để admin chọn */}
+                      {aiImageCandidates.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400">
+                            {isEn ? 'Select an image to compress and use:' : 'Nhấp chọn ảnh bên dưới để nén và sử dụng:'}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {aiImageCandidates.map((c) => (
+                              <div
+                                key={c.id}
+                                className="group relative border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden bg-neutral-100"
+                              >
+                                <img src={c.data_url} alt="" className="w-full h-24 object-cover" />
+                                <div className="p-1.5 bg-white dark:bg-neutral-900 flex items-center justify-between">
+                                  <button
+                                    type="button"
+                                    disabled={imageUploading}
+                                    onClick={() => handleSelectAiImage(c)}
+                                    className="w-full py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                                  >
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>{t('homepageSectionsModule.aiImageSelect')}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

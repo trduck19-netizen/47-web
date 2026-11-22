@@ -190,6 +190,10 @@ import * as adminNotificationsSettingsApi from './api/admin/notifications/settin
 import * as adminSecurityLogsIndexApi from './api/admin/security-logs/index';
 import * as adminSettingsIndexApi from './api/admin/settings/index';
 import * as homepageSectionsAdminApi from './api/admin/homepage-sections';
+import * as homepageSectionsUploadImageApi from './api/admin/homepage-sections/upload-image';
+import * as homepageSectionsAiSuggestApi from './api/admin/homepage-sections/ai-suggest';
+import * as homepageSectionsAiGenerateImageApi from './api/admin/homepage-sections/ai-generate-image';
+import * as homepageImagesApi from './api/homepage-images/[file]';
 import * as homepageSectionsPublicApi from './api/homepage-sections';
 // Universal Commerce Platform RESTful APIs
 import * as productsIndexApi from './api/products/index';
@@ -1595,6 +1599,27 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
       }
 
+      // 8c-27. /api/admin/homepage-sections/upload-image (Section Image Upload & WebP Compressor)
+      if (pathname === '/api/admin/homepage-sections/upload-image') {
+        if (method === 'OPTIONS') return await homepageSectionsUploadImageApi.onRequestOptions();
+        if (method === 'POST') return await homepageSectionsUploadImageApi.onRequestPost(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 8c-28. /api/admin/homepage-sections/ai-suggest (AI Copywriting Suggestions)
+      if (pathname === '/api/admin/homepage-sections/ai-suggest') {
+        if (method === 'OPTIONS') return await homepageSectionsAiSuggestApi.onRequestOptions();
+        if (method === 'POST') return await homepageSectionsAiSuggestApi.onRequestPost(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 8c-29. /api/admin/homepage-sections/ai-generate-image (AI Image Generation)
+      if (pathname === '/api/admin/homepage-sections/ai-generate-image') {
+        if (method === 'OPTIONS') return await homepageSectionsAiGenerateImageApi.onRequestOptions();
+        if (method === 'POST') return await homepageSectionsAiGenerateImageApi.onRequestPost(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+
       // 8d. /api/crawl-article (AI Article Crawler & Extractor)
       if (pathname === '/api/crawl-article') {
         return await crawlArticleApi.onRequest(context);
@@ -2585,6 +2610,18 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       // Phục vụ icon game động và tĩnh tại /game_icons/<slug>.<ext>
       if (pathname.startsWith('/game_icons/') && (method === 'GET' || method === 'HEAD')) {
         return await handleGameIconRequest(request, env, ctx, pathname);
+      }
+
+      // Phục vụ ảnh mục trang chủ tại /api/homepage-images/<file>
+      if (pathname.startsWith('/api/homepage-images/')) {
+        const fileParam = pathname.replace(/^\/api\/homepage-images\//, '');
+        const imageContext = {
+          ...context,
+          params: { file: fileParam },
+        };
+        if (method === 'OPTIONS') return await homepageImagesApi.onRequestOptions();
+        if (method === 'GET' || method === 'HEAD') return await homepageImagesApi.onRequestGet(imageContext);
+        return new Response('Method Not Allowed', { status: 405 });
       }
 
       // Server-side resilience layer for missing JS chunks (Stale deployments)

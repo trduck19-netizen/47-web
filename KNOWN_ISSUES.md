@@ -10,6 +10,26 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-312: Cạm Bẫy Lưu Ảnh Trực Tiếp Base64 Vào Bảng Cấu Hình D1 (Database Ballooning), Lỗ Hổng SVG Stored XSS & Thiết Kế Fallback Đa Tầng Cho API Nén Ngoại Vi
+- **Triệu chứng & Rủi ro**:
+  - Lưu trực tiếp chuỗi base64 của ảnh vào trường cấu hình `system_settings` làm phình kích thước dữ liệu từ vài KB lên hàng chục MB, gây chậm hoặc sập Cloudflare Worker (Payload Too Large/CPU Time Exceeded) mỗi khi tải trang chủ.
+  - Chấp nhận tệp ảnh SVG tải lên từ người dùng hoặc qua URL ngoài tiềm ẩn nguy cơ chứa mã JavaScript độc hại (`<svg onload="...">`, `<script>`), gây ra lỗ hổng Stored XSS ngay trong origin quản trị và web khách.
+  - Phụ thuộc hoàn toàn vào dịch vụ nén ảnh bên ngoài (TinyPNG, Cloudinary) mà không có tầng nén dự phòng nội bộ sẽ khiến toàn bộ chức năng tải ảnh bị tê liệt khi hết hạn mức gói miễn phí (HTTP 429) hoặc khi dịch vụ ngoài bảo trì/chậm/lỗi mạng.
+  - Tạo nút "Bỏ qua nén" để quản trị viên tự chọn: Khiến quản trị viên vô tình tải lên các file ảnh raw hàng chục MB, làm suy giảm nghiêm trọng chỉ số Core Web Vitals (LCP và CLS) của web khách.
+- **Cạm bẫy đã thất bại**:
+  - Ghép chuỗi base64 vào JSON của `system_settings`: Phình to CSDL D1 và tiêu tốn băng thông Worker vô ích.
+  - Chỉ dựa vào phần mở rộng tệp `.png`/`.jpg`: Kẻ tấn công đổi đuôi file mã độc thành `.jpg` để qua mặt.
+  - Chặn lưu mục khi API nén ngoài lỗi hoặc chưa có khóa API: Gây ức chế và làm gián đoạn toàn bộ hoạt động quản trị sàn.
+- **Giải pháp chuẩn đã kiểm chứng**:
+  - Lưu trữ tách biệt vào bảng D1 chuyên biệt `homepage_section_images` và phục vụ qua Edge Worker streaming endpoint (`/api/homepage-images/:id`) với header cache bất biến (`public, max-age=31536000, immutable`). Cấu hình `system_settings` chỉ lưu đường dẫn URL nội bộ siêu nhẹ.
+  - Kiểm định Magic Bytes nhị phân nghiêm ngặt (chỉ nhận JPEG, PNG, WebP, GIF, AVIF; chặn 100% SVG và các file thực thi). Chặn triệt để SSRF private IP khi tải bản sao URL ngoài.
+  - Quy tắc Nén Đa Tầng & Không Bao Giờ Làm Mất Ảnh (Multi-Layer Fail-Safe Compression):
+    1. *Tầng 1 (Client)*: Tự động nén WebP bằng HTML5 Canvas ngay trên trình duyệt (giảm quality 0.82 $\rightarrow$ 0.65 $\rightarrow$ 0.50 nếu vượt dung lượng).
+    2. *Tầng 2 (External Optimizer)*: Thử nén qua TinyPNG API (nếu đã cấu hình `TINYPNG_API_KEY`, timeout 8s).
+    3. *Tầng 3 (Server ImageScript)*: Máy chủ luôn giải mã và tái mã hóa chuẩn WebP đúng kích thước (banner 1200px/300KB, icon 400px/100KB).
+    4. *Tầng 4 (Fail-Safe Fallback)*: Nếu mọi bước nén thất bại, máy chủ vẫn lưu bản gốc an toàn và đánh dấu `original_fallback` kèm lý do để quản trị viên có thể nhấn nút "Nén lại" sau. Không bao giờ chặn việc lưu mục của admin!
+  - Giao diện AI & API ngoài: Xử lý trạng thái Chưa cấu hình (`unconfigured: true`) an toàn, cho phép toàn bộ form hoạt động bình thường kể cả khi chưa có khóa API.
+
 ### ISSUE-311: Lỗi Thiếu Cấu Hình Pepper Khi Triển Khai Mới (Fail-Closed Misconfiguration), Cơ Chế Pepper-Binding, Tàn Dư Math.random & Quy Trình Khôi Phục Secret Chuẩn 3 Bước
 - **Triệu chứng & Rủi ro**:
   - Khi triển khai môi trường Cloudflare Pages mới (`universal-mall-shop` và `admin-universal-mall`), nếu chưa cấu hình `PASSWORD_PEPPER` hoặc cấu hình rỗng, máy chủ thực thi cơ chế Fail-Closed từ chối toàn bộ yêu cầu đăng nhập và trả về HTTP 500: *"Hệ thống bảo mật chưa sẵn sàng (Thiếu cấu hình pepper bảo mật). Vui lòng liên hệ quản trị viên."*
