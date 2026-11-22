@@ -315,10 +315,10 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   const getAdminAuthToken = (): string => {
     if (typeof window === 'undefined') return '';
     return (
-      localStorage.getItem('wcg_admin_token') ||
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_admin_token') ||
-      sessionStorage.getItem('wcg_auth_token') ||
+      localStorage.getItem('pine_admin_token') ||
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_admin_token') ||
+      sessionStorage.getItem('pine_auth_token') ||
       ''
     );
   };

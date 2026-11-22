@@ -3,7 +3,7 @@
  * Synchronizes across multiple SearchAutocomplete instances (Hero and Floating bar)
  */
 
-const RECENT_SEARCHES_KEY = 'wcg_recent_searches';
+const RECENT_SEARCHES_KEY = 'pine_recent_searches';
 export const MAX_RECENT_SEARCHES = 5;
 
 export function getRecentSearches(): string[] {
@@ -35,7 +35,7 @@ export function saveRecentSearch(term: string): string[] {
 
   try {
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('wcg_recent_searches_updated', { detail: updated }));
+    window.dispatchEvent(new CustomEvent('pine_recent_searches_updated', { detail: updated }));
   } catch {}
 
   return updated;
@@ -48,7 +48,7 @@ export function removeRecentSearch(term: string): string[] {
 
   try {
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('wcg_recent_searches_updated', { detail: updated }));
+    window.dispatchEvent(new CustomEvent('pine_recent_searches_updated', { detail: updated }));
   } catch {}
 
   return updated;
@@ -58,6 +58,6 @@ export function clearRecentSearches(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(RECENT_SEARCHES_KEY);
-    window.dispatchEvent(new CustomEvent('wcg_recent_searches_updated', { detail: [] }));
+    window.dispatchEvent(new CustomEvent('pine_recent_searches_updated', { detail: [] }));
   } catch {}
 }

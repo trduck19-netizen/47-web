@@ -5,14 +5,14 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Cross-Origin-Opener-Policy: same-origin-allow-popups
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://codegame.shop https://*.codegame.shop https://web-code-game.pages.dev https://admin-code-game-shop.pages.dev https://challenges.cloudflare.com https://api.dicebear.com https://my.sepay.vn; frame-src 'self' https://challenges.cloudflare.com https://codegame.shop https://*.codegame.shop https://web-code-game.pages.dev https://admin-code-game-shop.pages.dev;
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://universal-mall-shop.pages.dev https://*.codegame.shop https://universal-mall-shop.pages.dev https://admin-universal-mall.pages.dev https://challenges.cloudflare.com https://api.dicebear.com https://my.sepay.vn; frame-src 'self' https://challenges.cloudflare.com https://universal-mall-shop.pages.dev https://*.codegame.shop https://universal-mall-shop.pages.dev https://admin-universal-mall.pages.dev;
 
 /sync-bridge*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self' https://codegame.shop https://*.codegame.shop https://web-code-game.pages.dev https://admin-code-game-shop.pages.dev http://localhost:* http://127.0.0.1:*;
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self' https://universal-mall-shop.pages.dev https://*.codegame.shop https://universal-mall-shop.pages.dev https://admin-universal-mall.pages.dev http://localhost:* http://127.0.0.1:*;
   Access-Control-Allow-Origin: *
 
 /sync-bridge
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self' https://codegame.shop https://*.codegame.shop https://web-code-game.pages.dev https://admin-code-game-shop.pages.dev http://localhost:* http://127.0.0.1:*;
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self' https://universal-mall-shop.pages.dev https://*.codegame.shop https://universal-mall-shop.pages.dev https://admin-universal-mall.pages.dev http://localhost:* http://127.0.0.1:*;
   Access-Control-Allow-Origin: *
 
 /data/*

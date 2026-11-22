@@ -20,7 +20,7 @@ const SETTINGS_KEY = 'wcg_email_settings_v1';
 
 const DEFAULT_SETTINGS = {
   provider: 'resend', // 'resend' | 'brevo' | 'smtp'
-  sender_name: 'CodeGame.Shop',
+  sender_name: 'Pine Universal Mall',
   sender_email: 'no-reply@codegame.shop',
   reply_to: 'support@codegame.shop',
   notify_on_new_code: true,

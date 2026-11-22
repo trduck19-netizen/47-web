@@ -22,7 +22,7 @@ const DEFAULT_SEPAY_CONFIG = {
   qrTemplate: 'compact2',
   isActive: true,
   autoConfirm: true,
-  webhookUrl: 'https://codegame.shop/api/webhooks/sepay',
+  webhookUrl: 'https://universal-mall-shop.pages.dev/api/webhooks/sepay',
 };
 
 export const onRequestOptions: PagesFunction = async () => {

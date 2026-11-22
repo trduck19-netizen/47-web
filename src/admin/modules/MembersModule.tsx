@@ -106,7 +106,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
     // 2. BroadcastChannel for cross-tab instant notification (0ms delay)
     let channel: BroadcastChannel | null = null;
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channel = new BroadcastChannel('wcg_data_sync');
+      channel = new BroadcastChannel('pine_data_sync');
       channel.onmessage = (e) => {
         if (!isMounted) return;
         if (e.data?.type === 'MEMBER_REGISTERED') {
@@ -146,8 +146,8 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
       setRefreshTrigger((prev) => prev + 1);
     };
 
-    window.addEventListener('wcg_admin_data_updated', onSync);
-    window.addEventListener('wcg_user_registered', onUserRegistered);
+    window.addEventListener('pine_admin_data_updated', onSync);
+    window.addEventListener('pine_user_registered', onUserRegistered);
     window.addEventListener('storage', (e) => {
       if (e.key?.includes('member') || e.key?.includes('user')) {
         setRefreshTrigger((prev) => prev + 1);
@@ -157,8 +157,8 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
     return () => {
       isMounted = false;
       if (channel) channel.close();
-      window.removeEventListener('wcg_admin_data_updated', onSync);
-      window.removeEventListener('wcg_user_registered', onUserRegistered);
+      window.removeEventListener('pine_admin_data_updated', onSync);
+      window.removeEventListener('pine_user_registered', onUserRegistered);
     };
   }, []);
 
@@ -272,7 +272,7 @@ export const MembersModule: React.FC<MembersModuleProps> = ({ onShowToast }) => 
 
     setIsResettingPassword(true);
     try {
-      const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+      const token = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
       const res = await fetch(`/api/admin/members/${encodeURIComponent(resetPassMember.id)}/reset-password`, {
         method: 'POST',
         headers: {

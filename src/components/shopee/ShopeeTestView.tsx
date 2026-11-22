@@ -341,10 +341,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       }
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleBrandingSync);
+    window.addEventListener('pine_admin_data_updated', handleBrandingSync);
     window.addEventListener('storage', handleBrandingSync);
-    window.addEventListener('wcg_store_products_updated', handleProductsSync);
-    window.addEventListener('wcg_store_settings_updated', handleProductsSync);
+    window.addEventListener('pine_store_products_updated', handleProductsSync);
+    window.addEventListener('pine_store_settings_updated', handleProductsSync);
 
     // Kích hoạt đồng bộ sản phẩm thật đang bán từ D1
     fetch('/api/products?limit=100&_t=' + Date.now())
@@ -353,17 +353,17 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           setCurrentStoreProducts(json.data);
           try {
-            localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(json.data));
+            localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(json.data));
           } catch {}
         }
       })
       .catch(() => {});
 
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleBrandingSync);
+      window.removeEventListener('pine_admin_data_updated', handleBrandingSync);
       window.removeEventListener('storage', handleBrandingSync);
-      window.removeEventListener('wcg_store_products_updated', handleProductsSync);
-      window.removeEventListener('wcg_store_settings_updated', handleProductsSync);
+      window.removeEventListener('pine_store_products_updated', handleProductsSync);
+      window.removeEventListener('pine_store_settings_updated', handleProductsSync);
     };
   }, []);
 
@@ -455,10 +455,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       }
     };
 
-    window.addEventListener('wcg_news_updated', onNewsUpdated);
+    window.addEventListener('pine_news_updated', onNewsUpdated);
     return () => {
       isMounted = false;
-      window.removeEventListener('wcg_news_updated', onNewsUpdated);
+      window.removeEventListener('pine_news_updated', onNewsUpdated);
     };
   }, []);
 
@@ -485,8 +485,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         setCartCount(cartService.getCart().length);
       }
     };
-    window.addEventListener('wcg_cart_updated', handleCartUpdated);
-    return () => window.removeEventListener('wcg_cart_updated', handleCartUpdated);
+    window.addEventListener('pine_cart_updated', handleCartUpdated);
+    return () => window.removeEventListener('pine_cart_updated', handleCartUpdated);
   }, []);
 
   // Countdown timer for Flash Sale (Khung giờ kết thúc cố định: cuối ngày 23:59:59 của ngày hiện tại - đếm xuống đơn điệu)
@@ -2137,7 +2137,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 className="flex items-center gap-1.5 bg-black hover:bg-slate-900 text-white px-3 py-1 rounded text-xs transition active:scale-95 cursor-pointer font-bold"
               >
                 <Store className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{customTopBadge || t.mall?.topNav?.mallHomepage || (language === 'en' ? 'Universal Mall Homepage' : 'Trang Chủ Sàn CodeGame Mall')}</span>
+                <span className="hidden sm:inline">{customTopBadge || t.mall?.topNav?.mallHomepage || (language === 'en' ? 'Universal Mall Homepage' : 'Trang Chủ Sàn Pine Universal Mall')}</span>
                 <span className="sm:hidden">{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ')}</span>
               </button>
             </div>
@@ -2970,10 +2970,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           <div className="rounded-xl overflow-hidden shadow-sm p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <FileText className="w-6 h-6 text-[#ee4d2d]" />
-              <span>{isEn ? 'Universal Mall Terms of Service' : 'Điều Khoản Dịch Vụ Sàn CodeGame Mall'}</span>
+              <span>{isEn ? 'Universal Mall Terms of Service' : 'Điều Khoản Dịch Vụ Sàn Pine Universal Mall'}</span>
             </h3>
             <div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
-              <p><strong>{isEn ? '1. General Provisions:' : '1. Quy định chung:'}</strong> {isEn ? 'All giftcodes and vouchers on Universal Mall are distributed free or from official game publishers holding valid G1/G234 licenses in Vietnam.' : 'Toàn bộ giftcode và mã quà tặng trên sàn CodeGame Mall được chia sẻ hoàn toàn miễn phí hoặc phân phối từ các nhà phát hành game chính thức có giấy phép phê duyệt nội dung G1/G234 tại Việt Nam.'}</p>
+              <p><strong>{isEn ? '1. General Provisions:' : '1. Quy định chung:'}</strong> {isEn ? 'All giftcodes and vouchers on Universal Mall are distributed free or from official game publishers holding valid G1/G234 licenses in Vietnam.' : 'Toàn bộ giftcode và mã quà tặng trên sàn Pine Universal Mall được chia sẻ hoàn toàn miễn phí hoặc phân phối từ các nhà phát hành game chính thức có giấy phép phê duyệt nội dung G1/G234 tại Việt Nam.'}</p>
               <p><strong>{isEn ? '2. 168-Hour Escrow Protection:' : '2. Cơ chế bảo chứng 168 giờ:'}</strong> {isEn ? 'For buyer security, all payment funds are safely held in escrow for 168 hours (7 days). Within this window, buyers can request a 100% refund or 1-tap exchange if any issue arises.' : 'Đối với các giao dịch tài khoản, thẻ nạp và tiện ích qua sàn, số tiền thanh toán của người mua được hệ thống tạm giữ an toàn trong 168 giờ (7 ngày). Trong khoảng thời gian này, nếu phát sinh lỗi mã hoặc tranh chấp, người mua có quyền yêu cầu hoàn tiền 100% hoặc đổi mã 1-chạm.'}</p>
               <p><strong>{isEn ? '3. Anti-Fraud & Self-Dealing:' : '3. Chống gian lận và tự mua:'}</strong> {isEn ? 'Self-purchasing, fake orders, and automated bot actions interfering with system resources are strictly prohibited.' : 'Hệ thống nghiêm cấm mọi hành vi tự mua hàng của chính gian hàng mình, spam tạo đơn ảo hoặc dùng công cụ tự động can thiệp vào tài nguyên máy chủ.'}</p>
               <p><strong>{isEn ? '4. Management Rights:' : '4. Quyền của Ban Quản Trị:'}</strong> {isEn ? 'The administration reserves the right to update terms to protect gamers and merchants.' : 'Ban Quản Trị có quyền cập nhật và bổ sung các điều khoản nhằm bảo vệ tối đa quyền lợi chính đáng của cộng đồng game thủ và các gian hàng đối tác.'}</p>
@@ -3547,7 +3547,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               className="inline-flex items-center gap-2 bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs px-6 py-2.5 rounded-full shadow transition cursor-pointer"
             >
               <Store className="w-4 h-4" />
-              <span>{t.mall?.footer?.backToTop || (language === 'en' ? 'Back to Top of Universal Mall' : 'Về Đầu Trang Sàn CodeGame Mall')}</span>
+              <span>{t.mall?.footer?.backToTop || (language === 'en' ? 'Back to Top of Universal Mall' : 'Về Đầu Trang Sàn Pine Universal Mall')}</span>
             </button>
           </div>
 
@@ -3625,7 +3625,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         onRemoveBookmark={(id) => handleToggleBookmark(id)}
         onSelectGame={onSelectGame}
         onClearAll={() => {
-          localStorage.removeItem('wcg_bookmarks');
+          localStorage.removeItem('pine_bookmarks');
           syncBookmarks();
           onShowToast('Đã xóa toàn bộ tủ game', 'info');
         }}

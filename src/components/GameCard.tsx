@@ -153,7 +153,7 @@ export const GameCard: React.FC<GameCardProps> = ({
     e.stopPropagation();
     const origin = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? window.location.origin
-      : 'https://codegame.shop';
+      : 'https://universal-mall-shop.pages.dev';
     const shareUrl = `${origin}/game/${game.slug}`;
 
     // 1. Copy to clipboard
@@ -182,7 +182,7 @@ export const GameCard: React.FC<GameCardProps> = ({
     }
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
-        new CustomEvent('wcg_show_toast', {
+        new CustomEvent('pine_show_toast', {
           detail: {
             title: toastTitle,
             message: toastMsg,

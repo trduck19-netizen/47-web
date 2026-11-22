@@ -263,7 +263,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
           code: c.code,
           rewards: c.rewards || '',
           expiry: c.expiry || '',
-          game_url: payload.game_url || `https://codegame.shop/game/${gameSlug}`,
+          game_url: payload.game_url || `https://universal-mall-shop.pages.dev/game/${gameSlug}`,
           source_name: payload.source_name || '',
         });
 
@@ -296,7 +296,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       game_name: gameName,
       game_slug: gameSlug,
       codes: item.codesToSend,
-      game_url: payload.game_url || `https://codegame.shop/game/${gameSlug}`,
+      game_url: payload.game_url || `https://universal-mall-shop.pages.dev/game/${gameSlug}`,
     });
 
     const res = await sendTelegramApiMessage(botToken, item.chat_id, dmText, { parse_mode: 'HTML' });

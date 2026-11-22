@@ -8,10 +8,10 @@ class CrossOriginSync {
     if (typeof window === 'undefined') return;
 
     const hostname = window.location.hostname;
-    if (hostname.includes('admin-code-game-shop')) {
-      this.targetOrigin = 'https://codegame.shop';
-    } else if (hostname.includes('web-code-game') || hostname.includes('codegame.shop')) {
-      this.targetOrigin = 'https://admin-code-game-shop.pages.dev';
+    if (hostname.includes('admin-universal-mall') || hostname.includes('admin-code-game-shop')) {
+      this.targetOrigin = (import.meta.env.VITE_SITE_URL || 'https://universal-mall-shop.pages.dev').replace(/\/$/, '');
+    } else if (hostname.includes('universal-mall-shop') || hostname.includes('web-code-game')) {
+      this.targetOrigin = 'https://admin-universal-mall.pages.dev';
     }
 
     if (this.targetOrigin) {

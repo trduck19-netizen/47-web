@@ -153,17 +153,17 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
   // --- SHOW / HIDE VIRTUAL METRICS TOGGLE ---
   const [showVirtualStats, setShowVirtualStats] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_virtual_stats') !== 'false';
+    return localStorage.getItem('pine_admin_show_virtual_stats') !== 'false';
   });
 
   const [showAdminClaimed, setShowAdminClaimed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_claimed_gw') !== 'false';
+    return localStorage.getItem('pine_admin_show_claimed_gw') !== 'false';
   });
 
   const [showAdminStock, setShowAdminStock] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_stock_gw') !== 'false';
+    return localStorage.getItem('pine_admin_show_stock_gw') !== 'false';
   });
 
   // --- QUICK FOMO ADJUST MODAL STATE ---
@@ -254,22 +254,22 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
       loadData();
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleSync);
+    window.addEventListener('pine_admin_data_updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleSync);
+      window.removeEventListener('pine_admin_data_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);
 
   const getAdminHeaders = (): Record<string, string> => {
     const token =
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_auth_token') ||
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_auth_token') ||
       '';
     const syncKey =
-      sessionStorage.getItem('wcg_admin_sync_key') ||
-      localStorage.getItem('wcg_admin_sync_key') ||
+      sessionStorage.getItem('pine_admin_sync_key') ||
+      localStorage.getItem('pine_admin_sync_key') ||
       '';
 
     const headers: Record<string, string> = {
@@ -1536,7 +1536,7 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
                             <span className="text-[10px] text-slate-400 font-mono">{keyItem.id}</span>
                           </td>
                           <td className="p-3 font-mono text-[11px] text-purple-600 dark:text-purple-400">
-                            {keyItem.key_prefix || (keyItem.raw_key ? keyItem.raw_key.substring(0, 16) + '...' : 'wcg_gw_...')}
+                            {keyItem.key_prefix || (keyItem.raw_key ? keyItem.raw_key.substring(0, 16) + '...' : 'pine_gw_...')}
                           </td>
                           <td className="p-3">
                             <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
@@ -1693,7 +1693,7 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
                   type="text"
                   value={testApiKey}
                   onChange={(e) => setTestApiKey(e.target.value)}
-                  placeholder="wcg_gw_..."
+                  placeholder="pine_gw_..."
                   className="w-full font-mono rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-purple-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
@@ -1952,15 +1952,15 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
                   onClick={() => {
                     let snippet = '';
                     if (apiDocCategory === 'curl_get') {
-                      snippet = `curl -X GET "https://codegame.shop/api/giveaways/manage"\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY"`;
+                      snippet = `curl -X GET "https://universal-mall-shop.pages.dev/api/giveaways/manage"\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY"`;
                     } else if (apiDocCategory === 'curl_add_codes') {
-                      snippet = `curl -X PUT "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "action": "ADD_CODES",\n    "id": "gw_genshin_impact",\n    "codes": ["GENSHIN_VIP_01", "GENSHIN_VIP_02", "GENSHIN_VIP_03"]\n  }'`;
+                      snippet = `curl -X PUT "https://universal-mall-shop.pages.dev/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "action": "ADD_CODES",\n    "id": "gw_genshin_impact",\n    "codes": ["GENSHIN_VIP_01", "GENSHIN_VIP_02", "GENSHIN_VIP_03"]\n  }'`;
                     } else if (apiDocCategory === 'curl_open_now') {
-                      snippet = `curl -X PUT "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "action": "OPEN_NOW",\n    "id": "gw_hiep-khach-hanh_mvuj5a5m"\n  }'`;
+                      snippet = `curl -X PUT "https://universal-mall-shop.pages.dev/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "action": "OPEN_NOW",\n    "id": "gw_hiep-khach-hanh_mvuj5a5m"\n  }'`;
                     } else if (apiDocCategory === 'curl_create') {
-                      snippet = `curl -X POST "https://codegame.shop/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "title": "Code riêng Honkai: Star Rail Mới Nhất",\n    "game_slug": "honkai-star-rail",\n    "game_name": "Honkai: Star Rail",\n    "description": "Code độc quyền dành cho tân thủ tham gia sự kiện.",\n    "rewards": "Vé Tinh Cầu Đặc Biệt x10 + 1600 Ngọc Ánh Sao",\n    "codes": ["HSR_NEWBIE_01", "HSR_NEWBIE_02"],\n    "max_per_user": 1,\n    "max_per_ip": 1,\n    "cooldown_hours": 1,\n    "is_active": true\n  }'`;
+                      snippet = `curl -X POST "https://universal-mall-shop.pages.dev/api/giveaways/manage" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\\n  -d '{\n    "title": "Code riêng Honkai: Star Rail Mới Nhất",\n    "game_slug": "honkai-star-rail",\n    "game_name": "Honkai: Star Rail",\n    "description": "Code độc quyền dành cho tân thủ tham gia sự kiện.",\n    "rewards": "Vé Tinh Cầu Đặc Biệt x10 + 1600 Ngọc Ánh Sao",\n    "codes": ["HSR_NEWBIE_01", "HSR_NEWBIE_02"],\n    "max_per_user": 1,\n    "max_per_ip": 1,\n    "cooldown_hours": 1,\n    "is_active": true\n  }'`;
                     } else {
-                      snippet = `// Thư viện mẫu gọi API Quản Lý Giveaway (Node.js / Browser)\nconst API_KEY = 'YOUR_GIVEAWAYS_API_KEY';\nconst BASE_URL = 'https://codegame.shop';\n\n// 1. Lấy danh sách chiến dịch & kho mã D1\nasync function getGiveaways() {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    headers: { 'X-Api-Key': API_KEY }\n  });\n  return await res.json();\n}\n\n// 2. Nạp thêm giftcode mới vào kho D1\nasync function addGiveawayCodes(giveawayId, codesArray) {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Api-Key': API_KEY\n    },\n    body: JSON.stringify({\n      action: 'ADD_CODES',\n      id: giveawayId,\n      codes: codesArray\n    })\n  });\n  return await res.json();\n}\n\n// 3. Mở giật mã ngay lập tức (Bỏ khóa hẹn giờ tương lai)\nasync function openGiveawayNow(giveawayId) {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Api-Key': API_KEY\n    },\n    body: JSON.stringify({\n      action: 'OPEN_NOW',\n      id: giveawayId\n    })\n  });\n  return await res.json();\n}`;
+                      snippet = `// Thư viện mẫu gọi API Quản Lý Giveaway (Node.js / Browser)\nconst API_KEY = 'YOUR_GIVEAWAYS_API_KEY';\nconst BASE_URL = 'https://universal-mall-shop.pages.dev';\n\n// 1. Lấy danh sách chiến dịch & kho mã D1\nasync function getGiveaways() {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    headers: { 'X-Api-Key': API_KEY }\n  });\n  return await res.json();\n}\n\n// 2. Nạp thêm giftcode mới vào kho D1\nasync function addGiveawayCodes(giveawayId, codesArray) {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Api-Key': API_KEY\n    },\n    body: JSON.stringify({\n      action: 'ADD_CODES',\n      id: giveawayId,\n      codes: codesArray\n    })\n  });\n  return await res.json();\n}\n\n// 3. Mở giật mã ngay lập tức (Bỏ khóa hẹn giờ tương lai)\nasync function openGiveawayNow(giveawayId) {\n  const res = await fetch(\`\${BASE_URL}/api/giveaways/manage\`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Api-Key': API_KEY\n    },\n    body: JSON.stringify({\n      action: 'OPEN_NOW',\n      id: giveawayId\n    })\n  });\n  return await res.json();\n}`;
                     }
                     handleCopyText(snippet, 'Mẫu Lệnh');
                   }}
@@ -1976,11 +1976,11 @@ export const PrivateCodesModule: React.FC<PrivateCodesModuleProps> = ({ onShowTo
                 {apiDocCategory === 'curl_get' && (
                   <pre className="text-emerald-400">
 {`# 1. Tra cứu danh sách toàn bộ chiến dịch kèm kho mã chi tiết
-curl -X GET "https://codegame.shop/api/giveaways/manage" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/giveaways/manage" \\
   -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY"
 
 # 2. Hoặc tra cứu 1 chiến dịch cụ thể theo ID
-curl -X GET "https://codegame.shop/api/giveaways/manage?id=gw_genshin_impact" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/giveaways/manage?id=gw_genshin_impact" \\
   -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY"`}
                   </pre>
                 )}
@@ -1988,7 +1988,7 @@ curl -X GET "https://codegame.shop/api/giveaways/manage?id=gw_genshin_impact" \\
                 {apiDocCategory === 'curl_add_codes' && (
                   <pre className="text-emerald-400">
 {`# Nạp thêm danh sách giftcode mới vào kho D1 cho đợt phát
-curl -X PUT "https://codegame.shop/api/giveaways/manage" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/giveaways/manage" \\
   -H "Content-Type: application/json" \\
   -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\
   -d '{
@@ -2006,7 +2006,7 @@ curl -X PUT "https://codegame.shop/api/giveaways/manage" \\
                 {apiDocCategory === 'curl_open_now' && (
                   <pre className="text-emerald-400">
 {`# Mở giật mã ngay lập tức (Bỏ khóa hẹn giờ tương lai, đặt start_time = hôm nay, ACTIVE)
-curl -X PUT "https://codegame.shop/api/giveaways/manage" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/giveaways/manage" \\
   -H "Content-Type: application/json" \\
   -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\
   -d '{
@@ -2019,7 +2019,7 @@ curl -X PUT "https://codegame.shop/api/giveaways/manage" \\
                 {apiDocCategory === 'curl_create' && (
                   <pre className="text-emerald-400">
 {`# Tạo mới một chiến dịch giveaway hoàn chỉnh kèm kho mã ban đầu
-curl -X POST "https://codegame.shop/api/giveaways/manage" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/giveaways/manage" \\
   -H "Content-Type: application/json" \\
   -H "X-Api-Key: YOUR_GIVEAWAYS_API_KEY" \\
   -d '{
@@ -2041,7 +2041,7 @@ curl -X POST "https://codegame.shop/api/giveaways/manage" \\
                   <pre className="text-emerald-400">
 {`// Thư viện mẫu gọi API Quản Lý Giveaway (Node.js / Browser)
 const API_KEY = 'YOUR_GIVEAWAYS_API_KEY';
-const BASE_URL = 'https://codegame.shop';
+const BASE_URL = 'https://universal-mall-shop.pages.dev';
 
 // 1. Lấy danh sách chiến dịch & kho mã D1
 async function getGiveaways() {
@@ -2114,7 +2114,7 @@ async function toggleGiveaway(giveawayId, isActive) {
                 onClick={() => {
                   const next = !showAdminClaimed;
                   setShowAdminClaimed(next);
-                  localStorage.setItem('wcg_admin_show_claimed_gw', String(next));
+                  localStorage.setItem('pine_admin_show_claimed_gw', String(next));
                 }}
                 className={`px-2 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   showAdminClaimed
@@ -2133,7 +2133,7 @@ async function toggleGiveaway(giveawayId, isActive) {
                 onClick={() => {
                   const next = !showAdminStock;
                   setShowAdminStock(next);
-                  localStorage.setItem('wcg_admin_show_stock_gw', String(next));
+                  localStorage.setItem('pine_admin_show_stock_gw', String(next));
                 }}
                 className={`px-2 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   showAdminStock
@@ -2152,7 +2152,7 @@ async function toggleGiveaway(giveawayId, isActive) {
                 onClick={() => {
                   const next = !showVirtualStats;
                   setShowVirtualStats(next);
-                  localStorage.setItem('wcg_admin_show_virtual_stats', String(next));
+                  localStorage.setItem('pine_admin_show_virtual_stats', String(next));
                 }}
                 className={`px-2 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   showVirtualStats

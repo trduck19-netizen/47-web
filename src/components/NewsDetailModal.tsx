@@ -93,7 +93,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
       typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? window.location.origin
-        : 'https://codegame.shop';
+        : 'https://universal-mall-shop.pages.dev';
     const url = `${origin}/news/${article.slug}`;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -386,7 +386,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         fallbackUrl,
       });
       if (typeof window !== 'undefined') {
-        const key = 'wcg_news_fallback_log_v1';
+        const key = 'pine_news_fallback_log_v1';
         const existing = JSON.parse(localStorage.getItem(key) || '[]');
         if (!existing.some((item: any) => item.articleId === article.id)) {
           existing.push({
@@ -397,7 +397,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
             timestamp: new Date().toISOString(),
           });
           localStorage.setItem(key, JSON.stringify(existing.slice(-100)));
-          window.dispatchEvent(new CustomEvent('wcg_news_fallback_logged'));
+          window.dispatchEvent(new CustomEvent('pine_news_fallback_logged'));
         }
       }
     } catch {}
@@ -482,7 +482,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
 
             {/* Nút Chia Sẻ Qua Telegram (Mục 3.1) */}
             <a
-              href={`https://t.me/share/url?url=${encodeURIComponent(`https://codegame.shop/news/${article.slug}`)}&text=${encodeURIComponent(article.title)}`}
+              href={`https://t.me/share/url?url=${encodeURIComponent(`https://universal-mall-shop.pages.dev/news/${article.slug}`)}&text=${encodeURIComponent(article.title)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 hover:text-sky-300 border border-sky-500/30 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0 active:scale-95 shadow-xs"
@@ -572,7 +572,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                   {/* Official Watermark Badge */}
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-white/20 shadow-lg text-[11px] font-bold text-white select-none">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>CodeGame.Shop • Tổng Hợp</span>
+                    <span>Pine Universal Mall • Tổng Hợp</span>
                   </div>
                 </div>
               </div>
@@ -932,15 +932,15 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* 9. DÒNG NGUỒN Ở CUỐI BÀI: Nguồn: CodeGame.Shop             */}
+        {/* 9. DÒNG NGUỒN Ở CUỐI BÀI: Nguồn: Pine Universal Mall             */}
         {/* ========================================================= */}
         <div className="p-4 sm:p-5 rounded-2xl bg-card/70 border border-border/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="font-bold text-foreground">Nguồn: CodeGame.Shop</span>
+            <span className="font-bold text-foreground">Nguồn: Pine Universal Mall</span>
           </div>
           <div className="flex items-center gap-3">
-            <span>Bản quyền nội dung: CodeGame.Shop</span>
+            <span>Bản quyền nội dung: Pine Universal Mall</span>
             <span>•</span>
             <span>Cập nhật: {formattedDate}</span>
           </div>

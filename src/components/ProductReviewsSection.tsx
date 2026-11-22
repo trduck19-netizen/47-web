@@ -46,7 +46,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
     if (!productId) return;
     try {
       setLoading(true);
-      const token = localStorage.getItem('wcg_auth_token') || '';
+      const token = localStorage.getItem('pine_auth_token') || '';
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -75,7 +75,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
       return;
     }
 
-    const token = localStorage.getItem('wcg_auth_token') || '';
+    const token = localStorage.getItem('pine_auth_token') || '';
     if (!token) {
       onOpenAuth?.();
       return;

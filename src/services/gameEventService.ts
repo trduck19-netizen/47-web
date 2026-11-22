@@ -2,8 +2,8 @@ import type { GameEventItem, GameEventStatus } from '../types/gameEvent';
 import { SEED_GAME_EVENTS } from '../data/seedGameEvents';
 
 class GameEventService {
-  private readonly STORAGE_KEY = 'wcg_game_events_v1';
-  private readonly DELETED_STORAGE_KEY = 'wcg_deleted_game_events_v1';
+  private readonly STORAGE_KEY = 'pine_game_events_v1';
+  private readonly DELETED_STORAGE_KEY = 'pine_deleted_game_events_v1';
   private events: GameEventItem[] = [];
   private deletedIds = new Set<string>();
   private isLoaded = false;
@@ -53,7 +53,7 @@ class GameEventService {
   private broadcast(): void {
     if (typeof window === 'undefined') return;
     try {
-      window.dispatchEvent(new CustomEvent('wcg_game_events_updated', { detail: { events: this.events } }));
+      window.dispatchEvent(new CustomEvent('pine_game_events_updated', { detail: { events: this.events } }));
     } catch {}
   }
 

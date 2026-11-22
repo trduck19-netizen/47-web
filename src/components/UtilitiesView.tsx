@@ -92,12 +92,12 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
   const [cmsIntro, setCmsIntro] = useState(() => dataService.getContentByKey('utilities_section'));
   const [isGlobalSoldEnabled, setIsGlobalSoldEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_utilities_global_show_sold') !== 'false' && localStorage.getItem('wcg_admin_show_sold_util') !== 'false';
+    return localStorage.getItem('pine_utilities_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_util') !== 'false';
   });
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('wcg_utilities_view_mode') as 'grid' | 'list';
+      const saved = localStorage.getItem('pine_utilities_view_mode') as 'grid' | 'list';
       if (saved === 'grid' || saved === 'list') return saved;
     }
     return 'grid';
@@ -106,7 +106,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
   const handleSetViewMode = (mode: 'grid' | 'list') => {
     setViewMode(mode);
     try {
-      localStorage.setItem('wcg_utilities_view_mode', mode);
+      localStorage.setItem('pine_utilities_view_mode', mode);
     } catch {}
   };
 
@@ -212,7 +212,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
         return currPkg;
       });
       setIsGlobalSoldEnabled(
-        localStorage.getItem('wcg_utilities_global_show_sold') !== 'false' && localStorage.getItem('wcg_admin_show_sold_util') !== 'false'
+        localStorage.getItem('pine_utilities_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_util') !== 'false'
       );
     };
 
@@ -220,24 +220,24 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
     const unsubTpl = templateService.subscribe(handleUpdate);
     const unsubStock = marketingService.subscribeStockChange(handleUpdate);
     const unsubSold = marketingService.subscribeSoldCountChange(handleUpdate);
-    window.addEventListener('wcg_admin_data_updated', handleUpdate);
-    window.addEventListener('wcg_virtual_stock_updated', handleUpdate);
-    window.addEventListener('wcg_sold_count_updated', handleUpdate);
-    window.addEventListener('wcg_utilities_settings_updated', handleUpdate);
-    window.addEventListener('wcg_universal_templates_updated', handleUpdate);
-    window.addEventListener('wcg_utilities_updated', handleUpdate);
+    window.addEventListener('pine_admin_data_updated', handleUpdate);
+    window.addEventListener('pine_virtual_stock_updated', handleUpdate);
+    window.addEventListener('pine_sold_count_updated', handleUpdate);
+    window.addEventListener('pine_utilities_settings_updated', handleUpdate);
+    window.addEventListener('pine_universal_templates_updated', handleUpdate);
+    window.addEventListener('pine_utilities_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       unsub();
       unsubTpl();
       unsubStock();
       unsubSold();
-      window.removeEventListener('wcg_admin_data_updated', handleUpdate);
-      window.removeEventListener('wcg_virtual_stock_updated', handleUpdate);
-      window.removeEventListener('wcg_sold_count_updated', handleUpdate);
-      window.removeEventListener('wcg_utilities_settings_updated', handleUpdate);
-      window.removeEventListener('wcg_universal_templates_updated', handleUpdate);
-      window.removeEventListener('wcg_utilities_updated', handleUpdate);
+      window.removeEventListener('pine_admin_data_updated', handleUpdate);
+      window.removeEventListener('pine_virtual_stock_updated', handleUpdate);
+      window.removeEventListener('pine_sold_count_updated', handleUpdate);
+      window.removeEventListener('pine_utilities_settings_updated', handleUpdate);
+      window.removeEventListener('pine_universal_templates_updated', handleUpdate);
+      window.removeEventListener('pine_utilities_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -249,7 +249,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
     } else {
       const origin = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? window.location.origin
-        : 'https://codegame.shop';
+        : 'https://universal-mall-shop.pages.dev';
       const shareUrl = `${origin}/utilities#utility=${item.id}`;
       if (navigator.clipboard) {
         navigator.clipboard.writeText(shareUrl);
@@ -327,8 +327,8 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
       return;
     }
 
-    if (currentUser.session_token && typeof localStorage !== 'undefined' && !localStorage.getItem('wcg_auth_token')) {
-      localStorage.setItem('wcg_auth_token', currentUser.session_token);
+    if (currentUser.session_token && typeof localStorage !== 'undefined' && !localStorage.getItem('pine_auth_token')) {
+      localStorage.setItem('pine_auth_token', currentUser.session_token);
     }
 
     if (!isBalanceEnough) {

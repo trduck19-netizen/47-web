@@ -301,9 +301,9 @@ export async function recordSoftDelete(
   // 4. Invalidate Edge PoP + Cloudflare Purge
   try {
     const urlsToPurge = [
-      'https://codegame.shop/api/sync',
-      'https://codegame.shop/api/crawler/ingest-codes',
-      'https://codegame.shop/api/crawler/ingest-upcoming-games',
+      'https://universal-mall-shop.pages.dev/api/sync',
+      'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+      'https://universal-mall-shop.pages.dev/api/crawler/ingest-upcoming-games',
       ...additionalPurgeUrls,
     ];
     if (context && request) {
@@ -572,9 +572,9 @@ export async function restoreSoftDeletedRecord(
 
     if (context && request) {
       await invalidateCatalogEdgeCache(context, request, env, [
-        'https://codegame.shop/api/sync',
-        'https://codegame.shop/api/crawler/ingest-codes',
-        'https://codegame.shop/api/crawler/ingest-upcoming-games',
+        'https://universal-mall-shop.pages.dev/api/sync',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-upcoming-games',
       ]).catch(() => {});
     }
 

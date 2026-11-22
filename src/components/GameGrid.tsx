@@ -40,7 +40,7 @@ interface GameGridProps {
   useInfiniteScroll?: boolean;
 }
 
-const VIEW_MODE_STORAGE_KEY = 'wcg_client_view_mode_games';
+const VIEW_MODE_STORAGE_KEY = 'pine_client_view_mode_games';
 
 export const GameGrid: React.FC<GameGridProps> = ({
   games,

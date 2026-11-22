@@ -374,17 +374,17 @@ export const TemporaryAuditTokenManager: React.FC<TemporaryAuditTokenManagerProp
                 {
                   id: 'curl_snapshot',
                   name: '1. Đọc Snapshot số ảo / kho thật:',
-                  cmd: `curl -X GET "https://codegame.shop/api/crawler/marketing?action=get_metrics_snapshot" \\\n  -H "Authorization: Bearer ${tokenData.token}"`,
+                  cmd: `curl -X GET "https://universal-mall-shop.pages.dev/api/crawler/marketing?action=get_metrics_snapshot" \\\n  -H "Authorization: Bearer ${tokenData.token}"`,
                 },
                 {
                   id: 'curl_sync',
                   name: '2. Đọc Database State gốc trong D1:',
-                  cmd: `curl -X GET "https://codegame.shop/api/sync" \\\n  -H "Authorization: Bearer ${tokenData.token}"`,
+                  cmd: `curl -X GET "https://universal-mall-shop.pages.dev/api/sync" \\\n  -H "Authorization: Bearer ${tokenData.token}"`,
                 },
                 {
                   id: 'curl_counters',
                   name: '3. Quét đối soát kho hàng (Dry-Run):',
-                  cmd: `curl -X GET "https://codegame.shop/api/admin/audit-counters" \\\n  -H "Authorization: Bearer ${tokenData.token}"`,
+                  cmd: `curl -X GET "https://universal-mall-shop.pages.dev/api/admin/audit-counters" \\\n  -H "Authorization: Bearer ${tokenData.token}"`,
                 },
               ].map((item) => (
                 <div key={item.id} className="p-2.5 rounded-xl bg-slate-950 text-slate-200 border border-slate-800 text-xs font-mono relative group">

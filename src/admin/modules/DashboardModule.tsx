@@ -38,7 +38,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) 
     // Instant cross-tab & KV sync listener
     let channel: BroadcastChannel | null = null;
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channel = new BroadcastChannel('wcg_data_sync');
+      channel = new BroadcastChannel('pine_data_sync');
       channel.onmessage = (e) => {
         if (
           e.data?.type === 'TRANSACTIONS_UPDATED' ||
@@ -54,11 +54,11 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) 
     const onDataUpdated = () => {
       loadDashboardData();
     };
-    window.addEventListener('wcg_admin_data_updated', onDataUpdated);
+    window.addEventListener('pine_admin_data_updated', onDataUpdated);
 
     return () => {
       channel?.close();
-      window.removeEventListener('wcg_admin_data_updated', onDataUpdated);
+      window.removeEventListener('pine_admin_data_updated', onDataUpdated);
     };
   }, []);
 

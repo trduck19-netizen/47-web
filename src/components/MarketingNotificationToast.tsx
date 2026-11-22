@@ -17,7 +17,7 @@ import { marketingService } from '../services/marketingService';
 import { dataService } from '../services/dataService';
 import { useLanguage } from '../context/LanguageContext';
 
-const MARKETING_SNOOZE_KEY = 'wcg_marketing_toast_snooze_until';
+const MARKETING_SNOOZE_KEY = 'pine_marketing_toast_snooze_until';
 
 interface MarketingNotificationToastProps {
   onSelectGameSlug?: (slug: string) => void;
@@ -47,8 +47,8 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
     const handleMobileSearchToggle = (e: any) => {
       setIsMobileSearchActive(Boolean(e?.detail?.isOpen));
     };
-    window.addEventListener('wcg_mobile_search_toggled', handleMobileSearchToggle);
-    return () => window.removeEventListener('wcg_mobile_search_toggled', handleMobileSearchToggle);
+    window.addEventListener('pine_mobile_search_toggled', handleMobileSearchToggle);
+    return () => window.removeEventListener('pine_mobile_search_toggled', handleMobileSearchToggle);
   }, []);
 
   const [toastPosition, setToastPosition] = useState<ToastPosition>(() => {
@@ -59,8 +59,8 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
     const handleConfigChange = () => {
       setToastPosition(marketingService.getConfig().toastPosition || 'bottom-left');
     };
-    window.addEventListener('wcg_marketing_config_updated', handleConfigChange);
-    return () => window.removeEventListener('wcg_marketing_config_updated', handleConfigChange);
+    window.addEventListener('pine_marketing_config_updated', handleConfigChange);
+    return () => window.removeEventListener('pine_marketing_config_updated', handleConfigChange);
   }, []);
 
   const timerRef = useRef<any>(null);
@@ -166,11 +166,11 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
     let deletedGwSet = new Set<string>();
     try {
       if (typeof window !== 'undefined') {
-        const rawDelSp = localStorage.getItem('wcg_deleted_store_products');
+        const rawDelSp = localStorage.getItem('pine_deleted_store_products');
         if (rawDelSp) deletedStoreSet = new Set(JSON.parse(rawDelSp));
-        const rawDelUt = localStorage.getItem('wcg_deleted_utilities');
+        const rawDelUt = localStorage.getItem('pine_deleted_utilities');
         if (rawDelUt) deletedUtilSet = new Set(JSON.parse(rawDelUt));
-        const rawDelGw = localStorage.getItem('wcg_deleted_giveaways');
+        const rawDelGw = localStorage.getItem('pine_deleted_giveaways');
         if (rawDelGw) deletedGwSet = new Set(JSON.parse(rawDelGw));
       }
     } catch {}
@@ -257,7 +257,7 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
     const giveaways = typeof dataService.getGiveaways === 'function' ? dataService.getGiveaways().filter((g) => g && g.is_active !== false) : [];
     let inventory: any[] = [];
     try {
-      const invRaw = localStorage.getItem('wcg_admin_inventory_v4');
+      const invRaw = localStorage.getItem('pine_admin_inventory_v4');
       if (invRaw) inventory = JSON.parse(invRaw);
     } catch {}
     return { games, storeProducts, utilityProducts, giveaways, inventory };
@@ -372,11 +372,11 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
           let deletedGwSet = new Set<string>();
           try {
             if (typeof window !== 'undefined') {
-              const rawDelSp = localStorage.getItem('wcg_deleted_store_products');
+              const rawDelSp = localStorage.getItem('pine_deleted_store_products');
               if (rawDelSp) deletedStoreSet = new Set(JSON.parse(rawDelSp));
-              const rawDelUt = localStorage.getItem('wcg_deleted_utilities');
+              const rawDelUt = localStorage.getItem('pine_deleted_utilities');
               if (rawDelUt) deletedUtilSet = new Set(JSON.parse(rawDelUt));
-              const rawDelGw = localStorage.getItem('wcg_deleted_giveaways');
+              const rawDelGw = localStorage.getItem('pine_deleted_giveaways');
               if (rawDelGw) deletedGwSet = new Set(JSON.parse(rawDelGw));
             }
           } catch {}
@@ -481,8 +481,8 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
       // Immediately kick off schedule when snooze cleared
       scheduleRef.current();
     };
-    window.addEventListener('wcg_clear_marketing_snooze', handleClearSnooze);
-    return () => window.removeEventListener('wcg_clear_marketing_snooze', handleClearSnooze);
+    window.addEventListener('pine_clear_marketing_snooze', handleClearSnooze);
+    return () => window.removeEventListener('pine_clear_marketing_snooze', handleClearSnooze);
   }, []);
 
   // Đồng bộ đa tab: Lắng nghe sự kiện đã hiển thị từ các tab khác trong cùng trình duyệt
@@ -497,8 +497,8 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
         dismissNotification();
       }
     };
-    window.addEventListener('wcg_notif_processed', handleNotifProcessed);
-    return () => window.removeEventListener('wcg_notif_processed', handleNotifProcessed);
+    window.addEventListener('pine_notif_processed', handleNotifProcessed);
+    return () => window.removeEventListener('pine_notif_processed', handleNotifProcessed);
   }, [dismissNotification]);
 
   // Subscribe to real actions (local or broadcast)
@@ -537,11 +537,11 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
       }
     };
 
-    window.addEventListener('wcg_new_ledger_events_available', handleNewEvents);
-    window.addEventListener('wcg_new_real_events_available', handleNewEvents);
+    window.addEventListener('pine_new_ledger_events_available', handleNewEvents);
+    window.addEventListener('pine_new_real_events_available', handleNewEvents);
     return () => {
-      window.removeEventListener('wcg_new_ledger_events_available', handleNewEvents);
-      window.removeEventListener('wcg_new_real_events_available', handleNewEvents);
+      window.removeEventListener('pine_new_ledger_events_available', handleNewEvents);
+      window.removeEventListener('pine_new_real_events_available', handleNewEvents);
     };
   }, [isSnoozed]);
 
@@ -646,14 +646,14 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
       if (testNotif) displayNotification(testNotif);
     };
 
-    window.addEventListener('wcg_marketing_config_updated', handleConfigUpdate);
+    window.addEventListener('pine_marketing_config_updated', handleConfigUpdate);
     window.addEventListener('storage', handleConfigUpdate);
-    window.addEventListener('wcg_trigger_marketing_test', handleTestTrigger);
+    window.addEventListener('pine_trigger_marketing_test', handleTestTrigger);
 
     return () => {
-      window.removeEventListener('wcg_marketing_config_updated', handleConfigUpdate);
+      window.removeEventListener('pine_marketing_config_updated', handleConfigUpdate);
       window.removeEventListener('storage', handleConfigUpdate);
-      window.removeEventListener('wcg_trigger_marketing_test', handleTestTrigger);
+      window.removeEventListener('pine_trigger_marketing_test', handleTestTrigger);
     };
   }, [dismissNotification, displayNotification, getDatasets]);
 

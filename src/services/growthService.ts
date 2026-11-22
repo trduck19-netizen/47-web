@@ -7,8 +7,8 @@ import type {
 } from '../types/growth';
 import { dataService } from './dataService';
 
-const GROWTH_CONFIG_KEY = 'wcg_growth_config_v1';
-const USER_GROWTH_DATA_PREFIX = 'wcg_user_growth_v1_';
+const GROWTH_CONFIG_KEY = 'pine_growth_config_v1';
+const USER_GROWTH_DATA_PREFIX = 'pine_user_growth_v1_';
 
 export const DEFAULT_WHEEL_SLICES: WheelSlice[] = [
   {
@@ -186,7 +186,7 @@ class GrowthService {
   constructor() {
     this.loadConfig();
     if (typeof window !== 'undefined') {
-      window.addEventListener('wcg_growth_config_updated', (e: any) => {
+      window.addEventListener('pine_growth_config_updated', (e: any) => {
         if (e?.detail && typeof e.detail === 'object') {
           this.config = {
             ...DEFAULT_GROWTH_CONFIG,
@@ -246,7 +246,7 @@ class GrowthService {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(GROWTH_CONFIG_KEY, JSON.stringify(this.config));
-        window.dispatchEvent(new CustomEvent('wcg_growth_config_updated', { detail: this.config }));
+        window.dispatchEvent(new CustomEvent('pine_growth_config_updated', { detail: this.config }));
       } catch {}
     }
   }
@@ -277,9 +277,9 @@ class GrowthService {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(GROWTH_CONFIG_KEY, JSON.stringify(merged));
-        window.dispatchEvent(new CustomEvent('wcg_growth_config_updated', { detail: merged }));
+        window.dispatchEvent(new CustomEvent('pine_growth_config_updated', { detail: merged }));
         if ('BroadcastChannel' in window) {
-          const channel = new BroadcastChannel('wcg_data_sync');
+          const channel = new BroadcastChannel('pine_data_sync');
           channel.postMessage({ type: 'GROWTH_CONFIG_UPDATED', payload: merged });
         }
       } catch {}
@@ -341,7 +341,7 @@ class GrowthService {
     if (typeof window === 'undefined' || !userId) return;
     try {
       localStorage.setItem(`${USER_GROWTH_DATA_PREFIX}${userId}`, JSON.stringify(data));
-      window.dispatchEvent(new CustomEvent('wcg_user_growth_updated', { detail: data }));
+      window.dispatchEvent(new CustomEvent('pine_user_growth_updated', { detail: data }));
     } catch {}
   }
 
@@ -572,7 +572,7 @@ class GrowthService {
     }
 
     // Tìm kiếm referrer theo mã giới thiệu trong danh sách thành viên
-    const membersRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_admin_members_v4') : null;
+    const membersRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('pine_admin_members_v4') : null;
     let members: any[] = [];
     try {
       if (membersRaw) members = JSON.parse(membersRaw);
@@ -608,7 +608,7 @@ class GrowthService {
     if (cfg.referrerBonusCore > 0) {
       referrer.balance = (Number(referrer.balance) || 0) + cfg.referrerBonusCore;
       try {
-        localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
+        localStorage.setItem('pine_admin_members_v4', JSON.stringify(members));
       } catch {}
     }
 
@@ -656,13 +656,13 @@ class GrowthService {
 
     // Đồng bộ số dư người mời trong admin members list
     try {
-      const membersRaw = localStorage.getItem('wcg_admin_members_v4');
+      const membersRaw = localStorage.getItem('pine_admin_members_v4');
       if (membersRaw) {
         const members: any[] = JSON.parse(membersRaw);
         const refMember = members.find((m) => m.id === referrerId);
         if (refMember) {
           refMember.balance = (Number(refMember.balance) || 0) + commissionCore;
-          localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
+          localStorage.setItem('pine_admin_members_v4', JSON.stringify(members));
         }
       }
     } catch {}

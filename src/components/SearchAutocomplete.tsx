@@ -183,7 +183,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
       document.body.style.overflow = 'hidden';
     }
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_mobile_search_toggled', { detail: { isOpen: true } }));
+      window.dispatchEvent(new CustomEvent('pine_mobile_search_toggled', { detail: { isOpen: true } }));
     }
     mobileInputRef.current?.focus();
     setTimeout(() => {
@@ -210,7 +210,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
       document.body.style.overflow = '';
     }
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_mobile_search_toggled', { detail: { isOpen: false } }));
+      window.dispatchEvent(new CustomEvent('pine_mobile_search_toggled', { detail: { isOpen: false } }));
     }
   };
 
@@ -219,7 +219,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     if (!isOpen || !isMobile || typeof window === 'undefined') return;
 
     // Push dummy history entry so Android system back button or back swipe closes search overlay
-    window.history.pushState({ wcg_search_overlay: true }, '');
+    window.history.pushState({ pine_search_overlay: true }, '');
 
     const handlePopState = () => {
       if (mobileInputRef.current) mobileInputRef.current.blur();
@@ -229,14 +229,14 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
         document.body.style.overflow = '';
       }
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wcg_mobile_search_toggled', { detail: { isOpen: false } }));
+        window.dispatchEvent(new CustomEvent('pine_mobile_search_toggled', { detail: { isOpen: false } }));
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      if (window.history.state?.wcg_search_overlay) {
+      if (window.history.state?.pine_search_overlay) {
         window.history.back();
       }
     };
@@ -252,8 +252,8 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
         }
       }
     };
-    window.addEventListener('wcg_mobile_search_toggled', handleGlobalToggle);
-    return () => window.removeEventListener('wcg_mobile_search_toggled', handleGlobalToggle);
+    window.addEventListener('pine_mobile_search_toggled', handleGlobalToggle);
+    return () => window.removeEventListener('pine_mobile_search_toggled', handleGlobalToggle);
   }, [isOpen]);
 
   // Safe cleanup on unmount
@@ -263,7 +263,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
         document.body.style.overflow = '';
       }
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wcg_mobile_search_toggled', { detail: { isOpen: false } }));
+        window.dispatchEvent(new CustomEvent('pine_mobile_search_toggled', { detail: { isOpen: false } }));
       }
     };
   }, []);
@@ -283,10 +283,10 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
         setRecentSearches([]);
       }
     };
-    window.addEventListener('wcg_recent_searches_updated', handleRecentUpdate);
+    window.addEventListener('pine_recent_searches_updated', handleRecentUpdate);
     window.addEventListener('storage', handleRecentUpdate);
     return () => {
-      window.removeEventListener('wcg_recent_searches_updated', handleRecentUpdate);
+      window.removeEventListener('pine_recent_searches_updated', handleRecentUpdate);
       window.removeEventListener('storage', handleRecentUpdate);
     };
   }, []);

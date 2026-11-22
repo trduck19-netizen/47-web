@@ -29,7 +29,7 @@ interface StoreViewProps {
   onOpenShare?: (product: StoreProduct) => void;
 }
 
-const STORE_VIEW_MODE_STORAGE_KEY = 'wcg_store_view_mode';
+const STORE_VIEW_MODE_STORAGE_KEY = 'pine_store_view_mode';
 
 export const StoreView: React.FC<StoreViewProps> = ({
   onSelectProduct,
@@ -46,7 +46,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
   const [cmsIntro, setCmsIntro] = useState(() => dataService.getContentByKey('store_section'));
   const [isGlobalSoldEnabled, setIsGlobalSoldEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_store_global_show_sold') !== 'false' && localStorage.getItem('wcg_admin_show_sold_store') !== 'false';
+    return localStorage.getItem('pine_store_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_store') !== 'false';
   });
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -70,7 +70,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
       setCmsIntro(dataService.getContentByKey('store_section'));
       setCategoriesList([...dataService.getStoreCategories()]);
       setIsGlobalSoldEnabled(
-        localStorage.getItem('wcg_store_global_show_sold') !== 'false' && localStorage.getItem('wcg_admin_show_sold_store') !== 'false'
+        localStorage.getItem('pine_store_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_store') !== 'false'
       );
     };
     dataService.syncWithCloudflareKV().catch(() => {});
@@ -79,24 +79,24 @@ export const StoreView: React.FC<StoreViewProps> = ({
     const unsubTpl = templateService.subscribe(handleUpdate);
     const unsubStock = marketingService.subscribeStockChange(handleUpdate);
     const unsubSold = marketingService.subscribeSoldCountChange(handleUpdate);
-    window.addEventListener('wcg_store_products_updated', handleUpdate);
-    window.addEventListener('wcg_admin_data_updated', handleUpdate);
-    window.addEventListener('wcg_virtual_stock_updated', handleUpdate);
-    window.addEventListener('wcg_sold_count_updated', handleUpdate);
-    window.addEventListener('wcg_store_settings_updated', handleUpdate);
-    window.addEventListener('wcg_universal_templates_updated', handleUpdate);
+    window.addEventListener('pine_store_products_updated', handleUpdate);
+    window.addEventListener('pine_admin_data_updated', handleUpdate);
+    window.addEventListener('pine_virtual_stock_updated', handleUpdate);
+    window.addEventListener('pine_sold_count_updated', handleUpdate);
+    window.addEventListener('pine_store_settings_updated', handleUpdate);
+    window.addEventListener('pine_universal_templates_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       unsub();
       unsubTpl();
       unsubStock();
       unsubSold();
-      window.removeEventListener('wcg_store_products_updated', handleUpdate);
-      window.removeEventListener('wcg_admin_data_updated', handleUpdate);
-      window.removeEventListener('wcg_virtual_stock_updated', handleUpdate);
-      window.removeEventListener('wcg_sold_count_updated', handleUpdate);
-      window.removeEventListener('wcg_store_settings_updated', handleUpdate);
-      window.removeEventListener('wcg_universal_templates_updated', handleUpdate);
+      window.removeEventListener('pine_store_products_updated', handleUpdate);
+      window.removeEventListener('pine_admin_data_updated', handleUpdate);
+      window.removeEventListener('pine_virtual_stock_updated', handleUpdate);
+      window.removeEventListener('pine_sold_count_updated', handleUpdate);
+      window.removeEventListener('pine_store_settings_updated', handleUpdate);
+      window.removeEventListener('pine_universal_templates_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -108,7 +108,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
     } else {
       const origin = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? window.location.origin
-        : 'https://codegame.shop';
+        : 'https://universal-mall-shop.pages.dev';
       const shareUrl = `${origin}/store#product=${product.id}`;
       if (navigator.clipboard) {
         navigator.clipboard.writeText(shareUrl);

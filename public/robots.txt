@@ -4,4 +4,4 @@ Disallow: /admin
 Disallow: /api/
 Disallow: /sync-bridge.html
 
-Sitemap: https://codegame.shop/sitemap.xml
+Sitemap: https://universal-mall-shop.pages.dev/sitemap.xml

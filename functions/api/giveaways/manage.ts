@@ -1119,9 +1119,9 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
         request,
         env,
         additionalPurgeUrls: [
-          'https://codegame.shop/api/giveaways',
-          'https://codegame.shop/api/giveaways/manage',
-          'https://codegame.shop/api/sync',
+          'https://universal-mall-shop.pages.dev/api/giveaways',
+          'https://universal-mall-shop.pages.dev/api/giveaways/manage',
+          'https://universal-mall-shop.pages.dev/api/sync',
         ],
       });
     }
@@ -1137,9 +1137,9 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
 
     (globalThis as any).__wcg_public_sync_cache = null;
     await invalidateCatalogEdgeCache(context as any, request, env, [
-      'https://codegame.shop/api/giveaways',
-      'https://codegame.shop/api/giveaways/manage',
-      'https://codegame.shop/api/sync',
+      'https://universal-mall-shop.pages.dev/api/giveaways',
+      'https://universal-mall-shop.pages.dev/api/giveaways/manage',
+      'https://universal-mall-shop.pages.dev/api/sync',
     ]).catch(() => {});
 
     return new Response(

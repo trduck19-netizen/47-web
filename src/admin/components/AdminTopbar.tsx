@@ -159,7 +159,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   }, []);
 
   const activeTabTitles = language === 'en' ? tabTitlesEn : tabTitles;
-  const meta = activeTabTitles[currentTab] || (language === 'en' ? { title: 'System Administration', subtitle: 'CodeGame Management System' } : { title: 'Quản Trị Hệ Thống', subtitle: 'Hệ thống quản lý CodeGame' });
+  const meta = activeTabTitles[currentTab] || (language === 'en' ? { title: 'System Administration', subtitle: 'Pine Universal Mall Management System' } : { title: 'Quản Trị Hệ Thống', subtitle: 'Hệ thống quản lý Pine Universal Mall' });
 
   const isEn = language === 'en';
 
@@ -259,7 +259,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
               await adminDataService.fetchFromCloudflareKV();
               const count = adminDataService.getMembers().length;
               setSyncFeedback(isEn ? `Synced (${count} users)` : `Đã đồng bộ (${count} TV)`);
-              window.dispatchEvent(new CustomEvent('wcg_admin_data_updated', { detail: { type: 'KV_DATA_PULLED' } }));
+              window.dispatchEvent(new CustomEvent('pine_admin_data_updated', { detail: { type: 'KV_DATA_PULLED' } }));
             } catch {
               setSyncFeedback(isEn ? 'Synced!' : 'Đã đồng bộ!');
             } finally {

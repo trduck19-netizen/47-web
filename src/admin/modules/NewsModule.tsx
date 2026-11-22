@@ -120,10 +120,10 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
         setMainSubTab('news');
       }
     };
-    window.addEventListener('wcg_admin_news_subtab', handleSubTabChange);
+    window.addEventListener('pine_admin_news_subtab', handleSubTabChange);
     window.addEventListener('hashchange', handleHash);
     return () => {
-      window.removeEventListener('wcg_admin_news_subtab', handleSubTabChange);
+      window.removeEventListener('pine_admin_news_subtab', handleSubTabChange);
       window.removeEventListener('hashchange', handleHash);
     };
   }, []);
@@ -301,11 +301,11 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
         pending: gameEventService.getPendingEvents().length,
       });
     };
-    window.addEventListener('wcg_news_updated', handleNewsUpdate);
-    window.addEventListener('wcg_game_events_updated', handleEventsUpdate);
+    window.addEventListener('pine_news_updated', handleNewsUpdate);
+    window.addEventListener('pine_game_events_updated', handleEventsUpdate);
     return () => {
-      window.removeEventListener('wcg_news_updated', handleNewsUpdate);
-      window.removeEventListener('wcg_game_events_updated', handleEventsUpdate);
+      window.removeEventListener('pine_news_updated', handleNewsUpdate);
+      window.removeEventListener('pine_game_events_updated', handleEventsUpdate);
     };
   }, []);
 
@@ -377,7 +377,7 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
       gallery_urls: [],
       virtual_views: 120,
       views_growth_rate: 1.0,
-      author: 'CodeGame Editorial',
+      author: 'Pine Universal Mall Editorial',
       views: 0,
       read_time_minutes: 3,
       is_featured: false,
@@ -711,9 +711,9 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
       game_name: editingArticle.game_name,
       tags: parsedTags,
       codes: editingArticle.codes || [],
-      author: 'CodeGame.Shop',
-      source_name: 'CodeGame.Shop',
-      source_url: editingArticle.source_url || 'https://codegame.shop',
+      author: 'Pine Universal Mall',
+      source_name: 'Pine Universal Mall',
+      source_url: editingArticle.source_url || 'https://universal-mall-shop.pages.dev',
       views: editingArticle.views || 0,
       read_time_minutes: editingArticle.read_time_minutes || 3,
       is_featured: Boolean(editingArticle.is_featured),
@@ -1271,7 +1271,7 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
           game_name: matchedGame?.name,
           tags: rewritten.tags || ['Giftcode', 'GameMobile'],
           codes: rewritten.codes || [],
-          author: 'CodeGame Editorial',
+          author: 'Pine Universal Mall Editorial',
           views: 0,
           read_time_minutes: rewritten.read_time_minutes || 3,
           is_featured: false,
@@ -1516,7 +1516,7 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
                 game_name: matchedGame?.name,
                 tags: rewritten.tags || ['Giftcode', 'GameMobile'],
                 codes: rewritten.codes || [],
-                author: 'CodeGame Editorial',
+                author: 'Pine Universal Mall Editorial',
                 views: 0,
                 read_time_minutes: 3,
                 is_featured: false,
@@ -1933,9 +1933,9 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
                           {/* Logo phụ nhỏ ở góc ảnh */}
                           <img
                             src="/og-image.jpg"
-                            alt="CodeGame"
+                            alt="Pine Universal Mall"
                             className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ring-1 ring-background shadow-xs object-cover pointer-events-none"
-                            title="Nguồn xuất bản: CodeGame.Shop"
+                            title="Nguồn xuất bản: Pine Universal Mall"
                           />
                         </div>
                         <div className="space-y-0.5 min-w-0 flex-1 overflow-hidden">
@@ -1957,7 +1957,7 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground truncate">
-                            <span className="text-primary-light font-semibold">Nguồn: CodeGame.Shop</span>
+                            <span className="text-primary-light font-semibold">Nguồn: Pine Universal Mall</span>
                             <span>•</span>
                             <span className="font-mono">/news/{art.slug}</span>
                           </div>
@@ -3666,8 +3666,8 @@ export const NewsModule: React.FC<NewsModuleProps> = ({ onShowToast }) => {
                       (editingArticle.game_slug ? `/game_icons/${editingArticle.game_slug}.webp` : '/news_covers/thi-truong-game-viet-nam.webp'),
                     status: editingArticle.status || 'PUBLISHED',
                     published_at: editingArticle.published_at || new Date().toISOString(),
-                    author: editingArticle.author || 'CodeGame.Shop',
-                    source_name: editingArticle.source_name || 'CodeGame.Shop',
+                    author: editingArticle.author || 'Pine Universal Mall',
+                    source_name: editingArticle.source_name || 'Pine Universal Mall',
                   } as NewsArticle
                 }
                 onClose={() => setIsPreviewOpen(false)}

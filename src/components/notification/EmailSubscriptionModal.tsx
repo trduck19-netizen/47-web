@@ -237,23 +237,23 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
   };
 
   const handleShareCode = async (item: CodeNotificationEntry) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://codegame.shop';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev';
     const gameUrl = `${origin}/game/${item.gameSlug}`;
     const shareText = `🎁 Giftcode ${item.gameName} Mới Nhất!\n🔑 Mã Code: ${item.code}\n${
       item.rewards ? `📦 Phần thưởng: ${item.rewards}\n` : ''
-    }🌐 Nguồn: CodeGame.Shop - Tra cứu giftcode tự động 24/7\n👉 Nhận thêm mã tại: ${gameUrl}`;
+    }🌐 Nguồn: Pine Universal Mall - Tra cứu giftcode tự động 24/7\n👉 Nhận thêm mã tại: ${gameUrl}`;
 
     // 1. Nếu thiết bị hỗ trợ Web Share API (chia sẻ trực tiếp qua Zalo, Messenger, Facebook trên điện thoại)
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: `Giftcode ${item.gameName} - CodeGame.Shop`,
+          title: `Giftcode ${item.gameName} - Pine Universal Mall`,
           text: shareText,
           url: gameUrl,
         });
         setSharedCodeId(item.id);
         setTimeout(() => setSharedCodeId(null), 2500);
-        onShowToast('Chia sẻ thành công!', `Đã chia sẻ mã ${item.code} kèm nguồn CodeGame.Shop!`, 'success');
+        onShowToast('Chia sẻ thành công!', `Đã chia sẻ mã ${item.code} kèm nguồn Pine Universal Mall!`, 'success');
         return;
       } catch (err: any) {
         if (err.name === 'AbortError') return; // Người dùng ấn hủy hộp thoại chia sẻ
@@ -267,7 +267,7 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
       setTimeout(() => setSharedCodeId(null), 2500);
       onShowToast(
         'Đã sao chép nội dung chia sẻ!',
-        `Mã code "${item.code}" của game ${item.gameName} kèm nguồn CodeGame.Shop đã sẵn sàng để dán vào Zalo, Facebook, Messenger!`,
+        `Mã code "${item.code}" của game ${item.gameName} kèm nguồn Pine Universal Mall đã sẵn sàng để dán vào Zalo, Facebook, Messenger!`,
         'success'
       );
     } catch {
@@ -329,7 +329,7 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
   };
 
   const handleUnsubscribe = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy nhận toàn bộ thông báo email từ CodeGame.shop?')) {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy nhận toàn bộ thông báo email từ Pine Universal Mall?')) {
       return;
     }
     setIsUnsubscribing(true);
@@ -596,12 +596,12 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
                             )}
                           </button>
 
-                          {/* Nút Chia Sẻ Kèm Nguồn CodeGame.Shop */}
+                          {/* Nút Chia Sẻ Kèm Nguồn Pine Universal Mall */}
                           <button
                             type="button"
                             onClick={() => handleShareCode(item)}
                             className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
-                            title="Chia sẻ mã code kèm link nguồn CodeGame.Shop"
+                            title="Chia sẻ mã code kèm link nguồn Pine Universal Mall"
                           >
                             {sharedCodeId === item.id ? (
                               <>
@@ -626,7 +626,7 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
                         </div>
 
                         <div className="text-[10px] text-cyan-400 font-mono font-medium shrink-0 flex items-center gap-0.5">
-                          <span>Nguồn: CodeGame.Shop</span>
+                          <span>Nguồn: Pine Universal Mall</span>
                         </div>
                       </div>
                     </div>

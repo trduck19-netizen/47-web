@@ -7,8 +7,8 @@ import {
   getOrderedSubsections as getSubs,
 } from '../config/homepageSections';
 
-const STORAGE_KEY = 'wcg_homepage_sections_v1';
-const UPDATE_EVENT = 'wcg_homepage_sections_updated';
+const STORAGE_KEY = 'pine_homepage_sections_v1';
+const UPDATE_EVENT = 'pine_homepage_sections_updated';
 
 class HomepageSectionsService {
   private sections: HomepageSectionConfig[] = [];
@@ -160,8 +160,8 @@ class HomepageSectionsService {
     try {
       const token =
         adminToken ||
-        localStorage.getItem('wcg_auth_token') ||
-        sessionStorage.getItem('wcg_auth_token') ||
+        localStorage.getItem('pine_auth_token') ||
+        sessionStorage.getItem('pine_auth_token') ||
         '';
 
       const res = await fetch('/api/admin/homepage-sections', {

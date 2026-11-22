@@ -75,7 +75,7 @@ export const ShippingTrackingModal: React.FC<ShippingTrackingModalProps> = ({
         recipientName: 'Khách Hàng',
         recipientPhone: '0987654321',
         recipientAddress: 'Hà Nội, Việt Nam',
-        senderName: 'CodeGame Logistics Center',
+        senderName: 'Pine Universal Mall Logistics Center',
         senderAddress: 'Tổng kho TMĐT Số 1, Cầu Giấy, Hà Nội',
         timeline: [
           {

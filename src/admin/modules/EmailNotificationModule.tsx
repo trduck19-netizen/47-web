@@ -74,11 +74,11 @@ export const EmailNotificationModule: React.FC<EmailNotificationModuleProps> = (
   const [broadcastType, setBroadcastType] = useState<'BROADCAST' | 'GIVEAWAY' | 'FLASH_SALE' | 'CODE_DROP'>('BROADCAST');
   const [targetGroup, setTargetGroup] = useState<'ALL' | 'GIVEAWAY' | 'SALE' | 'GAME'>('ALL');
   const [selectedGameSlug, setSelectedGameSlug] = useState('');
-  const [emailSubject, setEmailSubject] = useState('🎁 Nhận Ngay Mã Giftcode Mới Nhất Tại CodeGame.shop');
+  const [emailSubject, setEmailSubject] = useState('🎁 Nhận Ngay Mã Giftcode Mới Nhất Tại Pine Universal Mall');
   const [emailTitle, setEmailTitle] = useState('Thông Báo Quà Tặng Mới Dành Cho Bạn');
   const [emailDescription, setEmailDescription] = useState('Hệ thống vừa cập nhật danh sách mã code độc quyền mới. Bấm nút bên dưới để mở web và nhận quà ngay!');
   const [ctaText, setCtaText] = useState('Mở Trang Nhận Quà Ngay');
-  const [ctaUrl, setCtaUrl] = useState('https://codegame.shop');
+  const [ctaUrl, setCtaUrl] = useState('https://universal-mall-shop.pages.dev');
   const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
   const [allGames, setAllGames] = useState<GameItem[]>([]);
 
@@ -90,8 +90,8 @@ export const EmailNotificationModule: React.FC<EmailNotificationModuleProps> = (
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const getAdminHeaders = (): HeadersInit => {
-    const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
-    const syncKey = localStorage.getItem('wcg_admin_sync_key') || sessionStorage.getItem('wcg_admin_sync_key') || '';
+    const token = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
+    const syncKey = localStorage.getItem('pine_admin_sync_key') || sessionStorage.getItem('pine_admin_sync_key') || '';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
     if (syncKey) headers['X-Sync-Key'] = syncKey;
@@ -216,11 +216,11 @@ export const EmailNotificationModule: React.FC<EmailNotificationModuleProps> = (
         body: JSON.stringify({
           type: 'TEST',
           testEmail: testEmail.trim(),
-          title: 'Kiểm Tra Kết Nối Hệ Thống Email CodeGame.shop',
-          subject: '[TEST] Kiểm tra gửi thông báo từ CodeGame.shop',
-          description: 'Xin chào Admin! Nếu bạn đọc được email này, tính năng gửi email thông báo sự kiện và giftcode của CodeGame.shop đã kết nối thành công và sẵn sàng phục vụ khách hàng.',
+          title: 'Kiểm Tra Kết Nối Hệ Thống Email Pine Universal Mall',
+          subject: '[TEST] Kiểm tra gửi thông báo từ Pine Universal Mall',
+          description: 'Xin chào Admin! Nếu bạn đọc được email này, tính năng gửi email thông báo sự kiện và giftcode của Pine Universal Mall đã kết nối thành công và sẵn sàng phục vụ khách hàng.',
           ctaText: 'Kiểm Tra Trang Web',
-          ctaUrl: 'https://codegame.shop',
+          ctaUrl: 'https://universal-mall-shop.pages.dev',
         }),
       });
 
@@ -836,7 +836,7 @@ export const EmailNotificationModule: React.FC<EmailNotificationModuleProps> = (
                     type="text"
                     value={config.senderName}
                     onChange={(e) => setConfig({ ...config, senderName: e.target.value })}
-                    placeholder="CodeGame.shop - Thông Báo"
+                    placeholder="Pine Universal Mall - Thông Báo"
                     className="w-full px-3.5 py-2.5 bg-muted/40 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:border-secondary"
                   />
                 </div>

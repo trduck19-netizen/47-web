@@ -19,13 +19,13 @@ export const LanguageSeoHead: React.FC<LanguageSeoHeadProps> = ({
     if (typeof document === 'undefined') return;
 
     // 1. Cập nhật document.title theo ngôn ngữ
-    const defaultViTitle = 'CodeGame.shop - Kho Giftcode Game Mobile & Sàn TMĐT Đa Ngành #1 Việt Nam';
-    const defaultEnTitle = 'CodeGame.shop - Latest Verified Game Giftcodes & Universal E-Commerce Platform';
+    const defaultViTitle = 'Pine Universal Mall - Siêu Thị Trực Tuyến & Cổng Tra Cứu Toàn Diện';
+    const defaultEnTitle = 'Pine Universal Mall - Leading Multi-Industry Shopping & Verified Services';
     const finalTitle = title || (isEn ? defaultEnTitle : defaultViTitle);
     document.title = finalTitle;
 
     // 2. Cập nhật meta description
-    const defaultViDesc = 'Tra cứu giftcode game mobile, webgame bản quyền chính hãng ABEI/G1 tại Việt Nam. Nền tảng thương mại điện tử đa ngành, thanh toán VietQR tự động 0s.';
+    const defaultViDesc = 'Pine Universal Mall - Sàn thương mại điện tử đa ngành hàng đầu, mua sắm trực tuyến chất lượng cao, thanh toán VietQR tự động 0s.';
     const defaultEnDesc = 'Discover and redeem 100% verified official game giftcodes in Vietnam. Multi-industry e-commerce store with instant 0s digital delivery.';
     const finalDesc = description || (isEn ? defaultEnDesc : defaultViDesc);
 

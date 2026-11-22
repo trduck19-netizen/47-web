@@ -91,7 +91,7 @@ export const GiftcodesModerationModule: React.FC<GiftcodesModerationModuleProps>
   // Token helper
   const getAdminToken = () => {
     return typeof window !== 'undefined'
-      ? localStorage.getItem('wcg_admin_token') || localStorage.getItem('wcg_auth_token') || ''
+      ? localStorage.getItem('pine_admin_token') || localStorage.getItem('pine_auth_token') || ''
       : '';
   };
 

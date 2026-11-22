@@ -44,8 +44,8 @@ export const LuckyWheelAdminManager: React.FC<LuckyWheelAdminManagerProps> = ({
       const cfg = e?.detail || growthService.getConfig();
       if (cfg) setConfig(cfg);
     };
-    window.addEventListener('wcg_growth_config_updated', handleConfigUpdate);
-    return () => window.removeEventListener('wcg_growth_config_updated', handleConfigUpdate);
+    window.addEventListener('pine_growth_config_updated', handleConfigUpdate);
+    return () => window.removeEventListener('pine_growth_config_updated', handleConfigUpdate);
   }, []);
 
   const slices: WheelSlice[] = config.slices && config.slices.length === 8 ? config.slices : DEFAULT_WHEEL_SLICES;

@@ -60,7 +60,7 @@ export const FloatingNotificationModule: React.FC<FloatingNotificationModuleProp
     const text = linkText.trim() || 'Tại đây';
     const url = linkUrl.trim();
     if (!url) {
-      onShowToast('Vui lòng nhập đường dẫn URL', 'Ví dụ: https://codegame.shop hoặc /store, /news', 'error');
+      onShowToast('Vui lòng nhập đường dẫn URL', 'Ví dụ: https://universal-mall-shop.pages.dev hoặc /store, /news', 'error');
       return;
     }
 
@@ -211,7 +211,7 @@ export const FloatingNotificationModule: React.FC<FloatingNotificationModuleProp
     }
 
     const newTitle = `🔥 SỰ KIỆN: ${sp.title}`;
-    const newMsg = `Sự kiện "${sp.title}" đang diễn ra trực tiếp trên hệ thống CodeGame.Shop! ${sp.subtitle || ''}. Số lượng quà và ưu đãi có hạn, nhấn nút bên dưới để tham gia ngay!`;
+    const newMsg = `Sự kiện "${sp.title}" đang diễn ra trực tiếp trên hệ thống Pine Universal Mall! ${sp.subtitle || ''}. Số lượng quà và ưu đãi có hạn, nhấn nút bên dưới để tham gia ngay!`;
     const newIcon = sp.type === 'giveaway' ? 'gift' : 'flame';
     const newCta = sp.ctaText || 'Đến Ngay ➔';
     const newLink = sp.ctaLink || '#giveaways';
@@ -265,11 +265,11 @@ export const FloatingNotificationModule: React.FC<FloatingNotificationModuleProp
     const handleUpdate = () => {
       setConfig(adminDataService.getFloatingNotificationConfig());
     };
-    window.addEventListener('wcg_admin_content_updated', handleUpdate);
-    window.addEventListener('wcg_floating_notification_updated', handleUpdate);
+    window.addEventListener('pine_admin_content_updated', handleUpdate);
+    window.addEventListener('pine_floating_notification_updated', handleUpdate);
     return () => {
-      window.removeEventListener('wcg_admin_content_updated', handleUpdate);
-      window.removeEventListener('wcg_floating_notification_updated', handleUpdate);
+      window.removeEventListener('pine_admin_content_updated', handleUpdate);
+      window.removeEventListener('pine_floating_notification_updated', handleUpdate);
     };
   }, []);
 
@@ -511,7 +511,7 @@ export const FloatingNotificationModule: React.FC<FloatingNotificationModuleProp
                 type="text"
                 value={config.title}
                 onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                placeholder="VD: 🎁 Chào Mừng Đến Với CodeGame Store!"
+                placeholder="VD: 🎁 Chào Mừng Đến Với Pine Mall Store!"
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500 transition-colors"
               />
             </div>
@@ -640,7 +640,7 @@ export const FloatingNotificationModule: React.FC<FloatingNotificationModuleProp
                 rows={3}
                 value={config.message}
                 onChange={(e) => setConfig({ ...config, message: e.target.value })}
-                placeholder="Nhập nội dung thông báo nổi... (Ví dụ: Nhận quà VIP ngay [Tại đây](https://codegame.shop))"
+                placeholder="Nhập nội dung thông báo nổi... (Ví dụ: Nhận quà VIP ngay [Tại đây](https://universal-mall-shop.pages.dev))"
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500 transition-colors"
               />
 
@@ -1429,7 +1429,7 @@ export const FloatingNotificationModule: React.FC<FloatingNotificationModuleProp
                 <div className="h-9 bg-zinc-900/90 border-b border-zinc-800/80 px-3 flex items-center justify-between text-[10px] text-zinc-400">
                   <div className="flex items-center gap-1.5 font-bold text-white">
                     <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                    CodeGame Store
+                    Pine Mall Store
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-500">Mã Giftcode</span>

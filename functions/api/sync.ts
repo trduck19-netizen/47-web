@@ -134,7 +134,7 @@ async function isAuthorized(request: Request, env: Env): Promise<AuthResult> {
   if (token) {
     let member: any = null;
     if (env.DB) {
-      if (token.startsWith('wcg_edge_tok_')) {
+      if (token.startsWith('pine_edge_tok_') || token.startsWith('wcg_edge_tok_')) {
         const candidateSecrets = [env.JWT_SECRET];
         const { valid, userId } = await verifyToken(token, candidateSecrets);
         if (valid && userId) {
@@ -2159,10 +2159,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
         invalidateGamesCatalogCache();
         await invalidateCatalogEdgeCache(context as any, request, env, [
-          `https://codegame.shop/api/games?slug=${targetSlug}`,
-          `https://codegame.shop/api/games?id=${targetSlug}`,
+          `https://universal-mall-shop.pages.dev/api/games?slug=${targetSlug}`,
+          `https://universal-mall-shop.pages.dev/api/games?id=${targetSlug}`,
           new URL(`/api/games?slug=${targetSlug}`, request.url).toString(),
-          `https://codegame.shop/game/${targetSlug}`,
+          `https://universal-mall-shop.pages.dev/game/${targetSlug}`,
         ]).catch(() => {});
 
         return new Response(
@@ -3609,8 +3609,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           request,
           env,
           additionalPurgeUrls: [
-            'https://codegame.shop/api/crawler/ingest-codes',
-            'https://codegame.shop/api/sync',
+            'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+            'https://universal-mall-shop.pages.dev/api/sync',
           ],
         });
 
@@ -3618,8 +3618,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
         (globalThis as any).__wcg_public_sync_cache = null;
         await invalidateCatalogEdgeCache(context as any, request, env, [
-          'https://codegame.shop/api/crawler/ingest-codes',
-          'https://codegame.shop/api/sync',
+          'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+          'https://universal-mall-shop.pages.dev/api/sync',
         ]).catch(() => {});
 
         return new Response(JSON.stringify({
@@ -3878,8 +3878,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
         (globalThis as any).__wcg_public_sync_cache = null;
         await invalidateCatalogEdgeCache(context as any, request, env, [
-          'https://codegame.shop/api/crawler/ingest-codes',
-          'https://codegame.shop/api/sync',
+          'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+          'https://universal-mall-shop.pages.dev/api/sync',
         ]).catch(() => {});
 
         return new Response(JSON.stringify({

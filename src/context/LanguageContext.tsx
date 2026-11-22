@@ -34,7 +34,7 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-const LANGUAGE_STORAGE_KEY = 'wcg_language';
+const LANGUAGE_STORAGE_KEY = 'pine_language';
 
 // Từ điển ngôn ngữ nội bộ
 const dictionaries: Record<string, any> = {
@@ -113,7 +113,7 @@ function detectInitialPseudoMode(): boolean {
     if (testMode === 'pseudo' || pseudoParam === 'true' || pseudoParam === '1') {
       return true;
     }
-    const sessionFlag = sessionStorage.getItem('wcg_pseudo_i18n');
+    const sessionFlag = sessionStorage.getItem('pine_pseudo_i18n');
     if (sessionFlag === 'true') {
       return true;
     }
@@ -221,8 +221,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const setIsPseudo = useCallback((enabled: boolean) => {
     setIsPseudoState(enabled);
     try {
-      sessionStorage.setItem('wcg_pseudo_i18n', enabled ? 'true' : 'false');
-      window.dispatchEvent(new CustomEvent('wcg_pseudo_changed', { detail: enabled }));
+      sessionStorage.setItem('pine_pseudo_i18n', enabled ? 'true' : 'false');
+      window.dispatchEvent(new CustomEvent('pine_pseudo_changed', { detail: enabled }));
     } catch {}
   }, []);
 
@@ -241,7 +241,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Chuẩn hóa và đồng bộ URL tức thì mà không reload trang (Việc 2)
       syncUrlWithLanguage(targetLang);
 
-      window.dispatchEvent(new CustomEvent('wcg_language_changed', { detail: targetLang }));
+      window.dispatchEvent(new CustomEvent('pine_language_changed', { detail: targetLang }));
     } catch {}
   }, []);
 

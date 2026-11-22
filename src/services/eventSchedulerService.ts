@@ -1,7 +1,7 @@
 import { ScheduledEventRecord, ScheduledEventStatus, CountdownTimeLeft } from '../types/eventScheduler';
 
-const STORAGE_KEY = 'wcg_event_schedules_v1';
-const EVENT_NAME = 'wcg_event_schedules_updated';
+const STORAGE_KEY = 'pine_event_schedules_v1';
+const EVENT_NAME = 'pine_event_schedules_updated';
 
 class EventSchedulerService {
   private cachedSchedules: ScheduledEventRecord[] | null = null;

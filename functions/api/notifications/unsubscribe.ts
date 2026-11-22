@@ -52,7 +52,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hủy Nhận Thông Báo - CodeGame.shop</title>
+  <title>Hủy Nhận Thông Báo - Pine Universal Mall</title>
   <style>
     body {
       margin: 0; padding: 0;
@@ -92,10 +92,10 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
     ${targetEmail ? `<div class="email-box">${targetEmail}</div>` : ''}
     <p>
       ${unsubscribed
-        ? 'Bạn sẽ không còn nhận email cập nhật mã giftcode và sự kiện tự động từ CodeGame.shop. Bạn có thể đăng ký lại bất cứ khi nào bạn muốn trên website.'
+        ? 'Bạn sẽ không còn nhận email cập nhật mã giftcode và sự kiện tự động từ Pine Universal Mall. Bạn có thể đăng ký lại bất cứ khi nào bạn muốn trên website.'
         : 'Liên kết không hợp lệ hoặc bạn đã hủy đăng ký trước đó.'}
     </p>
-    <a href="https://codegame.shop" class="btn">Quay Về Trang Chủ CodeGame.shop</a>
+    <a href="https://universal-mall-shop.pages.dev" class="btn">Quay Về Trang Chủ Pine Universal Mall</a>
   </div>
 </body>
 </html>

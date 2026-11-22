@@ -426,7 +426,7 @@ export const SePayModule: React.FC<SePayModuleProps> = ({ onShowToast }) => {
     },
   ];
 
-  const baseWebhookUrl = config?.webhookUrl || 'https://admin-code-game-shop.pages.dev/api/webhooks/sepay';
+  const baseWebhookUrl = config?.webhookUrl || 'https://admin-universal-mall.pages.dev/api/webhooks/sepay';
   const effectiveWebhookUrl = apiKey
     ? `${baseWebhookUrl.split('?')[0]}?key=${encodeURIComponent(apiKey)}`
     : baseWebhookUrl;

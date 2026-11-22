@@ -51,14 +51,14 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
   useEffect(() => {
     // Check if session token exists
     const token =
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_auth_token');
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_auth_token');
     const isAuth =
-      localStorage.getItem('wcg_admin_authenticated') === 'true' ||
-      sessionStorage.getItem('wcg_admin_authenticated') === 'true';
+      localStorage.getItem('pine_admin_authenticated') === 'true' ||
+      sessionStorage.getItem('pine_admin_authenticated') === 'true';
     if (isAuth && !token) {
-      localStorage.removeItem('wcg_admin_authenticated');
-      sessionStorage.removeItem('wcg_admin_authenticated');
+      localStorage.removeItem('pine_admin_authenticated');
+      sessionStorage.removeItem('pine_admin_authenticated');
     }
   }, []);
 
@@ -98,7 +98,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
           const adminUser: AdminUser = {
             id: res.user.id || 'usr_admin',
             displayName: res.user.displayName || res.user.username || identifier.trim() || 'Admin',
-            email: res.user.email || 'admin@codegame.shop',
+            email: res.user.email || '',
             role: 'SUPER_ADMIN',
             avatar: res.user.avatar_url || '/logo.png',
             permissions: [
@@ -111,17 +111,17 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
             createdAt: '2026-08-01T00:00:00Z',
           };
 
-          localStorage.setItem('wcg_admin_authenticated', 'true');
-          sessionStorage.setItem('wcg_admin_authenticated', 'true');
+          localStorage.setItem('pine_admin_authenticated', 'true');
+          sessionStorage.setItem('pine_admin_authenticated', 'true');
 
           if (res.token) {
-            localStorage.setItem('wcg_auth_token', res.token);
-            sessionStorage.setItem('wcg_auth_token', res.token);
+            localStorage.setItem('pine_auth_token', res.token);
+            sessionStorage.setItem('pine_auth_token', res.token);
           }
 
           if (res.syncKey) {
-            localStorage.setItem('wcg_admin_sync_key', res.syncKey);
-            sessionStorage.setItem('wcg_admin_sync_key', res.syncKey);
+            localStorage.setItem('pine_admin_sync_key', res.syncKey);
+            sessionStorage.setItem('pine_admin_sync_key', res.syncKey);
           }
 
           adminDataService.updateCurrentAdminUser(adminUser);

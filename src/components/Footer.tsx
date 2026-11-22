@@ -54,8 +54,8 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, categories, on
   };
 
   const branding = dataService.getWebsiteBranding();
-  const rawBrand = (footerData?.extraData?.brandTitle || branding.siteTitle || 'CodeGame.Shop').trim();
-  const brandTitle = (!rawBrand || rawBrand.toUpperCase() === 'WEB CODE GAME' || rawBrand.toUpperCase() === 'WEB CODE') ? 'CodeGame.Shop' : rawBrand;
+  const rawBrand = (footerData?.extraData?.brandTitle || branding.siteTitle || 'Pine Universal Mall').trim();
+  const brandTitle = (!rawBrand || rawBrand.toUpperCase() === 'WEB CODE GAME' || rawBrand.toUpperCase() === 'WEB CODE') ? 'Pine Universal Mall' : rawBrand;
   const brandLogo = (footerData?.extraData?.brandLogo || branding.logoUrl || '/logo.webp').trim();
   const badge1Text = (footerData?.extraData?.badge1Text ?? 'Cloudflare Pages & D1').trim();
   const badge1Visible = footerData?.extraData?.badge1Visible !== false;
@@ -63,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, categories, on
   const badge2Visible = footerData?.extraData?.badge2Visible !== false;
   const rawIntro = (footerData?.content || '').trim();
   const siteIntro = (!rawIntro || rawIntro.startsWith('Web Code Game'))
-    ? 'CodeGame.Shop — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'
+    ? 'Pine Universal Mall — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'
     : rawIntro;
   const supportTelegram = footerData?.extraData?.telegram || 'https://t.me/webcodegame_vn';
   const supportZalo = footerData?.extraData?.zalo || 'https://zalo.me/0386767888';
@@ -121,7 +121,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, categories, on
                 <LanguageSelector variant="footer" />
               </div>
 
-              {/* Tải App CodeGame Button in Footer */}
+              {/* Tải App Pine Mall Button in Footer */}
               {onOpenDownloadApp && (
                 <div className="pt-2">
                   <button
@@ -130,7 +130,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, categories, on
                     className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-primary/15 via-purple-500/15 to-accent/15 hover:from-primary/25 hover:to-accent/25 border border-primary/40 text-primary-light font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-sm"
                   >
                     <Smartphone className="w-4 h-4 text-primary-light" />
-                    <span>Cài Đặt App CodeGame (Android & iOS)</span>
+                    <span>Cài Đặt App Pine Mall (Android & iOS)</span>
                     <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                       FREE
                     </span>
@@ -259,7 +259,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, categories, on
 
           {/* Bottom Bar (§2.3: Đảm bảo khoảng trắng sau © 2026 và sau dấu chấm) */}
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted-foreground">
-            <p>{`© ${new Date().getFullYear()} ${brandTitle || 'CodeGame.Shop'}. ${t.footer.rights}`}</p>
+            <p>{`© ${new Date().getFullYear()} ${brandTitle || 'Pine Universal Mall'}. ${t.footer.rights}`}</p>
             <p className="flex items-center gap-1">
               {siteIntro}
             </p>

@@ -62,7 +62,7 @@ export const TelegramHomeBanner: React.FC<TelegramHomeBannerProps> = ({
           <div>
             <div className="flex items-center justify-center sm:justify-start gap-2">
               <h4 className="text-sm sm:text-base font-black text-white tracking-tight">
-                Nhóm Telegram CodeGame.Shop
+                Nhóm Telegram Pine Universal Mall
               </h4>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">
                 Official

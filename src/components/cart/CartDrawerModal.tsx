@@ -76,8 +76,8 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
   useEffect(() => {
     syncCartState();
     const handleCartUpdated = () => syncCartState();
-    window.addEventListener('wcg_cart_updated', handleCartUpdated);
-    return () => window.removeEventListener('wcg_cart_updated', handleCartUpdated);
+    window.addEventListener('pine_cart_updated', handleCartUpdated);
+    return () => window.removeEventListener('pine_cart_updated', handleCartUpdated);
   }, [isOpen]);
 
   // Gợi ý mua kèm hàng số cùng gian hàng khi giỏ có hàng vật lý (§4)
@@ -208,8 +208,8 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
   // Helper auth headers
   const getHeaders = () => {
     const token =
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_auth_token') : null) ||
-      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('wcg_auth_token') : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('pine_auth_token') : null) ||
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pine_auth_token') : null) ||
       currentUser?.session_token ||
       '';
     const h: Record<string, string> = { 'Content-Type': 'application/json' };

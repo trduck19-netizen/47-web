@@ -51,7 +51,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
   const origin =
     typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? window.location.origin
-      : 'https://codegame.shop';
+      : 'https://universal-mall-shop.pages.dev';
 
   const gameSlug =
     product?.game_slug ||
@@ -90,7 +90,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
   const isOutOfStock = pkgStock <= 0;
 
   const shareTitle = `${packageItem.name} — ${formatCore(currentPrice)} | ${gameName}`;
-  const shareText = `Mua ngay ${packageItem.name} (${gameName}) giá chỉ ${formatCore(currentPrice)} tại CodeGame.shop`;
+  const shareText = `Mua ngay ${packageItem.name} (${gameName}) giá chỉ ${formatCore(currentPrice)} tại Pine Universal Mall`;
 
   const fallbackCopyText = (text: string): boolean => {
     try {

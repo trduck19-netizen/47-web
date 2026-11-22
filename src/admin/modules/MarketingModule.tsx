@@ -86,7 +86,7 @@ export const MarketingModule: React.FC<MarketingModuleProps> = ({ onShowToast })
   // Load real inventory to display realStock
   useEffect(() => {
     try {
-      const invRaw = localStorage.getItem('wcg_admin_inventory_v4');
+      const invRaw = localStorage.getItem('pine_admin_inventory_v4');
       if (invRaw) setRealInventory(JSON.parse(invRaw));
     } catch {}
 
@@ -95,13 +95,13 @@ export const MarketingModule: React.FC<MarketingModuleProps> = ({ onShowToast })
       setUtilityProducts(dataService.getUtilityProducts());
       setGiveaways(dataService.getGiveaways());
       try {
-        const invRaw = localStorage.getItem('wcg_admin_inventory_v4');
+        const invRaw = localStorage.getItem('pine_admin_inventory_v4');
         if (invRaw) setRealInventory(JSON.parse(invRaw));
       } catch {}
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleAdminData);
-    return () => window.removeEventListener('wcg_admin_data_updated', handleAdminData);
+    window.addEventListener('pine_admin_data_updated', handleAdminData);
+    return () => window.removeEventListener('pine_admin_data_updated', handleAdminData);
   }, []);
 
   const getRealStockForItem = (id: string, title: string, sku?: string) => {
@@ -321,8 +321,8 @@ export const MarketingModule: React.FC<MarketingModuleProps> = ({ onShowToast })
   // Test notification trigger
   const handleTestTrigger = (type: 'COPY_CODE' | 'BUY_PRODUCT' | 'BUY_UTILITY' | 'CLAIM_GIVEAWAY' | 'DEPOSIT_WALLET' | 'STATS_COPY' | 'RESTOCK_PRODUCT') => {
     try {
-      localStorage.removeItem('wcg_marketing_toast_snooze_until');
-      window.dispatchEvent(new CustomEvent('wcg_clear_marketing_snooze'));
+      localStorage.removeItem('pine_marketing_toast_snooze_until');
+      window.dispatchEvent(new CustomEvent('pine_clear_marketing_snooze'));
     } catch {}
     const rawAccount = marketingService.getRandomVirtualAccount();
     const maskedAccount = marketingService.maskName(rawAccount);
@@ -3021,8 +3021,8 @@ export const MarketingModule: React.FC<MarketingModuleProps> = ({ onShowToast })
                 type="button"
                 onClick={() => {
                   try {
-                    localStorage.removeItem('wcg_marketing_toast_snooze_until');
-                    window.dispatchEvent(new CustomEvent('wcg_clear_marketing_snooze'));
+                    localStorage.removeItem('pine_marketing_toast_snooze_until');
+                    window.dispatchEvent(new CustomEvent('pine_clear_marketing_snooze'));
                     onShowToast('Đã xóa cờ tạm dừng!', 'Hệ thống thông báo FOMO đã được kích hoạt lại tức thì 100%.', 'success');
                   } catch {}
                 }}

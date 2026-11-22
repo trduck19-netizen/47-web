@@ -173,10 +173,10 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
       setUpcomingCount(adminDataService.getUpcomingGames().length);
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleSync);
+    window.addEventListener('pine_admin_data_updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleSync);
+      window.removeEventListener('pine_admin_data_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, [categoryFilter, statusFilter, storeLinkFilter]);
@@ -720,7 +720,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
       render: (item) => (
         <div className="flex items-center justify-end gap-1 flex-nowrap" onClick={(e) => e.stopPropagation()}>
           <a
-            href={`https://codegame.shop/game/${item.slug}`}
+            href={`https://universal-mall-shop.pages.dev/game/${item.slug}`}
             target="_blank"
             rel="noreferrer"
             title={isEn ? 'View on Client Store (codegame.shop)' : 'Mở xem trên Web Khách (codegame.shop)'}
@@ -1926,7 +1926,7 @@ export const GamesModule: React.FC<GamesModuleProps> = ({ onShowToast, onOpenGam
                 </div>
               </div>
               <a
-                href={`https://codegame.shop/game/${viewingGame.slug}`}
+                href={`https://universal-mall-shop.pages.dev/game/${viewingGame.slug}`}
                 target="_blank"
                 rel="noreferrer"
                 className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 hover:bg-emerald-700 transition-all shrink-0 cursor-pointer"

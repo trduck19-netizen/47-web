@@ -42,7 +42,7 @@ export async function hashPassword(password: string, salt: string, customPepper?
 export function generateSessionToken(userId: string): string {
   const randomPart = generateSalt(24);
   const timestamp = Date.now().toString(36);
-  return `wcg_tok_${userId}_${timestamp}_${randomPart}`;
+  return `pine_tok_${userId}_${timestamp}_${randomPart}`;
 }
 
 // Generate high quality SVG avatar based on username seed

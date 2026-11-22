@@ -568,16 +568,16 @@ export const onRequestPost = async (context: {
   // 13. Phiên bản hóa & Xóa Edge Cache CDN triệt để cho cả plain URL và versioned URL
   const version = Date.now();
   const versionedPath = `/game_icons/${slug}.webp?v=${version}`;
-  const fullPublicUrl = `https://codegame.shop${versionedPath}`;
+  const fullPublicUrl = `https://universal-mall-shop.pages.dev${versionedPath}`;
 
   try {
     const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
     if (cache) {
       const origin = new URL(request.url).origin;
       const purgeUrls = [
-        `https://codegame.shop/game_icons/${slug}.webp`,
-        `https://codegame.shop/game_icons/${slug}.jpg`,
-        `https://codegame.shop/game_icons/${slug}.png`,
+        `https://universal-mall-shop.pages.dev/game_icons/${slug}.webp`,
+        `https://universal-mall-shop.pages.dev/game_icons/${slug}.jpg`,
+        `https://universal-mall-shop.pages.dev/game_icons/${slug}.png`,
         `${origin}/game_icons/${slug}.webp`,
         `${origin}/game_icons/${slug}.jpg`,
         `${origin}/game_icons/${slug}.png`,

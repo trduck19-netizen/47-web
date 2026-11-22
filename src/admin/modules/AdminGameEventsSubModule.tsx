@@ -62,8 +62,8 @@ export const AdminGameEventsSubModule: React.FC<AdminGameEventsSubModuleProps> =
 
   useEffect(() => {
     loadLocalData();
-    window.addEventListener('wcg_game_events_updated', loadLocalData);
-    return () => window.removeEventListener('wcg_game_events_updated', loadLocalData);
+    window.addEventListener('pine_game_events_updated', loadLocalData);
+    return () => window.removeEventListener('pine_game_events_updated', loadLocalData);
   }, []);
 
   // Server sync

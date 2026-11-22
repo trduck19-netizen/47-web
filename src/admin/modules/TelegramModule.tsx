@@ -114,18 +114,18 @@ export const TelegramModule: React.FC = () => {
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isUpdatingWebhook, setIsUpdatingWebhook] = useState(false);
-  const [testMessage, setTestMessage] = useState('🔔 [CodeGame Admin Test] Bot Telegram hoạt động hoàn hảo!');
+  const [testMessage, setTestMessage] = useState('🔔 [Pine Universal Mall Admin Test] Bot Telegram hoạt động hoàn hảo!');
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [actionNotice, setActionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const getAuthHeaders = (): Record<string, string> => {
     const token =
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_auth_token') ||
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_auth_token') ||
       '';
     const rawSyncKey =
-      (sessionStorage.getItem('wcg_admin_sync_key') ||
-      localStorage.getItem('wcg_admin_sync_key') ||
+      (sessionStorage.getItem('pine_admin_sync_key') ||
+      localStorage.getItem('pine_admin_sync_key') ||
       '').trim();
     const syncKey = (rawSyncKey && rawSyncKey.length >= 16)
       ? rawSyncKey
@@ -581,7 +581,7 @@ export const TelegramModule: React.FC = () => {
               </span>
               <button
                 type="button"
-                onClick={() => setNotifyKey(`wcg_tg_${generateRandomHex(24)}`)}
+                onClick={() => setNotifyKey(`pine_tg_${generateRandomHex(24)}`)}
                 className="text-[10px] text-[#229ED9] hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <Dices className="w-3 h-3" />

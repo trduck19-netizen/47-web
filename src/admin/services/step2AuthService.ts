@@ -11,7 +11,7 @@
  */
 
 // Salt used to protect against rainbow table attacks
-const STEP2_SALT = 'wcg_sec_step2_2026_salt_';
+const STEP2_SALT = 'pine_sec_step2_2026_salt_';
 
 // Salted SHA-256 hash of the authorization secret
 const STEP2_AUTHORIZED_HASH = 'acff5fde0f36559f28e89c3d9a5199c6678b13bede77515d68be2cf1f073c14d';

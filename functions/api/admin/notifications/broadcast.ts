@@ -165,7 +165,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       gameIconUrl: body.gameIconUrl,
       codes: body.codes,
       ctaText: body.ctaText || 'Khám Phá Ngay',
-      ctaUrl: body.ctaUrl || 'https://codegame.shop/',
+      ctaUrl: body.ctaUrl || 'https://universal-mall-shop.pages.dev/',
     });
 
     // 4. Gửi email hàng loạt theo đợt tối đa 50 người

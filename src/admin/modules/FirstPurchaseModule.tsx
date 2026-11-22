@@ -105,12 +105,12 @@ export const FirstPurchaseModule: React.FC<FirstPurchaseModuleProps> = ({ onShow
 
   const getAuthHeaders = (): Record<string, string> => {
     const token =
-      (typeof localStorage !== 'undefined' && (localStorage.getItem('wcg_admin_token') || localStorage.getItem('wcg_auth_token'))) ||
-      (typeof sessionStorage !== 'undefined' && (sessionStorage.getItem('wcg_admin_token') || sessionStorage.getItem('wcg_auth_token'))) ||
+      (typeof localStorage !== 'undefined' && (localStorage.getItem('pine_admin_token') || localStorage.getItem('pine_auth_token'))) ||
+      (typeof sessionStorage !== 'undefined' && (sessionStorage.getItem('pine_admin_token') || sessionStorage.getItem('pine_auth_token'))) ||
       '';
     const syncKey =
-      (typeof sessionStorage !== 'undefined' && (sessionStorage.getItem('wcg_admin_sync_key') || sessionStorage.getItem('wcg_sync_key'))) ||
-      (typeof localStorage !== 'undefined' && (localStorage.getItem('wcg_admin_sync_key') || localStorage.getItem('wcg_sync_key'))) ||
+      (typeof sessionStorage !== 'undefined' && (sessionStorage.getItem('pine_admin_sync_key') || sessionStorage.getItem('pine_sync_key'))) ||
+      (typeof localStorage !== 'undefined' && (localStorage.getItem('pine_admin_sync_key') || localStorage.getItem('pine_sync_key'))) ||
       '';
 
     const headers: Record<string, string> = {
@@ -124,7 +124,7 @@ export const FirstPurchaseModule: React.FC<FirstPurchaseModuleProps> = ({ onShow
   };
 
   const getAdminEndpoints = () => {
-    return ['/api/admin/first-purchase', 'https://codegame.shop/api/admin/first-purchase'];
+    return ['/api/admin/first-purchase', 'https://universal-mall-shop.pages.dev/api/admin/first-purchase'];
   };
 
   const loadData = async () => {

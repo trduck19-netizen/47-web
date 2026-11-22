@@ -148,7 +148,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         code: r.code,
         rewards: parsed.rewards || '',
         expiry: parsed.expiry || '',
-        game_url: parsed.game_url || `https://codegame.shop/game/${r.game_slug}`,
+        game_url: parsed.game_url || `https://universal-mall-shop.pages.dev/game/${r.game_slug}`,
       };
     });
 

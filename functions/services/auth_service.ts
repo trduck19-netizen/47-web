@@ -147,7 +147,7 @@ export async function createSignedToken(userId: string, secret: string): Promise
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const sig = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
-  return `wcg_edge_tok_${userId}_${timestamp}_${random}_${sig}`;
+  return `pine_edge_tok_${userId}_${timestamp}_${random}_${sig}`;
 }
 
 export async function verifyToken(
@@ -163,8 +163,8 @@ export async function verifyToken(
     return { valid: false, userId: null };
   }
 
-  if (token.startsWith('wcg_edge_tok_')) {
-    const raw = token.replace('wcg_edge_tok_', '');
+  if (token.startsWith('pine_edge_tok_') || token.startsWith('wcg_edge_tok_')) {
+    const raw = token.startsWith('pine_edge_tok_') ? token.replace('pine_edge_tok_', '') : token.replace('wcg_edge_tok_', '');
     const parts = raw.split('_');
     if (parts.length >= 4) {
       const sig = parts.pop()!;

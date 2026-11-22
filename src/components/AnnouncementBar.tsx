@@ -18,7 +18,7 @@ export const AnnouncementBar: React.FC = () => {
     });
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'wcg_admin_content_v4') {
+      if (e.key === 'pine_admin_content_v4') {
         const current = dataService.getAnnouncementBanner();
         setAnnouncement(current);
       }
@@ -28,12 +28,12 @@ export const AnnouncementBar: React.FC = () => {
       setAnnouncement(current);
     };
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('wcg_admin_content_updated', handleContentUpdated);
+    window.addEventListener('pine_admin_content_updated', handleContentUpdated);
 
     return () => {
       unsubscribe();
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('wcg_admin_content_updated', handleContentUpdated);
+      window.removeEventListener('pine_admin_content_updated', handleContentUpdated);
     };
   }, []);
 

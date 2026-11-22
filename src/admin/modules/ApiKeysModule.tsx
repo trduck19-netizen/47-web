@@ -698,12 +698,12 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
 
   const getAuthHeaders = (): Record<string, string> => {
     const token =
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_auth_token') ||
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_auth_token') ||
       '';
     const syncKey =
-      sessionStorage.getItem('wcg_admin_sync_key') ||
-      localStorage.getItem('wcg_admin_sync_key') ||
+      sessionStorage.getItem('pine_admin_sync_key') ||
+      localStorage.getItem('pine_admin_sync_key') ||
       '';
 
     const headers: Record<string, string> = {
@@ -1214,7 +1214,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
   const versatileKey = useMemo(() => {
     return (
       keys.find((k) => k.id === 'ak_preset_multi_versatile') ||
-      keys.find((k) => k.raw_key?.startsWith('wcg_multi_')) ||
+      keys.find((k) => k.raw_key?.startsWith('pine_multi_')) ||
       keys.find((k) => String(k.scope).includes(',')) ||
       null
     );
@@ -2089,7 +2089,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                   <span>🛍️ Cổng Quản Lý Code Bán & Gói Sản Phẩm (Store & Inventory API)</span>
                 </div>
                 <p>
-                  Endpoint <code>/api/store/manage</code> cung cấp toàn quyền quản trị danh mục gói sản phẩm bán (tạo, cập nhật, xóa gói, điều chỉnh giá bán / giá gốc, cấu hình hiển thị FOMO) và nạp kho mã code bán thực tế cho website. Mọi thay đổi về tồn kho mã code tự động kích hoạt tính toán lại số lượng tồn kho hiển thị (Quy tắc kho hàng thật = 0 thì hiển thị = 0 "HẾT HÀNG") và đồng bộ nguyên tử 1 - 1 lên Cửa Hàng <code>codegame.shop/store</code>.
+                  Endpoint <code>/api/store/manage</code> cung cấp toàn quyền quản trị danh mục gói sản phẩm bán (tạo, cập nhật, xóa gói, điều chỉnh giá bán / giá gốc, cấu hình hiển thị FOMO) và nạp kho mã code bán thực tế cho website. Mọi thay đổi về tồn kho mã code tự động kích hoạt tính toán lại số lượng tồn kho hiển thị (Quy tắc kho hàng thật = 0 thì hiển thị = 0 "HẾT HÀNG") và đồng bộ nguyên tử 1 - 1 lên Cửa Hàng <code>universal-mall-shop.pages.dev/store</code>.
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1 font-mono text-[11px]">
                   <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Scope yêu cầu: STORE_FULL</span>
@@ -2106,11 +2106,11 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# Lấy toàn bộ danh sách gói sản phẩm bán trên sàn
-curl -X GET "https://codegame.shop/api/store/manage?action=list_products" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/store/manage?action=list_products" \
   -H "X-API-Key: YOUR_API_KEY_HERE"
 
 # Lọc theo game_slug hoặc danh mục (category: pack, card, item...)
-curl -X GET "https://codegame.shop/api/store/manage?action=list_products&game_slug=3q-dao-dao-dao&status=ACTIVE" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/store/manage?action=list_products&game_slug=3q-dao-dao-dao&status=ACTIVE" \
   -H "Authorization: Bearer YOUR_API_KEY_HERE"`}
                 </pre>
               </div>
@@ -2122,7 +2122,7 @@ curl -X GET "https://codegame.shop/api/store/manage?action=list_products&game_sl
                   Mẫu 2: Tạo mới gói sản phẩm / gói nạp chiết khấu (Action: create_product - cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/store/manage \
+{`curl -X POST https://universal-mall-shop.pages.dev/api/store/manage \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY_HERE" \
   -d '{
@@ -2136,7 +2136,7 @@ curl -X GET "https://codegame.shop/api/store/manage?action=list_products&game_sl
     "current_price": 149000,
     "badge": "HOT BÁN CHẠY",
     "description": "Nhận ngay 200.000 Kim Cương và Quà Nạp Đầu Độc Quyền.",
-    "cover_image_url": "https://codegame.shop/game_icons/sword-x-staff.webp",
+    "cover_image_url": "https://universal-mall-shop.pages.dev/game_icons/sword-x-staff.webp",
     "virtual_sold_count": 86,
     "show_sold_count": true,
     "initial_codes": [
@@ -2155,7 +2155,7 @@ curl -X GET "https://codegame.shop/api/store/manage?action=list_products&game_sl
                   Mẫu 3: Nạp kho hàng loạt mã code bán mới (Action: import_codes - cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/store/manage \
+{`curl -X POST https://universal-mall-shop.pages.dev/api/store/manage \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \
   -d '{
@@ -2180,11 +2180,11 @@ curl -X GET "https://codegame.shop/api/store/manage?action=list_products&game_sl
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# Xem danh sách mã code chưa bán (AVAILABLE) của gói sản phẩm
-curl -X GET "https://codegame.shop/api/store/manage?action=list_codes&product_id=sp_sword-x-staff_pack1&status=AVAILABLE&limit=100" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/store/manage?action=list_codes&product_id=sp_sword-x-staff_pack1&status=AVAILABLE&limit=100" \
   -H "X-API-Key: YOUR_API_KEY_HERE"
 
 # Xem toàn bộ mã đã bán kèm ID đơn hàng
-curl -X GET "https://codegame.shop/api/store/manage?action=list_codes&product_id=sp_sword-x-staff_pack1&status=SOLD" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/store/manage?action=list_codes&product_id=sp_sword-x-staff_pack1&status=SOLD" \
   -H "X-API-Key: YOUR_API_KEY_HERE"`}
                 </pre>
               </div>
@@ -2197,7 +2197,7 @@ curl -X GET "https://codegame.shop/api/store/manage?action=list_codes&product_id
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# Cập nhật giá bán và huy hiệu khuyến mãi
-curl -X POST https://codegame.shop/api/store/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/store/manage \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY_HERE" \
   -d '{
@@ -2209,7 +2209,7 @@ curl -X POST https://codegame.shop/api/store/manage \
   }'
 
 # Điều chỉnh số lượng đã bán ảo và hiển thị FOMO
-curl -X POST https://codegame.shop/api/store/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/store/manage \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY_HERE" \
   -d '{
@@ -2229,7 +2229,7 @@ curl -X POST https://codegame.shop/api/store/manage \
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# Xóa các mã code chưa bán cụ thể khỏi kho
-curl -X POST https://codegame.shop/api/store/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/store/manage \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY_HERE" \
   -d '{
@@ -2239,7 +2239,7 @@ curl -X POST https://codegame.shop/api/store/manage \
   }'
 
 # Xóa vĩnh viễn gói sản phẩm khỏi Cửa Hàng (kèm toàn bộ mã tồn kho chưa bán)
-curl -X POST https://codegame.shop/api/store/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/store/manage \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY_HERE" \
   -d '{
@@ -2256,7 +2256,7 @@ curl -X POST https://codegame.shop/api/store/manage \
                   Mẫu 7: Tích hợp tự động hóa nạp kho (Node.js / JavaScript Fetch)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`const res = await fetch('https://codegame.shop/api/store/manage', {
+{`const res = await fetch('https://universal-mall-shop.pages.dev/api/store/manage', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -2282,11 +2282,11 @@ console.log('Kết quả nạp kho:', data.imported_count, 'Tồn kho mới:', d
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Đọc toàn bộ cấu hình chiến dịch, thống kê và danh sách lượt mua
-curl -X GET "https://codegame.shop/api/admin/first-purchase" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/first-purchase" \\
   -H "X-API-Key: YOUR_API_KEY_HERE"
 
 # 2. Cập nhật cấu hình từng phần (Partial Update)
-curl -X POST "https://codegame.shop/api/admin/first-purchase" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/first-purchase" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY_HERE" \\
   -d '{
@@ -2298,7 +2298,7 @@ curl -X POST "https://codegame.shop/api/admin/first-purchase" \\
   }'
 
 # 3. Đặt lại quyền mua ưu đãi (Reset Offer) cho 1 thành viên
-curl -X POST "https://codegame.shop/api/admin/first-purchase" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/first-purchase" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY_HERE" \\
   -d '{
@@ -2309,11 +2309,11 @@ curl -X POST "https://codegame.shop/api/admin/first-purchase" \\
   }'
 
 # 4. Tra cứu cờ ưu đãi mua lần đầu riêng từng tiện ích (Utilities)
-curl -X GET "https://codegame.shop/api/admin/utilities/first-purchase" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/utilities/first-purchase" \\
   -H "Authorization: Bearer YOUR_API_KEY_OR_SECRET"
 
 # 5. Cập nhật cờ ưu đãi mua lần đầu riêng cho 1 tiện ích (Bật / Giá riêng / Trần riêng)
-curl -X PUT "https://codegame.shop/api/admin/utilities/first-purchase/ut_vs_05_vip_7d" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/utilities/first-purchase/ut_vs_05_vip_7d" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_OR_SECRET" \\
   -d '{
@@ -2323,7 +2323,7 @@ curl -X PUT "https://codegame.shop/api/admin/utilities/first-purchase/ut_vs_05_v
   }'
 
 # 6. Cập nhật cờ ưu đãi mua lần đầu riêng cho 1 gói cửa hàng (Store Product)
-curl -X PUT "https://codegame.shop/api/admin/store/first-purchase/sp_hiep-khach-hanh_nhu-lai" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/store/first-purchase/sp_hiep-khach-hanh_nhu-lai" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_OR_SECRET" \\
   -d '{
@@ -2341,15 +2341,15 @@ curl -X PUT "https://codegame.shop/api/admin/store/first-purchase/sp_hiep-khach-
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Liệt kê toàn bộ các gói đang bật hình thức Nâng Giá kèm bậc giá hiện tại & tiếp theo
-curl -X GET "https://codegame.shop/api/admin/escalating/packages" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/escalating/packages" \\
   -H "X-API-Key: YOUR_API_KEY_HERE"
 
 # 2. Xem lịch sử đơn hàng đã mua theo thang giá của 1 gói
-curl -X GET "https://codegame.shop/api/admin/escalating/history?product_id=sp_idle-cat-gunner_mw5yrnka" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/escalating/history?product_id=sp_idle-cat-gunner_mw5yrnka" \\
   -H "X-API-Key: YOUR_API_KEY_HERE"
 
 # 3. Đặt lại thang giá về mốc ban đầu (Reset Escalating Price)
-curl -X POST "https://codegame.shop/api/admin/escalating/reset" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/escalating/reset" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY_HERE" \\
   -d '{
@@ -2367,11 +2367,11 @@ curl -X POST "https://codegame.shop/api/admin/escalating/reset" \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# Tra cứu nhật ký thay đổi chiến dịch mua lần đầu (phân trang page 1, 20 bản ghi)
-curl -X GET "https://codegame.shop/api/admin/audit-log?scope=first-purchase&page=1&limit=20" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/audit-log?scope=first-purchase&page=1&limit=20" \\
   -H "X-API-Key: YOUR_API_KEY_HERE"
 
 # Tra cứu nhật ký thao tác Nâng Giá
-curl -X GET "https://codegame.shop/api/admin/audit-log?scope=escalating&page=1&limit=20" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/audit-log?scope=escalating&page=1&limit=20" \\
   -H "X-API-Key: YOUR_API_KEY_HERE"`}
                 </pre>
               </div>
@@ -2384,7 +2384,7 @@ curl -X GET "https://codegame.shop/api/admin/audit-log?scope=escalating&page=1&l
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Cộng Core cho thành viên (type: ADD)
-curl -X POST "https://codegame.shop/api/admin/members/adjust-balance" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/members/adjust-balance" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY_HERE" \\
   -d '{
@@ -2396,7 +2396,7 @@ curl -X POST "https://codegame.shop/api/admin/members/adjust-balance" \\
   }'
 
 # 2. Trừ Core của thành viên (type: SUBTRACT)
-curl -X POST "https://codegame.shop/api/admin/members/adjust-balance" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/members/adjust-balance" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY_HERE" \\
   -d '{
@@ -2416,27 +2416,27 @@ curl -X POST "https://codegame.shop/api/admin/members/adjust-balance" \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Danh sách thành viên (lọc theo role, status, tìm kiếm, phân trang)
-curl -X GET "https://codegame.shop/api/admin/members?page=1&limit=20&status=ACTIVE&search=minh" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/members?page=1&limit=20&status=ACTIVE&search=minh" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Xem chi tiết 1 thành viên
-curl -X GET "https://codegame.shop/api/admin/members/usr_1793366379892_cb88" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/members/usr_1793366379892_cb88" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 3. Cập nhật thông tin thành viên (displayName, phone, status, role)
-curl -X PUT "https://codegame.shop/api/admin/members/usr_1793366379892_cb88" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/members/usr_1793366379892_cb88" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"displayName": "Minh Huỳnh Pro", "phone": "0987654321"}'
 
 # 4. Khóa tài khoản thành viên
-curl -X POST "https://codegame.shop/api/admin/members/usr_1793366379892_cb88/ban" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/members/usr_1793366379892_cb88/ban" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"reason": "Gian lận nhiệm vụ"}'
 
 # 5. Mở khóa tài khoản thành viên
-curl -X POST "https://codegame.shop/api/admin/members/usr_1793366379892_cb88/unban" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/members/usr_1793366379892_cb88/unban" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"`}
                 </pre>
               </div>
@@ -2449,11 +2449,11 @@ curl -X POST "https://codegame.shop/api/admin/members/usr_1793366379892_cb88/unb
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Tra cứu biến động số dư ví toàn sàn (lọc theo memberId, loại DEPOSIT/PURCHASE/REFUND, phân trang)
-curl -X GET "https://codegame.shop/api/admin/wallets/transactions?page=1&limit=20&type=DEPOSIT" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/wallets/transactions?page=1&limit=20&type=DEPOSIT" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Tra cứu số dư và 20 giao dịch gần nhất của 1 thành viên
-curl -X GET "https://codegame.shop/api/admin/wallets/usr_1793366379892_cb88" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/wallets/usr_1793366379892_cb88" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"`}
                 </pre>
               </div>
@@ -2466,15 +2466,15 @@ curl -X GET "https://codegame.shop/api/admin/wallets/usr_1793366379892_cb88" \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Danh sách đơn hàng mua code (lọc trạng thái COMPLETED/REFUNDED, phân trang)
-curl -X GET "https://codegame.shop/api/admin/orders?page=1&limit=20&status=COMPLETED" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/orders?page=1&limit=20&status=COMPLETED" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Chi tiết 1 đơn hàng (kèm mã code kho đã phát cho khách)
-curl -X GET "https://codegame.shop/api/admin/orders/ORD-1793366379892" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/orders/ORD-1793366379892" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 3. Hoàn tiền đơn hàng (hồi mã kho, hoàn Core về ví thành viên)
-curl -X POST "https://codegame.shop/api/admin/orders/ORD-1793366379892/refund" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/orders/ORD-1793366379892/refund" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"reason": "Khách mua nhầm gói, hoàn tiền theo yêu cầu"}'`}
@@ -2489,15 +2489,15 @@ curl -X POST "https://codegame.shop/api/admin/orders/ORD-1793366379892/refund" \
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Lịch sử giao dịch SePay D1 (phân trang, tìm kiếm mã GD/nội dung, tính tổng tiền)
-curl -X GET "https://codegame.shop/api/admin/sepay/transactions?page=1&limit=20&search=97104172" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/sepay/transactions?page=1&limit=20&search=97104172" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Xem cấu hình tài khoản nhận tiền SePay
-curl -X GET "https://codegame.shop/api/admin/sepay/config" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/sepay/config" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 3. Cập nhật cấu hình SePay (hỗ trợ cập nhật từng trường riêng)
-curl -X PUT "https://codegame.shop/api/admin/sepay/config" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/sepay/config" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"accountNumber": "10004681879", "bankName": "TPBank", "accountHolder": "CODEGAME SHOP"}'`}
@@ -2512,27 +2512,27 @@ curl -X PUT "https://codegame.shop/api/admin/sepay/config" \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Danh sách giftcode miễn phí (lọc theo game_slug, status, tìm kiếm)
-curl -X GET "https://codegame.shop/api/admin/free-codes?game_slug=genshin-impact&status=ACTIVE&limit=20" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/free-codes?game_slug=genshin-impact&status=ACTIVE&limit=20" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Thêm mới 1 mã giftcode
-curl -X POST "https://codegame.shop/api/admin/free-codes" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/free-codes" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"code": "GENSHIN2026", "game_slug": "genshin-impact", "rewards": "300 Nguyên Thạch", "status": "ACTIVE"}'
 
 # 3. Sửa mã giftcode
-curl -X PUT "https://codegame.shop/api/admin/free-codes/code_12345" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/free-codes/code_12345" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"rewards": "500 Nguyên Thạch + 50k Mora"}'
 
 # 4. Xóa lẻ 1 mã
-curl -X DELETE "https://codegame.shop/api/admin/free-codes/code_12345" \\
+curl -X DELETE "https://universal-mall-shop.pages.dev/api/admin/free-codes/code_12345" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 5. Xóa hàng loạt danh sách mã
-curl -X DELETE "https://codegame.shop/api/admin/free-codes" \\
+curl -X DELETE "https://universal-mall-shop.pages.dev/api/admin/free-codes" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"ids": ["code_1", "code_2", "code_3"]}'`}
@@ -2547,35 +2547,35 @@ curl -X DELETE "https://codegame.shop/api/admin/free-codes" \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Danh sách mã khách gửi (lọc status: PENDING / APPROVED / REJECTED)
-curl -X GET "https://codegame.shop/api/admin/submissions?status=PENDING" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/submissions?status=PENDING" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Duyệt mã (tự động nạp vào bảng codes)
-curl -X POST "https://codegame.shop/api/admin/submissions/sub_1793366379892/approve" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/submissions/sub_1793366379892/approve" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 3. Từ chối mã kèm lý do
-curl -X POST "https://codegame.shop/api/admin/submissions/sub_1793366379892/reject" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/submissions/sub_1793366379892/reject" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"reason": "Mã đã hết hạn sử dụng"}'
 
 # 4. Lấy danh sách báo mã lỗi một chạm (PENDING / RESOLVED_CONFIRMED)
-curl -X GET "https://codegame.shop/api/admin/code-reports?status=PENDING" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/code-reports?status=PENDING" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 5. Xử lý báo cáo mã lỗi (action: confirmed / invalid / dismiss)
-curl -X POST "https://codegame.shop/api/admin/code-reports/rep_1794295831_abc/resolve" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/code-reports/rep_1794295831_abc/resolve" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"action": "confirmed", "note": "Xác nhận mã đã hết hạn"}'
 
 # 6. Lấy danh sách bình luận game chờ duyệt
-curl -X GET "https://codegame.shop/api/admin/comments?status=PENDING" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/comments?status=PENDING" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 7. Duyệt bình luận game công khai
-curl -X POST "https://codegame.shop/api/admin/comments/cm_1794295832_xyz/approve" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/comments/cm_1794295832_xyz/approve" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"`}
                 </pre>
               </div>
@@ -2588,15 +2588,15 @@ curl -X POST "https://codegame.shop/api/admin/comments/cm_1794295832_xyz/approve
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Lấy toàn bộ danh sách khối nội dung CMS
-curl -X GET "https://codegame.shop/api/admin/content" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/content" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Xem chi tiết khối nội dung theo key
-curl -X GET "https://codegame.shop/api/admin/content/hero_banner" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/content/hero_banner" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 3. Cập nhật khối nội dung CMS
-curl -X PUT "https://codegame.shop/api/admin/content/hero_banner" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/content/hero_banner" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"title": "Cổng Giftcode Game Số 1 Việt Nam 2026", "subtitle": "Cập nhật giftcode 24/7"}'`}
@@ -2611,29 +2611,29 @@ curl -X PUT "https://codegame.shop/api/admin/content/hero_banner" \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Danh sách toàn bộ 18 tiện ích game
-curl -X GET "https://codegame.shop/api/admin/utilities" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/utilities" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Tạo mới 1 gói tiện ích
-curl -X POST "https://codegame.shop/api/admin/utilities" \\
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/utilities" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"id": "ut_custom_vpn", "title": "Gói VPN Game VIP 30 Ngày", "price": 45000, "stock": 100}'
 
 # 3. Cập nhật thông tin gói tiện ích
-curl -X PUT "https://codegame.shop/api/admin/utilities/ut_custom_vpn" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/utilities/ut_custom_vpn" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"price": 39000, "description": "VPN giảm ping siêu tốc"}'
 
 # 4. Cập nhật kho hàng tiện ích (đặt số tuyệt đối hoặc cộng/trừ delta)
-curl -X PUT "https://codegame.shop/api/admin/utilities/ut_custom_vpn/stock" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/utilities/ut_custom_vpn/stock" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"stock_quantity": 250}'
 
 # 5. Xóa vĩnh viễn gói tiện ích khỏi CSDL và setting KV
-curl -X DELETE "https://codegame.shop/api/admin/utilities/ut_custom_vpn" \\
+curl -X DELETE "https://universal-mall-shop.pages.dev/api/admin/utilities/ut_custom_vpn" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"`}
                 </pre>
               </div>
@@ -2646,11 +2646,11 @@ curl -X DELETE "https://codegame.shop/api/admin/utilities/ut_custom_vpn" \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Đọc cấu hình tăng trưởng (vòng quay, điểm danh, nạp đầu, đua top)
-curl -X GET "https://codegame.shop/api/admin/growth" \\
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/growth" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 
 # 2. Cập nhật cấu hình tăng trưởng (hỗ trợ partial update)
-curl -X PUT "https://codegame.shop/api/admin/growth" \\
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/growth" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
   -d '{"lucky_wheel_enabled": true, "checkin_streak_bonus": 500}'`}
@@ -2672,13 +2672,13 @@ curl -X PUT "https://codegame.shop/api/admin/growth" \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# Lấy thông tin nhóm (Tên, mô tả, số lượng thành viên, permissions)
-curl -X POST https://codegame.shop/api/telegram/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/telegram/manage \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_FULL" \
   -d '{ "action": "get_chat" }'
 
 # Lấy danh sách quản trị viên của nhóm
-curl -X POST https://codegame.shop/api/telegram/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/telegram/manage \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_FULL" \
   -d '{ "action": "get_administrators" }'`}
@@ -2691,7 +2691,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
                   Mẫu 2: Phân Trang Lịch Sử Tin Nhắn Nhận Từ Webhook (Action: get_recent_messages)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/telegram/manage \
+{`curl -X POST https://universal-mall-shop.pages.dev/api/telegram/manage \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_FULL" \
   -d '{
@@ -2709,7 +2709,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Ghim tin nhắn thông báo quan trọng
-curl -X POST https://codegame.shop/api/telegram/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/telegram/manage \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_FULL" \
   -d '{
@@ -2719,7 +2719,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
   }'
 
 # 2. Xóa tin nhắn rác hoặc vi phạm quy tắc
-curl -X POST https://codegame.shop/api/telegram/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/telegram/manage \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_FULL" \
   -d '{
@@ -2736,7 +2736,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# Cấm thành viên vi phạm và thu hồi mọi tin nhắn cũ
-curl -X POST https://codegame.shop/api/telegram/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/telegram/manage \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_FULL" \
   -d '{
@@ -2746,7 +2746,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
   }'
 
 # Hạn chế quyền gửi tin nhắn trong 24 giờ
-curl -X POST https://codegame.shop/api/telegram/manage \
+curl -X POST https://universal-mall-shop.pages.dev/api/telegram/manage \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_FULL" \
   -d '{
@@ -2767,7 +2767,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
                   Mẫu 5: Đăng Tin Tức / Mã Code / Thông Báo Lên Nhóm (POST /api/telegram/notify)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/telegram/notify \
+{`curl -X POST https://universal-mall-shop.pages.dev/api/telegram/notify \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_NOTIFY" \
   -d '{
@@ -2776,8 +2776,8 @@ curl -X POST https://codegame.shop/api/telegram/manage \
     "game_name": "Genshin Impact",
     "codes": ["GENSHINGIFT", "NATLAN2026"],
     "title": "Mã mới khám phá Natlan",
-    "source_name": "CodeGame.shop",
-    "source_url": "https://codegame.shop/code/genshin-impact"
+    "source_name": "Pine Universal Mall",
+    "source_url": "https://universal-mall-shop.pages.dev/code/genshin-impact"
   }'`}
                 </pre>
               </div>
@@ -2791,7 +2791,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
                   Gửi thông báo mã mới trực tiếp vào tin nhắn riêng Telegram cho những người dùng đã liên kết bot và theo dõi tựa game này (Khung giờ gửi: 09:00 - 22:00 VN, ngoài khung giờ tự lưu hàng chờ).
                 </p>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/telegram/notify-followers \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/telegram/notify-followers \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_NOTIFY" \\
   -d '{
@@ -2806,7 +2806,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
       }
     ],
     "source_name": "NPH Joy Game",
-    "source_url": "https://codegame.shop/game/hiep-khach-hanh"
+    "source_url": "https://universal-mall-shop.pages.dev/game/hiep-khach-hanh"
   }'`}
                 </pre>
               </div>
@@ -2820,7 +2820,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
                   Gom toàn bộ mã chờ phát sinh ban đêm (ngoài 09:00 - 22:00) thành 1 tin nhắn tổng hợp duy nhất cho từng người theo dõi để không spam thông báo.
                 </p>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/telegram/send-pending-digest \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/telegram/send-pending-digest \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_WITH_TELEGRAM_NOTIFY"`}
                 </pre>
@@ -2841,7 +2841,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
                   Mẫu 1: Dùng 1 Mã API Để Set Quyền Cho Mã Khác (cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/api-keys/set-permissions \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/api-keys/set-permissions \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_ADMIN_OR_VERSATILE_KEY" \\
   -d '{
@@ -2863,7 +2863,7 @@ curl -X POST https://codegame.shop/api/telegram/manage \
                   Mẫu 2: Set Quyền Bằng JavaScript (Node.js / Fetch API)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`const res = await fetch('https://codegame.shop/api/api-keys/set-permissions', {
+{`const res = await fetch('https://universal-mall-shop.pages.dev/api/api-keys/set-permissions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -2890,7 +2890,7 @@ console.log('Kết quả cập nhật:', data);`}
                   Mẫu 1: Đăng bài viết mới hoặc Đặt lịch hẹn giờ (cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/news \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/news \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY_HERE" \\
   -d '{
@@ -2909,7 +2909,7 @@ console.log('Kết quả cập nhật:', data);`}
                   Mẫu 2: Cập nhật / Sửa nội dung bài viết (JavaScript)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`const res = await fetch('https://codegame.shop/api/news/news_123', {
+{`const res = await fetch('https://universal-mall-shop.pages.dev/api/news/news_123', {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
@@ -2936,7 +2936,7 @@ console.log(data);`}
                   Mẫu 1: Tải logo thật và tự động đối chiếu Store (JSON Payload)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/games/upload-icon \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/games/upload-icon \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY_HERE" \\
   -d '{
@@ -2954,7 +2954,7 @@ console.log(data);`}
                   Mẫu 2: Tải file ảnh trực tiếp từ máy (Multipart Form-Data)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/games/upload-icon \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/games/upload-icon \\
   -H "X-API-Key: YOUR_API_KEY_HERE" \\
   -F "slug=kof-legend" \\
   -F "file=@icon_kyo_512.webp;type=image/webp" \\
@@ -2968,7 +2968,7 @@ console.log(data);`}
                   Mẫu 3: Tải và xác minh logo tự động (JavaScript Fetch)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`const res = await fetch('https://codegame.shop/api/games/upload-icon', {
+{`const res = await fetch('https://universal-mall-shop.pages.dev/api/games/upload-icon', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -3001,7 +3001,7 @@ console.log(data); // { success: true, iconUrl: '/game_icons/kof-legend.webp?v=.
                   Mẫu 1: Sửa Thông Tin Game Live (Action: update_game - cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/crawler/ingest-codes \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/crawler/ingest-codes \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
@@ -3018,7 +3018,7 @@ console.log(data); // { success: true, iconUrl: '/game_icons/kof-legend.webp?v=.
                   Mẫu 2: Xóa Lẻ Từng Mã Khỏi Game Live (Action: delete_codes - cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/crawler/ingest-codes \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/crawler/ingest-codes \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
@@ -3035,7 +3035,7 @@ console.log(data); // { success: true, iconUrl: '/game_icons/kof-legend.webp?v=.
                   Mẫu 3: Đặt Icon Live Về Tập Tin Có Sẵn (Action: update_icon_live - cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/crawler/ingest-codes \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/crawler/ingest-codes \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
@@ -3052,7 +3052,7 @@ console.log(data); // { success: true, iconUrl: '/game_icons/kof-legend.webp?v=.
                   Mẫu 4: Cập Nhật &amp; Tải Icon Game Live Từ URL Ảnh (Action: update_icon_from_url - cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/crawler/ingest-codes \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/crawler/ingest-codes \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
@@ -3073,7 +3073,7 @@ console.log(data); // { success: true, iconUrl: '/game_icons/kof-legend.webp?v=.
                   Mẫu 1: AI Lấy danh sách bài nộp chờ duyệt (GET /api/missions/ai/pending)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X GET "https://codegame.shop/api/missions/ai/pending?limit=20" \\
+{`curl -X GET "https://universal-mall-shop.pages.dev/api/missions/ai/pending?limit=20" \\
   -H "X-API-Key: YOUR_AI_KEY_HERE"`}
                 </pre>
               </div>
@@ -3084,7 +3084,7 @@ console.log(data); // { success: true, iconUrl: '/game_icons/kof-legend.webp?v=.
                   Mẫu 2: AI Gửi kết quả duyệt bài và tự động trả thưởng (POST /api/missions/ai/review)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`const res = await fetch('https://codegame.shop/api/missions/ai/review', {
+{`const res = await fetch('https://universal-mall-shop.pages.dev/api/missions/ai/review', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -3112,7 +3112,7 @@ console.log(result);`}
                   Mẫu: Đồng bộ toàn bộ dữ liệu qua Master API (POST /api/sync)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/sync \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/sync \\
   -H "Content-Type: application/json" \\
   -H "X-Sync-Key: YOUR_MASTER_KEY_HERE" \\
   -d '{
@@ -3137,7 +3137,7 @@ console.log(result);`}
                   Mẫu 1: Tra Cứu Toàn Bộ Đợt Phát & Tồn Kho Chi Tiết (cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X GET "https://codegame.shop/api/giveaways/manage?status=ALL" \\
+{`curl -X GET "https://universal-mall-shop.pages.dev/api/giveaways/manage?status=ALL" \\
   -H "X-Api-Key: YOUR_GIVEAWAY_OR_ADMIN_KEY"`}
                 </pre>
               </div>
@@ -3148,7 +3148,7 @@ console.log(result);`}
                   Mẫu 2: Nạp Thêm Hàng Loạt Mã Giftcode Vào Kho Đợt Phát (cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X PUT https://codegame.shop/api/giveaways/manage \\
+{`curl -X PUT https://universal-mall-shop.pages.dev/api/giveaways/manage \\
   -H "Content-Type: application/json" \\
   -H "X-Api-Key: YOUR_GIVEAWAY_OR_ADMIN_KEY" \\
   -d '{
@@ -3169,7 +3169,7 @@ console.log(result);`}
                   Mẫu 3: Tạo Mới Chiến Dịch Giveaway Đầy Đủ Thông Số (cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/giveaways/manage \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/giveaways/manage \\
   -H "Content-Type: application/json" \\
   -H "X-Api-Key: YOUR_GIVEAWAY_OR_ADMIN_KEY" \\
   -d '{
@@ -3198,7 +3198,7 @@ console.log(result);`}
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`// 1. Reset thời gian chờ toàn sàn (Khách có thể giật code tiếp theo ngay lập tức)
-await fetch('https://codegame.shop/api/giveaways/manage', {
+await fetch('https://universal-mall-shop.pages.dev/api/giveaways/manage', {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
@@ -3211,7 +3211,7 @@ await fetch('https://codegame.shop/api/giveaways/manage', {
 });
 
 // 2. Tạm dừng / Kích hoạt lại đợt phát
-await fetch('https://codegame.shop/api/giveaways/manage', {
+await fetch('https://universal-mall-shop.pages.dev/api/giveaways/manage', {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
@@ -3241,7 +3241,7 @@ await fetch('https://codegame.shop/api/giveaways/manage', {
                   Mẫu 1: Lấy Danh Sách Lịch Sự Kiện Kèm Trạng Thái Đếm Ngược Realtime (cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X GET "https://codegame.shop/api/event-scheduler?status=ALL" \\
+{`curl -X GET "https://universal-mall-shop.pages.dev/api/event-scheduler?status=ALL" \\
   -H "X-Api-Key: YOUR_EVENT_OR_ADMIN_KEY"`}
                 </pre>
               </div>
@@ -3252,7 +3252,7 @@ await fetch('https://codegame.shop/api/giveaways/manage', {
                   Mẫu 2: Tạo Lịch Sự Kiện Đếm Ngược Mới (cURL)
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
-{`curl -X POST https://codegame.shop/api/event-scheduler \\
+{`curl -X POST https://universal-mall-shop.pages.dev/api/event-scheduler \\
   -H "Content-Type: application/json" \\
   -H "X-Api-Key: YOUR_EVENT_OR_ADMIN_KEY" \\
   -d '{
@@ -3282,7 +3282,7 @@ await fetch('https://codegame.shop/api/giveaways/manage', {
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Kích hoạt LIVE ngay lập tức trong 120 phút
-curl -X PUT https://codegame.shop/api/event-scheduler \\
+curl -X PUT https://universal-mall-shop.pages.dev/api/event-scheduler \\
   -H "Content-Type: application/json" \\
   -H "X-Api-Key: YOUR_EVENT_OR_ADMIN_KEY" \\
   -d '{
@@ -3292,7 +3292,7 @@ curl -X PUT https://codegame.shop/api/event-scheduler \\
   }'
 
 # 2. Gia hạn thêm 60 phút
-curl -X PUT https://codegame.shop/api/event-scheduler \\
+curl -X PUT https://universal-mall-shop.pages.dev/api/event-scheduler \\
   -H "Content-Type: application/json" \\
   -H "X-Api-Key: YOUR_EVENT_OR_ADMIN_KEY" \\
   -d '{
@@ -3310,7 +3310,7 @@ curl -X PUT https://codegame.shop/api/event-scheduler \\
                 </h4>
                 <pre className="mt-2 p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`// Bật/tắt sự kiện
-await fetch('https://codegame.shop/api/event-scheduler', {
+await fetch('https://universal-mall-shop.pages.dev/api/event-scheduler', {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
@@ -3323,7 +3323,7 @@ await fetch('https://codegame.shop/api/event-scheduler', {
 });
 
 // Xóa sự kiện
-await fetch('https://codegame.shop/api/event-scheduler?id=ev_1793290359485_abc', {
+await fetch('https://universal-mall-shop.pages.dev/api/event-scheduler?id=ev_1793290359485_abc', {
   method: 'DELETE',
   headers: {
     'X-Api-Key': 'YOUR_EVENT_OR_ADMIN_KEY',
@@ -3356,7 +3356,7 @@ await fetch('https://codegame.shop/api/event-scheduler?id=ev_1793290359485_abc',
                 </div>
                 <pre className="p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# Lấy toàn bộ số liệu thống kê thời gian thực
-curl -X GET "https://codegame.shop/api/admin/dashboard/stats" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/dashboard/stats" \
   -H "Authorization: Bearer YOUR_API_KEY"`}
                 </pre>
               </div>
@@ -3372,11 +3372,11 @@ curl -X GET "https://codegame.shop/api/admin/dashboard/stats" \
                 </div>
                 <pre className="p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Tra cứu danh sách mã code trong kho theo gói sản phẩm
-curl -X GET "https://codegame.shop/api/admin/store/products/sp_12345/codes?status=AVAILABLE&page=1&limit=50" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/store/products/sp_12345/codes?status=AVAILABLE&page=1&limit=50" \
   -H "X-Api-Key: YOUR_API_KEY"
 
 # 2. Nạp hàng loạt mã code bán mới vào kho (tự động lọc trùng + cập nhật tồn kho)
-curl -X POST "https://codegame.shop/api/admin/store/products/sp_12345/codes" \
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/store/products/sp_12345/codes" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
@@ -3384,7 +3384,7 @@ curl -X POST "https://codegame.shop/api/admin/store/products/sp_12345/codes" \
   }'
 
 # 3. Xóa danh sách mã tồn kho chưa bán
-curl -X DELETE "https://codegame.shop/api/admin/store/products/sp_12345/codes" \
+curl -X DELETE "https://universal-mall-shop.pages.dev/api/admin/store/products/sp_12345/codes" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
@@ -3404,11 +3404,11 @@ curl -X DELETE "https://codegame.shop/api/admin/store/products/sp_12345/codes" \
                 </div>
                 <pre className="p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Đọc cấu hình tiếp thị FOMO hiện tại
-curl -X GET "https://codegame.shop/api/admin/marketing/config" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/marketing/config" \
   -H "X-Api-Key: YOUR_API_KEY"
 
 # 2. Cập nhật cấu hình thông báo FOMO
-curl -X PUT "https://codegame.shop/api/admin/marketing/config" \
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/marketing/config" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
@@ -3419,7 +3419,7 @@ curl -X PUT "https://codegame.shop/api/admin/marketing/config" \
   }'
 
 # 3. Kích hoạt phát sự kiện mua hàng ảo tức thì lên toàn website
-curl -X POST "https://codegame.shop/api/admin/marketing/trigger" \
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/marketing/trigger" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
@@ -3442,11 +3442,11 @@ curl -X POST "https://codegame.shop/api/admin/marketing/trigger" \
                 </div>
                 <pre className="p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Lấy danh sách các nguồn cào giftcode
-curl -X GET "https://codegame.shop/api/admin/crawler/sources" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/crawler/sources" \
   -H "X-Api-Key: YOUR_API_KEY"
 
 # 2. Thêm nguồn cào mới
-curl -X POST "https://codegame.shop/api/admin/crawler/sources" \
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/crawler/sources" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
@@ -3457,7 +3457,7 @@ curl -X POST "https://codegame.shop/api/admin/crawler/sources" \
   }'
 
 # 3. Kích hoạt cào giftcode tức thì
-curl -X POST "https://codegame.shop/api/admin/crawler/trigger" \
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/crawler/trigger" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
@@ -3478,26 +3478,26 @@ curl -X POST "https://codegame.shop/api/admin/crawler/trigger" \
                 </div>
                 <pre className="p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Lấy danh sách email đăng ký nhận giftcode
-curl -X GET "https://codegame.shop/api/admin/notifications/subscribers?page=1&limit=50" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/notifications/subscribers?page=1&limit=50" \
   -H "X-Api-Key: YOUR_API_KEY"
 
 # 2. Phát email thông báo hàng loạt (Broadcast)
-curl -X POST "https://codegame.shop/api/admin/notifications/broadcast" \
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/notifications/broadcast" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
-    "subject": "🎁 Siêu Giftcode Mới Đã Cập Bến CodeGame.Shop!",
+    "subject": "🎁 Siêu Giftcode Mới Đã Cập Bến Pine Universal Mall!",
     "content_html": "<h2>Chào bạn,</h2><p>Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!</p>",
     "target_game_slug": "3q-dao-dao-dao"
   }'
 
 # 3. Cập nhật cấu hình email provider
-curl -X PUT "https://codegame.shop/api/admin/notifications/settings" \
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/notifications/settings" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
     "provider": "resend",
-    "sender_name": "CodeGame.Shop",
+    "sender_name": "Pine Universal Mall",
     "sender_email": "no-reply@codegame.shop"
   }'`}
                 </pre>
@@ -3514,11 +3514,11 @@ curl -X PUT "https://codegame.shop/api/admin/notifications/settings" \
                 </div>
                 <pre className="p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Tra cứu nhật ký bảo mật (kèm lọc action, actor, severity)
-curl -X GET "https://codegame.shop/api/admin/security-logs?severity=WARNING&limit=30" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/security-logs?severity=WARNING&limit=30" \
   -H "X-Api-Key: YOUR_API_KEY"
 
 # 2. Ghi nhận nhật ký kiểm toán mới từ remote agent
-curl -X POST "https://codegame.shop/api/admin/security-logs" \
+curl -X POST "https://universal-mall-shop.pages.dev/api/admin/security-logs" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
@@ -3540,11 +3540,11 @@ curl -X POST "https://codegame.shop/api/admin/security-logs" \
                 </div>
                 <pre className="p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
 {`# 1. Đọc cấu hình hệ thống hiện tại
-curl -X GET "https://codegame.shop/api/admin/settings" \
+curl -X GET "https://universal-mall-shop.pages.dev/api/admin/settings" \
   -H "X-Api-Key: YOUR_API_KEY"
 
 # 2. Bật khuyến mãi nạp tiền hoặc bật chế độ bảo trì
-curl -X PUT "https://codegame.shop/api/admin/settings" \
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/settings" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{

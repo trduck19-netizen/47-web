@@ -472,7 +472,7 @@ export async function checkIconFileExists(slug: string, db?: D1Database): Promis
 
   // 2. Kiểm tra static assets
   try {
-    const res = await fetch(`https://codegame.shop/game_icons/${encodeURIComponent(cleanSlug)}.webp`, { method: 'HEAD' });
+    const res = await fetch(`https://universal-mall-shop.pages.dev/game_icons/${encodeURIComponent(cleanSlug)}.webp`, { method: 'HEAD' });
     if (res.status === 200) return true;
   } catch {}
 

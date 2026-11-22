@@ -54,7 +54,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
       } catch {}
     };
     updateCodes();
-    window.addEventListener('wcg_games_updated', updateCodes);
+    window.addEventListener('pine_games_updated', updateCodes);
 
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
@@ -74,20 +74,20 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         setLiveCopies(c);
       }
     };
-    window.addEventListener('wcg_master_copy_count_updated', handleCopyCountUpdated);
-    window.addEventListener('wcg_global_copy_count_updated', handleCopyCountUpdated);
+    window.addEventListener('pine_master_copy_count_updated', handleCopyCountUpdated);
+    window.addEventListener('pine_global_copy_count_updated', handleCopyCountUpdated);
     const handleContentUpdated = () => {
       setCmsHero(dataService.getContentByKey('hero_banner'));
     };
-    window.addEventListener('wcg_admin_content_updated', handleContentUpdated);
+    window.addEventListener('pine_admin_content_updated', handleContentUpdated);
 
     return () => {
       unsub();
       unsubCounter();
-      window.removeEventListener('wcg_games_updated', updateCodes);
-      window.removeEventListener('wcg_master_copy_count_updated', handleCopyCountUpdated);
-      window.removeEventListener('wcg_global_copy_count_updated', handleCopyCountUpdated);
-      window.removeEventListener('wcg_admin_content_updated', handleContentUpdated);
+      window.removeEventListener('pine_games_updated', updateCodes);
+      window.removeEventListener('pine_master_copy_count_updated', handleCopyCountUpdated);
+      window.removeEventListener('pine_global_copy_count_updated', handleCopyCountUpdated);
+      window.removeEventListener('pine_admin_content_updated', handleContentUpdated);
     };
   }, []);
 

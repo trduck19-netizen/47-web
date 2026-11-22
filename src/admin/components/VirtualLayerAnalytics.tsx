@@ -20,10 +20,10 @@ import {
 const getAuthToken = (): string => {
   if (typeof window === 'undefined') return '';
   return (
-    localStorage.getItem('wcg_auth_token') ||
-    sessionStorage.getItem('wcg_auth_token') ||
-    localStorage.getItem('wcg_admin_sync_key') ||
-    sessionStorage.getItem('wcg_admin_sync_key') ||
+    localStorage.getItem('pine_auth_token') ||
+    sessionStorage.getItem('pine_auth_token') ||
+    localStorage.getItem('pine_admin_sync_key') ||
+    sessionStorage.getItem('pine_admin_sync_key') ||
     ''
   );
 };

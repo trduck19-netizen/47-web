@@ -46,8 +46,8 @@ class OfferService {
       try {
         const authToken =
           token ||
-          (typeof localStorage !== 'undefined' && localStorage.getItem('wcg_auth_token')) ||
-          (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wcg_auth_token')) ||
+          (typeof localStorage !== 'undefined' && localStorage.getItem('pine_auth_token')) ||
+          (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pine_auth_token')) ||
           '';
 
         const headers: Record<string, string> = {};

@@ -72,8 +72,8 @@ export const LuckyWheelSection: React.FC<LuckyWheelSectionProps> = ({
       const cfg = e?.detail || growthService.getConfig();
       if (cfg) setConfig(cfg);
     };
-    window.addEventListener('wcg_growth_config_updated', handleConfigUpdate);
-    return () => window.removeEventListener('wcg_growth_config_updated', handleConfigUpdate);
+    window.addEventListener('pine_growth_config_updated', handleConfigUpdate);
+    return () => window.removeEventListener('pine_growth_config_updated', handleConfigUpdate);
   }, []);
 
   // Draw the Lucky Wheel on Canvas

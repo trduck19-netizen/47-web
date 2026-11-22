@@ -320,10 +320,10 @@ export const App: React.FC = () => {
       })
       .catch(() => {});
 
-    window.addEventListener('wcg_growth_config_updated', handleConfigUpdate);
+    window.addEventListener('pine_growth_config_updated', handleConfigUpdate);
     window.addEventListener('storage', handleConfigUpdate);
     return () => {
-      window.removeEventListener('wcg_growth_config_updated', handleConfigUpdate);
+      window.removeEventListener('pine_growth_config_updated', handleConfigUpdate);
       window.removeEventListener('storage', handleConfigUpdate);
     };
   }, []);
@@ -359,7 +359,7 @@ export const App: React.FC = () => {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref') || params.get('invite');
       if (ref) {
-        localStorage.setItem('wcg_referrer_id', ref);
+        localStorage.setItem('pine_referrer_id', ref);
       }
     }
   }, []);
@@ -372,7 +372,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const isTest1 = typeof window !== 'undefined' && (window.location.pathname.startsWith('/test1') || window.location.hash.includes('test1'));
     if (isTest1) {
-      const shopeeTheme = localStorage.getItem('wcg_shopee_theme');
+      const shopeeTheme = localStorage.getItem('pine_shopee_theme');
       const isDark = shopeeTheme === 'dark';
       setIsDarkMode(isDark);
       if (isDark) {
@@ -386,7 +386,7 @@ export const App: React.FC = () => {
       }
       return;
     }
-    const savedTheme = localStorage.getItem('wcg_theme');
+    const savedTheme = localStorage.getItem('pine_theme');
     const metaCs = document.querySelector('meta[name="color-scheme"]');
     if (savedTheme === 'light') {
       setIsDarkMode(false);
@@ -412,13 +412,13 @@ export const App: React.FC = () => {
         document.documentElement.classList.remove('light');
         document.documentElement.style.colorScheme = 'dark';
         if (metaCs) metaCs.setAttribute('content', 'dark');
-        localStorage.setItem('wcg_theme', 'dark');
+        localStorage.setItem('pine_theme', 'dark');
       } else {
         document.documentElement.classList.remove('dark');
         document.documentElement.classList.add('light');
         document.documentElement.style.colorScheme = 'light';
         if (metaCs) metaCs.setAttribute('content', 'light');
-        localStorage.setItem('wcg_theme', 'light');
+        localStorage.setItem('pine_theme', 'light');
       }
       return next;
     });
@@ -430,12 +430,12 @@ export const App: React.FC = () => {
       const active = Boolean(e?.detail?.isOpen);
       setIsMobileSearchActive(active);
     };
-    window.addEventListener('wcg_mobile_search_toggled', handleMobileSearchToggle);
+    window.addEventListener('pine_mobile_search_toggled', handleMobileSearchToggle);
 
     if (currentTab !== 'catalog') {
       setIsStickySearchVisible(false);
       return () => {
-        window.removeEventListener('wcg_mobile_search_toggled', handleMobileSearchToggle);
+        window.removeEventListener('pine_mobile_search_toggled', handleMobileSearchToggle);
       };
     }
 
@@ -464,7 +464,7 @@ export const App: React.FC = () => {
     window.addEventListener('resize', checkStickyVisibility, { passive: true });
 
     return () => {
-      window.removeEventListener('wcg_mobile_search_toggled', handleMobileSearchToggle);
+      window.removeEventListener('pine_mobile_search_toggled', handleMobileSearchToggle);
       window.removeEventListener('scroll', checkStickyVisibility);
       window.removeEventListener('resize', checkStickyVisibility);
     };
@@ -517,8 +517,8 @@ export const App: React.FC = () => {
         setCurrentUser(null);
       }
     };
-    window.addEventListener('wcg_user_updated', handleUserUpdate);
-    return () => window.removeEventListener('wcg_user_updated', handleUserUpdate);
+    window.addEventListener('pine_user_updated', handleUserUpdate);
+    return () => window.removeEventListener('pine_user_updated', handleUserUpdate);
   }, [handleUpdateUser]);
 
   // Global listener for floating toast events (from components/cards)
@@ -529,8 +529,8 @@ export const App: React.FC = () => {
         showToast(title, message, type || 'success');
       }
     };
-    window.addEventListener('wcg_show_toast', handleCustomToast);
-    return () => window.removeEventListener('wcg_show_toast', handleCustomToast);
+    window.addEventListener('pine_show_toast', handleCustomToast);
+    return () => window.removeEventListener('pine_show_toast', handleCustomToast);
   }, [showToast]);
 
   // Persistent Screen-Covering Splash Preloader Dismissal
@@ -846,8 +846,8 @@ export const App: React.FC = () => {
     const ALLOWED_ADMIN_ORIGINS = [
       window.location.origin,
       'https://admin-universal-mall.pages.dev',
-      'https://admin-code-game-shop.pages.dev',
-      'https://admin.codegame.shop',
+      'https://admin-universal-mall.pages.dev',
+      'https://admin-universal-mall.pages.dev',
       'http://localhost:5173',
       'http://localhost:3000',
       'http://localhost:8788',
@@ -915,7 +915,7 @@ export const App: React.FC = () => {
         ? selectedGame.active_codes_count
         : (selectedGame.codes_count || selectedGame.codes?.filter((c: any) => !isCodeExpired(c))?.length || 0);
       const countSuffix = codeCount > 0 ? `Nhận ${codeCount} Mã Code ` : '';
-      document.title = `Giftcode ${selectedGame.name || effectiveSlug} Mới Nhất 2026 - ${countSuffix}| CodeGame.shop`;
+      document.title = `Giftcode ${selectedGame.name || effectiveSlug} Mới Nhất 2026 - ${countSuffix}| Pine Universal Mall`;
       const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
       const inTest1 = currentTab === 'shopee-test' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/test1')) || isTestClientDomain;
       if (inTest1) {
@@ -966,59 +966,59 @@ export const App: React.FC = () => {
         if (window.location.pathname.startsWith('/news/') && window.location.pathname.length > 6) {
           // Viewing a specific news article full page: preserve /news/<slug> in address bar!
         } else if (isTodayCodesPath) {
-          document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | CodeGame.shop';
+          document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
           if (path !== '/ma-hom-nay') {
             window.history.replaceState(null, '', '/ma-hom-nay');
           }
         } else if (isEventsPath) {
-          document.title = 'Sự Kiện Game & Lịch Khởi Tranh Mới Nhất 2026 | CodeGame.shop';
+          document.title = 'Sự Kiện Game & Lịch Khởi Tranh Mới Nhất 2026 | Pine Universal Mall';
           if (path !== '/su-kien' && path !== '/events') {
             window.history.replaceState(null, '', '/su-kien');
           }
         } else {
-          document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | CodeGame.shop';
+          document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
           if (window.location.pathname !== '/news' || window.location.hash) {
             window.history.replaceState(null, '', '/news');
           }
         }
       } else if (currentTab === 'giveaways') {
-        document.title = 'Sự Kiện Giveaway Game Miễn Phí 2026 | CodeGame.shop';
+        document.title = 'Sự Kiện Giveaway Game Miễn Phí 2026 | Pine Universal Mall';
         if (window.location.pathname !== '/giveaways' || window.location.hash) {
           window.history.replaceState(null, '', '/giveaways');
         }
       } else if (currentTab === 'store') {
-        document.title = 'Cửa Hàng Thẻ Game & Robux Giá Rẻ | CodeGame.shop';
+        document.title = 'Cửa Hàng Thẻ Game & Robux Giá Rẻ | Pine Universal Mall';
         if (window.location.pathname !== '/store' || window.location.hash) {
           window.history.replaceState(null, '', '/store');
         }
       } else if (currentTab === 'utilities') {
-        document.title = 'Tiện Ích Nạp Game & Key Bản Quyền | CodeGame.shop';
+        document.title = 'Tiện Ích Nạp Game & Key Bản Quyền | Pine Universal Mall';
         if (window.location.pathname !== '/utilities' || window.location.hash) {
           window.history.replaceState(null, '', '/utilities');
         }
       } else if (currentTab === 'missions') {
-        document.title = 'Nhiệm Vụ Nhận Quà & Tiền Ví Miễn Phí | CodeGame.shop';
+        document.title = 'Nhiệm Vụ Nhận Quà & Tiền Ví Miễn Phí | Pine Universal Mall';
         const normPath = window.location.pathname.replace(/\/$/, '');
         if (normPath !== '/nhiem-vu' || window.location.hash || window.location.pathname.endsWith('/')) {
           window.history.replaceState(null, '', '/nhiem-vu');
         }
       } else if (currentTab === 'telegram') {
-        document.title = 'Cộng Đồng Telegram & Nhận Giftcode Tự Động | CodeGame.shop';
+        document.title = 'Cộng Đồng Telegram & Nhận Giftcode Tự Động | Pine Universal Mall';
         if (window.location.pathname !== '/telegram' || window.location.hash) {
           window.history.replaceState(null, '', '/telegram');
         }
       } else if (currentTab === 'today-codes') {
-        document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | CodeGame.shop';
+        document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
         if (window.location.pathname !== '/ma-hom-nay' || window.location.hash) {
           window.history.replaceState(null, '', '/ma-hom-nay');
         }
       } else if (currentTab === 'seller-center') {
-        document.title = 'Kênh Người Bán & Quản Lý Gian Hàng | CodeGame.shop';
+        document.title = 'Kênh Người Bán & Quản Lý Gian Hàng | Pine Universal Mall';
         if (window.location.pathname !== '/ban-hang' || window.location.hash) {
           window.history.replaceState(null, '', '/ban-hang');
         }
       } else if (currentTab === 'store-detail') {
-        document.title = 'Gian Hàng Số | CodeGame.shop';
+        document.title = 'Gian Hàng Số | Pine Universal Mall';
         if (currentStoreSlug && (window.location.pathname !== `/gian-hang/${currentStoreSlug}` || window.location.hash)) {
           window.history.replaceState(null, '', `/gian-hang/${currentStoreSlug}`);
         }
@@ -1038,7 +1038,7 @@ export const App: React.FC = () => {
             );
           }
         } else {
-          document.title = 'Giao Diện Thử Nghiệm Phong Cách Shopee Game (Test 1) | CodeGame.shop';
+          document.title = 'Giao Diện Thử Nghiệm Phong Cách Shopee Game (Test 1) | Pine Universal Mall';
         }
         const isDeepLink = window.location.pathname.startsWith('/test1/game/') || window.location.pathname.startsWith('/test1/g/') || (isTestClientDomain && window.location.pathname.startsWith('/game/'));
         if (!isDeepLink) {
@@ -1054,7 +1054,7 @@ export const App: React.FC = () => {
           }
         }
       } else {
-        document.title = 'CodeGame.shop - Cổng Tra Cứu Giftcode & Game Bản Quyền Hàng Đầu';
+        document.title = 'Pine Universal Mall - Cổng Tra Cứu Giftcode & Game Bản Quyền Hàng Đầu';
         if (window.location.pathname !== '/' || window.location.hash) {
           window.history.replaceState(null, '', '/');
         }
@@ -1582,7 +1582,7 @@ export const App: React.FC = () => {
     const cleanTitle =
       rawTitle && rawTitle.toUpperCase() !== 'WEB CODE GAME' && rawTitle.toUpperCase() !== 'WEB CODE'
         ? rawTitle
-        : 'CodeGame.Shop';
+        : 'Pine Universal Mall';
     document.title = `${cleanTitle} - Cổng Tra Cứu Giftcode & Tiện Ích Game`;
   }, [branding.avatarUrl, branding.siteTitle, language, currentTab]);
 
@@ -1591,11 +1591,11 @@ export const App: React.FC = () => {
     const handleContentUpdate = () => {
       setBranding(dataService.getWebsiteBranding());
     };
-    window.addEventListener('wcg_admin_content_updated', handleContentUpdate);
-    window.addEventListener('wcg_admin_data_updated', handleContentUpdate);
+    window.addEventListener('pine_admin_content_updated', handleContentUpdate);
+    window.addEventListener('pine_admin_data_updated', handleContentUpdate);
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key && e.key.startsWith('wcg_admin_content')) {
+      if (e.key && e.key.startsWith('pine_admin_content')) {
         handleContentUpdate();
       }
     };
@@ -1604,7 +1604,7 @@ export const App: React.FC = () => {
     let bc: BroadcastChannel | null = null;
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
-        bc = new BroadcastChannel('wcg_data_sync');
+        bc = new BroadcastChannel('pine_data_sync');
         bc.onmessage = (event) => {
           const type = event.data?.type || event.data?.key || '';
           if (!type || (typeof type === 'string' && (type.includes('content') || type.includes('branding')))) {
@@ -1615,8 +1615,8 @@ export const App: React.FC = () => {
     }
 
     return () => {
-      window.removeEventListener('wcg_admin_content_updated', handleContentUpdate);
-      window.removeEventListener('wcg_admin_data_updated', handleContentUpdate);
+      window.removeEventListener('pine_admin_content_updated', handleContentUpdate);
+      window.removeEventListener('pine_admin_data_updated', handleContentUpdate);
       window.removeEventListener('storage', handleStorageChange);
       if (bc) bc.close();
     };
@@ -1635,7 +1635,7 @@ export const App: React.FC = () => {
   };
 
   const handleClearAllBookmarks = () => {
-    localStorage.removeItem('wcg_bookmarks');
+    localStorage.removeItem('pine_bookmarks');
     setBookmarks([]);
     showToast('Đã làm trống tủ game', undefined, 'info');
   };
@@ -1732,11 +1732,11 @@ export const App: React.FC = () => {
   // Share Handlers for Universal Share Modal
   // Share Handlers for Universal Share Modal
   const getShareOrigin = () => {
-    if (typeof window === 'undefined') return 'https://codegame.shop';
+    if (typeof window === 'undefined') return 'https://universal-mall-shop.pages.dev';
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return window.location.origin;
     }
-    return 'https://codegame.shop';
+    return 'https://universal-mall-shop.pages.dev';
   };
 
   const handleOpenShareGame = (game: GameItem, e?: React.MouseEvent) => {
@@ -1879,7 +1879,7 @@ export const App: React.FC = () => {
               return;
             }
             if (host.includes('admin-test-code-game-shop')) {
-              const target = isEn ? 'https://test-code-game-shop.pages.dev/en/' : 'https://test-code-game-shop.pages.dev/';
+              const target = isEn ? 'https://universal-mall-shop.pages.dev/en/' : 'https://universal-mall-shop.pages.dev/';
               const newWin = window.open(target, '_blank');
               if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
                 window.location.href = target;
@@ -1888,7 +1888,7 @@ export const App: React.FC = () => {
             }
             const isDedicatedAdmin = host.includes('admin-code-game-shop');
             if (isDedicatedAdmin) {
-              const target = isEn ? 'https://codegame.shop/en/' : 'https://codegame.shop/';
+              const target = isEn ? 'https://universal-mall-shop.pages.dev/en/' : 'https://universal-mall-shop.pages.dev/';
               const newWin = window.open(target, '_blank');
               if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
                 window.location.href = target;

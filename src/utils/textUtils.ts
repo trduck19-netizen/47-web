@@ -530,7 +530,7 @@ function isCurrentEn(language?: string): boolean {
     return document.documentElement.lang.startsWith('en');
   }
   if (typeof localStorage !== 'undefined') {
-    const saved = localStorage.getItem('wcg_language');
+    const saved = localStorage.getItem('pine_language');
     if (saved && saved.startsWith('en')) return true;
   }
   return false;

@@ -34,8 +34,8 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  private readonly TOKEN_KEY = 'wcg_auth_token';
-  private readonly REMEMBER_KEY = 'wcg_remember_login';
+  private readonly TOKEN_KEY = 'pine_auth_token';
+  private readonly REMEMBER_KEY = 'pine_remember_login';
 
   /**
    * Real-time Broadcast & Synchronization to Admin Console
@@ -44,7 +44,7 @@ class AuthService {
     if (typeof window === 'undefined') return;
     try {
       // 1. Update localStorage wcg_admin_members_v4
-      const membersRaw = localStorage.getItem('wcg_admin_members_v4');
+      const membersRaw = localStorage.getItem('pine_admin_members_v4');
       const members: any[] = membersRaw ? JSON.parse(membersRaw) : [];
       const cleanMember = {
         id: member.id,
@@ -71,11 +71,11 @@ class AuthService {
       } else {
         members.unshift(cleanMember);
       }
-      localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
+      localStorage.setItem('pine_admin_members_v4', JSON.stringify(members));
 
       // 2. BroadcastChannel to notify all active admin tabs immediately
       if ('BroadcastChannel' in window) {
-        const channel = new BroadcastChannel('wcg_data_sync');
+        const channel = new BroadcastChannel('pine_data_sync');
         channel.postMessage({
           type: 'MEMBER_REGISTERED',
           payload: cleanMember,
@@ -86,12 +86,12 @@ class AuthService {
 
       // 3. Dispatch window events for same-page / embedded views
       window.dispatchEvent(
-        new CustomEvent('wcg_admin_data_updated', {
+        new CustomEvent('pine_admin_data_updated', {
           detail: { type: 'MEMBERS_UPDATED', payload: cleanMember },
         })
       );
       window.dispatchEvent(
-        new CustomEvent('wcg_user_registered', {
+        new CustomEvent('pine_user_registered', {
           detail: { member: cleanMember, user: user || cleanMember },
         })
       );
@@ -174,10 +174,10 @@ class AuthService {
 
         // Tự động kích hoạt ghi nhận mã giới thiệu nếu có
         try {
-          const savedRef = typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_referrer_id') : null;
+          const savedRef = typeof localStorage !== 'undefined' ? localStorage.getItem('pine_referrer_id') : null;
           if (savedRef && data.user?.id) {
             growthService.recordReferral(savedRef, data.user.id);
-            localStorage.removeItem('wcg_referrer_id');
+            localStorage.removeItem('pine_referrer_id');
           }
         } catch (refErr) {
           console.warn('[AuthService] referral tracking error:', refErr);
@@ -274,8 +274,8 @@ class AuthService {
         const data: AuthResponse = await res.json();
         if (data.success && data.user) {
           if (data.syncKey) {
-            localStorage.setItem('wcg_admin_sync_key', data.syncKey);
-            sessionStorage.setItem('wcg_admin_sync_key', data.syncKey);
+            localStorage.setItem('pine_admin_sync_key', data.syncKey);
+            sessionStorage.setItem('pine_admin_sync_key', data.syncKey);
           }
           this.saveSession(data.user, data.token || '', Boolean(rememberMe));
           return data;
@@ -351,7 +351,7 @@ class AuthService {
 
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
-        sessionStorage.removeItem(`wcg_otp_${cleanIdentifier}`);
+        sessionStorage.removeItem(`pine_otp_${cleanIdentifier}`);
         return data;
       }
       return {
@@ -439,7 +439,7 @@ class AuthService {
         if (data && data.success && data.user) {
           dataService.saveCurrentUser(data.user);
           this.notifyAdminRealtime(data.user, data.user);
-          window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: data.user }));
+          window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: data.user }));
           return { success: true, message: data.message || 'Cập nhật thông tin nhân vật thành công!', user: data.user };
         } else if (data && !data.success) {
           return { success: false, message: data.message || 'Không thể cập nhật thông tin.' };
@@ -467,7 +467,7 @@ class AuthService {
       sessionStorage.removeItem(this.TOKEN_KEY);
       if (typeof document !== 'undefined') {
         document.cookie = `${this.TOKEN_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
-        document.cookie = 'wcg_auth_user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
+        document.cookie = 'pine_auth_user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
       }
     } catch {}
   }

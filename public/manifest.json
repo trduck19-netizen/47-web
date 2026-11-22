@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "CodeGame - Cổng Tra Cứu Giftcode & Game Bản Quyền",
-  "short_name": "CodeGame",
-  "description": "Kho tổng hợp mã giftcode game mobile & PC miễn phí mới nhất 2026. Nhận quà tân thủ, tra cứu code game bản quyền G1.",
+  "name": "Pine Universal Mall - Siêu Thị Trực Tuyến & Cổng Tiện Ích Đa Ngành",
+  "short_name": "Pine Mall",
+  "description": "Sàn thương mại điện tử đa ngành Pine Universal Mall - mua sắm trực tuyến, tiện ích số, voucher khuyến mãi và quà tặng 24/7.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -39,7 +39,7 @@
   "shortcuts": [
     {
       "name": "Tra Cứu Giftcode",
-      "short_name": "Code Game",
+      "short_name": "Giftcode",
       "description": "Kho giftcode 486+ tựa game mới nhất",
       "url": "/",
       "icons": [{ "src": "/logo.png", "sizes": "192x192" }]

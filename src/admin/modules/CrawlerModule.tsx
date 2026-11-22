@@ -507,8 +507,8 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
   const [isSubmittingQuick, setIsSubmittingQuick] = useState(false);
 
   const getSyncHeaders = () => {
-    const token = localStorage.getItem('wcg_admin_token') || sessionStorage.getItem('wcg_admin_token') || '';
-    const syncKey = localStorage.getItem('wcg_admin_sync_key') || sessionStorage.getItem('wcg_admin_sync_key') || '';
+    const token = localStorage.getItem('pine_admin_token') || sessionStorage.getItem('pine_admin_token') || '';
+    const syncKey = localStorage.getItem('pine_admin_sync_key') || sessionStorage.getItem('pine_admin_sync_key') || '';
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Sync-Key': syncKey,
@@ -796,11 +796,11 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
       fetchD1QuotaStatus();
     };
 
-    window.addEventListener('wcg_crawler_sources_updated', handleSourcesUpdate);
-    window.addEventListener('wcg_admin_data_updated', handleSourcesUpdate);
+    window.addEventListener('pine_crawler_sources_updated', handleSourcesUpdate);
+    window.addEventListener('pine_admin_data_updated', handleSourcesUpdate);
     return () => {
-      window.removeEventListener('wcg_crawler_sources_updated', handleSourcesUpdate);
-      window.removeEventListener('wcg_admin_data_updated', handleSourcesUpdate);
+      window.removeEventListener('pine_crawler_sources_updated', handleSourcesUpdate);
+      window.removeEventListener('pine_admin_data_updated', handleSourcesUpdate);
     };
   }, []);
 
@@ -1967,7 +1967,7 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
     const randBytes = new Uint8Array(8);
     crypto.getRandomValues(randBytes);
     const randomHex = Array.from(randBytes).map((b) => b.toString(16).padStart(2, '0')).join('');
-    const newKey = `wcg_muse_${randomHex}`;
+    const newKey = `pine_muse_${randomHex}`;
     await handleSaveApiConfig({ apiKey: newKey });
     onShowToast(`Đã tạo API Key mới: ${newKey}`, 'success');
   };
@@ -2336,7 +2336,7 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
             <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
               <div>
                 <span className="text-slate-400">API Key:</span>{' '}
-                <strong className="text-emerald-400 font-mono">wcg_muse_...</strong>
+                <strong className="text-emerald-400 font-mono">pine_muse_...</strong>
               </div>
               <div>
                 <span className="text-slate-400">Game chờ:</span>{' '}
@@ -4584,12 +4584,12 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
                   <input
                     type="text"
                     readOnly
-                    value={typeof window !== 'undefined' ? `${window.location.origin}/api/crawler/ingest-codes` : 'https://codegame.shop/api/crawler/ingest-codes'}
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/api/crawler/ingest-codes` : 'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes'}
                     className="bg-transparent text-xs text-slate-200 font-mono flex-1 outline-none select-all"
                   />
                   <button
                     type="button"
-                    onClick={() => handleCopyText(typeof window !== 'undefined' ? `${window.location.origin}/api/crawler/ingest-codes` : 'https://codegame.shop/api/crawler/ingest-codes', 'url')}
+                    onClick={() => handleCopyText(typeof window !== 'undefined' ? `${window.location.origin}/api/crawler/ingest-codes` : 'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes', 'url')}
                     className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -4937,7 +4937,7 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
               <button
                 type="button"
                 onClick={() => {
-                  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://codegame.shop';
+                  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev';
                   const key = crawlerApiConfig.apiKey || '<API_KEY>';
                   let codeToCopy = '';
                   if (apiSnippetLang === 'python') {
@@ -5030,7 +5030,7 @@ console.log(data);`;
                 {apiSnippetLang === 'python' && `# 🐍 Python Script for Muse AI Agent / Bot
 import requests
 
-API_URL = "${typeof window !== 'undefined' ? window.location.origin : 'https://codegame.shop'}/api/crawler/ingest-codes"
+API_URL = "${typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev'}/api/crawler/ingest-codes"
 API_KEY = "${crawlerApiConfig.apiKey || '<API_KEY>'}"
 
 headers = {
@@ -5063,7 +5063,7 @@ print("HTTP Status:", response.status_code)
 print("API Response:", response.json())`}
 
                 {apiSnippetLang === 'curl' && `# 💻 cURL: Vừa nạp mã code vừa cập nhật Cách Nhập Code
-curl -X POST "${typeof window !== 'undefined' ? window.location.origin : 'https://codegame.shop'}/api/crawler/ingest-codes" \\
+curl -X POST "${typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev'}/api/crawler/ingest-codes" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${crawlerApiConfig.apiKey || '<API_KEY>'}" \\
   -d '{
@@ -5076,7 +5076,7 @@ curl -X POST "${typeof window !== 'undefined' ? window.location.origin : 'https:
   }'
 
 # 💻 cURL: CHỈ CẬP NHẬT CÁCH NHẬP CODE (Độc lập không cần mã)
-curl -X POST "${typeof window !== 'undefined' ? window.location.origin : 'https://codegame.shop'}/api/crawler/ingest-codes" \\
+curl -X POST "${typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev'}/api/crawler/ingest-codes" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${crawlerApiConfig.apiKey || '<API_KEY>'}" \\
   -d '{
@@ -5087,7 +5087,7 @@ curl -X POST "${typeof window !== 'undefined' ? window.location.origin : 'https:
   }'`}
 
                 {apiSnippetLang === 'nodejs' && `// 🚀 Node.js / TypeScript Fetch: Nạp code & cập nhật cách nhập
-const res = await fetch('${typeof window !== 'undefined' ? window.location.origin : 'https://codegame.shop'}/api/crawler/ingest-codes', {
+const res = await fetch('${typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev'}/api/crawler/ingest-codes', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

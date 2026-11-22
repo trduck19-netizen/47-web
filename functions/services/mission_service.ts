@@ -656,10 +656,10 @@ export async function invalidateMissionEdgeCache(requestOrUrl?: Request | string
   try {
     const cache = (caches as any).default;
     const baseUrls = [
-      'https://codegame.shop/api/missions',
-      'https://www.codegame.shop/api/missions',
-      'https://web-code-game.pages.dev/api/missions',
-      'https://admin-code-game-shop.pages.dev/api/missions',
+      'https://universal-mall-shop.pages.dev/api/missions',
+      'https://universal-mall-shop.pages.dev/api/missions',
+      'https://universal-mall-shop.pages.dev/api/missions',
+      'https://admin-universal-mall.pages.dev/api/missions',
     ];
     if (requestOrUrl) {
       if (typeof requestOrUrl === 'string') {

@@ -97,8 +97,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({
     setIsChangingPassword(true);
     try {
       const token =
-        localStorage.getItem('wcg_auth_token') ||
-        sessionStorage.getItem('wcg_auth_token');
+        localStorage.getItem('pine_auth_token') ||
+        sessionStorage.getItem('pine_auth_token');
 
       if (!token) {
         onShowToast(
@@ -106,8 +106,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({
           isEn ? 'Your session has expired. Please log in again.' : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
           'error'
         );
-        localStorage.removeItem('wcg_admin_authenticated');
-        sessionStorage.removeItem('wcg_admin_authenticated');
+        localStorage.removeItem('pine_admin_authenticated');
+        sessionStorage.removeItem('pine_admin_authenticated');
         setTimeout(() => window.location.reload(), 1500);
         return;
       }
@@ -126,12 +126,12 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({
             : 'Phiên đăng nhập không tồn tại hoặc đã hết hạn trên máy chủ. Vui lòng đăng nhập lại.',
           'error'
         );
-        localStorage.removeItem('wcg_admin_authenticated');
-        sessionStorage.removeItem('wcg_admin_authenticated');
-        localStorage.removeItem('wcg_auth_token');
-        sessionStorage.removeItem('wcg_auth_token');
-        localStorage.removeItem('wcg_auth_user');
-        sessionStorage.removeItem('wcg_auth_user');
+        localStorage.removeItem('pine_admin_authenticated');
+        sessionStorage.removeItem('pine_admin_authenticated');
+        localStorage.removeItem('pine_auth_token');
+        sessionStorage.removeItem('pine_auth_token');
+        localStorage.removeItem('pine_auth_user');
+        sessionStorage.removeItem('pine_auth_user');
         setTimeout(() => window.location.reload(), 1500);
         return;
       }
@@ -162,12 +162,12 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
-        localStorage.removeItem('wcg_admin_authenticated');
-        sessionStorage.removeItem('wcg_admin_authenticated');
-        localStorage.removeItem('wcg_auth_token');
-        sessionStorage.removeItem('wcg_auth_token');
-        localStorage.removeItem('wcg_auth_user');
-        sessionStorage.removeItem('wcg_auth_user');
+        localStorage.removeItem('pine_admin_authenticated');
+        sessionStorage.removeItem('pine_admin_authenticated');
+        localStorage.removeItem('pine_auth_token');
+        sessionStorage.removeItem('pine_auth_token');
+        localStorage.removeItem('pine_auth_user');
+        sessionStorage.removeItem('pine_auth_user');
         setTimeout(() => window.location.reload(), 1500);
         return;
       } else {
@@ -177,12 +177,12 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({
           'error'
         );
         if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('wcg_admin_authenticated');
-          sessionStorage.removeItem('wcg_admin_authenticated');
-          localStorage.removeItem('wcg_auth_token');
-          sessionStorage.removeItem('wcg_auth_token');
-          localStorage.removeItem('wcg_auth_user');
-          sessionStorage.removeItem('wcg_auth_user');
+          localStorage.removeItem('pine_admin_authenticated');
+          sessionStorage.removeItem('pine_admin_authenticated');
+          localStorage.removeItem('pine_auth_token');
+          sessionStorage.removeItem('pine_auth_token');
+          localStorage.removeItem('pine_auth_user');
+          sessionStorage.removeItem('pine_auth_user');
           setTimeout(() => window.location.reload(), 1500);
         }
       }

@@ -59,30 +59,30 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
     if (typeof window === 'undefined') return true;
 
     // Direct session suppression: Once dismissed in this browser session, never show again in this session
-    if (sessionStorage.getItem('wcg_floating_dismissed_session') === 'true') {
+    if (sessionStorage.getItem('pine_floating_dismissed_session') === 'true') {
       return true;
     }
 
     // Unique fingerprint for this specific announcement version
     const announcementFingerprint = `${cfg.updatedAt || ''}_${cfg.title}_${cfg.position}_${(cfg.message || '').slice(0, 30)}`;
     const dismissedFingerprint =
-      sessionStorage.getItem('wcg_floating_dismissed_version') ||
-      localStorage.getItem('wcg_floating_dismissed_version');
+      sessionStorage.getItem('pine_floating_dismissed_version') ||
+      localStorage.getItem('pine_floating_dismissed_version');
 
     // Only apply suppression IF user previously dismissed this exact announcement version
     if (dismissedFingerprint && dismissedFingerprint === announcementFingerprint) {
       // Check "Do not show today"
-      const doNotShowToday = localStorage.getItem('wcg_floating_do_not_show_today');
+      const doNotShowToday = localStorage.getItem('pine_floating_do_not_show_today');
       const todayStr = new Date().toDateString();
       if (doNotShowToday === todayStr) {
         return true; // Suppressed
       }
 
       if (cfg.frequency === 'once_session') {
-        const sessionDismissed = sessionStorage.getItem('wcg_floating_dismissed_session');
+        const sessionDismissed = sessionStorage.getItem('pine_floating_dismissed_session');
         if (sessionDismissed === 'true') return true;
       } else if (cfg.frequency === 'once_day') {
-        const dayDismissed = localStorage.getItem('wcg_floating_dismissed_date');
+        const dayDismissed = localStorage.getItem('pine_floating_dismissed_date');
         if (dayDismissed === todayStr) return true;
       }
     }
@@ -114,11 +114,11 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
       setIsDismissed(false);
     };
 
-    window.addEventListener('wcg_admin_content_updated', handleUpdate);
-    window.addEventListener('wcg_floating_notification_updated', handleUpdate);
+    window.addEventListener('pine_admin_content_updated', handleUpdate);
+    window.addEventListener('pine_floating_notification_updated', handleUpdate);
     return () => {
-      window.removeEventListener('wcg_admin_content_updated', handleUpdate);
-      window.removeEventListener('wcg_floating_notification_updated', handleUpdate);
+      window.removeEventListener('pine_admin_content_updated', handleUpdate);
+      window.removeEventListener('pine_floating_notification_updated', handleUpdate);
     };
   }, []);
 
@@ -177,18 +177,18 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
       const todayStr = new Date().toDateString();
       const announcementFingerprint = `${config.updatedAt || ''}_${config.title}_${config.position}_${(config.message || '').slice(0, 30)}`;
 
-      sessionStorage.setItem('wcg_floating_dismissed_session', 'true');
-      sessionStorage.setItem('wcg_floating_dismissed_version', announcementFingerprint);
-      localStorage.setItem('wcg_floating_dismissed_version', announcementFingerprint);
+      sessionStorage.setItem('pine_floating_dismissed_session', 'true');
+      sessionStorage.setItem('pine_floating_dismissed_version', announcementFingerprint);
+      localStorage.setItem('pine_floating_dismissed_version', announcementFingerprint);
 
       if (doNotShowAgainChecked) {
-        localStorage.setItem('wcg_floating_do_not_show_today', todayStr);
+        localStorage.setItem('pine_floating_do_not_show_today', todayStr);
       }
 
       if (config.frequency === 'once_session') {
-        sessionStorage.setItem('wcg_floating_dismissed_session', 'true');
+        sessionStorage.setItem('pine_floating_dismissed_session', 'true');
       } else if (config.frequency === 'once_day') {
-        localStorage.setItem('wcg_floating_dismissed_date', todayStr);
+        localStorage.setItem('pine_floating_dismissed_date', todayStr);
       }
     }
   };
@@ -210,7 +210,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
         const gwId = params.get('gw') || params.get('id');
         if (gwId) {
           window.location.hash = link;
-          window.dispatchEvent(new CustomEvent('wcg_open_giveaway_detail', { detail: { id: gwId } }));
+          window.dispatchEvent(new CustomEvent('pine_open_giveaway_detail', { detail: { id: gwId } }));
         } else {
           window.location.hash = '#giveaways';
         }
@@ -219,7 +219,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
         const utId = params.get('utility') || params.get('ut') || params.get('id');
         if (utId) {
           window.location.hash = link;
-          window.dispatchEvent(new CustomEvent('wcg_open_utility_detail', { detail: { id: utId } }));
+          window.dispatchEvent(new CustomEvent('pine_open_utility_detail', { detail: { id: utId } }));
         } else {
           window.location.hash = '#utilities';
         }
@@ -228,7 +228,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
         const prodId = params.get('product') || params.get('prod') || params.get('id');
         if (prodId) {
           window.location.hash = link;
-          window.dispatchEvent(new CustomEvent('wcg_open_store_detail', { detail: { id: prodId } }));
+          window.dispatchEvent(new CustomEvent('pine_open_store_detail', { detail: { id: prodId } }));
         } else {
           window.location.hash = '#store';
         }

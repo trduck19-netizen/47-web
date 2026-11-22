@@ -63,7 +63,7 @@ export const TopEventBanner: React.FC<TopEventBannerProps> = ({ onNavigate }) =>
 
   const [isDismissed, setIsDismissed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
-    return sessionStorage.getItem('wcg_dismissed_top_banner') === 'true';
+    return sessionStorage.getItem('pine_dismissed_top_banner') === 'true';
   });
 
   const refreshBanner = () => {
@@ -114,7 +114,7 @@ export const TopEventBanner: React.FC<TopEventBannerProps> = ({ onNavigate }) =>
     e.stopPropagation();
     setIsDismissed(true);
     try {
-      sessionStorage.setItem('wcg_dismissed_top_banner', 'true');
+      sessionStorage.setItem('pine_dismissed_top_banner', 'true');
     } catch {}
   };
 

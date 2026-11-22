@@ -58,23 +58,23 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
   // --- SHOW / HIDE VIRTUAL METRICS TOGGLE ---
   const [showVirtualStats, setShowVirtualStats] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_virtual_stats') !== 'false';
+    return localStorage.getItem('pine_admin_show_virtual_stats') !== 'false';
   });
 
   const [showAdminSold, setShowAdminSold] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_sold_util') !== 'false' && localStorage.getItem('wcg_utilities_global_show_sold') !== 'false';
+    return localStorage.getItem('pine_admin_show_sold_util') !== 'false' && localStorage.getItem('pine_utilities_global_show_sold') !== 'false';
   });
 
   const [showAdminStock, setShowAdminStock] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_stock_util') !== 'false';
+    return localStorage.getItem('pine_admin_show_stock_util') !== 'false';
   });
 
   // --- VIEW MODE: GROUPED (SẢN PHẨM ĐẠI DIỆN) VS FLAT (TẤT CẢ GÓI LẺ) ---
   const [viewMode, setViewMode] = useState<'grouped' | 'flat'>(() => {
     if (typeof window === 'undefined') return 'grouped';
-    return (localStorage.getItem('wcg_admin_util_view_mode') as 'grouped' | 'flat') || 'grouped';
+    return (localStorage.getItem('pine_admin_util_view_mode') as 'grouped' | 'flat') || 'grouped';
   });
 
   // --- QUICK FOMO ADJUST MODAL STATE ---
@@ -143,10 +143,10 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
       loadData();
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleSync);
+    window.addEventListener('pine_admin_data_updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleSync);
+      window.removeEventListener('pine_admin_data_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);
@@ -794,10 +794,10 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                 onClick={async () => {
                   const next = !showAdminSold;
                   setShowAdminSold(next);
-                  localStorage.setItem('wcg_admin_show_sold_util', String(next));
-                  localStorage.setItem('wcg_utilities_global_show_sold', String(next));
-                  window.dispatchEvent(new CustomEvent('wcg_utilities_settings_updated', { detail: { showSold: next } }));
-                  window.dispatchEvent(new Event('wcg_sold_count_updated'));
+                  localStorage.setItem('pine_admin_show_sold_util', String(next));
+                  localStorage.setItem('pine_utilities_global_show_sold', String(next));
+                  window.dispatchEvent(new CustomEvent('pine_utilities_settings_updated', { detail: { showSold: next } }));
+                  window.dispatchEvent(new Event('pine_sold_count_updated'));
                   try {
                     await adminDataService.pushFullStateToKV(true);
                   } catch (e) {}
@@ -824,7 +824,7 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                 onClick={() => {
                   const next = !showAdminStock;
                   setShowAdminStock(next);
-                  localStorage.setItem('wcg_admin_show_stock_util', String(next));
+                  localStorage.setItem('pine_admin_show_stock_util', String(next));
                 }}
                 className={`px-2 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   showAdminStock
@@ -843,7 +843,7 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                 onClick={() => {
                   const next = !showVirtualStats;
                   setShowVirtualStats(next);
-                  localStorage.setItem('wcg_admin_show_virtual_stats', String(next));
+                  localStorage.setItem('pine_admin_show_virtual_stats', String(next));
                 }}
                 className={`px-2 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   showVirtualStats
@@ -863,7 +863,7 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                 type="button"
                 onClick={() => {
                   setViewMode('grouped');
-                  localStorage.setItem('wcg_admin_util_view_mode', 'grouped');
+                  localStorage.setItem('pine_admin_util_view_mode', 'grouped');
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'grouped'
@@ -879,7 +879,7 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                 type="button"
                 onClick={() => {
                   setViewMode('flat');
-                  localStorage.setItem('wcg_admin_util_view_mode', 'flat');
+                  localStorage.setItem('pine_admin_util_view_mode', 'flat');
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'flat'

@@ -1,5 +1,5 @@
 /**
- * Telegram Service for CodeGame.Shop
+ * Telegram Service for Pine Universal Mall
  * Centralized service for Telegram Bot API communication, D1 schema maintenance,
  * deduplication, message chunking, and strict HTML formatting.
  */
@@ -208,7 +208,7 @@ export function normalizeCodes(codes: any[] | undefined): NotifyCodeItem[] {
 export function formatTelegramPost(payload: NotifyPayload): string {
   const { kind, game_name, title, codes, expiry, how_to, game_url, source_name, source_url } = payload;
   const escapedGame = escapeHtml(game_name || 'Game');
-  const safeGameUrl = game_url || `https://codegame.shop/${payload.game_slug ? `code/${payload.game_slug}` : ''}`;
+  const safeGameUrl = game_url || `https://universal-mall-shop.pages.dev/${payload.game_slug ? `code/${payload.game_slug}` : ''}`;
   const normCodes = normalizeCodes(codes);
 
   if (kind === 'event') {
@@ -286,10 +286,10 @@ export function formatTelegramPost(payload: NotifyPayload): string {
 export function formatTelegramDm(payload: NotifyPayload): string {
   const { game_name, title, codes, expiry, game_url } = payload;
   const escapedGame = escapeHtml(game_name || 'Game');
-  const safeGameUrl = game_url || `https://codegame.shop/${payload.game_slug ? `code/${payload.game_slug}` : ''}`;
+  const safeGameUrl = game_url || `https://universal-mall-shop.pages.dev/${payload.game_slug ? `code/${payload.game_slug}` : ''}`;
   const normCodes = normalizeCodes(codes);
 
-  const lines: string[] = [`🔔 <b>Thông báo từ CodeGame.Shop</b>`, `🎮 <b>${escapedGame}</b>`];
+  const lines: string[] = [`🔔 <b>Thông báo từ Pine Universal Mall</b>`, `🎮 <b>${escapedGame}</b>`];
   if (title && title.trim()) {
     lines.push(`⚡ ${escapeHtml(title.trim())}`);
   }
@@ -323,7 +323,7 @@ export function formatFollowerDm(payload: {
   expiry?: string;
 }): string {
   const escapedGame = escapeHtml(payload.game_name || 'Game');
-  const safeGameUrl = payload.game_url || `https://codegame.shop/game/${payload.game_slug || ''}`;
+  const safeGameUrl = payload.game_url || `https://universal-mall-shop.pages.dev/game/${payload.game_slug || ''}`;
   const lines: string[] = [`🎮 <b>${escapedGame} có mã mới!</b>`];
 
   const normCodes = normalizeCodes(payload.codes);
@@ -378,7 +378,7 @@ export function formatDigestDm(
   for (const [, gameItems] of byGame) {
     const first = gameItems[0];
     const gameTitle = escapeHtml(first.game_name || first.game_slug);
-    const safeUrl = first.game_url || `https://codegame.shop/game/${first.game_slug}`;
+    const safeUrl = first.game_url || `https://universal-mall-shop.pages.dev/game/${first.game_slug}`;
     const lines: string[] = [];
 
     for (const it of gameItems) {

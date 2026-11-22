@@ -178,13 +178,13 @@ export const MultiLineAnalyticsChart: React.FC = () => {
       setDataVersion((v) => v + 1);
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleDataUpdate);
+    window.addEventListener('pine_admin_data_updated', handleDataUpdate);
     window.addEventListener('storage', handleDataUpdate);
 
     let channel: BroadcastChannel | null = null;
     if ('BroadcastChannel' in window) {
       try {
-        channel = new BroadcastChannel('wcg_data_sync');
+        channel = new BroadcastChannel('pine_data_sync');
         channel.onmessage = () => {
           setDataVersion((v) => v + 1);
         };
@@ -192,7 +192,7 @@ export const MultiLineAnalyticsChart: React.FC = () => {
     }
 
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleDataUpdate);
+      window.removeEventListener('pine_admin_data_updated', handleDataUpdate);
       window.removeEventListener('storage', handleDataUpdate);
       channel?.close();
     };

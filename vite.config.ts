@@ -17,7 +17,7 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'https://web-code-game.pages.dev',
+        target: 'https://universal-mall-shop.pages.dev',
         changeOrigin: true,
         secure: false,
       },

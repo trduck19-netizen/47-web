@@ -113,16 +113,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     const unsub = dataService.subscribe(handleUpdate);
     const unsubStock = marketingService.subscribeStockChange(handleUpdate);
     const unsubSold = marketingService.subscribeSoldCountChange(handleUpdate);
-    window.addEventListener('wcg_virtual_stock_updated', handleUpdate);
-    window.addEventListener('wcg_sold_count_updated', handleUpdate);
-    window.addEventListener('wcg_utilities_updated', handleUpdate);
+    window.addEventListener('pine_virtual_stock_updated', handleUpdate);
+    window.addEventListener('pine_sold_count_updated', handleUpdate);
+    window.addEventListener('pine_utilities_updated', handleUpdate);
     return () => {
       unsub();
       unsubStock();
       unsubSold();
-      window.removeEventListener('wcg_virtual_stock_updated', handleUpdate);
-      window.removeEventListener('wcg_sold_count_updated', handleUpdate);
-      window.removeEventListener('wcg_utilities_updated', handleUpdate);
+      window.removeEventListener('pine_virtual_stock_updated', handleUpdate);
+      window.removeEventListener('pine_sold_count_updated', handleUpdate);
+      window.removeEventListener('pine_utilities_updated', handleUpdate);
     };
   }, []);
 
@@ -133,8 +133,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       if (!product) return;
       try {
         const slug = (product as any).game_slug || '';
-        const token = (typeof localStorage !== 'undefined' && localStorage.getItem('wcg_auth_token')) ||
-          (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wcg_auth_token')) ||
+        const token = (typeof localStorage !== 'undefined' && localStorage.getItem('pine_auth_token')) ||
+          (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pine_auth_token')) ||
           currentUser?.session_token || '';
 
         const data = await offerService.fetchOffers(slug, token);
@@ -250,8 +250,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Quyết định hiển thị "Đã bán" dựa trên: Cấu hình toàn cục + Cấu hình sản phẩm riêng lẻ
   const isGlobalSoldEnabled = isStoreProduct
-    ? (typeof window !== 'undefined' ? (localStorage.getItem('wcg_store_global_show_sold') !== 'false' && localStorage.getItem('wcg_admin_show_sold_store') !== 'false') : true)
-    : (typeof window !== 'undefined' ? (localStorage.getItem('wcg_utilities_global_show_sold') !== 'false' && localStorage.getItem('wcg_admin_show_sold_util') !== 'false') : true);
+    ? (typeof window !== 'undefined' ? (localStorage.getItem('pine_store_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_store') !== 'false') : true)
+    : (typeof window !== 'undefined' ? (localStorage.getItem('pine_utilities_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_util') !== 'false') : true);
   const isSoldVisible = isGlobalSoldEnabled && (product as any).show_sold_count !== false;
 
   const isVnd = dataService.getWebsiteBranding()?.currencyMode === 'VND' || (product as any)?.industry !== 'gaming';
@@ -344,7 +344,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     const origin =
       typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? window.location.origin
-        : 'https://codegame.shop';
+        : 'https://universal-mall-shop.pages.dev';
     const pathPrefix = isStoreProduct ? 'store#product' : 'utilities#utility';
     const shareUrl = `${origin}/${pathPrefix}=${product.id}`;
 
@@ -352,7 +352,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       try {
         await navigator.share({
           title: product.title,
-          text: `Mua ngay ${product.title} (${gameName}) uy tín, giá rẻ tại CodeGame.shop`,
+          text: `Mua ngay ${product.title} (${gameName}) uy tín, giá rẻ tại Pine Universal Mall`,
           url: shareUrl,
         });
         return;

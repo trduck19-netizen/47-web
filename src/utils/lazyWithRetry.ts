@@ -9,7 +9,7 @@ export function lazyWithRetry<T extends React.ComponentType<any>>(
   componentImport: () => Promise<{ default: T } | any>
 ): React.LazyExoticComponent<T> {
   return React.lazy(async () => {
-    const pageKey = `wcg_chunk_retry_${typeof window !== 'undefined' ? window.location.pathname : ''}`;
+    const pageKey = `pine_chunk_retry_${typeof window !== 'undefined' ? window.location.pathname : ''}`;
     try {
       const module = await componentImport();
       if (typeof window !== 'undefined') {

@@ -1161,8 +1161,8 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
     dataService.syncGiveaways().then(() => loadData());
     dataService.syncWithCloudflareKV();
     const handleGwUpdated = () => loadData();
-    window.addEventListener('wcg_giveaways_updated', handleGwUpdated);
-    window.addEventListener('wcg_universal_templates_updated', handleGwUpdated);
+    window.addEventListener('pine_giveaways_updated', handleGwUpdated);
+    window.addEventListener('pine_universal_templates_updated', handleGwUpdated);
     const unsub = dataService.subscribe(() => {
       loadData();
     });
@@ -1179,9 +1179,9 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
     };
     const unsubStock = marketingService.subscribeStockChange(handleUpdate);
     const unsubSold = marketingService.subscribeSoldCountChange(handleUpdate);
-    window.addEventListener('wcg_admin_data_updated', handleUpdate);
-    window.addEventListener('wcg_virtual_stock_updated', handleUpdate);
-    window.addEventListener('wcg_sold_count_updated', handleUpdate);
+    window.addEventListener('pine_admin_data_updated', handleUpdate);
+    window.addEventListener('pine_virtual_stock_updated', handleUpdate);
+    window.addEventListener('pine_sold_count_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       if (updateDebounceTimerRef.current) {
@@ -1194,12 +1194,12 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
       unsubTpl();
       unsubStock();
       unsubSold();
-      window.removeEventListener('wcg_admin_data_updated', handleUpdate);
-      window.removeEventListener('wcg_virtual_stock_updated', handleUpdate);
-      window.removeEventListener('wcg_sold_count_updated', handleUpdate);
+      window.removeEventListener('pine_admin_data_updated', handleUpdate);
+      window.removeEventListener('pine_virtual_stock_updated', handleUpdate);
+      window.removeEventListener('pine_sold_count_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
-      window.removeEventListener('wcg_giveaways_updated', handleGwUpdated);
-      window.removeEventListener('wcg_universal_templates_updated', handleGwUpdated);
+      window.removeEventListener('pine_giveaways_updated', handleGwUpdated);
+      window.removeEventListener('pine_universal_templates_updated', handleGwUpdated);
     };
   }, [loadData]);
 
@@ -1426,7 +1426,7 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
           (c, idx) =>
             `${idx + 1}. [${c.game_name}] Mã: ${c.code_value} | Thưởng: ${c.rewards} (Nhận: ${formatFullDateTime(c.claimed_at)})`
         )
-        .join('\n') + '\n\n📌 Nguồn: CodeGame.shop - Săn Giftcode VIP Miễn Phí tại https://codegame.shop';
+        .join('\n') + '\n\n📌 Nguồn: Pine Universal Mall - Săn Giftcode VIP Miễn Phí tại https://universal-mall-shop.pages.dev';
     navigator.clipboard.writeText(text);
     marketingService.recordRealCopy('Giveaway Giftcode', '', uniqueClaimedList.length);
     onShowToast('Đã sao chép tất cả mã!', `Đã chép toàn bộ ${uniqueClaimedList.length} giftcode vào clipboard.`, 'success');
@@ -1434,7 +1434,7 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
 
   const handleExportTxtFile = () => {
     if (uniqueClaimedList.length === 0) return;
-    const header = `=== DANH SÁCH GIFTCODE ĐÃ SĂN - CODEGAME.SHOP ===\nThời gian xuất: ${new Date().toLocaleString('vi-VN')}\nTổng số mã: ${uniqueClaimedList.length}\nTra cứu thêm mã mới: https://codegame.shop\n\n`;
+    const header = `=== DANH SÁCH GIFTCODE ĐÃ SĂN - CODEGAME.SHOP ===\nThời gian xuất: ${new Date().toLocaleString('vi-VN')}\nTổng số mã: ${uniqueClaimedList.length}\nTra cứu thêm mã mới: https://universal-mall-shop.pages.dev\n\n`;
     const body = uniqueClaimedList
       .map(
         (c, idx) =>

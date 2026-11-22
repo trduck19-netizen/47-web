@@ -1,6 +1,6 @@
 /**
  * Utility functions for Giftcode Expiration Date Parsing, Normalization and Validation
- * CodeGame.Shop Standard Giftcode Utilities
+ * Pine Universal Mall Standard Giftcode Utilities
  */
 
 /**
@@ -58,7 +58,7 @@ export function decodeHtmlEntities(raw: any): string {
     .replace(/&#39;/gi, "'")
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
-    .replace(/https:\/\/codegame\.store\/?/g, 'https://codegame.shop/');
+    .replace(/https:\/\/codegame\.store\/?/g, 'https://universal-mall-shop.pages.dev/');
 
   // Chữa lành tự động các mẫu phần thưởng tiếng Việt bị hỏng font (mojibake / uFFFD / ?)
   if (/qu[^\s]*.*t[^\s]*n\s+th[^\s]*.*v[^\s]*t\s+ph[^\s]*m|qu[^\s]*.*ingame/i.test(str)) {

@@ -134,8 +134,8 @@ export const NewsView: React.FC<NewsViewProps> = ({
 
     // Listen to news updates (from server or admin sync)
     const handleNewsUpdate = () => loadArticles();
-    window.addEventListener('wcg_news_updated', handleNewsUpdate);
-    return () => window.removeEventListener('wcg_news_updated', handleNewsUpdate);
+    window.addEventListener('pine_news_updated', handleNewsUpdate);
+    return () => window.removeEventListener('pine_news_updated', handleNewsUpdate);
   }, [initialArticleSlug]);
 
   useEffect(() => {
@@ -314,7 +314,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
           window.history.pushState({ articleSlug: art.slug }, '', targetPath);
         }
       }
-      document.title = `${art.title} | CodeGame.shop`;
+      document.title = `${art.title} | Pine Universal Mall`;
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
   };
@@ -326,8 +326,8 @@ export const NewsView: React.FC<NewsViewProps> = ({
         window.history.pushState(null, '', '/news');
       }
       document.title = inTest1
-        ? 'CodeGame Mall - Sàn TMĐT Tiện Ích & Code Game #1 Việt Nam | /test1'
-        : 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | CodeGame.shop';
+        ? 'Pine Universal Mall - Sàn TMĐT Tiện Ích & Code Game #1 Việt Nam | /test1'
+        : 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -341,7 +341,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
         const found = newsService.getArticleBySlug(slug);
         if (found) {
           setSelectedArticle(found);
-          document.title = `${found.title} | CodeGame.shop`;
+          document.title = `${found.title} | Pine Universal Mall`;
           window.scrollTo({ top: 0, behavior: 'instant' });
           return;
         }
@@ -349,13 +349,13 @@ export const NewsView: React.FC<NewsViewProps> = ({
       setSelectedArticle(null);
       if (path === '/ma-hom-nay' || path.startsWith('/ma-hom-nay/')) {
         setSubTab('today-codes');
-        document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | CodeGame.shop';
+        document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
       } else if (path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/')) {
         setSubTab('events');
-        document.title = 'Sự Kiện Game - Tổng Hợp Sự Kiện Nhận Giftcode Hot 2026 | CodeGame.shop';
+        document.title = 'Sự Kiện Game - Tổng Hợp Sự Kiện Nhận Giftcode Hot 2026 | Pine Universal Mall';
       } else {
         setSubTab('news');
-        document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | CodeGame.shop';
+        document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
       }
     };
 
@@ -390,8 +390,8 @@ export const NewsView: React.FC<NewsViewProps> = ({
                 window.history.pushState(null, '', '/news');
               }
               document.title = inTest1
-                ? 'CodeGame Mall - Sàn TMĐT Tiện Ích & Code Game #1 Việt Nam | /test1'
-                : 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | CodeGame.shop';
+                ? 'Pine Universal Mall - Sàn TMĐT Tiện Ích & Code Game #1 Việt Nam | /test1'
+                : 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
               subTab === 'news'
@@ -411,8 +411,8 @@ export const NewsView: React.FC<NewsViewProps> = ({
                 window.history.pushState(null, '', '/ma-hom-nay');
               }
               document.title = inTest1
-                ? 'CodeGame Mall - Mã Hôm Nay | /test1'
-                : 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | CodeGame.shop';
+                ? 'Pine Universal Mall - Mã Hôm Nay | /test1'
+                : 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
               subTab === 'today-codes'
@@ -432,8 +432,8 @@ export const NewsView: React.FC<NewsViewProps> = ({
                 window.history.pushState(null, '', '/su-kien');
               }
               document.title = inTest1
-                ? 'CodeGame Mall - Sự Kiện Game Hot | /test1'
-                : 'Sự Kiện Game - Tổng Hợp Sự Kiện Nhận Giftcode Hot 2026 | CodeGame.shop';
+                ? 'Pine Universal Mall - Sự Kiện Game Hot | /test1'
+                : 'Sự Kiện Game - Tổng Hợp Sự Kiện Nhận Giftcode Hot 2026 | Pine Universal Mall';
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
               subTab === 'events'
@@ -525,10 +525,10 @@ export const NewsView: React.FC<NewsViewProps> = ({
                     )}
                   </div>
 
-                  {/* Logo phụ & Nguồn: CodeGame.Shop */}
+                  {/* Logo phụ & Nguồn: Pine Universal Mall */}
                   <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/85 backdrop-blur-md border border-white/20 shadow-lg text-[10px] font-bold text-white select-none">
-                    <img src="/logo.webp" alt="CodeGame.Shop" width={14} height={14} className="w-3.5 h-3.5 rounded-full object-cover ring-1 ring-primary/60" />
-                    <span className="tracking-tight text-slate-200">CodeGame.Shop</span>
+                    <img src="/logo.webp" alt="Pine Universal Mall" width={14} height={14} className="w-3.5 h-3.5 rounded-full object-cover ring-1 ring-primary/60" />
+                    <span className="tracking-tight text-slate-200">Pine Universal Mall</span>
                   </div>
                 </div>
 
@@ -538,7 +538,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
                 <div className="flex items-center gap-2.5 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1.5 font-bold text-primary-light">
                     <ShieldCheck className="w-3.5 h-3.5 text-primary-light" />
-                    Nguồn: CodeGame.Shop
+                    Nguồn: Pine Universal Mall
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
@@ -717,10 +717,10 @@ export const NewsView: React.FC<NewsViewProps> = ({
                           )}
                         </div>
 
-                        {/* Sub-logo Watermark Badge: CodeGame.Shop */}
+                        {/* Sub-logo Watermark Badge: Pine Universal Mall */}
                         <div className="absolute top-3 right-3 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/20 shadow-md text-[9px] font-bold text-white select-none">
-                          <img src="/logo.webp" alt="CodeGame" width={12} height={12} className="w-3 h-3 rounded-full object-cover ring-1 ring-primary/60" />
-                          <span className="text-slate-200">CodeGame.Shop</span>
+                          <img src="/logo.webp" alt="Pine Universal Mall" width={12} height={12} className="w-3 h-3 rounded-full object-cover ring-1 ring-primary/60" />
+                          <span className="text-slate-200">Pine Universal Mall</span>
                         </div>
 
                         {/* Codes badge on image bottom */}
@@ -739,7 +739,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
                         <span className="font-semibold text-primary-light flex items-center gap-1">
                           <ShieldCheck className="w-3 h-3 text-primary-light" />
-                          CodeGame.Shop
+                          Pine Universal Mall
                         </span>
                         <span>•</span>
                         <span>{new Date(article.published_at || (article as any).created_at || Date.now()).toLocaleDateString('vi-VN')}</span>

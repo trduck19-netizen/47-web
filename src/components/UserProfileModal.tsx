@@ -112,7 +112,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   // Missions States
   const [missions, setMissions] = useState<Mission[]>(() => {
     try {
-      const cached = localStorage.getItem('wcg_cached_missions_v1');
+      const cached = localStorage.getItem('pine_cached_missions_v1');
       if (cached) return JSON.parse(cached) || [];
     } catch {}
     return [];
@@ -129,7 +129,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       if (res.success && res.missions) {
         setMissions(res.missions);
         try {
-          localStorage.setItem('wcg_cached_missions_v1', JSON.stringify(res.missions));
+          localStorage.setItem('pine_cached_missions_v1', JSON.stringify(res.missions));
         } catch {}
       }
     } catch (e) {
@@ -1258,7 +1258,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           ) : activeTab === 'telegram' ? (
             /* TAB 3: THÔNG BÁO TELEGRAM */
             <div className="space-y-4 animate-fade-in">
-              {/* 1. Kênh Thông Báo Telegram CodeGame Chính Thức */}
+              {/* 1. Kênh Thông Báo Telegram Pine Universal Mall Chính Thức */}
               <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#229ED9]/20 via-[#229ED9]/10 to-card border border-[#229ED9]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-[#229ED9] text-white flex items-center justify-center shrink-0 shadow-md">
@@ -1409,7 +1409,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             Liên Kết Telegram Nhận Mã Tức Thì
                           </h4>
                           <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto leading-relaxed">
-                            Kết nối tài khoản của bạn với Bot Telegram CodeGame để nhận mã giftcode riêng tự động, cảnh báo mã sắp hết hạn và quản lý game yêu thích 24/7.
+                            Kết nối tài khoản của bạn với Bot Telegram Pine Universal Mall để nhận mã giftcode riêng tự động, cảnh báo mã sắp hết hạn và quản lý game yêu thích 24/7.
                           </p>
                         </div>
 

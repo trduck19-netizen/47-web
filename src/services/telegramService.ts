@@ -1,5 +1,5 @@
 /**
- * Telegram Client Service for CodeGame.Shop
+ * Telegram Client Service for Pine Universal Mall
  * Interacts with /api/telegram/* endpoints and manages client-side caching.
  */
 
@@ -242,7 +242,7 @@ class TelegramService {
    * Tạo link chia sẻ qua Telegram theo chuẩn https://t.me/share/url
    */
   getShareUrl(url: string, text?: string): string {
-    const fullUrl = url.startsWith('http') ? url : `https://codegame.shop${url}`;
+    const fullUrl = url.startsWith('http') ? url : `https://universal-mall-shop.pages.dev${url}`;
     const params = new URLSearchParams();
     params.set('url', fullUrl);
     if (text) {

@@ -9,7 +9,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="CodeGame" />
+    <meta name="apple-mobile-web-app-title" content="Pine Mall" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -17,11 +17,63 @@
     <!-- Anti-FOUC & Instant Canvas Background Initialization -->
     <script>
       (function() {
+        // Storage Migration: wcg_* -> pine_*
+        try {
+          for (var k in localStorage) {
+            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0) {
+              var nk = 'pine_' + k.slice(4);
+              if (localStorage.getItem(nk) === null) {
+                localStorage.setItem(nk, localStorage.getItem(k));
+              }
+              localStorage.removeItem(k);
+            }
+          }
+        } catch(e) {}
+        
+        // Storage Migration: wcg_* -> pine_*
+        try {
+          for (var k in localStorage) {
+            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0) {
+              var nk = 'pine_' + k.slice(4);
+              if (localStorage.getItem(nk) === null) {
+                localStorage.setItem(nk, localStorage.getItem(k));
+              }
+              localStorage.removeItem(k);
+            }
+          }
+        } catch(e) {}
+        
+        // Storage Migration: wcg_* -> pine_*
+        try {
+          for (var k in localStorage) {
+            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0) {
+              var nk = 'pine_' + k.slice(4);
+              if (localStorage.getItem(nk) === null) {
+                localStorage.setItem(nk, localStorage.getItem(k));
+              }
+              localStorage.removeItem(k);
+            }
+          }
+        } catch(e) {}
+        
+        // Storage Migration: wcg_* -> pine_*
+        try {
+          for (var k in localStorage) {
+            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0) {
+              var nk = 'pine_' + k.slice(4);
+              if (localStorage.getItem(nk) === null) {
+                localStorage.setItem(nk, localStorage.getItem(k));
+              }
+              localStorage.removeItem(k);
+            }
+          }
+        } catch(e) {}
+        
         var host = window.location.hostname.toLowerCase();
         var pathname = window.location.pathname.toLowerCase();
         var hash = window.location.hash.toLowerCase();
         if (host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.startsWith('admin.')) {
-          document.title = 'Quản Trị Hệ Thống | Universal Mall';
+          document.title = 'Quản Trị Hệ Thống | Pine Universal Mall';
           if (window.location.pathname === '/' || window.location.pathname === '') {
             window.location.replace('/admin' + (window.location.hash || '#/dashboard'));
             return;
@@ -76,33 +128,33 @@
     <link rel="preload" as="image" href="/brand_loader_logo.jpg" fetchpriority="high" type="image/jpeg" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-    <title>CodeGame.shop - Săn Giftcode Miễn Phí & Giao Dịch Mã Game Uy Tín</title>
-    <meta name="description" content="Kho tổng hợp hơn 14.739+ giftcode game mobile và webgame mới nhất 2026 của 595 tựa game chuẩn. Cập nhật liên tục 24/7 từ các NPH VNG, Garena, VTC, SohaGame, Funtap." />
-    <meta name="keywords" content="giftcode game, code game moi nhat, ma qua tang, giftcode g1, code delta force, code genshin impact, nap game gia re, shop acc game, codegame" />
+    <title>Pine Universal Mall - Siêu Thị Trực Tuyến & Cổng Tra Cứu Toàn Diện</title>
+    <meta name="description" content="Pine Universal Mall - Sàn thương mại điện tử đa ngành hàng đầu, cung cấp hàng ngàn sản phẩm chất lượng cao, voucher độc quyền, giftcode miễn phí và tiện ích trực tuyến 24/7." />
+    <meta name="keywords" content="pine universal mall, pine mall, sieu thi truc tuyen, san thuong mai dien tu, mua sam online, giftcode game, voucher khuyen mai" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
-    <link rel="canonical" href="https://codegame.shop/" />
-    <link rel="alternate" hreflang="vi" href="https://codegame.shop/" />
-    <link rel="alternate" hreflang="x-default" href="https://codegame.shop/" />
+    <link rel="canonical" href="https://universal-mall-shop.pages.dev/" />
+    <link rel="alternate" hreflang="vi" href="https://universal-mall-shop.pages.dev/" />
+    <link rel="alternate" hreflang="x-default" href="https://universal-mall-shop.pages.dev/" />
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:site_name" content="CodeGame.shop" />
+    <meta property="og:site_name" content="Pine Universal Mall" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://codegame.shop/" />
-    <meta property="og:title" content="CodeGame.shop - Săn Giftcode Miễn Phí & Giao Dịch Mã Game Uy Tín" />
-    <meta property="og:description" content="Kho tổng hợp hơn 14.739+ giftcode game mobile và webgame mới nhất 2026 của 595 tựa game chuẩn. Cập nhật liên tục 24/7 từ các NPH VNG, Garena, VTC, SohaGame, Funtap." />
-    <meta property="og:image" content="https://codegame.shop/og-image.jpg" />
+    <meta property="og:url" content="https://universal-mall-shop.pages.dev/" />
+    <meta property="og:title" content="Pine Universal Mall - Siêu Thị Trực Tuyến & Cổng Tra Cứu Toàn Diện" />
+    <meta property="og:description" content="Pine Universal Mall - Sàn thương mại điện tử đa ngành hàng đầu, cung cấp hàng ngàn sản phẩm chất lượng cao, voucher độc quyền, giftcode miễn phí và tiện ích trực tuyến 24/7." />
+    <meta property="og:image" content="https://universal-mall-shop.pages.dev/og-image.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:locale" content="vi_VN" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:domain" content="codegame.shop" />
-    <meta name="twitter:url" content="https://codegame.shop/" />
-    <meta name="twitter:title" content="CodeGame.shop - Săn Giftcode Miễn Phí & Giao Dịch Mã Game Uy Tín" />
-    <meta name="twitter:description" content="Kho tổng hợp hơn 14.739+ giftcode game mobile và webgame mới nhất 2026 của 595 tựa game chuẩn. Cập nhật liên tục 24/7 từ các NPH VNG, Garena, VTC, SohaGame, Funtap." />
-    <meta name="twitter:image" content="https://codegame.shop/og-image.jpg" />
+    <meta name="twitter:domain" content="universal-mall-shop.pages.dev" />
+    <meta name="twitter:url" content="https://universal-mall-shop.pages.dev/" />
+    <meta name="twitter:title" content="Pine Universal Mall - Siêu Thị Trực Tuyến & Cổng Tra Cứu Toàn Diện" />
+    <meta name="twitter:description" content="Pine Universal Mall - Sàn thương mại điện tử đa ngành hàng đầu, cung cấp hàng ngàn sản phẩm chất lượng cao, voucher độc quyền, giftcode miễn phí và tiện ích trực tuyến 24/7." />
+    <meta name="twitter:image" content="https://universal-mall-shop.pages.dev/og-image.jpg" />
 
     <!-- Schema.org JSON-LD Structured Data for Google Rich Snippets -->
     <script type="application/ld+json">
@@ -111,15 +163,15 @@
         "@graph": [
           {
             "@type": "WebSite",
-            "@id": "https://codegame.shop/#website",
-            "url": "https://codegame.shop/",
-            "name": "CodeGame.shop",
-            "description": "Cổng tra cứu giftcode game mobile và webgame số 1 Việt Nam",
+            "@id": "https://universal-mall-shop.pages.dev/#website",
+            "url": "https://universal-mall-shop.pages.dev/",
+            "name": "Pine Universal Mall",
+            "description": "Sàn thương mại điện tử đa ngành & Cổng tiện ích trực tuyến Pine Universal Mall",
             "potentialAction": {
               "@type": "SearchAction",
               "target": {
                 "@type": "EntryPoint",
-                "urlTemplate": "https://codegame.shop/?search={search_term_string}"
+                "urlTemplate": "https://universal-mall-shop.pages.dev/?search={search_term_string}"
               },
               "query-input": "required name=search_term_string"
             },
@@ -127,12 +179,12 @@
           },
           {
             "@type": "Organization",
-            "@id": "https://codegame.shop/#organization",
-            "name": "CodeGame.shop",
-            "url": "https://codegame.shop/",
+            "@id": "https://universal-mall-shop.pages.dev/#organization",
+            "name": "Pine Universal Mall",
+            "url": "https://universal-mall-shop.pages.dev/",
             "logo": {
               "@type": "ImageObject",
-              "url": "https://codegame.shop/logo.webp",
+              "url": "https://universal-mall-shop.pages.dev/logo.webp",
               "width": 512,
               "height": 512
             },

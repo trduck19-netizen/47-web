@@ -73,10 +73,10 @@ export const FreeCodesModule: React.FC<FreeCodesModuleProps> = ({
       setGames(adminDataService.getGames());
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleSyncGames);
+    window.addEventListener('pine_admin_data_updated', handleSyncGames);
     window.addEventListener('storage', handleSyncGames);
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleSyncGames);
+      window.removeEventListener('pine_admin_data_updated', handleSyncGames);
       window.removeEventListener('storage', handleSyncGames);
     };
   }, []);
@@ -88,10 +88,10 @@ export const FreeCodesModule: React.FC<FreeCodesModuleProps> = ({
       loadCodes();
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleSync);
+    window.addEventListener('pine_admin_data_updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleSync);
+      window.removeEventListener('pine_admin_data_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, [gameFilter, statusFilter]);
@@ -386,7 +386,7 @@ export const FreeCodesModule: React.FC<FreeCodesModuleProps> = ({
       render: (item) => (
         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <a
-            href={`https://codegame.shop/game/${item.gameSlug}`}
+            href={`https://universal-mall-shop.pages.dev/game/${item.gameSlug}`}
             target="_blank"
             rel="noreferrer"
             title="Mở xem trên Web Khách (codegame.shop)"

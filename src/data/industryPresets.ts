@@ -35,7 +35,7 @@ export const INDUSTRY_PRESETS: Record<string, IndustryPreset> = {
     name: 'Game & Tiện Ích Số',
     icon: '🎮',
     badge: 'Mặc định',
-    defaultShopName: 'CodeGame.Shop',
+    defaultShopName: 'Pine Universal Mall',
     defaultSlogan: 'Kho Mã Giftcode & Tiện Ích Game Số 1 Việt Nam',
     defaultHotline: '0987.654.321',
     defaultCurrency: 'VND',

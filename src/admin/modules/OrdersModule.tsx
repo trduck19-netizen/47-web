@@ -95,7 +95,7 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
     // Instant cross-tab sync
     let channel: BroadcastChannel | null = null;
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channel = new BroadcastChannel('wcg_data_sync');
+      channel = new BroadcastChannel('pine_data_sync');
       channel.onmessage = (e) => {
         if (!isMounted) return;
         if (
@@ -113,12 +113,12 @@ export const OrdersModule: React.FC<OrdersModuleProps> = ({ onShowToast }) => {
       loadOrders();
     };
 
-    window.addEventListener('wcg_admin_data_updated', onDataUpdated);
+    window.addEventListener('pine_admin_data_updated', onDataUpdated);
 
     return () => {
       isMounted = false;
       channel?.close();
-      window.removeEventListener('wcg_admin_data_updated', onDataUpdated);
+      window.removeEventListener('pine_admin_data_updated', onDataUpdated);
     };
   }, [statusFilter, methodFilter, typeFilter]);
 

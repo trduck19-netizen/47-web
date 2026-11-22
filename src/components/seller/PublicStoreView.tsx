@@ -60,7 +60,7 @@ export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
   const getAuthToken = () => {
-    return localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+    return localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
   };
 
   const getHeaders = () => {
@@ -252,7 +252,7 @@ export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
                     <Clock className="w-3.5 h-3.5" /> Giờ hỗ trợ: {store.support_hours || '08:00 - 22:00'}
                   </span>
                   <span>•</span>
-                  <span>Sàn TMĐT Số CodeGame.shop</span>
+                  <span>Sàn TMĐT Số Pine Universal Mall</span>
                 </div>
               </div>
             </div>

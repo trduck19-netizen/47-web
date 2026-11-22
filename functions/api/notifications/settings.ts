@@ -133,8 +133,8 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
     const newConfig: EmailProviderConfig = {
       provider: body.provider === 'brevo' ? 'brevo' : 'resend',
       apiKey: finalApiKey,
-      senderEmail: String(body.senderEmail || 'notifications@codegame.shop').trim(),
-      senderName: String(body.senderName || 'CodeGame.shop - Thông Báo Sự Kiện & Code Game').trim(),
+      senderEmail: String(body.senderEmail || 'notifications@universal-mall-shop.pages.dev').trim(),
+      senderName: String(body.senderName || 'Pine Universal Mall - Thông Báo Sự Kiện & Code Game').trim(),
       isEnabled: Boolean(body.isEnabled),
     };
 

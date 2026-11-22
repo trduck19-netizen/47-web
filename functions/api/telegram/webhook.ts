@@ -128,7 +128,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       await sendTelegramApiMessage(
         botToken,
         chatId,
-        '⚠️ <b>Mã liên kết không hợp lệ.</b>\nVui lòng truy cập lại trang Tài khoản trên website <a href="https://codegame.shop">codegame.shop</a> để lấy link liên kết mới.',
+        '⚠️ <b>Mã liên kết không hợp lệ.</b>\nVui lòng truy cập lại trang Tài khoản trên website <a href="https://universal-mall-shop.pages.dev">codegame.shop</a> để lấy link liên kết mới.',
         { parse_mode: 'HTML' }
       );
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers: CORS_HEADERS });
@@ -182,7 +182,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       const replyMsg = [
         '🎉 <b>Liên kết tài khoản thành công!</b>',
         '',
-        `Tài khoản CodeGame.Shop của bạn đã được kết nối với Telegram (@${username || chatId}).`,
+        `Tài khoản Pine Universal Mall của bạn đã được kết nối với Telegram (@${username || chatId}).`,
         'Từ bây giờ, bạn có thể nhận thông báo riêng về Giftcode mới và các sự kiện game bạn quan tâm.',
         '',
         '📌 <b>Các lệnh hỗ trợ:</b>',
@@ -191,7 +191,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         '• <code>/danhsach</code>: Xem danh sách game đang theo dõi',
         '• <code>/dung</code>: Dừng toàn bộ thông báo riêng',
         '',
-        '🔗 Truy cập website: <a href="https://codegame.shop">codegame.shop</a>',
+        '🔗 Truy cập website: <a href="https://universal-mall-shop.pages.dev">codegame.shop</a>',
       ].join('\n');
 
       await sendTelegramApiMessage(botToken, chatId, replyMsg, { parse_mode: 'HTML' });
@@ -328,7 +328,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
 
   // 7. Lệnh mặc định hoặc trợ giúp (/help, /start bình thường, hoặc câu hỏi lạ)
   const helpText = [
-    '👋 <b>Xin chào bạn! Đây là Bot hỗ trợ CodeGame.Shop</b>',
+    '👋 <b>Xin chào bạn! Đây là Bot hỗ trợ Pine Universal Mall</b>',
     '',
     '📌 <b>Các lệnh bạn có thể sử dụng:</b>',
     '• <code>/theodoi &lt;slug&gt;</code>: Theo dõi nhận mã game',
@@ -336,7 +336,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     '• <code>/danhsach</code>: Xem danh sách game đang theo dõi',
     '• <code>/dung</code>: Dừng toàn bộ thông báo riêng',
     '',
-    '🔗 Để liên kết tài khoản web, vui lòng vào trang Cá nhân trên <a href="https://codegame.shop">codegame.shop</a> và ấn "Liên kết Telegram".',
+    '🔗 Để liên kết tài khoản web, vui lòng vào trang Cá nhân trên <a href="https://universal-mall-shop.pages.dev">codegame.shop</a> và ấn "Liên kết Telegram".',
   ].join('\n');
 
   await sendTelegramApiMessage(botToken, chatId, helpText, { parse_mode: 'HTML' });

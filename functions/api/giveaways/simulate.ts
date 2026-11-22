@@ -28,7 +28,7 @@ async function isAuthorized(request: Request, env: Env): Promise<boolean> {
 
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (token && env.DB) {
-    if (token.startsWith('wcg_edge_tok_')) {
+    if (token.startsWith('pine_edge_tok_') || token.startsWith('wcg_edge_tok_')) {
       const { valid } = await verifyToken(token, [env.JWT_SECRET]);
       if (valid) return true;
     }

@@ -40,8 +40,9 @@ const ALL_SCAN_PATHS = [
 
 // Whitelist các từ khóa hợp lệ (tên game bản quyền, tên thương hiệu, mã đơn, công nghệ, ngân hàng)
 const ALLOWED_KEYWORDS = [
+  'Pine Universal Mall',
+  'Pine Mall',
   'Universal Mall',
-  'CodeGame',
   'Shopee',
   'Garena',
   'GHTK',

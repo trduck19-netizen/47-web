@@ -63,9 +63,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
     const updated = [newCampaign, ...giveaways];
     setGiveaways(updated);
-    localStorage.setItem('wcg_admin_giveaways_v4', JSON.stringify(updated));
-    localStorage.setItem('wcg_giveaways', JSON.stringify(updated));
-    dataService.pushToCloudflareKV('wcg_admin_giveaways_v4', updated);
+    localStorage.setItem('pine_admin_giveaways_v4', JSON.stringify(updated));
+    localStorage.setItem('pine_giveaways', JSON.stringify(updated));
+    dataService.pushToCloudflareKV('pine_admin_giveaways_v4', updated);
     onShowToast('Thêm chiến dịch Giveaway thành công!', newCampaign.title, 'success');
     setNewGaTitle('');
   };
@@ -73,9 +73,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const handleDeleteGiveaway = (id: string, title: string) => {
     const updated = giveaways.filter((g) => g.id !== id);
     setGiveaways(updated);
-    localStorage.setItem('wcg_admin_giveaways_v4', JSON.stringify(updated));
-    localStorage.setItem('wcg_giveaways', JSON.stringify(updated));
-    dataService.pushToCloudflareKV('wcg_admin_giveaways_v4', updated);
+    localStorage.setItem('pine_admin_giveaways_v4', JSON.stringify(updated));
+    localStorage.setItem('pine_giveaways', JSON.stringify(updated));
+    dataService.pushToCloudflareKV('pine_admin_giveaways_v4', updated);
     onShowToast('Đã xóa chiến dịch', `Đã xóa chiến dịch "${title}" thành công.`, 'info');
   };
 
@@ -103,9 +103,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
     const updated = [newProduct, ...storeProducts];
     setStoreProducts(updated);
-    localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(updated));
-    localStorage.setItem('wcg_store_products', JSON.stringify(updated));
-    dataService.pushToCloudflareKV('wcg_admin_store_products_v4', updated);
+    localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(updated));
+    localStorage.setItem('pine_store_products', JSON.stringify(updated));
+    dataService.pushToCloudflareKV('pine_admin_store_products_v4', updated);
     onShowToast('Thêm sản phẩm thành công!', newProduct.title, 'success');
     setNewSpTitle('');
   };
@@ -128,7 +128,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Quản lý toàn diện hệ thống CodeGame.Shop trên nền tảng Cloudflare Edge & KV
+              Quản lý toàn diện hệ thống Pine Universal Mall trên nền tảng Cloudflare Edge & KV
             </p>
           </div>
         </div>

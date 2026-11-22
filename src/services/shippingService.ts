@@ -63,8 +63,8 @@ export interface CarrierApiConfig {
   defaultCarrier: CarrierCode;
 }
 
-const STORAGE_KEY_CONFIG = 'wcg_shipping_api_config_v1';
-const STORAGE_KEY_SHIPPING_ORDERS = 'wcg_shipping_orders_v1';
+const STORAGE_KEY_CONFIG = 'pine_shipping_api_config_v1';
+const STORAGE_KEY_SHIPPING_ORDERS = 'pine_shipping_orders_v1';
 
 export const CARRIERS: Record<CarrierCode, CarrierInfo> = {
   GHTK: {
@@ -167,7 +167,7 @@ class ShippingService {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(this.config));
-        window.dispatchEvent(new CustomEvent('wcg_shipping_config_updated'));
+        window.dispatchEvent(new CustomEvent('pine_shipping_config_updated'));
       }
     } catch {}
   }
@@ -263,7 +263,7 @@ class ShippingService {
         timestamp: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN'),
         completed: true,
         current: false,
-        location: 'Kho Tổng Trung Tâm Sàn CodeGame',
+        location: 'Kho Tổng Trung Tâm Pine Universal Mall',
       },
       {
         title: 'Đang chuẩn bị hàng & Đóng gói',
@@ -310,10 +310,10 @@ class ShippingService {
       recipientPhone: params.recipientPhone,
       recipientAddress: params.recipientAddress,
       shippingNote: params.shippingNote || '',
-      senderName: params.senderName || 'CodeGame Mall Official Store',
-      senderAddress: params.senderAddress || 'Kho Vận Trung Tâm CodeGame, Cầu Giấy, Hà Nội',
+      senderName: params.senderName || 'Pine Universal Mall Official Store',
+      senderAddress: params.senderAddress || 'Kho Vận Trung Tâm Pine Universal Mall, Cầu Giấy, Hà Nội',
       timeline,
-      labelUrl: `https://codegame.shop/shipping-label/${trackingCode}`,
+      labelUrl: `/shipping-label/${trackingCode}`,
       createdAt: nowIso,
       updatedAt: nowIso,
     };
@@ -325,7 +325,7 @@ class ShippingService {
 
     // Thông báo cho hệ thống
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_shipping_order_created', { detail: shippingRecord }));
+      window.dispatchEvent(new CustomEvent('pine_shipping_order_created', { detail: shippingRecord }));
     }
 
     return shippingRecord;

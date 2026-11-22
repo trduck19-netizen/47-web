@@ -70,7 +70,7 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
     const gameName = String(body.gameName || '').trim();
     const testEmail = String(body.testEmail || '').trim().toLowerCase();
 
-    const title = String(body.title || 'Thông báo từ CodeGame.shop').trim();
+    const title = String(body.title || 'Thông báo từ Pine Universal Mall').trim();
     const subject = String(body.subject || title).trim();
     const description = String(body.description || body.message || 'Có cập nhật mới trên website.').trim();
     const ctaText = body.ctaText ? String(body.ctaText).trim() : undefined;
@@ -182,7 +182,7 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
     let lastError = '';
 
     for (const r of recipients) {
-      const unsubUrl = `https://codegame.shop/api/notifications/unsubscribe?token=${encodeURIComponent(r.token)}`;
+      const unsubUrl = `https://universal-mall-shop.pages.dev/api/notifications/unsubscribe?token=${encodeURIComponent(r.token)}`;
       const html = buildCyberpunkEmailHtml({
         type,
         title,

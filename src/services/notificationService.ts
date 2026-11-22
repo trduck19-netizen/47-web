@@ -1,7 +1,7 @@
 import { EmailSubscription } from '../types/notification';
 
-const STORAGE_KEY = 'wcg_email_subscription_v1';
-const EVENT_NAME = 'wcg_email_subscription_updated';
+const STORAGE_KEY = 'pine_email_subscription_v1';
+const EVENT_NAME = 'pine_email_subscription_updated';
 
 class NotificationService {
   private cachedSub: EmailSubscription | null = null;

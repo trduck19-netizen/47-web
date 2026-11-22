@@ -119,7 +119,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
                 'X-Content-Type-Options': 'nosniff',
                 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
                 'Cache-Control': 'public, max-age=31536000, immutable',
-                'X-Image-Proxy-By': 'CodeGame-Edge-CDN',
+                'X-Image-Proxy-By': 'Pine-Edge-CDN',
               }),
             });
             try {
@@ -148,7 +148,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
               'X-Content-Type-Options': 'nosniff',
               'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
               'Cache-Control': 'public, max-age=31536000, immutable',
-              'X-Image-Proxy-By': 'CodeGame-Local-Static',
+              'X-Image-Proxy-By': 'Pine-Local-Static',
             }),
           });
           try {
@@ -172,7 +172,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
               'X-Content-Type-Options': 'nosniff',
               'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
               'Cache-Control': 'public, max-age=31536000, immutable',
-              'X-Image-Proxy-By': 'CodeGame-Local-JPG',
+              'X-Image-Proxy-By': 'Pine-Local-JPG',
             }),
           });
           try {
@@ -214,7 +214,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
                         'X-Content-Type-Options': 'nosniff',
                         'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
                         'Cache-Control': 'public, max-age=31536000, immutable',
-                        'X-Image-Proxy-By': 'CodeGame-D1-RemoteIcon',
+                        'X-Image-Proxy-By': 'Pine-D1-RemoteIcon',
                       }),
                     });
                     try {
@@ -264,7 +264,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
                   'X-Content-Type-Options': 'nosniff',
                   'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
                   'Cache-Control': 'public, max-age=31536000, immutable',
-                  'X-Image-Proxy-By': 'CodeGame-Edge-GooglePlay',
+                  'X-Image-Proxy-By': 'Pine-Edge-GooglePlay',
                 }),
               });
               try {

@@ -1,6 +1,6 @@
 /**
  * Admin Endpoint: /api/telegram/admin
- * For CodeGame Administrator to view Telegram stats, trigger test messages to TELEGRAM_ADMIN_CHAT_ID only,
+ * For Pine Universal Mall Administrator to view Telegram stats, trigger test messages to TELEGRAM_ADMIN_CHAT_ID only,
  * and view/set Webhook safely.
  */
 
@@ -221,7 +221,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     if (body.auto_set_webhook && refreshed.bot_token) {
       webhookResult = await setTelegramWebhook(
         refreshed.bot_token,
-        'https://codegame.shop/api/telegram/webhook',
+        'https://universal-mall-shop.pages.dev/api/telegram/webhook',
         refreshed.webhook_secret || undefined
       );
     }
@@ -262,9 +262,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     }
 
     const testMessage = [
-      '🧪 <b>[TEST] Tin Nhắn Thử Nghiệm Từ Quản Trị Viên CodeGame.Shop</b>',
+      '🧪 <b>[TEST] Tin Nhắn Thử Nghiệm Từ Quản Trị Viên Pine Universal Mall</b>',
       '',
-      'Đây là tin nhắn kiểm tra kết nối hệ thống Telegram Bot với website codegame.shop.',
+      'Đây là tin nhắn kiểm tra kết nối hệ thống Telegram Bot với website Pine Universal Mall (universal-mall-shop.pages.dev).',
       `⏰ Thời gian: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}`,
       '✅ <b>Trạng thái:</b> Kết nối Telegram Bot hoạt động hoàn hảo!',
       '📌 <i>Lưu ý: Bạn có thể tự xóa tin nhắn thử nghiệm này sau khi kiểm tra.</i>',
@@ -314,7 +314,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       );
     }
 
-    const customUrl = (body.webhook_url || 'https://codegame.shop/api/telegram/webhook').trim();
+    const customUrl = (body.webhook_url || 'https://universal-mall-shop.pages.dev/api/telegram/webhook').trim();
     const secret = (effectiveConfig.webhook_secret || env.TELEGRAM_WEBHOOK_SECRET || '').trim();
 
     const res = await setTelegramWebhook(botToken, customUrl, secret || undefined);

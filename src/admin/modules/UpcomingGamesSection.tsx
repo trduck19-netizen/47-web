@@ -137,7 +137,7 @@ export const UpcomingGamesSection: React.FC<UpcomingGamesSectionProps> = ({ onSh
   const [isSyncingServer, setIsSyncingServer] = useState(false);
 
   const crawlerConfig = adminDataService.getCrawlerApiConfig();
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://codegame.shop';
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev';
   const apiEndpointUrl = `${currentOrigin}/api/crawler/ingest-upcoming-games`;
   const displayedApiKey = showApiKey
     ? (crawlerConfig.apiKey || 'YOUR_API_KEY')
@@ -179,12 +179,12 @@ export const UpcomingGamesSection: React.FC<UpcomingGamesSectionProps> = ({ onSh
       loadData();
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleSync);
+    window.addEventListener('pine_admin_data_updated', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
       clearInterval(timer);
-      window.removeEventListener('wcg_admin_data_updated', handleSync);
+      window.removeEventListener('pine_admin_data_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);

@@ -39,9 +39,9 @@ export const GrowthModule: React.FC<GrowthModuleProps> = ({ onShowToast }) => {
       const cfg = e?.detail || growthService.getConfig();
       if (cfg) setConfig(cfg);
     };
-    window.addEventListener('wcg_growth_config_updated', handleUpdate);
+    window.addEventListener('pine_growth_config_updated', handleUpdate);
     return () => {
-      window.removeEventListener('wcg_growth_config_updated', handleUpdate);
+      window.removeEventListener('pine_growth_config_updated', handleUpdate);
     };
   }, []);
 
@@ -49,7 +49,7 @@ export const GrowthModule: React.FC<GrowthModuleProps> = ({ onShowToast }) => {
     setIsSaving(true);
     try {
       const saved = growthService.saveConfig(config);
-      await dataService.pushToCloudflareKV('wcg_growth_config_v1', saved);
+      await dataService.pushToCloudflareKV('pine_growth_config_v1', saved);
       onShowToast(
         'Đã lưu cấu hình tăng trưởng!',
         'Cấu hình Viral Loop & Thu hút người dùng mới đã được lưu và đồng bộ lên Cloudflare D1 thành công.',
@@ -66,7 +66,7 @@ export const GrowthModule: React.FC<GrowthModuleProps> = ({ onShowToast }) => {
     if (window.confirm('Bạn có chắc chắn muốn khôi phục cấu hình tăng trưởng về mặc định không?')) {
       setConfig(DEFAULT_GROWTH_CONFIG);
       const saved = growthService.saveConfig(DEFAULT_GROWTH_CONFIG);
-      await dataService.pushToCloudflareKV('wcg_growth_config_v1', saved);
+      await dataService.pushToCloudflareKV('pine_growth_config_v1', saved);
       onShowToast('Đã khôi phục mặc định', 'Cấu hình đã trở về thông số ban đầu và đồng bộ lên Cloudflare D1.', 'info');
     }
   };

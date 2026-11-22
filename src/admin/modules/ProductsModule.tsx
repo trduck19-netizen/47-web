@@ -68,9 +68,9 @@ export const ProductsModule: React.FC = () => {
 
   const getHeaders = useCallback(() => {
     const token =
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_auth_token') ||
-      localStorage.getItem('wcg_admin_sync_key') ||
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_auth_token') ||
+      localStorage.getItem('pine_admin_sync_key') ||
       '';
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

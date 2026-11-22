@@ -34,7 +34,7 @@ export const MissionsView: React.FC<MissionsViewProps> = ({
   const [missions, setMissions] = useState<Mission[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
-      const cached = localStorage.getItem('wcg_cached_missions_v1');
+      const cached = localStorage.getItem('pine_cached_missions_v1');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -45,7 +45,7 @@ export const MissionsView: React.FC<MissionsViewProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
     try {
-      const cached = localStorage.getItem('wcg_cached_missions_v1');
+      const cached = localStorage.getItem('pine_cached_missions_v1');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) return false;
@@ -58,7 +58,7 @@ export const MissionsView: React.FC<MissionsViewProps> = ({
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
 
   const fetchMissions = async (forceSpinner = false) => {
-    if (forceSpinner || (missions.length === 0 && !localStorage.getItem('wcg_cached_missions_v1'))) {
+    if (forceSpinner || (missions.length === 0 && !localStorage.getItem('pine_cached_missions_v1'))) {
       setIsLoading(true);
     }
     try {
@@ -66,7 +66,7 @@ export const MissionsView: React.FC<MissionsViewProps> = ({
       if (res.success) {
         setMissions(res.missions || []);
         try {
-          localStorage.setItem('wcg_cached_missions_v1', JSON.stringify(res.missions || []));
+          localStorage.setItem('pine_cached_missions_v1', JSON.stringify(res.missions || []));
         } catch {}
         if (initialMissionId) {
           const match = (res.missions || []).find((m) => m.id === initialMissionId);
@@ -120,7 +120,7 @@ export const MissionsView: React.FC<MissionsViewProps> = ({
         return m;
       });
       try {
-        localStorage.setItem('wcg_cached_missions_v1', JSON.stringify(updated));
+        localStorage.setItem('pine_cached_missions_v1', JSON.stringify(updated));
       } catch {}
       return updated;
     });

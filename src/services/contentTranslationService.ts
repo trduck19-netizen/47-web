@@ -17,7 +17,7 @@ export interface ContentTranslationRecord {
   updated_at: string;
 }
 
-const STORAGE_KEY = 'wcg_content_translations_v1';
+const STORAGE_KEY = 'pine_content_translations_v1';
 
 // Bộ bản dịch mẫu Tiếng Anh ban đầu cho 5 ngành hàng, sản phẩm tiêu biểu và hướng dẫn nhập code
 const INITIAL_CONTENT_TRANSLATIONS: ContentTranslationRecord[] = [
@@ -281,7 +281,7 @@ class ContentTranslationService {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.translations));
-        window.dispatchEvent(new CustomEvent('wcg_content_translations_updated'));
+        window.dispatchEvent(new CustomEvent('pine_content_translations_updated'));
       }
     } catch {}
   }

@@ -74,9 +74,9 @@ export const DEFAULT_UNIVERSAL_TEMPLATES: UniversalTemplatesConfig = {
   },
 };
 
-const TEMPLATES_KEY = 'wcg_universal_templates_v1';
-const SNAPSHOTS_KEY = 'wcg_template_snapshots_v1';
-const AUDIT_LOGS_KEY = 'wcg_template_audit_logs_v1';
+const TEMPLATES_KEY = 'pine_universal_templates_v1';
+const SNAPSHOTS_KEY = 'pine_template_snapshots_v1';
+const AUDIT_LOGS_KEY = 'pine_template_audit_logs_v1';
 
 class TemplateService {
   private templates: UniversalTemplatesConfig | null = null;
@@ -116,7 +116,7 @@ class TemplateService {
       }
     });
 
-    window.addEventListener('wcg_universal_templates_updated', () => {
+    window.addEventListener('pine_universal_templates_updated', () => {
       this.reloadLocal();
     });
   }
@@ -171,7 +171,7 @@ class TemplateService {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(TEMPLATES_KEY, JSON.stringify(this.templates));
-        window.dispatchEvent(new CustomEvent('wcg_universal_templates_updated', { detail: this.templates }));
+        window.dispatchEvent(new CustomEvent('pine_universal_templates_updated', { detail: this.templates }));
       } catch {}
     }
     this.notify();
@@ -192,19 +192,19 @@ class TemplateService {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(TEMPLATES_KEY, JSON.stringify(updated));
-        window.dispatchEvent(new CustomEvent('wcg_universal_templates_updated', { detail: updated }));
+        window.dispatchEvent(new CustomEvent('pine_universal_templates_updated', { detail: updated }));
       } catch {}
 
       // Push to Cloudflare KV / D1 as a single setting record
       try {
         const payload = { key: TEMPLATES_KEY, data: updated };
         const syncKey =
-          localStorage.getItem('wcg_admin_sync_key') ||
-          sessionStorage.getItem('wcg_admin_sync_key') ||
+          localStorage.getItem('pine_admin_sync_key') ||
+          sessionStorage.getItem('pine_admin_sync_key') ||
           '';
         const token =
-          localStorage.getItem('wcg_auth_token') ||
-          sessionStorage.getItem('wcg_auth_token') || '';
+          localStorage.getItem('pine_auth_token') ||
+          sessionStorage.getItem('pine_auth_token') || '';
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
           'X-Sync-Key': syncKey,
@@ -237,12 +237,12 @@ class TemplateService {
 
     const payload = { key: TEMPLATES_KEY, data: this.templates };
     const syncKey =
-      localStorage.getItem('wcg_admin_sync_key') ||
-      sessionStorage.getItem('wcg_admin_sync_key') ||
+      localStorage.getItem('pine_admin_sync_key') ||
+      sessionStorage.getItem('pine_admin_sync_key') ||
       '';
     const token =
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_auth_token') || '';
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_auth_token') || '';
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Sync-Key': syncKey,
@@ -251,9 +251,9 @@ class TemplateService {
 
     const endpoints = [
       '/api/sync',
-      'https://admin-code-game-shop.pages.dev/api/sync',
-      'https://codegame.shop/api/sync',
-      'https://web-code-game.pages.dev/api/sync',
+      'https://admin-universal-mall.pages.dev/api/sync',
+      'https://universal-mall-shop.pages.dev/api/sync',
+      'https://universal-mall-shop.pages.dev/api/sync',
     ];
 
     for (const url of endpoints) {
@@ -275,8 +275,8 @@ class TemplateService {
   public async syncTemplates(): Promise<UniversalTemplatesConfig> {
     const endpoints = [
       `/api/sync?key=${TEMPLATES_KEY}`,
-      `https://admin-code-game-shop.pages.dev/api/sync?key=${TEMPLATES_KEY}`,
-      `https://codegame.shop/api/sync?key=${TEMPLATES_KEY}`,
+      `https://admin-universal-mall.pages.dev/api/sync?key=${TEMPLATES_KEY}`,
+      `https://universal-mall-shop.pages.dev/api/sync?key=${TEMPLATES_KEY}`,
     ];
 
     for (const url of endpoints) {
@@ -547,23 +547,23 @@ class TemplateService {
 
       // 2. Restore giveaways if captured
       if (Array.isArray(target.data.giveaways) && target.data.giveaways.length > 0) {
-        localStorage.setItem('wcg_admin_giveaways_v4', JSON.stringify(target.data.giveaways));
-        localStorage.setItem('wcg_giveaways', JSON.stringify(target.data.giveaways));
-        window.dispatchEvent(new CustomEvent('wcg_giveaways_updated'));
+        localStorage.setItem('pine_admin_giveaways_v4', JSON.stringify(target.data.giveaways));
+        localStorage.setItem('pine_giveaways', JSON.stringify(target.data.giveaways));
+        window.dispatchEvent(new CustomEvent('pine_giveaways_updated'));
       }
 
       // 3. Restore utilities if captured
       if (Array.isArray(target.data.utilities) && target.data.utilities.length > 0) {
-        localStorage.setItem('wcg_admin_utilities_v4', JSON.stringify(target.data.utilities));
-        localStorage.setItem('wcg_utilities', JSON.stringify(target.data.utilities));
-        window.dispatchEvent(new CustomEvent('wcg_utilities_updated'));
+        localStorage.setItem('pine_admin_utilities_v4', JSON.stringify(target.data.utilities));
+        localStorage.setItem('pine_utilities', JSON.stringify(target.data.utilities));
+        window.dispatchEvent(new CustomEvent('pine_utilities_updated'));
       }
 
       // 4. Restore store products if captured
       if (Array.isArray(target.data.store_products) && target.data.store_products.length > 0) {
-        localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(target.data.store_products));
-        localStorage.setItem('wcg_store_products', JSON.stringify(target.data.store_products));
-        window.dispatchEvent(new CustomEvent('wcg_store_products_updated'));
+        localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(target.data.store_products));
+        localStorage.setItem('pine_store_products', JSON.stringify(target.data.store_products));
+        window.dispatchEvent(new CustomEvent('pine_store_products_updated'));
       }
 
       this.logAction({
@@ -726,9 +726,9 @@ class TemplateService {
         items.giveaways.forEach((gw) => {
           gw.use_template = true;
         });
-        localStorage.setItem('wcg_admin_giveaways_v4', JSON.stringify(items.giveaways));
-        localStorage.setItem('wcg_giveaways', JSON.stringify(items.giveaways));
-        window.dispatchEvent(new CustomEvent('wcg_giveaways_updated'));
+        localStorage.setItem('pine_admin_giveaways_v4', JSON.stringify(items.giveaways));
+        localStorage.setItem('pine_giveaways', JSON.stringify(items.giveaways));
+        window.dispatchEvent(new CustomEvent('pine_giveaways_updated'));
       }
     }
 
@@ -737,9 +737,9 @@ class TemplateService {
         items.utilities.forEach((u) => {
           (u as any).use_template = true;
         });
-        localStorage.setItem('wcg_admin_utilities_v4', JSON.stringify(items.utilities));
-        localStorage.setItem('wcg_utilities', JSON.stringify(items.utilities));
-        window.dispatchEvent(new CustomEvent('wcg_utilities_updated'));
+        localStorage.setItem('pine_admin_utilities_v4', JSON.stringify(items.utilities));
+        localStorage.setItem('pine_utilities', JSON.stringify(items.utilities));
+        window.dispatchEvent(new CustomEvent('pine_utilities_updated'));
       }
     }
 
@@ -748,9 +748,9 @@ class TemplateService {
         items.storeProducts.forEach((p) => {
           (p as any).use_template = true;
         });
-        localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(items.storeProducts));
-        localStorage.setItem('wcg_store_products', JSON.stringify(items.storeProducts));
-        window.dispatchEvent(new CustomEvent('wcg_store_products_updated'));
+        localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(items.storeProducts));
+        localStorage.setItem('pine_store_products', JSON.stringify(items.storeProducts));
+        window.dispatchEvent(new CustomEvent('pine_store_products_updated'));
       }
     }
 

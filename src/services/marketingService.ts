@@ -18,21 +18,21 @@ import {
   calculateDeterministicSold,
 } from '../shared/deterministicEngine';
 
-const MARKETING_CONFIG_KEY = 'wcg_marketing_config_v1';
-const MARKETING_REAL_CLICKS_KEY = 'wcg_marketing_real_clicks_v1';
-const MARKETING_VIRTUAL_STOCK_KEY = 'wcg_virtual_stock_levels_v2';
-const MARKETING_VIRTUAL_STOCK_TIMESTAMPS_KEY = 'wcg_virtual_stock_timestamps_v2';
-const MARKETING_FOMO_SOLD_KEY = 'wcg_fomo_live_sold_counts_v2';
-const MARKETING_FOMO_CLAIMED_KEY = 'wcg_fomo_live_claimed_counts_v2';
-const MARKETING_HOURLY_SERVER_STATS_KEY = 'wcg_hourly_server_stats_v2';
-const MARKETING_LAST_HOURLY_SYNC_KEY = 'wcg_last_hourly_sync_timestamp';
-const MARKETING_PROCESSED_IDS_KEY = 'wcg_marketing_processed_ids_v2';
-const MARKETING_HIGH_WATER_SOLD_KEY = 'wcg_high_water_sold_counts_v1';
-const MARKETING_HIGH_WATER_CLAIMED_KEY = 'wcg_high_water_claimed_counts_v1';
-const MARKETING_FOMO_SESSION_ANCHOR_KEY = 'wcg_fomo_session_anchor_v2';
-const MARKETING_SNAPSHOT_KEY = 'wcg_metrics_snapshot_cache_v2';
-const MARKETING_ADMIN_OVERRIDE_CLAIMED_KEY = 'wcg_admin_override_claimed_v2';
-const MARKETING_ADMIN_OVERRIDE_SOLD_KEY = 'wcg_admin_override_sold_v2';
+const MARKETING_CONFIG_KEY = 'pine_marketing_config_v1';
+const MARKETING_REAL_CLICKS_KEY = 'pine_marketing_real_clicks_v1';
+const MARKETING_VIRTUAL_STOCK_KEY = 'pine_virtual_stock_levels_v2';
+const MARKETING_VIRTUAL_STOCK_TIMESTAMPS_KEY = 'pine_virtual_stock_timestamps_v2';
+const MARKETING_FOMO_SOLD_KEY = 'pine_fomo_live_sold_counts_v2';
+const MARKETING_FOMO_CLAIMED_KEY = 'pine_fomo_live_claimed_counts_v2';
+const MARKETING_HOURLY_SERVER_STATS_KEY = 'pine_hourly_server_stats_v2';
+const MARKETING_LAST_HOURLY_SYNC_KEY = 'pine_last_hourly_sync_timestamp';
+const MARKETING_PROCESSED_IDS_KEY = 'pine_marketing_processed_ids_v2';
+const MARKETING_HIGH_WATER_SOLD_KEY = 'pine_high_water_sold_counts_v1';
+const MARKETING_HIGH_WATER_CLAIMED_KEY = 'pine_high_water_claimed_counts_v1';
+const MARKETING_FOMO_SESSION_ANCHOR_KEY = 'pine_fomo_session_anchor_v2';
+const MARKETING_SNAPSHOT_KEY = 'pine_metrics_snapshot_cache_v2';
+const MARKETING_ADMIN_OVERRIDE_CLAIMED_KEY = 'pine_admin_override_claimed_v2';
+const MARKETING_ADMIN_OVERRIDE_SOLD_KEY = 'pine_admin_override_sold_v2';
 
 export const PRESET_VIRTUAL_ACCOUNTS: string[] = [
   // 1. Vietnamese Full Names (30 names)
@@ -287,11 +287,11 @@ class MarketingService {
     // Purge legacy client-side drift keys (Rule: Client displays SSOT numbers from server, zero localStorage drift)
     if (typeof window !== 'undefined') {
       try {
-        localStorage.removeItem('wcg_high_water_sold_counts_v1');
-        localStorage.removeItem('wcg_high_water_claimed_counts_v1');
-        localStorage.removeItem('wcg_admin_override_sold_v2');
-        localStorage.removeItem('wcg_admin_override_claimed_v2');
-        localStorage.removeItem('wcg_fomo_session_anchor_v2');
+        localStorage.removeItem('pine_high_water_sold_counts_v1');
+        localStorage.removeItem('pine_high_water_claimed_counts_v1');
+        localStorage.removeItem('pine_admin_override_sold_v2');
+        localStorage.removeItem('pine_admin_override_claimed_v2');
+        localStorage.removeItem('pine_fomo_session_anchor_v2');
       } catch {}
     }
 
@@ -649,7 +649,7 @@ class MarketingService {
         this.notifySoldCountChanged('*', 0);
         this.broadcastCurrentCount();
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('wcg_virtual_stock_updated', { detail: {} }));
+          window.dispatchEvent(new CustomEvent('pine_virtual_stock_updated', { detail: {} }));
         }
       }
     } catch {}
@@ -678,7 +678,7 @@ class MarketingService {
       this.visibilityListenerAttached = true;
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-          const savedGlobal = localStorage.getItem('wcg_global_master_copy_count_v1');
+          const savedGlobal = localStorage.getItem('pine_global_master_copy_count_v1');
           if (savedGlobal) {
             const val = parseInt(savedGlobal, 10);
             if (!isNaN(val) && val > this.globalMasterCopyCount) {
@@ -750,13 +750,13 @@ class MarketingService {
       const today = this.getTodayDateKey();
       this.dailyMaxCopyDate = today;
       let count = 0;
-      const savedGlobal = localStorage.getItem('wcg_global_master_copy_count_v1');
+      const savedGlobal = localStorage.getItem('pine_global_master_copy_count_v1');
       if (savedGlobal) {
         const val = parseInt(savedGlobal, 10);
         if (!isNaN(val)) count = val;
       }
       if (count < 94558) {
-        const savedDaily = localStorage.getItem('wcg_marketing_daily_max_copy_v1');
+        const savedDaily = localStorage.getItem('pine_marketing_daily_max_copy_v1');
         if (savedDaily) {
           const parsed = JSON.parse(savedDaily);
           if (parsed && typeof parsed.count === 'number') {
@@ -773,8 +773,8 @@ class MarketingService {
   public saveGlobalMasterCopyCount(): void {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem('wcg_global_master_copy_count_v1', this.globalMasterCopyCount.toString());
-      localStorage.setItem('wcg_marketing_daily_max_copy_v1', JSON.stringify({
+      localStorage.setItem('pine_global_master_copy_count_v1', this.globalMasterCopyCount.toString());
+      localStorage.setItem('pine_marketing_daily_max_copy_v1', JSON.stringify({
         date: this.dailyMaxCopyDate || this.getTodayDateKey(),
         count: this.globalMasterCopyCount,
       }));
@@ -804,7 +804,7 @@ class MarketingService {
   private initProcessedCopyNotifIds(): void {
     if (typeof window === 'undefined') return;
     try {
-      const saved = sessionStorage.getItem('wcg_processed_copy_ids_v1') || localStorage.getItem('wcg_processed_copy_ids_v1');
+      const saved = sessionStorage.getItem('pine_processed_copy_ids_v1') || localStorage.getItem('pine_processed_copy_ids_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
@@ -905,7 +905,7 @@ class MarketingService {
   private initBroadcastChannel(): void {
     if (typeof window === 'undefined' || !('BroadcastChannel' in window)) return;
     try {
-      this.broadcastChannel = new BroadcastChannel('wcg_marketing_real_events');
+      this.broadcastChannel = new BroadcastChannel('pine_marketing_real_events');
       this.broadcastChannel.onmessage = (event) => {
         if (!event || !event.data) return;
         const { type, payload } = event.data;
@@ -913,7 +913,7 @@ class MarketingService {
           if (payload.notifId) {
             this.processedNotifIds.add(payload.notifId);
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('wcg_notif_processed', { detail: payload }));
+              window.dispatchEvent(new CustomEvent('pine_notif_processed', { detail: payload }));
             }
           }
         } else if (type === 'USER_ACTION_COOLDOWN_BROADCAST' && payload) {
@@ -928,7 +928,7 @@ class MarketingService {
             match.scheduledFireTime = payload.scheduledFireTime;
             this.sortAndPruneRealEventQueue();
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('wcg_new_real_events_available'));
+              window.dispatchEvent(new CustomEvent('pine_new_real_events_available'));
             }
           }
         } else if (type === 'COPY_INCREMENT_BROADCAST' && payload) {
@@ -1212,7 +1212,7 @@ class MarketingService {
       let changed = false;
 
       // 1. Seed store products & utilities
-      const spRaw = localStorage.getItem('wcg_admin_store_products_v4') || localStorage.getItem('wcg_store_products_v4');
+      const spRaw = localStorage.getItem('pine_admin_store_products_v4') || localStorage.getItem('pine_store_products_v4');
       if (spRaw) {
         try {
           const spList = JSON.parse(spRaw);
@@ -1228,7 +1228,7 @@ class MarketingService {
         } catch {}
       }
 
-      const utRaw = localStorage.getItem('wcg_admin_utilities_v4') || localStorage.getItem('wcg_utilities_v4');
+      const utRaw = localStorage.getItem('pine_admin_utilities_v4') || localStorage.getItem('pine_utilities_v4');
       if (utRaw) {
         try {
           const utList = JSON.parse(utRaw);
@@ -1245,7 +1245,7 @@ class MarketingService {
       }
 
       // 2. Seed giveaways
-      const gwRaw = localStorage.getItem('wcg_admin_giveaways_v4') || localStorage.getItem('wcg_giveaways_v4');
+      const gwRaw = localStorage.getItem('pine_admin_giveaways_v4') || localStorage.getItem('pine_giveaways_v4');
       if (gwRaw) {
         try {
           const gwList = JSON.parse(gwRaw);
@@ -1842,8 +1842,8 @@ class MarketingService {
     }
     if (typeof window !== 'undefined') {
       try {
-        window.dispatchEvent(new CustomEvent('wcg_master_copy_count_updated', { detail: { count: current } }));
-        window.dispatchEvent(new CustomEvent('wcg_global_copy_count_updated', { detail: { count: current } }));
+        window.dispatchEvent(new CustomEvent('pine_master_copy_count_updated', { detail: { count: current } }));
+        window.dispatchEvent(new CustomEvent('pine_global_copy_count_updated', { detail: { count: current } }));
       } catch {}
     }
   }
@@ -1861,8 +1861,8 @@ class MarketingService {
         try {
           if (typeof window !== 'undefined') {
             const arr = Array.from(this.processedCopyNotifIds);
-            sessionStorage.setItem('wcg_processed_copy_ids_v1', JSON.stringify(arr));
-            localStorage.setItem('wcg_processed_copy_ids_v1', JSON.stringify(arr));
+            sessionStorage.setItem('pine_processed_copy_ids_v1', JSON.stringify(arr));
+            localStorage.setItem('pine_processed_copy_ids_v1', JSON.stringify(arr));
           }
         } catch {}
       }
@@ -1974,7 +1974,7 @@ class MarketingService {
     if (!id) return 0;
     if (typeof localStorage !== 'undefined') {
       try {
-        const invRaw = localStorage.getItem('wcg_admin_inventory_v4');
+        const invRaw = localStorage.getItem('pine_admin_inventory_v4');
         if (invRaw) {
           const invList = JSON.parse(invRaw);
           if (Array.isArray(invList) && invList.length > 0) {
@@ -1989,7 +1989,7 @@ class MarketingService {
           }
         }
 
-        const utRaw = localStorage.getItem('wcg_admin_utilities_v4');
+        const utRaw = localStorage.getItem('pine_admin_utilities_v4');
         if (utRaw) {
           const utList = JSON.parse(utRaw);
           const found = Array.isArray(utList) ? utList.find((u: any) => u && u.id === id) : null;
@@ -1999,7 +1999,7 @@ class MarketingService {
             return s;
           }
         }
-        const spRaw = localStorage.getItem('wcg_admin_store_products_v4');
+        const spRaw = localStorage.getItem('pine_admin_store_products_v4');
         if (spRaw) {
           const spList = JSON.parse(spRaw);
           const found = Array.isArray(spList) ? spList.find((p: any) => p && p.id === id) : null;
@@ -2009,7 +2009,7 @@ class MarketingService {
             return s;
           }
         }
-        const gwRaw = localStorage.getItem('wcg_admin_giveaways_v4');
+        const gwRaw = localStorage.getItem('pine_admin_giveaways_v4');
         if (gwRaw) {
           const gwList = JSON.parse(gwRaw);
           const found = Array.isArray(gwList) ? gwList.find((g: any) => g && g.id === id) : null;
@@ -2177,19 +2177,19 @@ class MarketingService {
     if (!id) return null;
     if (typeof localStorage !== 'undefined') {
       try {
-        const utRaw = localStorage.getItem('wcg_admin_utilities_v4') || localStorage.getItem('wcg_utilities_v4');
+        const utRaw = localStorage.getItem('pine_admin_utilities_v4') || localStorage.getItem('pine_utilities_v4');
         if (utRaw) {
           const list = JSON.parse(utRaw);
           const found = Array.isArray(list) ? list.find((u: any) => u && u.id === id) : null;
           if (found && found.title) return { title: found.title, itemType: 'utility' };
         }
-        const spRaw = localStorage.getItem('wcg_admin_store_products_v4') || localStorage.getItem('wcg_store_products_v4');
+        const spRaw = localStorage.getItem('pine_admin_store_products_v4') || localStorage.getItem('pine_store_products_v4');
         if (spRaw) {
           const list = JSON.parse(spRaw);
           const found = Array.isArray(list) ? list.find((p: any) => p && p.id === id) : null;
           if (found && found.title) return { title: found.title, itemType: 'store' };
         }
-        const gwRaw = localStorage.getItem('wcg_admin_giveaways_v4') || localStorage.getItem('wcg_giveaways_v4');
+        const gwRaw = localStorage.getItem('pine_admin_giveaways_v4') || localStorage.getItem('pine_giveaways_v4');
         if (gwRaw) {
           const list = JSON.parse(gwRaw);
           const found = Array.isArray(list) ? list.find((g: any) => g && g.id === id) : null;
@@ -2414,7 +2414,7 @@ class MarketingService {
     if (!id) return null;
     if (typeof localStorage !== 'undefined') {
       try {
-        const spRaw = localStorage.getItem('wcg_admin_store_products_v4') || localStorage.getItem('wcg_store_products_v4');
+        const spRaw = localStorage.getItem('pine_admin_store_products_v4') || localStorage.getItem('pine_store_products_v4');
         if (spRaw) {
           const spList = JSON.parse(spRaw);
           const found = Array.isArray(spList) ? spList.find((p: any) => p && p.id === id) : null;
@@ -2428,7 +2428,7 @@ class MarketingService {
             };
           }
         }
-        const utRaw = localStorage.getItem('wcg_admin_utilities_v4') || localStorage.getItem('wcg_utilities_v4');
+        const utRaw = localStorage.getItem('pine_admin_utilities_v4') || localStorage.getItem('pine_utilities_v4');
         if (utRaw) {
           const utList = JSON.parse(utRaw);
           const found = Array.isArray(utList) ? utList.find((u: any) => u && u.id === id) : null;
@@ -2474,7 +2474,7 @@ class MarketingService {
     if (!id) return null;
     if (typeof localStorage !== 'undefined') {
       try {
-        const gwRaw = localStorage.getItem('wcg_admin_giveaways_v4') || localStorage.getItem('wcg_giveaways_v4');
+        const gwRaw = localStorage.getItem('pine_admin_giveaways_v4') || localStorage.getItem('pine_giveaways_v4');
         if (gwRaw) {
           const gwList = JSON.parse(gwRaw);
           const found = Array.isArray(gwList) ? gwList.find((g: any) => g && g.id === id) : null;
@@ -2924,7 +2924,7 @@ class MarketingService {
       try { cb(id, count); } catch {}
     });
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_sold_count_updated', { detail: { id, count } }));
+      window.dispatchEvent(new CustomEvent('pine_sold_count_updated', { detail: { id, count } }));
     }
   }
 
@@ -3020,7 +3020,7 @@ class MarketingService {
       try { cb(productId, newStock); } catch {}
     });
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_virtual_stock_updated', { detail: { productId, stock: newStock } }));
+      window.dispatchEvent(new CustomEvent('pine_virtual_stock_updated', { detail: { productId, stock: newStock } }));
     }
   }
 
@@ -3103,7 +3103,7 @@ class MarketingService {
     // 3. Fallback: check logged in user from all known localStorage & sessionStorage keys
     if (typeof window !== 'undefined') {
       try {
-        const userKeys = ['wcg_user', 'wcg_current_user', 'wcg_auth_user'];
+        const userKeys = ['pine_user', 'pine_current_user', 'pine_auth_user'];
         for (const key of userKeys) {
           const raw = localStorage.getItem(key) || sessionStorage.getItem(key);
           if (raw) {
@@ -3122,11 +3122,11 @@ class MarketingService {
     // 4. Guest user identifier (authentic & stable for this browser session)
     if (typeof window !== 'undefined') {
       try {
-        let guestAlias = localStorage.getItem('wcg_client_guest_name');
+        let guestAlias = localStorage.getItem('pine_client_guest_name');
         if (!guestAlias) {
           const guestNum = Math.floor(1000 + Math.random() * 9000);
           guestAlias = `Khách #${guestNum}`;
-          localStorage.setItem('wcg_client_guest_name', guestAlias);
+          localStorage.setItem('pine_client_guest_name', guestAlias);
         }
         return guestAlias;
       } catch {}
@@ -3396,7 +3396,7 @@ class MarketingService {
     event = this.sanitizeNotificationMasking(event);
     this.pushRealEvent(event, shouldBroadcast, false);
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_new_real_events_available'));
+      window.dispatchEvent(new CustomEvent('pine_new_real_events_available'));
     }
   }
 
@@ -3482,7 +3482,7 @@ class MarketingService {
               match.scheduledFireTime = data.event.scheduledFireTime;
               this.sortAndPruneRealEventQueue();
               if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('wcg_new_real_events_available'));
+                window.dispatchEvent(new CustomEvent('pine_new_real_events_available'));
               }
             }
             if (this.broadcastChannel) {
@@ -3712,17 +3712,17 @@ class MarketingService {
       let deletedGwSet = new Set<string>();
       try {
         if (typeof window !== 'undefined') {
-          const rawDelSp = localStorage.getItem('wcg_deleted_store_products');
+          const rawDelSp = localStorage.getItem('pine_deleted_store_products');
           if (rawDelSp) {
             const parsed = JSON.parse(rawDelSp);
             if (Array.isArray(parsed)) deletedStoreSet = new Set(parsed);
           }
-          const rawDelUt = localStorage.getItem('wcg_deleted_utilities');
+          const rawDelUt = localStorage.getItem('pine_deleted_utilities');
           if (rawDelUt) {
             const parsed = JSON.parse(rawDelUt);
             if (Array.isArray(parsed)) deletedUtilSet = new Set(parsed);
           }
-          const rawDelGw = localStorage.getItem('wcg_deleted_giveaways');
+          const rawDelGw = localStorage.getItem('pine_deleted_giveaways');
           if (rawDelGw) {
             const parsed = JSON.parse(rawDelGw);
             if (Array.isArray(parsed)) deletedGwSet = new Set(parsed);
@@ -3816,8 +3816,8 @@ class MarketingService {
       if (newEventsAdded) {
         this.sortAndPruneRealEventQueue();
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('wcg_new_ledger_events_available'));
-          window.dispatchEvent(new CustomEvent('wcg_new_real_events_available'));
+          window.dispatchEvent(new CustomEvent('pine_new_ledger_events_available'));
+          window.dispatchEvent(new CustomEvent('pine_new_real_events_available'));
         }
       }
     }
@@ -4225,7 +4225,7 @@ class MarketingService {
       let deletedGwSet = new Set<string>();
       try {
         if (typeof window !== 'undefined') {
-          const rawDelGw = localStorage.getItem('wcg_deleted_giveaways');
+          const rawDelGw = localStorage.getItem('pine_deleted_giveaways');
           if (rawDelGw) {
             const parsed = JSON.parse(rawDelGw);
             if (Array.isArray(parsed)) deletedGwSet = new Set(parsed);
@@ -4296,12 +4296,12 @@ class MarketingService {
       let deletedUtilSet = new Set<string>();
       try {
         if (typeof window !== 'undefined') {
-          const rawDelSp = localStorage.getItem('wcg_deleted_store_products');
+          const rawDelSp = localStorage.getItem('pine_deleted_store_products');
           if (rawDelSp) {
             const parsed = JSON.parse(rawDelSp);
             if (Array.isArray(parsed)) deletedStoreSet = new Set(parsed);
           }
-          const rawDelUt = localStorage.getItem('wcg_deleted_utilities');
+          const rawDelUt = localStorage.getItem('pine_deleted_utilities');
           if (rawDelUt) {
             const parsed = JSON.parse(rawDelUt);
             if (Array.isArray(parsed)) deletedUtilSet = new Set(parsed);
@@ -4480,11 +4480,11 @@ class MarketingService {
       let deletedGwSet = new Set<string>();
       try {
         if (typeof window !== 'undefined') {
-          const rawDelSp = localStorage.getItem('wcg_deleted_store_products');
+          const rawDelSp = localStorage.getItem('pine_deleted_store_products');
           if (rawDelSp) deletedStoreSet = new Set(JSON.parse(rawDelSp));
-          const rawDelUt = localStorage.getItem('wcg_deleted_utilities');
+          const rawDelUt = localStorage.getItem('pine_deleted_utilities');
           if (rawDelUt) deletedUtilSet = new Set(JSON.parse(rawDelUt));
-          const rawDelGw = localStorage.getItem('wcg_deleted_giveaways');
+          const rawDelGw = localStorage.getItem('pine_deleted_giveaways');
           if (rawDelGw) deletedGwSet = new Set(JSON.parse(rawDelGw));
         }
       } catch {}
@@ -4672,7 +4672,7 @@ class MarketingService {
   private setupStorageListener(): void {
     if (typeof window === 'undefined') return;
     window.addEventListener('storage', (e) => {
-      if ((e.key === 'wcg_global_master_copy_count_v1' || e.key === 'wcg_marketing_daily_max_copy_v1') && e.newValue) {
+      if ((e.key === 'pine_global_master_copy_count_v1' || e.key === 'pine_marketing_daily_max_copy_v1') && e.newValue) {
         try {
           let val = 0;
           if (e.newValue.startsWith('{')) {
@@ -4729,7 +4729,7 @@ class MarketingService {
             this.stockListeners.forEach((cb) => {
               try { cb('', 0); } catch {}
             });
-            window.dispatchEvent(new CustomEvent('wcg_virtual_stock_updated', { detail: {} }));
+            window.dispatchEvent(new CustomEvent('pine_virtual_stock_updated', { detail: {} }));
           }
         } catch {}
       }
@@ -4822,10 +4822,10 @@ class MarketingService {
         } catch {}
       }
       if (
-        e.key === 'wcg_admin_utilities_v4' ||
-        e.key === 'wcg_admin_store_products_v4' ||
-        e.key === 'wcg_admin_giveaways_v4' ||
-        e.key === 'wcg_admin_inventory_v4'
+        e.key === 'pine_admin_utilities_v4' ||
+        e.key === 'pine_admin_store_products_v4' ||
+        e.key === 'pine_admin_giveaways_v4' ||
+        e.key === 'pine_admin_inventory_v4'
       ) {
         this.clearRealStockCache();
         this.notifyStockChanged('*', 0);
@@ -4837,8 +4837,8 @@ class MarketingService {
         this.clearRealStockCache();
         this.notifyStockChanged('*', 0);
       };
-      window.addEventListener('wcg_admin_data_updated', handleInventoryReset);
-      window.addEventListener('wcg_data_updated', handleInventoryReset);
+      window.addEventListener('pine_admin_data_updated', handleInventoryReset);
+      window.addEventListener('pine_data_updated', handleInventoryReset);
       window.addEventListener('beforeunload', () => {
         this.flushPendingCopyPush();
         this.flushSessionAnchor();
@@ -4860,7 +4860,7 @@ class MarketingService {
       });
     }
 
-    window.addEventListener('wcg_marketing_config_updated', (e: any) => {
+    window.addEventListener('pine_marketing_config_updated', (e: any) => {
       if (e.detail && typeof e.detail === 'object') {
         this.config = {
           ...DEFAULT_MARKETING_CONFIG,
@@ -4900,7 +4900,7 @@ class MarketingService {
       this.notifySoldCountChanged('*', 0);
     });
 
-    window.addEventListener('wcg_utilities_updated', (e: any) => {
+    window.addEventListener('pine_utilities_updated', (e: any) => {
       const list = Array.isArray(e.detail) ? e.detail : [];
       let changed = false;
       list.forEach((u: any) => {
@@ -4922,7 +4922,7 @@ class MarketingService {
       }
     });
 
-    window.addEventListener('wcg_giveaways_updated', (e: any) => {
+    window.addEventListener('pine_giveaways_updated', (e: any) => {
       const list = Array.isArray(e.detail) ? e.detail : [];
       let changed = false;
       list.forEach((gw: any) => {
@@ -4942,7 +4942,7 @@ class MarketingService {
       }
     });
 
-    window.addEventListener('wcg_store_products_updated', (e: any) => {
+    window.addEventListener('pine_store_products_updated', (e: any) => {
       const list = Array.isArray(e.detail) ? e.detail : [];
       let changed = false;
       list.forEach((p: any) => {
@@ -5047,7 +5047,7 @@ class MarketingService {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(MARKETING_CONFIG_KEY, JSON.stringify(this.config));
-        window.dispatchEvent(new CustomEvent('wcg_marketing_config_updated', { detail: this.config }));
+        window.dispatchEvent(new CustomEvent('pine_marketing_config_updated', { detail: this.config }));
       } catch (err) {
         console.error('Failed to save marketing config to localStorage', err);
       }
@@ -5058,13 +5058,13 @@ class MarketingService {
     try {
       const token =
         typeof window !== 'undefined'
-          ? localStorage.getItem('wcg_auth_token') ||
-            sessionStorage.getItem('wcg_auth_token') ||
+          ? localStorage.getItem('pine_auth_token') ||
+            sessionStorage.getItem('pine_auth_token') ||
             ''
           : '';
       const syncKey =
         typeof window !== 'undefined'
-          ? sessionStorage.getItem('wcg_admin_sync_key') || localStorage.getItem('wcg_admin_sync_key') || ''
+          ? sessionStorage.getItem('pine_admin_sync_key') || localStorage.getItem('pine_admin_sync_key') || ''
           : '';
 
       const headers: Record<string, string> = {
@@ -5078,8 +5078,8 @@ class MarketingService {
 
       const endpoints = [
         '/api/sync',
-        'https://web-code-game.pages.dev/api/sync',
-        'https://admin-code-game-shop.pages.dev/api/sync',
+        'https://universal-mall-shop.pages.dev/api/sync',
+        'https://admin-universal-mall.pages.dev/api/sync',
       ];
 
       const resList = await Promise.all(
@@ -5222,6 +5222,6 @@ export const marketingService = new MarketingService();
 if (typeof window !== 'undefined') {
   (window as any).marketingService = marketingService;
   (window as any).triggerMarketingToast = () => {
-    window.dispatchEvent(new CustomEvent('wcg_trigger_marketing_test'));
+    window.dispatchEvent(new CustomEvent('pine_trigger_marketing_test'));
   };
 }

@@ -283,7 +283,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   // 2. Không kèm Bearer token -> Trả về tài liệu hướng dẫn API công khai (TUYỆT ĐỐI KHÔNG lộ key)
   const doc = {
-    service: 'CodeGame Marketing & FOMO Independent Audit API (Muse Integration)',
+    service: 'Pine Universal Mall Marketing & FOMO Independent Audit API (Muse Integration)',
     version: '1.0.0',
     status: 'ONLINE',
     endpoint: `${urlObj.origin}/api/crawler/marketing`,

@@ -42,8 +42,8 @@ export const TranslationsModule: React.FC<TranslationsModuleProps> = ({ onShowTo
   useEffect(() => {
     loadData();
     const handleUpdate = () => loadData();
-    window.addEventListener('wcg_content_translations_updated', handleUpdate);
-    return () => window.removeEventListener('wcg_content_translations_updated', handleUpdate);
+    window.addEventListener('pine_content_translations_updated', handleUpdate);
+    return () => window.removeEventListener('pine_content_translations_updated', handleUpdate);
   }, []);
 
   // Filtered translations

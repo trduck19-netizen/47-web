@@ -94,8 +94,8 @@ export const Header: React.FC<HeaderProps> = ({
     const handleCartUpdate = (e: any) => {
       setCartCount(Number(e?.detail?.count ?? cartService.getCartCount()));
     };
-    window.addEventListener('wcg_cart_updated', handleCartUpdate);
-    return () => window.removeEventListener('wcg_cart_updated', handleCartUpdate);
+    window.addEventListener('pine_cart_updated', handleCartUpdate);
+    return () => window.removeEventListener('pine_cart_updated', handleCartUpdate);
   }, []);
 
   const [isGrowthEnabled, setIsGrowthEnabled] = useState(() => {
@@ -123,10 +123,10 @@ export const Header: React.FC<HeaderProps> = ({
       })
       .catch(() => {});
 
-    window.addEventListener('wcg_growth_config_updated', handleConfigUpdate);
+    window.addEventListener('pine_growth_config_updated', handleConfigUpdate);
     window.addEventListener('storage', handleConfigUpdate);
     return () => {
-      window.removeEventListener('wcg_growth_config_updated', handleConfigUpdate);
+      window.removeEventListener('pine_growth_config_updated', handleConfigUpdate);
       window.removeEventListener('storage', handleConfigUpdate);
     };
   }, []);
@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="font-display font-bold text-xs sm:text-base tracking-normal sm:tracking-wider text-foreground group-hover:text-primary-light transition-colors whitespace-nowrap">
                   {branding?.siteTitle && branding.siteTitle.toUpperCase() !== 'WEB CODE GAME' && branding.siteTitle.toUpperCase() !== 'WEB CODE'
                     ? branding.siteTitle
-                    : 'CodeGame.Shop'}
+                    : 'Pine Universal Mall'}
                 </span>
                 {branding?.siteTitle === 'WEB CODE' && (
                   <span className="text-[9px] sm:text-xs px-1 sm:px-1.5 py-0.2 rounded-md bg-accent/20 text-accent font-mono font-bold tracking-tight border border-accent/30">
@@ -322,7 +322,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onOpenDownloadApp}
               className="relative flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-2 rounded-xl bg-gradient-to-r from-primary/15 via-purple-500/15 to-accent/15 hover:from-primary/25 hover:to-accent/25 border border-primary/40 text-primary-light font-extrabold text-xs transition-all active:scale-95 shadow-sm cursor-pointer group shrink-0"
-              title={isEn ? 'Install App on mobile (Get instant codes & gifts)' : 'Cài đặt App CodeGame lên điện thoại (Nhận code mới & Quà tặng tức thì)'}
+              title={isEn ? 'Install App on mobile (Get instant codes & gifts)' : 'Cài đặt App Pine Universal Mall lên điện thoại (Nhận code mới & Quà tặng tức thì)'}
             >
               <Smartphone className="w-3.5 h-3.5 text-primary-light group-hover:scale-110 transition-transform" />
               <span className="hidden sm:inline">{isEn ? 'Download App' : 'Tải App'}</span>
@@ -677,7 +677,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {/* 5. Trang Quản Trị Admin */}
                       {(currentUser.role === 'admin' || currentUser.role === 'SUPER_ADMIN') && (
                         <a
-                          href="https://admin-code-game-shop.pages.dev"
+                          href="https://admin-universal-mall.pages.dev"
                           target="_blank"
                           rel="noreferrer"
                           onClick={() => setIsUserMenuOpen(false)}

@@ -19,7 +19,7 @@ class MissionService {
     }
 
     if (includeAdminSecret && typeof localStorage !== 'undefined') {
-      const syncKey = localStorage.getItem('wcg_admin_sync_key') || sessionStorage.getItem('wcg_admin_sync_key');
+      const syncKey = localStorage.getItem('pine_admin_sync_key') || sessionStorage.getItem('pine_admin_sync_key');
       if (syncKey) {
         headers['X-Sync-Key'] = syncKey;
       }

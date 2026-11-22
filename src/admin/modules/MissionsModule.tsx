@@ -172,7 +172,7 @@ export const MissionsModule: React.FC = () => {
       target_channel_url: '',
       guide_steps: [
         'Truy cập vào nhóm/trang theo liên kết được cung cấp.',
-        'Đăng một bài viết giới thiệu sàn CodeGame.Shop kèm nội dung yêu cầu.',
+        'Đăng một bài viết giới thiệu sàn Pine Universal Mall kèm nội dung yêu cầu.',
         'Lấy đường link bài đăng đã công khai và dán vào ô bằng chứng bên dưới.',
       ],
       content_requirements: 'Bài viết có ít nhất 15 từ, kèm hashtag #codegameshop #choigame và ảnh minh họa sàn.',

@@ -8,16 +8,16 @@
   <script>
     (function() {
       const ALLOWED_ORIGINS = new Set([
-        'https://codegame.shop',
-        'https://www.codegame.shop',
-        'https://web-code-game.pages.dev',
-        'https://admin-code-game-shop.pages.dev',
+        'https://universal-mall-shop.pages.dev',
+        'https://universal-mall-shop.pages.dev',
+        'https://universal-mall-shop.pages.dev',
+        'https://admin-universal-mall.pages.dev',
         window.location.origin
       ]);
 
       function isAllowed(origin) {
         if (ALLOWED_ORIGINS.has(origin)) return true;
-        if (origin.endsWith('.codegame.shop') || origin === 'https://codegame.shop') return true;
+        if (origin.endsWith('.codegame.shop') || origin === 'https://universal-mall-shop.pages.dev') return true;
         if (origin.endsWith('.web-code-game.pages.dev')) return true;
         if (origin.endsWith('.admin-code-game-shop.pages.dev')) return true;
         if (origin.includes('localhost') || origin.includes('127.0.0.1')) return true;

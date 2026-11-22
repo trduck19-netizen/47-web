@@ -81,7 +81,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
   // ==========================================
   // 0. WEBSITE BRANDING & ASSETS STATE
   // ==========================================
-  const [siteTitle, setSiteTitle] = useState('CodeGame.Shop');
+  const [siteTitle, setSiteTitle] = useState('Pine Universal Mall');
   const [portalSubtitle, setPortalSubtitle] = useState('Cổng Tra Cứu Giftcode #1');
   const [supportHotline, setSupportHotline] = useState('0987.654.321');
   const [currencyMode, setCurrencyMode] = useState<'VND' | 'CORE'>('VND');
@@ -148,10 +148,10 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
   // ==========================================
   // 6. FOOTER & BRANDING STATE
   // ==========================================
-  const [footerBrandTitle, setFooterBrandTitle] = useState('CodeGame.Shop');
+  const [footerBrandTitle, setFooterBrandTitle] = useState('Pine Universal Mall');
   const [footerLogoUrl, setFooterLogoUrl] = useState('');
   const [footerText, setFooterText] = useState(
-    'CodeGame.Shop — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'
+    'Pine Universal Mall — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'
   );
   const [footerBadge1Text, setFooterBadge1Text] = useState('Cloudflare Pages & D1');
   const [footerBadge1Visible, setFooterBadge1Visible] = useState(true);
@@ -208,10 +208,10 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
       loadCMSData();
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleUpdate);
+    window.addEventListener('pine_admin_data_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleUpdate);
+      window.removeEventListener('pine_admin_data_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -231,7 +231,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
         ? branding.title.trim()
         : !isLegacyOrEmpty(footerTitle)
         ? footerTitle!
-        : 'CodeGame.Shop';
+        : 'Pine Universal Mall';
       setSiteTitle(resolvedTitle);
 
       if (branding.extraData) {
@@ -346,12 +346,12 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
         setFooterText(footer.content);
       } else {
         setFooterText(
-          'CodeGame.Shop — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'
+          'Pine Universal Mall — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'
         );
       }
       if (footer.extraData) {
         if (footer.extraData.brandTitle !== undefined) {
-          setFooterBrandTitle(!isLegacyOrEmpty(footer.extraData.brandTitle) ? footer.extraData.brandTitle : 'CodeGame.Shop');
+          setFooterBrandTitle(!isLegacyOrEmpty(footer.extraData.brandTitle) ? footer.extraData.brandTitle : 'Pine Universal Mall');
         }
         if (footer.extraData.brandLogo !== undefined) setFooterLogoUrl(footer.extraData.brandLogo);
         if (footer.extraData.badge1Text !== undefined) setFooterBadge1Text(footer.extraData.badge1Text);
@@ -365,7 +365,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
       }
     } else {
       setFooterText(
-        'CodeGame.Shop — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'
+        'Pine Universal Mall — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'
       );
     }
 
@@ -504,7 +504,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
           const currentSiteTitle =
             siteTitle.trim() && siteTitle.trim().toUpperCase() !== 'WEB CODE GAME' && siteTitle.trim().toUpperCase() !== 'WEB CODE'
               ? siteTitle.trim()
-              : 'CodeGame.Shop';
+              : 'Pine Universal Mall';
           const currentLogoUrl = logoUrl.trim();
           adminDataService.saveContentItem({
             key: 'website_branding',
@@ -620,7 +620,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
           break;
 
         case 'footer':
-          const currentFooterTitle = footerBrandTitle.trim() || 'CodeGame.Shop';
+          const currentFooterTitle = footerBrandTitle.trim() || 'Pine Universal Mall';
           const currentFooterLogo = footerLogoUrl.trim();
           adminDataService.saveContentItem({
             key: 'footer_support',
@@ -703,7 +703,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
         }
       }
 
-      await adminDataService.syncToCloudflareKV('wcg_admin_content_v4', adminDataService.getContentItems());
+      await adminDataService.syncToCloudflareKV('pine_admin_content_v4', adminDataService.getContentItems());
       onShowToast('Đã Lưu Thành Công!', 'Nội dung đã được cập nhật và đồng bộ Real-time lên Web Khách.', 'success');
     } catch (err: any) {
       console.error('Error saving CMS section:', err);
@@ -728,7 +728,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
       const allSiteTitle =
         siteTitle.trim() && siteTitle.trim().toUpperCase() !== 'WEB CODE GAME' && siteTitle.trim().toUpperCase() !== 'WEB CODE'
           ? siteTitle.trim()
-          : 'CodeGame.Shop';
+          : 'Pine Universal Mall';
       const allLogoUrl = logoUrl.trim();
       adminDataService.saveContentItem({
         key: 'website_branding',
@@ -867,7 +867,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
       adminDataService.saveProductCategoriesConfig(allFinalCfg);
       setCategoriesConfig(allFinalCfg);
 
-      await adminDataService.syncToCloudflareKV('wcg_admin_content_v4', adminDataService.getContentItems());
+      await adminDataService.syncToCloudflareKV('pine_admin_content_v4', adminDataService.getContentItems());
 
       onShowToast(
         'Đã Lưu Tất Cả Nội Dung & Thiết Lập Web!',
@@ -1666,10 +1666,10 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
                     type="text"
                     value={footerBrandTitle}
                     onChange={(e) => setFooterBrandTitle(e.target.value)}
-                    placeholder="VD: CodeGame.Shop"
+                    placeholder="VD: Pine Universal Mall"
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-bold text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
-                  <p className="mt-1 text-[11px] text-slate-500">Mặc định: CodeGame.Shop (để trống sẽ dùng tên website).</p>
+                  <p className="mt-1 text-[11px] text-slate-500">Mặc định: Pine Universal Mall (để trống sẽ dùng tên website).</p>
                 </div>
 
                 <div>
@@ -1708,7 +1708,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
                   required
                   value={footerText}
                   onChange={(e) => setFooterText(e.target.value)}
-                  placeholder="CodeGame.Shop — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức."
+                  placeholder="Pine Universal Mall — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức."
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white leading-relaxed"
                 />
               </div>
@@ -1799,11 +1799,11 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
                       />
                     </div>
                     <span className="font-bold text-sm text-white tracking-wider">
-                      {footerBrandTitle || siteTitle || 'CodeGame.Shop'}
+                      {footerBrandTitle || siteTitle || 'Pine Universal Mall'}
                     </span>
                   </div>
                   <p className="text-slate-300 text-xs leading-relaxed max-w-lg">
-                    {footerText || 'CodeGame.Shop — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'}
+                    {footerText || 'Pine Universal Mall — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.'}
                   </p>
                   <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                     {footerBadge1Visible && (
@@ -2018,13 +2018,13 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
                       setFooterBrandTitle(val);
                     }
                   }}
-                  placeholder="VD: CodeGame.Shop"
+                  placeholder="VD: Pine Universal Mall"
                   className="flex-1 rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-bold text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => {
-                    const titleToSync = siteTitle.trim() || 'CodeGame.Shop';
+                    const titleToSync = siteTitle.trim() || 'Pine Universal Mall';
                     setFooterBrandTitle(titleToSync);
                     onShowToast('Đã Đồng Bộ!', `Đã gán tên "${titleToSync}" cho cả Chân Trang.`, 'info');
                   }}
@@ -2300,7 +2300,7 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
                       )}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-bold text-white text-xs truncate">{siteTitle || 'CodeGame.Shop'}</span>
+                      <span className="font-bold text-white text-xs truncate">{siteTitle || 'Pine Universal Mall'}</span>
                       <span className="text-[10px] text-slate-400 truncate">{portalSubtitle || 'Cổng Tra Cứu Giftcode #1'}</span>
                     </div>
                   </div>

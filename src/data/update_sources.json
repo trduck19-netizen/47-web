@@ -1,8 +1,8 @@
 [
   {
     "id": "codegame_store",
-    "name": "CodeGame Store",
-    "url": "https://codegame.store/",
+    "name": "Pine Mall Store",
+    "url": "https://universal-mall-shop.pages.dev/",
     "type": "CRAWLER_PRIMARY",
     "status": "ACTIVE",
     "description": "Nguồn tổng hợp giftcode game mobile, webgame bản quyền G1 và mã quà tặng độc quyền.",

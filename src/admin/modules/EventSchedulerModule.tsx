@@ -342,7 +342,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
     eventSchedulerService.saveSchedule(record);
     // Push sync to server D1 / Edge Cache
     try {
-      (adminDataService as any).syncToCloudflareKV('wcg_event_schedules_v1', eventSchedulerService.getSchedules());
+      (adminDataService as any).syncToCloudflareKV('pine_event_schedules_v1', eventSchedulerService.getSchedules());
     } catch {}
 
     setIsFormOpen(false);
@@ -353,7 +353,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
   const handleToggleActive = (id: string) => {
     eventSchedulerService.toggleScheduleActive(id);
     try {
-      (adminDataService as any).syncToCloudflareKV('wcg_event_schedules_v1', eventSchedulerService.getSchedules());
+      (adminDataService as any).syncToCloudflareKV('pine_event_schedules_v1', eventSchedulerService.getSchedules());
     } catch {}
     onShowToast('Đã lưu', 'Đã thay đổi trạng thái kích hoạt sự kiện', 'info');
   };
@@ -363,7 +363,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
     if (!deletingItem) return;
     eventSchedulerService.deleteSchedule(deletingItem.id);
     try {
-      (adminDataService as any).syncToCloudflareKV('wcg_event_schedules_v1', eventSchedulerService.getSchedules());
+      (adminDataService as any).syncToCloudflareKV('pine_event_schedules_v1', eventSchedulerService.getSchedules());
     } catch {}
     setDeletingItem(null);
     onShowToast('Đã xóa', 'Đã xóa lịch sự kiện thành công', 'success');
@@ -392,12 +392,12 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
 
   const getAdminHeaders = (): Record<string, string> => {
     const token =
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_auth_token') ||
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_auth_token') ||
       '';
     const syncKey =
-      sessionStorage.getItem('wcg_admin_sync_key') ||
-      localStorage.getItem('wcg_admin_sync_key') ||
+      sessionStorage.getItem('pine_admin_sync_key') ||
+      localStorage.getItem('pine_admin_sync_key') ||
       '';
 
     const headers: Record<string, string> = {
@@ -915,7 +915,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
               <div className="py-8 text-center space-y-2">
                 <p className="text-xs text-neutral-400">Chưa có khóa API tùy chỉnh nào được tạo riêng cho Lịch Sự Kiện.</p>
                 <p className="text-[11px] text-amber-400 font-mono">
-                  Khóa mặc định toàn sàn: <strong>wcg_ev_••••••••••••••••••••</strong>
+                  Khóa mặc định toàn sàn: <strong>pine_ev_••••••••••••••••••••</strong>
                 </p>
               </div>
             ) : (
@@ -948,7 +948,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
                             <span className="text-[10px] text-neutral-500 font-mono">{keyItem.id}</span>
                           </td>
                           <td className="p-3 font-mono text-[11px] text-amber-400">
-                            {keyItem.key_prefix || (keyItem.raw_key ? keyItem.raw_key.substring(0, 16) + '...' : 'wcg_ev_...')}
+                            {keyItem.key_prefix || (keyItem.raw_key ? keyItem.raw_key.substring(0, 16) + '...' : 'pine_ev_...')}
                           </td>
                           <td className="p-3">
                             <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
@@ -1105,7 +1105,7 @@ export const EventSchedulerModule: React.FC<EventSchedulerModuleProps> = ({ onSh
                   type="text"
                   value={testApiKey}
                   onChange={(e) => setTestApiKey(e.target.value)}
-                  placeholder="wcg_ev_..."
+                  placeholder="pine_ev_..."
                   className="w-full font-mono rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
                 />
               </div>

@@ -337,7 +337,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
             <div>
               <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                CodeGame Admin
+                Pine Universal Mall
               </h1>
               <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
                 PRO PORTAL v2.5
@@ -417,7 +417,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         onSelectTab(item.id);
                         if (item.id === 'news' && currentTab !== 'news') {
                           window.location.hash = '#/news';
-                          window.dispatchEvent(new CustomEvent('wcg_admin_news_subtab', { detail: 'news' }));
+                          window.dispatchEvent(new CustomEvent('pine_admin_news_subtab', { detail: 'news' }));
                         }
                       }}
                       title={collapsed ? item.label : undefined}
@@ -459,7 +459,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                             e.stopPropagation();
                             onSelectTab('news');
                             window.location.hash = '#/news';
-                            window.dispatchEvent(new CustomEvent('wcg_admin_news_subtab', { detail: 'news' }));
+                            window.dispatchEvent(new CustomEvent('pine_admin_news_subtab', { detail: 'news' }));
                           }}
                           className={`w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
                             currentTab === 'news' && (typeof window !== 'undefined' && !window.location.hash.includes('tab=events') && !window.location.hash.includes('tab=pending'))
@@ -476,7 +476,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                             e.stopPropagation();
                             onSelectTab('news');
                             window.location.hash = '#/news?tab=events';
-                            window.dispatchEvent(new CustomEvent('wcg_admin_news_subtab', { detail: 'events' }));
+                            window.dispatchEvent(new CustomEvent('pine_admin_news_subtab', { detail: 'events' }));
                           }}
                           className={`w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
                             currentTab === 'news' && (typeof window !== 'undefined' && window.location.hash.includes('tab=events'))
@@ -493,7 +493,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                             e.stopPropagation();
                             onSelectTab('news');
                             window.location.hash = '#/news?tab=pending';
-                            window.dispatchEvent(new CustomEvent('wcg_admin_news_subtab', { detail: 'pending' }));
+                            window.dispatchEvent(new CustomEvent('pine_admin_news_subtab', { detail: 'pending' }));
                           }}
                           className={`w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
                             currentTab === 'news' && (typeof window !== 'undefined' && window.location.hash.includes('tab=pending'))

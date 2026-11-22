@@ -111,7 +111,7 @@ export const CodePlaygroundModal: React.FC<CodePlaygroundModalProps> = ({
             </div>
 
             <h4 className="font-heading font-bold text-base text-foreground mb-1">
-              Thử Vận May Cùng CodeGame.Shop
+              Thử Vận May Cùng Pine Universal Mall
             </h4>
             <p className="text-xs text-muted-foreground max-w-xs mx-auto mb-4">
               Nhấn nút bên dưới để hệ thống chọn ngẫu nhiên 1 mã giftcode đặc biệt kèm phần thưởng cho bạn!

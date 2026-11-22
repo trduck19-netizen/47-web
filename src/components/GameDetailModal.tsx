@@ -167,7 +167,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
     const slug = (liveGame?.slug || liveGame?.id || game?.slug || game?.id || '').toLowerCase();
     if (!slug) return;
     try {
-      const saved = localStorage.getItem(`wcg_reported_codes_${slug}`);
+      const saved = localStorage.getItem(`pine_reported_codes_${slug}`);
       if (saved) {
         setReportedCodes(JSON.parse(saved));
       } else {
@@ -177,7 +177,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
   }, [liveGame?.slug, liveGame?.id, game?.slug, game?.id]);
 
   const handleReportCode = async (codeStr: string) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('wcg_auth_token') || '' : '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('pine_auth_token') || '' : '';
     if (!activeUser || !token) {
       if (onOpenAuth) onOpenAuth();
       else setIsAuthPromptOpen(true);
@@ -213,7 +213,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
         const next = { ...reportedCodes, [codeStr]: true };
         setReportedCodes(next);
         try {
-          localStorage.setItem(`wcg_reported_codes_${slug}`, JSON.stringify(next));
+          localStorage.setItem(`pine_reported_codes_${slug}`, JSON.stringify(next));
         } catch {}
         onShowToast(
           'Báo lỗi thành công',
@@ -224,7 +224,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
         const next = { ...reportedCodes, [codeStr]: true };
         setReportedCodes(next);
         try {
-          localStorage.setItem(`wcg_reported_codes_${slug}`, JSON.stringify(next));
+          localStorage.setItem(`pine_reported_codes_${slug}`, JSON.stringify(next));
         } catch {}
         onShowToast('Đã báo trước đó', data.error || 'Bạn đã báo lỗi mã này rồi.', 'info');
       } else if (res.status === 429) {
@@ -247,7 +247,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
       return;
     }
     setIsLoadingComments(true);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('wcg_auth_token') || '' : '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('pine_auth_token') || '' : '';
     try {
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -277,7 +277,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = typeof window !== 'undefined' ? localStorage.getItem('wcg_auth_token') || '' : '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('pine_auth_token') || '' : '';
     if (!activeUser || !token) {
       if (onOpenAuth) onOpenAuth();
       else setIsAuthPromptOpen(true);
@@ -341,7 +341,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
   useEffect(() => {
     const slug = (liveGame?.slug || liveGame?.id || game?.slug || game?.id || '').toLowerCase();
     if (!slug) return;
-    const token = typeof window !== 'undefined' ? localStorage.getItem('wcg_auth_token') || '' : '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('pine_auth_token') || '' : '';
     if (token) {
       telegramService.getUserStatus(token).then((res) => {
         if (res && Array.isArray(res.subscriptions)) {
@@ -355,7 +355,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
   }, [liveGame?.slug, liveGame?.id, game?.slug, game?.id]);
 
   const handleToggleFollow = async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('wcg_auth_token') || '' : '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('pine_auth_token') || '' : '';
     if (!activeUser || !token) {
       if (onOpenAuth) {
         onOpenAuth();
@@ -396,7 +396,7 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
   };
 
   const handleTelegramFollowClick = async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('wcg_auth_token') || '' : '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('pine_auth_token') || '' : '';
     if (!activeUser || !token) {
       if (onOpenAuth) {
         onOpenAuth();
@@ -583,8 +583,8 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
     }
 
     const codeList = targetCodes.map((c) => c.code.trim()).filter(Boolean);
-    const gameLink = `https://codegame.shop/game/${currentGame.slug || currentGame.id || ''}`;
-    const watermark = `\n\n📌 Nguồn: CodeGame.shop - Cổng Tra Cứu Giftcode Bản Quyền G1\n👉 Nhận thêm mã VIP miễn phí tại: ${gameLink}`;
+    const gameLink = `https://universal-mall-shop.pages.dev/game/${currentGame.slug || currentGame.id || ''}`;
+    const watermark = `\n\n📌 Nguồn: Pine Universal Mall - Cổng Tra Cứu Giftcode Bản Quyền G1\n👉 Nhận thêm mã VIP miễn phí tại: ${gameLink}`;
     const codeString = codeList.join('\n') + watermark;
 
     const ok = await copyToClipboard(codeString);
@@ -827,8 +827,8 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
               {/* Nút Chia Sẻ Qua Telegram (Mục 3.1) */}
               <a
                 href={telegramService.getShareUrl(
-                  `https://codegame.shop/game/${currentGame.slug || currentGame.id}`,
-                  `Nhận trọn bộ Giftcode ${currentGame.name} mới nhất 2026 tại CodeGame.Shop`
+                  `https://universal-mall-shop.pages.dev/game/${currentGame.slug || currentGame.id}`,
+                  `Nhận trọn bộ Giftcode ${currentGame.name} mới nhất 2026 tại Pine Universal Mall`
                 )}
                 target="_blank"
                 rel="noopener noreferrer"

@@ -168,15 +168,15 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
   const [filteredGameSlug, setFilteredGameSlug] = useState<string | undefined>(undefined);
 
   // Authentication Guard State
-  // SECURITY: never trust the client-side 'wcg_admin_authenticated' flag.
+  // SECURITY: never trust the client-side 'pine_admin_authenticated' flag.
   // isAuthenticated only becomes true after /api/auth/me confirms role === 'admin'.
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isVerifying, setIsVerifying] = useState<boolean>(() => {
-    const hasToken = Boolean(localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token'));
+    const hasToken = Boolean(localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token'));
     // Flag only narrows (respects logout); it never grants access without server verification.
     const hasAdminFlag =
-      localStorage.getItem('wcg_admin_authenticated') === 'true' ||
-      sessionStorage.getItem('wcg_admin_authenticated') === 'true';
+      localStorage.getItem('pine_admin_authenticated') === 'true' ||
+      sessionStorage.getItem('pine_admin_authenticated') === 'true';
     return hasToken && hasAdminFlag;
   });
 
@@ -193,12 +193,12 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
   const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string>('');
 
   const clearAdminFlags = () => {
-    localStorage.removeItem('wcg_admin_authenticated');
-    sessionStorage.removeItem('wcg_admin_authenticated');
-    localStorage.removeItem('wcg_auth_token');
-    sessionStorage.removeItem('wcg_auth_token');
-    localStorage.removeItem('wcg_auth_user');
-    sessionStorage.removeItem('wcg_auth_user');
+    localStorage.removeItem('pine_admin_authenticated');
+    sessionStorage.removeItem('pine_admin_authenticated');
+    localStorage.removeItem('pine_auth_token');
+    sessionStorage.removeItem('pine_auth_token');
+    localStorage.removeItem('pine_auth_user');
+    sessionStorage.removeItem('pine_auth_user');
   };
 
   /**
@@ -223,8 +223,8 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
    */
   const verifyAdminSession = async (): Promise<boolean> => {
     const token =
-      localStorage.getItem('wcg_auth_token') ||
-      sessionStorage.getItem('wcg_auth_token') ||
+      localStorage.getItem('pine_auth_token') ||
+      sessionStorage.getItem('pine_auth_token') ||
       '';
 
     if (!token) {
@@ -256,14 +256,14 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
         const roleUpper = String(data?.user?.role || '').toUpperCase();
         if (data?.success && data?.user && (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN')) {
           if (data?.syncKey) {
-            localStorage.setItem('wcg_admin_sync_key', data.syncKey);
-            sessionStorage.setItem('wcg_admin_sync_key', data.syncKey);
+            localStorage.setItem('pine_admin_sync_key', data.syncKey);
+            sessionStorage.setItem('pine_admin_sync_key', data.syncKey);
           }
           if (data.user) {
             const adminUser: AdminUser = {
               id: data.user.id || 'usr_admin',
               displayName: data.user.displayName || data.user.username || 'Admin',
-              email: data.user.email || 'admin@codegame.shop',
+              email: data.user.email || '',
               role: 'SUPER_ADMIN',
               avatar: data.user.avatar_url || '/logo.png',
               permissions: [
@@ -326,7 +326,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
 
   useEffect(() => {
     // Initialize Theme
-    const savedTheme = localStorage.getItem('wcg_theme');
+    const savedTheme = localStorage.getItem('pine_theme');
     const metaCs = document.querySelector('meta[name="color-scheme"]');
     if (savedTheme === 'light') {
       setIsDarkMode(false);
@@ -352,7 +352,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
     // 2. BroadcastChannel for instant cross-tab sync
     let channel: BroadcastChannel | null = null;
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channel = new BroadcastChannel('wcg_data_sync');
+      channel = new BroadcastChannel('pine_data_sync');
       channel.onmessage = (e) => {
         if (e.data?.type === 'MEMBER_REGISTERED') {
           const m = e.data.payload || e.data.user;
@@ -378,11 +378,11 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       );
       refreshPendingCounts();
     };
-    window.addEventListener('wcg_user_registered', handleUserRegistered);
+    window.addEventListener('pine_user_registered', handleUserRegistered);
 
     return () => {
       if (channel) channel.close();
-      window.removeEventListener('wcg_user_registered', handleUserRegistered);
+      window.removeEventListener('pine_user_registered', handleUserRegistered);
     };
   }, [isAuthenticated]);
 
@@ -457,13 +457,13 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
         document.documentElement.classList.remove('light');
         document.documentElement.style.colorScheme = 'dark';
         if (metaCs) metaCs.setAttribute('content', 'dark');
-        localStorage.setItem('wcg_theme', 'dark');
+        localStorage.setItem('pine_theme', 'dark');
       } else {
         document.documentElement.classList.remove('dark');
         document.documentElement.classList.add('light');
         document.documentElement.style.colorScheme = 'light';
         if (metaCs) metaCs.setAttribute('content', 'light');
-        localStorage.setItem('wcg_theme', 'light');
+        localStorage.setItem('pine_theme', 'light');
       }
       return next;
     });
@@ -517,7 +517,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
     } else {
       const isTestAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-test-code-game-shop');
       if (isTestAdmin) {
-        const target = isEn ? 'https://test-code-game-shop.pages.dev/en/' : 'https://test-code-game-shop.pages.dev/';
+        const target = isEn ? 'https://universal-mall-shop.pages.dev/en/' : 'https://universal-mall-shop.pages.dev/';
         const newWin = window.open(target, '_blank');
         if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
           window.location.href = target;
@@ -533,9 +533,10 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
         }
         return;
       }
-      const isDedicatedAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-code-game-shop');
+      const isDedicatedAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-universal-mall') || hostname.includes('admin-universal-mall') || hostname.includes('admin-universal-mall') || hostname.includes('admin-universal-mall') || hostname.includes('admin-code-game-shop');
       if (isDedicatedAdmin) {
-        const target = isEn ? 'https://codegame.shop/en/' : 'https://codegame.shop/';
+        const clientOrigin = (import.meta.env.VITE_SITE_URL || 'https://universal-mall-shop.pages.dev').replace(/\/$/, '');
+        const target = isEn ? `${clientOrigin}/en/` : `${clientOrigin}/`;
         const newWin = window.open(target, '_blank');
         if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
           window.location.href = target;
@@ -556,7 +557,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
   const handleLoginSuccess = async (user: AdminUser) => {
     setCurrentUser(user);
     setIsAuthenticated(true);
-    localStorage.setItem('wcg_admin_authenticated', 'true');
+    localStorage.setItem('pine_admin_authenticated', 'true');
     showToast('Xác thực thành công', `Chào mừng ${user.displayName} đến với Admin Console.`, 'success');
 
     // Asynchronously refresh session in background without blocking console access

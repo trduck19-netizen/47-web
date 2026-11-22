@@ -908,7 +908,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   }
 
   const doc = {
-    service: 'CodeGame Crawler & Bot Ingestion API (Muse Integration)',
+    service: 'Pine Universal Mall Crawler & Bot Ingestion API (Muse Integration)',
     version: '1.0.0',
     status: 'ONLINE',
     endpoint: `${urlObj.origin}/api/crawler/ingest-codes`,
@@ -1112,7 +1112,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return new Response(
       JSON.stringify({
         success: true,
-        service: 'CodeGame Crawler & Bot Ingestion API (Muse Integration)',
+        service: 'Pine Universal Mall Crawler & Bot Ingestion API (Muse Integration)',
         version: '1.0.0',
         status: 'ONLINE',
         authorized: true,
@@ -1451,10 +1451,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           await setSettingD1(env.DB, 'wcg_admin_games_v5', activeGames);
           invalidateGamesCatalogCache();
           await invalidateCatalogEdgeCache(context as any, request, env, [
-            `https://codegame.shop/api/games?slug=${targetSlug}`,
-            `https://codegame.shop/api/games?id=${targetSlug}`,
+            `https://universal-mall-shop.pages.dev/api/games?slug=${targetSlug}`,
+            `https://universal-mall-shop.pages.dev/api/games?id=${targetSlug}`,
             new URL(`/api/games?slug=${targetSlug}`, request.url).toString(),
-            `https://codegame.shop/game/${targetSlug}`,
+            `https://universal-mall-shop.pages.dev/game/${targetSlug}`,
           ]).catch(() => {});
         }
 
@@ -1673,17 +1673,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       invalidateGamesCatalogCache();
       const specificUrls = [
-        `https://codegame.shop/api/games?slug=${finalSlug}`,
-        `https://codegame.shop/api/games?id=${finalSlug}`,
-        `https://web-code-game.pages.dev/api/games?slug=${finalSlug}`,
-        `https://web-code-game.pages.dev/api/games?id=${finalSlug}`,
+        `https://universal-mall-shop.pages.dev/api/games?slug=${finalSlug}`,
+        `https://universal-mall-shop.pages.dev/api/games?id=${finalSlug}`,
+        `https://universal-mall-shop.pages.dev/api/games?slug=${finalSlug}`,
+        `https://universal-mall-shop.pages.dev/api/games?id=${finalSlug}`,
         new URL(`/api/games?slug=${finalSlug}`, request.url).toString(),
         new URL(`/api/games?id=${finalSlug}`, request.url).toString(),
-        `https://codegame.shop/game/${finalSlug}`,
-        `https://web-code-game.pages.dev/game/${finalSlug}`,
+        `https://universal-mall-shop.pages.dev/game/${finalSlug}`,
+        `https://universal-mall-shop.pages.dev/game/${finalSlug}`,
         new URL(`/game/${finalSlug}`, request.url).toString(),
-        'https://codegame.shop/api/games',
-        'https://web-code-game.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/games',
         new URL('/api/games', request.url).toString(),
       ];
       await invalidateCatalogEdgeCache(context as any, request, env, specificUrls).catch(() => {});
@@ -1905,7 +1905,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
               expires_at: c.expiresAt,
               expiresAt: c.expiresAt,
               expiry: c.expiresAt,
-              sourceUrl: sourceUrl || `https://codegame.shop/game/${rawSlug}`,
+              sourceUrl: sourceUrl || `https://universal-mall-shop.pages.dev/game/${rawSlug}`,
               source: source || auth.botName || 'Queue Game API',
               copyCount: 100 + Math.floor(Math.random() * 200),
               createdAt: nowIso,
@@ -2217,8 +2217,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // Xóa cache Edge
       invalidateGamesCatalogCache();
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        `https://codegame.shop/api/games?slug=${targetSlug}`,
-        `https://codegame.shop/game/${targetSlug}`,
+        `https://universal-mall-shop.pages.dev/api/games?slug=${targetSlug}`,
+        `https://universal-mall-shop.pages.dev/game/${targetSlug}`,
       ]).catch(() => {});
 
       return new Response(
@@ -2387,7 +2387,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
               expires_at: parsedExp.formatted || rawExpiry || null,
               expiresAt: parsedExp.formatted || rawExpiry || null,
               expiry: parsedExp.formatted || rawExpiry || null,
-              sourceUrl: item.sourceUrl || `https://codegame.shop/game/${targetSlug}`,
+              sourceUrl: item.sourceUrl || `https://universal-mall-shop.pages.dev/game/${targetSlug}`,
               source: item.sourceName || item.sourceUrl || item.sourceType || 'Crawler Approved',
               copyCount: 0,
               createdAt: new Date().toISOString(),
@@ -3137,10 +3137,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       (globalThis as any).cachedAutocompleteGamesList = null;
       invalidateGamesCatalogCache();
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        'https://codegame.shop/api/games',
-        'https://codegame.shop/api/crawler/ingest-codes',
-        'https://codegame.shop/api/sync',
-        `https://codegame.shop/game/${matchedSlug}`,
+        'https://universal-mall-shop.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+        'https://universal-mall-shop.pages.dev/api/sync',
+        `https://universal-mall-shop.pages.dev/game/${matchedSlug}`,
       ]).catch(() => {});
 
       return new Response(
@@ -3361,10 +3361,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       (globalThis as any).cachedAutocompleteGamesList = null;
       invalidateGamesCatalogCache();
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        'https://codegame.shop/api/games',
-        'https://codegame.shop/api/crawler/ingest-codes',
-        'https://codegame.shop/api/sync',
-        `https://codegame.shop/game/${matchedSlug}`,
+        'https://universal-mall-shop.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+        'https://universal-mall-shop.pages.dev/api/sync',
+        `https://universal-mall-shop.pages.dev/game/${matchedSlug}`,
       ]).catch(() => {});
 
       return new Response(
@@ -3411,7 +3411,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       if (cleanIconUrl.startsWith('http://') || cleanIconUrl.startsWith('https://')) {
         try {
           const parsedUrl = new URL(cleanIconUrl);
-          const allowedHosts = ['codegame.shop', 'web-code-game.pages.dev', 'admin-code-game-shop.pages.dev', 'localhost'];
+          const allowedHosts = ['universal-mall-shop.pages.dev', 'admin-universal-mall.pages.dev', 'codegame.shop', 'localhost'];
           if (!allowedHosts.some(h => parsedUrl.hostname === h || parsedUrl.hostname.endsWith('.' + h))) {
             return new Response(
               JSON.stringify({
@@ -3491,10 +3491,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
       }
 
-      // 3. Fallback: kiểm tra qua https://codegame.shop nếu đang ở môi trường dev/staging
+      // 3. Fallback: kiểm tra qua https://universal-mall-shop.pages.dev nếu đang ở môi trường dev/staging
       if (!iconFileExists) {
         try {
-          const prodUrl = `https://codegame.shop${cleanIconUrl}`;
+          const prodUrl = `https://universal-mall-shop.pages.dev${cleanIconUrl}`;
           const prodRes = await fetch(prodUrl, { method: 'GET' });
           if (prodRes.status === 200) {
             const buf = await prodRes.arrayBuffer();
@@ -3595,10 +3595,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       (globalThis as any).cachedAutocompleteGamesList = null;
       invalidateGamesCatalogCache();
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        'https://codegame.shop/api/games',
-        'https://codegame.shop/api/crawler/ingest-codes',
-        'https://codegame.shop/api/sync',
-        `https://codegame.shop/game/${matchedSlug}`,
+        'https://universal-mall-shop.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+        'https://universal-mall-shop.pages.dev/api/sync',
+        `https://universal-mall-shop.pages.dev/game/${matchedSlug}`,
       ]).catch(() => {});
 
       return new Response(
@@ -3855,11 +3855,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       (globalThis as any).cachedAutocompleteGamesList = null;
       invalidateGamesCatalogCache();
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        'https://codegame.shop/api/games',
-        'https://codegame.shop/api/crawler/ingest-codes',
-        'https://codegame.shop/api/sync',
-        `https://codegame.shop/game/${targetSlug}`,
-        `https://codegame.shop/game_icons/${targetSlug}.webp`,
+        'https://universal-mall-shop.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+        'https://universal-mall-shop.pages.dev/api/sync',
+        `https://universal-mall-shop.pages.dev/game/${targetSlug}`,
+        `https://universal-mall-shop.pages.dev/game_icons/${targetSlug}.webp`,
       ]).catch(() => {});
 
       return new Response(
@@ -3938,9 +3938,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       (globalThis as any).__wcg_public_sync_cache = null;
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        'https://codegame.shop/api/games',
-        'https://codegame.shop/api/crawler/ingest-codes',
-        'https://codegame.shop/api/sync',
+        'https://universal-mall-shop.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+        'https://universal-mall-shop.pages.dev/api/sync',
       ]).catch(() => {});
 
       return new Response(
@@ -3994,8 +3994,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       (globalThis as any).__wcg_public_sync_cache = null;
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        'https://codegame.shop/api/sync',
-        'https://codegame.shop/api/crawler/ingest-codes',
+        'https://universal-mall-shop.pages.dev/api/sync',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
       ]).catch(() => {});
 
       return new Response(
@@ -4084,8 +4084,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           request,
           env,
           additionalPurgeUrls: [
-            'https://codegame.shop/api/crawler/ingest-codes',
-            'https://codegame.shop/api/sync',
+            'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+            'https://universal-mall-shop.pages.dev/api/sync',
           ],
         });
       }
@@ -4098,8 +4098,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       (globalThis as any).__wcg_public_sync_cache = null;
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        'https://codegame.shop/api/crawler/ingest-codes',
-        'https://codegame.shop/api/sync',
+        'https://universal-mall-shop.pages.dev/api/crawler/ingest-codes',
+        'https://universal-mall-shop.pages.dev/api/sync',
       ]).catch(() => {});
 
       return new Response(JSON.stringify({
@@ -4167,11 +4167,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           request,
           env,
           additionalPurgeUrls: [
-            `https://codegame.shop/api/games?slug=${targetSlug}`,
-            `https://codegame.shop/api/games?id=${targetSlug}`,
+            `https://universal-mall-shop.pages.dev/api/games?slug=${targetSlug}`,
+            `https://universal-mall-shop.pages.dev/api/games?id=${targetSlug}`,
             new URL(`/api/games?slug=${targetSlug}`, request.url).toString(),
-            `https://codegame.shop/game/${targetSlug}`,
-            'https://codegame.shop/api/sync',
+            `https://universal-mall-shop.pages.dev/game/${targetSlug}`,
+            'https://universal-mall-shop.pages.dev/api/sync',
           ],
         });
       }
@@ -4179,11 +4179,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       invalidateGamesCatalogCache();
       (globalThis as any).__wcg_public_sync_cache = null;
       await invalidateCatalogEdgeCache(context as any, request, env, [
-        `https://codegame.shop/api/games?slug=${targetSlug}`,
-        `https://codegame.shop/api/games?id=${targetSlug}`,
+        `https://universal-mall-shop.pages.dev/api/games?slug=${targetSlug}`,
+        `https://universal-mall-shop.pages.dev/api/games?id=${targetSlug}`,
         new URL(`/api/games?slug=${targetSlug}`, request.url).toString(),
-        `https://codegame.shop/game/${targetSlug}`,
-        'https://codegame.shop/api/sync',
+        `https://universal-mall-shop.pages.dev/game/${targetSlug}`,
+        'https://universal-mall-shop.pages.dev/api/sync',
       ]).catch(() => {});
 
       return new Response(
@@ -4930,7 +4930,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           expires_at: c.expiresAt,
           expiresAt: c.expiresAt,
           expiry: c.expiresAt,
-          sourceUrl: rawItem.sourceUrl || `https://codegame.shop/game/${gameSlug}`,
+          sourceUrl: rawItem.sourceUrl || `https://universal-mall-shop.pages.dev/game/${gameSlug}`,
           source: rawItem.source || auth.botName || 'Muse External Ingest API',
           extractionMethod: c.extractionMethod || 'api',
           crossCheckCount: c.crossCheckCount || 1,
@@ -5291,20 +5291,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const specificGameUrls: string[] = [];
       for (const s of ingestedSlugs) {
         specificGameUrls.push(
-          `https://codegame.shop/api/games?slug=${s}`,
-          `https://codegame.shop/api/games?id=${s}`,
-          `https://web-code-game.pages.dev/api/games?slug=${s}`,
-          `https://web-code-game.pages.dev/api/games?id=${s}`,
+          `https://universal-mall-shop.pages.dev/api/games?slug=${s}`,
+          `https://universal-mall-shop.pages.dev/api/games?id=${s}`,
+          `https://universal-mall-shop.pages.dev/api/games?slug=${s}`,
+          `https://universal-mall-shop.pages.dev/api/games?id=${s}`,
           new URL(`/api/games?slug=${s}`, request.url).toString(),
           new URL(`/api/games?id=${s}`, request.url).toString(),
-          `https://codegame.shop/game/${s}`,
-          `https://web-code-game.pages.dev/game/${s}`,
+          `https://universal-mall-shop.pages.dev/game/${s}`,
+          `https://universal-mall-shop.pages.dev/game/${s}`,
           new URL(`/game/${s}`, request.url).toString()
         );
       }
       specificGameUrls.push(
-        'https://codegame.shop/api/games',
-        'https://web-code-game.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/games',
+        'https://universal-mall-shop.pages.dev/api/games',
         new URL('/api/games', request.url).toString()
       );
       await invalidateCatalogEdgeCache(context as any, request, env, specificGameUrls).catch(() => {});

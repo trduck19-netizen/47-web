@@ -5,11 +5,11 @@ import { isSpamOrAdArticle } from '../utils/newsFilterUtils';
 import type { NewsAutoSource, NewsScheduleConfig, NewsCrawlLogItem } from '../types/newsAutomation';
 import { DEFAULT_NEWS_AUTO_SOURCES, DEFAULT_NEWS_SCHEDULE_CONFIG } from '../types/newsAutomation';
 
-const STORAGE_KEY = 'wcg_news_articles_v1';
-const STORAGE_DELETED_KEY = 'wcg_deleted_news_articles_v1';
-const STORAGE_SOURCES_KEY = 'wcg_news_auto_sources_v1';
-const STORAGE_CONFIG_KEY = 'wcg_news_schedule_config_v1';
-const STORAGE_LOGS_KEY = 'wcg_news_crawl_logs_v1';
+const STORAGE_KEY = 'pine_news_articles_v1';
+const STORAGE_DELETED_KEY = 'pine_deleted_news_articles_v1';
+const STORAGE_SOURCES_KEY = 'pine_news_auto_sources_v1';
+const STORAGE_CONFIG_KEY = 'pine_news_schedule_config_v1';
+const STORAGE_LOGS_KEY = 'pine_news_crawl_logs_v1';
 
 /**
  * Hàm so sánh sắp xếp tin tức: Tin mới nhất luôn lên trước (published_at/created_at giảm dần)
@@ -320,7 +320,7 @@ class NewsService {
             game_name: (incoming.game_name && incoming.game_name.trim()) || existing.game_name || '',
             content: (incoming.content && incoming.content.trim()) || existing.content || '',
             gallery_urls: (Array.isArray(incoming.gallery_urls) && incoming.gallery_urls.length > 0) ? incoming.gallery_urls : (existing.gallery_urls || []),
-            author: incoming.author || existing.author || 'CodeGame',
+            author: incoming.author || existing.author || 'Pine Universal Mall',
             views: incoming.views ?? existing.views ?? 0,
             featured: incoming.featured ?? existing.featured ?? false,
           };
@@ -383,7 +383,7 @@ class NewsService {
       somethingChanged = true;
     }
     if (somethingChanged && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_news_updated', { detail: this.articles }));
+      window.dispatchEvent(new CustomEvent('pine_news_updated', { detail: this.articles }));
     }
   }
 
@@ -601,7 +601,7 @@ class NewsService {
         game_name: articleData.game_name,
         tags: articleData.tags || ['Tin Mới', 'Giftcode'],
         codes: articleData.codes || [],
-        author: articleData.author || 'CodeGame Editorial',
+        author: articleData.author || 'Pine Universal Mall Editorial',
         views: articleData.views || 0,
         read_time_minutes: articleData.read_time_minutes || Math.max(2, Math.ceil((articleData.content || '').length / 500)),
         is_featured: Boolean(articleData.is_featured),
@@ -618,7 +618,7 @@ class NewsService {
     this.saveToStorage();
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_news_updated', { detail: this.articles }));
+      window.dispatchEvent(new CustomEvent('pine_news_updated', { detail: this.articles }));
     }
 
     if (!options?.skipSync) {
@@ -667,7 +667,7 @@ class NewsService {
     this.saveToStorage();
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_news_updated', { detail: this.articles }));
+      window.dispatchEvent(new CustomEvent('pine_news_updated', { detail: this.articles }));
     }
 
     await this.syncToCloudflareServer();
@@ -719,7 +719,7 @@ class NewsService {
     this.saveToStorage();
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_news_updated', { detail: this.articles }));
+      window.dispatchEvent(new CustomEvent('pine_news_updated', { detail: this.articles }));
     }
 
     await this.syncToCloudflareServer();
@@ -744,8 +744,8 @@ class NewsService {
 
     try {
       const syncKey =
-        localStorage.getItem('wcg_admin_sync_key') ||
-        sessionStorage.getItem('wcg_admin_sync_key') ||
+        localStorage.getItem('pine_admin_sync_key') ||
+        sessionStorage.getItem('pine_admin_sync_key') ||
         '';
 
       const res = await fetch('/api/sync', {
@@ -838,7 +838,7 @@ class NewsService {
         tags = ['Giftcode Mới', 'Mã Quà Tặng', gameName, 'Code Tân Thủ'];
         content = `## Danh Sách Mã Giftcode ${gameName} Mới Nhất Hôm Nay
 
-Ban biên tập **CodeGame.shop** gửi tặng cộng đồng game thủ danh sách các mã quà tặng giftcode mới nhất dành cho tựa game **${gameName}** ${pubPhrase}.
+Ban biên tập **Pine Universal Mall** gửi tặng cộng đồng game thủ danh sách các mã quà tặng giftcode mới nhất dành cho tựa game **${gameName}** ${pubPhrase}.
 
 ### 1. Danh Sách Mã Code Còn Hạn Sử Dụng
 Toàn bộ mã bên dưới đã được đối chiếu kiểm tra thực tế trong game. Hãy nhanh tay sao chép và nhập ngay trước khi hết hạn sử dụng!
@@ -864,7 +864,7 @@ Tựa game **${gameName}** (${pubPhrase}) vừa chính thức phát hành phiên
 - **Sự Kiện Đăng Nhập 7 Ngày**: Đăng nhập liên tục trong tuần đầu phát hành bản cập nhật để nhận miễn phí rương bảo thạch và vàng khóa.
 
 ### 2. Danh Sách Giftcode Áp Dụng Cho Phiên Bản Này
-Ban quản trị **CodeGame.shop** đã tổng hợp và kiểm tra tính hợp lệ của toàn bộ mã giftcode mới nhất dành cho ${gameName}. Hãy sử dụng danh sách mã code bên dưới để nhận ngay quà tặng khởi đầu thuận lợi!
+Ban quản trị **Pine Universal Mall** đã tổng hợp và kiểm tra tính hợp lệ của toàn bộ mã giftcode mới nhất dành cho ${gameName}. Hãy sử dụng danh sách mã code bên dưới để nhận ngay quà tặng khởi đầu thuận lợi!
 
 ### 3. Hướng Dẫn Cách Nhập Code Nhận Quà
 1. Mở trò chơi **${gameName}** trên thiết bị của bạn.
@@ -910,7 +910,7 @@ Nhiều người chơi mới thường bối rối không tìm thấy nơi nhậ
 - Mỗi mã code chỉ có thể sử dụng 1 lần cho 1 nhân vật.
 
 ### 3. Danh Sách Mã Đang Hoạt Động 100%
-Dưới đây là bộ mã đã được hệ thống CodeGame.shop xác thực kiểm duyệt thành công!`;
+Dưới đây là bộ mã đã được hệ thống Pine Universal Mall xác thực kiểm duyệt thành công!`;
         break;
 
       case 'event':
@@ -960,7 +960,7 @@ Nhanh tay sao chép ngay danh sách mã quà tặng bên dưới để không b�
       gallery_urls: [],
       virtual_views: Math.floor(Math.random() * 150) + 120,
       views_growth_rate: 1.0,
-      author: 'CodeGame Editorial',
+      author: 'Pine Universal Mall Editorial',
       status: 'PUBLISHED',
       is_featured: false,
       is_hot: true,
@@ -993,7 +993,7 @@ Nhanh tay sao chép ngay danh sách mã quà tặng bên dưới để không b�
       .replace(/###?\s*Tiêu đề mục (?:lớn|nhỏ)\n*/gi, '')
       .replace(/\*\*Văn bản in đậm\*\*\n*/gi, '')
       .replace(/>\s*💡\s*\*\*Lưu ý:\*\*\s*Nội dung nhắc nhở game thủ\.\.\.\n*/gi, '')
-      .replace(/CodeGame\.store/gi, 'CodeGame.shop')
+      .replace(/codegame\.(?:store|shop)/gi, 'Pine Universal Mall')
       .trim();
 
     // 1. Quét thêm mã giftcode từ nội dung
@@ -1089,7 +1089,7 @@ ${finalCodes.length > 0 ? finalCodes.map((c) => `- **${c}**: Gói quà tri ân &
 
 ## 4. Mẹo Chơi Game & Cách Nhận Thêm Code Mới
 - Theo dõi Fanpage và Group cộng đồng chính thức của ${gameName} để tham gia các minigame săn code độc quyền.
-- Thường xuyên ghé thăm **CodeGame.shop** để cập nhật nhanh nhất các mã giftcode máy chủ mới và sự kiện đua TOP.`;
+- Thường xuyên ghé thăm **Pine Universal Mall** để cập nhật nhanh nhất các mã giftcode máy chủ mới và sự kiện đua TOP.`;
 
     const gameLogo =
       params.game?.banner_url ||
@@ -1123,7 +1123,7 @@ ${finalCodes.length > 0 ? finalCodes.map((c) => `- **${c}**: Gói quà tri ân &
       game_slug: params.game?.slug,
       game_name: gameName,
       tags: ['Giftcode', gameName, 'TinTucGame', 'CapNhat'],
-      author: 'CodeGame Editorial',
+      author: 'Pine Universal Mall Editorial',
       status: 'PUBLISHED',
       is_featured: false,
       is_hot: true,

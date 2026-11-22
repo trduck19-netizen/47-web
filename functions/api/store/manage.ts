@@ -146,7 +146,7 @@ async function syncPublicStoreState(env: Env, context: any): Promise<void> {
     invalidateSettingMemoryCache('wcg_master_state_v4');
 
     // Xóa Edge Cache trên Cloudflare CDN
-    invalidateCatalogEdgeCache(context, env, 'https://codegame.shop/api/sync');
+    invalidateCatalogEdgeCache(context, env, 'https://universal-mall-shop.pages.dev/api/sync');
   } catch {}
 }
 

@@ -2121,7 +2121,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     try {
       const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
       if (cache) {
-        const publicUrl1 = `https://codegame.shop/game_icons/${trimmedSlug}.webp`;
+        const publicUrl1 = `https://universal-mall-shop.pages.dev/game_icons/${trimmedSlug}.webp`;
         const publicUrl2 = new URL(`/game_icons/${trimmedSlug}.webp`, request.url).toString();
         await Promise.allSettled([
           cache.delete(new Request(publicUrl1)),
@@ -2130,7 +2130,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       }
     } catch {}
 
-    const fullPublicUrl = `https://codegame.shop/game_icons/${trimmedSlug}.webp`;
+    const fullPublicUrl = `https://universal-mall-shop.pages.dev/game_icons/${trimmedSlug}.webp`;
 
     return new Response(
       JSON.stringify({
@@ -2191,7 +2191,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       try {
         const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
         if (cache) {
-          const publicUrl1 = `https://codegame.shop/game_icons/${trimmedSlug}.webp`;
+          const publicUrl1 = `https://universal-mall-shop.pages.dev/game_icons/${trimmedSlug}.webp`;
           const publicUrl2 = new URL(`/game_icons/${trimmedSlug}.webp`, request.url).toString();
           await Promise.allSettled([
             cache.delete(new Request(publicUrl1)),
@@ -2298,8 +2298,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
           request,
           env,
           additionalPurgeUrls: [
-            'https://codegame.shop/api/crawler/ingest-upcoming-games',
-            'https://codegame.shop/api/sync',
+            'https://universal-mall-shop.pages.dev/api/crawler/ingest-upcoming-games',
+            'https://universal-mall-shop.pages.dev/api/sync',
           ],
         });
       }
@@ -2317,8 +2317,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     const gScope = globalThis as any;
     gScope.__wcg_public_sync_cache = null;
     await invalidateCatalogEdgeCache(context as any, request, env, [
-      'https://codegame.shop/api/crawler/ingest-upcoming-games',
-      'https://codegame.shop/api/sync',
+      'https://universal-mall-shop.pages.dev/api/crawler/ingest-upcoming-games',
+      'https://universal-mall-shop.pages.dev/api/sync',
     ]).catch(() => {});
 
     return new Response(

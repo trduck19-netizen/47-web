@@ -79,10 +79,10 @@ class AdminDataService {
   private saveCustomFreeCodes() {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem('wcg_admin_custom_free_codes_v1', JSON.stringify(this.customFreeCodes));
-      crossOriginSync.setItem('wcg_admin_custom_free_codes_v1', this.customFreeCodes);
+      localStorage.setItem('pine_admin_custom_free_codes_v1', JSON.stringify(this.customFreeCodes));
+      crossOriginSync.setItem('pine_admin_custom_free_codes_v1', this.customFreeCodes);
       this.broadcastSync('CUSTOM_FREE_CODES_UPDATED', this.customFreeCodes);
-      this.syncToCloudflareKV('wcg_admin_custom_free_codes_v1', this.customFreeCodes);
+      this.syncToCloudflareKV('pine_admin_custom_free_codes_v1', this.customFreeCodes);
     } catch {}
   }
 
@@ -90,10 +90,10 @@ class AdminDataService {
     if (typeof window === 'undefined') return;
     try {
       const list = Array.from(this.deletedFreeCodeIds);
-      localStorage.setItem('wcg_deleted_free_codes', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_deleted_free_codes', list);
+      localStorage.setItem('pine_deleted_free_codes', JSON.stringify(list));
+      crossOriginSync.setItem('pine_deleted_free_codes', list);
       this.broadcastSync('DELETED_FREE_CODES_UPDATED', list);
-      this.syncToCloudflareKV('wcg_deleted_free_codes', list);
+      this.syncToCloudflareKV('pine_deleted_free_codes', list);
     } catch {}
   }
 
@@ -101,10 +101,10 @@ class AdminDataService {
     if (typeof window === 'undefined') return;
     try {
       const list = Array.from(this.deletedStoreProductIds);
-      localStorage.setItem('wcg_deleted_store_products', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_deleted_store_products', list);
+      localStorage.setItem('pine_deleted_store_products', JSON.stringify(list));
+      crossOriginSync.setItem('pine_deleted_store_products', list);
       this.broadcastSync('DELETED_STORE_PRODUCTS_UPDATED', list);
-      this.syncToCloudflareKV('wcg_deleted_store_products', list);
+      this.syncToCloudflareKV('pine_deleted_store_products', list);
     } catch {}
   }
 
@@ -112,10 +112,10 @@ class AdminDataService {
     if (typeof window === 'undefined') return;
     try {
       const list = Array.from(this.deletedUtilityIds);
-      localStorage.setItem('wcg_deleted_utilities', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_deleted_utilities', list);
+      localStorage.setItem('pine_deleted_utilities', JSON.stringify(list));
+      crossOriginSync.setItem('pine_deleted_utilities', list);
       this.broadcastSync('DELETED_UTILITIES_UPDATED', list);
-      this.syncToCloudflareKV('wcg_deleted_utilities', list);
+      this.syncToCloudflareKV('pine_deleted_utilities', list);
     } catch {}
   }
 
@@ -123,10 +123,10 @@ class AdminDataService {
     if (typeof window === 'undefined') return;
     try {
       const list = Array.from(this.deletedGiveawayIds);
-      localStorage.setItem('wcg_deleted_giveaways', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_deleted_giveaways', list);
+      localStorage.setItem('pine_deleted_giveaways', JSON.stringify(list));
+      crossOriginSync.setItem('pine_deleted_giveaways', list);
       this.broadcastSync('DELETED_GIVEAWAYS_UPDATED', list);
-      this.syncToCloudflareKV('wcg_deleted_giveaways', list);
+      this.syncToCloudflareKV('pine_deleted_giveaways', list);
     } catch {}
   }
 
@@ -134,16 +134,16 @@ class AdminDataService {
     if (typeof window === 'undefined') return;
     try {
       const list = Array.from(this.deletedInventoryItemIds);
-      localStorage.setItem('wcg_deleted_inventory_codes', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_deleted_inventory_codes', list);
+      localStorage.setItem('pine_deleted_inventory_codes', JSON.stringify(list));
+      crossOriginSync.setItem('pine_deleted_inventory_codes', list);
       this.broadcastSync('DELETED_INVENTORY_CODES_UPDATED', list);
-      this.syncToCloudflareKV('wcg_deleted_inventory_codes', list);
+      this.syncToCloudflareKV('pine_deleted_inventory_codes', list);
     } catch {}
   }
   private sepayConfig: SePayConfig = {
     apiKey: '',
     isConnected: true,
-    webhookUrl: 'https://admin-code-game-shop.pages.dev/api/webhooks/sepay',
+    webhookUrl: 'https://admin-universal-mall.pages.dev/api/webhooks/sepay',
     webhookSecretSet: true,
     bankAccount: 'CODE GAME SHOP',
     accountNumber: '10004681879',
@@ -169,28 +169,28 @@ class AdminDataService {
   private isInitialized = false;
 
   private readonly KEYS = {
-    GAMES: 'wcg_admin_games_v5',
-    FREE_CODES: 'wcg_admin_free_codes_v5',
-    SUBMISSIONS: 'wcg_admin_submissions_v4',
-    MEMBERS: 'wcg_admin_members_v4',
-    TRANSACTIONS: 'wcg_admin_transactions_v4',
-    PRIVATE_CODES: 'wcg_admin_private_codes_v4',
-    INVENTORY: 'wcg_admin_inventory_v4',
-    ORDERS: 'wcg_admin_orders_v4',
-    SEPAY: 'wcg_admin_sepay_v4',
-    SEPAY_LOGS: 'wcg_admin_sepay_logs_v4',
-    CONTENT: 'wcg_admin_content_v4',
-    SECURITY_LOGS: 'wcg_admin_security_logs_v4',
-    GIVEAWAYS: 'wcg_admin_giveaways_v4',
-    STORE_PRODUCTS: 'wcg_admin_store_products_v4',
-    UTILITIES: 'wcg_admin_utilities_v4',
-    ADMIN_USER: 'wcg_admin_user_v4',
-    CRAWLER_PENDING_GAMES: 'wcg_crawler_pending_games_v1',
-    CRAWLER_AUTO_PUBLISH_CONFIG: 'wcg_crawler_auto_publish_games_v1',
-    CRAWLER_API_CONFIG: 'wcg_crawler_api_config_v1',
-    CRAWLER_API_LOGS: 'wcg_crawler_api_logs_v1',
-    UPCOMING_GAMES: 'wcg_admin_upcoming_games_v1',
-    UPCOMING_GAMES_LOGS: 'wcg_admin_upcoming_games_logs_v1',
+    GAMES: 'pine_admin_games_v5',
+    FREE_CODES: 'pine_admin_free_codes_v5',
+    SUBMISSIONS: 'pine_admin_submissions_v4',
+    MEMBERS: 'pine_admin_members_v4',
+    TRANSACTIONS: 'pine_admin_transactions_v4',
+    PRIVATE_CODES: 'pine_admin_private_codes_v4',
+    INVENTORY: 'pine_admin_inventory_v4',
+    ORDERS: 'pine_admin_orders_v4',
+    SEPAY: 'pine_admin_sepay_v4',
+    SEPAY_LOGS: 'pine_admin_sepay_logs_v4',
+    CONTENT: 'pine_admin_content_v4',
+    SECURITY_LOGS: 'pine_admin_security_logs_v4',
+    GIVEAWAYS: 'pine_admin_giveaways_v4',
+    STORE_PRODUCTS: 'pine_admin_store_products_v4',
+    UTILITIES: 'pine_admin_utilities_v4',
+    ADMIN_USER: 'pine_admin_user_v4',
+    CRAWLER_PENDING_GAMES: 'pine_crawler_pending_games_v1',
+    CRAWLER_AUTO_PUBLISH_CONFIG: 'pine_crawler_auto_publish_games_v1',
+    CRAWLER_API_CONFIG: 'pine_crawler_api_config_v1',
+    CRAWLER_API_LOGS: 'pine_crawler_api_logs_v1',
+    UPCOMING_GAMES: 'pine_admin_upcoming_games_v1',
+    UPCOMING_GAMES_LOGS: 'pine_admin_upcoming_games_logs_v1',
   };
 
   constructor() {
@@ -211,7 +211,7 @@ class AdminDataService {
       console.warn(`[adminDataService] localStorage write error for "${key}":`, e?.message || e);
       try {
         localStorage.removeItem(this.KEYS.FREE_CODES);
-        localStorage.removeItem('wcg_admin_free_codes_v5');
+        localStorage.removeItem('pine_admin_free_codes_v5');
         localStorage.removeItem(this.KEYS.GAMES);
         localStorage.setItem(key, value);
         return true;
@@ -221,44 +221,44 @@ class AdminDataService {
     }
   }
 
-  private readonly DATASET_VERSION = 'wcg_dataset_2026_10_30_v41';
+  private readonly DATASET_VERSION = 'pine_dataset_2026_10_30_v41';
 
   private cleanupLegacyV3Data(): void {
     if (typeof window === 'undefined') return;
     try {
       // Always purge bulky free_codes from localStorage to keep quota completely free for members, transactions and orders
-      localStorage.removeItem('wcg_admin_free_codes_v5');
-      localStorage.removeItem('wcg_admin_free_codes_v4');
-      localStorage.removeItem('wcg_admin_free_codes_v3');
-      localStorage.removeItem('wcg_admin_free_codes_v2');
+      localStorage.removeItem('pine_admin_free_codes_v5');
+      localStorage.removeItem('pine_admin_free_codes_v4');
+      localStorage.removeItem('pine_admin_free_codes_v3');
+      localStorage.removeItem('pine_admin_free_codes_v2');
 
-      const currentVer = localStorage.getItem('wcg_dataset_version');
+      const currentVer = localStorage.getItem('pine_dataset_version');
       if (currentVer !== this.DATASET_VERSION) {
         // Clear cached member, transaction and utilities lists to purge stale offline snapshots and force 100% authoritative pull from Cloudflare D1
-        localStorage.removeItem('wcg_admin_members_v4');
-        localStorage.removeItem('wcg_admin_transactions_v4');
-        localStorage.removeItem('wcg_admin_orders_v4');
-        localStorage.removeItem('wcg_admin_games_v5');
-        localStorage.removeItem('wcg_admin_utilities_v4');
-        localStorage.removeItem('wcg_utilities');
+        localStorage.removeItem('pine_admin_members_v4');
+        localStorage.removeItem('pine_admin_transactions_v4');
+        localStorage.removeItem('pine_admin_orders_v4');
+        localStorage.removeItem('pine_admin_games_v5');
+        localStorage.removeItem('pine_admin_utilities_v4');
+        localStorage.removeItem('pine_utilities');
         // TUYỆT ĐỐI BẢO TỒN KHO MÃ GIVEAWAYS (Đặc quyền Admin): Không bao giờ xóa kho mã code riêng của Quản trị viên
-        localStorage.setItem('wcg_dataset_version', this.DATASET_VERSION);
+        localStorage.setItem('pine_dataset_version', this.DATASET_VERSION);
       }
 
       const obsoleteKeys = [
-        'wcg_store_products',
-        'wcg_utilities',
-        'wcg_giveaways',
-        'wcg_admin_games_v4',
-        'wcg_admin_free_codes_v4',
-        'wcg_admin_games_v3',
-        'wcg_admin_free_codes_v3',
-        'wcg_admin_games_v2',
-        'wcg_admin_free_codes_v2',
-        'wcg_admin_submissions_v3',
-        'wcg_admin_giveaways_v3',
-        'wcg_admin_store_products_v3',
-        'wcg_admin_utilities_v3',
+        'pine_store_products',
+        'pine_utilities',
+        'pine_giveaways',
+        'pine_admin_games_v4',
+        'pine_admin_free_codes_v4',
+        'pine_admin_games_v3',
+        'pine_admin_free_codes_v3',
+        'pine_admin_games_v2',
+        'pine_admin_free_codes_v2',
+        'pine_admin_submissions_v3',
+        'pine_admin_giveaways_v3',
+        'pine_admin_store_products_v3',
+        'pine_admin_utilities_v3',
       ];
       obsoleteKeys.forEach((k) => localStorage.removeItem(k));
 
@@ -291,28 +291,28 @@ class AdminDataService {
       legacySeedUtilIds.forEach((id) => this.deletedUtilityIds.add(id));
       legacySeedGwIds.forEach((id) => this.deletedGiveawayIds.add(id));
 
-      const savedDelStore = localStorage.getItem('wcg_deleted_store_products');
+      const savedDelStore = localStorage.getItem('pine_deleted_store_products');
       if (savedDelStore) {
         try {
           const parsed = JSON.parse(savedDelStore);
           if (Array.isArray(parsed)) parsed.forEach((id: string) => this.deletedStoreProductIds.add(id));
         } catch {}
       }
-      const savedDelUtils = localStorage.getItem('wcg_deleted_utilities');
+      const savedDelUtils = localStorage.getItem('pine_deleted_utilities');
       if (savedDelUtils) {
         try {
           const parsed = JSON.parse(savedDelUtils);
           if (Array.isArray(parsed)) parsed.forEach((id: string) => this.deletedUtilityIds.add(id));
         } catch {}
       }
-      const savedDelGw = localStorage.getItem('wcg_deleted_giveaways');
+      const savedDelGw = localStorage.getItem('pine_deleted_giveaways');
       if (savedDelGw) {
         try {
           const parsed = JSON.parse(savedDelGw);
           if (Array.isArray(parsed)) parsed.forEach((id: string) => this.deletedGiveawayIds.add(id));
         } catch {}
       }
-      const savedDelInv = localStorage.getItem('wcg_deleted_inventory_codes');
+      const savedDelInv = localStorage.getItem('pine_deleted_inventory_codes');
       if (savedDelInv) {
         try {
           const parsed = JSON.parse(savedDelInv);
@@ -320,7 +320,7 @@ class AdminDataService {
         } catch {}
       }
 
-      const savedDelFc = localStorage.getItem('wcg_deleted_free_codes');
+      const savedDelFc = localStorage.getItem('pine_deleted_free_codes');
       if (savedDelFc) {
         try {
           const parsed = JSON.parse(savedDelFc);
@@ -328,7 +328,7 @@ class AdminDataService {
         } catch {}
       }
 
-      const savedCustomFc = localStorage.getItem('wcg_admin_custom_free_codes_v1');
+      const savedCustomFc = localStorage.getItem('pine_admin_custom_free_codes_v1');
       if (savedCustomFc) {
         try {
           const parsed = JSON.parse(savedCustomFc);
@@ -343,7 +343,7 @@ class AdminDataService {
         } catch {}
       }
 
-            const savedCrawlerSources = localStorage.getItem('wcg_admin_crawler_sources_v1');
+            const savedCrawlerSources = localStorage.getItem('pine_admin_crawler_sources_v1');
       if (savedCrawlerSources) {
         try {
           const parsed = JSON.parse(savedCrawlerSources);
@@ -358,7 +358,7 @@ class AdminDataService {
         );
       }
 
-      const savedPendingGames = localStorage.getItem('wcg_crawler_pending_games_v1');
+      const savedPendingGames = localStorage.getItem('pine_crawler_pending_games_v1');
       if (savedPendingGames) {
         try {
           const parsed = JSON.parse(savedPendingGames);
@@ -366,7 +366,7 @@ class AdminDataService {
         } catch {}
       }
 
-      const savedAutoPublishConfig = localStorage.getItem('wcg_crawler_auto_publish_games_v1');
+      const savedAutoPublishConfig = localStorage.getItem('pine_crawler_auto_publish_games_v1');
       if (savedAutoPublishConfig) {
         try {
           const parsed = JSON.parse(savedAutoPublishConfig);
@@ -376,7 +376,7 @@ class AdminDataService {
         } catch {}
       }
 
-      const savedApiConfig = localStorage.getItem('wcg_crawler_api_config_v1');
+      const savedApiConfig = localStorage.getItem('pine_crawler_api_config_v1');
       if (savedApiConfig) {
         try {
           const parsed = JSON.parse(savedApiConfig);
@@ -386,7 +386,7 @@ class AdminDataService {
         } catch {}
       }
 
-      const savedApiLogs = localStorage.getItem('wcg_crawler_api_logs_v1');
+      const savedApiLogs = localStorage.getItem('pine_crawler_api_logs_v1');
       if (savedApiLogs) {
         try {
           const parsed = JSON.parse(savedApiLogs);
@@ -762,7 +762,7 @@ class AdminDataService {
           {
             id: 'cnt_branding',
             key: 'website_branding',
-            title: 'CodeGame.Shop',
+            title: 'Pine Universal Mall',
             content: 'Thiết lập nhận diện thương hiệu, logo, avatar và hình nền website.',
             isActive: true,
             type: 'BRANDING',
@@ -841,11 +841,11 @@ class AdminDataService {
             id: 'cnt_footer',
             key: 'footer_support',
             title: 'Chân Trang & Hỗ Trợ',
-            content: 'CodeGame.Shop — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.',
+            content: 'Pine Universal Mall — Nền tảng tổng hợp và chia sẻ giftcode game mobile & PC hàng đầu Việt Nam. Cập nhật mã quà tặng mới nhất mỗi ngày từ NPH chính thức.',
             isActive: true,
             type: 'FOOTER',
             extraData: {
-              brandTitle: 'CodeGame.Shop',
+              brandTitle: 'Pine Universal Mall',
               brandLogo: '',
               badge1Text: 'Cloudflare Pages & D1',
               badge1Visible: true,
@@ -861,7 +861,7 @@ class AdminDataService {
           {
             id: 'cnt_terms',
             key: 'terms_of_service',
-            title: 'Điều Khoản Sử Dụng Dịch Vụ CodeGame Store',
+            title: 'Điều Khoản Sử Dụng Dịch Vụ Pine Mall Store',
             content: '1. Quy định chung: Toàn bộ giftcode và mã quà tặng trên website được chia sẻ hoàn toàn miễn phí hoặc từ các đối tác phân phối chính thức.\n2. Người dùng cam kết không sử dụng công cụ tự động spam, phá hoại hoặc lạm dụng tài nguyên hệ thống.\n3. Ban Quản Trị có quyền cập nhật, hiệu chỉnh các điều khoản sử dụng nhằm đảm bảo quyền lợi chung cho cộng đồng game thủ.',
             isActive: true,
             type: 'TERMS',
@@ -1001,10 +1001,10 @@ class AdminDataService {
     if (typeof window === 'undefined') return;
     try {
       if ('BroadcastChannel' in window) {
-        const channel = new BroadcastChannel('wcg_data_sync');
+        const channel = new BroadcastChannel('pine_data_sync');
         channel.postMessage({ type, payload, timestamp: Date.now() });
       }
-      window.dispatchEvent(new CustomEvent('wcg_admin_data_updated', { detail: { type, payload } }));
+      window.dispatchEvent(new CustomEvent('pine_admin_data_updated', { detail: { type, payload } }));
     } catch (e) {
       console.error('Error broadcasting data sync:', e);
     }
@@ -1013,19 +1013,19 @@ class AdminDataService {
   private getAuthHeaders(): Record<string, string> {
     let token =
       (typeof window !== 'undefined'
-        ? localStorage.getItem('wcg_admin_token') || localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_admin_token') || sessionStorage.getItem('wcg_auth_token')
+        ? localStorage.getItem('pine_admin_token') || localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_admin_token') || sessionStorage.getItem('pine_auth_token')
         : '') || '';
     let syncKey =
       (typeof window !== 'undefined'
-        ? localStorage.getItem('wcg_admin_sync_key') || sessionStorage.getItem('wcg_admin_sync_key')
+        ? localStorage.getItem('pine_admin_sync_key') || sessionStorage.getItem('pine_admin_sync_key')
         : '') || '';
 
-    const ADMIN_SYNC_KEY = (typeof window !== 'undefined' ? (localStorage.getItem('wcg_admin_sync_key') || localStorage.getItem('wcg_admin_token')) : '') || '';
+    const ADMIN_SYNC_KEY = (typeof window !== 'undefined' ? (localStorage.getItem('pine_admin_sync_key') || localStorage.getItem('pine_admin_token')) : '') || '';
     const isDedicatedAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-code-game-shop');
     const isTestAdmin = typeof window !== 'undefined' && window.location.hostname.includes('admin-test-code-game-shop');
     const isAdminUser = typeof window !== 'undefined' && (
-      localStorage.getItem('wcg_admin_authenticated') === 'true' ||
-      sessionStorage.getItem('wcg_admin_authenticated') === 'true' ||
+      localStorage.getItem('pine_admin_authenticated') === 'true' ||
+      sessionStorage.getItem('pine_admin_authenticated') === 'true' ||
       this.currentAdmin?.role === 'SUPER_ADMIN' ||
       this.currentAdmin?.role === 'ADMIN'
     );
@@ -1033,7 +1033,7 @@ class AdminDataService {
     if (!syncKey && (isDedicatedAdmin || isTestAdmin || isAdminUser)) {
       syncKey = ADMIN_SYNC_KEY;
       try {
-        localStorage.setItem('wcg_admin_sync_key', ADMIN_SYNC_KEY);
+        localStorage.setItem('pine_admin_sync_key', ADMIN_SYNC_KEY);
       } catch {}
     }
 
@@ -1065,8 +1065,8 @@ class AdminDataService {
     const endpoints = isTestAdmin
       ? ['/api/sync']
       : (isLocalhost
-          ? ['https://admin-code-game-shop.pages.dev/api/sync', 'https://codegame.shop/api/sync', 'https://web-code-game.pages.dev/api/sync', '/api/sync']
-          : ['/api/sync', 'https://admin-code-game-shop.pages.dev/api/sync', 'https://codegame.shop/api/sync', 'https://web-code-game.pages.dev/api/sync']);
+          ? ['https://admin-universal-mall.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', '/api/sync']
+          : ['/api/sync', 'https://admin-universal-mall.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync']);
 
     try {
       const headers = this.getAuthHeaders();
@@ -1099,8 +1099,8 @@ class AdminDataService {
     const endpoints = isTestAdmin
       ? ['/api/sync']
       : (isLocalhost
-          ? ['https://admin-code-game-shop.pages.dev/api/sync', 'https://codegame.shop/api/sync', 'https://web-code-game.pages.dev/api/sync', '/api/sync']
-          : ['/api/sync', 'https://admin-code-game-shop.pages.dev/api/sync', 'https://codegame.shop/api/sync', 'https://web-code-game.pages.dev/api/sync']);
+          ? ['https://admin-universal-mall.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', '/api/sync']
+          : ['/api/sync', 'https://admin-universal-mall.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync']);
 
     try {
       const headers = this.getAuthHeaders();
@@ -1119,7 +1119,7 @@ class AdminDataService {
 
             // Asynchronously notify client domain to purge edge isolate caches (only for production)
             if (!currentHost.includes('codegame.shop') && !isTestAdmin) {
-              fetch('https://codegame.shop/api/sync', { method: 'POST', headers, body }).catch(() => {});
+              fetch('https://universal-mall-shop.pages.dev/api/sync', { method: 'POST', headers, body }).catch(() => {});
             }
 
             return true;
@@ -1133,9 +1133,9 @@ class AdminDataService {
   public async fetchFromCloudflareKV(): Promise<void> {
     const endpoints = [
       '/api/sync',
-      'https://admin-code-game-shop.pages.dev/api/sync',
-      'https://codegame.shop/api/sync',
-      'https://web-code-game.pages.dev/api/sync',
+      'https://admin-universal-mall.pages.dev/api/sync',
+      'https://universal-mall-shop.pages.dev/api/sync',
+      'https://universal-mall-shop.pages.dev/api/sync',
     ];
 
     for (const baseUrl of endpoints) {
@@ -1364,23 +1364,23 @@ class AdminDataService {
             // 7. Deleted Tombstones
             if (json.deletedStoreProducts && Array.isArray(json.deletedStoreProducts)) {
               json.deletedStoreProducts.forEach((id: string) => this.deletedStoreProductIds.add(id));
-              this.safeSetItem('wcg_deleted_store_products', JSON.stringify(Array.from(this.deletedStoreProductIds)));
+              this.safeSetItem('pine_deleted_store_products', JSON.stringify(Array.from(this.deletedStoreProductIds)));
             }
             if (json.deletedUtilities && Array.isArray(json.deletedUtilities)) {
               json.deletedUtilities.forEach((id: string) => this.deletedUtilityIds.add(id));
-              this.safeSetItem('wcg_deleted_utilities', JSON.stringify(Array.from(this.deletedUtilityIds)));
+              this.safeSetItem('pine_deleted_utilities', JSON.stringify(Array.from(this.deletedUtilityIds)));
             }
             if (json.deletedGiveaways && Array.isArray(json.deletedGiveaways)) {
               json.deletedGiveaways.forEach((id: string) => this.deletedGiveawayIds.add(id));
-              this.safeSetItem('wcg_deleted_giveaways', JSON.stringify(Array.from(this.deletedGiveawayIds)));
+              this.safeSetItem('pine_deleted_giveaways', JSON.stringify(Array.from(this.deletedGiveawayIds)));
             }
             if (json.deletedInventoryCodes && Array.isArray(json.deletedInventoryCodes)) {
               json.deletedInventoryCodes.forEach((id: string) => this.deletedInventoryItemIds.add(id));
-              this.safeSetItem('wcg_deleted_inventory_codes', JSON.stringify(Array.from(this.deletedInventoryItemIds)));
+              this.safeSetItem('pine_deleted_inventory_codes', JSON.stringify(Array.from(this.deletedInventoryItemIds)));
             }
             if (json.deletedFreeCodes && Array.isArray(json.deletedFreeCodes)) {
               json.deletedFreeCodes.forEach((id: string) => this.deletedFreeCodeIds.add(id));
-              this.safeSetItem('wcg_deleted_free_codes', JSON.stringify(Array.from(this.deletedFreeCodeIds)));
+              this.safeSetItem('pine_deleted_free_codes', JSON.stringify(Array.from(this.deletedFreeCodeIds)));
             }
             if (json.customFreeCodes && Array.isArray(json.customFreeCodes)) {
               const currentCustomMap = new Map<string, FreeCodeRecord>();
@@ -1568,24 +1568,24 @@ class AdminDataService {
 
             // 13. Categories & Marketing Config
             if (json.utilityCategories && Array.isArray(json.utilityCategories)) {
-              const currentCats = localStorage.getItem('wcg_admin_utility_categories_v1');
+              const currentCats = localStorage.getItem('pine_admin_utility_categories_v1');
               const newCats = JSON.stringify(json.utilityCategories);
               if (currentCats !== newCats) {
-                this.safeSetItem('wcg_admin_utility_categories_v1', newCats);
+                this.safeSetItem('pine_admin_utility_categories_v1', newCats);
                 hasUpdates = true;
               }
             }
             if (json.storeCategories && Array.isArray(json.storeCategories)) {
-              const currentCats = localStorage.getItem('wcg_admin_store_categories_v1');
+              const currentCats = localStorage.getItem('pine_admin_store_categories_v1');
               const newCats = JSON.stringify(json.storeCategories);
               if (currentCats !== newCats) {
-                this.safeSetItem('wcg_admin_store_categories_v1', newCats);
+                this.safeSetItem('pine_admin_store_categories_v1', newCats);
                 hasUpdates = true;
               }
             }
                         if (json.crawlerSources && Array.isArray(json.crawlerSources)) {
               this.crawlerSources = json.crawlerSources;
-              this.safeSetItem('wcg_admin_crawler_sources_v1', JSON.stringify(this.crawlerSources));
+              this.safeSetItem('pine_admin_crawler_sources_v1', JSON.stringify(this.crawlerSources));
               hasUpdates = true;
             }
 
@@ -1596,7 +1596,7 @@ class AdminDataService {
                 json.deletedNewsArticles.forEach((id: string) => deletedNewsSet.add(String(id)));
               }
               try {
-                const delRaw = localStorage.getItem('wcg_deleted_news_articles_v1');
+                const delRaw = localStorage.getItem('pine_deleted_news_articles_v1');
                 if (delRaw) {
                   const p = JSON.parse(delRaw);
                   if (Array.isArray(p)) p.forEach((id: string) => deletedNewsSet.add(String(id)));
@@ -1607,7 +1607,7 @@ class AdminDataService {
                 (a: any) => a && a.id && !deletedNewsSet.has(a.id) && !deletedNewsSet.has(a.slug)
               );
 
-              const currentNewsRaw = localStorage.getItem('wcg_news_articles_v1');
+              const currentNewsRaw = localStorage.getItem('pine_news_articles_v1');
               let existingLocalArticles: any[] = [];
               try {
                 if (currentNewsRaw) existingLocalArticles = JSON.parse(currentNewsRaw);
@@ -1627,9 +1627,9 @@ class AdminDataService {
               if (mergedArticles.length > 0 || !Array.isArray(existingLocalArticles) || existingLocalArticles.length === 0) {
                 const newNewsStr = JSON.stringify(mergedArticles);
                 if (currentNewsRaw !== newNewsStr || json.newsAutoSources || json.newsScheduleConfig) {
-                  this.safeSetItem('wcg_news_articles_v1', newNewsStr);
+                  this.safeSetItem('pine_news_articles_v1', newNewsStr);
                   newsService.applyServerSnapshot(mergedArticles, json.newsAutoSources, json.newsScheduleConfig);
-                  window.dispatchEvent(new CustomEvent('wcg_news_updated', { detail: mergedArticles }));
+                  window.dispatchEvent(new CustomEvent('pine_news_updated', { detail: mergedArticles }));
                   hasUpdates = true;
                 }
               }
@@ -1659,11 +1659,11 @@ class AdminDataService {
             }
 
             if (json.marketingConfig && typeof json.marketingConfig === 'object') {
-              const currentMarketing = localStorage.getItem('wcg_marketing_config_v1');
+              const currentMarketing = localStorage.getItem('pine_marketing_config_v1');
               const newMarketing = JSON.stringify(json.marketingConfig);
               if (currentMarketing !== newMarketing) {
-                this.safeSetItem('wcg_marketing_config_v1', newMarketing);
-                window.dispatchEvent(new CustomEvent('wcg_marketing_config_updated', { detail: json.marketingConfig }));
+                this.safeSetItem('pine_marketing_config_v1', newMarketing);
+                window.dispatchEvent(new CustomEvent('pine_marketing_config_updated', { detail: json.marketingConfig }));
               }
             }
 
@@ -1965,7 +1965,7 @@ class AdminDataService {
 
     // 7. Aggregate actual copy clicks recorded from client website
     try {
-      const copyStatsStr = typeof window !== 'undefined' ? localStorage.getItem('wcg_daily_copy_stats') : null;
+      const copyStatsStr = typeof window !== 'undefined' ? localStorage.getItem('pine_daily_copy_stats') : null;
       if (copyStatsStr) {
         const parsed = JSON.parse(copyStatsStr);
         if (typeof parsed === 'object' && parsed !== null) {
@@ -2014,12 +2014,12 @@ class AdminDataService {
     if (typeof window === 'undefined' || !code) return;
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const currentStatsStr = localStorage.getItem('wcg_daily_copy_stats');
+      const currentStatsStr = localStorage.getItem('pine_daily_copy_stats');
       const stats = currentStatsStr ? JSON.parse(currentStatsStr) : {};
       stats[today] = (stats[today] || 0) + 1;
-      localStorage.setItem('wcg_daily_copy_stats', JSON.stringify(stats));
+      localStorage.setItem('pine_daily_copy_stats', JSON.stringify(stats));
 
-      const currentEventsStr = localStorage.getItem('wcg_client_copy_events');
+      const currentEventsStr = localStorage.getItem('pine_client_copy_events');
       const events = currentEventsStr ? JSON.parse(currentEventsStr) : [];
       events.unshift({
         id: `copy_${Date.now()}`,
@@ -2028,11 +2028,11 @@ class AdminDataService {
         timestamp: new Date().toISOString(),
       });
       if (events.length > 500) events.length = 500;
-      localStorage.setItem('wcg_client_copy_events', JSON.stringify(events));
+      localStorage.setItem('pine_client_copy_events', JSON.stringify(events));
 
       if ('BroadcastChannel' in window) {
         try {
-          const channel = new BroadcastChannel('wcg_data_sync');
+          const channel = new BroadcastChannel('pine_data_sync');
           channel.postMessage({ type: 'COPY_RECORDED', code, gameSlug, today });
         } catch {}
       }
@@ -2614,7 +2614,7 @@ class AdminDataService {
     this.orders = [];
     this.saveOrders();
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('wcg_orders', JSON.stringify([]));
+      localStorage.setItem('pine_orders', JSON.stringify([]));
     }
 
     // 4. Clear SePay logs
@@ -2626,11 +2626,11 @@ class AdminDataService {
     // 5. Reset user in localStorage
     if (typeof localStorage !== 'undefined') {
       try {
-        const uRaw = localStorage.getItem('wcg_user');
+        const uRaw = localStorage.getItem('pine_user');
         if (uRaw) {
           const u = JSON.parse(uRaw);
           u.wallet_balance = 0;
-          localStorage.setItem('wcg_user', JSON.stringify(u));
+          localStorage.setItem('pine_user', JSON.stringify(u));
         }
       } catch {}
     }
@@ -2640,18 +2640,18 @@ class AdminDataService {
     this.broadcastSync('TRANSACTIONS_UPDATED', []);
     this.broadcastSync('ORDERS_UPDATED', []);
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_admin_data_updated'));
-      window.dispatchEvent(new CustomEvent('wcg_user_registered'));
+      window.dispatchEvent(new CustomEvent('pine_admin_data_updated'));
+      window.dispatchEvent(new CustomEvent('pine_user_registered'));
     }
 
     // 7. Push to Cloudflare D1
     try {
       const token =
         typeof window !== 'undefined'
-          ? localStorage.getItem('wcg_auth_token') ||
-            sessionStorage.getItem('wcg_auth_token') ||
-            localStorage.getItem('wcg_admin_sync_key') ||
-            sessionStorage.getItem('wcg_admin_sync_key') ||
+          ? localStorage.getItem('pine_auth_token') ||
+            sessionStorage.getItem('pine_auth_token') ||
+            localStorage.getItem('pine_admin_sync_key') ||
+            sessionStorage.getItem('pine_admin_sync_key') ||
             ''
           : '';
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -2864,7 +2864,7 @@ class AdminDataService {
 
     // Đồng bộ sang wcg_orders của client nếu có
     try {
-      const clientOrdersRaw = localStorage.getItem('wcg_orders');
+      const clientOrdersRaw = localStorage.getItem('pine_orders');
       if (clientOrdersRaw) {
         const clientOrders = JSON.parse(clientOrdersRaw);
         const target = clientOrders.find((co: any) => co.id === order.id || co.id === order.orderCode);
@@ -2873,7 +2873,7 @@ class AdminDataService {
           if (update.carrier !== undefined) target.carrier = update.carrier;
           if (update.status !== undefined) target.status = update.status.toLowerCase();
           if (update.shippingNote !== undefined) target.shipping_note = update.shippingNote;
-          localStorage.setItem('wcg_orders', JSON.stringify(clientOrders));
+          localStorage.setItem('pine_orders', JSON.stringify(clientOrders));
         }
       }
     } catch {}
@@ -3057,8 +3057,8 @@ class AdminDataService {
     const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
     const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1';
     const endpoints = isLocalhost
-      ? ['https://admin-code-game-shop.pages.dev/api/admin/sepay-credit', 'https://web-code-game.pages.dev/api/admin/sepay-credit', '/api/admin/sepay-credit']
-      : ['/api/admin/sepay-credit', 'https://admin-code-game-shop.pages.dev/api/admin/sepay-credit', 'https://web-code-game.pages.dev/api/admin/sepay-credit'];
+      ? ['https://admin-universal-mall.pages.dev/api/admin/sepay-credit', 'https://universal-mall-shop.pages.dev/api/admin/sepay-credit', '/api/admin/sepay-credit']
+      : ['/api/admin/sepay-credit', 'https://admin-universal-mall.pages.dev/api/admin/sepay-credit', 'https://universal-mall-shop.pages.dev/api/admin/sepay-credit'];
 
     let serverSuccess = false;
     let serverResponse: any = null;
@@ -3180,7 +3180,7 @@ class AdminDataService {
           this.contentItems = incoming;
           localStorage.setItem(this.KEYS.CONTENT, JSON.stringify(incoming));
           crossOriginSync.setItem(this.KEYS.CONTENT, incoming);
-          window.dispatchEvent(new CustomEvent('wcg_admin_data_updated', { detail: { key: this.KEYS.CONTENT } }));
+          window.dispatchEvent(new CustomEvent('pine_admin_data_updated', { detail: { key: this.KEYS.CONTENT } }));
           return incoming;
         }
       }
@@ -3252,7 +3252,7 @@ class AdminDataService {
       ? bTitle!
       : !isLegacyOrEmpty(footerTitle)
       ? footerTitle!
-      : 'CodeGame.Shop';
+      : 'Pine Universal Mall';
 
     const bLogo = item?.extraData?.logoUrl?.trim();
     const effectiveLogo =
@@ -3336,7 +3336,7 @@ class AdminDataService {
     // 2. Fallback localStorage
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('wcg_admin_categories_config');
+        const saved = localStorage.getItem('pine_admin_categories_config');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.categories) && parsed.categories.length > 0) {
@@ -3375,8 +3375,8 @@ class AdminDataService {
     // 2. Cập nhật localStorage và phát tín hiệu realtime
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem('wcg_admin_categories_config', JSON.stringify(config));
-        window.dispatchEvent(new CustomEvent('wcg_admin_data_updated', {
+        localStorage.setItem('pine_admin_categories_config', JSON.stringify(config));
+        window.dispatchEvent(new CustomEvent('pine_admin_data_updated', {
           detail: { key: 'categories_config', config }
         }));
       } catch {}
@@ -3406,7 +3406,7 @@ class AdminDataService {
         }
       } catch {}
       try {
-        const raw = localStorage.getItem('wcg_admin_floating_notification_v1');
+        const raw = localStorage.getItem('pine_admin_floating_notification_v1');
         if (raw) {
           const parsed = JSON.parse(raw);
           return { ...DEFAULT_FLOATING_NOTIFICATION, ...parsed };
@@ -3446,9 +3446,9 @@ class AdminDataService {
 
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem('wcg_admin_floating_notification_v1', JSON.stringify({ ...config, updatedAt: now }));
-        crossOriginSync.setItem('wcg_admin_floating_notification_v1', { ...config, updatedAt: now });
-        window.dispatchEvent(new CustomEvent('wcg_floating_notification_updated', { detail: { ...config, updatedAt: now } }));
+        localStorage.setItem('pine_admin_floating_notification_v1', JSON.stringify({ ...config, updatedAt: now }));
+        crossOriginSync.setItem('pine_admin_floating_notification_v1', { ...config, updatedAt: now });
+        window.dispatchEvent(new CustomEvent('pine_floating_notification_updated', { detail: { ...config, updatedAt: now } }));
       } catch {}
     }
 
@@ -3959,7 +3959,7 @@ class AdminDataService {
     ];
     let list: UtilityCategory[] = [...defaultCats];
     try {
-      const saved = localStorage.getItem('wcg_admin_utility_categories_v1');
+      const saved = localStorage.getItem('pine_admin_utility_categories_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -4012,10 +4012,10 @@ class AdminDataService {
     }
 
     try {
-      localStorage.setItem('wcg_admin_utility_categories_v1', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_admin_utility_categories_v1', list);
+      localStorage.setItem('pine_admin_utility_categories_v1', JSON.stringify(list));
+      crossOriginSync.setItem('pine_admin_utility_categories_v1', list);
       this.broadcastSync('UTILITY_CATEGORIES_UPDATED', list);
-      this.syncToCloudflareKV('wcg_admin_utility_categories_v1', list);
+      this.syncToCloudflareKV('pine_admin_utility_categories_v1', list);
       this.pushFullStateToKV();
       this.logAction('UTILITY_CATEGORY_SAVED', finalItem.id, 'INFO', { label: finalItem.label });
     } catch {}
@@ -4031,10 +4031,10 @@ class AdminDataService {
     list = list.filter((c) => c.id !== id);
 
     try {
-      localStorage.setItem('wcg_admin_utility_categories_v1', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_admin_utility_categories_v1', list);
+      localStorage.setItem('pine_admin_utility_categories_v1', JSON.stringify(list));
+      crossOriginSync.setItem('pine_admin_utility_categories_v1', list);
       this.broadcastSync('UTILITY_CATEGORIES_UPDATED', list);
-      this.syncToCloudflareKV('wcg_admin_utility_categories_v1', list);
+      this.syncToCloudflareKV('pine_admin_utility_categories_v1', list);
       this.pushFullStateToKV();
       this.logAction('UTILITY_CATEGORY_DELETED', id, 'WARNING', { label: target.label });
     } catch {}
@@ -4052,7 +4052,7 @@ class AdminDataService {
     ];
     let list: StoreCategory[] = [...defaultCats];
     try {
-      const saved = localStorage.getItem('wcg_admin_store_categories_v1');
+      const saved = localStorage.getItem('pine_admin_store_categories_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -4106,10 +4106,10 @@ class AdminDataService {
     }
 
     try {
-      localStorage.setItem('wcg_admin_store_categories_v1', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_admin_store_categories_v1', list);
+      localStorage.setItem('pine_admin_store_categories_v1', JSON.stringify(list));
+      crossOriginSync.setItem('pine_admin_store_categories_v1', list);
       this.broadcastSync('STORE_CATEGORIES_UPDATED', list);
-      this.syncToCloudflareKV('wcg_admin_store_categories_v1', list);
+      this.syncToCloudflareKV('pine_admin_store_categories_v1', list);
       this.pushFullStateToKV();
       this.logAction('STORE_CATEGORY_SAVED', finalItem.id, 'INFO', { label: finalItem.label });
     } catch {}
@@ -4125,10 +4125,10 @@ class AdminDataService {
     list = list.filter((c) => c.id !== id);
 
     try {
-      localStorage.setItem('wcg_admin_store_categories_v1', JSON.stringify(list));
-      crossOriginSync.setItem('wcg_admin_store_categories_v1', list);
+      localStorage.setItem('pine_admin_store_categories_v1', JSON.stringify(list));
+      crossOriginSync.setItem('pine_admin_store_categories_v1', list);
       this.broadcastSync('STORE_CATEGORIES_UPDATED', list);
-      this.syncToCloudflareKV('wcg_admin_store_categories_v1', list);
+      this.syncToCloudflareKV('pine_admin_store_categories_v1', list);
       this.pushFullStateToKV();
       this.logAction('STORE_CATEGORY_DELETED', id, 'WARNING', { label: target.label });
     } catch {}
@@ -4262,10 +4262,10 @@ class AdminDataService {
         body: JSON.stringify({
           crawlerAutoPublishGamesConfig: this.crawlerAutoPublishGamesConfig,
       utilitiesGlobalShowSold: typeof localStorage !== 'undefined'
-        ? (localStorage.getItem('wcg_utilities_global_show_sold') !== 'false' && localStorage.getItem('wcg_admin_show_sold_util') !== 'false')
+        ? (localStorage.getItem('pine_utilities_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_util') !== 'false')
         : true,
       storeGlobalShowSold: typeof localStorage !== 'undefined'
-        ? (localStorage.getItem('wcg_store_global_show_sold') !== 'false' && localStorage.getItem('wcg_admin_show_sold_store') !== 'false')
+        ? (localStorage.getItem('pine_store_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_store') !== 'false')
         : true,
         }),
       });
@@ -4302,7 +4302,7 @@ class AdminDataService {
           this.saveGames();
         }
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('wcg_admin_data_updated'));
+          window.dispatchEvent(new CustomEvent('pine_admin_data_updated'));
           this.broadcastSync('ADMIN_DATA_UPDATED', { action: 'approve_crawler_game', id });
         }
         return { success: true, message: data.message };
@@ -4416,7 +4416,7 @@ class AdminDataService {
           this.saveGames();
         }
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('wcg_admin_data_updated'));
+          window.dispatchEvent(new CustomEvent('pine_admin_data_updated'));
           this.broadcastSync('ADMIN_DATA_UPDATED', { action: 'batch_approve_crawler_games', ids });
         }
         return { success: true, message: data.message, approvedCount: data.approvedCount };
@@ -4640,8 +4640,8 @@ class AdminDataService {
       const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1';
 
       const endpoints = isLocalhost
-        ? ['https://admin-code-game-shop.pages.dev/api/sync', 'https://codegame.shop/api/sync', 'https://web-code-game.pages.dev/api/sync', '/api/sync']
-        : ['/api/sync', 'https://admin-code-game-shop.pages.dev/api/sync', 'https://codegame.shop/api/sync', 'https://web-code-game.pages.dev/api/sync'];
+        ? ['https://admin-universal-mall.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', '/api/sync']
+        : ['/api/sync', 'https://admin-universal-mall.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync', 'https://universal-mall-shop.pages.dev/api/sync'];
 
       let success = false;
       const headers = this.getAuthHeaders();
@@ -4684,13 +4684,13 @@ class AdminDataService {
   public async saveCrawlerSources(sources: CrawlerSource[]): Promise<boolean> {
     this.crawlerSources = sources;
     try {
-      this.safeSetItem('wcg_admin_crawler_sources_v1', JSON.stringify(sources));
-      crossOriginSync.setItem('wcg_admin_crawler_sources_v1', sources);
+      this.safeSetItem('pine_admin_crawler_sources_v1', JSON.stringify(sources));
+      crossOriginSync.setItem('pine_admin_crawler_sources_v1', sources);
       this.broadcastSync('CRAWLER_SOURCES_UPDATED', sources);
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wcg_crawler_sources_updated', { detail: sources }));
+        window.dispatchEvent(new CustomEvent('pine_crawler_sources_updated', { detail: sources }));
       }
-      await this.syncToCloudflareKV('wcg_crawler_sources_v1', sources);
+      await this.syncToCloudflareKV('pine_crawler_sources_v1', sources);
       return true;
     } catch (e) {
       console.warn('[AdminDataService] Lỗi lưu crawler sources:', e);
@@ -5606,8 +5606,8 @@ class AdminDataService {
     const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
     const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1';
     const endpoints = isLocalhost
-      ? ['https://admin-code-game-shop.pages.dev/api/crawler/ingest-upcoming-games', '/api/crawler/ingest-upcoming-games']
-      : ['/api/crawler/ingest-upcoming-games', 'https://admin-code-game-shop.pages.dev/api/crawler/ingest-upcoming-games'];
+      ? ['https://admin-universal-mall.pages.dev/api/crawler/ingest-upcoming-games', '/api/crawler/ingest-upcoming-games']
+      : ['/api/crawler/ingest-upcoming-games', 'https://admin-universal-mall.pages.dev/api/crawler/ingest-upcoming-games'];
 
     const payload = {
       action: 'set_display_list',
@@ -5643,8 +5643,8 @@ class AdminDataService {
     const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
     const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1';
     const endpoints = isLocalhost
-      ? ['https://admin-code-game-shop.pages.dev/api/crawler/ingest-upcoming-games?status=ALL', '/api/crawler/ingest-upcoming-games?status=ALL']
-      : ['/api/crawler/ingest-upcoming-games?status=ALL', 'https://admin-code-game-shop.pages.dev/api/crawler/ingest-upcoming-games?status=ALL'];
+      ? ['https://admin-universal-mall.pages.dev/api/crawler/ingest-upcoming-games?status=ALL', '/api/crawler/ingest-upcoming-games?status=ALL']
+      : ['/api/crawler/ingest-upcoming-games?status=ALL', 'https://admin-universal-mall.pages.dev/api/crawler/ingest-upcoming-games?status=ALL'];
 
     for (const url of endpoints) {
       try {

@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       (error as any)?.name === 'ChunkLoadError';
 
     if (isChunkError && typeof window !== 'undefined') {
-      const retryKey = 'wcg_error_boundary_chunk_reload';
+      const retryKey = 'pine_error_boundary_chunk_reload';
       const last = sessionStorage.getItem(retryKey);
       const now = Date.now();
       if (!last || now - parseInt(last, 10) > 10000) {

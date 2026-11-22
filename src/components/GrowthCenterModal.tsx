@@ -85,9 +85,9 @@ export const GrowthCenterModal: React.FC<GrowthCenterModalProps> = ({
       const cfg = e?.detail || growthService.getConfig();
       if (cfg) setConfig(cfg);
     };
-    window.addEventListener('wcg_growth_config_updated', handleConfigUpdate);
+    window.addEventListener('pine_growth_config_updated', handleConfigUpdate);
     return () => {
-      window.removeEventListener('wcg_growth_config_updated', handleConfigUpdate);
+      window.removeEventListener('pine_growth_config_updated', handleConfigUpdate);
     };
   }, []);
 
@@ -173,7 +173,7 @@ export const GrowthCenterModal: React.FC<GrowthCenterModalProps> = ({
   if (!isOpen || typeof document === 'undefined') return null;
 
   const currentUserId = currentUser?.id || 'guest_user';
-  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://codegame.shop';
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev';
   const referralCode = growthData.referralCode;
   const referralLink = `${siteUrl}?ref=${referralCode}`;
 

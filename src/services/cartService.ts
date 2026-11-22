@@ -1,6 +1,6 @@
 /**
  * Multi-Store Marketplace Shopping Cart Service (Giai đoạn 2 Sàn TMĐT số)
- * Quản lý giỏ hàng đa gian hàng, gom nhóm theo người bán và đồng bộ sự kiện wcg_cart_updated.
+ * Quản lý giỏ hàng đa gian hàng, gom nhóm theo người bán và đồng bộ sự kiện pine_cart_updated.
  */
 
 export interface CartItem {
@@ -35,7 +35,7 @@ export interface StoreCartGroup {
 }
 
 class CartService {
-  private readonly STORAGE_KEY = 'wcg_marketplace_cart_v1';
+  private readonly STORAGE_KEY = 'pine_marketplace_cart_v1';
 
   public getCart(): CartItem[] {
     if (typeof window === 'undefined') return [];
@@ -53,7 +53,7 @@ class CartService {
     if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(items));
-      window.dispatchEvent(new CustomEvent('wcg_cart_updated', { detail: { items, count: items.length } }));
+      window.dispatchEvent(new CustomEvent('pine_cart_updated', { detail: { items, count: items.length } }));
     } catch (err) {
       console.error('[CartService save error]', err);
     }
@@ -109,7 +109,7 @@ class CartService {
   public clearCart(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(this.STORAGE_KEY);
-    window.dispatchEvent(new CustomEvent('wcg_cart_updated', { detail: { items: [], count: 0 } }));
+    window.dispatchEvent(new CustomEvent('pine_cart_updated', { detail: { items: [], count: 0 } }));
   }
 
   public getCartCount(): number {

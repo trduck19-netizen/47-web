@@ -129,16 +129,16 @@ class DataService {
   private codesFallbackLoaded: boolean = false;
 
   // Local storage keys
-  private readonly BOOKMARKS_KEY = 'wcg_bookmarks';
-  private readonly VOTES_KEY = 'wcg_votes';
-  private readonly CUSTOM_CODES_KEY = 'wcg_custom_codes';
-  private readonly USER_KEY = 'wcg_user';
-  private readonly CLAIMED_CODES_KEY = 'wcg_claimed_giveaways';
-  private readonly ORDERS_KEY = 'wcg_orders';
-  private readonly MISSION_REWARDS_KEY = 'wcg_my_mission_rewards_v1';
-  private readonly STORE_PRODUCTS_KEY = 'wcg_admin_store_products_v4';
-  private readonly UTILITIES_KEY = 'wcg_admin_utilities_v4';
-  private readonly GIVEAWAYS_KEY = 'wcg_admin_giveaways_v4';
+  private readonly BOOKMARKS_KEY = 'pine_bookmarks';
+  private readonly VOTES_KEY = 'pine_votes';
+  private readonly CUSTOM_CODES_KEY = 'pine_custom_codes';
+  private readonly USER_KEY = 'pine_user';
+  private readonly CLAIMED_CODES_KEY = 'pine_claimed_giveaways';
+  private readonly ORDERS_KEY = 'pine_orders';
+  private readonly MISSION_REWARDS_KEY = 'pine_my_mission_rewards_v1';
+  private readonly STORE_PRODUCTS_KEY = 'pine_admin_store_products_v4';
+  private readonly UTILITIES_KEY = 'pine_admin_utilities_v4';
+  private readonly GIVEAWAYS_KEY = 'pine_admin_giveaways_v4';
 
   // Seed sample Store Products, Utilities & Giveaways from shared seedData
   private defaultStoreProducts: StoreProduct[] = DEFAULT_STORE_PRODUCTS;
@@ -150,45 +150,45 @@ class DataService {
     this.processData().catch(() => {});
   }
 
-  private readonly DATASET_VERSION = 'wcg_dataset_2026_10_30_v41';
+  private readonly DATASET_VERSION = 'pine_dataset_2026_10_30_v41';
 
   private cleanupLegacyV3Data(): void {
     if (typeof window === 'undefined') return;
     try {
-      const currentVer = localStorage.getItem('wcg_dataset_version');
+      const currentVer = localStorage.getItem('pine_dataset_version');
       if (currentVer !== this.DATASET_VERSION) {
         // Clear cached game, code, giveaways and utilities lists to load newest datasets with 100% fresh data
-        localStorage.removeItem('wcg_admin_games_v5');
-        localStorage.removeItem('wcg_admin_free_codes_v5');
-        localStorage.removeItem('wcg_admin_games_v4');
-        localStorage.removeItem('wcg_admin_free_codes_v4');
-        localStorage.removeItem('wcg_admin_utilities_v4');
-        localStorage.removeItem('wcg_utilities');
-        localStorage.removeItem('wcg_admin_giveaways_v4');
+        localStorage.removeItem('pine_admin_games_v5');
+        localStorage.removeItem('pine_admin_free_codes_v5');
+        localStorage.removeItem('pine_admin_games_v4');
+        localStorage.removeItem('pine_admin_free_codes_v4');
+        localStorage.removeItem('pine_admin_utilities_v4');
+        localStorage.removeItem('pine_utilities');
+        localStorage.removeItem('pine_admin_giveaways_v4');
         localStorage.removeItem(this.GIVEAWAYS_KEY);
-        localStorage.setItem('wcg_dataset_version', this.DATASET_VERSION);
+        localStorage.setItem('pine_dataset_version', this.DATASET_VERSION);
       }
 
       const obsoleteKeys = [
-        'wcg_store_products',
-        'wcg_utilities',
-        'wcg_giveaways',
-        'wcg_admin_games_v4',
-        'wcg_admin_free_codes_v4',
-        'wcg_admin_games_v3',
-        'wcg_admin_free_codes_v3',
-        'wcg_admin_games_v2',
-        'wcg_admin_free_codes_v2',
-        'wcg_admin_submissions_v3',
-        'wcg_admin_giveaways_v3',
-        'wcg_admin_store_products_v3',
-        'wcg_admin_utilities_v3',
+        'pine_store_products',
+        'pine_utilities',
+        'pine_giveaways',
+        'pine_admin_games_v4',
+        'pine_admin_free_codes_v4',
+        'pine_admin_games_v3',
+        'pine_admin_free_codes_v3',
+        'pine_admin_games_v2',
+        'pine_admin_free_codes_v2',
+        'pine_admin_submissions_v3',
+        'pine_admin_giveaways_v3',
+        'pine_admin_store_products_v3',
+        'pine_admin_utilities_v3',
       ];
       obsoleteKeys.forEach((k) => localStorage.removeItem(k));
 
       // Clean up phantom giveaway and Delta Force from localStorage if present
       try {
-        const rawGw = localStorage.getItem('wcg_admin_giveaways_v4') || localStorage.getItem(this.GIVEAWAYS_KEY);
+        const rawGw = localStorage.getItem('pine_admin_giveaways_v4') || localStorage.getItem(this.GIVEAWAYS_KEY);
         if (rawGw) {
           const parsed = JSON.parse(rawGw);
           if (Array.isArray(parsed)) {
@@ -199,7 +199,7 @@ class DataService {
                 g?.id !== 'gw_garena_delta_force' &&
                 !(g?.game_name && g.game_name.toLowerCase().includes('delta force'))
             );
-            localStorage.setItem('wcg_admin_giveaways_v4', JSON.stringify(cleaned));
+            localStorage.setItem('pine_admin_giveaways_v4', JSON.stringify(cleaned));
             localStorage.setItem(this.GIVEAWAYS_KEY, JSON.stringify(cleaned));
           }
         }
@@ -217,42 +217,42 @@ class DataService {
         'sp_pubg_uc_600',
       ]);
       try {
-        const rawSp = localStorage.getItem('wcg_admin_store_products_v4');
+        const rawSp = localStorage.getItem('pine_admin_store_products_v4');
         if (rawSp) {
           const parsed = JSON.parse(rawSp);
           if (Array.isArray(parsed)) {
             const filtered = parsed.filter((p) => p && !testMockIds.has(p.id));
-            localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(filtered));
+            localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(filtered));
             localStorage.setItem(this.STORE_PRODUCTS_KEY, JSON.stringify(filtered));
           }
         }
       } catch {}
       try {
-        const rawUt = localStorage.getItem('wcg_admin_utilities_v4');
+        const rawUt = localStorage.getItem('pine_admin_utilities_v4');
         if (rawUt) {
           const parsed = JSON.parse(rawUt);
           if (Array.isArray(parsed)) {
             const filtered = parsed.filter((u) => u && !testMockIds.has(u.id));
-            localStorage.setItem('wcg_admin_utilities_v4', JSON.stringify(filtered));
+            localStorage.setItem('pine_admin_utilities_v4', JSON.stringify(filtered));
             localStorage.setItem(this.UTILITIES_KEY, JSON.stringify(filtered));
           }
         }
       } catch {}
 
       // Reset wallets and revenue to 0 VNĐ
-      const resetFlag = 'wcg_client_wallet_and_revenue_reset_v5';
+      const resetFlag = 'pine_client_wallet_and_revenue_reset_v5';
       if (!localStorage.getItem(resetFlag)) {
         try {
-          const uRaw = localStorage.getItem('wcg_user');
+          const uRaw = localStorage.getItem('pine_user');
           if (uRaw) {
             const u = JSON.parse(uRaw);
             u.wallet_balance = 0;
-            localStorage.setItem('wcg_user', JSON.stringify(u));
+            localStorage.setItem('pine_user', JSON.stringify(u));
           }
         } catch {}
-        localStorage.setItem('wcg_orders', JSON.stringify([]));
-        localStorage.setItem('wcg_admin_orders_v4', JSON.stringify([]));
-        localStorage.setItem('wcg_admin_transactions_v4', JSON.stringify([]));
+        localStorage.setItem('pine_orders', JSON.stringify([]));
+        localStorage.setItem('pine_admin_orders_v4', JSON.stringify([]));
+        localStorage.setItem('pine_admin_transactions_v4', JSON.stringify([]));
         localStorage.setItem(resetFlag, 'true');
       }
     } catch {}
@@ -275,7 +275,7 @@ class DataService {
     // Purge stale inventory cache from client localStorage to ensure 100% server-authoritative stock
     try {
       if (!window.location.hash.includes('/admin')) {
-        localStorage.removeItem('wcg_admin_inventory_v4');
+        localStorage.removeItem('pine_admin_inventory_v4');
       }
     } catch {}
 
@@ -303,24 +303,24 @@ class DataService {
     window.addEventListener('storage', (e) => {
       if (
         e.key &&
-        (e.key.startsWith('wcg_admin_store_products') ||
-          e.key.startsWith('wcg_admin_utilities') ||
-          e.key.startsWith('wcg_deleted_store_products') ||
-          e.key.startsWith('wcg_deleted_utilities') ||
-          e.key.startsWith('wcg_admin_games') ||
-          e.key.startsWith('wcg_admin_free_codes') ||
-          e.key.startsWith('wcg_admin_custom_free_codes') ||
-          e.key.startsWith('wcg_deleted_free_codes') ||
-          e.key.startsWith('wcg_admin_giveaways') ||
-          e.key.startsWith('wcg_admin_content') ||
-          e.key.startsWith('wcg_admin_sepay'))
+        (e.key.startsWith('pine_admin_store_products') ||
+          e.key.startsWith('pine_admin_utilities') ||
+          e.key.startsWith('pine_deleted_store_products') ||
+          e.key.startsWith('pine_deleted_utilities') ||
+          e.key.startsWith('pine_admin_games') ||
+          e.key.startsWith('pine_admin_free_codes') ||
+          e.key.startsWith('pine_admin_custom_free_codes') ||
+          e.key.startsWith('pine_deleted_free_codes') ||
+          e.key.startsWith('pine_admin_giveaways') ||
+          e.key.startsWith('pine_admin_content') ||
+          e.key.startsWith('pine_admin_sepay'))
       ) {
         this.reload();
       }
     });
 
     // Custom Window Events
-    window.addEventListener('wcg_admin_data_updated', () => {
+    window.addEventListener('pine_admin_data_updated', () => {
       this.reload();
     });
 
@@ -331,7 +331,7 @@ class DataService {
     // Cross-tab & Cross-origin BroadcastChannel for instant sync without reload
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
-        const bc = new BroadcastChannel('wcg_data_sync');
+        const bc = new BroadcastChannel('pine_data_sync');
         bc.onmessage = (event) => {
           const type = String(event.data?.type || event.data?.key || '');
           if (!type) return;
@@ -352,7 +352,7 @@ class DataService {
           if (type.includes('content') || type.includes('branding')) {
             this.syncWithCloudflareKV().then(() => {
               this.reload();
-              window.dispatchEvent(new CustomEvent('wcg_admin_content_updated'));
+              window.dispatchEvent(new CustomEvent('pine_admin_content_updated'));
             });
           } else if (
             type.includes('games') ||
@@ -361,7 +361,7 @@ class DataService {
             type.includes('utilities') ||
             type.includes('giveaways') ||
             type === 'ADMIN_DATA_UPDATED' ||
-            type === 'wcg_admin_data_updated'
+            type === 'pine_admin_data_updated'
           ) {
             this.reload();
           }
@@ -374,14 +374,14 @@ class DataService {
     try {
       const token =
         typeof window !== 'undefined'
-          ? localStorage.getItem('wcg_auth_token') ||
-            sessionStorage.getItem('wcg_auth_token') ||
+          ? localStorage.getItem('pine_auth_token') ||
+            sessionStorage.getItem('pine_auth_token') ||
             this.getCurrentUser()?.session_token ||
             ''
           : '';
       let adminSecret =
         typeof window !== 'undefined'
-          ? sessionStorage.getItem('wcg_admin_sync_key') || localStorage.getItem('wcg_admin_sync_key') || ''
+          ? sessionStorage.getItem('pine_admin_sync_key') || localStorage.getItem('pine_admin_sync_key') || ''
           : '';
 
       const headers: Record<string, string> = {
@@ -398,14 +398,14 @@ class DataService {
       const endpoints: string[] = ['/api/sync'];
       if (typeof window !== 'undefined') {
         const host = window.location.hostname;
-        if (!host.includes('codegame.shop') && !host.includes('localhost')) {
-          endpoints.push('https://codegame.shop/api/sync');
+        if (!host.includes('universal-mall-shop.pages.dev') && !host.includes('codegame.shop') && !host.includes('localhost')) {
+          endpoints.push('/api/sync');
         }
         if (!host.includes('web-code-game.pages.dev') && !host.includes('localhost')) {
-          endpoints.push('https://web-code-game.pages.dev/api/sync');
+          endpoints.push('https://universal-mall-shop.pages.dev/api/sync');
         }
         if (!host.includes('admin-code-game-shop.pages.dev') && !host.includes('localhost')) {
-          endpoints.push('https://admin-code-game-shop.pages.dev/api/sync');
+          endpoints.push('https://admin-universal-mall.pages.dev/api/sync');
         }
       }
 
@@ -436,15 +436,15 @@ class DataService {
         const json = await res.json();
         const incoming = json.data || json.content;
         if (incoming && Array.isArray(incoming) && incoming.length > 0) {
-          const currentContent = localStorage.getItem('wcg_admin_content_v4');
+          const currentContent = localStorage.getItem('pine_admin_content_v4');
           const newContent = JSON.stringify(incoming);
           if (currentContent !== newContent) {
             try {
-              localStorage.setItem('wcg_admin_content_v4', newContent);
+              localStorage.setItem('pine_admin_content_v4', newContent);
             } catch {}
           }
           // Always notify components of up-to-date CMS items
-          window.dispatchEvent(new CustomEvent('wcg_admin_content_updated', { detail: incoming }));
+          window.dispatchEvent(new CustomEvent('pine_admin_content_updated', { detail: incoming }));
 
           // Specifically propagate floating notification setting
           const floatingItem = incoming.find((i: any) => i && i.key === 'floating_notification');
@@ -459,9 +459,9 @@ class DataService {
               updatedAt: extra.updatedAt || floatingItem.updatedAt || new Date().toISOString(),
             };
             try {
-              localStorage.setItem('wcg_admin_floating_notification_v1', JSON.stringify(cfg));
+              localStorage.setItem('pine_admin_floating_notification_v1', JSON.stringify(cfg));
             } catch {}
-            window.dispatchEvent(new CustomEvent('wcg_floating_notification_updated', { detail: cfg }));
+            window.dispatchEvent(new CustomEvent('pine_floating_notification_updated', { detail: cfg }));
           }
         }
       }
@@ -477,12 +477,12 @@ class DataService {
         const json = await res.json();
         const incoming = json.data || json.giveaways;
         if (incoming && Array.isArray(incoming) && incoming.length > 0) {
-          const currentGw = localStorage.getItem('wcg_admin_giveaways_v4');
+          const currentGw = localStorage.getItem('pine_admin_giveaways_v4');
           const newGw = JSON.stringify(incoming);
           if (currentGw !== newGw) {
-            localStorage.setItem('wcg_admin_giveaways_v4', newGw);
+            localStorage.setItem('pine_admin_giveaways_v4', newGw);
             localStorage.setItem(this.GIVEAWAYS_KEY, newGw);
-            window.dispatchEvent(new CustomEvent('wcg_giveaways_updated', { detail: incoming }));
+            window.dispatchEvent(new CustomEvent('pine_giveaways_updated', { detail: incoming }));
             this.reload();
           }
           return incoming;
@@ -503,8 +503,8 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           window.location.hash.includes('/admin') ||
           window.location.pathname.startsWith('/admin') ||
           window.location.hostname.includes('admin-code-game-shop') ||
-          Boolean(sessionStorage.getItem('wcg_admin_session')) ||
-          Boolean(localStorage.getItem('wcg_admin_authenticated') === 'true')
+          Boolean(sessionStorage.getItem('pine_admin_session')) ||
+          Boolean(localStorage.getItem('pine_admin_authenticated') === 'true')
         );
         if (!isAdmin) {
           // Public visitor fast path: Call /api/sync-lite to get essential data in 1 compressed request (~49KB, TTFB < 100ms)
@@ -540,20 +540,20 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
                 // Apply Marketing config
                 if (json.marketingConfig && typeof json.marketingConfig === 'object') {
                   try {
-                    localStorage.setItem('wcg_marketing_config_v1', JSON.stringify(json.marketingConfig));
-                    window.dispatchEvent(new CustomEvent('wcg_marketing_config_updated', { detail: json.marketingConfig }));
+                    localStorage.setItem('pine_marketing_config_v1', JSON.stringify(json.marketingConfig));
+                    window.dispatchEvent(new CustomEvent('pine_marketing_config_updated', { detail: json.marketingConfig }));
                   } catch {}
                 }
 
                 // Apply CMS Branding & Content
                 if (json.content && Array.isArray(json.content) && json.content.length > 0) {
-                  const currentContent = localStorage.getItem('wcg_admin_content_v4');
+                  const currentContent = localStorage.getItem('pine_admin_content_v4');
                   const newContent = JSON.stringify(json.content);
                   if (currentContent !== newContent) {
                     try {
-                      localStorage.setItem('wcg_admin_content_v4', newContent);
+                      localStorage.setItem('pine_admin_content_v4', newContent);
                     } catch {}
-                    window.dispatchEvent(new CustomEvent('wcg_admin_content_updated', { detail: json.content }));
+                    window.dispatchEvent(new CustomEvent('pine_admin_content_updated', { detail: json.content }));
                   }
                   const floatingItem = json.content.find((i: any) => i && i.key === 'floating_notification');
                   if (floatingItem) {
@@ -567,32 +567,32 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
                       updatedAt: extra.updatedAt || floatingItem.updatedAt || new Date().toISOString(),
                     };
                     try {
-                      localStorage.setItem('wcg_admin_floating_notification_v1', JSON.stringify(cfg));
+                      localStorage.setItem('pine_admin_floating_notification_v1', JSON.stringify(cfg));
                     } catch {}
-                    window.dispatchEvent(new CustomEvent('wcg_floating_notification_updated', { detail: cfg }));
+                    window.dispatchEvent(new CustomEvent('pine_floating_notification_updated', { detail: cfg }));
                   }
                 }
 
                 // Apply Active Giveaways
                 if (json.giveaways && Array.isArray(json.giveaways) && json.giveaways.length > 0) {
-                  const currentGw = localStorage.getItem('wcg_admin_giveaways_v4');
+                  const currentGw = localStorage.getItem('pine_admin_giveaways_v4');
                   const newGw = JSON.stringify(json.giveaways);
                   if (currentGw !== newGw) {
                     try {
-                      localStorage.setItem('wcg_admin_giveaways_v4', newGw);
+                      localStorage.setItem('pine_admin_giveaways_v4', newGw);
                       localStorage.setItem(this.GIVEAWAYS_KEY, newGw);
                     } catch {}
-                    window.dispatchEvent(new CustomEvent('wcg_giveaways_updated', { detail: json.giveaways }));
+                    window.dispatchEvent(new CustomEvent('pine_giveaways_updated', { detail: json.giveaways }));
                   }
                 }
 
                 // Apply Upcoming Games
                 if (json.upcomingGames && Array.isArray(json.upcomingGames) && json.upcomingGames.length > 0) {
                   try {
-                    localStorage.setItem('wcg_cached_upcoming_games_v1', JSON.stringify(json.upcomingGames));
-                    localStorage.setItem('wcg_admin_upcoming_games_v1', JSON.stringify(json.upcomingGames));
+                    localStorage.setItem('pine_cached_upcoming_games_v1', JSON.stringify(json.upcomingGames));
+                    localStorage.setItem('pine_admin_upcoming_games_v1', JSON.stringify(json.upcomingGames));
                   } catch {}
-                  window.dispatchEvent(new CustomEvent('wcg_upcoming_games_updated', { detail: json.upcomingGames }));
+                  window.dispatchEvent(new CustomEvent('pine_upcoming_games_updated', { detail: json.upcomingGames }));
                 }
 
                 // Apply Game Events
@@ -615,29 +615,29 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
                     let delList: string[] = [];
                     if (json.deletedStoreProducts && Array.isArray(json.deletedStoreProducts)) {
                       delList = json.deletedStoreProducts;
-                      localStorage.setItem('wcg_deleted_store_products', JSON.stringify(delList));
+                      localStorage.setItem('pine_deleted_store_products', JSON.stringify(delList));
                     } else {
                       try {
-                        const delRaw = localStorage.getItem('wcg_deleted_store_products');
+                        const delRaw = localStorage.getItem('pine_deleted_store_products');
                         if (delRaw) delList = JSON.parse(delRaw);
                       } catch {}
                     }
                     const delSet = new Set(delList);
                     delSet.add('sp_idle-cat-gunner_mw5yrnka');
-                    localStorage.setItem('wcg_deleted_store_products', JSON.stringify(Array.from(delSet)));
+                    localStorage.setItem('pine_deleted_store_products', JSON.stringify(Array.from(delSet)));
                     const filtered = json.storeProducts.filter((p: any) => p && p.id && !delSet.has(p.id));
-                    const currentSp = localStorage.getItem('wcg_admin_store_products_v4');
+                    const currentSp = localStorage.getItem('pine_admin_store_products_v4');
                     const newSp = JSON.stringify(filtered);
                     if (currentSp !== newSp) {
-                      localStorage.setItem('wcg_admin_store_products_v4', newSp);
+                      localStorage.setItem('pine_admin_store_products_v4', newSp);
                       localStorage.setItem(this.STORE_PRODUCTS_KEY, newSp);
                     }
                     if (json.storeCategories && Array.isArray(json.storeCategories)) {
-                      localStorage.setItem('wcg_admin_store_categories_v1', JSON.stringify(json.storeCategories));
+                      localStorage.setItem('pine_admin_store_categories_v1', JSON.stringify(json.storeCategories));
                     }
-                    window.dispatchEvent(new CustomEvent('wcg_store_products_updated', { detail: filtered }));
-                    window.dispatchEvent(new CustomEvent('wcg_store_settings_updated', { detail: { products: filtered, categories: json.storeCategories } }));
-                    window.dispatchEvent(new CustomEvent('wcg_admin_data_updated'));
+                    window.dispatchEvent(new CustomEvent('pine_store_products_updated', { detail: filtered }));
+                    window.dispatchEvent(new CustomEvent('pine_store_settings_updated', { detail: { products: filtered, categories: json.storeCategories } }));
+                    window.dispatchEvent(new CustomEvent('pine_admin_data_updated'));
                     this.notifyListeners();
                   } catch (err) {
                     console.warn('[dataService] Failed to cache store products from sync-lite:', err);
@@ -692,10 +692,10 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             let hasChanges = false;
             if (json.games && Array.isArray(json.games) && json.games.length > 0) {
               try {
-                const currentGames = localStorage.getItem('wcg_admin_games_v5');
+                const currentGames = localStorage.getItem('pine_admin_games_v5');
                 const newGames = JSON.stringify(json.games);
                 if (currentGames !== newGames) {
-                  localStorage.setItem('wcg_admin_games_v5', newGames);
+                  localStorage.setItem('pine_admin_games_v5', newGames);
                   hasChanges = true;
                 }
               } catch {}
@@ -704,9 +704,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               try {
                 const newCodes = JSON.stringify(json.freeCodes);
                 if (newCodes.length <= 1.5 * 1024 * 1024) {
-                  const currentCodes = localStorage.getItem('wcg_admin_free_codes_v5');
+                  const currentCodes = localStorage.getItem('pine_admin_free_codes_v5');
                   if (currentCodes !== newCodes) {
-                    localStorage.setItem('wcg_admin_free_codes_v5', newCodes);
+                    localStorage.setItem('pine_admin_free_codes_v5', newCodes);
                     hasChanges = true;
                   }
                 }
@@ -714,56 +714,56 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             }
             if (json.deletedFreeCodes && Array.isArray(json.deletedFreeCodes)) {
               try {
-                const currentDel = localStorage.getItem('wcg_deleted_free_codes');
+                const currentDel = localStorage.getItem('pine_deleted_free_codes');
                 const newDel = JSON.stringify(json.deletedFreeCodes);
                 if (currentDel !== newDel) {
-                  localStorage.setItem('wcg_deleted_free_codes', newDel);
+                  localStorage.setItem('pine_deleted_free_codes', newDel);
                   hasChanges = true;
                 }
               } catch {}
             }
             if (json.customFreeCodes && Array.isArray(json.customFreeCodes)) {
               try {
-                const currentCustom = localStorage.getItem('wcg_admin_custom_free_codes_v1');
+                const currentCustom = localStorage.getItem('pine_admin_custom_free_codes_v1');
                 const newCustom = JSON.stringify(json.customFreeCodes);
                 if (currentCustom !== newCustom) {
-                  localStorage.setItem('wcg_admin_custom_free_codes_v1', newCustom);
+                  localStorage.setItem('pine_admin_custom_free_codes_v1', newCustom);
                   hasChanges = true;
-                  window.dispatchEvent(new CustomEvent('wcg_admin_custom_codes_updated', { detail: json.customFreeCodes }));
+                  window.dispatchEvent(new CustomEvent('pine_admin_custom_codes_updated', { detail: json.customFreeCodes }));
                 }
               } catch {}
             }
             if (json.content && Array.isArray(json.content) && json.content.length > 0) {
               try {
-                const currentContent = localStorage.getItem('wcg_admin_content_v4');
+                const currentContent = localStorage.getItem('pine_admin_content_v4');
                 const newContent = JSON.stringify(json.content);
                 if (currentContent !== newContent) {
-                  localStorage.setItem('wcg_admin_content_v4', newContent);
+                  localStorage.setItem('pine_admin_content_v4', newContent);
                   hasChanges = true;
-                  window.dispatchEvent(new CustomEvent('wcg_admin_content_updated', { detail: json.content }));
+                  window.dispatchEvent(new CustomEvent('pine_admin_content_updated', { detail: json.content }));
                 }
               } catch {}
             }
             if (json.submissions && Array.isArray(json.submissions)) {
               try {
-                const currentSubs = localStorage.getItem('wcg_admin_submissions_v4');
+                const currentSubs = localStorage.getItem('pine_admin_submissions_v4');
                 const newSubs = JSON.stringify(json.submissions);
                 if (currentSubs !== newSubs) {
-                  localStorage.setItem('wcg_admin_submissions_v4', newSubs);
+                  localStorage.setItem('pine_admin_submissions_v4', newSubs);
                   hasChanges = true;
                 }
               } catch {}
             }
             if (json.privateCodes && Array.isArray(json.privateCodes)) {
-              const currentPriv = localStorage.getItem('wcg_admin_private_codes_v4');
+              const currentPriv = localStorage.getItem('pine_admin_private_codes_v4');
               const newPriv = JSON.stringify(json.privateCodes);
               if (currentPriv !== newPriv) {
-                localStorage.setItem('wcg_admin_private_codes_v4', newPriv);
+                localStorage.setItem('pine_admin_private_codes_v4', newPriv);
                 hasChanges = true;
               }
             }
             if (json.inventory && Array.isArray(json.inventory)) {
-              const currentInvRaw = localStorage.getItem('wcg_admin_inventory_v4');
+              const currentInvRaw = localStorage.getItem('pine_admin_inventory_v4');
               let localInv: any[] = [];
               try {
                 localInv = currentInvRaw ? JSON.parse(currentInvRaw) : [];
@@ -791,12 +791,12 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               const mergedList = Array.from(mergedMap.values());
               const newInv = JSON.stringify(mergedList);
               if (currentInvRaw !== newInv) {
-                localStorage.setItem('wcg_admin_inventory_v4', newInv);
+                localStorage.setItem('pine_admin_inventory_v4', newInv);
                 hasChanges = true;
               }
             }
             if (json.orders && Array.isArray(json.orders)) {
-              const currentOrdersRaw = localStorage.getItem('wcg_admin_orders_v4');
+              const currentOrdersRaw = localStorage.getItem('pine_admin_orders_v4');
               let localOrders: any[] = [];
               try {
                 localOrders = currentOrdersRaw ? JSON.parse(currentOrdersRaw) : [];
@@ -822,12 +822,12 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               const mergedOrders = Array.from(mergedMap.values());
               const newOrders = JSON.stringify(mergedOrders);
               if (currentOrdersRaw !== newOrders) {
-                localStorage.setItem('wcg_admin_orders_v4', newOrders);
+                localStorage.setItem('pine_admin_orders_v4', newOrders);
                 hasChanges = true;
               }
             }
             if (json.transactions && Array.isArray(json.transactions)) {
-              const currentTxRaw = localStorage.getItem('wcg_admin_transactions_v4');
+              const currentTxRaw = localStorage.getItem('pine_admin_transactions_v4');
               let localTxs: any[] = [];
               try {
                 localTxs = currentTxRaw ? JSON.parse(currentTxRaw) : [];
@@ -853,22 +853,22 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               const mergedTxs = Array.from(mergedMap.values());
               const newTx = JSON.stringify(mergedTxs);
               if (currentTxRaw !== newTx) {
-                localStorage.setItem('wcg_admin_transactions_v4', newTx);
+                localStorage.setItem('pine_admin_transactions_v4', newTx);
                 hasChanges = true;
               }
             }
             if (json.deletedGiveaways && Array.isArray(json.deletedGiveaways)) {
-              const currentDelGw = localStorage.getItem('wcg_deleted_giveaways');
+              const currentDelGw = localStorage.getItem('pine_deleted_giveaways');
               const newDelGw = JSON.stringify(json.deletedGiveaways);
               if (currentDelGw !== newDelGw) {
-                localStorage.setItem('wcg_deleted_giveaways', newDelGw);
+                localStorage.setItem('pine_deleted_giveaways', newDelGw);
                 hasChanges = true;
               }
             }
             if (json.giveaways && Array.isArray(json.giveaways)) {
               let deletedGwSet = new Set<string>();
               try {
-                const delRaw = localStorage.getItem('wcg_deleted_giveaways');
+                const delRaw = localStorage.getItem('pine_deleted_giveaways');
                 if (delRaw) deletedGwSet = new Set(JSON.parse(delRaw));
               } catch {}
               if (json.deletedGiveaways && Array.isArray(json.deletedGiveaways)) {
@@ -886,123 +886,123 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
                   !(g.game_name && g.game_name.toLowerCase().includes('delta force'))
               );
               if (incomingGw.length > 0) {
-                const currentGw = localStorage.getItem('wcg_admin_giveaways_v4');
+                const currentGw = localStorage.getItem('pine_admin_giveaways_v4');
                 const newGw = JSON.stringify(incomingGw);
                 if (currentGw !== newGw) {
-                  localStorage.setItem('wcg_admin_giveaways_v4', newGw);
+                  localStorage.setItem('pine_admin_giveaways_v4', newGw);
                   localStorage.setItem(this.GIVEAWAYS_KEY, newGw);
                   hasChanges = true;
                 }
-                window.dispatchEvent(new CustomEvent('wcg_giveaways_updated', { detail: incomingGw }));
+                window.dispatchEvent(new CustomEvent('pine_giveaways_updated', { detail: incomingGw }));
               }
             }
             if (json.deletedStoreProducts && Array.isArray(json.deletedStoreProducts)) {
-              const currentDel = localStorage.getItem('wcg_deleted_store_products');
+              const currentDel = localStorage.getItem('pine_deleted_store_products');
               const newDel = JSON.stringify(json.deletedStoreProducts);
               if (currentDel !== newDel) {
-                localStorage.setItem('wcg_deleted_store_products', newDel);
+                localStorage.setItem('pine_deleted_store_products', newDel);
                 hasChanges = true;
               }
             }
             if (json.deletedUtilities && Array.isArray(json.deletedUtilities)) {
-              const currentDel = localStorage.getItem('wcg_deleted_utilities');
+              const currentDel = localStorage.getItem('pine_deleted_utilities');
               const newDel = JSON.stringify(json.deletedUtilities);
               if (currentDel !== newDel) {
-                localStorage.setItem('wcg_deleted_utilities', newDel);
+                localStorage.setItem('pine_deleted_utilities', newDel);
                 hasChanges = true;
               }
             }
             if (json.storeProducts && Array.isArray(json.storeProducts)) {
               let delList: string[] = [];
               try {
-                const delRaw = localStorage.getItem('wcg_deleted_store_products');
+                const delRaw = localStorage.getItem('pine_deleted_store_products');
                 if (delRaw) delList = JSON.parse(delRaw);
               } catch {}
               const delSet = new Set(delList);
               const filtered = json.storeProducts.filter((p: any) => p && p.id && !delSet.has(p.id));
-              const currentSp = localStorage.getItem('wcg_admin_store_products_v4');
+              const currentSp = localStorage.getItem('pine_admin_store_products_v4');
               const newSp = JSON.stringify(filtered);
               if (currentSp !== newSp) {
-                localStorage.setItem('wcg_admin_store_products_v4', newSp);
+                localStorage.setItem('pine_admin_store_products_v4', newSp);
                 localStorage.setItem(this.STORE_PRODUCTS_KEY, newSp);
                 hasChanges = true;
               }
-              window.dispatchEvent(new CustomEvent('wcg_store_products_updated', { detail: filtered }));
+              window.dispatchEvent(new CustomEvent('pine_store_products_updated', { detail: filtered }));
             }
             if (json.utilities && Array.isArray(json.utilities)) {
               let delList: string[] = [];
               try {
-                const delRaw = localStorage.getItem('wcg_deleted_utilities');
+                const delRaw = localStorage.getItem('pine_deleted_utilities');
                 if (delRaw) delList = JSON.parse(delRaw);
               } catch {}
               const delSet = new Set(delList);
               const filtered = json.utilities.filter((u: any) => u && u.id && !delSet.has(u.id));
-              const currentUt = localStorage.getItem('wcg_admin_utilities_v4');
+              const currentUt = localStorage.getItem('pine_admin_utilities_v4');
               const newUt = JSON.stringify(filtered);
               if (currentUt !== newUt) {
-                localStorage.setItem('wcg_admin_utilities_v4', newUt);
+                localStorage.setItem('pine_admin_utilities_v4', newUt);
                 localStorage.setItem(this.UTILITIES_KEY, newUt);
                 hasChanges = true;
               }
-              window.dispatchEvent(new CustomEvent('wcg_utilities_updated', { detail: filtered }));
+              window.dispatchEvent(new CustomEvent('pine_utilities_updated', { detail: filtered }));
             }
             if (json.utilitiesGlobalShowSold !== undefined) {
-              const currentVal = localStorage.getItem('wcg_utilities_global_show_sold');
+              const currentVal = localStorage.getItem('pine_utilities_global_show_sold');
               const newVal = String(json.utilitiesGlobalShowSold);
               if (currentVal !== newVal) {
-                localStorage.setItem('wcg_utilities_global_show_sold', newVal);
-                localStorage.setItem('wcg_admin_show_sold_util', newVal);
+                localStorage.setItem('pine_utilities_global_show_sold', newVal);
+                localStorage.setItem('pine_admin_show_sold_util', newVal);
                 hasChanges = true;
-                window.dispatchEvent(new CustomEvent('wcg_utilities_settings_updated', { detail: { showSold: json.utilitiesGlobalShowSold } }));
-                window.dispatchEvent(new Event('wcg_sold_count_updated'));
+                window.dispatchEvent(new CustomEvent('pine_utilities_settings_updated', { detail: { showSold: json.utilitiesGlobalShowSold } }));
+                window.dispatchEvent(new Event('pine_sold_count_updated'));
               }
             }
             if (json.storeGlobalShowSold !== undefined) {
-              const currentVal = localStorage.getItem('wcg_store_global_show_sold');
+              const currentVal = localStorage.getItem('pine_store_global_show_sold');
               const newVal = String(json.storeGlobalShowSold);
               if (currentVal !== newVal) {
-                localStorage.setItem('wcg_store_global_show_sold', newVal);
-                localStorage.setItem('wcg_admin_show_sold_store', newVal);
+                localStorage.setItem('pine_store_global_show_sold', newVal);
+                localStorage.setItem('pine_admin_show_sold_store', newVal);
                 hasChanges = true;
-                window.dispatchEvent(new CustomEvent('wcg_store_settings_updated', { detail: { showSold: json.storeGlobalShowSold } }));
-                window.dispatchEvent(new Event('wcg_sold_count_updated'));
+                window.dispatchEvent(new CustomEvent('pine_store_settings_updated', { detail: { showSold: json.storeGlobalShowSold } }));
+                window.dispatchEvent(new Event('pine_sold_count_updated'));
               }
             }
             if (json.utilityCategories && Array.isArray(json.utilityCategories)) {
-              const currentCats = localStorage.getItem('wcg_admin_utility_categories_v1');
+              const currentCats = localStorage.getItem('pine_admin_utility_categories_v1');
               const newCats = JSON.stringify(json.utilityCategories);
               if (currentCats !== newCats) {
-                localStorage.setItem('wcg_admin_utility_categories_v1', newCats);
+                localStorage.setItem('pine_admin_utility_categories_v1', newCats);
                 hasChanges = true;
               }
             }
             if (json.storeCategories && Array.isArray(json.storeCategories)) {
-              const currentCats = localStorage.getItem('wcg_admin_store_categories_v1');
+              const currentCats = localStorage.getItem('pine_admin_store_categories_v1');
               const newCats = JSON.stringify(json.storeCategories);
               if (currentCats !== newCats) {
-                localStorage.setItem('wcg_admin_store_categories_v1', newCats);
+                localStorage.setItem('pine_admin_store_categories_v1', newCats);
                 hasChanges = true;
               }
             }
             if (json.publicPayment && typeof json.publicPayment === 'object') {
-              const currentSepay = localStorage.getItem('wcg_admin_sepay_v4');
+              const currentSepay = localStorage.getItem('pine_admin_sepay_v4');
               let currentObj = currentSepay ? JSON.parse(currentSepay) : {};
               const updated = { ...currentObj, ...json.publicPayment };
               const newSepay = JSON.stringify(updated);
               if (currentSepay !== newSepay) {
-                localStorage.setItem('wcg_admin_sepay_v4', newSepay);
+                localStorage.setItem('pine_admin_sepay_v4', newSepay);
                 hasChanges = true;
               }
             } else if (json.sepay && typeof json.sepay === 'object') {
-              const currentSepay = localStorage.getItem('wcg_admin_sepay_v4');
+              const currentSepay = localStorage.getItem('pine_admin_sepay_v4');
               const newSepay = JSON.stringify(json.sepay);
               if (currentSepay !== newSepay) {
-                localStorage.setItem('wcg_admin_sepay_v4', newSepay);
+                localStorage.setItem('pine_admin_sepay_v4', newSepay);
                 hasChanges = true;
               }
             }
             if (json.marketingConfig && typeof json.marketingConfig === 'object') {
-              const currentMarketingRaw = localStorage.getItem('wcg_marketing_config_v1');
+              const currentMarketingRaw = localStorage.getItem('pine_marketing_config_v1');
               let localCfg: any = null;
               try {
                 if (currentMarketingRaw) localCfg = JSON.parse(currentMarketingRaw);
@@ -1011,26 +1011,26 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               const serverLastUpdated = json.marketingConfig.lastUpdated ? Date.parse(json.marketingConfig.lastUpdated) : 0;
               const localLastUpdated = localCfg?.lastUpdated ? Date.parse(localCfg.lastUpdated) : 0;
               const hasAdminAuth = typeof window !== 'undefined' && Boolean(
-                localStorage.getItem('wcg_auth_token') ||
-                sessionStorage.getItem('wcg_auth_token') ||
-                localStorage.getItem('wcg_admin_sync_key') ||
-                sessionStorage.getItem('wcg_admin_sync_key')
+                localStorage.getItem('pine_auth_token') ||
+                sessionStorage.getItem('pine_auth_token') ||
+                localStorage.getItem('pine_admin_sync_key') ||
+                sessionStorage.getItem('pine_admin_sync_key')
               );
 
               // Server Cloudflare D1 is authoritative SSOT: customers always accept server config whenever it arrives or changes
               if (!localCfg || isNaN(localLastUpdated) || serverLastUpdated >= localLastUpdated || !hasAdminAuth) {
                 const newMarketing = JSON.stringify(json.marketingConfig);
                 if (currentMarketingRaw !== newMarketing) {
-                  localStorage.setItem('wcg_marketing_config_v1', newMarketing);
-                  window.dispatchEvent(new CustomEvent('wcg_marketing_config_updated', { detail: json.marketingConfig }));
+                  localStorage.setItem('pine_marketing_config_v1', newMarketing);
+                  window.dispatchEvent(new CustomEvent('pine_marketing_config_updated', { detail: json.marketingConfig }));
                 }
               } else if (hasAdminAuth && localLastUpdated > serverLastUpdated) {
                 // Admin has newer local changes than server KV: auto-heal server asynchronously without reverting local state!
-                this.pushToCloudflareKV('wcg_marketing_config_v1', localCfg);
+                this.pushToCloudflareKV('pine_marketing_config_v1', localCfg);
               }
             }
             if (json.growthConfig && typeof json.growthConfig === 'object') {
-              const currentGrowthRaw = localStorage.getItem('wcg_growth_config_v1');
+              const currentGrowthRaw = localStorage.getItem('pine_growth_config_v1');
               let localGrowth: any = null;
               try {
                 if (currentGrowthRaw) localGrowth = JSON.parse(currentGrowthRaw);
@@ -1039,31 +1039,31 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               const serverLastUpdated = json.growthConfig.lastUpdated ? Date.parse(json.growthConfig.lastUpdated) : 0;
               const localLastUpdated = localGrowth?.lastUpdated ? Date.parse(localGrowth.lastUpdated) : 0;
               const hasAdminAuth = typeof window !== 'undefined' && Boolean(
-                localStorage.getItem('wcg_auth_token') ||
-                sessionStorage.getItem('wcg_auth_token') ||
-                localStorage.getItem('wcg_admin_sync_key') ||
-                sessionStorage.getItem('wcg_admin_sync_key')
+                localStorage.getItem('pine_auth_token') ||
+                sessionStorage.getItem('pine_auth_token') ||
+                localStorage.getItem('pine_admin_sync_key') ||
+                sessionStorage.getItem('pine_admin_sync_key')
               );
 
               if (!localGrowth || isNaN(localLastUpdated) || serverLastUpdated >= localLastUpdated || !hasAdminAuth) {
                 const newGrowth = JSON.stringify(json.growthConfig);
-                localStorage.setItem('wcg_growth_config_v1', newGrowth);
-                window.dispatchEvent(new CustomEvent('wcg_growth_config_updated', { detail: json.growthConfig }));
+                localStorage.setItem('pine_growth_config_v1', newGrowth);
+                window.dispatchEvent(new CustomEvent('pine_growth_config_updated', { detail: json.growthConfig }));
               } else if (hasAdminAuth && localLastUpdated > serverLastUpdated) {
-                this.pushToCloudflareKV('wcg_growth_config_v1', localGrowth);
+                this.pushToCloudflareKV('pine_growth_config_v1', localGrowth);
               }
             }
             if (json.deletedNewsArticles && Array.isArray(json.deletedNewsArticles)) {
-              const currentDel = localStorage.getItem('wcg_deleted_news_articles_v1');
+              const currentDel = localStorage.getItem('pine_deleted_news_articles_v1');
               const newDel = JSON.stringify(json.deletedNewsArticles);
               if (currentDel !== newDel) {
-                localStorage.setItem('wcg_deleted_news_articles_v1', newDel);
+                localStorage.setItem('pine_deleted_news_articles_v1', newDel);
               }
             }
             if (json.newsArticles && Array.isArray(json.newsArticles)) {
               let deletedSet = new Set<string>(['sp_idle-cat-gunner_mw5yrnka']);
               try {
-                const delRaw = localStorage.getItem('wcg_deleted_news_articles_v1');
+                const delRaw = localStorage.getItem('pine_deleted_news_articles_v1');
                 if (delRaw) {
                   const p = JSON.parse(delRaw);
                   if (Array.isArray(p)) deletedSet = new Set(p.map(String));
@@ -1073,7 +1073,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               const cleanArticles = json.newsArticles.filter(
                 (a: any) => !deletedSet.has(a.id) && !deletedSet.has(a.slug)
               );
-              const currentNews = localStorage.getItem('wcg_news_articles_v1');
+              const currentNews = localStorage.getItem('pine_news_articles_v1');
               let existingLocalArticles: any[] = [];
               try {
                 if (currentNews) existingLocalArticles = JSON.parse(currentNews);
@@ -1092,18 +1092,18 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               if (finalArticles.length > 0 || !Array.isArray(existingLocalArticles) || existingLocalArticles.length === 0) {
                 const newNews = JSON.stringify(finalArticles);
                 if (currentNews !== newNews || json.newsAutoSources || json.newsScheduleConfig) {
-                  localStorage.setItem('wcg_news_articles_v1', newNews);
+                  localStorage.setItem('pine_news_articles_v1', newNews);
                   newsService.applyServerSnapshot(finalArticles, json.newsAutoSources, json.newsScheduleConfig);
-                  window.dispatchEvent(new CustomEvent('wcg_news_updated', { detail: finalArticles }));
+                  window.dispatchEvent(new CustomEvent('pine_news_updated', { detail: finalArticles }));
                 }
               }
             }
             if (json.eventSchedules && Array.isArray(json.eventSchedules)) {
-              const currentSchedulesRaw = localStorage.getItem('wcg_event_schedules_v1');
+              const currentSchedulesRaw = localStorage.getItem('pine_event_schedules_v1');
               const newSchedules = JSON.stringify(json.eventSchedules);
               if (currentSchedulesRaw !== newSchedules) {
-                localStorage.setItem('wcg_event_schedules_v1', newSchedules);
-                window.dispatchEvent(new CustomEvent('wcg_event_schedules_updated', { detail: json.eventSchedules }));
+                localStorage.setItem('pine_event_schedules_v1', newSchedules);
+                window.dispatchEvent(new CustomEvent('pine_event_schedules_updated', { detail: json.eventSchedules }));
                 hasChanges = true;
               }
             }
@@ -1148,9 +1148,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
       // 1. Load Free Codes (Combine Admin Storage with Bundled Master Codes)
       let freeCodesList: Array<{ id?: string; gameSlug?: string; codeValue?: string; rewards?: string; status?: string; expiresAt?: string; createdAt?: string }> = [];
-      const savedCodes = localStorage.getItem('wcg_admin_free_codes_v5');
-      const savedCustom = localStorage.getItem('wcg_admin_custom_free_codes_v1');
-      const savedDel = localStorage.getItem('wcg_deleted_free_codes');
+      const savedCodes = localStorage.getItem('pine_admin_free_codes_v5');
+      const savedCustom = localStorage.getItem('pine_admin_custom_free_codes_v1');
+      const savedDel = localStorage.getItem('pine_deleted_free_codes');
 
       const deletedIds = new Set<string>();
       if (savedDel) {
@@ -1177,7 +1177,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
       // Dynamically load fallback raw games only if offline/fallback is needed and not cached in localStorage
       let rawGamesData: any[] = [];
-      const savedGamesCheck = localStorage.getItem('wcg_admin_games_v5');
+      const savedGamesCheck = localStorage.getItem('pine_admin_games_v5');
       if (savedGamesCheck === null) {
         try {
           const gamesMod = await import('../data/games188.json');
@@ -1259,14 +1259,14 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
       // 3. Load Games (Prefer Admin Database, fallback to JSON)
       let gamesList: any[] = [];
-      const savedGames = localStorage.getItem('wcg_admin_games_v5');
+      const savedGames = localStorage.getItem('pine_admin_games_v5');
       if (savedGames !== null) {
         try {
           const parsed = JSON.parse(savedGames);
           if (Array.isArray(parsed) && parsed.length >= 593) {
             gamesList = parsed;
           } else {
-            localStorage.removeItem('wcg_admin_games_v5');
+            localStorage.removeItem('pine_admin_games_v5');
           }
         } catch {}
       }
@@ -1332,7 +1332,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             banner_url: g.banner_url || g.bannerUrl || undefined,
             description:
               g.description ||
-              `Tổng hợp trọn bộ giftcode và mã quà tặng độc quyền của game ${g.name}. Cập nhật mới nhất 2026 trên CodeGame.Shop.`,
+              `Tổng hợp trọn bộ giftcode và mã quà tặng độc quyền của game ${g.name}. Cập nhật mới nhất 2026 trên Pine Universal Mall.`,
             instructions:
               g.instructions ||
               'Bước 1: Mở game > Nhấn Avatar nhân vật\nBước 2: Chọn Cài đặt > Nhập Giftcode\nBước 3: Dán mã và nhấn Xác nhận.',
@@ -1452,13 +1452,13 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     }
     await this.ensureFallbackCodesLoaded();
     try {
-      if (typeof window !== 'undefined' && !sessionStorage.getItem('wcg_ip_checked')) {
-        sessionStorage.setItem('wcg_ip_checked', '1');
+      if (typeof window !== 'undefined' && !sessionStorage.getItem('pine_ip_checked')) {
+        sessionStorage.setItem('pine_ip_checked', '1');
         fetch('/api/stats')
           .then((res) => res.json())
           .then((data) => {
             if (data?.client_ip) {
-              localStorage.setItem('wcg_client_ip', data.client_ip);
+              localStorage.setItem('pine_client_ip', data.client_ip);
             }
           })
           .catch(() => {});
@@ -1813,13 +1813,13 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     try {
       const today = new Date().toISOString().slice(0, 10);
       // 1. Update daily counter
-      const currentStatsStr = localStorage.getItem('wcg_daily_copy_stats');
+      const currentStatsStr = localStorage.getItem('pine_daily_copy_stats');
       const stats = currentStatsStr ? JSON.parse(currentStatsStr) : {};
       stats[today] = (stats[today] || 0) + 1;
-      localStorage.setItem('wcg_daily_copy_stats', JSON.stringify(stats));
+      localStorage.setItem('pine_daily_copy_stats', JSON.stringify(stats));
 
       // 2. Record detailed event log
-      const currentEventsStr = localStorage.getItem('wcg_client_copy_events');
+      const currentEventsStr = localStorage.getItem('pine_client_copy_events');
       const events = currentEventsStr ? JSON.parse(currentEventsStr) : [];
       events.unshift({
         id: `copy_${Date.now()}`,
@@ -1828,12 +1828,12 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         timestamp: new Date().toISOString(),
       });
       if (events.length > 500) events.length = 500;
-      localStorage.setItem('wcg_client_copy_events', JSON.stringify(events));
+      localStorage.setItem('pine_client_copy_events', JSON.stringify(events));
 
       // 3. Broadcast sync across tabs
       if ('BroadcastChannel' in window) {
         try {
-          const channel = new BroadcastChannel('wcg_data_sync');
+          const channel = new BroadcastChannel('pine_data_sync');
           channel.postMessage({ type: 'COPY_RECORDED', code, gameSlug, today });
         } catch {}
       }
@@ -2195,7 +2195,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         if (json && json.success && Array.isArray(json.games) && json.games.length > 0) {
           const processed = sortAndFilter(json.games);
           try {
-            localStorage.setItem('wcg_cached_upcoming_games_v1', JSON.stringify(processed));
+            localStorage.setItem('pine_cached_upcoming_games_v1', JSON.stringify(processed));
           } catch {}
           return processed;
         }
@@ -2204,7 +2204,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
     // 2. Try reading from cached or admin storage in LocalStorage
     try {
-      const cached = localStorage.getItem('wcg_cached_upcoming_games_v1') || localStorage.getItem('wcg_admin_upcoming_games_v1');
+      const cached = localStorage.getItem('pine_cached_upcoming_games_v1') || localStorage.getItem('pine_admin_upcoming_games_v1');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -2259,7 +2259,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     };
 
     try {
-      const cached = localStorage.getItem('wcg_cached_upcoming_games_v1') || localStorage.getItem('wcg_admin_upcoming_games_v1');
+      const cached = localStorage.getItem('pine_cached_upcoming_games_v1') || localStorage.getItem('pine_admin_upcoming_games_v1');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -2280,7 +2280,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         const json = await res.json();
         if (json && json.success && Array.isArray(json.games) && json.games.length > 0) {
           try {
-            localStorage.setItem('wcg_admin_upcoming_games_v1', JSON.stringify(json.games));
+            localStorage.setItem('pine_admin_upcoming_games_v1', JSON.stringify(json.games));
           } catch {}
           return json.games;
         }
@@ -2288,7 +2288,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     } catch {}
 
     try {
-      const cached = localStorage.getItem('wcg_admin_upcoming_games_v1');
+      const cached = localStorage.getItem('pine_admin_upcoming_games_v1');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -2302,7 +2302,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
   getAllUpcomingGamesRawSync(): UpcomingGame[] {
     try {
-      const cached = localStorage.getItem('wcg_admin_upcoming_games_v1');
+      const cached = localStorage.getItem('pine_admin_upcoming_games_v1');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -2318,7 +2318,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     let list: GiveawayCampaign[] = [];
     let deletedGwSet = new Set<string>();
     try {
-      const delRaw = localStorage.getItem('wcg_deleted_giveaways');
+      const delRaw = localStorage.getItem('pine_deleted_giveaways');
       if (delRaw) {
         const parsed = JSON.parse(delRaw);
         if (Array.isArray(parsed)) deletedGwSet = new Set(parsed);
@@ -2327,7 +2327,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
     try {
       // Priority: Admin-managed giveaways from KV sync
-      const adminGw = localStorage.getItem('wcg_admin_giveaways_v4');
+      const adminGw = localStorage.getItem('pine_admin_giveaways_v4');
       if (adminGw !== null) {
         const parsed = JSON.parse(adminGw);
         if (Array.isArray(parsed)) {
@@ -2422,9 +2422,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     try {
       const user = this.getCurrentUser();
       if (user?.registered_ip) return user.registered_ip;
-      const cached = localStorage.getItem('wcg_client_ip') || sessionStorage.getItem('wcg_client_ip');
+      const cached = localStorage.getItem('pine_client_ip') || sessionStorage.getItem('pine_client_ip');
       if (cached) return cached;
-      const membersRaw = localStorage.getItem('wcg_admin_members_v4');
+      const membersRaw = localStorage.getItem('pine_admin_members_v4');
       if (membersRaw && user) {
         const members = JSON.parse(membersRaw);
         const m = members.find((x: any) => x.id === user.id || (user.email && x.email === user.email));
@@ -2575,8 +2575,8 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     }
 
     const token =
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_auth_token') : null) ||
-      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('wcg_auth_token') : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('pine_auth_token') : null) ||
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pine_auth_token') : null) ||
       user.session_token ||
       '';
 
@@ -2585,9 +2585,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     try {
       const endpoints = [
         '/api/giveaways/claim',
-        'https://codegame.shop/api/giveaways/claim',
-        'https://web-code-game.pages.dev/api/giveaways/claim',
-        'https://admin-code-game-shop.pages.dev/api/giveaways/claim',
+        '/api/giveaways/claim',
+        'https://universal-mall-shop.pages.dev/api/giveaways/claim',
+        'https://admin-universal-mall.pages.dev/api/giveaways/claim',
       ];
 
       let serverData: any = null;
@@ -2653,7 +2653,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           );
           try {
             localStorage.setItem(this.GIVEAWAYS_KEY, JSON.stringify(updatedGiveaways));
-            localStorage.setItem('wcg_admin_giveaways_v4', JSON.stringify(updatedGiveaways));
+            localStorage.setItem('pine_admin_giveaways_v4', JSON.stringify(updatedGiveaways));
           } catch {}
 
           const claimedList = this.getClaimedCodes();
@@ -2711,7 +2711,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               }
               try {
                 localStorage.setItem(this.GIVEAWAYS_KEY, JSON.stringify(allGiveaways));
-                localStorage.setItem('wcg_admin_giveaways_v4', JSON.stringify(allGiveaways));
+                localStorage.setItem('pine_admin_giveaways_v4', JSON.stringify(allGiveaways));
               } catch {}
               this.notifyListeners();
             }
@@ -2747,7 +2747,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     const guestUser: UserProfile = {
       id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       username: 'Game Thủ Miễn Phí',
-      email: 'guest@webcodegame.vn',
+      email: 'guest@universal-mall-shop.pages.dev',
       role: 'user',
       wallet_balance: 0,
     };
@@ -2821,7 +2821,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       });
       const finalList = Array.from(combinedMap.values());
       localStorage.setItem(this.MISSION_REWARDS_KEY, JSON.stringify(finalList));
-      window.dispatchEvent(new CustomEvent('wcg_mission_rewards_updated'));
+      window.dispatchEvent(new CustomEvent('pine_mission_rewards_updated'));
     } catch {}
   }
 
@@ -2876,19 +2876,19 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               if (json.deletedStoreProducts && Array.isArray(json.deletedStoreProducts)) {
                 delList = json.deletedStoreProducts;
               } else {
-                const delRaw = localStorage.getItem('wcg_deleted_store_products');
+                const delRaw = localStorage.getItem('pine_deleted_store_products');
                 if (delRaw) delList = JSON.parse(delRaw);
               }
               const delSet = new Set(delList);
               delSet.add('sp_idle-cat-gunner_mw5yrnka');
-              localStorage.setItem('wcg_deleted_store_products', JSON.stringify(Array.from(delSet)));
+              localStorage.setItem('pine_deleted_store_products', JSON.stringify(Array.from(delSet)));
               const filtered = json.storeProducts.filter((p: any) => p && p.id && !delSet.has(p.id));
-              const currentSp = localStorage.getItem('wcg_admin_store_products_v4');
+              const currentSp = localStorage.getItem('pine_admin_store_products_v4');
               const newSp = JSON.stringify(filtered);
               if (currentSp !== newSp) {
-                localStorage.setItem('wcg_admin_store_products_v4', newSp);
+                localStorage.setItem('pine_admin_store_products_v4', newSp);
                 localStorage.setItem(this.STORE_PRODUCTS_KEY, newSp);
-                window.dispatchEvent(new CustomEvent('wcg_store_products_updated', { detail: filtered }));
+                window.dispatchEvent(new CustomEvent('pine_store_products_updated', { detail: filtered }));
                 this.notifyListeners();
               }
             } catch {}
@@ -2935,7 +2935,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     let prods: StoreProduct[] | null = null;
     let deletedSet = new Set<string>(['sp_idle-cat-gunner_mw5yrnka']);
     try {
-      const delRaw = localStorage.getItem('wcg_deleted_store_products');
+      const delRaw = localStorage.getItem('pine_deleted_store_products');
       if (delRaw) {
         const parsedDel = JSON.parse(delRaw);
         if (Array.isArray(parsedDel)) deletedSet = new Set(parsedDel);
@@ -2961,8 +2961,8 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       try {
         // Priority: Admin-managed store products from KV sync
         const adminSp = isTestSite
-          ? (localStorage.getItem('wcg_test_store_products_v4') || localStorage.getItem('wcg_admin_store_products_v4'))
-          : localStorage.getItem('wcg_admin_store_products_v4');
+          ? (localStorage.getItem('pine_test_store_products_v4') || localStorage.getItem('pine_admin_store_products_v4'))
+          : localStorage.getItem('pine_admin_store_products_v4');
         if (adminSp !== null) {
           const parsed = JSON.parse(adminSp);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -2986,7 +2986,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       let stock = Math.max(0, Number(p.stock_quantity ?? 0));
       try {
         if (typeof localStorage !== 'undefined') {
-          const invRaw = localStorage.getItem('wcg_admin_inventory_v4');
+          const invRaw = localStorage.getItem('pine_admin_inventory_v4');
           if (invRaw) {
             const invList = JSON.parse(invRaw);
             if (Array.isArray(invList) && invList.length > 0) {
@@ -3038,14 +3038,14 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   }): Promise<{ success: boolean; order?: OrderRecord; remainingBalance?: number; updatedStock?: number; updatedInventory?: any[]; message?: string; code?: string; old_price?: number; new_price?: number }> {
     const activeUser = this.getCurrentUser();
     let token =
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_auth_token') : null) ||
-      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('wcg_auth_token') : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('pine_auth_token') : null) ||
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pine_auth_token') : null) ||
       activeUser?.session_token ||
       '';
 
     // Auto-restore token into localStorage if found on user profile
-    if (token && typeof localStorage !== 'undefined' && !localStorage.getItem('wcg_auth_token')) {
-      localStorage.setItem('wcg_auth_token', token);
+    if (token && typeof localStorage !== 'undefined' && !localStorage.getItem('pine_auth_token')) {
+      localStorage.setItem('pine_auth_token', token);
     }
 
     const headers: Record<string, string> = {
@@ -3061,8 +3061,8 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
     const endpoints = [
       '/api/orders/create',
-      ...(currentOrigin && currentOrigin.includes('codegame.shop') ? [] : ['https://codegame.shop/api/orders/create']),
-      'https://web-code-game.pages.dev/api/orders/create',
+      ...(currentOrigin && currentOrigin.includes('codegame.shop') ? [] : ['/api/orders/create']),
+      'https://universal-mall-shop.pages.dev/api/orders/create',
     ];
 
     let lastErrorMessage = '';
@@ -3215,7 +3215,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             }
           : p
       );
-      localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(updatedProducts));
+      localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(updatedProducts));
       localStorage.setItem(this.STORE_PRODUCTS_KEY, JSON.stringify(updatedProducts));
 
       // Generate Physical Order with WebCrypto fail-closed
@@ -3269,7 +3269,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
       // Save into Admin Orders for cross-sync
       try {
-        const adminOrdersRaw = localStorage.getItem('wcg_admin_orders_v4');
+        const adminOrdersRaw = localStorage.getItem('pine_admin_orders_v4');
         const adminOrders: any[] = adminOrdersRaw ? JSON.parse(adminOrdersRaw) : [];
         const newAdminOrder = {
           id: physicalOrder.id,
@@ -3300,17 +3300,17 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           shippingFee: physicalOrder.shipping_fee,
         };
         adminOrders.unshift(newAdminOrder);
-        localStorage.setItem('wcg_admin_orders_v4', JSON.stringify(adminOrders));
-        this.saveRemoteData('wcg_admin_orders_v4', adminOrders);
+        localStorage.setItem('pine_admin_orders_v4', JSON.stringify(adminOrders));
+        this.saveRemoteData('pine_admin_orders_v4', adminOrders);
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('wcg_admin_data_updated', { detail: { type: 'ORDERS_UPDATED' } }));
+          window.dispatchEvent(new CustomEvent('pine_admin_data_updated', { detail: { type: 'ORDERS_UPDATED' } }));
         }
       } catch {}
 
       // Record transaction if wallet
       if (pMethod === 'wallet') {
         try {
-          const txsRaw = localStorage.getItem('wcg_admin_transactions_v4');
+          const txsRaw = localStorage.getItem('pine_admin_transactions_v4');
           const txs: any[] = txsRaw ? JSON.parse(txsRaw) : [];
           const purchaseTx = {
             id: physicalOrder.id,
@@ -3326,14 +3326,14 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             createdAt: physicalOrder.created_at,
           };
           txs.unshift(purchaseTx);
-          localStorage.setItem('wcg_admin_transactions_v4', JSON.stringify(txs.slice(0, 500)));
+          localStorage.setItem('pine_admin_transactions_v4', JSON.stringify(txs.slice(0, 500)));
         } catch {}
       }
 
       // Notify updates
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: user }));
-        window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance } }));
+        window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: user }));
+        window.dispatchEvent(new CustomEvent('pine_wallet_updated', { detail: { newBalance } }));
       }
 
       return {
@@ -3410,7 +3410,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             }
           : p
       );
-      localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(updatedProducts));
+      localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(updatedProducts));
       localStorage.setItem(this.STORE_PRODUCTS_KEY, JSON.stringify(updatedProducts));
 
       const orders = this.getOrders();
@@ -3419,7 +3419,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
       // Record atomic debit transaction locally for ledger consistency
       try {
-        const txsRaw = localStorage.getItem('wcg_admin_transactions_v4');
+        const txsRaw = localStorage.getItem('pine_admin_transactions_v4');
         const txs: any[] = txsRaw ? JSON.parse(txsRaw) : [];
         const purchaseTx = {
           id: serverRes.order.id || `tx_${Date.now()}`,
@@ -3435,13 +3435,13 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           createdAt: serverRes.order.created_at || new Date().toISOString(),
         };
         txs.unshift(purchaseTx);
-        localStorage.setItem('wcg_admin_transactions_v4', JSON.stringify(txs.slice(0, 500)));
+        localStorage.setItem('pine_admin_transactions_v4', JSON.stringify(txs.slice(0, 500)));
       } catch {}
 
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: user }));
-        window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance: user.wallet_balance } }));
-        window.dispatchEvent(new CustomEvent('wcg_store_products_updated', { detail: updatedProducts }));
+        window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: user }));
+        window.dispatchEvent(new CustomEvent('pine_wallet_updated', { detail: { newBalance: user.wallet_balance } }));
+        window.dispatchEvent(new CustomEvent('pine_store_products_updated', { detail: updatedProducts }));
       }
       this.notifyListeners();
 
@@ -3488,7 +3488,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     let utilities: UtilityProduct[] | null = null;
     let deletedSet = new Set<string>(['sp_idle-cat-gunner_mw5yrnka']);
     try {
-      const delRaw = localStorage.getItem('wcg_deleted_utilities');
+      const delRaw = localStorage.getItem('pine_deleted_utilities');
       if (delRaw) {
         const parsedDel = JSON.parse(delRaw);
         if (Array.isArray(parsedDel)) deletedSet = new Set(parsedDel);
@@ -3497,7 +3497,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
     try {
       // Priority: Admin-managed utility products from KV sync
-      const adminUt = localStorage.getItem('wcg_admin_utilities_v4');
+      const adminUt = localStorage.getItem('pine_admin_utilities_v4');
       if (adminUt !== null) {
         const parsed = JSON.parse(adminUt);
         if (Array.isArray(parsed)) {
@@ -3516,7 +3516,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       let stock = Math.max(0, Number(u.stock_quantity ?? 0));
       try {
         if (typeof localStorage !== 'undefined') {
-          const invRaw = localStorage.getItem('wcg_admin_inventory_v4');
+          const invRaw = localStorage.getItem('pine_admin_inventory_v4');
           if (invRaw) {
             const invList = JSON.parse(invRaw);
             if (Array.isArray(invList) && invList.length > 0) {
@@ -3550,7 +3550,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   saveUtilityProducts(products: UtilityProduct[]): void {
     try {
       localStorage.setItem(this.UTILITIES_KEY, JSON.stringify(products));
-      localStorage.setItem('wcg_admin_utilities_v4', JSON.stringify(products));
+      localStorage.setItem('pine_admin_utilities_v4', JSON.stringify(products));
       this.notifyListeners();
     } catch {}
   }
@@ -3564,7 +3564,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     ];
     let list: UtilityCategory[] = [...defaultCats];
     try {
-      const saved = localStorage.getItem('wcg_admin_utility_categories_v1');
+      const saved = localStorage.getItem('pine_admin_utility_categories_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -3606,7 +3606,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     ];
     let list: StoreCategory[] = [...defaultCats];
     try {
-      const saved = localStorage.getItem('wcg_admin_store_categories_v1');
+      const saved = localStorage.getItem('pine_admin_store_categories_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -3736,7 +3736,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
       // Record atomic debit transaction locally for ledger consistency
       try {
-        const txsRaw = localStorage.getItem('wcg_admin_transactions_v4');
+        const txsRaw = localStorage.getItem('pine_admin_transactions_v4');
         const txs: any[] = txsRaw ? JSON.parse(txsRaw) : [];
         const purchaseTx = {
           id: serverRes.order.id || `tx_${Date.now()}`,
@@ -3752,13 +3752,13 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           createdAt: serverRes.order.created_at || new Date().toISOString(),
         };
         txs.unshift(purchaseTx);
-        localStorage.setItem('wcg_admin_transactions_v4', JSON.stringify(txs.slice(0, 500)));
+        localStorage.setItem('pine_admin_transactions_v4', JSON.stringify(txs.slice(0, 500)));
       } catch {}
 
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: user }));
-        window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance: user.wallet_balance } }));
-        window.dispatchEvent(new CustomEvent('wcg_utilities_updated', { detail: updatedUtilities }));
+        window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: user }));
+        window.dispatchEvent(new CustomEvent('pine_wallet_updated', { detail: { newBalance: user.wallet_balance } }));
+        window.dispatchEvent(new CustomEvent('pine_utilities_updated', { detail: updatedUtilities }));
       }
       this.notifyListeners();
 
@@ -3781,24 +3781,24 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     try {
       const userStr = JSON.stringify(user);
       localStorage.setItem(this.USER_KEY, userStr);
-      localStorage.setItem('wcg_persistent_account', userStr);
+      localStorage.setItem('pine_persistent_account', userStr);
       sessionStorage.setItem(this.USER_KEY, userStr);
 
       const token =
         user.session_token ||
-        localStorage.getItem('wcg_auth_token') ||
-        sessionStorage.getItem('wcg_auth_token');
+        localStorage.getItem('pine_auth_token') ||
+        sessionStorage.getItem('pine_auth_token');
       if (token) {
-        localStorage.setItem('wcg_auth_token', token);
-        sessionStorage.setItem('wcg_auth_token', token);
+        localStorage.setItem('pine_auth_token', token);
+        sessionStorage.setItem('pine_auth_token', token);
       }
 
       // Set 365-day persistent cookie to survive browser restarts, mobile memory purges, and WebViews
       if (typeof document !== 'undefined') {
         const expires = new Date(Date.now() + 365 * 864e5).toUTCString();
-        document.cookie = `wcg_auth_user=${encodeURIComponent(userStr)}; expires=${expires}; path=/; SameSite=Lax`;
+        document.cookie = `pine_auth_user=${encodeURIComponent(userStr)}; expires=${expires}; path=/; SameSite=Lax`;
         if (token) {
-          document.cookie = `wcg_auth_token=${encodeURIComponent(token)}; expires=${expires}; path=/; SameSite=Lax`;
+          document.cookie = `pine_auth_token=${encodeURIComponent(token)}; expires=${expires}; path=/; SameSite=Lax`;
         }
       }
     } catch {}
@@ -3808,15 +3808,15 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem(this.USER_KEY);
-      localStorage.removeItem('wcg_persistent_account');
-      localStorage.removeItem('wcg_auth_token');
-      localStorage.removeItem('wcg_remember_login');
+      localStorage.removeItem('pine_persistent_account');
+      localStorage.removeItem('pine_auth_token');
+      localStorage.removeItem('pine_remember_login');
       sessionStorage.removeItem(this.USER_KEY);
-      sessionStorage.removeItem('wcg_auth_token');
+      sessionStorage.removeItem('pine_auth_token');
 
       if (typeof document !== 'undefined') {
-        document.cookie = 'wcg_auth_user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
-        document.cookie = 'wcg_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
+        document.cookie = 'pine_auth_user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
+        document.cookie = 'pine_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
       }
     } catch {}
   }
@@ -3826,13 +3826,13 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     try {
       let data = typeof localStorage !== 'undefined' ? localStorage.getItem(this.USER_KEY) : null;
       if (!data && typeof localStorage !== 'undefined') {
-        data = localStorage.getItem('wcg_persistent_account');
+        data = localStorage.getItem('pine_persistent_account');
       }
       if (!data && typeof sessionStorage !== 'undefined') {
         data = sessionStorage.getItem(this.USER_KEY);
       }
       if (!data && typeof document !== 'undefined') {
-        const match = document.cookie.match(/(?:^|;\s*)wcg_auth_user=([^;]+)/);
+        const match = document.cookie.match(/(?:^|;\s*)pine_auth_user=([^;]+)/);
         if (match) {
           try {
             data = decodeURIComponent(match[1]);
@@ -3843,7 +3843,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       const user: UserProfile = JSON.parse(data);
       if (!user || !user.id) return null;
 
-      const resetFlag = 'wcg_user_wallet_zero_v1';
+      const resetFlag = 'pine_user_wallet_zero_v1';
       if (typeof localStorage !== 'undefined' && !localStorage.getItem(resetFlag)) {
         if (user && user.wallet_balance !== 0) {
           user.wallet_balance = 0;
@@ -3864,10 +3864,10 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     if (user) {
       if (!user.session_token && typeof localStorage !== 'undefined') {
         let savedToken =
-          localStorage.getItem('wcg_auth_token') ||
-          sessionStorage.getItem('wcg_auth_token');
+          localStorage.getItem('pine_auth_token') ||
+          sessionStorage.getItem('pine_auth_token');
         if (!savedToken && typeof document !== 'undefined') {
-          const match = document.cookie.match(/(?:^|;\s*)wcg_auth_token=([^;]+)/);
+          const match = document.cookie.match(/(?:^|;\s*)pine_auth_token=([^;]+)/);
           if (match) {
             try {
               savedToken = decodeURIComponent(match[1]);
@@ -3880,17 +3880,17 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
       // Instant event dispatch to keep React header and UI in sync in 0 seconds
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: user }));
+        window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: user }));
         try {
-          const bc = new BroadcastChannel('wcg_data_sync');
-          bc.postMessage({ type: 'wcg_user_updated', user });
+          const bc = new BroadcastChannel('pine_data_sync');
+          bc.postMessage({ type: 'pine_user_updated', user });
           bc.close();
         } catch {}
       }
 
       // Synchronize directly into Admin Members collection & push to Cloudflare KV
       try {
-        const membersRaw = localStorage.getItem('wcg_admin_members_v4');
+        const membersRaw = localStorage.getItem('pine_admin_members_v4');
         let members: any[] = membersRaw ? JSON.parse(membersRaw) : [];
         const cleanUserId = (user.id || '').trim();
         const cleanEmail = (user.email || '').trim().toLowerCase();
@@ -3932,15 +3932,15 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           });
         }
 
-        localStorage.setItem('wcg_admin_members_v4', JSON.stringify(members));
+        localStorage.setItem('pine_admin_members_v4', JSON.stringify(members));
       } catch {}
     } else {
       this.clearUserMultiTier();
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: null }));
+        window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: null }));
         try {
-          const bc = new BroadcastChannel('wcg_data_sync');
-          bc.postMessage({ type: 'wcg_user_updated', user: null });
+          const bc = new BroadcastChannel('pine_data_sync');
+          bc.postMessage({ type: 'pine_user_updated', user: null });
           bc.close();
         } catch {}
       }
@@ -3951,7 +3951,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     const user = this.getCurrentUser() || {
       id: `usr_${Date.now()}`,
       username: 'GameThuvn',
-      email: 'member@webcodegame.vn',
+      email: 'member@universal-mall-shop.pages.dev',
       role: 'user',
       wallet_balance: 0,
     };
@@ -3961,7 +3961,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
     // Save transaction & sync to Cloudflare KV
     try {
-      const txsRaw = localStorage.getItem('wcg_admin_transactions_v4');
+      const txsRaw = localStorage.getItem('pine_admin_transactions_v4');
       const txs = txsRaw ? JSON.parse(txsRaw) : [];
       const newTx = {
         id: `tx_${Date.now()}`,
@@ -3977,8 +3977,8 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         createdAt: new Date().toISOString(),
       };
       txs.unshift(newTx);
-      localStorage.setItem('wcg_admin_transactions_v4', JSON.stringify(txs));
-      this.pushToCloudflareKV('wcg_admin_transactions_v4', txs);
+      localStorage.setItem('pine_admin_transactions_v4', JSON.stringify(txs));
+      this.pushToCloudflareKV('pine_admin_transactions_v4', txs);
     } catch {}
 
     return user.wallet_balance;
@@ -4080,22 +4080,22 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
     // 2. Queue into Admin Moderation Submissions and sync to Cloudflare KV
     try {
-      const subsRaw = localStorage.getItem('wcg_admin_submissions_v4');
+      const subsRaw = localStorage.getItem('pine_admin_submissions_v4');
       const submissions = subsRaw ? JSON.parse(subsRaw) : [];
       const newSub = {
         id: `sub_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         codeValue: cleanCode,
         gameSlug,
         submitterName: submitterName || 'Game thủ Cộng đồng',
-        submitterEmail: submitterEmail || 'user@webcodegame.vn',
+        submitterEmail: submitterEmail || 'user@universal-mall-shop.pages.dev',
         rewards: cleanRewards,
         status: 'PENDING',
         notes: 'Đóng góp trực tuyến từ web khách',
         submittedAt: new Date().toISOString(),
       };
       submissions.unshift(newSub);
-      localStorage.setItem('wcg_admin_submissions_v4', JSON.stringify(submissions));
-      this.pushToCloudflareKV('wcg_admin_submissions_v4', submissions);
+      localStorage.setItem('pine_admin_submissions_v4', JSON.stringify(submissions));
+      this.pushToCloudflareKV('pine_admin_submissions_v4', submissions);
     } catch {}
 
     return true;
@@ -4104,7 +4104,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   // Announcement Banner
   getAnnouncementBanner(): { id: string; title: string; content: string; isActive: boolean } | null {
     try {
-      const saved = localStorage.getItem('wcg_admin_content_v4');
+      const saved = localStorage.getItem('pine_admin_content_v4');
       if (saved) {
         const items = JSON.parse(saved);
         if (Array.isArray(items)) {
@@ -4131,7 +4131,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   // Dynamic CMS Content (Hero, Giveaways, Store, Utilities, Terms, Privacy Policy, Footer)
   getContentByKey(key: string): { title: string; content: string; extraData?: any; isActive?: boolean } | null {
     try {
-      const saved = localStorage.getItem('wcg_admin_content_v4');
+      const saved = localStorage.getItem('pine_admin_content_v4');
       if (saved) {
         const items = JSON.parse(saved);
         if (Array.isArray(items)) {
@@ -4166,7 +4166,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         };
       }
       if (typeof window !== 'undefined') {
-        const raw = localStorage.getItem('wcg_admin_floating_notification_v1');
+        const raw = localStorage.getItem('pine_admin_floating_notification_v1');
         if (raw) {
           const parsed = JSON.parse(raw);
           return { ...DEFAULT_FLOATING_NOTIFICATION, ...parsed };
@@ -4194,7 +4194,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1920&auto=format&fit=crop&q=80';
 
     try {
-      const saved = localStorage.getItem('wcg_admin_content_v4');
+      const saved = localStorage.getItem('pine_admin_content_v4');
       if (saved) {
         const items = JSON.parse(saved);
         if (Array.isArray(items)) {
@@ -4217,13 +4217,13 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             ? rawBTitle!
             : !isLegacyOrEmpty(rawFTitle)
             ? rawFTitle!
-            : 'CodeGame.Shop';
+            : 'Pine Universal Mall';
 
           // Auto-migrate legacy cache in localStorage if needed
           if (branding && isLegacyOrEmpty(branding.title)) {
             branding.title = effectiveTitle;
             try {
-              localStorage.setItem('wcg_admin_content_v4', JSON.stringify(items));
+              localStorage.setItem('pine_admin_content_v4', JSON.stringify(items));
             } catch {}
           }
 
@@ -4257,7 +4257,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       backgroundUrl: defaultBg,
       backgroundStyle: 'ambient',
       backgroundOpacity: 0.35,
-      siteTitle: 'CodeGame.Shop',
+      siteTitle: 'Pine Universal Mall',
       portalSubtitle: 'Cổng Tra Cứu Giftcode #1',
       hotline: '0987.654.321',
       currencyMode: 'VND',
@@ -4269,7 +4269,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   // Website Pagination Configuration (Classic Numbered Pages vs Infinite Scroll)
   getPaginationConfig(): { mode: 'classic' | 'infinite'; pageSize: number } {
     try {
-      const saved = localStorage.getItem('wcg_admin_content_v4');
+      const saved = localStorage.getItem('pine_admin_content_v4');
       if (saved) {
         const items = JSON.parse(saved);
         if (Array.isArray(items)) {
@@ -4294,7 +4294,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     try {
       if (typeof window !== 'undefined') {
         // 1. Kiểm tra trực tiếp key wcg_admin_categories_config
-        const saved = localStorage.getItem('wcg_admin_categories_config');
+        const saved = localStorage.getItem('pine_admin_categories_config');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.categories) && parsed.categories.length > 0) {
@@ -4313,7 +4313,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         }
 
         // 2. Fallback kiểm tra trong wcg_admin_content_v4 nếu được lưu dạng ContentItem
-        const contentSaved = localStorage.getItem('wcg_admin_content_v4');
+        const contentSaved = localStorage.getItem('pine_admin_content_v4');
         if (contentSaved) {
           const items = JSON.parse(contentSaved);
           if (Array.isArray(items)) {
@@ -4340,8 +4340,8 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   saveProductCategoriesConfig(config: ProductCategoriesConfig): void {
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('wcg_admin_categories_config', JSON.stringify(config));
-        window.dispatchEvent(new CustomEvent('wcg_admin_data_updated', {
+        localStorage.setItem('pine_admin_categories_config', JSON.stringify(config));
+        window.dispatchEvent(new CustomEvent('pine_admin_data_updated', {
           detail: { key: 'categories_config', config }
         }));
       }
@@ -4352,7 +4352,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   getPrivateCodesForEmail(email?: string): any[] {
     if (!email) return [];
     try {
-      const saved = localStorage.getItem('wcg_admin_private_codes_v4');
+      const saved = localStorage.getItem('pine_admin_private_codes_v4');
       if (saved) {
         const items = JSON.parse(saved);
         if (Array.isArray(items)) {
@@ -4377,14 +4377,14 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     qrOrderExpiryMinutes?: number;
   } {
     try {
-      const saved = localStorage.getItem('wcg_admin_sepay_v4');
+      const saved = localStorage.getItem('pine_admin_sepay_v4');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
           const isDummy = !parsed.accountNumber || parsed.accountNumber === '0987654321';
           return {
             apiKey: parsed.apiKey || '',
-            bankAccount: isDummy ? 'CODE GAME SHOP' : (parsed.bankAccount || 'CODE GAME SHOP'),
+            bankAccount: isDummy ? 'PINE UNIVERSAL MALL' : (parsed.bankAccount || 'PINE UNIVERSAL MALL'),
             accountNumber: isDummy ? '10004681879' : (parsed.accountNumber || '10004681879'),
             bankName: isDummy ? 'TPBank' : (parsed.bankName || 'TPBank'),
             paymentPrefix: parsed.paymentPrefix || 'WCG',
@@ -4397,7 +4397,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     } catch {}
     return {
       apiKey: '',
-      bankAccount: 'CODE GAME SHOP',
+      bankAccount: 'PINE UNIVERSAL MALL',
       accountNumber: '10004681879',
       bankName: 'TPBank',
       paymentPrefix: 'WCG',
@@ -4416,7 +4416,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     const cleanEmail = (currentUser?.email || '').trim().toLowerCase();
 
     try {
-      const txsRaw = localStorage.getItem('wcg_admin_transactions_v4');
+      const txsRaw = localStorage.getItem('pine_admin_transactions_v4');
       if (txsRaw) {
         const txs: any[] = JSON.parse(txsRaw);
         if (Array.isArray(txs)) {
@@ -4494,7 +4494,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     const cleanUsername = (u?.username || '').trim().toLowerCase();
 
     try {
-      const txsRaw = localStorage.getItem('wcg_admin_transactions_v4');
+      const txsRaw = localStorage.getItem('pine_admin_transactions_v4');
       if (txsRaw) {
         const txs: any[] = JSON.parse(txsRaw);
         if (Array.isArray(txs)) {
@@ -4529,8 +4529,8 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     // FIX: Always call /api/auth/me first for registered users — local cache may be stale after
     // a SePay webhook has updated KV on the server side but localStorage hasn't been updated yet.
     const token =
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_auth_token') : null) ||
-      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('wcg_auth_token') : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('pine_auth_token') : null) ||
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pine_auth_token') : null) ||
       user.session_token;
 
     // Guest users don't have session tokens — use local balance only
@@ -4539,7 +4539,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     }
 
     const isLocalhost = typeof window !== 'undefined' && (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1'));
-    const endpoint = isLocalhost ? 'https://codegame.shop/api/auth/me' : '/api/auth/me';
+    const endpoint = '/api/auth/me';
 
     try {
       const res = await fetch(endpoint, {
@@ -4594,12 +4594,12 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             // Sync User's Private Codes from Cloudflare KV
             if (Array.isArray(data.privateCodes) && data.privateCodes.length > 0) {
               try {
-                const privRaw = localStorage.getItem('wcg_admin_private_codes_v4');
+                const privRaw = localStorage.getItem('pine_admin_private_codes_v4');
                 let existingPriv: any[] = privRaw ? JSON.parse(privRaw) : [];
                 const privMap = new Map<string, any>();
                 existingPriv.forEach((p) => p?.id && privMap.set(p.id, p));
                 data.privateCodes.forEach((p: any) => p?.id && privMap.set(p.id, p));
-                localStorage.setItem('wcg_admin_private_codes_v4', JSON.stringify(Array.from(privMap.values())));
+                localStorage.setItem('pine_admin_private_codes_v4', JSON.stringify(Array.from(privMap.values())));
                 changed = true;
               } catch {}
             }
@@ -4651,7 +4651,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             // Sync User's Wallet Transactions from Cloudflare KV
             if (Array.isArray(data.transactions) && data.transactions.length > 0) {
               try {
-                const txRaw = localStorage.getItem('wcg_admin_transactions_v4');
+                const txRaw = localStorage.getItem('pine_admin_transactions_v4');
                 let existingTx: any[] = txRaw ? JSON.parse(txRaw) : [];
                 const txMap = new Map<string, any>();
                 existingTx.forEach((t) => t?.id && txMap.set(t.id, t));
@@ -4659,7 +4659,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
                 const mergedTxs = Array.from(txMap.values()).sort(
                   (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
                 );
-                localStorage.setItem('wcg_admin_transactions_v4', JSON.stringify(mergedTxs));
+                localStorage.setItem('pine_admin_transactions_v4', JSON.stringify(mergedTxs));
                 changed = true;
               } catch {}
             }
@@ -4754,50 +4754,50 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     try {
       if (Array.isArray(snapshot.storeProducts)) {
         localStorage.setItem(this.STORE_PRODUCTS_KEY, JSON.stringify(snapshot.storeProducts));
-        localStorage.setItem('wcg_admin_store_products_v4', JSON.stringify(snapshot.storeProducts));
+        localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(snapshot.storeProducts));
       }
       if (Array.isArray(snapshot.utilities)) {
         localStorage.setItem(this.UTILITIES_KEY, JSON.stringify(snapshot.utilities));
-        localStorage.setItem('wcg_admin_utilities_v4', JSON.stringify(snapshot.utilities));
+        localStorage.setItem('pine_admin_utilities_v4', JSON.stringify(snapshot.utilities));
       }
       if (Array.isArray(snapshot.deletedStoreProducts)) {
-        localStorage.setItem('wcg_deleted_store_products', JSON.stringify(snapshot.deletedStoreProducts));
+        localStorage.setItem('pine_deleted_store_products', JSON.stringify(snapshot.deletedStoreProducts));
       }
       if (Array.isArray(snapshot.deletedUtilities)) {
-        localStorage.setItem('wcg_deleted_utilities', JSON.stringify(snapshot.deletedUtilities));
+        localStorage.setItem('pine_deleted_utilities', JSON.stringify(snapshot.deletedUtilities));
       }
       if (Array.isArray(snapshot.games) && snapshot.games.length > 0) {
-        localStorage.setItem('wcg_admin_games_v5', JSON.stringify(snapshot.games));
+        localStorage.setItem('pine_admin_games_v5', JSON.stringify(snapshot.games));
       }
       if (Array.isArray(snapshot.freeCodes) && snapshot.freeCodes.length > 0) {
         try {
           const codesStr = JSON.stringify(snapshot.freeCodes);
           if (codesStr.length <= 1.5 * 1024 * 1024) {
-            localStorage.setItem('wcg_admin_free_codes_v5', codesStr);
+            localStorage.setItem('pine_admin_free_codes_v5', codesStr);
           }
         } catch {}
       }
       if (Array.isArray(snapshot.customFreeCodes)) {
-        localStorage.setItem('wcg_admin_custom_free_codes_v1', JSON.stringify(snapshot.customFreeCodes));
+        localStorage.setItem('pine_admin_custom_free_codes_v1', JSON.stringify(snapshot.customFreeCodes));
       }
       if (Array.isArray(snapshot.deletedFreeCodes)) {
-        localStorage.setItem('wcg_deleted_free_codes', JSON.stringify(snapshot.deletedFreeCodes));
+        localStorage.setItem('pine_deleted_free_codes', JSON.stringify(snapshot.deletedFreeCodes));
       }
       if (Array.isArray(snapshot.giveaways)) {
         localStorage.setItem(this.GIVEAWAYS_KEY, JSON.stringify(snapshot.giveaways));
-        localStorage.setItem('wcg_admin_giveaways_v4', JSON.stringify(snapshot.giveaways));
+        localStorage.setItem('pine_admin_giveaways_v4', JSON.stringify(snapshot.giveaways));
       }
       if (Array.isArray(snapshot.content) && snapshot.content.length > 0) {
-        localStorage.setItem('wcg_admin_content_v4', JSON.stringify(snapshot.content));
+        localStorage.setItem('pine_admin_content_v4', JSON.stringify(snapshot.content));
       }
       if (Array.isArray(snapshot.inventory)) {
-        localStorage.setItem('wcg_admin_inventory_v4', JSON.stringify(snapshot.inventory));
+        localStorage.setItem('pine_admin_inventory_v4', JSON.stringify(snapshot.inventory));
       }
       if (snapshot.sepay && typeof snapshot.sepay === 'object') {
-        localStorage.setItem('wcg_admin_sepay_v4', JSON.stringify(snapshot.sepay));
+        localStorage.setItem('pine_admin_sepay_v4', JSON.stringify(snapshot.sepay));
       }
       if (Array.isArray(snapshot.orders)) {
-        localStorage.setItem('wcg_admin_orders_v4', JSON.stringify(snapshot.orders));
+        localStorage.setItem('pine_admin_orders_v4', JSON.stringify(snapshot.orders));
         const currentUser = this.getCurrentUser();
         if (currentUser) {
           const myOrders = snapshot.orders.filter(
@@ -4811,25 +4811,25 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         }
       }
       if (Array.isArray(snapshot.transactions)) {
-        localStorage.setItem('wcg_admin_transactions_v4', JSON.stringify(snapshot.transactions));
+        localStorage.setItem('pine_admin_transactions_v4', JSON.stringify(snapshot.transactions));
       }
       if (Array.isArray(snapshot.members)) {
-        localStorage.setItem('wcg_admin_members_v4', JSON.stringify(snapshot.members));
+        localStorage.setItem('pine_admin_members_v4', JSON.stringify(snapshot.members));
       }
       if (snapshot.marketingConfig && typeof snapshot.marketingConfig === 'object') {
-        localStorage.setItem('wcg_marketing_config_v1', JSON.stringify(snapshot.marketingConfig));
-        window.dispatchEvent(new CustomEvent('wcg_marketing_config_updated', { detail: snapshot.marketingConfig }));
+        localStorage.setItem('pine_marketing_config_v1', JSON.stringify(snapshot.marketingConfig));
+        window.dispatchEvent(new CustomEvent('pine_marketing_config_updated', { detail: snapshot.marketingConfig }));
       }
       if (Array.isArray(snapshot.storeCategories)) {
-        localStorage.setItem('wcg_admin_store_categories_v1', JSON.stringify(snapshot.storeCategories));
+        localStorage.setItem('pine_admin_store_categories_v1', JSON.stringify(snapshot.storeCategories));
       }
       if (Array.isArray(snapshot.utilityCategories)) {
-        localStorage.setItem('wcg_admin_utility_categories_v1', JSON.stringify(snapshot.utilityCategories));
+        localStorage.setItem('pine_admin_utility_categories_v1', JSON.stringify(snapshot.utilityCategories));
       }
       if (Array.isArray(snapshot.newsArticles)) {
         let deletedSet = new Set<string>(['sp_idle-cat-gunner_mw5yrnka']);
         try {
-          const delRaw = localStorage.getItem('wcg_deleted_news_articles_v1');
+          const delRaw = localStorage.getItem('pine_deleted_news_articles_v1');
           if (delRaw) {
             const p = JSON.parse(delRaw);
             if (Array.isArray(p)) deletedSet = new Set(p.map(String));
@@ -4838,12 +4838,12 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         const cleanArticles = snapshot.newsArticles.filter(
           (a: any) => !deletedSet.has(a.id) && !deletedSet.has(a.slug)
         );
-        localStorage.setItem('wcg_news_articles_v1', JSON.stringify(cleanArticles));
+        localStorage.setItem('pine_news_articles_v1', JSON.stringify(cleanArticles));
         newsService.applyServerSnapshot(cleanArticles, snapshot.newsAutoSources, snapshot.newsScheduleConfig);
-        window.dispatchEvent(new CustomEvent('wcg_news_updated', { detail: cleanArticles }));
+        window.dispatchEvent(new CustomEvent('pine_news_updated', { detail: cleanArticles }));
       }
 
-      localStorage.setItem('wcg_store_initialized', 'true');
+      localStorage.setItem('pine_store_initialized', 'true');
       console.log('[DataService] Applied full state snapshot successfully');
       this.reload();
       this.notifyListeners();
@@ -4859,8 +4859,8 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     }
 
     const token =
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_auth_token') : null) ||
-      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('wcg_auth_token') : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('pine_auth_token') : null) ||
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pine_auth_token') : null) ||
       user.session_token ||
       '';
 

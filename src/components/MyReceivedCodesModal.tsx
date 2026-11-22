@@ -145,7 +145,7 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
   };
 
   const loadMarketplaceOrders = async () => {
-    const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+    const token = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
     if (!token) return;
     setIsLoadingMarketplace(true);
     try {
@@ -164,7 +164,7 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
     e.preventDefault();
     if (!reportingOrder) return;
     setIsSubmittingReport(true);
-    const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+    const token = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
     try {
       const res = await fetch(`/api/seller-orders/${reportingOrder.id}/report`, {
         method: 'POST',
@@ -191,7 +191,7 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
     e.preventDefault();
     if (!ratingOrder) return;
     setIsSubmittingRating(true);
-    const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+    const token = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
     try {
       const res = await fetch(`/api/seller-orders/${ratingOrder.id}/rate`, {
         method: 'POST',
@@ -218,7 +218,7 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
     e.preventDefault();
     if (!disputeOrder) return;
     setIsSubmittingDispute(true);
-    const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+    const token = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
     try {
       const res = await fetch(`/api/seller-orders/${disputeOrder.id}/dispute`, {
         method: 'POST',
@@ -242,7 +242,7 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
   };
 
   const handleConfirmReceived = async (orderId: string) => {
-    const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
+    const token = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
     try {
       const res = await fetch(`/api/orders/${orderId}/confirm-received`, {
         method: 'POST',
@@ -279,11 +279,11 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
       const handleMissionRewardsUpdated = () => {
         setMissionRewardsList(dataService.getMissionRewards());
       };
-      window.addEventListener('wcg_mission_rewards_updated', handleMissionRewardsUpdated);
+      window.addEventListener('pine_mission_rewards_updated', handleMissionRewardsUpdated);
 
       return () => {
         unsub();
-        window.removeEventListener('wcg_mission_rewards_updated', handleMissionRewardsUpdated);
+        window.removeEventListener('pine_mission_rewards_updated', handleMissionRewardsUpdated);
       };
     }
   }, [isOpen, lookupEmail]);

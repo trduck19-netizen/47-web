@@ -59,23 +59,23 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
   // --- SHOW / HIDE VIRTUAL METRICS TOGGLE ---
   const [showVirtualStats, setShowVirtualStats] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_virtual_stats') !== 'false';
+    return localStorage.getItem('pine_admin_show_virtual_stats') !== 'false';
   });
 
   const [showAdminSold, setShowAdminSold] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_sold_store') !== 'false' && localStorage.getItem('wcg_store_global_show_sold') !== 'false';
+    return localStorage.getItem('pine_admin_show_sold_store') !== 'false' && localStorage.getItem('pine_store_global_show_sold') !== 'false';
   });
 
   const [showAdminStock, setShowAdminStock] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('wcg_admin_show_stock_store') !== 'false';
+    return localStorage.getItem('pine_admin_show_stock_store') !== 'false';
   });
 
   // --- VIEW MODE: GROUPED (THEO GAME) VS FLAT (TẤT CẢ GÓI LẺ) ---
   const [viewMode, setViewMode] = useState<'grouped' | 'flat'>(() => {
     if (typeof window === 'undefined') return 'grouped';
-    return (localStorage.getItem('wcg_admin_store_view_mode') as 'grouped' | 'flat') || 'grouped';
+    return (localStorage.getItem('pine_admin_store_view_mode') as 'grouped' | 'flat') || 'grouped';
   });
 
   // --- QUICK FOMO ADJUST MODAL STATE ---
@@ -176,10 +176,10 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
       loadData();
     };
 
-    window.addEventListener('wcg_admin_data_updated', handleSync);
+    window.addEventListener('pine_admin_data_updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
-      window.removeEventListener('wcg_admin_data_updated', handleSync);
+      window.removeEventListener('pine_admin_data_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);
@@ -328,7 +328,7 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
     if (!resetModalProduct) return;
     setIsResetting(true);
     try {
-      const token = localStorage.getItem('wcg_admin_token') || localStorage.getItem('wcg_auth_token') || '';
+      const token = localStorage.getItem('pine_admin_token') || localStorage.getItem('pine_auth_token') || '';
       const res = await fetch('/api/admin/escalating/reset', {
         method: 'POST',
         headers: {
@@ -361,7 +361,7 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
     setHistoryData(null);
     setIsLoadingHistory(true);
     try {
-      const token = localStorage.getItem('wcg_admin_token') || localStorage.getItem('wcg_auth_token') || '';
+      const token = localStorage.getItem('pine_admin_token') || localStorage.getItem('pine_auth_token') || '';
       const res = await fetch(`/api/admin/escalating/history?product_id=${encodeURIComponent(prod.id)}`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
@@ -873,10 +873,10 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
                 onClick={async () => {
                   const next = !showAdminSold;
                   setShowAdminSold(next);
-                  localStorage.setItem('wcg_admin_show_sold_store', String(next));
-                  localStorage.setItem('wcg_store_global_show_sold', String(next));
-                  window.dispatchEvent(new CustomEvent('wcg_store_settings_updated', { detail: { showSold: next } }));
-                  window.dispatchEvent(new Event('wcg_sold_count_updated'));
+                  localStorage.setItem('pine_admin_show_sold_store', String(next));
+                  localStorage.setItem('pine_store_global_show_sold', String(next));
+                  window.dispatchEvent(new CustomEvent('pine_store_settings_updated', { detail: { showSold: next } }));
+                  window.dispatchEvent(new Event('pine_sold_count_updated'));
                   try {
                     await adminDataService.pushFullStateToKV(true);
                   } catch (e) {}
@@ -903,7 +903,7 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
                 onClick={() => {
                   const next = !showAdminStock;
                   setShowAdminStock(next);
-                  localStorage.setItem('wcg_admin_show_stock_store', String(next));
+                  localStorage.setItem('pine_admin_show_stock_store', String(next));
                 }}
                 className={`px-2 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   showAdminStock
@@ -922,7 +922,7 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
                 onClick={() => {
                   const next = !showVirtualStats;
                   setShowVirtualStats(next);
-                  localStorage.setItem('wcg_admin_show_virtual_stats', String(next));
+                  localStorage.setItem('pine_admin_show_virtual_stats', String(next));
                 }}
                 className={`px-2 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   showVirtualStats
@@ -942,7 +942,7 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
                 type="button"
                 onClick={() => {
                   setViewMode('grouped');
-                  localStorage.setItem('wcg_admin_store_view_mode', 'grouped');
+                  localStorage.setItem('pine_admin_store_view_mode', 'grouped');
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'grouped'
@@ -958,7 +958,7 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
                 type="button"
                 onClick={() => {
                   setViewMode('flat');
-                  localStorage.setItem('wcg_admin_store_view_mode', 'flat');
+                  localStorage.setItem('pine_admin_store_view_mode', 'flat');
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'flat'

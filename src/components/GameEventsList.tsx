@@ -59,8 +59,8 @@ export const GameEventsList: React.FC<GameEventsListProps> = ({
       }).catch(() => {});
     }
 
-    window.addEventListener('wcg_game_events_updated', loadData);
-    return () => window.removeEventListener('wcg_game_events_updated', loadData);
+    window.addEventListener('pine_game_events_updated', loadData);
+    return () => window.removeEventListener('pine_game_events_updated', loadData);
   }, []);
 
   // Format date time in Vietnam format (e.g., 23:59 02/11/2026)
@@ -469,7 +469,7 @@ export const GameEventsList: React.FC<GameEventsListProps> = ({
                       }
                     }}
                     className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-xs font-bold transition-all active:scale-95 cursor-pointer truncate"
-                    title={`Xem danh sách giftcode game ${event.game_name} trên CodeGame.shop`}
+                    title={`Xem danh sách giftcode game ${event.game_name} trên Pine Universal Mall`}
                   >
                     <Gift className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">Xem code trên web</span>

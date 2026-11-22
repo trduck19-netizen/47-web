@@ -142,7 +142,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
   const [shippingName, setShippingName] = useState<string>(() => {
     if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('wcg_shipping_info');
+      const saved = localStorage.getItem('pine_shipping_info');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -155,7 +155,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
   const [shippingPhone, setShippingPhone] = useState<string>(() => {
     if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('wcg_shipping_info');
+      const saved = localStorage.getItem('pine_shipping_info');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -168,7 +168,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
   const [shippingAddress, setShippingAddress] = useState<string>(() => {
     if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('wcg_shipping_info');
+      const saved = localStorage.getItem('pine_shipping_info');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -193,7 +193,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
   const saveShippingCache = (name: string, phone: string, address: string) => {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('wcg_shipping_info', JSON.stringify({ name, phone, address }));
+      localStorage.setItem('pine_shipping_info', JSON.stringify({ name, phone, address }));
     }
   };
 
@@ -459,8 +459,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     let isMounted = true;
     const activeUser = currentUser || dataService.getCurrentUser();
     const token =
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('wcg_auth_token') : null) ||
-      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('wcg_auth_token') : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('pine_auth_token') : null) ||
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pine_auth_token') : null) ||
       activeUser?.session_token ||
       '';
 
@@ -502,14 +502,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     const unsub = dataService.subscribe(handleUpdate);
     const unsubStock = marketingService.subscribeStockChange(handleUpdate);
     const unsubSold = marketingService.subscribeSoldCountChange(handleUpdate);
-    window.addEventListener('wcg_virtual_stock_updated', handleUpdate);
-    window.addEventListener('wcg_sold_count_updated', handleUpdate);
+    window.addEventListener('pine_virtual_stock_updated', handleUpdate);
+    window.addEventListener('pine_sold_count_updated', handleUpdate);
     return () => {
       unsub();
       unsubStock();
       unsubSold();
-      window.removeEventListener('wcg_virtual_stock_updated', handleUpdate);
-      window.removeEventListener('wcg_sold_count_updated', handleUpdate);
+      window.removeEventListener('pine_virtual_stock_updated', handleUpdate);
+      window.removeEventListener('pine_sold_count_updated', handleUpdate);
     };
   }, []);
 
@@ -900,7 +900,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
     setQrStatus('creating');
     try {
-      const token = user.session_token || localStorage.getItem('wcg_auth_token') || '';
+      const token = user.session_token || localStorage.getItem('pine_auth_token') || '';
       const res = await fetch('/api/orders/create-qr', {
         method: 'POST',
         headers: {
@@ -975,8 +975,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
       return;
     }
 
-    if (user.session_token && typeof localStorage !== 'undefined' && !localStorage.getItem('wcg_auth_token')) {
-      localStorage.setItem('wcg_auth_token', user.session_token);
+    if (user.session_token && typeof localStorage !== 'undefined' && !localStorage.getItem('pine_auth_token')) {
+      localStorage.setItem('pine_auth_token', user.session_token);
     }
 
     if (!isPriceValid) {
@@ -1117,8 +1117,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
             onUpdateUser(updatedUser);
           }
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: updatedUser }));
-            window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance: newBal } }));
+            window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: updatedUser }));
+            window.dispatchEvent(new CustomEvent('pine_wallet_updated', { detail: { newBalance: newBal } }));
           }
         }
 
@@ -1170,8 +1170,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
           dataService.saveCurrentUser(updatedUser);
           if (onUpdateUser) onUpdateUser(updatedUser);
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: updatedUser }));
-            window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance: newBal } }));
+            window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: updatedUser }));
+            window.dispatchEvent(new CustomEvent('pine_wallet_updated', { detail: { newBalance: newBal } }));
           }
         }
         setCompletedOrder(res.order);
@@ -1215,7 +1215,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     if (onOpenWallet) {
       onOpenWallet();
     } else if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wcg_open_wallet_modal'));
+      window.dispatchEvent(new CustomEvent('pine_open_wallet_modal'));
     }
   };
 
@@ -2560,8 +2560,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       dataService.saveCurrentUser(updated);
                       if (onUpdateUser) onUpdateUser(updated);
                       if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('wcg_user_updated', { detail: updated }));
-                        window.dispatchEvent(new CustomEvent('wcg_wallet_updated', { detail: { newBalance: updated.wallet_balance } }));
+                        window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: updated }));
+                        window.dispatchEvent(new CustomEvent('pine_wallet_updated', { detail: { newBalance: updated.wallet_balance } }));
                       }
                       onShowToast('Nạp Thử Nghiệm Sandbox', 'Đã cộng 1.000.000₫ vào ví test để trải nghiệm mua sắm.', 'success');
                     }

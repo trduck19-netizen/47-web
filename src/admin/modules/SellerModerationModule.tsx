@@ -116,8 +116,8 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
   const [savingConfig, setSavingConfig] = useState<boolean>(false);
 
   const getAdminHeaders = () => {
-    const token = localStorage.getItem('wcg_auth_token') || sessionStorage.getItem('wcg_auth_token') || '';
-    const syncKey = localStorage.getItem('wcg_admin_sync_key') || sessionStorage.getItem('wcg_admin_sync_key') || '';
+    const token = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
+    const syncKey = localStorage.getItem('pine_admin_sync_key') || sessionStorage.getItem('pine_admin_sync_key') || '';
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,

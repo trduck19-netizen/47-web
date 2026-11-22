@@ -57,7 +57,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   };
 
   const HeaderIcon = headerConfig.icon;
-  const shareTitle = `${title} | CodeGame.Shop 2026`;
+  const shareTitle = `${title} | Pine Universal Mall 2026`;
 
   const fallbackCopyText = (text: string): boolean => {
     try {
