@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { AdminLayout } from './components/AdminLayout';
 import { AdminModuleTab } from './components/AdminSidebar';
 import { AdminLoginGuard } from './components/AdminLoginGuard';
@@ -6,38 +6,39 @@ import { ToastContainer, type ToastMessage } from '../components/Toast';
 import { adminDataService } from './services/adminDataService';
 import { AdminUser } from './types/adminTypes';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AdminModuleSkeleton } from './components/AdminModuleSkeleton';
 
-// Import all modules
-import { DashboardModule } from './modules/DashboardModule';
-import { GamesModule } from './modules/GamesModule';
-import { NewsModule } from './modules/NewsModule';
-import { FreeCodesModule } from './modules/FreeCodesModule';
-import { GiftcodesModerationModule } from './modules/GiftcodesModerationModule';
-import { MembersModule } from './modules/MembersModule';
-import { WalletModule } from './modules/WalletModule';
-import { PrivateCodesModule } from './modules/PrivateCodesModule';
-import { CodeInventoryModule } from './modules/CodeInventoryModule';
-import { UtilitiesModule } from './modules/UtilitiesModule';
-import { OrdersModule } from './modules/OrdersModule';
-import { FirstPurchaseModule } from './modules/FirstPurchaseModule';
-import { SePayModule } from './modules/SePayModule';
-import { ContentCMSModule } from './modules/ContentCMSModule';
-import { SecurityLogsModule } from './modules/SecurityLogsModule';
-import { ProfileModule } from './modules/ProfileModule';
-import { MarketingModule } from './modules/MarketingModule';
-import { FloatingNotificationModule } from './modules/FloatingNotificationModule';
-import { GrowthModule } from './modules/GrowthModule';
-import { MissionsModule } from './modules/MissionsModule';
-import { CrawlerModule } from './modules/CrawlerModule';
-import { EventSchedulerModule } from './modules/EventSchedulerModule';
-import { EmailNotificationModule } from './modules/EmailNotificationModule';
-import { ApiKeysModule } from './modules/ApiKeysModule';
-import { TelegramModule } from './modules/TelegramModule';
-import { SellerModerationModule } from './modules/SellerModerationModule';
-import { PlatformLeadsModule } from './modules/PlatformLeadsModule';
-import { TranslationsModule } from './modules/TranslationsModule';
-import { VouchersModule } from './modules/VouchersModule';
-import { HomepageSectionsModule } from './modules/HomepageSectionsModule';
+// Lazy load all 30 admin modules for optimal performance & code-splitting
+const DashboardModule = React.lazy(() => import('./modules/DashboardModule').then((m) => ({ default: m.DashboardModule })));
+const GamesModule = React.lazy(() => import('./modules/GamesModule').then((m) => ({ default: m.GamesModule })));
+const NewsModule = React.lazy(() => import('./modules/NewsModule').then((m) => ({ default: m.NewsModule })));
+const FreeCodesModule = React.lazy(() => import('./modules/FreeCodesModule').then((m) => ({ default: m.FreeCodesModule })));
+const GiftcodesModerationModule = React.lazy(() => import('./modules/GiftcodesModerationModule').then((m) => ({ default: m.GiftcodesModerationModule })));
+const MembersModule = React.lazy(() => import('./modules/MembersModule').then((m) => ({ default: m.MembersModule })));
+const WalletModule = React.lazy(() => import('./modules/WalletModule').then((m) => ({ default: m.WalletModule })));
+const PrivateCodesModule = React.lazy(() => import('./modules/PrivateCodesModule').then((m) => ({ default: m.PrivateCodesModule })));
+const CodeInventoryModule = React.lazy(() => import('./modules/CodeInventoryModule').then((m) => ({ default: m.CodeInventoryModule })));
+const UtilitiesModule = React.lazy(() => import('./modules/UtilitiesModule').then((m) => ({ default: m.UtilitiesModule })));
+const OrdersModule = React.lazy(() => import('./modules/OrdersModule').then((m) => ({ default: m.OrdersModule })));
+const FirstPurchaseModule = React.lazy(() => import('./modules/FirstPurchaseModule').then((m) => ({ default: m.FirstPurchaseModule })));
+const SePayModule = React.lazy(() => import('./modules/SePayModule').then((m) => ({ default: m.SePayModule })));
+const ContentCMSModule = React.lazy(() => import('./modules/ContentCMSModule').then((m) => ({ default: m.ContentCMSModule })));
+const SecurityLogsModule = React.lazy(() => import('./modules/SecurityLogsModule').then((m) => ({ default: m.SecurityLogsModule })));
+const ProfileModule = React.lazy(() => import('./modules/ProfileModule').then((m) => ({ default: m.ProfileModule })));
+const MarketingModule = React.lazy(() => import('./modules/MarketingModule').then((m) => ({ default: m.MarketingModule })));
+const FloatingNotificationModule = React.lazy(() => import('./modules/FloatingNotificationModule').then((m) => ({ default: m.FloatingNotificationModule })));
+const GrowthModule = React.lazy(() => import('./modules/GrowthModule').then((m) => ({ default: m.GrowthModule })));
+const MissionsModule = React.lazy(() => import('./modules/MissionsModule').then((m) => ({ default: m.MissionsModule })));
+const CrawlerModule = React.lazy(() => import('./modules/CrawlerModule').then((m) => ({ default: m.CrawlerModule })));
+const EventSchedulerModule = React.lazy(() => import('./modules/EventSchedulerModule').then((m) => ({ default: m.EventSchedulerModule })));
+const EmailNotificationModule = React.lazy(() => import('./modules/EmailNotificationModule').then((m) => ({ default: m.EmailNotificationModule })));
+const ApiKeysModule = React.lazy(() => import('./modules/ApiKeysModule').then((m) => ({ default: m.ApiKeysModule })));
+const TelegramModule = React.lazy(() => import('./modules/TelegramModule').then((m) => ({ default: m.TelegramModule })));
+const SellerModerationModule = React.lazy(() => import('./modules/SellerModerationModule').then((m) => ({ default: m.SellerModerationModule })));
+const PlatformLeadsModule = React.lazy(() => import('./modules/PlatformLeadsModule').then((m) => ({ default: m.PlatformLeadsModule })));
+const TranslationsModule = React.lazy(() => import('./modules/TranslationsModule').then((m) => ({ default: m.TranslationsModule })));
+const VouchersModule = React.lazy(() => import('./modules/VouchersModule').then((m) => ({ default: m.VouchersModule })));
+const HomepageSectionsModule = React.lazy(() => import('./modules/HomepageSectionsModule').then((m) => ({ default: m.HomepageSectionsModule })));
 import { MarketingNotificationToast } from '../components/MarketingNotificationToast';
 import { LanguageProvider, useLanguage } from '../context/LanguageContext';
 
@@ -620,9 +621,10 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       pendingOrdersCount={pendingOrdersCount}
       onQuickAction={handleQuickAction}
     >
-      {/* 13 Module View Switcher with ErrorBoundary */}
+      {/* Module View Switcher with ErrorBoundary & Lazy Suspense */}
       <ErrorBoundary key={currentTab}>
-        {currentTab === 'dashboard' && (
+        <Suspense fallback={<AdminModuleSkeleton />}>
+          {currentTab === 'dashboard' && (
           <DashboardModule onNavigate={(tab) => setCurrentTab(tab)} onShowToast={showToast} />
         )}
 
@@ -750,6 +752,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
             onUpdateCurrentUser={(updated) => setCurrentUser(updated)}
           />
         )}
+        </Suspense>
       </ErrorBoundary>
 
       {/* Global Toast Notifications */}

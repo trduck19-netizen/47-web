@@ -7,6 +7,26 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 448. Triển Khai Thành Công Đợt 2 Tinh Gọn Hệ Thống (Lean Framework): Code-Splitting & Lazy Loading 30 Module Admin, Giảm Chunk AdminApp Từ 3.32 MB Xuống 551 KB (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai Bước 2 theo Lộ trình Tinh gọn `docs/BAO_CAO_DANH_GIA_VA_KHUNG_TINH_GON_DU_AN.md` và kế hoạch đã được phê duyệt.
+  - Mục tiêu: Chuyển đổi toàn bộ 30 module quản trị bị import tĩnh trong `src/admin/AdminApp.tsx` sang cơ chế nạp lười (`React.lazy()` + `Suspense`).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Xây dựng AdminModuleSkeleton & Song ngữ*:
+     - Tạo component `src/admin/components/AdminModuleSkeleton.tsx` với hiệu ứng shimmer mượt mà, hỗ trợ Dark/Light mode và chuẩn Rule 9 Single-Screen First.
+     - Khai báo bổ sung khóa song ngữ `admin.loadingModule` đối xứng trong `vi.json` ("Đang tải phân hệ quản trị...") và `en.json` ("Loading administration module...").
+  2. *Chuyển đổi 30 Static Imports sang React.lazy()*:
+     - Chuyển đổi toàn bộ 30 module (`DashboardModule`, `GamesModule`, `NewsModule`, `FreeCodesModule`, `GiftcodesModerationModule`, `MembersModule`, `WalletModule`, `PrivateCodesModule`, `CodeInventoryModule`, `UtilitiesModule`, `OrdersModule`, `FirstPurchaseModule`, `SePayModule`, `ContentCMSModule`, `SecurityLogsModule`, `ProfileModule`, `MarketingModule`, `FloatingNotificationModule`, `GrowthModule`, `MissionsModule`, `CrawlerModule`, `EventSchedulerModule`, `EmailNotificationModule`, `ApiKeysModule`, `TelegramModule`, `SellerModerationModule`, `PlatformLeadsModule`, `TranslationsModule`, `VouchersModule`, `HomepageSectionsModule`) sang `React.lazy(() => import('./modules/...').then(m => ({ default: m.ModuleName })))`.
+     - Bọc View Switcher trong `<Suspense fallback={<AdminModuleSkeleton />}>` bên trong `ErrorBoundary`.
+- **Kiểm thử & Nghiệm thu (Verification & Metrics)**:
+  - *Đo lường Chunk Assets thực tế*:
+    * Chunk `AdminApp.js`: **Giảm từ 3.319,62 KB (3.32 MB) xuống 551,21 KB (gzip chỉ 102,35 KB, giảm 83.4%)**.
+    * Toàn bộ 30 module được Rollup tách thành các lazy chunk độc lập kích thước siêu nhẹ (6 KB – 185 KB), chỉ tải khi quản trị viên click vào tab tương ứng.
+    * Cảnh báo build Rollup `(!) Some chunks are larger than 1200 kB` đối với AdminApp đã biến mất hoàn toàn.
+  - *TypeScript Typecheck*: `npx tsc -p tsconfig.homepage.json --noEmit` Exit Code 0 (`docs/tsc_check_success.log`).
+  - *i18n Guard Scanner*: 18/18 file giao diện PASSED, 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - *Bảo mật Rule 10*: Quét 3 lệnh bắt buộc đều đạt 0 hit rò rỉ secret.
+
 ### 447. Triển Khai Thành Công Đợt 1 Tinh Gọn Hệ Thống (Lean Framework): Lưu Trữ 14.320 Dòng Lịch Sử Sang docs/archive/, Xóa Bỏ Hoàn Toàn Chunk 8.02 MB Fallback JS, Giảm 50% Dung Lượng Assets (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai Đợt 1 Tinh Gọn Hệ Thống theo phê duyệt của Chủ sở hữu và tài liệu chuẩn `docs/BAO_CAO_DANH_GIA_VA_KHUNG_TINH_GON_DU_AN.md`.

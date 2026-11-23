@@ -496,7 +496,8 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "close": "Close"
-    }
+    },
+    "loadingModule": "Loading administration module..."
   },
   "footer": {
     "siteDesc": "Vietnam's leading verified giftcode directory and modern multi-industry e-commerce platform.",

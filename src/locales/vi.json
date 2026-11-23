@@ -496,7 +496,8 @@
       "confirm": "Xác nhận",
       "cancel": "Hủy bỏ",
       "close": "Đóng"
-    }
+    },
+    "loadingModule": "Đang tải phân hệ quản trị..."
   },
   "footer": {
     "siteDesc": "Hệ thống tra cứu giftcode và nền tảng thương mại điện tử đa ngành uy tín hàng đầu Việt Nam.",
