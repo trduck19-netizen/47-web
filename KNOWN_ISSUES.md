@@ -10,6 +10,44 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-316: Lỗi Endpoint Probe Chậm 10–16 Giây Do Tự Chạy Schema Migration D1 (`ensureSchemaUpgrades`) Trên Endpoint Đọc Thường Xuyên
+- **Triệu chứng & Rủi ro**:
+  - Giao diện Quản trị (`/admin`) bị treo đơ từ 10 đến 16 giây mỗi lần mở trang cấu hình hoặc kiểm tra trạng thái ảnh.
+  - Các script kiểm thử tự động, probe giám sát hoặc browser subagent đều phải chờ đợi lâu, làm tắc nghẽn toàn bộ quy trình kiểm chứng.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  - File `functions/api/homepage-images/probe.ts` gọi `await ensureSchemaUpgrades(env.DB)`. Hàm này chạy tuần tự qua hơn 40 migrations của D1 với hàng loạt câu lệnh `CREATE TABLE`, `ALTER TABLE`, `UPDATE` và `INSERT INTO schema_migrations`.
+  - Endpoint Probe là endpoint kiểm tra tình trạng nhanh được gọi liên tục mỗi khi tải trang; việc đặt logic migration D1 vào đây gây overhead khổng lồ.
+- **Cạm bẫy đã thất bại (Failed Attempts)**:
+  - Đặt timeout hoặc cờ cache cho probe nhưng vẫn giữ lệnh gọi `ensureSchemaUpgrades`: Vẫn bị nghẽn 10-16s mỗi khi cache hết hạn hoặc gặp cold start.
+- **Giải pháp chuẩn đã kiểm chứng (Đợt 11)**:
+  - Loại bỏ hoàn toàn `ensureSchemaUpgrades` khỏi `probe.ts`.
+  - Endpoint probe chỉ thực thi duy nhất 1 câu truy vấn `SELECT COUNT(*) AS total_images FROM homepage_section_images` siêu nhẹ.
+  - Kết quả: Độ trễ phản hồi giảm triệt để từ 10–16 giây xuống dưới 50ms (warm) và ~500ms (cold/TLS), triệt tiêu hoàn toàn hiện tượng treo trang.
+
+### ISSUE-317: Bẫy Race Condition Rollback Cả Hai Request Khi Upload Ảnh Thứ 10 Song Song & Giải Pháp Phân Định Thứ Tự Top 10 Bằng SQLite C-Engine Thật (`LIMIT 10`)
+- **Triệu chứng & Rủi ro**:
+  - Khi CSDL đang có 9 ảnh (còn đúng 1 slot trống cho hạn mức 10 ảnh), nếu có 2 upload diễn ra đồng thời (song song), cả hai đều vượt qua vòng kiểm tra trước (Pre-check đếm thấy 9 ảnh).
+  - Cả hai request cùng chèn vào DB khiến tổng số ảnh tăng lên 11.
+  - Nếu áp dụng cơ chế rollback đơn giản `if (count > 10) rollback()` thì cả 2 request đều phát hiện tổng ảnh là 11 và CẢ HAI CÙNG ROLLBACK xóa chính mình. Hậu quả: CSDL trở về 9 ảnh, cả 2 người dùng đều bị báo lỗi từ chối dù hệ thống còn 1 slot trống!
+- **Cạm bẫy đã thất bại (Failed Attempts)**:
+  - Rollback mù quáng dựa trên điều kiện `count > 10`: Khiến toàn bộ các request đồng thời bị từ chối oan uổng.
+- **Giải pháp chuẩn đã kiểm chứng (Đợt 11)**:
+  - Sử dụng truy vấn phân định thứ tự thời gian nguyên tử:
+    `SELECT id FROM homepage_section_images WHERE section_id = ? ORDER BY created_at ASC, rowid ASC LIMIT 10`.
+  - Bản ghi đến trước (nằm trong Top 10 hợp lệ) được giữ lại an toàn và trả về HTTP 200.
+  - Bản ghi đến sau (nằm ngoài Top 10) bị tự động rollback xóa khỏi DB và trả về HTTP 400 kèm thông báo rõ ràng.
+  - Đã kiểm chứng trên SQLite C-Engine nhúng của Node.js v24 (`node:sqlite`) với kịch bản `Promise.all` 2 request đồng thời khi DB có 9 ảnh: **19/19 PASSED (0 FAILED)** trong 8ms (log tại `docs/test_upload_11_images.txt`).
+
+### ISSUE-318: Bẫy Nút `/store` Trên Giao Diện Khách Chỉ Cuộn Trang Thay Vì Chuyển SubView Sang `StoreView` Thực Tế
+- **Triệu chứng & Rủi ro**:
+  - Khi người dùng hoặc quản trị viên click vào nút điều hướng hoặc banner có liên kết `/store`, trang web chỉ cuộn xuống `#shopee-products-grid` ở chân trang chủ thay vì mở giao diện Cửa Hàng thực sự.
+  - Bị đánh giá là điều hướng giả (fake navigation) trong các báo cáo kiểm chứng độc lập.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  - Trong `src/components/shopee/ShopeeTestView.tsx`, hàm `handleNavigation` xử lý nhánh `url === '/store'` bằng cách gọi `setSubView('home')` và `scrollIntoView({ behavior: 'smooth' })`.
+- **Giải pháp chuẩn đã kiểm chứng (Đợt 11)**:
+  - Đổi nhánh xử lý thành `setSubView('store')` kết hợp cuộn lên đầu trang (`window.scrollTo({ top: 0, behavior: 'smooth' })`).
+  - Giao diện chuyển mượt sang component `StoreView` (Cửa Hàng chuyên biệt với đầy đủ 10 gói dịch vụ, bộ lọc, chi tiết sản phẩm và giỏ hàng).
+
 ### ISSUE-314: Cửa Sổ TOCTOU (Time-of-Check to Time-of-Use) Trong Cloudflare Workers & Giới Hạn Tự Nhiên Khi Kiểm Tra DNS Over HTTPS (DoH) Trước Khi Fetch URL Ngoài
 - **Bản chất kỹ thuật & Giới hạn nền tảng (Known Platform Limitation)**:
   - Khi tải ảnh từ link ngoài (Mirror URL), ứng dụng giải quyết bài toán chống tấn công SSRF / DNS Rebinding bằng cách gọi Cloudflare DNS-over-HTTPS (`https://cloudflare-dns.com/dns-query`) để thẩm định trước các địa chỉ IP phân giải được (cả bản ghi A và AAAA).

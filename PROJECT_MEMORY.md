@@ -145,3 +145,22 @@
   - *Lý do Pepper-Binding*: Mã băm PBKDF2 gắn liền với pepper tại thời điểm tính toán. Nếu tạm thời đặt pepper cũ đã lộ lên Cloudflare Pages rồi sau đó mới xoay sang pepper mới, mã băm PBKDF2 vừa tạo vẫn gắn với pepper cũ. Khi đó, lần đăng nhập tiếp theo với pepper mới sẽ thất bại 100% (tài khoản bị khóa vĩnh viễn). **Tuyệt đối không đặt tạm pepper cũ đã lộ rồi mới xoay**.
   - *Cảnh báo nâng cấp tự động*: Việc tự động nâng cấp hash khi đăng nhập chỉ băm lại mật khẩu cũ hiện tại bằng PBKDF2 — nó KHÔNG sửa việc chuỗi hash SHA-256 cũ của chính mật khẩu đó đã bị lộ công khai trong lịch sử repo và vẫn có thể bị bẻ khóa offline. **BẮT BUỘC Quản trị viên phải thực hiện ĐỔI MẬT KHẨU MỚI** (trong form quản trị hoặc qua OTP) để loại bỏ hoàn toàn rủi ro mật khẩu cũ bị bẻ khóa.
 - **Cấm lặp lại sai lầm**: Tuyệt đối không đặt tạm pepper cũ đã lộ lên Cloudflare Pages rồi mới xoay, không lưu chuỗi bí mật trong code/commit history, và tuân thủ nguyên tắc di chuyển một chiều (One-way Legacy Migration Bridge).
+
+---
+
+## 6. KHO LƯU TRỮ VÀ TỐI ƯU HÓA ẢNH TRANG CHỦ & KIỂM SOÁT CONCURRENCY (HOMEPAGE IMAGE PIPELINE & CONCURRENCY GUARD)
+
+1. **Lưu Trữ Ảnh Tách Biệt & Không Gây Ballooning D1**:
+   - Ảnh tải lên được lưu trong bảng chuyên biệt `homepage_section_images` (chứa dữ liệu binary WebP nén) và phục vụ trực tiếp qua Edge streaming endpoint `/api/homepage-images/:id`.
+   - Bảng cấu hình `system_settings` chỉ lưu URL nội bộ `/api/homepage-images/:id`, không bao giờ lưu base64.
+2. **Loại Bỏ Migration Ngầm Khỏi Các Endpoint Đọc (Zero Migrations on Probe/Read)**:
+   - Các endpoint kiểm tra trạng thái (`/api/homepage-images/probe`) hoặc tải dữ liệu (`/api/homepage-sections`) **TUYỆT ĐỐI KHÔNG** gọi `ensureSchemaUpgrades`.
+   - Migration D1 chỉ chạy qua file migration chuyên dụng hoặc lệnh CLI quản trị định kỳ, đưa độ trễ của probe về dưới 50ms và không làm nghẽn giao diện Admin.
+3. **Cơ Chế Phân Định Thứ Tự Top 10 Chống Race Condition (Atomic Top-10 Concurrency Guard)**:
+   - Khi có 2 request upload chạy song song khi CSDL đang có 9 ảnh (tổng tăng lên 11), hệ thống áp dụng truy vấn:
+     `SELECT id FROM homepage_section_images WHERE section_id = ? ORDER BY created_at ASC, rowid ASC LIMIT 10`.
+   - Bản ghi đến trước (thứ 10) nằm trong Top 10 được giữ lại an toàn (HTTP 200).
+   - Bản ghi đến sau (thứ 11) bị tự động rollback xóa khỏi DB và trả về HTTP 400 kèm thông báo rõ ràng.
+   - Luôn kiểm chứng cơ chế này bằng SQLite D1 C-Engine thật (`node:sqlite`).
+4. **Điều Hướng Liên Kết Cửa Hàng Thật (Real Store Navigation)**:
+   - Khi người dùng hoặc quản trị viên click vào liên kết `/store`, hệ thống chuyển thẳng `subView: 'store'` (mở `StoreView` chuyên biệt) và cuộn lên đầu trang, tuyệt đối không giữ ở trang chủ và chỉ cuộn xuống sản phẩm.
