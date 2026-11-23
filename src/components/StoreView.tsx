@@ -390,19 +390,23 @@ export const StoreView: React.FC<StoreViewProps> = ({
                 {/* Product Thumbnail */}
                 <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-muted overflow-hidden shrink-0 border border-border shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center">
                   <img
-                    src={product.cover_image_url || product.game_icon_url || `/game_icons/${product.game_slug}.webp`}
+                    src={product.cover_image_url || product.game_icon_url || product.product_images?.[0] || (product.game_slug ? `/game_icons/${product.game_slug}.webp` : '/package-placeholder.svg')}
                     alt={product.game_name}
                     className="w-full h-full object-cover"
                     loading="lazy"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      const localFallback = `/game_icons/${product.game_slug}.webp`;
-                      if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
-                        target.src = localFallback;
+                      const gameIcon = product.game_slug ? `/game_icons/${product.game_slug}.webp` : '';
+                      const firstProdImg = product.product_images?.[0];
+
+                      if (firstProdImg && target.src !== firstProdImg && !target.src.endsWith(firstProdImg)) {
+                        target.src = firstProdImg;
+                      } else if (gameIcon && target.src !== gameIcon && !target.src.endsWith(gameIcon)) {
+                        target.src = gameIcon;
                       } else {
                         target.onerror = null;
-                        target.src = '/vite.svg';
+                        target.src = '/package-placeholder.svg';
                       }
                     }}
                   />
@@ -551,19 +555,23 @@ export const StoreView: React.FC<StoreViewProps> = ({
                     <div className="flex items-start gap-2 sm:gap-2.5 min-w-0 flex-1">
                       <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-muted overflow-hidden shrink-0 border border-border shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center">
                         <img
-                          src={product.cover_image_url || product.game_icon_url || `/game_icons/${product.game_slug}.webp`}
+                          src={product.cover_image_url || product.game_icon_url || product.product_images?.[0] || (product.game_slug ? `/game_icons/${product.game_slug}.webp` : '/package-placeholder.svg')}
                           alt={product.game_name}
                           className="w-full h-full object-cover"
                           loading="lazy"
                           referrerPolicy="no-referrer"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            const localFallback = `/game_icons/${product.game_slug}.webp`;
-                            if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
-                              target.src = localFallback;
+                            const gameIcon = product.game_slug ? `/game_icons/${product.game_slug}.webp` : '';
+                            const firstProdImg = product.product_images?.[0];
+
+                            if (firstProdImg && target.src !== firstProdImg && !target.src.endsWith(firstProdImg)) {
+                              target.src = firstProdImg;
+                            } else if (gameIcon && target.src !== gameIcon && !target.src.endsWith(gameIcon)) {
+                              target.src = gameIcon;
                             } else {
                               target.onerror = null;
-                              target.src = '/vite.svg';
+                              target.src = '/package-placeholder.svg';
                             }
                           }}
                         />

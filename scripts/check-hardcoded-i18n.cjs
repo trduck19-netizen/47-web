@@ -215,6 +215,8 @@ function scanUiFile(filePath) {
 function runScanner() {
   const isAll = process.argv.includes('--all');
   console.log('🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...');
+  const nowUtc = new Date().toISOString();
+  console.log(`   Timestamp: ${nowUtc} — Batch: Dot 19 Trang Chu (23/11/2026)`);
 
   let filesToScan = [];
   if (isAll) {

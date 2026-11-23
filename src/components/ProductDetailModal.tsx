@@ -37,6 +37,7 @@ import { offerService } from '../services/offerService';
 import { getProductPackages } from '../utils/productPackageUtils';
 import { GuideLinksBanner } from './GuideLinksBanner';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import { useLanguage } from '../context/LanguageContext';
 import { PackageShareModal } from './PackageShareModal';
 import { ProductReviewsSection } from './ProductReviewsSection';
 
@@ -61,6 +62,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onOpenShare,
   onShowToast,
 }) => {
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
@@ -487,16 +490,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   }
                 }}
                 className="p-2 sm:p-2.5 rounded-xl bg-muted/60 hover:bg-muted text-slate-300 hover:text-foreground cursor-pointer transition-all active:scale-95"
-                title="Chia sẻ gói đang chọn"
-                aria-label="Chia sẻ gói đang chọn"
+                title={t('productDetailModal.shareSelectedPackage') || 'Chia sẻ gói đang chọn'}
+                aria-label={t('productDetailModal.shareSelectedPackage') || 'Chia sẻ gói đang chọn'}
               >
                 <Share2 className="w-4 h-4" />
               </button>
               <button
                 onClick={onClose}
                 className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-slate-600 shadow-md cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0"
-                aria-label="Đóng"
-                title="Đóng"
+                aria-label={t('productDetailModal.close') || 'Đóng'}
+                title={t('productDetailModal.close') || 'Đóng'}
               >
                 <X className="w-5 h-5 text-white" />
               </button>
@@ -545,7 +548,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
                         }}
                         className="absolute left-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition-all cursor-pointer opacity-90 sm:opacity-0 sm:group-hover:opacity-100 z-10 active:scale-95"
-                        title="Ảnh trước"
+                        title={t('productDetailModal.prevImage') || 'Ảnh trước'}
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
@@ -555,7 +558,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
                         }}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition-all cursor-pointer opacity-90 sm:opacity-0 sm:group-hover:opacity-100 z-10 active:scale-95"
-                        title="Ảnh sau"
+                        title={t('productDetailModal.nextImage') || 'Ảnh sau'}
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -565,7 +568,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <button
                     onClick={() => setIsZoomed(true)}
                     className="absolute bottom-2.5 right-2.5 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition-all cursor-pointer z-10"
-                    title="Phóng to ảnh"
+                    title={t('productDetailModal.zoomImage') || 'Phóng to ảnh'}
                   >
                     <ZoomIn className="w-4 h-4" />
                   </button>
@@ -596,24 +599,24 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
                   <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div>
-                    <h5 className="font-bold text-xs text-emerald-300">GIAO DỊCH BẢO VỆ</h5>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Thanh toán an toàn trong hệ thống</p>
+                    <h5 className="font-bold text-xs text-emerald-300">{t('productDetailModal.trustSafe') || 'GIAO DỊCH BẢO VỆ'}</h5>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{t('productDetailModal.trustSafeDesc') || 'Thanh toán an toàn trong hệ thống'}</p>
                   </div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
                   <Clock className="w-5 h-5 text-amber-400 shrink-0" />
                   <div>
-                    <h5 className="font-bold text-xs text-amber-300">NHANH CHÓNG</h5>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Xử lý tự động hoặc 0-5 phút</p>
+                    <h5 className="font-bold text-xs text-amber-300">{t('productDetailModal.trustFast') || 'NHANH CHÓNG'}</h5>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{t('productDetailModal.trustFastDesc') || 'Xử lý tự động hoặc 0-5 phút'}</p>
                   </div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
                   <Sparkles className="w-5 h-5 text-indigo-400 shrink-0" />
                   <div>
-                    <h5 className="font-bold text-xs text-indigo-300">CHÍNH HÃNG 100%</h5>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Cam kết đúng bản quyền gói</p>
+                    <h5 className="font-bold text-xs text-indigo-300">{t('productDetailModal.trustAuthentic') || 'CHÍNH HÃNG 100%'}</h5>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{t('productDetailModal.trustAuthenticDesc') || 'Cam kết đúng bản quyền gói'}</p>
                   </div>
                 </div>
               </div>
@@ -624,7 +627,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1.5">
                       <BookOpen className="w-4 h-4 text-primary" />
-                      <span>Thông Tin Chi Tiết Sản Phẩm:</span>
+                      <span>{t('productDetailModal.productDetails') || 'Thông Tin Chi Tiết Sản Phẩm:'}</span>
                     </h4>
                     {currentDescription.length > 200 && (
                       <button
@@ -632,7 +635,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         onClick={() => setIsDescExpanded(!isDescExpanded)}
                         className="inline-flex items-center gap-1 text-[11px] font-semibold text-secondary hover:opacity-90 py-1 px-2.5 rounded-lg bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 cursor-pointer transition-all active:scale-95 shrink-0"
                       >
-                        <span>{isDescExpanded ? 'Thu gọn' : 'Xem toàn bộ'}</span>
+                        <span>{isDescExpanded ? (t('productDetailModal.collapseDesc') || 'Thu gọn') : (t('productDetailModal.readAllDesc') || 'Xem toàn bộ')}</span>
                         {isDescExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
                     )}
@@ -650,7 +653,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {!isDescExpanded && currentDescription.length > 200 && (
                       <div className="pointer-events-none absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-card via-card/80 to-transparent flex items-end justify-center pb-1">
                         <span className="text-[10px] text-secondary font-semibold bg-card/90 px-2 py-0.5 rounded-full border border-secondary/20 shadow-sm">
-                          Nhấn &quot;Xem toàn bộ&quot; để đọc hết mô tả...
+                          {t('productDetailModal.viewAllDescTip') || 'Nhấn "Xem toàn bộ" để đọc hết mô tả...'}
                         </span>
                       </div>
                     )}
@@ -673,34 +676,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="p-3.5 rounded-2xl bg-card border border-border space-y-2 text-xs">
                   <div className="font-bold text-foreground flex items-center gap-1.5 pb-1.5 border-b border-border/60">
                     <BadgeCheck className="w-4 h-4 text-emerald-500" />
-                    <span>Thông Số & Cam Kết Bán Hàng</span>
+                    <span>{t('productDetailModal.productSpecs') || 'Thông Số & Cam Kết Bán Hàng'}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
                     {(product as any).brand && (
                       <div>
-                        <span className="text-muted-foreground">Thương hiệu: </span>
+                        <span className="text-muted-foreground">{t('productDetailModal.brand') || 'Thương hiệu:'} </span>
                         <span className="font-bold text-foreground">{(product as any).brand}</span>
                       </div>
                     )}
                     {(product as any).product_type && (
                       <div>
-                        <span className="text-muted-foreground">Loại sản phẩm: </span>
+                        <span className="text-muted-foreground">{t('productDetailModal.productType') || 'Loại sản phẩm:'} </span>
                         <span className="font-bold text-foreground">
-                          {(product as any).product_type === 'physical' ? 'Hàng Vật Lý' : 'Kỹ Thuật Số'}
+                          {(product as any).product_type === 'physical' ? (t('productDetailModal.productTypePhysical') || 'Hàng Vật Lý') : (t('productDetailModal.productTypeDigital') || 'Kỹ Thuật Số')}
                         </span>
                       </div>
                     )}
                     {(product as any).origin && (
                       <div>
-                        <span className="text-muted-foreground">Xuất xứ: </span>
+                        <span className="text-muted-foreground">{t('productDetailModal.origin') || 'Xuất xứ:'} </span>
                         <span className="font-bold text-foreground">{(product as any).origin}</span>
                       </div>
                     )}
                     {(product as any).shipping_fee !== undefined && (
                       <div>
-                        <span className="text-muted-foreground">Vận chuyển: </span>
+                        <span className="text-muted-foreground">{t('productDetailModal.shipping') || 'Vận chuyển:'} </span>
                         <span className="font-bold text-emerald-500">
-                          {(product as any).shipping_fee === 0 ? 'Miễn phí giao hàng' : formatPriceVal((product as any).shipping_fee)}
+                          {(product as any).shipping_fee === 0 ? (t('productDetailModal.freeShipping') || 'Miễn phí giao hàng') : formatPriceVal((product as any).shipping_fee)}
                         </span>
                       </div>
                     )}
@@ -718,7 +721,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {(product as any).show_warranty && (
                 <div className="p-3 rounded-xl bg-muted/30 border border-border flex items-center gap-2 text-xs text-muted-foreground">
                   <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{(product as any).warranty_text || 'Bảo hành 1 đổi 1 suốt chu kỳ sử dụng'}</span>
+                  <span>{(product as any).warranty_text || (t('productDetailModal.warrantyDefault') || 'Bảo hành 1 đổi 1 suốt chu kỳ sử dụng')}</span>
                 </div>
               )}
             </div>
@@ -730,7 +733,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="pb-3 border-b border-border/70">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs font-semibold text-muted-foreground">
-                      Gói đã chọn:
+                      {t('productDetailModal.selectedPackageLabel') || 'Gói đã chọn:'}
                     </span>
                     <span className="text-xs font-bold text-secondary truncate max-w-[260px]">
                       {selectedPackage.name}
@@ -744,7 +747,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {!isSelectedEscalating && isSelectedOfferEligible && displayCurrentPrice !== currentPrice && (
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 shadow-xs">
                           <Sparkles className="w-3 h-3 text-rose-400" />
-                          <span>Ưu đãi mua lần đầu</span>
+                          <span>{t('productDetailModal.firstPurchaseOffer') || 'Ưu đãi mua lần đầu'}</span>
                         </span>
                       )}
                       {!isSelectedEscalating && displayOriginalPrice > displayCurrentPrice && (
@@ -769,12 +772,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <div>
                       {isOutOfStock ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-bold">
-                          <span>Hết hàng</span>
+                          <span>{t('productDetailModal.outOfStockShort') || 'Hết hàng'}</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Còn hàng</span>
+                          <span>{t('productDetailModal.inStockShort') || 'Còn hàng'}</span>
                         </span>
                       )}
                     </div>
@@ -797,7 +800,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <div className="p-1.5 rounded-xl bg-amber-500/20 border border-amber-500/50">
                           <span className="text-[9px] text-amber-300 font-bold uppercase block">Lượt {Number(selectedEscData.completed_count) + 1} (Hiện tại)</span>
                           <span className="font-mono font-black text-xs text-amber-400 block mt-0.5">{formatPriceVal(displayCurrentPrice)}</span>
-                          <span className="text-[8px] text-emerald-400 font-semibold block">Giá lượt này</span>
+                          <span className="text-[8px] text-emerald-400 font-semibold block">{t('productDetailModal.escalatingCurrentTurn') || 'Giá lượt này'}</span>
                         </div>
                         <div className="p-1.5 rounded-xl bg-muted/40 border border-border">
                           <span className="text-[9px] text-muted-foreground font-bold uppercase block">Lượt {Number(selectedEscData.completed_count) + 2}</span>
@@ -808,7 +811,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                 : displayCurrentPrice + selectedEscData.step
                             )}
                           </span>
-                          <span className="text-[8px] text-muted-foreground block">Lượt kế</span>
+                          <span className="text-[8px] text-muted-foreground block">{t('productDetailModal.escalatingNextTurn') || 'Lượt kế'}</span>
                         </div>
                         <div className="p-1.5 rounded-xl bg-muted/20 border border-border/60 opacity-80">
                           <span className="text-[9px] text-muted-foreground font-bold uppercase block">Lượt {Number(selectedEscData.completed_count) + 3}</span>
@@ -819,16 +822,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                 : displayCurrentPrice + (selectedEscData.step * 2)
                             )}
                           </span>
-                          <span className="text-[8px] text-muted-foreground block">Sau nữa</span>
+                          <span className="text-[8px] text-muted-foreground block">{t('productDetailModal.escalatingLaterTurn') || 'Sau nữa'}</span>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-slate-800/60">
-                        <span>Đã mua thành công: <strong className="text-foreground font-mono">{selectedEscData.completed_count}</strong> lượt</span>
+                        <span>{t('productDetailModal.escalatingBoughtCount', { count: selectedEscData.completed_count }) || `Đã mua thành công: ${selectedEscData.completed_count} lượt`}</span>
                         {selectedEscData.max_price ? (
-                          <span>Trần giá: <strong className="text-slate-300 font-mono">{formatCore(selectedEscData.max_price)}</strong></span>
+                          <span>{t('productDetailModal.escalatingPriceCap', { cap: formatCore(selectedEscData.max_price) }) || `Trần giá: ${formatCore(selectedEscData.max_price)}`}</span>
                         ) : (
-                          <span>Không giới hạn trần</span>
+                          <span>{t('productDetailModal.escalatingNoCap') || 'Không giới hạn trần'}</span>
                         )}
                       </div>
                     </div>
@@ -837,18 +840,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   {!isSelectedEscalating && isSelectedOfferEligible && (
                     <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 w-fit">
                       <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-                      <span>Ưu đãi mua lần đầu (chỉ 1 lần duy nhất cho gói này)</span>
+                      <span>{t('productDetailModal.firstPurchaseOfferOnly') || 'Ưu đãi mua lần đầu (chỉ 1 lần duy nhất cho gói này)'}</span>
                     </div>
                   )}
 
                   <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                     <span className="flex items-center gap-1 text-amber-400 font-semibold">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>5.0 (Đánh giá uy tín)</span>
+                      <span>{t('productDetailModal.ratingTrusted') || '5.0 (Đánh giá uy tín)'}</span>
                     </span>
                     {isSoldVisible && (
                       <span className="text-slate-400">
-                        Đã bán: <strong className="text-foreground font-mono">{displaySold}</strong> gói
+                        {t('productDetailModal.soldPackages', { count: displaySold }) || `Đã bán: ${displaySold} gói`}
                       </span>
                     )}
                   </div>
@@ -860,7 +863,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="font-heading font-bold text-xs text-foreground flex items-center gap-1.5">
                       <BookOpen className="w-3.5 h-3.5 text-secondary" />
-                      <span>Thông Tin Chi Tiết Gói:</span>
+                      <span>{t('productDetailModal.packageDetails') || 'Thông Tin Chi Tiết Gói:'}</span>
                     </h4>
                     {currentDescription && currentDescription.length > 80 && (
                       <button
@@ -869,7 +872,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         className="min-h-[44px] px-3 py-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary border border-secondary/30 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shrink-0"
                         aria-label={isDescExpanded ? 'Thu gọn mô tả' : 'Xem thêm mô tả'}
                       >
-                        <span>{isDescExpanded ? 'Thu gọn' : 'Xem thêm'}</span>
+                        <span>{isDescExpanded ? (t('productDetailModal.collapseDesc') || 'Thu gọn') : (t('common.viewMore') || 'Xem thêm')}</span>
                         {isDescExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
                     )}
@@ -902,8 +905,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <LogIn className="w-4 h-4" />
                         <span>
                           {offerData.campaign?.enabled
-                            ? `Đăng Nhập Để Nhận Ưu Đãi (${formatPriceVal(totalPrice)})`
-                            : `Đăng Nhập Để Mua (${formatPriceVal(totalPrice)})`}
+                            ? t('productDetailModal.loginForOffer', { price: formatPriceVal(totalPrice) })
+                            : t('productDetailModal.loginToBuy', { price: formatPriceVal(totalPrice) })}
                         </span>
                       </button>
                     ) : (
@@ -913,7 +916,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         disabled={isOutOfStock}
                         onClick={() => {
                           if (isOutOfStock) {
-                            if (onShowToast) onShowToast('Hết hàng', 'Gói này tạm thời hết hàng trong kho.', 'error');
+                            if (onShowToast) onShowToast(t('productDetailModal.outOfStockToast') || 'Hết hàng', t('productDetailModal.outOfStockToastDesc') || 'Gói này tạm thời hết hàng trong kho.', 'error');
                             return;
                           }
                           const finalSafeQty = isSelectedEscalating ? 1 : (realStock > 0 ? Math.min(Math.max(1, quantity), realStock) : 0);
@@ -952,12 +955,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <Zap className={`w-4 h-4 ${isSelectedEscalating ? 'fill-slate-950 text-slate-950' : ''}`} />
                         <span>
                           {!isOutOfStock
-                            ? isSelectedEscalating
-                              ? `Mua Ngay (${formatPriceVal(totalPrice)})`
-                              : isSelectedOfferEligible
-                                ? `Mua Ngay Ưu Đãi (${formatPriceVal(totalPrice)})`
-                                : `Mua Ngay (${formatPriceVal(totalPrice)})`
-                            : 'Tạm Hết Hàng'}
+                            ? (isSelectedEscalating || isSelectedOfferEligible
+                                ? t('productDetailModal.buyNowOffer', { price: formatPriceVal(totalPrice) })
+                                : t('productDetailModal.buyNow', { price: formatPriceVal(totalPrice) }))
+                            : (t('productDetailModal.outOfStock') || 'Tạm Hết Hàng')}
                         </span>
                       </button>
                       <button
@@ -965,17 +966,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         disabled={isOutOfStock}
                         onClick={handleAddToCart}
                         className="w-full sm:w-auto px-4 min-h-[44px] h-[48px] rounded-xl font-bold text-xs sm:text-sm border-2 border-secondary/60 text-secondary hover:bg-secondary/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                        title="Thêm phân loại này vào giỏ hàng"
+                        title={t('productDetailModal.addToCartTitle') || 'Thêm phân loại này vào giỏ hàng'}
                       >
                         <ShoppingCart className="w-4 h-4" />
-                        <span>Thêm Giỏ</span>
+                        <span>{t('productDetailModal.addToCart') || 'Thêm Giỏ'}</span>
                       </button>
                     </div>
                     )}
                     <p className="text-[10px] text-center text-muted-foreground pt-0.5">
                       {(product as any).product_type === 'physical'
-                        ? '📦 Đóng gói cẩn thận • Giao tận nơi toàn quốc • Đổi trả 7 ngày'
-                        : '⚡ Giao mã tự động qua ví trong 0 giây'}
+                        ? (t('productDetailModal.physicalDeliveryGuarantee') || '📦 Đóng gói cẩn thận • Giao tận nơi toàn quốc • Đổi trả 7 ngày')
+                        : (t('productDetailModal.digitalDeliveryGuarantee') || '⚡ Giao mã tự động qua ví trong 0 giây')}
                     </p>
                   </div>
                 </div>
@@ -992,9 +993,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <div className="flex items-center gap-1.5 text-rose-300 font-bold">
                       <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-pulse shrink-0" />
-                      <span>Đăng nhập để nhận ưu đãi mua lần đầu chỉ {formatCore(offerData.campaign?.offer_price || 2000)}</span>
+                      <span>{t('productDetailModal.loginPromptOffer', { price: formatCore(offerData.campaign?.offer_price || 2000) })}</span>
                     </div>
-                    <span className="text-[10px] text-amber-400 font-bold underline shrink-0">Đăng nhập ngay &gt;</span>
+                    <span className="text-[10px] text-amber-400 font-bold underline shrink-0">{t('productDetailModal.loginNow') || 'Đăng nhập ngay >'}</span>
                   </div>
                 )}
 
@@ -1012,9 +1013,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <div className="flex items-center gap-1.5 text-amber-300 font-medium">
                       <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>Cần xác minh email trong Hồ Sơ Tài Khoản để nhận giá ưu đãi {formatCore(offerData.campaign?.offer_price || 2000)}.</span>
+                      <span>{t('productDetailModal.verifyEmailNotice', { price: formatCore(offerData.campaign?.offer_price || 2000) })}</span>
                     </div>
-                    <span className="text-[10px] text-amber-400 font-bold underline shrink-0">Xác minh ngay &gt;</span>
+                    <span className="text-[10px] text-amber-400 font-bold underline shrink-0">{t('productDetailModal.verifyNow') || 'Xác minh ngay >'}</span>
                   </div>
                 )}
 
@@ -1023,10 +1024,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                       <Package className="w-4 h-4 text-secondary" />
-                      <span>Chọn gói sản phẩm:</span>
+                      <span>{t('productDetailModal.selectProductPackage') || 'Chọn gói sản phẩm:'}</span>
                     </label>
                     <span className="text-[11px] text-muted-foreground font-mono">
-                      {packages.length} gói có sẵn
+                      {t('productDetailModal.availablePackages', { count: packages.length }) || `${packages.length} gói có sẵn`}
                     </span>
                   </div>
 
@@ -1036,7 +1037,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="space-y-3 pt-2 pb-2 border-b border-border/70">
                     <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                       <Tag className="w-3.5 h-3.5 text-secondary" />
-                      <span>Chọn Thuộc Tính / Phân Loại Hàng:</span>
+                      <span>{t('productDetailModal.selectAttributes') || 'Chọn Thuộc Tính / Phân Loại Hàng:'}</span>
                     </div>
                     {(product as any).attributes.map((attr: any) => {
                       const currentSelectedVal = (selectedPackage as any)?.attributes?.[attr.name] ||
@@ -1169,19 +1170,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               {isPkgEscalating && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 flex items-center gap-1">
                                   <Zap className="w-2.5 h-2.5 text-amber-400" />
-                                  Nâng Giá (+{formatCore(pkgEscData.step)}/lượt)
+                                  {t('productDetailModal.escalatingPrice', { step: formatCore(pkgEscData.step) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferEligible && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0 flex items-center gap-1">
                                   <Sparkles className="w-2.5 h-2.5 text-rose-400" />
-                                  Mua lần đầu chỉ {formatCore(pkgRawOfferPrice)}
+                                  {t('productDetailModal.firstPurchaseOfferPrice', { price: formatCore(pkgRawOfferPrice) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferUnverified && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 flex items-center gap-1" title="Cần xác minh email để áp dụng giá ưu đãi">
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 flex items-center gap-1" title={t('productDetailModal.needEmailVerification') || 'Cần xác minh email để áp dụng giá ưu đãi'}>
                                   <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                                  Mua lần đầu chỉ {formatCore(pkgRawOfferPrice)} (Cần xác minh email)
+                                  {t('productDetailModal.firstPurchaseOfferPriceEmail', { price: formatCore(pkgRawOfferPrice) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferLoginReq && (
@@ -1220,9 +1221,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                   {formatPriceVal(pkgOriginalPrice)}
                                 </span>
                               ) : isPkgOut ? (
-                                <span className="text-[10px] text-rose-400 font-semibold block">Hết hàng</span>
+                                <span className="text-[10px] text-rose-400 font-semibold block">{t('productDetailModal.outOfStockShort') || 'Hết hàng'}</span>
                               ) : (
-                                <span className="text-[10px] text-emerald-400 font-semibold block">Còn hàng</span>
+                                <span className="text-[10px] text-emerald-400 font-semibold block">{t('productDetailModal.inStockShort') || 'Còn hàng'}</span>
                               )}
                             </div>
 
@@ -1234,8 +1235,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                 setPackageToShare(pkg);
                               }}
                               className="p-1.5 sm:p-2 rounded-lg bg-slate-800/80 hover:bg-secondary/20 text-slate-400 hover:text-secondary border border-slate-700/60 hover:border-secondary/40 transition-all cursor-pointer active:scale-90 shrink-0 ml-auto sm:ml-0"
-                              title={`Chia sẻ gói ${pkg.name}`}
-                              aria-label={`Chia sẻ gói ${pkg.name}`}
+                              title={t('productDetailModal.sharePackage', { name: pkg.name }) || `Chia sẻ gói ${pkg.name}`}
+                              aria-label={t('productDetailModal.sharePackage', { name: pkg.name }) || `Chia sẻ gói ${pkg.name}`}
                             >
                               <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </button>
@@ -1251,17 +1252,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   isSelectedEscalating ? (
                     <div className="pt-2 border-t border-border/70 flex items-center justify-between">
                       <div>
-                        <span className="text-xs font-bold text-foreground block">Số lượng mua:</span>
-                        <span className="text-[10px] text-amber-300">⚡ Cố định 1 gói/đơn để bảo đảm giá theo lượt mua</span>
+                        <span className="text-xs font-bold text-foreground block">{t('productDetailModal.purchaseQuantity') || 'Số lượng mua:'}</span>
+                        <span className="text-[10px] text-amber-300">{t('productDetailModal.fixedOnePerOrderNotice') || '⚡ Cố định 1 gói/đơn để bảo đảm giá theo lượt mua'}</span>
                       </div>
                       <span className="font-mono font-bold text-xs text-foreground px-3 py-1 bg-muted rounded-lg border border-border">
-                        1 Gói
+                        {t('productDetailModal.onePackage') || '1 Gói'}
                       </span>
                     </div>
                   ) : (
                     <div className="pt-2 border-t border-border/70 flex items-center justify-between">
                       <div>
-                        <span className="text-xs font-bold text-foreground block">Số lượng mua:</span>
+                        <span className="text-xs font-bold text-foreground block">{t('productDetailModal.purchaseQuantity') || 'Số lượng mua:'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -1269,7 +1270,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           onClick={handleDecreaseQty}
                           disabled={quantity <= 1 || realStock <= 0}
                           className="w-8 h-8 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center disabled:opacity-40 cursor-pointer active:scale-95 transition-all"
-                          aria-label="Giảm"
+                          aria-label={t('productDetailModal.decrease') || 'Giảm'}
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
@@ -1287,7 +1288,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           onClick={handleIncreaseQty}
                           disabled={realStock <= 0 || quantity >= realStock}
                           className="w-8 h-8 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center disabled:opacity-40 cursor-pointer active:scale-95 transition-all"
-                          aria-label="Tăng"
+                          aria-label={t('productDetailModal.increase') || 'Tăng'}
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
@@ -1321,7 +1322,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <button
               onClick={() => setIsZoomed(false)}
               className="absolute top-4 right-4 p-3 rounded-full bg-slate-800 text-white border border-slate-700 hover:bg-slate-700 cursor-pointer"
-              aria-label="Đóng phóng to"
+              aria-label={t('productDetailModal.closeZoom') || 'Đóng phóng to'}
             >
               <X className="w-6 h-6" />
             </button>

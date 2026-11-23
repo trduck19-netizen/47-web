@@ -7,6 +7,32 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 445. Hoàn Tất Dứt Điểm Đợt 19 Trang Chủ: Sửa Lỗi Crash Route /store (getSection), Chuẩn Hóa Fallback Ảnh E-Commerce StoreView, Song Ngữ Hóa Toàn Diện ProductDetailModal & Cập Nhật i18n Guard Log Mới (23/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai khắc phục dứt điểm theo kế hoạch Đợt 19 đã được User phê duyệt kèm 5 đính chính:
+    * **Nhóm 1 (Chạy Lại i18n Guard & Xuất Log Mới Bằng Direct Raw Pipe)**:
+      1. Chạy lại máy kiểm i18n guard thật trên 15/15 file giao diện cốt lõi bằng lệnh direct raw pipe: `cmd.exe /c "chcp 65001 >nul && node scripts/check-hardcoded-i18n.cjs > docs/i18n_guard_default.log 2>&1"`.
+      2. File log mới ghi nhận Timestamp mới (`Timestamp: 2026-11-23T16:17:23.585Z — Batch: Dot 19 Trang Chu (23/11/2026)`), kích thước 480 bytes, mã MD5 mới `e35a37da1319c5c60a393a839b67f051` (khác hoàn toàn hash cũ `8ecde54b237e1e14e56e217e27a097b7`).
+      3. Tuyệt đối không viện dẫn "Rule 14" trong tài liệu và báo cáo.
+    * **Nhóm 2 (Đính Chính Trích Dẫn Dòng HSM trong CHANGELOG.md)**:
+      1. Đính chính trích dẫn số dòng của §443 (dòng 38) và §444 (dòng 18 và 19) theo đúng vị trí thực tế tại commit `3182750` do chèn 2 dòng import `viLocale`/`enLocale` ở đầu `HomepageSectionsModule.tsx` (dòng 138–139, 1055, 1083–1084, 1046, 2748–2767).
+    * **Nhóm 3 (Chuẩn Hóa Trích Dẫn Cấu Trúc JSON API)**:
+      1. Ghi rõ tiêu đề: "Trích rút gọn cấu trúc response (mảng sections đã lược bỏ)".
+      2. Giữ nguyên 3 key cấp cao nhất: `success`, `sections`, `updated_at: "2026-11-23T14:29:24.856Z"`. Xóa bỏ key `timestamp` không tồn tại trong backend.
+    * **Nhóm 4 (Khắc Phục Crash Direct Route /store & Nâng Cấp Fallback Ảnh StoreView)**:
+      1. *Khắc phục crash `getSection`:* Bổ sung hàm `public getSection(id: string): HomepageSectionConfig | undefined` vào class `HomepageSectionsService` (`src/services/homepageSectionsService.ts`). Khắc phục dứt điểm lỗi TypeError crash `FloatingAnnouncement` khi truy cập trực tiếp route `/store`.
+      2. *Tạo ảnh placeholder mới:* Tạo `public/package-placeholder.svg` (SVG 64x64 biểu tượng kiện hàng/hộp quà 3D isometric chuyên nghiệp, stroke `#94a3b8`, không có dấu ✕). Giữ nguyên `public/vite.svg`.
+      3. *Tối ưu chuỗi fallback 5 nấc:* Chuẩn hóa `src` và `onError` trong `StoreView.tsx` (cả List và Grid) theo thứ tự: `cover_image_url` -> `game_icon_url` -> `product_images?.[0]` -> `/game_icons/${game_slug}.webp` -> `/package-placeholder.svg`.
+      4. *Chẩn đoán gốc 5 ảnh hỏng:* Cả 5 gói test trong D1 đều có `cover_image_url: "/game_icons/lien-quan-mobile.webp"`. Hiện tượng không ổn định xảy ra do race condition giữa fetch và mount StoreView khiến sản phẩm bị render rời rạc trước khi gom nhóm, fallback cũ ép gán `target.src = '/vite.svg'` tạo dấu ✕ xanh. Sau khi fix fallback và gom nhóm ổn định, ảnh nạp chuẩn.
+    * **Nhóm 5 (Song Ngữ Hóa Toàn Diện ProductDetailModal)**:
+      1. Bổ sung 64 cặp key-value đối xứng cho `productDetailModal` trong cả `src/locales/vi.json` và `src/locales/en.json`.
+      2. Chuyển đổi toàn bộ các nhãn UI trong `src/components/ProductDetailModal.tsx` ("Chọn gói sản phẩm", "Còn hàng", "Hết hàng", "Mua Ngay", "Thêm Giỏ", "NHANH CHÓNG", "CHÍNH HÃNG 100%", "Xác minh ngay >", "Đăng nhập ngay >", "Số lượng mua:").
+      3. Kết quả quét i18n scanner: 0 lỗi còn sót trong `ProductDetailModal.tsx`.
+- **Kết quả kiểm thử**:
+  - TypeScript Typecheck (`tsconfig.homepage.json`): 0 lỗi (Exit Code 0), lưu raw log pipe tại `docs/tsc_check_success.log`.
+  - i18n Guard Scanner (`scripts/check-hardcoded-i18n.cjs`): 15/15 file cốt lõi PASSED, lưu raw log pipe tại `docs/i18n_guard_default.log` (480 bytes, MD5 `e35a37da1319c5c60a393a839b67f051`).
+  - An toàn bảo mật Rule 10: 0 secret rò rỉ trong git history và mã nguồn.
+
 ### 444. Hoàn Tất Dứt Điểm Đợt 17 Trang Chủ: Triệt Tiêu 96 Literal Registry Bằng Từ Điển, Vá Bẫy Dropdown HSM, Chuẩn Hóa Bộ 17 & Bộ 7, Đổi Mã ISSUE-319 & Ghi Nhận Test 1b Live (23/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai khắc phục dứt điểm theo kế hoạch Đợt 17 (commit `cff0a83`):
@@ -15,8 +41,8 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
       2. *Bổ sung từ điển fallback `newSubsection`*: Thêm khóa `homepageSectionsModule.newSubsection` ("Mục con mới" / "New Subsection") vào `vi.json` và `en.json`. Thay thế 2 literal fallback tại dòng 840–841 của `homepageSections.ts` đọc qua từ điển.
       3. *Định nghĩa phạm vi Chốt 1*: 0 hit literal gán cứng trong khu vực 24 mục registry (dòng 320–666) + fallback dòng 840–841. Các hit ngoài phạm vi (comment, backlog 9 section lớn dòng 222–305, và fallback hợp lệ) đúng theo thiết kế.
     * **Nhóm 2 (Vá Bẫy Dropdown Mục Cha & Gán Độc Lập CustomItems trong HSM)**:
-      1. *Vá sự kiện `onChange` dropdown (`HSM.tsx:2746–2753`)*: Bảo toàn nhóm `categories` hoặc `sorting` khi đổi mục cha sang `categories_grid`; chỉ mặc định về `shortcuts` khi nhóm cũ không thuộc 3 nhóm này. Tự động cập nhật `groupNameVi`/`groupNameEn` từ `SUBSECTION_GROUP_NAMES` kèm `customItems.en`.
-      2. *Đồng bộ `customItems.en`*: Đổi dòng 1053 trong `HSM.tsx` sang `SUBSECTION_GROUP_NAMES.customItems.en`.
+      1. *Vá sự kiện `onChange` dropdown (`HSM.tsx:2748–2767`)*: Bảo toàn nhóm `categories` hoặc `sorting` khi đổi mục cha sang `categories_grid`; chỉ mặc định về `shortcuts` khi nhóm cũ không thuộc 3 nhóm này. Tự động cập nhật `groupNameVi`/`groupNameEn` từ `SUBSECTION_GROUP_NAMES` kèm `customItems.en`. (Độ lệch +2 so với trích dẫn 2746–2753 do chèn 2 dòng import `viLocale`/`enLocale` ở đầu file từ đợt 18).
+      2. *Đồng bộ `customItems.en`*: Đổi dòng 1055 trong `HSM.tsx` sang `SUBSECTION_GROUP_NAMES.customItems.en` (nguyên bản đợt 17 là dòng 1053, lệch +2 do chèn 2 dòng import `viLocale`/`enLocale` ở đầu file).
     * **Nhóm 3 (Chuẩn Hóa Tài Liệu & Đổi Mã ISSUE-319)**:
       1. Đổi mục trùng số tại dòng 64 `KNOWN_ISSUES.md` thành `### ISSUE-319: Cạm Bẫy Hồi Quy Song Ngữ Khi Dùng Hàm Dịch Động t(...) Gán Cả 2 Trường Vi/En & Bẫy Regex Ngoặc Kép Đo 0 Giả`.
       2. Đính chính đủ 8 số dòng trích dẫn trong §443.
@@ -35,7 +61,7 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
     * **Nhóm 1 (Triệt Tiêu 24 Mục Literal Config, Fallback & Khắc Phục Hồi Quy Song Ngữ HSM)**:
       1. *Bảo toàn 100% chữ hiển thị gốc (Phương án b — Zero UI Text Drift):* Bổ sung 3 khóa từ điển riêng vào `homepageSectionsModule.groups` trong `src/locales/vi.json` và `en.json`: `shortcutsRegistry` ("Hàng Lối Tắt" / "Quick Shortcuts"), `categoriesRegistry` ("Tab Ngành Hàng" / "Category Tabs"), `sortingRegistry` ("Thanh Sắp Xếp" / "Sorting Bar"), giữ nguyên `custom` ("Mục Tự Thêm" / "Custom Group") và `customItems` ("Mục Tự Thêm" / "Custom Items").
       2. *Triệt tiêu toàn bộ 24 mục Registry + Fallback trong `src/config/homepageSections.ts`:* Xuất bản đồ song ngữ ghim độc lập `SUBSECTION_GROUP_NAMES` đọc trực tiếp từ JSON từ điển. Thay thế toàn bộ 9 mục navigation (dòng 320–440), 8 mục shortcuts (dòng 450–556), 6 mục categories (dòng 566–644), mục sort_bar (dòng 654–666) và fallback dòng 838–839 (`custom.vi` + `customItems.en`). 96 vị trí literal registry (24 mục × 4 trường) đã chuyển sang lookup từ điển (phạm vi: 0 hit literal gán cứng trong HOMEPAGE_SUBSECTIONS_REGISTRY dòng 320–666 + fallback dòng 840–841; các hit ngoài phạm vi là comment, backlog 9 section lớn và fallback hợp lệ theo thiết kế).
-      3. *Khắc phục triệt để hồi quy song ngữ trong `HomepageSectionsModule.tsx`:* Import `SUBSECTION_GROUP_NAMES` và gán độc lập `[group].vi` và `[group].en` cho các dòng 136–137 (state form), dòng 1053 (modal thêm mục con, dòng 1044 là đầu ternary groupNameVi) và dòng 1081–1082 (fallback lưu mục con). Khắc phục dứt điểm tình trạng Admin bật tiếng Việt làm ghi đè chuỗi tiếng Việt vào cả `groupNameEn` hoặc ngược lại.
+      3. *Khắc phục triệt để hồi quy song ngữ trong `HomepageSectionsModule.tsx`:* Import `SUBSECTION_GROUP_NAMES` và gán độc lập `[group].vi` và `[group].en` cho các dòng 138–139 (state form, nguyên bản đợt 16 là dòng 136–137), dòng 1055 (modal thêm mục con, nguyên bản đợt 16 là dòng 1053, dòng 1046 là đầu ternary groupNameVi) và dòng 1083–1084 (fallback lưu mục con, nguyên bản đợt 16 là dòng 1081–1082; độ lệch +2 do chèn 2 dòng import `viLocale`/`enLocale` ở đầu file từ đợt 18). Khắc phục dứt điểm tình trạng Admin bật tiếng Việt làm ghi đè chuỗi tiếng Việt vào cả `groupNameEn` hoặc ngược lại.
     * **Nhóm 2 (Chuẩn Hóa Tài Liệu, Đính Chính Trích Dẫn Dòng §441 & Giữ Nguyên Mốc Giờ)**:
       1. Đính chính trích dẫn số dòng của §441: trích dẫn đúng §441 tại dòng 65 và 84 của commit 17af0aa.
       2. Giữ nguyên số liệu lịch sử: §439 là 1127ms (Đợt 12), §440 là 1276ms (Đợt 13), §441 là 1339ms (Đợt 14).

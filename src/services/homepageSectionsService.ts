@@ -109,6 +109,10 @@ class HomepageSectionsService {
     return [...this.sections];
   }
 
+  public getSection(id: string): HomepageSectionConfig | undefined {
+    return this.sections.find((s) => s.id === id);
+  }
+
   public getSectionsSnapshot(): HomepageSectionConfig[] {
     return [...this.sections];
   }
