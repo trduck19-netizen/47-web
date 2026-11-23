@@ -216,7 +216,13 @@
     "copyUrl": "Link: {url}",
     "outOfStockDesc": "This code package is currently out of stock. Please check back later.",
     "authRequired": "Login Required",
-    "authRequiredDesc": "Please log in to purchase this code package."
+    "authRequiredDesc": "Please log in to purchase this code package.",
+    "catPack": "Top-up Pack",
+    "catMonthly": "Monthly Pass",
+    "catGift": "VIP Code",
+    "catAccount": "Game Account",
+    "catDigital": "Digital Goods",
+    "sale": "Sale:"
   },
   "cart": {
     "title": "Your Shopping Cart",

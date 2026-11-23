@@ -34,7 +34,7 @@ import {
 interface TestCase {
   id: number;
   name: string;
-  category: 'DoH_Live' | 'SSRF_URL' | 'Magic_Bytes';
+  category: 'DoH_Live' | 'DoH_CNAME' | 'SSRF_URL' | 'Magic_Bytes';
   run: () => Promise<boolean> | boolean;
   expectedPass: boolean;
 }
@@ -126,11 +126,40 @@ const TEST_CASES: TestCase[] = [
   },
   {
     id: 9,
-    name: 'DoH Live CNAME: Tên miền CNAME công khai hợp lệ (www.github.com -> github.com)',
+    name: 'DoH Pure CNAME: Chuỗi CNAME thuần túy không kèm bản ghi A (Thực thi nhánh !hasValidIp & cnamesToFollow recursion dòng 356-362)',
     category: 'DoH_CNAME',
     run: async () => {
-      const res = await resolveAndValidateHostDns('www.github.com');
-      return res.ok;
+      const origFetch = globalThis.fetch;
+      try {
+        // Mock DoH response ghi nhận nguyên văn (Option b):
+        // Bước 1: cname-pure.internal trả type 5 (CNAME) trỏ về target-public.example.com, KHÔNG có A/AAAA (!hasValidIp = true)
+        // Bước 2: target-public.example.com trả type 1 (A) trỏ về 104.16.132.229 (IP công khai Cloudflare CDN)
+        globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+          const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
+          if (urlStr.includes('cname-pure.internal')) {
+            return new Response(JSON.stringify({
+              Status: 0,
+              Answer: [
+                { name: 'cname-pure.internal', type: 5, data: 'target-public.example.com.' }
+              ]
+            }), { status: 200, headers: { 'Content-Type': 'application/dns-json' } });
+          }
+          if (urlStr.includes('target-public.example.com')) {
+            return new Response(JSON.stringify({
+              Status: 0,
+              Answer: [
+                { name: 'target-public.example.com', type: 1, data: '104.16.132.229' }
+              ]
+            }), { status: 200, headers: { 'Content-Type': 'application/dns-json' } });
+          }
+          return origFetch(input, init);
+        }) as typeof fetch;
+
+        const res = await resolveAndValidateHostDns('cname-pure.internal');
+        return res.ok;
+      } finally {
+        globalThis.fetch = origFetch;
+      }
     },
     expectedPass: true,
   },
@@ -156,231 +185,231 @@ const TEST_CASES: TestCase[] = [
     expectedPass: false,
   },
   {
-    id: 10,
+    id: 12,
     name: 'Host localhost',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://localhost/secret'),
     expectedPass: false,
   },
   {
-    id: 11,
+    id: 13,
     name: 'IPv6 Loopback [::1]',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://[::1]/debug'),
     expectedPass: false,
   },
   {
-    id: 12,
+    id: 14,
     name: 'Private 10.0.0.0/8',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://10.0.0.1/config'),
     expectedPass: false,
   },
   {
-    id: 13,
+    id: 15,
     name: 'Private 192.168.0.0/16',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://192.168.1.1/router'),
     expectedPass: false,
   },
   {
-    id: 14,
+    id: 16,
     name: 'Private 172.16.0.0/12',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://172.16.0.5/api'),
     expectedPass: false,
   },
   {
-    id: 15,
+    id: 17,
     name: 'AWS Metadata 169.254.169.254',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://169.254.169.254/latest/meta-data'),
     expectedPass: false,
   },
   {
-    id: 16,
+    id: 18,
     name: 'GCP Metadata Hostname',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://metadata.google.internal/computeMetadata'),
     expectedPass: false,
   },
   {
-    id: 17,
+    id: 19,
     name: 'Current Network 0.0.0.0',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://0.0.0.0:8080/data'),
     expectedPass: false,
   },
   {
-    id: 18,
+    id: 20,
     name: 'CGNAT 100.64.0.1 (RFC 6598)',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://100.64.0.1/test'),
     expectedPass: false,
   },
   {
-    id: 19,
+    id: 21,
     name: 'CGNAT Boundary 100.127.255.254 (RFC 6598)',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://100.127.255.254/test'),
     expectedPass: false,
   },
   {
-    id: 20,
+    id: 22,
     name: 'IETF Protocol Assignments 192.0.0.1 (RFC 6890)',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://192.0.0.1/test'),
     expectedPass: false,
   },
   {
-    id: 21,
+    id: 23,
     name: 'TEST-NET-1 Documentation 192.0.2.1 (RFC 5737)',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://192.0.2.1/test'),
     expectedPass: false,
   },
   {
-    id: 22,
+    id: 24,
     name: 'TEST-NET-2 Documentation 198.51.100.1 (RFC 5737)',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://198.51.100.1/test'),
     expectedPass: false,
   },
   {
-    id: 23,
+    id: 25,
     name: 'TEST-NET-3 Documentation 203.0.113.1 (RFC 5737)',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://203.0.113.1/test'),
     expectedPass: false,
   },
   {
-    id: 24,
+    id: 26,
     name: 'Limited Broadcast 255.255.255.255',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://255.255.255.255/broadcast'),
     expectedPass: false,
   },
   {
-    id: 25,
+    id: 27,
     name: 'IPv4 Octal notation 0177.0.0.1',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://0177.0.0.1/'),
     expectedPass: false,
   },
   {
-    id: 26,
+    id: 28,
     name: 'IPv4 Hex notation 0x7f.0.0.1',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://0x7f.0.0.1/'),
     expectedPass: false,
   },
   {
-    id: 27,
+    id: 29,
     name: 'IPv4 Dword decimal 2130706433',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://2130706433/'),
     expectedPass: false,
   },
   {
-    id: 28,
+    id: 30,
     name: 'IPv4 Hex integer 0x7f000001',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://0x7f000001/'),
     expectedPass: false,
   },
   {
-    id: 29,
+    id: 31,
     name: 'IPv4 Octal integer 017700000001',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://017700000001/'),
     expectedPass: false,
   },
   {
-    id: 30,
+    id: 32,
     name: 'IPv4 2-part notation 127.1',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://127.1/'),
     expectedPass: false,
   },
   {
-    id: 31,
+    id: 33,
     name: 'IPv6 Link-Local [fe80::1]',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://[fe80::1]/test'),
     expectedPass: false,
   },
   {
-    id: 32,
+    id: 34,
     name: 'IPv6 Unique-Local [fc00::1]',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://[fc00::1]/test'),
     expectedPass: false,
   },
   {
-    id: 33,
+    id: 35,
     name: 'IPv4-mapped IPv6 [::ffff:127.0.0.1]',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://[::ffff:127.0.0.1]/test'),
     expectedPass: false,
   },
   {
-    id: 34,
+    id: 36,
     name: 'IPv4-mapped IPv6 hex [::ffff:7f00:1]',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://[::ffff:7f00:1]/test'),
     expectedPass: false,
   },
   {
-    id: 35,
+    id: 37,
     name: 'Invalid Protocol ftp://',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('ftp://example.com/image.png'),
     expectedPass: false,
   },
   {
-    id: 36,
+    id: 38,
     name: 'Invalid Protocol file://',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('file:///etc/passwd'),
     expectedPass: false,
   },
   {
-    id: 37,
+    id: 39,
     name: 'Invalid Protocol gopher://',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('gopher://127.0.0.1:6379/_'),
     expectedPass: false,
   },
   {
-    id: 38,
+    id: 40,
     name: 'Invalid Protocol javascript:',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('javascript:alert(1)'),
     expectedPass: false,
   },
   {
-    id: 39,
+    id: 41,
     name: 'Invalid Protocol data:',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='),
     expectedPass: false,
   },
   {
-    id: 40,
+    id: 42,
     name: 'Internal Domain *.local',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('https://shop.local/image.png'),
     expectedPass: false,
   },
   {
-    id: 41,
+    id: 43,
     name: 'Internal Domain *.internal',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('https://db.internal/image.png'),
     expectedPass: false,
   },
   {
-    id: 42,
+    id: 44,
     name: 'Valid Public URL (Cloudflare CDN)',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('https://universal-mall-shop.pages.dev/brand_loader_logo.jpg'),
@@ -391,35 +420,35 @@ const TEST_CASES: TestCase[] = [
   // NHÓM 3: KIỂM THỬ MAGIC BYTES NHỊ PHÂN
   // =========================================================================
   {
-    id: 43,
+    id: 45,
     name: 'Magic Bytes WebP (RIFF...WEBP)',
     category: 'Magic_Bytes',
     run: () => validateImageMagicBytes(new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50])) !== null,
     expectedPass: true,
   },
   {
-    id: 44,
+    id: 46,
     name: 'Magic Bytes JPEG (FF D8 FF E0...JFIF)',
     category: 'Magic_Bytes',
     run: () => validateImageMagicBytes(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00, 0x60])) !== null,
     expectedPass: true,
   },
   {
-    id: 45,
+    id: 47,
     name: 'Magic Bytes PNG (89 50 4E 47 0D 0A 1A 0A...IHDR)',
     category: 'Magic_Bytes',
     run: () => validateImageMagicBytes(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52])) !== null,
     expectedPass: true,
   },
   {
-    id: 46,
+    id: 48,
     name: 'Chặn SVG XSS Script (<svg onload=alert(1)>)',
     category: 'Magic_Bytes',
     run: () => validateImageMagicBytes(new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"></svg>')) !== null,
     expectedPass: false,
   },
   {
-    id: 47,
+    id: 49,
     name: 'Chặn HTML File Upload (<!DOCTYPE html>)',
     category: 'Magic_Bytes',
     run: () => validateImageMagicBytes(new TextEncoder().encode('<!DOCTYPE html><html><body>malicious</body></html>')) !== null,

@@ -38,6 +38,7 @@ import { SubmitCodeModal } from '../SubmitCodeModal';
 import { BookmarkDrawer } from '../BookmarkDrawer';
 import { LanguageSelector } from '../LanguageSelector';
 import { useLanguage } from '../../context/LanguageContext';
+import { groupStoreProductsByGame } from '../../utils/productPackageUtils';
 
 export type ShopeeSubView = 
   | 'home' 
@@ -624,6 +625,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     }
     return list;
   }, [currentStoreProducts, storeProducts, searchKeyword, selectedCategory, categoriesConfig]);
+
+  // Đếm chính xác số thẻ game hiển thị trong Cửa hàng đa ngành (đã gom nhóm theo game)
+  const groupedStoreProductsCount = useMemo(() => {
+    return groupStoreProductsByGame(currentStoreProducts && currentStoreProducts.length > 0 ? currentStoreProducts : (storeProducts || [])).length;
+  }, [currentStoreProducts, storeProducts]);
 
   // 3. Filter utility products (Cloud Phone, Gói nạp)
   const filteredUtilities = useMemo(() => {
@@ -2549,7 +2555,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 {subView === 'events' && t('mall.breadcrumb.events', { count: eventsCount })}
                 {subView === 'today-codes' && (t.mall?.breadcrumb?.todayCodes || (language === 'en' ? "Today's Codes (Closes at 22:30)" : 'Mã Hôm Nay (Tự Đóng 22:30)'))}
                 {subView === 'upcoming' && t('mall.breadcrumb.upcoming', { count: upcomingTotal })}
-                {subView === 'store' && t('mall.breadcrumb.store', { count: storeProducts?.length || 0 })}
+                {subView === 'store' && t('mall.breadcrumb.store', { count: groupedStoreProductsCount || storeProducts?.length || 1 })}
                 {subView === 'game-zone' && t('mall.breadcrumb.gameZone', { count: allGames?.length || 593 })}
                 {subView === 'seller' && (t.mall?.breadcrumb?.seller || (language === 'en' ? 'Marketplace & Seller Portal' : 'Sàn Giao Dịch & Kênh Người Bán'))}
                 {subView === 'account' && (t.mall?.breadcrumb?.account || (language === 'en' ? 'Account & Core Wallet' : 'Tài Khoản & Ví Core'))}

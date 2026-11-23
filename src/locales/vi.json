@@ -216,7 +216,13 @@
     "copyUrl": "Đường dẫn: {url}",
     "outOfStockDesc": "Gói code này hiện đã hết hàng trong kho. Vui lòng quay lại sau.",
     "authRequired": "Cần đăng nhập",
-    "authRequiredDesc": "Vui lòng đăng nhập để thanh toán gói code."
+    "authRequiredDesc": "Vui lòng đăng nhập để thanh toán gói code.",
+    "catPack": "Gói nạp",
+    "catMonthly": "Thẻ tháng / Pass",
+    "catGift": "Code VIP",
+    "catAccount": "Tài khoản",
+    "catDigital": "Hàng Số",
+    "sale": "Giảm giá:"
   },
   "cart": {
     "title": "Giỏ Hàng Của Bạn",

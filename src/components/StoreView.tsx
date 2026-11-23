@@ -157,11 +157,32 @@ export const StoreView: React.FC<StoreViewProps> = ({
     }
   };
 
+  const getCategoryLabel = (cat: { id: string; label: string }) => {
+    const idLower = (cat.id || '').toLowerCase();
+    const labelLower = (cat.label || '').toLowerCase();
+    if (idLower === 'pack' || labelLower.includes('gói nạp') || labelLower.includes('top-up')) {
+      return t('store.catPack');
+    }
+    if (idLower === 'monthly' || labelLower.includes('thẻ tháng') || labelLower.includes('pass')) {
+      return t('store.catMonthly');
+    }
+    if (idLower === 'gift' || labelLower.includes('code vip') || labelLower.includes('vip code')) {
+      return t('store.catGift');
+    }
+    if (idLower === 'account' || labelLower.includes('tài khoản') || labelLower.includes('account')) {
+      return t('store.catAccount');
+    }
+    if (idLower === 'digital' || labelLower.includes('hàng số') || labelLower.includes('digital')) {
+      return t('store.catDigital');
+    }
+    return cat.label;
+  };
+
   const categoryTabs = [
     { id: 'all', label: t('store.allPackages'), icon: '📦' },
     ...categoriesList.map((c) => ({
       id: c.id,
-      label: c.label,
+      label: getCategoryLabel(c),
       icon: c.icon || '🏷️',
     })),
   ];
@@ -423,7 +444,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                     )}
                   </div>
                   <h3 className="font-heading font-bold text-xs sm:text-sm text-foreground group-hover:text-secondary transition-colors truncate">
-                    {product.title}
+                    {language === 'en' && (product as any).title_en ? (product as any).title_en : product.title}
                   </h3>
                   <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">
                     {displayStock <= 0 ? (
@@ -566,7 +587,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                           {isFlashSaleUpcoming && flashSale && (
                             <EventCountdownBadge
                               targetDate={flashSale.event.start_time}
-                              label="Sale:"
+                              label={t('store.sale')}
                               theme={flashSale.event.theme || 'fire'}
                               variant="pill"
                               onExpire={() => setProducts([...dataService.getStoreProducts()])}
@@ -583,7 +604,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                           )}
                         </div>
                         <h3 className="font-heading font-bold text-[11px] sm:text-xs md:text-sm text-foreground group-hover:text-secondary transition-colors line-clamp-2 leading-snug">
-                          {product.title}
+                          {language === 'en' && (product as any).title_en ? (product as any).title_en : product.title}
                         </h3>
                       </div>
                     </div>
@@ -611,7 +632,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                         maxHeight: '2.5rem',
                       }}
                     >
-                      {product.description}
+                      {language === 'en' && (product as any).description_en ? (product as any).description_en : product.description}
                     </p>
                   )}
                 </div>

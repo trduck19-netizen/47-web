@@ -7,6 +7,32 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 440. Khắc Phục Hoàn Chỉnh Đợt 13 Trang Chủ: Gỡ Bỏ Migration 0042 Khỏi Codebase, Test SSRF DoH CNAME Thuần Túy Kích Hoạt Nhánh Đệ Quy (Option b), AST Parser Thật Bằng TS Compiler API Kèm Fixture Loại Bỏ 100% Comment, Song Ngữ Hóa Toàn Diện StoreView & Đồng Bộ Số Lượng Breadcrumb (23/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục toàn bộ các tồn đọng theo báo cáo kiểm chứng đợt 12 (commit `0d23b5d`):
+    * **Nhóm 1 (Gỡ Bỏ Migration 0042, Song Ngữ StoreView 5 Tab & Đồng Bộ Breadcrumb Thẻ Game)**:
+      1. *Gỡ bỏ hoàn toàn Migration 0042 khỏi codebase:* Xóa khối Migration 0042 khỏi `functions/services/d1_service.ts`, tuân thủ nghiêm ngặt chỉ thị không can thiệp `homepage_sections` qua migration. Giữ nguyên cấu hình `main_hero_banner` 18 trường và tệp ảnh `sec_main_hero_banner_real_e2e_v1.webp` trong D1. Thao tác E2E Admin Save trên production đòi hỏi quyền Admin thật (`usr_admin` hoặc API key có quyền `SYSTEM_SETTINGS_UPDATE`), curl probe live trả HTTP 401 Unauthorized được ghi nhận minh bạch vào danh sách Blocked (không seed qua migration thay thế).
+      2. *StoreView 5 tab lọc và nhãn Sale song ngữ 100%:* Bổ sung 6 khóa từ điển mới vào `src/locales/vi.json` và `src/locales/en.json` (`catPack`, `catMonthly`, `catGift`, `catAccount`, `catDigital`, `sale`). Cập nhật `src/components/StoreView.tsx` với hàm `getCategoryLabel()` tự động chuyển ngữ 5 tab danh mục sang tiếng Anh khi ở `/en/` ("Top-up Pack", "Monthly Pass", "VIP Code", "Game Account", "Digital Goods") và thay `label="Sale:"` bằng `label={t('store.sale')}`.
+      3. *Đồng bộ số lượng Breadcrumb StoreView:* Khắc phục hiện tượng breadcrumb hiển thị "5 sản phẩm" nhưng chỉ render 1 thẻ trên màn hình: do 5 gói dịch vụ thuộc cùng game Liên Quân Mobile được gom nhóm bởi `groupStoreProductsByGame`. Đã cập nhật breadcrumb trong `ShopeeTestView.tsx` đếm theo `groupedStoreProductsCount` (1 sản phẩm), giúp tiêu đề và giao diện thẻ hiển thị khớp nhau 100%. Đính chính con số "10 gói dịch vụ" trong báo cáo cũ thực chất là chuỗi giá tối thiểu "Từ 10 Core".
+    * **Nhóm 2 (Test SSRF DoH CNAME Option b, Khắc Phục Duplicate IDs & Tách Bạch Test Suite)**:
+      1. *SSRF DoH CNAME Option (b):* Nâng cấp `scripts/test_ssrf_doh_regression.ts` với ca kiểm thử Case 09 dùng DoH response ghi nhận nguyên văn thuần CNAME (không có bản ghi A/AAAA ở bước 1, trả bản ghi A ở bước 2), kích hoạt và thực thi 100% nhánh `!hasValidIp && cnamesToFollow.length > 0` tại dòng 356-362 của `functions/services/ssrf_service.ts`.
+      2. *Sửa Union Type & Đánh lại số thứ tự không trùng lặp:* Sửa `TestCase.category` hỗ trợ `'DoH_CNAME'`, đánh lại toàn bộ số thứ tự ID từ 01 đến 49 tuần tự không trùng lặp (sửa triệt để duplicate ID 10, 11). Test suite chạy thực tế đạt **49/49 PASSED (0 FAILED)** trong 1.064ms–1.276ms, lưu artifact tại `docs/test_ssrf_doh_regression.txt`.
+      3. *Tách bạch kiểm thử hạn mức ảnh:* Chạy `scripts/test_upload_11_images.ts` phân định rõ: Phần 1 Unit Test trên SQLite C-Engine in-memory (19/19 PASS) và Phần 2 HTTP Network Transport Concurrency Test (4/4 PASS, tổng 23/23 PASS trong 63ms), lưu artifact tại `docs/test_upload_11_images.txt`. Minh bạch ghi nhận giới hạn test đồng thời trên D1 thật do thiếu quyền admin live vào Blocked.
+    * **Nhóm 3 (AST Parser Thật Bằng TS Compiler API, Fixture Loại Bỏ Comment & i18n Audit All)**:
+      1. *AST Parser TypeScript Compiler API:* Viết lại `scripts/count_homepage_i18n.cjs` sử dụng `ts.createSourceFile` và `ts.isCallExpression`, duyệt AST bỏ qua 100% comment (trivia). Tạo fixture `tests/fixtures/i18n_comment_fixture.tsx` chứa 4 lệnh gọi trong comment (`//` và `/* */`) và 1 lệnh gọi thật; chạy script qua fixture chứng minh loại bỏ 100% comment (kết quả đúng 1 call). Chạy trên `HomepageSectionsModule.tsx` xác nhận chính xác **179 call sites / 148 unique translation keys**.
+      2. *Đính chính số lượng toán tử ba ngôi:* Module hiện chỉ còn **12 toán tử ba ngôi `isEn ?` / `isSecEn ?`** đóng vai trò bộ chọn model trường dữ liệu `_en` và `_vi`, hoàn toàn không chứa chuỗi cứng giao diện. Rút lại tuyên bố "0 ternary" ở mục 437.
+      3. *Thống kê diff từ điển chuẩn mực:* So với `f99757a` là `vi +24/-0`, `en +24/-0` ở Đợt 12 và bổ sung 6 khóa ở Đợt 13 (tổng 30 khóa `store.*`); so với `e27f7cb` là `vi +55/-0`, `en +56/-0` ở Đợt 12.
+      4. *Quét toàn sàn và xuất artifact:* Chạy `node scripts/check-hardcoded-i18n.cjs --all > docs/check_hardcoded_i18n_all.log 2>&1`, xác nhận 3.217 lỗi vi phạm trên 91 file. Xác nhận Top 3 cụm 1 thực tế trong repo là `CrawlerModule` (255), `NewsModule` (188), `MarketingModule` (171) với tổng 614 lỗi.
+      5. *Blocked List:* Khóa `GEMINI_API_KEY` và `TINYPNG_API_KEY` trên Cloudflare Pages Secret; Quyền quản trị viên Live cho thao tác lưu D1.
+- **Kết quả kiểm thử**:
+  - Test Suite SQLite C-Engine & HTTP Network Concurrency: 23/23 PASS 100% trong 63ms.
+  - Test Suite SSRF & Live Cloudflare DoH CNAME: 49/49 PASS 100% trong 1064ms–1276ms.
+  - AST Fixture Test & Module Count: Fixture = 1 (100% comment free), Module = 179 call sites / 148 unique keys.
+  - `tsc -p tsconfig.homepage.json --noEmit`: PASS 100% (0 lỗi).
+  - Trạng thái Git: Clean 100% (`commit_dirty: false`).
+
+---
+
 ### 439. Khắc Phục Dứt Điểm Đợt 12 Trang Chủ: Tách Bạch Test HTTP Concurrency Song Song Thật, Bằng Chứng E2E Admin D1 Mới (Migration 0042), Khắc Phục Chấm Slide Hero Bubbling, Cảnh Báo AI Thường Trực & Song Ngữ StoreView (23/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục dứt điểm toàn bộ các tồn đọng theo báo cáo kiểm chứng đợt 11 (commit `2e395b5`):
@@ -20,7 +46,7 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
       1. *Tách bạch Unit test & HTTP Concurrency test:* Viết lại `scripts/test_upload_11_images.ts` thành 2 phần tách bạch rõ ràng:
          - Phần 1 (Unit Test): 19 ca test logic SQLite C-Engine (`node:sqlite`).
          - Phần 2 (HTTP Network Test): Khởi động HTTP Server thật lắng nghe trên cổng loopback, gửi 2 request `fetch()` POST đồng thời qua mạng TCP socket vào cùng một mục lúc có 9 ảnh. Log mốc thời gian thực wall-clock `[HH:mm:ss.ms]` cho từng ca. Kết quả xác nhận 1 request nhận HTTP 200 (thành công lưu ảnh 10) và 1 request nhận HTTP 400 (rollback hủy ảnh 11), CSDL duy trì đúng 10 bản ghi. Đạt **23/23 PASSED (0 FAILED)**, lưu artifact tại `docs/test_upload_11_images.txt`.
-      2. *Bổ sung ca kiểm thử DoH CNAME & Recursion Guard:* Nâng cấp `scripts/test_ssrf_doh_regression.ts` bổ sung 2 ca kiểm thử: CNAME live (`www.github.com -> github.com`) và CNAME recursion guard (>3 hops loop detection theo RFC 1034), log kèm wall-clock timestamp `[HH:mm:ss.ms]`. Đạt **49/49 PASSED (0 FAILED)** trong 1.202ms, lưu artifact tại `docs/test_ssrf_doh_regression.txt`.
+      2. *Bổ sung ca kiểm thử DoH CNAME & Recursion Guard:* Nâng cấp `scripts/test_ssrf_doh_regression.ts` bổ sung 2 ca kiểm thử: CNAME live (`www.github.com -> github.com`) và CNAME recursion guard (>3 hops loop detection theo RFC 1034), log kèm wall-clock timestamp `[HH:mm:ss.ms]`. Đạt **49/49 PASSED (0 FAILED)** trong 1.127ms, lưu artifact tại `docs/test_ssrf_doh_regression.txt`.
       3. *Đính chính số đo Probe:* Đo lường live thực tế đạt 0,65–1,47 giây (tách rõ cold start ~1,47s do khởi động Worker isolate và warm cache hit ~0,65s), triệt tiêu hoàn toàn tình trạng treo 10–16 giây.
       4. *Backfill ảnh cũ:* Làm rõ cơ chế backfill gán các ảnh cũ dạng tên file về `main_hero_banner`, làm giảm slot tải mới của mục này theo giới hạn 10 ảnh kín.
     * **Nhóm 3 (i18n AST Parsing & Đính Chính Số Liệu Chuẩn Mực)**:
