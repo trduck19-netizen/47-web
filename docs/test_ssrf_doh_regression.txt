@@ -1,74 +1,58 @@
-======================================================================
-=== TEST SUITE: SSRF, DOH, CGNAT & MAGIC BYTES REGRESSION (38/38) ===
-======================================================================
-Execution Timestamp : 2026-11-22T16:20:23.832Z
-Source of Truth     : functions/services/ssrf_service.ts (DIRECT IMPORT)
+================================================================================
+[TEST SUITE] SSRF PROTECTION & CLOUDFLARE DoH REGRESSION AUDIT (47 TEST CASES)
+Source-of-truth: functions/services/ssrf_service.ts
+Timestamp: 2026-11-23T03:48:26.288Z
+================================================================================
 
---- DANH SÁCH CÁC DẢI IP ĐẶC BIỆT ĐƯỢC BẢO VỆ (RFC/IANA STANDARD) ---
-  [IPv4] 0.0.0.0/8            | RFC 1122   | Current network (this host on this network)
-  [IPv4] 10.0.0.0/8           | RFC 1918   | Private-Use Networks
-  [IPv4] 100.64.0.0/10        | RFC 6598   | Shared Address Space / Carrier-Grade NAT (CGNAT)
-  [IPv4] 127.0.0.0/8          | RFC 1122   | Loopback
-  [IPv4] 169.254.0.0/16       | RFC 3927   | Link-Local / Cloud Metadata (AWS/GCP/Azure)
-  [IPv4] 172.16.0.0/12        | RFC 1918   | Private-Use Networks
-  [IPv4] 192.0.0.0/24         | RFC 6890   | IETF Protocol Assignments
-  [IPv4] 192.0.2.0/24         | RFC 5737   | TEST-NET-1 Documentation
-  [IPv4] 192.168.0.0/16       | RFC 1918   | Private-Use Networks
-  [IPv4] 198.51.100.0/24      | RFC 5737   | TEST-NET-2 Documentation
-  [IPv4] 203.0.113.0/24       | RFC 5737   | TEST-NET-3 Documentation
-  [IPv4] 224.0.0.0/4          | RFC 5771   | Multicast
-  [IPv4] 240.0.0.0/4          | RFC 1112   | Reserved for Future Use
-  [IPv4] 255.255.255.255/32   | RFC 919    | Limited Broadcast
-  [IPv6] ::1/128              | RFC 4291   | IPv6 Loopback
-  [IPv6] ::/128               | RFC 4291   | IPv6 Unspecified address
-  [IPv6] fe80::/10            | RFC 4291   | Link-Local Unicast
-  [IPv6] fc00::/7             | RFC 4193   | Unique Local Address (ULA - fc00::/8 & fd00::/8)
-  [IPv6] ff00::/8             | RFC 4291   | Multicast
-  [IPv6] 2001:db8::/32        | RFC 3849   | Documentation
-  [IPv6] ::ffff:0:0/96        | RFC 4291   | IPv4-mapped IPv6 Address
-----------------------------------------------------------------------
+  [PASS] [DoH_Live] Case 01: DoH Live: Phân giải tên miền công khai cloudflare.com (A/AAAA Public) (152.77ms)
+  [PASS] [DoH_Live] Case 02: DoH Live: Phân giải tên miền công khai google.com (A/AAAA Public) (83.32ms)
+  [PASS] [DoH_Live] Case 03: DoH Rebinding Guard: 127.0.0.1.nip.io trỏ về Loopback 127.0.0.1 (69.20ms)
+  [PASS] [DoH_Live] Case 04: DoH Rebinding Guard: 10.0.0.1.nip.io trỏ về Private IP 10.0.0.1 (66.07ms)
+  [PASS] [DoH_Live] Case 05: DoH Rebinding Guard: 192.168.1.1.nip.io trỏ về Private IP 192.168.1.1 (237.31ms)
+  [PASS] [DoH_Live] Case 06: DoH Rebinding Guard: 100.64.0.1.nip.io trỏ về CGNAT (RFC 6598) (146.65ms)
+  [PASS] [DoH_Live] Case 07: DoH Rebinding Guard: 169.254.169.254.nip.io trỏ về Cloud Metadata (299.93ms)
+  [PASS] [DoH_Live] Case 08: DoH Live Fail-Closed: Tên miền không tồn tại hoặc lỗi phân giải DNS (31.52ms)
+  [PASS] [SSRF_URL] Case 09: IPv4 Loopback 127.0.0.1 (0.14ms)
+  [PASS] [SSRF_URL] Case 10: Host localhost (0.02ms)
+  [PASS] [SSRF_URL] Case 11: IPv6 Loopback [::1] (0.02ms)
+  [PASS] [SSRF_URL] Case 12: Private 10.0.0.0/8 (0.01ms)
+  [PASS] [SSRF_URL] Case 13: Private 192.168.0.0/16 (0.01ms)
+  [PASS] [SSRF_URL] Case 14: Private 172.16.0.0/12 (0.01ms)
+  [PASS] [SSRF_URL] Case 15: AWS Metadata 169.254.169.254 (0.02ms)
+  [PASS] [SSRF_URL] Case 16: GCP Metadata Hostname (0.01ms)
+  [PASS] [SSRF_URL] Case 17: Current Network 0.0.0.0 (0.02ms)
+  [PASS] [SSRF_URL] Case 18: CGNAT 100.64.0.1 (RFC 6598) (0.02ms)
+  [PASS] [SSRF_URL] Case 19: CGNAT Boundary 100.127.255.254 (RFC 6598) (0.02ms)
+  [PASS] [SSRF_URL] Case 20: IETF Protocol Assignments 192.0.0.1 (RFC 6890) (0.01ms)
+  [PASS] [SSRF_URL] Case 21: TEST-NET-1 Documentation 192.0.2.1 (RFC 5737) (0.01ms)
+  [PASS] [SSRF_URL] Case 22: TEST-NET-2 Documentation 198.51.100.1 (RFC 5737) (0.01ms)
+  [PASS] [SSRF_URL] Case 23: TEST-NET-3 Documentation 203.0.113.1 (RFC 5737) (0.01ms)
+  [PASS] [SSRF_URL] Case 24: Limited Broadcast 255.255.255.255 (0.01ms)
+  [PASS] [SSRF_URL] Case 25: IPv4 Octal notation 0177.0.0.1 (0.01ms)
+  [PASS] [SSRF_URL] Case 26: IPv4 Hex notation 0x7f.0.0.1 (0.01ms)
+  [PASS] [SSRF_URL] Case 27: IPv4 Dword decimal 2130706433 (0.01ms)
+  [PASS] [SSRF_URL] Case 28: IPv4 Hex integer 0x7f000001 (0.01ms)
+  [PASS] [SSRF_URL] Case 29: IPv4 Octal integer 017700000001 (0.01ms)
+  [PASS] [SSRF_URL] Case 30: IPv4 2-part notation 127.1 (0.01ms)
+  [PASS] [SSRF_URL] Case 31: IPv6 Link-Local [fe80::1] (0.01ms)
+  [PASS] [SSRF_URL] Case 32: IPv6 Unique-Local [fc00::1] (0.01ms)
+  [PASS] [SSRF_URL] Case 33: IPv4-mapped IPv6 [::ffff:127.0.0.1] (0.02ms)
+  [PASS] [SSRF_URL] Case 34: IPv4-mapped IPv6 hex [::ffff:7f00:1] (0.01ms)
+  [PASS] [SSRF_URL] Case 35: Invalid Protocol ftp:// (0.01ms)
+  [PASS] [SSRF_URL] Case 36: Invalid Protocol file:// (0.01ms)
+  [PASS] [SSRF_URL] Case 37: Invalid Protocol gopher:// (0.01ms)
+  [PASS] [SSRF_URL] Case 38: Invalid Protocol javascript: (0.01ms)
+  [PASS] [SSRF_URL] Case 39: Invalid Protocol data: (0.01ms)
+  [PASS] [SSRF_URL] Case 40: Internal Domain *.local (0.01ms)
+  [PASS] [SSRF_URL] Case 41: Internal Domain *.internal (0.01ms)
+  [PASS] [SSRF_URL] Case 42: Valid Public URL (Cloudflare CDN) (0.02ms)
+  [PASS] [Magic_Bytes] Case 43: Magic Bytes WebP (RIFF...WEBP) (0.07ms)
+  [PASS] [Magic_Bytes] Case 44: Magic Bytes JPEG (FF D8 FF E0...JFIF) (0.01ms)
+  [PASS] [Magic_Bytes] Case 45: Magic Bytes PNG (89 50 4E 47 0D 0A 1A 0A...IHDR) (0.01ms)
+  [PASS] [Magic_Bytes] Case 46: Chặn SVG XSS Script (<svg onload=alert(1)>) (0.01ms)
+  [PASS] [Magic_Bytes] Case 47: Chặn HTML File Upload (<!DOCTYPE html>) (0.01ms)
 
-[PASS] Case 01: IPv4 Loopback 127.0.0.1                        -> Blocked: true  | Duration: 1ms
-[PASS] Case 02: Host localhost                                 -> Blocked: true  | Duration: 0ms
-[PASS] Case 03: IPv6 Loopback [::1]                            -> Blocked: true  | Duration: 0ms
-[PASS] Case 04: Private 10.0.0.0/8                             -> Blocked: true  | Duration: 1ms
-[PASS] Case 05: Private 192.168.0.0/16                         -> Blocked: true  | Duration: 0ms
-[PASS] Case 06: Private 172.16.0.0/12                          -> Blocked: true  | Duration: 0ms
-[PASS] Case 07: AWS Metadata 169.254.169.254                   -> Blocked: true  | Duration: 0ms
-[PASS] Case 08: GCP Metadata Hostname                          -> Blocked: true  | Duration: 0ms
-[PASS] Case 09: Current Network 0.0.0.0                        -> Blocked: true  | Duration: 0ms
-[PASS] Case 10: CGNAT 100.64.0.1 (RFC 6598)                    -> Blocked: true  | Duration: 0ms
-[PASS] Case 11: CGNAT Boundary 100.127.255.254 (RFC 6598)      -> Blocked: true  | Duration: 0ms
-[PASS] Case 12: IETF Protocol Assignments 192.0.0.1 (RFC 6890) -> Blocked: true  | Duration: 1ms
-[PASS] Case 13: TEST-NET-1 Documentation 192.0.2.1 (RFC 5737)  -> Blocked: true  | Duration: 0ms
-[PASS] Case 14: TEST-NET-2 Documentation 198.51.100.1 (RFC 5737) -> Blocked: true  | Duration: 0ms
-[PASS] Case 15: TEST-NET-3 Documentation 203.0.113.1 (RFC 5737) -> Blocked: true  | Duration: 0ms
-[PASS] Case 16: Limited Broadcast 255.255.255.255              -> Blocked: true  | Duration: 0ms
-[PASS] Case 17: IPv4 Octal notation 0177.0.0.1                 -> Blocked: true  | Duration: 0ms
-[PASS] Case 18: IPv4 Hex notation 0x7f.0.0.1                   -> Blocked: true  | Duration: 0ms
-[PASS] Case 19: IPv4 Dword / Integer decimal 2130706433        -> Blocked: true  | Duration: 0ms
-[PASS] Case 20: IPv4 Hex integer 0x7f000001                    -> Blocked: true  | Duration: 0ms
-[PASS] Case 21: IPv4 Octal integer 017700000001                -> Blocked: true  | Duration: 0ms
-[PASS] Case 22: IPv4 2-part notation 127.1                     -> Blocked: true  | Duration: 0ms
-[PASS] Case 23: IPv6 Link-Local [fe80::1]                      -> Blocked: true  | Duration: 0ms
-[PASS] Case 24: IPv6 Unique-Local [fc00::1]                    -> Blocked: true  | Duration: 0ms
-[PASS] Case 25: IPv4-mapped IPv6 [::ffff:127.0.0.1]            -> Blocked: true  | Duration: 0ms
-[PASS] Case 26: IPv4-mapped IPv6 hex [::ffff:7f00:1]           -> Blocked: true  | Duration: 0ms
-[PASS] Case 27: Invalid Protocol ftp://                        -> Blocked: true  | Duration: 0ms
-[PASS] Case 28: Invalid Protocol file://                       -> Blocked: true  | Duration: 0ms
-[PASS] Case 29: Invalid Protocol gopher://                     -> Blocked: true  | Duration: 0ms
-[PASS] Case 30: Invalid Protocol javascript:                   -> Blocked: true  | Duration: 0ms
-[PASS] Case 31: Invalid Protocol data:                         -> Blocked: true  | Duration: 0ms
-[PASS] Case 32: Internal Domain *.local                        -> Blocked: true  | Duration: 0ms
-[PASS] Case 33: Internal Domain *.internal                     -> Blocked: true  | Duration: 0ms
-[PASS] Case 34: Valid Public URL (Cloudflare CDN)              -> Blocked: false | Duration: 0ms
-[PASS] Case 35: Magic Bytes WebP (RIFF...WEBP)                 -> Mime: image/webp | Duration: 1ms
-[PASS] Case 36: Magic Bytes JPEG (FF D8 FF)                    -> Mime: image/jpeg | Duration: 0ms
-[PASS] Case 37: Magic Bytes PNG (89 50 4E 47)                  -> Mime: image/png  | Duration: 0ms
-[PASS] Case 38: Malicious HTML/JS Payload in SVG/Text          -> Mime: REJECTED   | Duration: 0ms
-
-======================================================================
-=== REGRESSION RESULT: 38/38 CASES PASSED (100%) ===
-Total Execution Time : 11ms
-Status               : VERIFIED OK (Direct Code Execution)
-======================================================================
+================================================================================
+SUMMARY: 47 PASSED, 0 FAILED out of 47 cases in 1094ms
+100% PRODUCTION CODE REAL IMPORT VERIFIED (INCLUDING LIVE CLOUDFLARE DoH QUERIES)
+================================================================================

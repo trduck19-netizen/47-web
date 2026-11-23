@@ -148,18 +148,41 @@ export async function postInsertAtomicCheckAndRollback(
 
     const count = postCountRow ? Number(postCountRow.count) : 0;
     if (count > 10) {
-      // Đã vượt quá 10 ảnh do tranh chấp đồng thời -> Xóa bản ghi vừa chèn (Rollback)
-      await db
-        .prepare('DELETE FROM homepage_section_images WHERE id = ?')
-        .bind(imageId)
-        .run()
-        .catch(() => {});
+      // Kiểm tra xem imageId hiện tại có thuộc top 10 bản ghi chèn trước hay là bản ghi vượt hạn mức (>10)
+      const top10Query = await db
+        .prepare(`
+          SELECT id FROM homepage_section_images 
+          WHERE section_id = ? OR id LIKE ('sec_' || ? || '_%') OR id LIKE ('%' || ? || '%')
+          ORDER BY created_at ASC, rowid ASC
+          LIMIT 10
+        `)
+        .bind(sectionId, safeSectionId, safeSectionId)
+        .all();
 
+      const top10Ids = Array.isArray(top10Query?.results) ? top10Query.results.map((r: any) => r.id) : [];
+      const isWithinTop10 = top10Ids.includes(imageId);
+
+      if (!isWithinTop10) {
+        // Bản ghi này vượt quá vị trí thứ 10 do tranh chấp đồng thời -> Xóa bản ghi vừa chèn (Rollback)
+        await db
+          .prepare('DELETE FROM homepage_section_images WHERE id = ?')
+          .bind(imageId)
+          .run()
+          .catch(() => {});
+
+        return {
+          valid: false,
+          count,
+          rolledBack: true,
+          error: `Mục này đã đạt giới hạn tối đa 10 ảnh (${count - 1}/10). Thao tác tải ảnh bị hủy để bảo đảm tính nguyên tử và chống tranh chấp đồng thời.`,
+        };
+      }
+
+      // Bản ghi imageId này thuộc top 10 hợp lệ (đến trước trong tranh chấp)
       return {
-        valid: false,
-        count,
-        rolledBack: true,
-        error: `Mục này đã đạt giới hạn tối đa 10 ảnh (${count - 1}/10). Thao tác tải ảnh bị hủy để bảo đảm tính nguyên tử và chống tranh chấp đồng thời.`,
+        valid: true,
+        count: 10,
+        rolledBack: false,
       };
     }
 

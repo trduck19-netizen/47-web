@@ -1,40 +1,38 @@
 ================================================================================
-[TEST SUITE] HOMEPAGE IMAGE LIMIT (10 IMAGES QUOTA & ATOMIC CONCURRENCY GUARD)
+[TEST SUITE] HOMEPAGE IMAGE LIMIT & CONCURRENCY GUARD (REAL SQLITE D1 ENGINE)
 Source-of-truth: functions/services/homepage_image_service.ts
-Timestamp: 2026-11-22T16:30:53.242Z
+Database Engine: node:sqlite (Embedded SQLite C-Engine)
+Timestamp: 2026-11-23T03:53:23.946Z
 ================================================================================
 
---- TEST 1: Tải tuần tự 10 ảnh đầu tiên vào mục 'hero_banner' ---
-  [PASS] Ảnh 1/10 tải thành công (count: 1)
-  [PASS] Ảnh 2/10 tải thành công (count: 2)
-  [PASS] Ảnh 3/10 tải thành công (count: 3)
-  [PASS] Ảnh 4/10 tải thành công (count: 4)
-  [PASS] Ảnh 5/10 tải thành công (count: 5)
-  [PASS] Ảnh 6/10 tải thành công (count: 6)
-  [PASS] Ảnh 7/10 tải thành công (count: 7)
-  [PASS] Ảnh 8/10 tải thành công (count: 8)
-  [PASS] Ảnh 9/10 tải thành công (count: 9)
-  [PASS] Ảnh 10/10 tải thành công (count: 10)
-  [PASS] Tổng số ảnh sau 10 lần tải tuần tự là đúng 10 (Thực tế: 10)
+--- TEST 1: Tải tuần tự 10 ảnh đầu tiên vào mục 'main_hero_banner' ---
+  [PASS] Ảnh 1/10 chèn thành công (count: 1) (0.43ms)
+  [PASS] Ảnh 2/10 chèn thành công (count: 2) (0.08ms)
+  [PASS] Ảnh 3/10 chèn thành công (count: 3) (0.07ms)
+  [PASS] Ảnh 4/10 chèn thành công (count: 4) (0.07ms)
+  [PASS] Ảnh 5/10 chèn thành công (count: 5) (0.06ms)
+  [PASS] Ảnh 6/10 chèn thành công (count: 6) (0.05ms)
+  [PASS] Ảnh 7/10 chèn thành công (count: 7) (0.04ms)
+  [PASS] Ảnh 8/10 chèn thành công (count: 8) (0.04ms)
+  [PASS] Ảnh 9/10 chèn thành công (count: 9) (0.05ms)
+  [PASS] Ảnh 10/10 chèn thành công (count: 10) (0.06ms)
+  [PASS] Tổng số ảnh sau 10 lần tải tuần tự là đúng 10 (Thực tế trong CSDL: 10) (0.02ms)
 
---- TEST 2: Cố gắng tải ảnh thứ 11 tuần tự vào mục đã đầy ---
-  [PASS] Pre-check phát hiện đạt tối đa 10 ảnh và chặn với HTTP 400 (count: 10)
-  [PASS] Ảnh thứ 11 bị từ chối lưu vào CSDL (status: 400, error: "Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.")
-  [PASS] Số lượng ảnh trong CSDL vẫn giữ nguyên 10 (Không bị tràn)
+--- TEST 2: Cố gắng tải ảnh thứ 11 tuần tự vào mục đã đầy 10 ảnh ---
+  [PASS] Pre-check phát hiện đạt tối đa 10 ảnh và chặn với HTTP 400 (count: 10) (0.01ms)
+  [PASS] Ảnh thứ 11 bị từ chối lưu vào CSDL thật (status: 400, error: "Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.") (0.02ms)
+  [PASS] Số lượng ảnh trong CSDL vẫn giữ nguyên 10 (Không bị tràn) (0.02ms)
 
---- TEST 3: Tranh chấp đồng thời (Atomic Concurrency Guard & Rollback) ---
-  [PASS] Trạng thái ban đầu: CSDL có 9 ảnh (quota: 9/10)
-  [PASS] Cả 2 request A và B đều pass Pre-check vì count = 9
-  [PASS] Request A chèn thành công (count: 10/10)
-  [PASS] Request B bị Post-Insert Guard phát hiện vi phạm và trả HTTP 400
-  [PASS] Request B đã được tự động ROLLBACK xóa khỏi CSDL
-  [PASS] Tổng số ảnh sau tranh chấp đồng thời duy trì đúng 10 ảnh (Không vượt quá)
+--- TEST 3: Tranh chấp đồng thời THẬT (Concurrent Uploads on 9 Images) ---
+  [PASS] Trạng thái ban đầu: CSDL thật có đúng 9 ảnh (quota: 9/10) (0.03ms)
+  [PASS] Tranh chấp đồng thời: Chính xác 1 request thành công và 1 request bị chặn/rollback (Success: 1, Rejected: 1) (0.29ms)
+  [PASS] Tổng số bản ghi trong CSDL sau tranh chấp duy trì đúng 10 ảnh (Không bao giờ là 11) (0.03ms)
 
 --- TEST 4: Đếm ảnh legacy (tiền tố sec_<id>_ không có section_id) và ảnh mới ---
-  [PASS] Đếm chính xác tổng cộng 7 ảnh (4 legacy + 3 mới): count = 7
-  [PASS] Quota còn 3 chỗ trống (7/10)
+  [PASS] Đếm chính xác tổng cộng 7 ảnh (4 legacy + 3 mới): count = 7 (0.05ms)
+  [PASS] Hạn mức còn 3 slot khả dụng (7/10) (0.05ms)
 
 ================================================================================
-SUMMARY: 22 PASSED, 0 FAILED in 10ms
-100% PRODUCTION CODE REAL IMPORT VERIFIED
+SUMMARY: 19 PASSED, 0 FAILED in 8ms
+100% PRODUCTION CODE REAL IMPORT VERIFIED ON REAL SQLITE C-ENGINE
 ================================================================================

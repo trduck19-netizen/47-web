@@ -932,10 +932,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       setSubView('home');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (url === '/store') {
-      setSubView('home');
-      setSelectedCategory('all');
-      setSelectedProductType('all');
-      document.getElementById('shopee-products-grid')?.scrollIntoView({ behavior: 'smooth' });
+      setSubView('store');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (url === '/seller-center') {
       if (onOpenSellerCenter) onOpenSellerCenter();
       else setSubView('seller-center' as any);

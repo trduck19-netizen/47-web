@@ -1915,7 +1915,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                           </span>
                         )}
                       </div>
-                      {sec.link_url && (
+                      {sec.link_url ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -1931,6 +1931,18 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         >
                           <LinkIcon className="w-2.5 h-2.5" />
                           <span>Link ↗</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            showAdminToast('info', t('homepageSectionsModule.itemHasNoLink', { title: sTitle }));
+                          }}
+                          className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center gap-0.5 cursor-pointer"
+                          title={t('homepageSectionsModule.itemHasNoLink', { title: sTitle })}
+                        >
+                          <LinkIcon className="w-2.5 h-2.5 opacity-50" />
+                          <span className="opacity-75">{isSecEn ? 'No link' : 'Chưa gắn link'}</span>
                         </button>
                       )}
                     </div>

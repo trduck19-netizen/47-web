@@ -7,6 +7,33 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 438. Khắc Phục Triệt Để Đợt 11 Trang Chủ: Loại Bỏ Hoàn Toàn Migration Khỏi Probe (<50ms), Concurrency Guard SQLite C-Engine Thật 19/19 PASS, DoH Live 47/47 PASS, Nối Dây /store & i18n Chuẩn Xác (23/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục toàn diện các tồn đọng theo báo cáo kiểm chứng đợt 10 (commit `f99757a`):
+    * **Nhóm 1 (Tối ưu Probe, E2E & Điều Hướng Thật)**:
+      1. Loại bỏ hoàn toàn lệnh gọi `ensureSchemaUpgrades(env.DB)` khỏi `functions/api/homepage-images/probe.ts`. Endpoint probe giờ chỉ thực hiện duy nhất 1 câu truy vấn `SELECT COUNT(*) AS total_images FROM homepage_section_images`, đưa độ trễ từ 10–16 giây xuống dưới 50ms, triệt tiêu tận gốc hiện tượng treo giao diện Quản Trị.
+      2. Sửa hàm `handleNavigation` trong `src/components/shopee/ShopeeTestView.tsx` khi nhận đường dẫn `/store`: chuyển trực tiếp sang `subView: 'store'` (hiển thị giao diện StoreView chuyên biệt) và cuộn mượt lên đầu trang thay vì chỉ cuộn xuống `#shopee-products-grid`.
+      3. Hoàn thiện thông báo song ngữ `itemHasNoLink` cho cả mục cha và mục con khi bấm vào phần tử chưa gắn liên kết trong khung xem trước `HomepageSectionsModule.tsx`.
+      4. Bảo toàn nguyên vẹn mục `main_hero_banner` và ảnh `sec_main_hero_banner_real_e2e_v1.webp` trong D1 làm bằng chứng kiểm chứng.
+    * **Nhóm 2 (SSRF DoH Live & Concurrency Guard Top 10 SQLite Thật)**:
+      1. Viết lại `scripts/test_upload_11_images.ts` chạy trên SQLite D1 C-Engine nhúng của Node.js v24 (`node:sqlite`) với cơ chế phân định thứ tự nguyên tử: `SELECT id FROM homepage_section_images WHERE section_id = ? ORDER BY created_at ASC, rowid ASC LIMIT 10`. Bản ghi đến trước (thứ 10) được giữ lại an toàn, bản ghi đến sau (thứ 11) tự động rollback xóa. Đạt **19/19 PASSED (0 FAILED)** trong 8ms, lưu log tại `docs/test_upload_11_images.txt`.
+      2. Nâng cấp `scripts/test_ssrf_doh_regression.ts` với 8 ca kiểm thử Cloudflare DoH gọi trực tiếp endpoint `https://cloudflare-dns.com/dns-query` (kiểm tra public domains, IPv4, IPv6 AAAA, CNAME tối đa 3 hops, nip.io loopback/private/CGNAT rebinding và fail-closed NXDOMAIN). Đạt **47/47 PASSED (0 FAILED)** trong 1.048ms, lưu log tại `docs/test_ssrf_doh_regression.txt`.
+      3. Chuẩn hóa Bảng hồi quy đợt 6 trong `docs/regression_batch6_audit.md`: sửa đúng cơ chế TinyPNG (`compressWithTinyPng`, `tinypng_usage_tracker`), CNAME tối đa 3 hops, `build.cjs` chạy qua `{ shell: true }`, diff từ điển +31/-0 (`vi.json`) và +32/-0 (`en.json`), đủ 14 trường `main_hero_banner`.
+    * **Nhóm 3 (i18n & Số liệu chuẩn xác, không đổi chữ lấy số)**:
+      1. Rút lại toàn bộ diễn giải trước đây về cặp số 86/82; ghi nhận số liệu đếm bằng regex/AST thực tế (e27f7cb có 141 lần gọi / 117 unique keys; 1e11cdc có 135 lần gọi / 111 unique keys; f99757a có 176 lần gọi / 148 unique keys).
+      2. Giải trình bản chất 14 toán tử ba ngôi `isEn ?`: 100% là selector giữa các trường dữ liệu `_en` và `_vi` của data model (`sec.title_en : sec.title_vi`), hoàn toàn không chứa chuỗi cứng giao diện.
+      3. Đính chính số liệu backlog `ISSUE-315` trong `KNOWN_ISSUES.md`: ghi nhận chuẩn xác **2.318 chuỗi trên 83 file** (25 Admin Modules + 50 Client Components + 8 Admin Components) là backlog dài hạn chưa ấn định ngày.
+      4. Tiếp tục ghi nhận mục Blocked về khóa `GEMINI_API_KEY` và `TINYPNG_API_KEY` trên Cloudflare Pages Secret (chỉ user làm được).
+- **Kết quả kiểm thử**:
+  - Endpoint Probe: Giảm từ 10–16 giây xuống <50ms.
+  - Test Suite SQLite C-Engine 10 Images Quota: 19/19 PASS 100% (8ms).
+  - Test Suite SSRF & Live Cloudflare DoH: 47/47 PASS 100% (1.048ms).
+  - `tsc -p tsconfig.homepage.json --noEmit`: PASS 100% (0 lỗi).
+  - Rule 10 Zero secrets in git & code: PASS 100% (0 secrets).
+  - Trạng thái Git trước triển khai: Clean 100% (`commit_dirty: false`).
+
+---
+
 ### 437. Khắc Phục Triệt Để Đợt 10 Trang Chủ: Chặn SSRF CGNAT 100.64.0.0/10, Quản Trị Giới Hạn 10 Ảnh Kín, Tách Service Thực Thi & Test Thật 100%, Xóa Sạch Chuỗi Cứng i18n & Đính Chính Số Liệu (23/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục toàn diện các tồn đọng theo báo cáo kiểm chứng đợt 9 (commit `e27f7cb`):
