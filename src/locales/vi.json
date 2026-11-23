@@ -607,7 +607,11 @@
       "support247": "Hỗ Trợ 24/7"
     },
     "paginationSummary": "Trang {page} / {totalPages} • Tổng {total} gói",
+    "paginationSummary_singular": "Trang {page} / {totalPages} • Tổng {total} gói",
+    "paginationSummary_plural": "Trang {page} / {totalPages} • Tổng {total} gói",
     "showingCount": "Đang hiển thị {from} - {to} trên tổng số {total} gói",
+    "showingCount_singular": "Đang hiển thị {from} - {to} trên tổng số 1 gói",
+    "showingCount_plural": "Đang hiển thị {from} - {to} trên tổng số {total} gói",
     "categories": {
       "sectionTitle": "DANH MỤC NGÀNH HÀNG TOÀN SÀN",
       "sectionSubtitle": "(5 Ngành Hàng Chính Hãng)",
@@ -631,7 +635,7 @@
       "viewAllBtn": "Xem Kho Voucher Sàn"
     },
     "products": {
-      "allTab": "🔥 Tất Cả Sản Phẩm",
+      "allTab": "🔥 Tất Cả Gói",
       "physicalTab": "🚚 Hàng Vật Lý (Ship)",
       "digitalTab": "⚡ Hàng Số (Mã 0s)",
       "pageInfo": "Trang {page} / {totalPages} • Tổng {total} gói",
@@ -982,8 +986,11 @@
     "groups": {
       "navigation": "Thanh Điều Hướng",
       "shortcuts": "Hàng Lối Tắt Dịch Vụ",
+      "shortcutsRegistry": "Hàng Lối Tắt",
       "categories": "Tab Ngành Hàng Toàn Sàn",
+      "categoriesRegistry": "Tab Ngành Hàng",
       "sorting": "Thanh Sắp Xếp Sản Phẩm",
+      "sortingRegistry": "Thanh Sắp Xếp",
       "custom": "Mục Tự Thêm",
       "customItems": "Mục Tự Thêm",
       "shortcutsShort": "Hàng Lối Tắt Dịch Vụ"

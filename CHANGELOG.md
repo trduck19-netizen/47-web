@@ -7,6 +7,28 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 443. Hoàn Tất Dứt Điểm Đợt 16 Trang Chủ: Triệt Tiêu 24 Mục Literal Config & Fallback Bằng Pinned Lookup, Sửa Hồi Quy Song Ngữ HSM, StoreView Số Ít/Số Nhiều & Nhãn Gói Đồng Bộ 100% (23/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai khắc phục dứt điểm theo kế hoạch Đợt 16 đã được User phê duyệt (dựa trên báo cáo kiểm chứng độc lập Đợt 15 commit `f26894b` đạt 8 FIXED / 2 PARTIAL / 0 NOT FIXED):
+    * **Nhóm 1 (Triệt Tiêu 24 Mục Literal Config, Fallback & Khắc Phục Hồi Quy Song Ngữ HSM)**:
+      1. *Bảo toàn 100% chữ hiển thị gốc (Phương án b — Zero UI Text Drift):* Bổ sung 3 khóa từ điển riêng vào `homepageSectionsModule.groups` trong `src/locales/vi.json` và `en.json`: `shortcutsRegistry` ("Hàng Lối Tắt" / "Quick Shortcuts"), `categoriesRegistry` ("Tab Ngành Hàng" / "Category Tabs"), `sortingRegistry` ("Thanh Sắp Xếp" / "Sorting Bar"), giữ nguyên `custom` ("Mục Tự Thêm" / "Custom Group") và `customItems` ("Mục Tự Thêm" / "Custom Items").
+      2. *Triệt tiêu toàn bộ 24 mục Registry + Fallback trong `src/config/homepageSections.ts`:* Xuất bản đồ song ngữ ghim độc lập `SUBSECTION_GROUP_NAMES` đọc trực tiếp từ JSON từ điển. Thay thế toàn bộ 9 mục navigation (dòng 293–406), 8 mục shortcuts (dòng 424–522), 6 mục categories (dòng 538–610), 1 mục sorting (dòng 626–628) và fallback dòng 808–809 (`custom.vi` + `customItems.en`). Chạy grep Chốt 4 ngoặc đơn xác nhận 52 vị trí literal cũ giảm về đúng **0 hit**.
+      3. *Khắc phục triệt để hồi quy song ngữ trong `HomepageSectionsModule.tsx`:* Import `SUBSECTION_GROUP_NAMES` và gán độc lập `[group].vi` và `[group].en` cho các dòng 135–136 (state form), dòng 1043–1044 (modal thêm mục con) và dòng 1072–1073 (fallback lưu mục con). Khắc phục dứt điểm tình trạng Admin bật tiếng Việt làm ghi đè chuỗi tiếng Việt vào cả `groupNameEn` hoặc ngược lại.
+    * **Nhóm 2 (Chuẩn Hóa Tài Liệu, Đính Chính Trích Dẫn Dòng §441 & Giữ Nguyên Mốc Giờ)**:
+      1. Đính chính trích dẫn số dòng của §441: trích dẫn đúng dòng 43 và dòng 62 (thay vì dòng 14, 15, 33 bị dồn xuống do chèn §442 dài 29 dòng).
+      2. Giữ nguyên số liệu lịch sử: §439 là 1127ms (Đợt 12), §440 là 1276ms (Đợt 13), §441 là 1339ms (Đợt 14).
+      3. Mốc giờ kiểm chứng đồng thời D1 thật giữ chuẩn xác: `10:47:46.767Z` (= 17:47:46.767 giờ VN ngày 23/11).
+    * **Nhóm 3 (StoreView Singular/Plural & Nhãn Gói Đồng Bộ 100%)**:
+      1. Cập nhật `allTab`: Đổi thành `"🔥 Tất Cả Gói"` (VI) và `"🔥 All Packages"` (EN) trong từ điển, cập nhật fallback tại `ShopeeTestView.tsx:1892` sang `'🔥 All Packages' : '🔥 Tất Cả Gói'`.
+      2. Bổ sung cặp từ điển singular/plural: `paginationSummary_singular` & `_plural`, `showingCount_singular` & `_plural` trong cả 2 file `vi.json` và `en.json`.
+      3. Cập nhật `ShopeeTestView.tsx` tại dòng 1914 và 2062 gọi bản `_singular` khi `currentMallProducts.length === 1`.
+- **Kết quả kiểm thử**:
+  - TypeScript Typecheck (`tsconfig.homepage.json`): 0 lỗi (Exit Code 0), lưu raw log pipe tại `docs/tsc_check_success.log`.
+  - i18n Guard Scanner (`scripts/check-hardcoded-i18n.cjs`): 15/15 file cốt lõi PASSED, lưu raw log pipe tại `docs/i18n_guard_default.log`.
+  - Quét 10 pattern minify trên bundle live: 0 hit.
+  - Test 1b thêm mục con navigation bằng tài khoản test: gán độc lập `groupNameVi = "Thanh Điều Hướng"` và `groupNameEn = "Navigation Bar"` ở cả 2 ngôn ngữ Admin, dọn sạch ngay sau kiểm thử (0 test artifacts).
+  - An toàn bảo mật Rule 10: 0 secret rò rỉ trong git history và mã nguồn.
+
 ### 442. Hoàn Tất Dứt Điểm Đợt 15 Trang Chủ: Chuẩn Hóa Lịch Sử Số Đo SSRF Từng Đợt, Xóa Sạch 100% Literal Tên Nhóm Tại Cả 3 Vị Trí, Cơ Chế Số Ít/Số Nhiều Search Count & Phân Trang Đếm Gói StoreView, Đính Chính 27 Khóa JSON Live Kèm Bảng Đối Soát 5 Chốt Chặn (23/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai khắc phục triệt để theo kế hoạch Đợt 15 đã được User duyệt (dựa trên báo cáo kiểm chứng độc lập commit `597b56e`):

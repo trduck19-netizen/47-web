@@ -1889,7 +1889,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               <div className="flex items-center justify-between border-b-2 border-[#ee4d2d] pb-2 flex-wrap gap-2">
                 <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
                   {[
-                    { id: 'all', label: t.mall?.products?.allTab || (language === 'en' ? '🔥 All Products' : '🔥 Tất Cả Sản Phẩm'), count: filteredStoreProducts.length },
+                    { id: 'all', label: t.mall?.products?.allTab || (language === 'en' ? '🔥 All Packages' : '🔥 Tất Cả Gói'), count: filteredStoreProducts.length },
                     { id: 'physical', label: t.mall?.products?.physicalTab || (language === 'en' ? '🚚 Physical Goods (Ship)' : '🚚 Hàng Vật Lý (Ship)'), count: filteredStoreProducts.filter(p => p.product_type === 'physical').length },
                     { id: 'digital', label: t.mall?.products?.digitalTab || (language === 'en' ? '⚡ Digital (0s)' : '⚡ Hàng Số (Mã 0s)'), count: filteredStoreProducts.filter(p => p.product_type !== 'physical').length },
                   ].map((tab) => (
@@ -1911,11 +1911,17 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 </div>
 
                 <div className="text-xs text-slate-500 font-medium">
-                  {t('mall.paginationSummary', {
-                    page: currentPage,
-                    totalPages: mallTotalPages,
-                    total: currentMallProducts.length,
-                  })}
+                  {currentMallProducts.length === 1
+                    ? t('mall.paginationSummary_singular', {
+                        page: currentPage,
+                        totalPages: mallTotalPages,
+                        total: 1,
+                      })
+                    : t('mall.paginationSummary_plural', {
+                        page: currentPage,
+                        totalPages: mallTotalPages,
+                        total: currentMallProducts.length,
+                      })}
                 </div>
               </div>
 
@@ -2059,11 +2065,17 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               {mallTotalPages > 1 && (
                 <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                   <div className="text-slate-500 font-medium">
-                    {t('mall.showingCount', {
-                      from: (currentPage - 1) * 20 + 1,
-                      to: Math.min(currentPage * 20, currentMallProducts.length),
-                      total: currentMallProducts.length,
-                    })}
+                    {currentMallProducts.length === 1
+                      ? t('mall.showingCount_singular', {
+                          from: 1,
+                          to: 1,
+                          total: 1,
+                        })
+                      : t('mall.showingCount_plural', {
+                          from: (currentPage - 1) * 20 + 1,
+                          to: Math.min(currentPage * 20, currentMallProducts.length),
+                          total: currentMallProducts.length,
+                        })}
                   </div>
 
                   <div className="flex items-center gap-1">

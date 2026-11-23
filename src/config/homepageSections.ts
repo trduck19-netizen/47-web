@@ -24,8 +24,8 @@
  *        id: 'shortcut_zalo_support',             // Mã định danh mục con duy nhất
  *        parentId: 'categories_grid',             // Mã mục lớn chứa mục con này
  *        group: 'shortcuts',                      // Nhóm phân loại (navigation | shortcuts | categories | sorting)
- *        groupNameVi: 'Hàng Lối Tắt',             // Tên nhóm tiếng Việt
- *        groupNameEn: 'Quick Shortcuts',          // Tên nhóm tiếng Anh
+ *        groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,        // Tên nhóm tiếng Việt
+ *        groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,        // Tên nhóm tiếng Anh
  *        nameVi: 'Hỗ Trợ Zalo',                   // Tên hiển thị tiếng Việt
  *        nameEn: 'Zalo Support',                  // Tên hiển thị tiếng Anh
  *        descriptionVi: 'Lối tắt kết nối chat tư vấn Zalo...', // Mô tả tiếng Việt
@@ -46,6 +46,36 @@
  *      {isSubsectionEnabled('categories_grid', 'shortcut_zalo_support') && <ZaloSupportShortcut />}
  * ============================================================================
  */
+
+import viLocale from '../locales/vi.json';
+import enLocale from '../locales/en.json';
+
+export const SUBSECTION_GROUP_NAMES = {
+  navigation: {
+    vi: viLocale.homepageSectionsModule.groups.navigation, // "Thanh Điều Hướng"
+    en: enLocale.homepageSectionsModule.groups.navigation, // "Navigation Bar"
+  },
+  shortcuts: {
+    vi: viLocale.homepageSectionsModule.groups.shortcutsRegistry, // "Hàng Lối Tắt"
+    en: enLocale.homepageSectionsModule.groups.shortcutsRegistry, // "Quick Shortcuts"
+  },
+  categories: {
+    vi: viLocale.homepageSectionsModule.groups.categoriesRegistry, // "Tab Ngành Hàng"
+    en: enLocale.homepageSectionsModule.groups.categoriesRegistry, // "Category Tabs"
+  },
+  sorting: {
+    vi: viLocale.homepageSectionsModule.groups.sortingRegistry, // "Thanh Sắp Xếp"
+    en: enLocale.homepageSectionsModule.groups.sortingRegistry, // "Sorting Bar"
+  },
+  custom: {
+    vi: viLocale.homepageSectionsModule.groups.custom, // "Mục Tự Thêm"
+    en: enLocale.homepageSectionsModule.groups.custom, // "Custom Group"
+  },
+  customItems: {
+    vi: viLocale.homepageSectionsModule.groups.customItems, // "Mục Tự Thêm"
+    en: enLocale.homepageSectionsModule.groups.customItems, // "Custom Items"
+  },
+} as const;
 
 export interface HomepageSectionDefinition {
   id: string;
@@ -290,8 +320,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_home',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Trang Chủ Sàn',
     nameEn: 'Mall Home',
     descriptionVi: 'Nút điều hướng về trang chủ sàn thương mại điện tử Universal Mall.',
@@ -304,8 +334,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_store',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Cửa Hàng Đa Ngành',
     nameEn: 'Multi-Industry Store',
     descriptionVi: 'Nút mở danh mục các gian hàng và sản phẩm chính hãng toàn sàn.',
@@ -318,8 +348,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_seller',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Kênh Người Bán',
     nameEn: 'Seller Center',
     descriptionVi: 'Nút truy cập cổng quản trị gian hàng và mở bán hàng dành cho đối tác.',
@@ -332,8 +362,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_account',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Tài Khoản & Ví',
     nameEn: 'Account & Wallet',
     descriptionVi: 'Nút mở hồ sơ cá nhân, số dư ví Core và lịch sử giao dịch.',
@@ -346,8 +376,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_game_zone',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Game Zone',
     nameEn: 'Game Zone',
     descriptionVi: 'Nút chuyển nhanh sang phân khu 593 tựa game có giấy phép ABEI.',
@@ -360,8 +390,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_missions',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Nhiệm Vụ',
     nameEn: 'Missions',
     descriptionVi: 'Nút mở trung tâm nhiệm vụ điểm danh và săn thưởng Core hàng ngày.',
@@ -374,8 +404,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_telegram',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Telegram',
     nameEn: 'Telegram',
     descriptionVi: 'Nút kết nối cộng đồng game thủ và kênh nhận thông báo bot Telegram.',
@@ -388,8 +418,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_a_z',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Mục Lục A-Z',
     nameEn: 'A-Z Index',
     descriptionVi: 'Nút tra cứu danh bạ toàn bộ tựa game theo bảng chữ cái A-Z.',
@@ -402,8 +432,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'nav_submit_code',
     parentId: 'top_announcement',
     group: 'navigation',
-    groupNameVi: 'Thanh Điều Hướng',
-    groupNameEn: 'Navigation Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.navigation.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.navigation.en,
     nameVi: 'Gửi Mã Mới',
     nameEn: 'Submit Code',
     descriptionVi: 'Nút mở cửa sổ gửi giftcode cộng đồng đóng góp nhận thưởng.',
@@ -420,8 +450,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'shortcut_instant_delivery',
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: 'Hàng Lối Tắt',
-    groupNameEn: 'Quick Shortcuts',
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     nameVi: 'Giao Mã 0s',
     nameEn: 'Instant Delivery 0s',
     descriptionVi: 'Lối tắt mở tủ mã cá nhân và xem các đơn hàng giao mã tự động tức thì.',
@@ -434,8 +464,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'shortcut_courier_shipping',
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: 'Hàng Lối Tắt',
-    groupNameEn: 'Quick Shortcuts',
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     nameVi: 'Giao Bưu Chính',
     nameEn: 'Courier Shipping',
     descriptionVi: 'Lối tắt cuộn nhanh xuống danh mục hàng vật lý vận chuyển bưu điện.',
@@ -448,8 +478,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'shortcut_protection_168h',
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: 'Hàng Lối Tắt',
-    groupNameEn: 'Quick Shortcuts',
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     nameVi: 'Bảo Hộ 168H',
     nameEn: '168H Protection',
     descriptionVi: 'Lối tắt mở chính sách ký quỹ bảo hiểm giao dịch an toàn 7 ngày.',
@@ -462,8 +492,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'shortcut_vietqr_topup',
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: 'Hàng Lối Tắt',
-    groupNameEn: 'Quick Shortcuts',
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     nameVi: 'Nạp VietQR',
     nameEn: 'VietQR Topup',
     descriptionVi: 'Lối tắt mở cửa sổ nạp tiền tự động qua mã VietQR chuẩn ngân hàng.',
@@ -476,8 +506,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'shortcut_lucky_wheel',
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: 'Hàng Lối Tắt',
-    groupNameEn: 'Quick Shortcuts',
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     nameVi: 'Vòng Quay Xu',
     nameEn: 'Lucky Wheel',
     descriptionVi: 'Lối tắt tham gia vòng quay may mắn trúng xu Core và quà tặng sàn.',
@@ -490,8 +520,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'shortcut_vouchers',
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: 'Hàng Lối Tắt',
-    groupNameEn: 'Quick Shortcuts',
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     nameVi: 'Mã Giảm Giá',
     nameEn: 'Vouchers & Coupons',
     descriptionVi: 'Lối tắt mở kho voucher Shopee đa tầng và mã giảm giá toàn sàn.',
@@ -504,8 +534,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'shortcut_game_zone',
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: 'Hàng Lối Tắt',
-    groupNameEn: 'Quick Shortcuts',
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     nameVi: 'Game Zone',
     nameEn: 'Game Zone',
     descriptionVi: 'Lối tắt chuyển vào khu vực game bản quyền và săn giftcode miễn phí.',
@@ -518,8 +548,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'shortcut_support_247',
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: 'Hàng Lối Tắt',
-    groupNameEn: 'Quick Shortcuts',
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     nameVi: 'Hỗ Trợ 24/7',
     nameEn: '24/7 Support',
     descriptionVi: 'Lối tắt mở kênh liên hệ chăm sóc khách hàng và giải quyết khiếu nại.',
@@ -536,8 +566,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'cat_all',
     parentId: 'categories_grid',
     group: 'categories',
-    groupNameVi: 'Tab Ngành Hàng',
-    groupNameEn: 'Category Tabs',
+    groupNameVi: SUBSECTION_GROUP_NAMES.categories.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.categories.en,
     nameVi: 'Tất Cả',
     nameEn: 'All Categories',
     descriptionVi: 'Tab hiển thị toàn bộ các sản phẩm thuộc mọi ngành hàng trên sàn.',
@@ -550,8 +580,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'cat_fashion',
     parentId: 'categories_grid',
     group: 'categories',
-    groupNameVi: 'Tab Ngành Hàng',
-    groupNameEn: 'Category Tabs',
+    groupNameVi: SUBSECTION_GROUP_NAMES.categories.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.categories.en,
     nameVi: 'Thời Trang & Phụ Kiện',
     nameEn: 'Fashion & Accessories',
     descriptionVi: 'Tab lọc các sản phẩm áo quần, giày dép, túi xách và phụ kiện nam nữ.',
@@ -564,8 +594,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'cat_beauty',
     parentId: 'categories_grid',
     group: 'categories',
-    groupNameVi: 'Tab Ngành Hàng',
-    groupNameEn: 'Category Tabs',
+    groupNameVi: SUBSECTION_GROUP_NAMES.categories.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.categories.en,
     nameVi: 'Mỹ Phẩm & Sắc Đẹp',
     nameEn: 'Beauty & Cosmetics',
     descriptionVi: 'Tab lọc các sản phẩm chăm sóc da mặt, trang điểm và nước hoa cao cấp.',
@@ -578,8 +608,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'cat_tech',
     parentId: 'categories_grid',
     group: 'categories',
-    groupNameVi: 'Tab Ngành Hàng',
-    groupNameEn: 'Category Tabs',
+    groupNameVi: SUBSECTION_GROUP_NAMES.categories.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.categories.en,
     nameVi: 'Thiết Bị Số & Công Nghệ',
     nameEn: 'Digital Tech & Gadgets',
     descriptionVi: 'Tab lọc các thiết bị điện thoại, cáp sạc, tai nghe và phụ kiện máy tính.',
@@ -592,8 +622,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'cat_services',
     parentId: 'categories_grid',
     group: 'categories',
-    groupNameVi: 'Tab Ngành Hàng',
-    groupNameEn: 'Category Tabs',
+    groupNameVi: SUBSECTION_GROUP_NAMES.categories.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.categories.en,
     nameVi: 'Khóa Học & Dịch Vụ',
     nameEn: 'Courses & Services',
     descriptionVi: 'Tab lọc các khóa học trực tuyến, tài khoản phần mềm và dịch vụ số.',
@@ -606,8 +636,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'cat_gaming',
     parentId: 'categories_grid',
     group: 'categories',
-    groupNameVi: 'Tab Ngành Hàng',
-    groupNameEn: 'Category Tabs',
+    groupNameVi: SUBSECTION_GROUP_NAMES.categories.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.categories.en,
     nameVi: 'Gaming & Thẻ Nạp',
     nameEn: 'Gaming & Recharge',
     descriptionVi: 'Tab lọc các sản phẩm thẻ cào game, tài khoản VIP và vật phẩm game.',
@@ -624,8 +654,8 @@ export const HOMEPAGE_SUBSECTIONS_REGISTRY: readonly HomepageSubsectionDefinitio
     id: 'sort_bar',
     parentId: 'categories_grid',
     group: 'sorting',
-    groupNameVi: 'Thanh Sắp Xếp',
-    groupNameEn: 'Sorting Bar',
+    groupNameVi: SUBSECTION_GROUP_NAMES.sorting.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.sorting.en,
     nameVi: 'Thanh Sắp Xếp (Mới nhất / Bán chạy)',
     nameEn: 'Sorting Bar (Newest / Best Selling)',
     descriptionVi: 'Cụm nút chuyển đổi thứ tự sắp xếp sản phẩm theo Mới nhất hoặc Bán chạy nhất.',
@@ -805,8 +835,8 @@ export function mergeSubsectionsConfig(
         id: item.id,
         parentId,
         group: item.group || 'shortcuts',
-        groupNameVi: item.groupNameVi || 'Mục Tự Thêm',
-        groupNameEn: item.groupNameEn || 'Custom Items',
+        groupNameVi: item.groupNameVi || SUBSECTION_GROUP_NAMES.custom.vi,
+        groupNameEn: item.groupNameEn || SUBSECTION_GROUP_NAMES.customItems.en,
         nameVi: item.title_vi || item.internal_name || item.nameVi || 'Mục con mới',
         nameEn: item.title_en || item.internal_name || item.nameEn || 'New Subsection',
         descriptionVi: item.description_vi || item.descriptionVi || '',

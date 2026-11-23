@@ -607,7 +607,11 @@
       "support247": "Support 24/7"
     },
     "paginationSummary": "Page {page} / {totalPages} • Total {total} packages",
+    "paginationSummary_singular": "Page {page} / {totalPages} • Total 1 package",
+    "paginationSummary_plural": "Page {page} / {totalPages} • Total {total} packages",
     "showingCount": "Showing {from} - {to} of {total} packages",
+    "showingCount_singular": "Showing {from} - {to} of 1 package",
+    "showingCount_plural": "Showing {from} - {to} of {total} packages",
     "categories": {
       "sectionTitle": "MULTI-INDUSTRY CATEGORIES",
       "sectionSubtitle": "(5 Official Industries)",
@@ -631,7 +635,7 @@
       "viewAllBtn": "View Mall Vouchers"
     },
     "products": {
-      "allTab": "🔥 All Products",
+      "allTab": "🔥 All Packages",
       "physicalTab": "🚚 Physical Goods (Ship)",
       "digitalTab": "⚡ Digital Goods (0s Code)",
       "pageInfo": "Page {page} / {totalPages} • Total {total} packages",
@@ -982,8 +986,11 @@
     "groups": {
       "navigation": "Navigation Bar",
       "shortcuts": "Quick Service Shortcuts",
+      "shortcutsRegistry": "Quick Shortcuts",
       "categories": "Mall Category Tabs",
+      "categoriesRegistry": "Category Tabs",
       "sorting": "Product Sorting Controls",
+      "sortingRegistry": "Sorting Bar",
       "custom": "Custom Group",
       "customItems": "Custom Items",
       "shortcutsShort": "Quick Shortcuts"

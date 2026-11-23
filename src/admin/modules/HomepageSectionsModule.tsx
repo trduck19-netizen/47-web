@@ -33,6 +33,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import {
   HOMEPAGE_SECTIONS_REGISTRY,
   HOMEPAGE_SUBSECTIONS_REGISTRY,
+  SUBSECTION_GROUP_NAMES,
   HomepageSectionConfig,
   HomepageSubsectionConfig,
   SYSTEM_PAGE_OPTIONS,
@@ -132,8 +133,8 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   const [newSubForm, setNewSubForm] = useState<AddSubsectionFormState>({
     parentId: 'categories_grid',
     group: 'shortcuts',
-    groupNameVi: t('homepageSectionsModule.groups.shortcutsShort'),
-    groupNameEn: t('homepageSectionsModule.groups.shortcutsShort'),
+    groupNameVi: SUBSECTION_GROUP_NAMES.shortcuts.vi,
+    groupNameEn: SUBSECTION_GROUP_NAMES.shortcuts.en,
     internal_name: '',
     title_vi: '',
     title_en: '',
@@ -1040,8 +1041,16 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     setNewSubForm({
       parentId,
       group,
-      groupNameVi: group === 'navigation' ? t('homepageSectionsModule.groups.navigation') : group === 'shortcuts' ? t('homepageSectionsModule.groups.shortcutsShort') : t('homepageSectionsModule.groups.custom'),
-      groupNameEn: group === 'navigation' ? t('homepageSectionsModule.groups.navigation') : group === 'shortcuts' ? t('homepageSectionsModule.groups.shortcutsShort') : t('homepageSectionsModule.groups.custom'),
+      groupNameVi: group === 'navigation'
+        ? SUBSECTION_GROUP_NAMES.navigation.vi
+        : group === 'shortcuts'
+          ? SUBSECTION_GROUP_NAMES.shortcuts.vi
+          : SUBSECTION_GROUP_NAMES.custom.vi,
+      groupNameEn: group === 'navigation'
+        ? SUBSECTION_GROUP_NAMES.navigation.en
+        : group === 'shortcuts'
+          ? SUBSECTION_GROUP_NAMES.shortcuts.en
+          : SUBSECTION_GROUP_NAMES.custom.en,
       internal_name: '',
       title_vi: '',
       title_en: '',
@@ -1069,8 +1078,8 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       id: customId,
       parentId: newSubForm.parentId,
       group: newSubForm.group || 'shortcuts',
-      groupNameVi: newSubForm.groupNameVi || t('homepageSectionsModule.groups.custom'),
-      groupNameEn: newSubForm.groupNameEn || t('homepageSectionsModule.groups.customItems'),
+      groupNameVi: newSubForm.groupNameVi || SUBSECTION_GROUP_NAMES.custom.vi,
+      groupNameEn: newSubForm.groupNameEn || SUBSECTION_GROUP_NAMES.customItems.en,
       nameVi: newSubForm.title_vi.trim() || newSubForm.internal_name.trim(),
       nameEn: newSubForm.title_en.trim() || newSubForm.internal_name.trim() || 'New Item',
       descriptionVi: newSubForm.description_vi.trim(),

@@ -61,6 +61,20 @@
   4. *Kiểm định Magic Bytes nhị phân*: Sau khi tải về, kiểm tra trực tiếp magic bytes của mảng byte thật (chỉ nhận JPEG, PNG, WebP, GIF, AVIF; chặn 100% SVG, HTML và file thực thi).
   5. *Nén lại WebP độc lập*: Mọi ảnh tải về đều được giải mã và tái mã hóa thành WebP mới hoàn toàn qua ImageScript, triệt tiêu mọi payload mã độc nhúng trong metadata ảnh.
 
+### ISSUE-316: Cạm Bẫy Hồi Quy Song Ngữ Khi Dùng Hàm Dịch Động t(...) Gán Cả 2 Trường Vi/En & Bẫy Regex Ngoặc Kép Đo 0 Giả
+- **Triệu chứng & Rủi ro**:
+  1. *Hồi quy song ngữ HSM (Đợt 15)*: Khi gán `groupNameVi` và `groupNameEn` bằng cùng 1 hàm dịch động `t(...)` (ví dụ: `groupNameVi: t('homepageSectionsModule.groups.shortcutsShort')`, `groupNameEn: t('homepageSectionsModule.groups.shortcutsShort')`), chuỗi trả về phụ thuộc hoàn toàn vào ngôn ngữ giao diện của Quản trị viên tại thời điểm đó:
+     - Nếu Admin bật Tiếng Việt: cả `groupNameVi` VÀ `groupNameEn` đều bị gán chuỗi Tiếng Việt (`"Hàng Lối Tắt Dịch Vụ"`). Khách xem giao diện Tiếng Anh `/en/` bị hiển thị Tiếng Việt.
+     - Nếu Admin bật Tiếng Anh: cả `groupNameVi` VÀ `groupNameEn` đều bị gán chuỗi Tiếng Anh. Khách xem Tiếng Việt bị hiển thị Tiếng Anh.
+  2. *Bẫy regex ngoặc kép đo 0 giả*: Khi quét kiểm tra literal trong mã nguồn TypeScript vốn dùng nháy đơn `'` (ví dụ `groupNameVi: 'Thanh Điều Hướng'`), nếu viết regex kiểm tra Chốt 4 bằng nháy kép `"` (`groupNameVi:\s*\"Thanh Điều Hướng\"`), lệnh trả về 0 hit giả tạo, làm suy giảm giá trị kiểm chứng thực tế.
+- **Cạm bẫy đã thất bại**:
+  - Dùng hàm `t(...)` ngữ cảnh người dùng đang đăng nhập để gán dữ liệu đa ngôn ngữ lưu trữ vào database/config.
+  - Viết lệnh regex kiểm tra với dấu ngoặc cứng `"` không bao hàm dấu ngoặc đơn `'` của mã nguồn.
+- **Giải pháp chuẩn đã kiểm chứng (Đợt 16)**:
+  - Khởi tạo và xuất hằng số `SUBSECTION_GROUP_NAMES` trong `src/config/homepageSections.ts` đọc trực tiếp từ JSON từ điển `viLocale` và `enLocale`.
+  - Mọi vị trí khởi tạo form hoặc gán fallback luôn trỏ sang thuộc tính ghim cứng ngôn ngữ độc lập: `.vi` cho trường tiếng Việt và `.en` cho trường tiếng Anh.
+  - Lệnh kiểm tra Chốt 4 chuyển sang kiểm tra lớp ký tự `['"]` hoặc nháy đơn `'` của mã nguồn, đảm bảo bắt đúng 100% literal tồn đọng.
+
 ### ISSUE-315: Bảng Phân Loại Toàn Bộ 3.217 Lỗi Chuỗi Tiếng Việt Ghi Cứng Toàn Sàn (i18n Backlog Audit) & Kế Hoạch Xử Lý Từng Cụm
 - **Bối cảnh & Nguyên nhân gốc rễ**:
   - Khi chạy máy quét tự động ở chế độ mở rộng toàn sàn (`node scripts/check-hardcoded-i18n.cjs --all`), phát hiện tổng cộng **3.217 lỗi** trên **91 file** (giảm 15 lỗi so với mức 3.232 lỗi / 92 file nhờ hoàn thiện song ngữ cho StoreView ở Đợt 13; đã lưu log kiểm chứng đầy đủ tại `docs/check_hardcoded_i18n_all.log`).
