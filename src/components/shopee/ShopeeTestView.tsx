@@ -2555,7 +2555,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 {subView === 'events' && t('mall.breadcrumb.events', { count: eventsCount })}
                 {subView === 'today-codes' && (t.mall?.breadcrumb?.todayCodes || (language === 'en' ? "Today's Codes (Closes at 22:30)" : 'Mã Hôm Nay (Tự Đóng 22:30)'))}
                 {subView === 'upcoming' && t('mall.breadcrumb.upcoming', { count: upcomingTotal })}
-                {subView === 'store' && t('mall.breadcrumb.store', { count: groupedStoreProductsCount || storeProducts?.length || 1 })}
+                {subView === 'store' && (
+                  (groupedStoreProductsCount || storeProducts?.length || 1) === 1
+                    ? t('mall.breadcrumb.store_singular')
+                    : t('mall.breadcrumb.store_plural', { count: groupedStoreProductsCount || storeProducts?.length || 1 })
+                )}
                 {subView === 'game-zone' && t('mall.breadcrumb.gameZone', { count: allGames?.length || 593 })}
                 {subView === 'seller' && (t.mall?.breadcrumb?.seller || (language === 'en' ? 'Marketplace & Seller Portal' : 'Sàn Giao Dịch & Kênh Người Bán'))}
                 {subView === 'account' && (t.mall?.breadcrumb?.account || (language === 'en' ? 'Account & Core Wallet' : 'Tài Khoản & Ví Core'))}

@@ -476,7 +476,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                     </div>
                     {hasMultiplePackages && (
                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 inline-block">
-                        {t('store.packageCount', { count: packages.length })}
+                        {packages.length === 1 ? t('store.packageCountSingular', { count: packages.length }) : t('store.packageCountPlural', { count: packages.length })}
                       </span>
                     )}
                     {product.original_price > effectivePrice && (
@@ -655,7 +655,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                       )}
                       {hasMultiplePackages && (
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 ml-1">
-                          {t('store.packageCount', { count: packages.length })}
+                          {packages.length === 1 ? t('store.packageCountSingular', { count: packages.length }) : t('store.packageCountPlural', { count: packages.length })}
                         </span>
                       )}
                     </div>

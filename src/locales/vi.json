@@ -222,7 +222,9 @@
     "catGift": "Code VIP",
     "catAccount": "Tài khoản",
     "catDigital": "Hàng Số",
-    "sale": "Giảm giá:"
+    "sale": "Giảm giá:",
+    "packageCountSingular": "{count} gói",
+    "packageCountPlural": "{count} gói"
   },
   "cart": {
     "title": "Giỏ Hàng Của Bạn",
@@ -566,7 +568,9 @@
       "telegram": "Cộng Đồng & Kênh Thông Báo Telegram",
       "az": "Mục Lục Toàn Bộ Tựa Game A-Z",
       "terms": "Điều Khoản Dịch Vụ Sàn",
-      "privacy": "Chính Sách Bảo Mật Sàn"
+      "privacy": "Chính Sách Bảo Mật Sàn",
+      "store_singular": "Cửa Hàng Đa Ngành (1 Sản Phẩm)",
+      "store_plural": "Cửa Hàng Đa Ngành ({count} Sản Phẩm)"
     },
     "hero": {
       "slide0Badge": "🛍️ ĐẠI HỘI MUA SẮM UNIVERSAL MALL",

@@ -222,7 +222,9 @@
     "catGift": "VIP Code",
     "catAccount": "Game Account",
     "catDigital": "Digital Goods",
-    "sale": "Sale:"
+    "sale": "Sale:",
+    "packageCountSingular": "{count} package",
+    "packageCountPlural": "{count} packages"
   },
   "cart": {
     "title": "Your Shopping Cart",
@@ -559,6 +561,8 @@
       "todayCodes": "Today's Codes (Closes at 22:30)",
       "upcoming": "Upcoming Games ({count} Verified Entries)",
       "store": "Multi-Industry Store ({count} Products)",
+      "store_singular": "Multi-Industry Store (1 Product)",
+      "store_plural": "Multi-Industry Store ({count} Products)",
       "gameZone": "Game Zone & Giftcodes ({count} Games)",
       "seller": "Marketplace & Seller Portal",
       "account": "Account & Core Wallet",

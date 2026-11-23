@@ -2460,6 +2460,17 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
 
                 {/* Nguồn Ảnh Tabs */}
                 <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700 space-y-2.5">
+                  {/* Cảnh báo chưa cấu hình API Key: Hiển thị thường trực ngay khi mở modal sửa */}
+                  {(aiImageUnconfigured || aiConfigured !== true) && (
+                    <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-[10px] text-amber-800 dark:text-amber-200 flex items-start gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-bold">{t('homepageSectionsModule.aiImageUnconfigured')}</div>
+                        <div>{t('homepageSectionsModule.aiImageUnconfiguredDesc')}</div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex rounded-lg bg-neutral-200/70 dark:bg-neutral-800 p-0.5 text-xs font-semibold">
                     <button
                       type="button"
@@ -2631,16 +2642,6 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         </button>
                       </div>
 
-                      {/* Cảnh báo chưa cấu hình API Key: Hiển thị thường trực ngay khi mở */}
-                      {(aiImageUnconfigured || aiConfigured !== true) && (
-                        <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-[10px] text-amber-800 dark:text-amber-200 flex items-start gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                          <div>
-                            <div className="font-bold">{t('homepageSectionsModule.aiImageUnconfigured')}</div>
-                            <div>{t('homepageSectionsModule.aiImageUnconfiguredDesc')}</div>
-                          </div>
-                        </div>
-                      )}
 
                       {/* Danh sách ảnh ứng viên để admin chọn */}
                       {aiImageCandidates.length > 0 && (

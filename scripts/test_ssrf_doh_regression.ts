@@ -126,12 +126,12 @@ const TEST_CASES: TestCase[] = [
   },
   {
     id: 9,
-    name: 'DoH Pure CNAME: Chuỗi CNAME thuần túy không kèm bản ghi A (Thực thi nhánh !hasValidIp & cnamesToFollow recursion dòng 356-362)',
+    name: 'DoH Mock CNAME: Chuỗi CNAME mô phỏng (JSON response tự tạo, domain giả cname-pure.internal) kích hoạt nhánh !hasValidIp & cnamesToFollow recursion dòng 356-362',
     category: 'DoH_CNAME',
     run: async () => {
       const origFetch = globalThis.fetch;
       try {
-        // Mock DoH response ghi nhận nguyên văn (Option b):
+        // Mock DoH response tự tạo (Option b):
         // Bước 1: cname-pure.internal trả type 5 (CNAME) trỏ về target-public.example.com, KHÔNG có A/AAAA (!hasValidIp = true)
         // Bước 2: target-public.example.com trả type 1 (A) trỏ về 104.16.132.229 (IP công khai Cloudflare CDN)
         globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
