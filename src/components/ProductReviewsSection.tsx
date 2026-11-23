@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Star, MessageSquare, CheckCircle, ShieldAlert, Send, LogIn, ThumbsUp } from 'lucide-react';
 import type { UserProfile } from '../types/game';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface ProductReviewsSectionProps {
   productId: string;
@@ -41,6 +42,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   const [commentInput, setCommentInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const { t } = useLanguage();
 
   const fetchReviews = useCallback(async () => {
     if (!productId) return;
@@ -71,7 +73,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentInput.trim()) {
-      onShowToast?.('Vui lòng nhập nhận xét', 'Hãy chia sẻ cảm nhận trải nghiệm thực tế về sản phẩm', 'error');
+      onShowToast?.(t('productReviews.emptyCommentToast'), t('productReviews.emptyCommentToastDesc'), 'error');
       return;
     }
 
@@ -92,20 +94,20 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         body: JSON.stringify({
           rating: ratingInput,
           comment: commentInput.trim(),
-          userName: currentUser?.name || currentUser?.email?.split('@')[0] || 'Khách hàng',
+          userName: currentUser?.name || currentUser?.email?.split('@')[0] || t('productReviews.customerDefaultName'),
         }),
       });
 
       const resJson = await res.json();
       if (res.ok && resJson.success) {
-        onShowToast?.('Gửi đánh giá thành công', resJson.message || 'Đánh giá đang được duyệt để hiển thị công khai.', 'success');
+        onShowToast?.(t('productReviews.reviewSuccessToast'), resJson.message || t('productReviews.reviewSuccessDefaultMsg'), 'success');
         setCommentInput('');
         fetchReviews();
       } else {
-        onShowToast?.('Không thể gửi đánh giá', resJson.message || 'Đã có lỗi xảy ra', 'error');
+        onShowToast?.(t('productReviews.reviewErrorToast'), resJson.message || t('productReviews.defaultErrorMsg'), 'error');
       }
     } catch (err: any) {
-      onShowToast?.('Lỗi kết nối', err?.message || 'Không thể kết nối máy chủ', 'error');
+      onShowToast?.(t('productReviews.connectionErrorToast'), err?.message || t('productReviews.cannotConnectServer'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -121,19 +123,19 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         <div className="flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-secondary" />
           <h4 className="text-sm font-bold text-foreground uppercase tracking-wider">
-            Đánh giá sản phẩm
+            {t('productReviews.reviewsTitle')}
           </h4>
         </div>
         {totalReviews > 0 && averageRating !== null && (
           <span className="text-xs text-muted-foreground font-mono">
-            {totalReviews} đánh giá đã xác thực
+            {t('productReviews.verifiedReviews', { count: totalReviews })}
           </span>
         )}
       </div>
 
       {loading && !data ? (
         <div className="py-4 text-center text-xs text-muted-foreground animate-pulse">
-          Đang tải đánh giá sản phẩm...
+          {t('productReviews.loadingReviews')}
         </div>
       ) : (
         <div className="space-y-4">
@@ -145,9 +147,9 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                   <Star key={s} className="w-4 h-4" />
                 ))}
               </div>
-              <p className="text-xs font-semibold text-foreground">Chưa có đánh giá</p>
+              <p className="text-xs font-semibold text-foreground">{t('productReviews.noReviews')}</p>
               <p className="text-[11px] text-muted-foreground">
-                Hãy là người đầu tiên trải nghiệm và để lại nhận xét cho sản phẩm này!
+                {t('productReviews.firstToReview')}
               </p>
             </div>
           ) : (
@@ -171,7 +173,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                   ))}
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  {totalReviews} lượt đánh giá
+                  {t('productReviews.totalReviewsCount', { count: totalReviews })}
                 </p>
               </div>
 
@@ -205,17 +207,17 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
           <div className="p-3.5 rounded-xl bg-card border border-border/70 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-foreground">
-                Gửi nhận xét của bạn
+                {t('productReviews.sendYourReview')}
               </span>
               <span className="text-[10px] text-muted-foreground font-mono">
-                1 tài khoản / 1 đánh giá
+                {t('productReviews.onePerAccount')}
               </span>
             </div>
 
             {!currentUser ? (
               <div className="p-3 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground">
-                  Vui lòng đăng nhập để gửi đánh giá sản phẩm.
+                  {t('productReviews.loginToReviewNotice')}
                 </span>
                 <button
                   type="button"
@@ -223,19 +225,19 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                   className="px-3 py-1 rounded-lg bg-secondary text-white text-xs font-bold hover:bg-secondary/90 transition flex items-center gap-1 shrink-0 cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
-                  Đăng nhập
+                  {t('productReviews.loginBtn')}
                 </button>
               </div>
             ) : data?.hasReviewed ? (
               <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 text-emerald-400 text-xs">
                 <CheckCircle className="w-4 h-4 shrink-0" />
-                <span>Bạn đã gửi đánh giá cho sản phẩm này. Cảm ơn phản hồi quý báu của bạn!</span>
+                <span>{t('productReviews.alreadyReviewedNotice')}</span>
               </div>
             ) : !data?.hasPurchased ? (
               <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-300 text-xs">
                 <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400" />
                 <span>
-                  Chỉ khách hàng đã mua và thanh toán đơn hàng sản phẩm này mới có quyền gửi đánh giá thực tế.
+                  {t('productReviews.mustPurchaseNotice')}
                 </span>
               </div>
             ) : (
@@ -243,7 +245,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
               <form onSubmit={handleSubmitReview} className="space-y-3">
                 {/* Chọn số sao */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Chấm điểm:</span>
+                  <span className="text-xs text-muted-foreground">{t('productReviews.ratingScore')}</span>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -275,14 +277,14 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                   rows={2}
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
-                  placeholder="Chia sẻ trải nghiệm sử dụng thực tế của bạn về sản phẩm này..."
+                  placeholder={t('productReviews.reviewPlaceholder')}
                   className="w-full p-2.5 rounded-lg bg-muted/60 border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
                   disabled={submitting}
                 />
 
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-muted-foreground">
-                    Đánh giá sẽ qua kiểm duyệt công khai trước khi xuất hiện trên trang.
+                    {t('productReviews.moderationNotice')}
                   </span>
                   <button
                     type="submit"
@@ -290,7 +292,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                     className="px-3.5 py-1.5 rounded-lg bg-secondary text-white text-xs font-bold hover:bg-secondary/90 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    {submitting ? 'Đang gửi...' : 'Gửi đánh giá'}
+                    {submitting ? t('productReviews.submittingReview') : t('productReviews.submitReview')}
                   </button>
                 </div>
               </form>

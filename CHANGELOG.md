@@ -7,6 +7,32 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 446. Hoàn Tất Dứt Điểm Đợt 20 Trang Chủ: Song Ngữ Hóa Toàn Diện Modal & Reviews, Sửa Triệt Để Route /en/store 6 Vị Trí, Thay 19 Fallback vite.svg Bằng package-placeholder.svg & Chuẩn Hóa i18n Guard Log Batch Đợt 20 (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai khắc phục dứt điểm theo kế hoạch Đợt 20 đã được phê duyệt (sau kiểm chứng Đợt 19):
+    * **Nhóm 1 (Đính Chính Chẩn Đoán Gốc 5 Gói CSDL D1 & Cơ Chế Gom Nhóm StoreView)**:
+      1. *CSDL D1 thật*: 5 ID `sprod_...` nằm trong bảng `seller_products` (không phải `store_products` — bảng này là legacy admin catalog, chỉ có 18 dòng VS Phone). Cả 5 dòng đều có `seller_id = 'sel_1795086886496_jik0f'` ("Gian Hàng Test Muse", ACTIVE), `game_slug = 'lien-quan-mobile'`, `cover_url = '/game_icons/lien-quan-mobile.webp'`, `status = 'APPROVED'`, `deleted_at = NULL`, `game_name = 'Liên Quân Mobile'`, `product_type = 'digital'`, tạo ngày 2026-11-19. Nguồn nạp: hàm `loadAllStoreProductsD1` trong `functions/services/d1_service.ts` (bắt đầu dòng 4861, query dòng 4941–5002 kết hợp `seller_products JOIN sellers` và `LEFT JOIN seller_codes sc_agg`).
+      2. *Cơ chế gom nhóm đồng bộ*: Trong `src/components/StoreView.tsx` tại dòng 191 (`groupedProducts = useMemo(() => groupStoreProductsByGame(products), [products])`), key gom nhóm nguyên văn là `const key = prod.game_slug ? prod.game_slug.toLowerCase().trim() : prod.id;` (`src/utils/productPackageUtils.ts:172`). Vì cùng `game_slug: 'lien-quan-mobile'`, hàm gom nhóm đồng bộ luôn tạo đúng 1 thẻ duy nhất; 5 thẻ riêng chỉ xảy ra khi `game_slug` rỗng hoặc mỗi gói có sẵn `packages > 1`.
+    * **Nhóm 2 (Song Ngữ Hóa Toàn Diện ProductDetailModal, PackageShareModal, ProductReviewsSection & Route /en/store)**:
+      1. *ProductDetailModal.tsx*: Xóa toàn bộ 65 fallback sau `||`, sửa các toast ghi cứng (372, 403, 423, 432, 924), `aria-label` (873), fallback object (172, 233, 1204), offer badge (1191), ladder count (1203), sold count (1208), badge (1196). Sửa logic số ít/số nhiều dòng 1030 (`availablePackages_one` khi 1 gói) và dòng 854 (`soldPackages_one` khi 1 lượt bán).
+      2. *PackageShareModal.tsx*: Tích hợp hook `useLanguage()`, song ngữ hóa 100% nhãn modal, nút mua chính, badge kho và toast chép link dòng 124.
+      3. *ProductReviewsSection.tsx*: Tích hợp hook `useLanguage()`, song ngữ hóa 100% tiêu đề, trạng thái trống, phân bổ sao, form gửi nhận xét, ghi chú quyền đánh giá và 4 toast dòng 74, 101, 105, 108.
+      4. *Sửa triệt để route `/en/store` ở đủ 6 vị trí trong `src/App.tsx`*: Dòng 140 (khởi tạo `currentTab` nhận diện `/en/store`), dòng 748 (`parseHash` nhận diện `/en/store`), dòng 796 (loại trừ `/en/store` khỏi fallback `shopee-test`/`catalog`), dòng 939–944 (khối `inTest1` nhận biết ngôn ngữ để không ép `/en/store` về `/`), dòng 989–993 (nhánh `store` ép expected path `/en/store` khi EN thay vì ép về `/store`), dòng 1185 (`handlePopState` nhận diện `/en/store`) và bổ sung dòng 1834 (banner deep-link nhận diện `/en/store`). Mở thẳng `/en/store` bảo toàn 100% URL và hiển thị cửa hàng tiếng Anh.
+    * **Nhóm 3 (Chuẩn Hóa Số Liệu §445 & Trích JSON Response)**:
+      1. Đính chính số key modal: 74 key mỗi file (`vi.json` và `en.json`), đối xứng 1-1, diff +76 dòng mỗi file.
+      2. Bổ sung khối JSON trích thật 3 key cấp cao nhất với fence code cho endpoint công khai; phân biệt endpoint admin (`functions/api/admin/homepage-sections.ts` — file đơn) trả 5 key.
+      3. Ghi nhận rõ: `docs/tsc_check_success.log` 0 byte phản ánh trạng thái 0 lỗi; bằng chứng chạy lại theo đợt nằm ở `docs/tsc_check_success.txt`.
+    * **Nhóm 4 (Kế Thừa Backlog & Bổ Sung Blocked Cố Định)**:
+      1. *Blocked chung*: 2 key `GEMINI_API_KEY` và `TINYPNG_API_KEY` chưa có trên Cloudflare Pages Production (ngoài phạm vi đợt).
+      2. *Backlog kế thừa*: (1) 9 section lớn (`homepageSections.ts` dòng 220–309); (2) numbering KNOWN_ISSUES; (3) ISSUE-315 (3.217 chuỗi / 91 file); (4) BL-01 (tách dynamic import chunk > 1200 kB); (5) BL-02 (audit song ngữ `--all` cho các modal thứ cấp còn lại).
+    * **Nhóm 5 (Thay Thế 19 Fallback /vite.svg Bằng /package-placeholder.svg)**:
+      1. Thay thế toàn bộ 19 vị trí fallback `/vite.svg` trong 7 file (`ProductDetailModal.tsx`, `UtilitiesView.tsx`, `ProductCheckoutModal.tsx`, `UtilitiesModule.tsx`, `CodeInventoryModule.tsx`, `SearchableGameSelect.tsx`, `ProductGalleryUpload.tsx`) bằng `/package-placeholder.svg`.
+      2. Giữ nguyên file `public/vite.svg`. Grep `/vite.svg` trong toàn bộ `src/` đạt 0 hit.
+- **Kết quả kiểm thử & Bằng chứng đo lường thực tế**:
+  - TypeScript Typecheck (`tsconfig.homepage.json`): 0 lỗi (Exit Code 0), lưu log tại `docs/tsc_check_success.txt` (Batch Đợt 20).
+  - i18n Guard Scanner (`scripts/check-hardcoded-i18n.cjs`): 18/18 file cốt lõi PASSED (đã bổ sung 3 modal vào in-scope), lưu raw log pipe tại `docs/i18n_guard_default.log` (480 bytes, MD5 `a41b4a9c60c4eeae6c2f50a9a63a8fee`, timestamp `2026-11-23T17:52:38.758Z`).
+  - An toàn bảo mật Rule 10: 0 secret rò rỉ trong git history và mã nguồn (3 lệnh grep = 0 hit).
+
 ### 445. Hoàn Tất Dứt Điểm Đợt 19 Trang Chủ: Sửa Lỗi Crash Route /store (getSection), Chuẩn Hóa Fallback Ảnh E-Commerce StoreView, Song Ngữ Hóa Toàn Diện ProductDetailModal & Cập Nhật i18n Guard Log Mới (23/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai khắc phục dứt điểm theo kế hoạch Đợt 19 đã được User phê duyệt kèm 5 đính chính:
@@ -17,21 +43,28 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
     * **Nhóm 2 (Đính Chính Trích Dẫn Dòng HSM trong CHANGELOG.md)**:
       1. Đính chính trích dẫn số dòng của §443 (dòng 38) và §444 (dòng 18 và 19) theo đúng vị trí thực tế tại commit `3182750` do chèn 2 dòng import `viLocale`/`enLocale` ở đầu `HomepageSectionsModule.tsx` (dòng 138–139, 1055, 1083–1084, 1046, 2748–2767).
     * **Nhóm 3 (Chuẩn Hóa Trích Dẫn Cấu Trúc JSON API)**:
-      1. Ghi rõ tiêu đề: "Trích rút gọn cấu trúc response (mảng sections đã lược bỏ)".
-      2. Giữ nguyên 3 key cấp cao nhất: `success`, `sections`, `updated_at: "2026-11-23T14:29:24.856Z"`. Xóa bỏ key `timestamp` không tồn tại trong backend.
+      1. Ghi rõ tiêu đề: "Trích rút gọn cấu trúc response (mảng sections đã lược bỏ)":
+         ```json
+         {
+           "success": true,
+           "sections": [ ... ],
+           "updated_at": "2026-11-23T14:29:24.856Z"
+         }
+         ```
+      2. Giữ nguyên 3 key cấp cao nhất: `success`, `sections`, `updated_at: "2026-11-23T14:29:24.856Z"`. Xóa bỏ key `timestamp` không tồn tại trong backend. Cấu trúc 3 key này chỉ đúng với endpoint công khai (`functions/api/homepage-sections.ts`), endpoint admin (`functions/api/admin/homepage-sections.ts` — file đơn) trả 5 key (thêm `registry`, `subsectionsRegistry`).
     * **Nhóm 4 (Khắc Phục Crash Direct Route /store & Nâng Cấp Fallback Ảnh StoreView)**:
       1. *Khắc phục crash `getSection`:* Bổ sung hàm `public getSection(id: string): HomepageSectionConfig | undefined` vào class `HomepageSectionsService` (`src/services/homepageSectionsService.ts`). Khắc phục dứt điểm lỗi TypeError crash `FloatingAnnouncement` khi truy cập trực tiếp route `/store`.
       2. *Tạo ảnh placeholder mới:* Tạo `public/package-placeholder.svg` (SVG 64x64 biểu tượng kiện hàng/hộp quà 3D isometric chuyên nghiệp, stroke `#94a3b8`, không có dấu ✕). Giữ nguyên `public/vite.svg`.
       3. *Tối ưu chuỗi fallback 5 nấc:* Chuẩn hóa `src` và `onError` trong `StoreView.tsx` (cả List và Grid) theo thứ tự: `cover_image_url` -> `game_icon_url` -> `product_images?.[0]` -> `/game_icons/${game_slug}.webp` -> `/package-placeholder.svg`.
-      4. *Chẩn đoán gốc 5 ảnh hỏng:* Cả 5 gói test trong D1 đều có `cover_image_url: "/game_icons/lien-quan-mobile.webp"`. Hiện tượng không ổn định xảy ra do race condition giữa fetch và mount StoreView khiến sản phẩm bị render rời rạc trước khi gom nhóm, fallback cũ ép gán `target.src = '/vite.svg'` tạo dấu ✕ xanh. Sau khi fix fallback và gom nhóm ổn định, ảnh nạp chuẩn.
+      4. *Đính chính chẩn đoán 5 gói test & cơ chế gom nhóm (sửa tại đợt 20)*: 5 ID `sprod_...` nằm trong bảng `seller_products` (không phải bảng `store_products` — bảng này chỉ có 18 dòng VS Phone của admin), do người bán tạo qua `functions/api/seller/products/index.ts:272` và được nạp bởi hàm `loadAllStoreProductsD1` (`functions/services/d1_service.ts`, bắt đầu dòng 4861, query dòng 4941–5002 kết hợp `seller_products JOIN sellers` và `LEFT JOIN seller_codes sc_agg`). Cả 5 gói đều có `seller_id = 'sel_1795086886496_jik0f'`, `game_slug = 'lien-quan-mobile'`, `cover_url = '/game_icons/lien-quan-mobile.webp'`, `status = 'APPROVED'`. Cơ chế gom nhóm trong StoreView tại dòng 191 (`groupedProducts = useMemo(() => groupStoreProductsByGame(products), [products])`) với key chuẩn hóa nguyên văn là `const key = prod.game_slug ? prod.game_slug.toLowerCase().trim() : prod.id;` (`productPackageUtils.ts:172`). Vì cùng `game_slug: 'lien-quan-mobile'`, hàm gom nhóm đồng bộ luôn gộp cả 5 gói vào đúng 1 thẻ duy nhất; 5 thẻ riêng chỉ xảy ra nếu `game_slug` rỗng hoặc mỗi gói có sẵn `packages > 1`.
     * **Nhóm 5 (Song Ngữ Hóa Toàn Diện ProductDetailModal)**:
-      1. Bổ sung 64 cặp key-value đối xứng cho `productDetailModal` trong cả `src/locales/vi.json` và `src/locales/en.json`.
+      1. Bổ sung 74 key đối xứng cho `productDetailModal` trong cả `src/locales/vi.json` và `src/locales/en.json` (diff thực tế +76 dòng mỗi file = 74 key + 2 dòng cấu trúc mở/đóng ngoặc).
       2. Chuyển đổi toàn bộ các nhãn UI trong `src/components/ProductDetailModal.tsx` ("Chọn gói sản phẩm", "Còn hàng", "Hết hàng", "Mua Ngay", "Thêm Giỏ", "NHANH CHÓNG", "CHÍNH HÃNG 100%", "Xác minh ngay >", "Đăng nhập ngay >", "Số lượng mua:").
-      3. Kết quả quét i18n scanner: 0 lỗi còn sót trong `ProductDetailModal.tsx`.
-- **Kết quả kiểm thử**:
-  - TypeScript Typecheck (`tsconfig.homepage.json`): 0 lỗi (Exit Code 0), lưu raw log pipe tại `docs/tsc_check_success.log`.
+- **Kết quả kiểm thử & Trạng thái tồn đọng**:
+  - TypeScript Typecheck (`tsconfig.homepage.json`): 0 lỗi (Exit Code 0), lưu raw log pipe tại `docs/tsc_check_success.log` (0 byte do 0 error), timestamp ghi nhận tại `docs/tsc_check_success.txt`.
   - i18n Guard Scanner (`scripts/check-hardcoded-i18n.cjs`): 15/15 file cốt lõi PASSED, lưu raw log pipe tại `docs/i18n_guard_default.log` (480 bytes, MD5 `e35a37da1319c5c60a393a839b67f051`).
   - An toàn bảo mật Rule 10: 0 secret rò rỉ trong git history và mã nguồn.
+  - **Mục Blocked chung kế thừa**: `GEMINI_API_KEY` và `TINYPNG_API_KEY` chưa có trên Cloudflare Pages Production.
 
 ### 444. Hoàn Tất Dứt Điểm Đợt 17 Trang Chủ: Triệt Tiêu 96 Literal Registry Bằng Từ Điển, Vá Bẫy Dropdown HSM, Chuẩn Hóa Bộ 17 & Bộ 7, Đổi Mã ISSUE-319 & Ghi Nhận Test 1b Live (23/11/2026)
 - **Bối cảnh & Yêu cầu**:

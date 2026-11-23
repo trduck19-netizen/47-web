@@ -137,7 +137,7 @@ export const App: React.FC = () => {
       if (hash.includes('gian-hang') || path.startsWith('/gian-hang/')) return 'store-detail';
       if (hash.includes('news') || hash.includes('tintuc') || path === '/news' || path.startsWith('/news/') || hash.includes('su-kien') || hash.includes('events') || path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/')) return 'news';
       if (hash.includes('giveaways') || hash.includes('gw=') || path === '/giveaways' || path.startsWith('/giveaways/')) return 'giveaways';
-      if (hash.includes('store') || hash.includes('product=') || hash.includes('prod=') || path === '/store' || path.startsWith('/store/')) return 'store';
+      if (hash.includes('store') || hash.includes('product=') || hash.includes('prod=') || path === '/store' || path.startsWith('/store/') || path === '/en/store' || path.startsWith('/en/store/')) return 'store';
       if (hash.includes('utilities') || hash.includes('utility=') || hash.includes('ut=') || path === '/utilities' || path.startsWith('/utilities/')) return 'utilities';
       if (hash.includes('missions') || hash.includes('nhiem-vu') || path === '/missions' || path.startsWith('/missions/') || path === '/nhiem-vu' || path.startsWith('/nhiem-vu/')) return 'missions';
       if (hash.includes('telegram') || path === '/telegram' || path.startsWith('/telegram/')) return 'telegram';
@@ -745,7 +745,7 @@ export const App: React.FC = () => {
           const pGwId = window.location.pathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim();
           if (pGwId) setInitialGiveawayId(pGwId);
           return;
-        } else if (pathname === '/store' || pathname.startsWith('/store/')) {
+        } else if (pathname === '/store' || pathname.startsWith('/store/') || pathname === '/en/store' || pathname.startsWith('/en/store/')) {
           setCurrentTab('store');
           return;
         } else if (pathname === '/utilities' || pathname.startsWith('/utilities/')) {
@@ -793,7 +793,7 @@ export const App: React.FC = () => {
           setSelectedGame(null);
           setCurrentTab('shopee-test');
           return;
-        } else if (pathname === '/en' || pathname === '/en/' || pathname === '/vi' || pathname === '/vi/' || !hash || hash === '#') {
+        } else if ((pathname === '/en' || pathname === '/en/' || pathname === '/vi' || pathname === '/vi/' || !hash || hash === '#') && pathname !== '/store' && !pathname.startsWith('/store/') && pathname !== '/en/store' && !pathname.startsWith('/en/store/')) {
           setSelectedGame(null);
           setCurrentTab(isTestClientDomain ? 'shopee-test' : 'catalog');
         } else if (hash === '#catalog' || hashLower.startsWith('#catalog')) {
@@ -936,6 +936,10 @@ export const App: React.FC = () => {
         if (window.location.pathname.startsWith('/test1/game/') || window.location.pathname.startsWith('/test1/g/') || (isTestClientDomain && window.location.pathname.startsWith('/game/'))) {
           return;
         }
+        const currentLowerPath = window.location.pathname.toLowerCase();
+        if (currentLowerPath === '/store' || currentLowerPath.startsWith('/store/') || currentLowerPath === '/en/store' || currentLowerPath.startsWith('/en/store/')) {
+          return;
+        }
         if (isTestClientDomain) {
           const path = window.location.pathname.toLowerCase();
           const isLangPath = path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/';
@@ -988,8 +992,10 @@ export const App: React.FC = () => {
         }
       } else if (currentTab === 'store') {
         document.title = 'Cửa Hàng Thẻ Game & Robux Giá Rẻ | Pine Universal Mall';
-        if (window.location.pathname !== '/store' || window.location.hash) {
-          window.history.replaceState(null, '', '/store');
+        const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
+        const expectedStorePath = isEnMode ? '/en/store' : '/store';
+        if (window.location.pathname !== expectedStorePath || window.location.hash) {
+          window.history.replaceState(null, '', expectedStorePath);
         }
       } else if (currentTab === 'utilities') {
         document.title = 'Tiện Ích Nạp Game & Key Bản Quyền | Pine Universal Mall';
@@ -1182,7 +1188,7 @@ export const App: React.FC = () => {
         setCurrentTab('giveaways');
         const pGwId = window.location.pathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim();
         if (pGwId) setInitialGiveawayId(pGwId);
-      } else if (path === '/store' || path.startsWith('/store/')) {
+      } else if (path === '/store' || path.startsWith('/store/') || path === '/en/store' || path.startsWith('/en/store/')) {
         setSelectedGame(null);
         setCurrentTab('store');
         const popParams = new URLSearchParams(window.location.search);
@@ -1831,7 +1837,7 @@ export const App: React.FC = () => {
       }
       return;
     }
-    if (link.startsWith('/store')) {
+    if (link.startsWith('/store') || link.startsWith('/en/store')) {
       handleSelectTab('store');
       if (targetId) {
         handleSelectProductById(targetId);

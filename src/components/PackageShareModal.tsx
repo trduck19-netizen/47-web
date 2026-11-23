@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { StoreProduct, ProductPackageVariant } from '../types/game';
 import { formatCore } from '../utils/textUtils';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface PackageShareModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
   onBuyNow,
   onShowToast,
 }) => {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   if (!isOpen || !packageItem || typeof document === 'undefined') return null;
@@ -121,7 +123,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
       fallbackCopyText(shareUrl);
     }
     setCopied(true);
-    onShowToast('Đã chép link gói!', `Đã sao chép liên kết gói "${packageItem.name}".`, 'success');
+    onShowToast(t('packageShareModal.linkCopied'), t('packageShareModal.linkCopiedDesc', { name: packageItem.name }), 'success');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -181,7 +183,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-heading font-bold text-sm sm:text-base text-foreground truncate">
-                Chia Sẻ Gói Sản Phẩm
+                {t('packageShareModal.shareTitle')}
               </h3>
               <p className="text-[11px] text-muted-foreground truncate font-medium">
                 {gameName}
@@ -193,8 +195,8 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
             type="button"
             onClick={onClose}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 shadow-sm cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0 min-h-[44px] min-w-[44px]"
-            aria-label="Đóng"
-            title="Đóng"
+            aria-label={t('packageShareModal.close')}
+            title={t('packageShareModal.close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -216,18 +218,18 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
               <span className="text-[10px] font-bold uppercase tracking-wider text-secondary bg-secondary/10 px-1.5 py-0.5 rounded border border-secondary/20">
-                Gói Code
+                {t('packageShareModal.packageType')}
               </span>
               {isEscalating && (
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 flex items-center gap-1">
                   <Zap className="w-2.5 h-2.5 text-amber-400" />
-                  Nâng Giá (+{formatCore(packageItem.escalating_step || 0)}/lượt)
+                  {t('packageShareModal.escalatingStep', { step: formatCore(packageItem.escalating_step || 0) })}
                 </span>
               )}
               {!isEscalating && packageItem.first_purchase_enabled !== false && (
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0 flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5 text-rose-400" />
-                  Mua lần đầu {formatCore(packageItem.first_purchase_price ? Number(packageItem.first_purchase_price) : 2000)}
+                  {t('packageShareModal.firstPurchasePrice', { price: formatCore(packageItem.first_purchase_price ? Number(packageItem.first_purchase_price) : 2000) })}
                 </span>
               )}
               {packageItem.badge && (
@@ -258,11 +260,11 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
               )}
               {isOutOfStock ? (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 inline-flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> Hết hàng
+                  <AlertCircle className="w-3 h-3" /> {t('packageShareModal.outOfStockShort')}
                 </span>
               ) : (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 inline-flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Còn hàng
+                  <CheckCircle2 className="w-3 h-3" /> {t('packageShareModal.inStockShort')}
                 </span>
               )}
             </div>
@@ -274,11 +276,11 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-secondary" />
-              <span>Liên Kết Gói (Deep Link)</span>
+              <span>{t('packageShareModal.deepLink')}</span>
             </label>
             {copied && (
               <span className="text-[11px] font-bold text-emerald-400 animate-fade-in flex items-center gap-1">
-                <Check className="w-3 h-3" /> Đã lưu vào bộ nhớ tạm!
+                <Check className="w-3 h-3" /> {t('packageShareModal.copiedNotice')}
               </span>
             )}
           </div>
@@ -300,17 +302,17 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
                   ? 'bg-emerald-500 text-white shadow-emerald-500/20'
                   : 'bg-gradient-to-r from-secondary to-primary hover:opacity-90 text-white shadow-sm'
               }`}
-              title="Chép link"
+              title={t('packageShareModal.copyLink')}
             >
               {copied ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>Đã chép link ✓</span>
+                  <span>{t('packageShareModal.copied')}</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5" />
-                  <span>Chép link</span>
+                  <span>{t('packageShareModal.copyLink')}</span>
                 </>
               )}
             </button>
@@ -326,7 +328,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
               className="min-h-[44px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 hover:border-slate-600 transition-all cursor-pointer active:scale-95"
             >
               <Share2 className="w-4 h-4 text-cyan-400" />
-              <span>Chia Sẻ Ứng Dụng...</span>
+              <span>{t('packageShareModal.shareNative')}</span>
             </button>
           )}
 
@@ -347,7 +349,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
               }`}
             >
               <Zap className="w-4 h-4" />
-              <span>{isOutOfStock ? 'Gói Đã Hết Hàng' : `Mua Ngay (${formatCore(currentPrice)})`}</span>
+              <span>{isOutOfStock ? t('packageShareModal.outOfStock') : t('packageShareModal.buyNow', { price: formatCore(currentPrice) })}</span>
             </button>
           )}
         </div>
@@ -358,7 +360,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
           onClick={onClose}
           className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-border/60 text-xs font-semibold transition-all cursor-pointer active:scale-95 flex items-center justify-center"
         >
-          Đóng Cửa Sổ
+          {t('packageShareModal.closeWindow')}
         </button>
 
         {/* Nút Chia Sẻ Mạng Xã Hội Nhanh (Zalo, Messenger, Facebook, Telegram) */}
@@ -369,7 +371,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
               type="button"
               onClick={shareZalo}
               className="flex flex-col items-center gap-1 group cursor-pointer min-h-[44px] justify-center"
-              title="Chia sẻ lên Zalo"
+              title={t('packageShareModal.shareZalo')}
             >
               <div className="w-8 h-8 rounded-xl bg-[#0068FF]/15 border border-[#0068FF]/30 text-[#0068FF] flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span className="font-bold text-[10px]">Zalo</span>
@@ -382,7 +384,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
               type="button"
               onClick={shareMessenger}
               className="flex flex-col items-center gap-1 group cursor-pointer min-h-[44px] justify-center"
-              title="Chia sẻ qua Messenger"
+              title={t('packageShareModal.shareMessenger')}
             >
               <div className="w-8 h-8 rounded-xl bg-[#00B2FF]/15 border border-[#00B2FF]/30 text-[#00B2FF] flex items-center justify-center group-hover:scale-110 transition-transform">
                 <MessageCircle className="w-4 h-4" />
@@ -395,7 +397,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
               type="button"
               onClick={shareFacebook}
               className="flex flex-col items-center gap-1 group cursor-pointer min-h-[44px] justify-center"
-              title="Chia sẻ lên Facebook"
+              title={t('packageShareModal.shareFacebook')}
             >
               <div className="w-8 h-8 rounded-xl bg-[#1877F2]/15 border border-[#1877F2]/30 text-[#1877F2] flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span className="font-bold text-xs">f</span>
@@ -408,7 +410,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
               type="button"
               onClick={shareTelegram}
               className="flex flex-col items-center gap-1 group cursor-pointer min-h-[44px] justify-center"
-              title="Chia sẻ lên Telegram"
+              title={t('packageShareModal.shareTelegram')}
             >
               <div className="w-8 h-8 rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/30 text-[#229ED9] flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Send className="w-4 h-4" />

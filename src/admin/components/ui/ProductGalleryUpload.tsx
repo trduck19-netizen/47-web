@@ -230,7 +230,7 @@ export const ProductGalleryUpload: React.FC<ProductGalleryUploadProps> = ({
                     alt={`Product image ${idx + 1}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/vite.svg';
+                      (e.target as HTMLImageElement).src = '/package-placeholder.svg';
                     }}
                   />
 

@@ -689,13 +689,13 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
                 {/* Thumbnail */}
                 <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-muted overflow-hidden shrink-0 border border-border shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center">
                   <img
-                    src={item.icon_url || item.cover_image_url || '/vite.svg'}
+                    src={item.icon_url || item.cover_image_url || '/package-placeholder.svg'}
                     alt={item.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.onerror = null;
-                      target.src = '/vite.svg';
+                      target.src = '/package-placeholder.svg';
                     }}
                   />
                   {(effectiveDiscount > 0 || isFlashSaleLive) && (
@@ -825,13 +825,13 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
                     <div className="flex items-start gap-2 sm:gap-2.5 min-w-0 flex-1">
                       <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-muted overflow-hidden shrink-0 border border-border shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center">
                         <img
-                          src={item.icon_url || item.cover_image_url || '/vite.svg'}
+                          src={item.icon_url || item.cover_image_url || '/package-placeholder.svg'}
                           alt={item.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.onerror = null;
-                            target.src = '/vite.svg';
+                            target.src = '/package-placeholder.svg';
                           }}
                         />
                         {(effectiveDiscount > 0 || isFlashSaleLive) && (
@@ -1128,7 +1128,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
                         <img
-                          src={checkoutUtility.icon_url || checkoutUtility.cover_image_url || '/vite.svg'}
+                          src={checkoutUtility.icon_url || checkoutUtility.cover_image_url || '/package-placeholder.svg'}
                           alt={checkoutUtility.title}
                           className="w-full h-full object-cover"
                         />

@@ -1306,7 +1306,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           target.src = localFallback;
                         } else {
                           target.onerror = null;
-                          target.src = '/vite.svg';
+                          target.src = '/package-placeholder.svg';
                         }
                       }}
                     />
@@ -1581,7 +1581,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           target.src = localFallback;
                         } else {
                           target.onerror = null;
-                          target.src = '/vite.svg';
+                          target.src = '/package-placeholder.svg';
                         }
                       }}
                     />

@@ -1123,7 +1123,7 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.onerror = null;
-                          target.src = '/vite.svg';
+                          target.src = '/package-placeholder.svg';
                         }}
                       />
                     </div>
@@ -1350,7 +1350,7 @@ export const CodeInventoryModule: React.FC<CodeInventoryModuleProps> = ({ onShow
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;
-                        target.src = '/vite.svg';
+                        target.src = '/package-placeholder.svg';
                       }}
                     />
                   </div>

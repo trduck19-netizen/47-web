@@ -1038,13 +1038,13 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                   <div className="mt-3 flex items-start gap-3">
                     <div className="h-12 w-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
                       <img
-                        src={parentUtil.cover_image_url || parentUtil.icon_url || '/vite.svg'}
+                        src={parentUtil.cover_image_url || parentUtil.icon_url || '/package-placeholder.svg'}
                         alt={parentUtil.title}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.onerror = null;
-                          target.src = '/vite.svg';
+                          target.src = '/package-placeholder.svg';
                         }}
                       />
                     </div>
@@ -1272,13 +1272,13 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                 <div className="mt-2.5 flex items-center gap-3">
                   <div className="h-11 w-11 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
                     <img
-                      src={prod.cover_image_url || prod.icon_url || '/vite.svg'}
+                      src={prod.cover_image_url || prod.icon_url || '/package-placeholder.svg'}
                       alt={prod.title}
                       className="h-full w-full object-cover group-hover:scale-105 transition-transform"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;
-                        target.src = '/vite.svg';
+                        target.src = '/package-placeholder.svg';
                       }}
                     />
                   </div>

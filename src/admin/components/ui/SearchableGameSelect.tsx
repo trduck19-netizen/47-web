@@ -164,7 +164,7 @@ export const SearchableGameSelect: React.FC<SearchableGameSelectProps> = ({
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.onerror = null;
-                    target.src = '/vite.svg';
+                    target.src = '/package-placeholder.svg';
                   }}
                 />
               </div>
@@ -345,7 +345,7 @@ export const SearchableGameSelect: React.FC<SearchableGameSelectProps> = ({
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.onerror = null;
-                            target.src = '/vite.svg';
+                            target.src = '/package-placeholder.svg';
                           }}
                         />
                       </div>

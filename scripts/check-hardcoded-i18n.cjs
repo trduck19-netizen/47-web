@@ -28,6 +28,9 @@ const IN_SCOPE_UI_FILES = [
   'src/admin/modules/OrdersModule.tsx',
   'src/admin/modules/MembersModule.tsx',
   'src/admin/modules/HomepageSectionsModule.tsx',
+  'src/components/ProductDetailModal.tsx',
+  'src/components/PackageShareModal.tsx',
+  'src/components/ProductReviewsSection.tsx',
 ];
 
 // Danh mục toàn bộ các thư mục giao diện UI (khi chạy ở chế độ audit toàn sàn --all)
@@ -216,7 +219,7 @@ function runScanner() {
   const isAll = process.argv.includes('--all');
   console.log('🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...');
   const nowUtc = new Date().toISOString();
-  console.log(`   Timestamp: ${nowUtc} — Batch: Dot 19 Trang Chu (23/11/2026)`);
+  console.log(`   Timestamp: ${nowUtc} — Batch: Dot 20 Trang Chu (24/11/2026)`);
 
   let filesToScan = [];
   if (isAll) {
