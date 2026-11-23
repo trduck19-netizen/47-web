@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import {
   ShoppingBag,
   ShieldCheck,
@@ -39,6 +40,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
   onOpenAuth,
   onOpenShare,
 }) => {
+  const { t, language } = useLanguage();
   const [products, setProducts] = useState<StoreProduct[]>(() => dataService.getStoreProducts().map((p) => templateService.resolveStoreProduct(p)));
   const [categoriesList, setCategoriesList] = useState(() => dataService.getStoreCategories());
   const [filterType, setFilterType] = useState<string>('all');
@@ -113,8 +115,8 @@ export const StoreView: React.FC<StoreViewProps> = ({
       if (navigator.clipboard) {
         navigator.clipboard.writeText(shareUrl);
         onShowToast(
-          'Đã sao chép link sản phẩm!',
-          `Đường dẫn: ${shareUrl}`,
+          t('store.copySuccess'),
+          t('store.copyUrl', { url: shareUrl }),
           'success'
         );
       }
@@ -125,8 +127,8 @@ export const StoreView: React.FC<StoreViewProps> = ({
     e.stopPropagation();
     if (product.stock_quantity <= 0) {
       onShowToast(
-        'Hết hàng',
-        'Gói code này hiện đã hết hàng trong kho. Vui lòng quay lại sau.',
+        t('store.outOfStock'),
+        t('store.outOfStockDesc'),
         'error'
       );
       return;
@@ -144,7 +146,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
     const singlePkg = (Array.isArray(packages) && packages.length > 0) ? packages[0] : null;
     if (!currentUser && onOpenAuth) {
       onOpenAuth();
-      onShowToast('Cần đăng nhập', 'Vui lòng đăng nhập để thanh toán gói code.', 'info');
+      onShowToast(t('store.authRequired'), t('store.authRequiredDesc'), 'info');
       return;
     }
 
@@ -156,7 +158,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
   };
 
   const categoryTabs = [
-    { id: 'all', label: 'Tất cả gói', icon: '📦' },
+    { id: 'all', label: t('store.allPackages'), icon: '📦' },
     ...categoriesList.map((c) => ({
       id: c.id,
       label: c.label,
@@ -228,14 +230,13 @@ export const StoreView: React.FC<StoreViewProps> = ({
           <div className="space-y-1 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-secondary/15 text-secondary text-[11px] sm:text-xs font-semibold border border-secondary/30">
               <ShoppingBag className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-              <span>{cmsIntro?.extraData?.badge || 'Gói Nạp & Giftcode Chiết Khấu Chính Hãng'}</span>
+              <span>{language === 'en' ? t('store.badge') : (cmsIntro?.extraData?.badge || t('store.badge'))}</span>
             </div>
             <h1 className="font-display font-extrabold text-base sm:text-3xl text-foreground">
-              {cmsIntro?.title || 'Cửa Hàng Code Chiết Khấu Tới 60%'}
+              {language === 'en' ? t('store.headerTitle') : (cmsIntro?.title || t('store.headerTitle'))}
             </h1>
             <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-none">
-              {cmsIntro?.content ||
-                'Mã nạp game, thẻ tháng và giftcode sự kiện độc quyền. Nhận mã tự động 100% qua VietQR / Ví số dư.'}
+              {language === 'en' ? t('store.headerDesc') : (cmsIntro?.content || t('store.headerDesc'))}
             </p>
           </div>
 
@@ -243,10 +244,10 @@ export const StoreView: React.FC<StoreViewProps> = ({
             <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
             <div>
               <span className="font-heading font-bold text-[11px] sm:text-xs text-foreground block">
-                {cmsIntro?.extraData?.warrantyTitle || 'Bảo Hành 100%'}
+                {language === 'en' ? t('store.warrantyTitle') : (cmsIntro?.extraData?.warrantyTitle || t('store.warrantyTitle'))}
               </span>
               <span className="text-[9px] sm:text-[10px] text-slate-300">
-                {cmsIntro?.extraData?.warrantyDesc || 'Đổi trả tức thì nếu mã lỗi'}
+                {language === 'en' ? t('store.warrantyDesc') : (cmsIntro?.extraData?.warrantyDesc || t('store.warrantyDesc'))}
               </span>
             </div>
           </div>
@@ -284,7 +285,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm kiếm gói code..."
+              placeholder={t('store.searchPlaceholder')}
               className="w-full pl-9 pr-4 py-2 rounded-xl bg-card border border-border text-base sm:text-xs text-foreground placeholder-slate-400 focus:ring-2 focus:ring-secondary focus:outline-none"
             />
           </div>
@@ -299,8 +300,8 @@ export const StoreView: React.FC<StoreViewProps> = ({
                   ? 'bg-secondary text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
-              title="Lưới sản phẩm"
-              aria-label="Chế độ lưới"
+              title={t('store.gridView')}
+              aria-label={t('store.gridView')}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
@@ -312,8 +313,8 @@ export const StoreView: React.FC<StoreViewProps> = ({
                   ? 'bg-secondary text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
-              title="Danh sách hàng ngang"
-              aria-label="Chế độ danh sách"
+              title={t('store.listView')}
+              aria-label={t('store.listView')}
             >
               <List className="w-3.5 h-3.5" />
             </button>
@@ -328,10 +329,10 @@ export const StoreView: React.FC<StoreViewProps> = ({
             <Package className="w-7 h-7" />
           </div>
           <h3 className="font-heading font-bold text-base sm:text-lg text-foreground mb-1">
-            Không tìm thấy sản phẩm nào
+            {t('store.noProducts')}
           </h3>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Vui lòng thử đổi từ khóa tìm kiếm hoặc chọn danh mục khác.
+            {t('store.noProductsDesc')}
           </p>
         </div>
       ) : viewMode === 'list' ? (
@@ -405,7 +406,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                     {isFlashSaleUpcoming && flashSale && (
                       <EventCountdownBadge
                         targetDate={flashSale.event.start_time}
-                        label="Sắp Sale:"
+                        label={t('store.saleUpcoming')}
                         theme={flashSale.event.theme || 'fire'}
                         variant="pill"
                         onExpire={() => setProducts([...dataService.getStoreProducts()])}
@@ -414,7 +415,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                     {isFlashSaleLive && flashSale && (
                       <EventCountdownBadge
                         targetDate={flashSale.event.end_time}
-                        label="Hết hạn:"
+                        label={t('store.saleEnding')}
                         theme={flashSale.event.theme || 'fire'}
                         variant="pill"
                         onExpire={() => setProducts([...dataService.getStoreProducts()])}
@@ -427,18 +428,18 @@ export const StoreView: React.FC<StoreViewProps> = ({
                   <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">
                     {displayStock <= 0 ? (
                       <span className="font-mono text-rose-400 font-bold">
-                        Hết hàng
+                        {t('store.outOfStock')}
                       </span>
                     ) : (
                       <span className="font-mono text-emerald-400 font-semibold">
-                        Còn hàng
+                        {t('store.inStock')}
                       </span>
                     )}
                     {isGlobalSoldEnabled && product.show_sold_count !== false && (
                       <>
                         <span>•</span>
                         <span className="font-mono text-amber-400/90 hidden xs:inline">
-                          Đã bán: {displaySold}
+                          {t('store.soldCount', { count: displaySold })}
                         </span>
                       </>
                     )}
@@ -449,12 +450,12 @@ export const StoreView: React.FC<StoreViewProps> = ({
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <div className="text-right">
                     <div className="font-display font-black text-xs sm:text-sm md:text-base text-emerald-400 flex items-center justify-end gap-1">
-                      {hasMultiplePackages && <span className="text-[10px] text-muted-foreground font-normal">Từ</span>}
+                      {hasMultiplePackages && <span className="text-[10px] text-muted-foreground font-normal">{t('store.fromPrice')}</span>}
                       <span>{formatCore(displayPrice)}</span>
                     </div>
                     {hasMultiplePackages && (
                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 inline-block">
-                        {packages.length} gói
+                        {t('store.packageCount', { count: packages.length })}
                       </span>
                     )}
                     {product.original_price > effectivePrice && (
@@ -477,10 +478,10 @@ export const StoreView: React.FC<StoreViewProps> = ({
                     }`}
                   >
                     {product.stock_quantity <= 0 ? (
-                      <span>Hết hàng</span>
+                      <span>{t('store.outOfStock')}</span>
                     ) : (
                       <>
-                        <span>{hasMultiplePackages ? 'Chọn gói' : (isFlashSaleLive ? 'Săn Sale' : 'Mua ngay')}</span>
+                        <span>{hasMultiplePackages ? t('store.selectPackage') : (isFlashSaleLive ? t('store.huntSale') : t('store.buyNow'))}</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </>
                     )}
@@ -489,7 +490,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                   <button
                     onClick={(e) => handleShareProduct(product, e)}
                     className="p-1.5 rounded-lg bg-muted/40 hover:bg-muted text-slate-400 hover:text-foreground transition-all cursor-pointer active:scale-90 hidden sm:flex"
-                    title="Chia sẻ link sản phẩm"
+                    title={t('store.shareProduct')}
                   >
                     <Share2 className="w-3.5 h-3.5" />
                   </button>
@@ -574,7 +575,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                           {isFlashSaleLive && flashSale && (
                             <EventCountdownBadge
                               targetDate={flashSale.event.end_time}
-                              label="Hết:"
+                              label={t('store.saleEnding')}
                               theme={flashSale.event.theme || 'fire'}
                               variant="pill"
                               onExpire={() => setProducts([...dataService.getStoreProducts()])}
@@ -591,8 +592,8 @@ export const StoreView: React.FC<StoreViewProps> = ({
                     <button
                       onClick={(e) => handleShareProduct(product, e)}
                       className="p-1.5 rounded-lg bg-muted/40 hover:bg-muted text-slate-400 hover:text-foreground transition-all cursor-pointer active:scale-90 shrink-0"
-                      title="Chia sẻ link sản phẩm"
-                      aria-label="Chia sẻ link sản phẩm"
+                      title={t('store.shareProduct')}
+                      aria-label={t('store.shareProduct')}
                     >
                       <Share2 className="w-3.5 h-3.5" />
                     </button>
@@ -622,7 +623,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-1 flex-wrap">
-                      {hasMultiplePackages && <span className="text-[10px] text-muted-foreground font-medium">Từ</span>}
+                      {hasMultiplePackages && <span className="text-[10px] text-muted-foreground font-medium">{t('store.fromPrice')}</span>}
                       <span className="font-display font-black text-xs sm:text-sm md:text-base text-emerald-400">
                         {formatCore(displayPrice)}
                       </span>
@@ -633,7 +634,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                       )}
                       {hasMultiplePackages && (
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 ml-1">
-                          {packages.length} gói
+                          {t('store.packageCount', { count: packages.length })}
                         </span>
                       )}
                     </div>
@@ -647,16 +648,16 @@ export const StoreView: React.FC<StoreViewProps> = ({
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {displayStock <= 0 ? (
                             <span className="text-[9px] sm:text-[10px] font-mono text-rose-400 font-bold">
-                              Hết hàng
+                              {t('store.outOfStock')}
                             </span>
                           ) : (
                             <span className="text-[9px] sm:text-[10px] font-mono text-emerald-400 font-semibold">
-                              Còn hàng
+                              {t('store.inStock')}
                             </span>
                           )}
                           {isGlobalSoldEnabled && product.show_sold_count !== false && (
                             <span className="text-[9px] sm:text-[10px] font-mono text-amber-400/90">
-                              • Đã bán: {displaySold}
+                              • {t('store.soldCount', { count: displaySold })}
                             </span>
                           )}
                         </div>
@@ -677,10 +678,10 @@ export const StoreView: React.FC<StoreViewProps> = ({
                     }`}
                   >
                     {product.stock_quantity <= 0 ? (
-                      <span>Hết hàng</span>
+                      <span>{t('store.outOfStock')}</span>
                     ) : (
                       <>
-                        <span>{hasMultiplePackages ? 'Chọn gói' : (isFlashSaleLive ? 'Săn Sale' : 'Mua ngay')}</span>
+                        <span>{hasMultiplePackages ? t('store.selectPackage') : (isFlashSaleLive ? t('store.huntSale') : t('store.buyNow'))}</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </>
                     )}

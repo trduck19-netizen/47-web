@@ -124,12 +124,32 @@ const TEST_CASES: TestCase[] = [
     },
     expectedPass: false,
   },
+  {
+    id: 9,
+    name: 'DoH Live CNAME: Tên miền CNAME công khai hợp lệ (www.github.com -> github.com)',
+    category: 'DoH_CNAME',
+    run: async () => {
+      const res = await resolveAndValidateHostDns('www.github.com');
+      return res.ok;
+    },
+    expectedPass: true,
+  },
+  {
+    id: 10,
+    name: 'DoH CNAME Recursion Guard: Chặn vượt quá giới hạn độ sâu 3 hops CNAME (depth > 3 loop detection)',
+    category: 'DoH_CNAME',
+    run: async () => {
+      const res = await resolveAndValidateHostDns('www.github.com', 4);
+      return res.ok;
+    },
+    expectedPass: false,
+  },
 
   // =========================================================================
   // NHÓM 2: KIỂM THỬ SSRF CẤP 1 (URL PARSER & IP DECODER)
   // =========================================================================
   {
-    id: 9,
+    id: 11,
     name: 'IPv4 Loopback 127.0.0.1',
     category: 'SSRF_URL',
     run: () => isSafeExternalUrl('http://127.0.0.1/admin'),
@@ -410,31 +430,37 @@ const TEST_CASES: TestCase[] = [
 async function runTestSuite() {
   const suiteStartTime = Date.now();
   console.log('================================================================================');
-  console.log('[TEST SUITE] SSRF PROTECTION & CLOUDFLARE DoH REGRESSION AUDIT (47 TEST CASES)');
+  console.log(`[TEST SUITE] SSRF PROTECTION & CLOUDFLARE DoH REGRESSION AUDIT (${TEST_CASES.length} TEST CASES)`);
   console.log('Source-of-truth: functions/services/ssrf_service.ts');
   console.log(`Timestamp: ${new Date().toISOString()}`);
   console.log('================================================================================\n');
 
   let passCount = 0;
   let failCount = 0;
+  let caseIdx = 0;
 
   for (const tc of TEST_CASES) {
+    caseIdx++;
     const caseStart = performance.now();
+    const now = new Date();
+    const pad = (n: number, z = 2) => n.toString().padStart(z, '0');
+    const wallClock = `[${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}.${pad(now.getMilliseconds(), 3)}]`;
+
     try {
       const result = await tc.run();
       const durationMs = (performance.now() - caseStart).toFixed(2);
       const isPassed = result === tc.expectedPass;
 
       if (isPassed) {
-        console.log(`  [PASS] [${tc.category}] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name} (${durationMs}ms)`);
+        console.log(`  ${wallClock} [PASS] [${tc.category}] Case ${caseIdx.toString().padStart(2, '0')}: ${tc.name} (${durationMs}ms)`);
         passCount++;
       } else {
-        console.error(`  [FAIL] [${tc.category}] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name} (Expected: ${tc.expectedPass}, Got: ${result}, ${durationMs}ms)`);
+        console.error(`  ${wallClock} [FAIL] [${tc.category}] Case ${caseIdx.toString().padStart(2, '0')}: ${tc.name} (Expected: ${tc.expectedPass}, Got: ${result}, ${durationMs}ms)`);
         failCount++;
       }
     } catch (err: any) {
       const durationMs = (performance.now() - caseStart).toFixed(2);
-      console.error(`  [ERROR] [${tc.category}] Case ${tc.id.toString().padStart(2, '0')}: ${tc.name} threw error: ${err.message} (${durationMs}ms)`);
+      console.error(`  ${wallClock} [ERROR] [${tc.category}] Case ${caseIdx.toString().padStart(2, '0')}: ${tc.name} threw error: ${err.message} (${durationMs}ms)`);
       failCount++;
     }
   }

@@ -181,7 +181,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
   const [aiImageCandidates, setAiImageCandidates] = useState<
     Array<{ id: string; data_url: string; alt_vi: string; alt_en: string }>
   >([]);
-  const [aiImageUnconfigured, setAiImageUnconfigured] = useState<boolean>(false);
+  const [aiImageUnconfigured, setAiImageUnconfigured] = useState<boolean>(true);
 
   // Danh sách các mục/mục con có ảnh chưa đạt chuẩn nén WebP (Nhóm 1)
   const uncompressedItems = useMemo(() => {
@@ -346,6 +346,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
           setSections(merged);
           setInitialSnapshot(JSON.stringify(merged));
           homepageSectionsService.saveConfigLocally(merged);
+          if (data.updated_at) {
+            try {
+              const d = new Date(data.updated_at);
+              const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} (${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')})`;
+              setLastSavedTime(timeStr);
+            } catch {}
+          }
           return;
         }
       }
@@ -616,7 +623,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         homepageSectionsService.saveConfigLocally(merged);
 
         const now = new Date();
-        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} (${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')})`;
         setLastSavedTime(timeStr);
 
         showAdminToast(
@@ -669,13 +676,13 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
     setAiPrompt('');
     setAiImagePrompt('');
     setAiImageCandidates([]);
-    // Duy trì cảnh báo chưa cấu hình khóa AI nếu probe đã phát hiện
-    if (aiConfigured === false) {
-      setAiUnconfigured(true);
-      setAiImageUnconfigured(true);
-    } else {
+    // Duy trì cảnh báo chưa cấu hình khóa AI nếu probe đã phát hiện (mặc định cảnh báo mở thường trực)
+    if (aiConfigured === true) {
       setAiUnconfigured(false);
       setAiImageUnconfigured(false);
+    } else {
+      setAiUnconfigured(true);
+      setAiImageUnconfigured(true);
     }
   };
 
@@ -1942,7 +1949,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                           title={t('homepageSectionsModule.itemHasNoLink', { title: sTitle })}
                         >
                           <LinkIcon className="w-2.5 h-2.5 opacity-50" />
-                          <span className="opacity-75">{isSecEn ? 'No link' : 'Chưa gắn link'}</span>
+                          <span className="opacity-75">{t('homepageSectionsModule.noLink')}</span>
                         </button>
                       )}
                     </div>
@@ -2624,8 +2631,8 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                         </button>
                       </div>
 
-                      {/* Cảnh báo chưa cấu hình API Key */}
-                      {aiImageUnconfigured && (
+                      {/* Cảnh báo chưa cấu hình API Key: Hiển thị thường trực ngay khi mở */}
+                      {(aiImageUnconfigured || aiConfigured !== true) && (
                         <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-[10px] text-amber-800 dark:text-amber-200 flex items-start gap-1.5">
                           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                           <div>

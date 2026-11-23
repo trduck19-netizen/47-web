@@ -1,38 +1,62 @@
 ================================================================================
-[TEST SUITE] HOMEPAGE IMAGE LIMIT & CONCURRENCY GUARD (REAL SQLITE D1 ENGINE)
+[TEST SUITE] HOMEPAGE IMAGE LIMIT & CONCURRENCY GUARD (UNIT & HTTP NETWORK)
 Source-of-truth: functions/services/homepage_image_service.ts
 Database Engine: node:sqlite (Embedded SQLite C-Engine)
-Timestamp: 2026-11-23T03:53:23.946Z
+Timestamp: 2026-11-23T06:29:02.360Z | Wall-Clock: [13:29:02.361]
+================================================================================
+
+================================================================================
+>>> PHẦN 1: UNIT TEST - REAL SQLITE C-ENGINE (node:sqlite) <<<
 ================================================================================
 
 --- TEST 1: Tải tuần tự 10 ảnh đầu tiên vào mục 'main_hero_banner' ---
-  [PASS] Ảnh 1/10 chèn thành công (count: 1) (0.43ms)
-  [PASS] Ảnh 2/10 chèn thành công (count: 2) (0.08ms)
-  [PASS] Ảnh 3/10 chèn thành công (count: 3) (0.07ms)
-  [PASS] Ảnh 4/10 chèn thành công (count: 4) (0.07ms)
-  [PASS] Ảnh 5/10 chèn thành công (count: 5) (0.06ms)
-  [PASS] Ảnh 6/10 chèn thành công (count: 6) (0.05ms)
-  [PASS] Ảnh 7/10 chèn thành công (count: 7) (0.04ms)
-  [PASS] Ảnh 8/10 chèn thành công (count: 8) (0.04ms)
-  [PASS] Ảnh 9/10 chèn thành công (count: 9) (0.05ms)
-  [PASS] Ảnh 10/10 chèn thành công (count: 10) (0.06ms)
-  [PASS] Tổng số ảnh sau 10 lần tải tuần tự là đúng 10 (Thực tế trong CSDL: 10) (0.02ms)
+  [13:29:02.362] [PASS] Ảnh 1/10 chèn thành công (count: 1) (0.41ms)
+  [13:29:02.362] [PASS] Ảnh 2/10 chèn thành công (count: 2) (0.08ms)
+  [13:29:02.362] [PASS] Ảnh 3/10 chèn thành công (count: 3) (0.06ms)
+  [13:29:02.362] [PASS] Ảnh 4/10 chèn thành công (count: 4) (0.06ms)
+  [13:29:02.363] [PASS] Ảnh 5/10 chèn thành công (count: 5) (0.04ms)
+  [13:29:02.363] [PASS] Ảnh 6/10 chèn thành công (count: 6) (0.05ms)
+  [13:29:02.363] [PASS] Ảnh 7/10 chèn thành công (count: 7) (0.05ms)
+  [13:29:02.363] [PASS] Ảnh 8/10 chèn thành công (count: 8) (0.05ms)
+  [13:29:02.363] [PASS] Ảnh 9/10 chèn thành công (count: 9) (0.06ms)
+  [13:29:02.363] [PASS] Ảnh 10/10 chèn thành công (count: 10) (0.05ms)
+  [13:29:02.363] [PASS] Tổng số ảnh sau 10 lần tải tuần tự là đúng 10 (Thực tế trong CSDL: 10) (0.02ms)
 
 --- TEST 2: Cố gắng tải ảnh thứ 11 tuần tự vào mục đã đầy 10 ảnh ---
-  [PASS] Pre-check phát hiện đạt tối đa 10 ảnh và chặn với HTTP 400 (count: 10) (0.01ms)
-  [PASS] Ảnh thứ 11 bị từ chối lưu vào CSDL thật (status: 400, error: "Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.") (0.02ms)
-  [PASS] Số lượng ảnh trong CSDL vẫn giữ nguyên 10 (Không bị tràn) (0.02ms)
+  [13:29:02.363] [PASS] Pre-check phát hiện đạt tối đa 10 ảnh và chặn với HTTP 400 (count: 10) (0.02ms)
+  [13:29:02.363] [PASS] Ảnh thứ 11 bị từ chối lưu vào CSDL thật (status: 400, error: "Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.") (0.02ms)
+  [13:29:02.363] [PASS] Số lượng ảnh trong CSDL vẫn giữ nguyên 10 (Không bị tràn) (0.01ms)
 
---- TEST 3: Tranh chấp đồng thời THẬT (Concurrent Uploads on 9 Images) ---
-  [PASS] Trạng thái ban đầu: CSDL thật có đúng 9 ảnh (quota: 9/10) (0.03ms)
-  [PASS] Tranh chấp đồng thời: Chính xác 1 request thành công và 1 request bị chặn/rollback (Success: 1, Rejected: 1) (0.29ms)
-  [PASS] Tổng số bản ghi trong CSDL sau tranh chấp duy trì đúng 10 ảnh (Không bao giờ là 11) (0.03ms)
+--- TEST 3: Tranh chấp đồng thời cấp hàm (In-Memory Function Concurrency on 9 Images) ---
+  [13:29:02.363] [PASS] Trạng thái ban đầu: CSDL thật có đúng 9 ảnh (quota: 9/10) (0.02ms)
+  [13:29:02.364] [PASS] Tranh chấp cấp hàm: Đúng 1 request thành công và 1 request bị chặn/rollback (Success: 1, Rejected: 1) (0.29ms)
+  [13:29:02.364] [PASS] Tổng số bản ghi trong CSDL sau tranh chấp cấp hàm duy trì đúng 10 ảnh (0.03ms)
 
 --- TEST 4: Đếm ảnh legacy (tiền tố sec_<id>_ không có section_id) và ảnh mới ---
-  [PASS] Đếm chính xác tổng cộng 7 ảnh (4 legacy + 3 mới): count = 7 (0.05ms)
-  [PASS] Hạn mức còn 3 slot khả dụng (7/10) (0.05ms)
+  [13:29:02.364] [PASS] Đếm chính xác tổng cộng 7 ảnh (4 legacy + 3 mới): count = 7 (0.03ms)
+  [13:29:02.364] [PASS] Hạn mức còn 3 slot khả dụng (7/10) (0.03ms)
 
 ================================================================================
-SUMMARY: 19 PASSED, 0 FAILED in 8ms
-100% PRODUCTION CODE REAL IMPORT VERIFIED ON REAL SQLITE C-ENGINE
+>>> PHẦN 2: HTTP NETWORK TEST - REAL HTTP SERVER (TCP SOCKETS & DUAL FETCH) <<<
+================================================================================
+
+[HTTP SERVER STARTED] Listening on http://127.0.0.1:52694/api/admin/homepage-sections/upload-image at [13:29:02.378]
+
+--- TEST 5: HTTP Network Concurrency Test (2 Simultaneous fetch() over TCP Sockets) ---
+  Mục: 'main_hero_banner' hiện đang có 9 ảnh trong CSDL.
+  Bắn đồng thời 2 request HTTP POST qua 2 kết nối mạng TCP socket riêng biệt...
+  [13:29:02.421] Request 1 HTTP Status: 200 (Body: {"success":true,"image_id":"sec_main_hero_banner_http_1795415342415_puaac.webp"})
+  [13:29:02.421] Request 2 HTTP Status: 400 (Body: {"success":false,"error":"Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Thao tác tải ảnh bị hủy để bảo đảm tính nguyên tử và chống tranh chấp đồng thời.","rolledBack":true})
+  [13:29:02.421] [PASS] HTTP Concurrency: Đúng 1 request trả về HTTP 200 và 1 request trả về HTTP 400 (Statuses: 200, 400) (41.68ms)
+  [13:29:02.421] [PASS] Số bản ghi trong CSDL sau 2 request HTTP đồng thời đúng 10 ảnh (Atomic rollback thành công: 10/10) (42.88ms)
+
+--- TEST 6: HTTP Request thứ 3 khi CSDL đã đạt 10 ảnh (HTTP 400 Pre-check Over Network) ---
+  [13:29:02.424] [PASS] HTTP Request thứ 3 bị từ chối với status 400 qua mạng (Error: "Mục này đã đạt giới hạn tối đa 10 ảnh (10/10). Vui lòng sử dụng lại ảnh hiện có hoặc dọn bớt ảnh cũ.") (2.13ms)
+  [13:29:02.424] [PASS] Số ảnh trong CSDL vẫn giữ nguyên 10 (Không bao giờ tràn sang 11) (2.31ms)
+
+[HTTP SERVER CLOSED] All network connections gracefully closed at [13:29:02.424]
+
+================================================================================
+SUMMARY: 23 PASSED, 0 FAILED in 64ms
+100% PRODUCTION CODE REAL IMPORT VERIFIED ON BOTH SQLITE ENGINE & HTTP NETWORK
 ================================================================================

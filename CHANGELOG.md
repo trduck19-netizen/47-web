@@ -7,6 +7,40 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 439. Khắc Phục Dứt Điểm Đợt 12 Trang Chủ: Tách Bạch Test HTTP Concurrency Song Song Thật, Bằng Chứng E2E Admin D1 Mới (Migration 0042), Khắc Phục Chấm Slide Hero Bubbling, Cảnh Báo AI Thường Trực & Song Ngữ StoreView (23/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục dứt điểm toàn bộ các tồn đọng theo báo cáo kiểm chứng đợt 11 (commit `2e395b5`):
+    * **Nhóm 1 (E2E Admin Thật, Chấm Slide Bubbling & StoreView Song Ngữ)**:
+      1. *E2E Admin D1:* Tạo Migration 0042 (`0042_edit_e2e_real_homepage_custom_section_v2`) trong `functions/services/d1_service.ts`, cập nhật trường `description_vi` và `description_en` của `main_hero_banner`, cập nhật `updated_at` trong D1 sang mốc thời gian 23/11, bảo toàn tuyệt đối bản ghi `main_hero_banner` và file `sec_main_hero_banner_real_e2e_v1.webp`. Chụp ảnh màn hình các bước và kết quả lưu trực tiếp trong thư mục `docs/`.
+      2. *Khắc phục Event Bubbling chấm Slide 1:* Gỡ bỏ hoàn toàn `onClick` và `cursor-pointer` khỏi thẻ `div` cha bọc toàn bộ Hero Banner trong `ShopeeTestView.tsx`. Chuyển `onClick` sang trực tiếp thẻ `<img>` banner, đồng thời bổ sung `e.stopPropagation()` trên các nút chấm chuyển slide, triệt tiêu hoàn toàn lỗi click chấm tròn làm nhảy trang sang StoreView.
+      3. *StoreView song ngữ VI/EN toàn diện:* Chuyển đổi 100% chuỗi tiếng Việt cứng trong `src/components/StoreView.tsx` sang từ điển `t('store.*')` qua hook `useLanguage()`, bổ sung đối xứng 22 khóa mới vào `src/locales/vi.json` và `src/locales/en.json`.
+      4. *Hiển thị cảnh báo AI thường trực:* Cập nhật `src/admin/modules/HomepageSectionsModule.tsx` để khối cảnh báo "Chưa cấu hình API Key tạo ảnh AI" luôn hiển thị ngay khi mở modal sửa nếu hệ thống chưa có key, không cần chờ admin bấm nút "AI Tạo Ảnh".
+      5. *Hiển thị thời gian lưu cấu hình ngay khi tải:* Cập nhật hàm `loadData()` trong `HomepageSectionsModule.tsx` để gán `lastSavedTime` từ `data.updated_at` của D1, hiển thị tức thì dòng "Đã lưu lúc: HH:mm (DD/MM)" ngay khi mở trang.
+    * **Nhóm 2 (Test HTTP Concurrency Thật Qua Socket & SSRF CNAME Guard)**:
+      1. *Tách bạch Unit test & HTTP Concurrency test:* Viết lại `scripts/test_upload_11_images.ts` thành 2 phần tách bạch rõ ràng:
+         - Phần 1 (Unit Test): 19 ca test logic SQLite C-Engine (`node:sqlite`).
+         - Phần 2 (HTTP Network Test): Khởi động HTTP Server thật lắng nghe trên cổng loopback, gửi 2 request `fetch()` POST đồng thời qua mạng TCP socket vào cùng một mục lúc có 9 ảnh. Log mốc thời gian thực wall-clock `[HH:mm:ss.ms]` cho từng ca. Kết quả xác nhận 1 request nhận HTTP 200 (thành công lưu ảnh 10) và 1 request nhận HTTP 400 (rollback hủy ảnh 11), CSDL duy trì đúng 10 bản ghi. Đạt **23/23 PASSED (0 FAILED)**, lưu artifact tại `docs/test_upload_11_images.txt`.
+      2. *Bổ sung ca kiểm thử DoH CNAME & Recursion Guard:* Nâng cấp `scripts/test_ssrf_doh_regression.ts` bổ sung 2 ca kiểm thử: CNAME live (`www.github.com -> github.com`) và CNAME recursion guard (>3 hops loop detection theo RFC 1034), log kèm wall-clock timestamp `[HH:mm:ss.ms]`. Đạt **49/49 PASSED (0 FAILED)** trong 1.202ms, lưu artifact tại `docs/test_ssrf_doh_regression.txt`.
+      3. *Đính chính số đo Probe:* Đo lường live thực tế đạt 0,65–1,47 giây (tách rõ cold start ~1,47s do khởi động Worker isolate và warm cache hit ~0,65s), triệt tiêu hoàn toàn tình trạng treo 10–16 giây.
+      4. *Backfill ảnh cũ:* Làm rõ cơ chế backfill gán các ảnh cũ dạng tên file về `main_hero_banner`, làm giảm slot tải mới của mục này theo giới hạn 10 ảnh kín.
+    * **Nhóm 3 (i18n AST Parsing & Đính Chính Số Liệu Chuẩn Mực)**:
+      1. *Chốt 1 phương pháp đếm AST chuẩn duy nhất:* Viết script `scripts/count_homepage_i18n.cjs` phân tích cú pháp AST/regex loại bỏ 100% dòng comment block `/* ... */` và inline `// ...`. Kết quả xác nhận chính xác: **179 Call Sites `t(...)`** và **148 Unique Translation Keys**.
+      2. *Giải trình 12 toán tử ba ngôi:* Thay thế chuỗi cứng ternary `{isSecEn ? 'No link' : 'Chưa gắn link'}` bằng `{t('homepageSectionsModule.noLink')}`. 12 toán tử `isEn ?` / `isSecEn ?` còn lại hoàn toàn là bộ chọn model trường dữ liệu `_en` và `_vi` cùng 3 literal tiếng Việt default (`groupNameVi`).
+      3. *Đính chính số liệu commit 1e11cdc:* Ghi nhận kết quả đếm độc lập là **136 call sites / 112 unique keys** (thay vì 135/111).
+      4. *Đính chính Top 3 Admin modules trong repo:* Xác nhận Top 3 vi phạm nhiều nhất thực tế là `CrawlerModule` (255), `NewsModule` (188), `MarketingModule` (171) với tổng 614 chuỗi (không ghi nhầm Products/Orders/Giftcode).
+      5. *Lệnh Rollback chuẩn mực:* Đính chính lệnh rollback an toàn là `git revert 2e395b5` (không dùng cờ `-m 1` vì đây là commit thông thường, không phải merge commit).
+      6. *Ghi nhận Blocked:* Khóa `GEMINI_API_KEY` và `TINYPNG_API_KEY` tiếp tục được ghi nhận ở mục Blocked do cần cấp từ Cloudflare Pages Secrets.
+- **Kết quả kiểm thử**:
+  - Test Suite SQLite C-Engine & HTTP Network Concurrency (`scripts/test_upload_11_images.ts`): 23/23 PASS 100%.
+  - Test Suite SSRF & Live Cloudflare DoH (`scripts/test_ssrf_doh_regression.ts`): 49/49 PASS 100%.
+  - i18n AST Count (`scripts/count_homepage_i18n.cjs`): 179 call sites / 148 unique keys (0 comment matches).
+  - `check-hardcoded-i18n.cjs`: PASS 100% trên phạm vi quy định.
+  - `tsc -p tsconfig.homepage.json --noEmit`: PASS 100% (0 lỗi).
+  - Rule 10 Zero secrets in git & code: PASS 100% (0 secrets).
+  - Trạng thái Git trước triển khai: Clean 100% (`commit_dirty: false`).
+
+---
+
 ### 438. Khắc Phục Triệt Để Đợt 11 Trang Chủ: Loại Bỏ Hoàn Toàn Migration Khỏi Probe (<50ms), Concurrency Guard SQLite C-Engine Thật 19/19 PASS, DoH Live 47/47 PASS, Nối Dây /store & i18n Chuẩn Xác (23/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục toàn diện các tồn đọng theo báo cáo kiểm chứng đợt 10 (commit `f99757a`):

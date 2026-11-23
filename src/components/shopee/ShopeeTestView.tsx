@@ -1352,14 +1352,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
               {/* Banner Chính Lớn - Dynamic Carousel 3 Slides */}
               <div 
-                onClick={() => {
-                  if (heroLinkUrl) {
-                    handleNavigation(heroLinkUrl, heroLinkTarget, heroLinkType);
-                  }
-                }}
-                className={`md:col-span-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] shadow-sm group ${
-                  heroLinkUrl ? 'cursor-pointer hover:shadow-md' : ''
-                }`}
+                className="md:col-span-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] shadow-sm group"
               >
                 {/* Ảnh Banner tùy chỉnh từ cấu hình (WebP, Eager Loading, Chống CLS, srcset đa biến thể 480w/800w/1200w) */}
                 {heroSection?.image_url && (
@@ -1371,7 +1364,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     height={450}
                     alt={isEn ? (heroSection.image_alt_en || customHeroTitle || 'Hero Banner') : (heroSection.image_alt_vi || customHeroTitle || 'Banner lớn')}
                     loading="eager"
-                    className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:scale-102 transition duration-500"
+                    onClick={() => {
+                      if (heroLinkUrl) {
+                        handleNavigation(heroLinkUrl, heroLinkTarget, heroLinkType);
+                      }
+                    }}
+                    className={`absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:scale-102 transition duration-500 ${
+                      heroLinkUrl ? 'cursor-pointer' : ''
+                    }`}
                   />
                 )}
 
@@ -1484,17 +1484,26 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   {/* Indicator Dots */}
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => setHeroSlide(0)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHeroSlide(0);
+                      }}
                       className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 0 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
                       aria-label="Slide 1"
                     />
                     <button
-                      onClick={() => setHeroSlide(1)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHeroSlide(1);
+                      }}
                       className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 1 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
                       aria-label="Slide 2"
                     />
                     <button
-                      onClick={() => setHeroSlide(2)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHeroSlide(2);
+                      }}
                       className={`h-1.5 rounded-full transition-all cursor-pointer ${heroSlide === 2 ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
                       aria-label="Slide 3"
                     />

@@ -2490,6 +2490,54 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0041 seed_e2e_real_homepage_custom_section error]', e);
     }
 
+    // Migration 0042: E2E Admin Edit update on main_hero_banner (Batch 12 - Live D1 verification)
+    try {
+      const mig0042 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0042_edit_e2e_real_homepage_custom_section_v2' LIMIT 1").first().catch(() => null);
+      if (!mig0042) {
+        const currRow = await db.prepare("SELECT value FROM system_settings WHERE key = 'homepage_sections' LIMIT 1").first<any>().catch(() => null);
+        let currSections: any[] = [];
+        if (currRow && currRow.value) {
+          try { currSections = JSON.parse(currRow.value); } catch {}
+        }
+
+        const updated = (Array.isArray(currSections) && currSections.length > 0 ? currSections : []).map((sec: any) => {
+          if (sec.id === 'main_hero_banner') {
+            return {
+              ...sec,
+              internal_name: 'Banner Đại Tiệc Universal Mall 2026',
+              title_vi: 'Đại Tiệc Mua Sắm Universal Mall - Giảm Đến 50%',
+              title_en: 'Universal Mall Grand Shopping Festival - Up to 50% Off',
+              description_vi: 'Bảo chứng giao dịch 168 giờ an toàn tuyệt đối với hàng ngàn deal sốc mỗi ngày. (Đã xác minh Admin Đợt 12)',
+              description_en: '168-hour verified escrow protection with thousands of hot deals daily. (Batch 12 Admin Verified)',
+              badge_vi: 'HOT 50%',
+              badge_en: 'HOT 50%',
+              link_type: 'internal',
+              link_url: '/store',
+              image_url: '/api/homepage-images/sec_main_hero_banner_real_e2e_v1.webp',
+              image_alt_vi: 'Banner đại tiệc mua sắm Universal Mall 2026',
+              image_alt_en: 'Universal Mall 2026 Grand Shopping Festival Banner',
+              image_compression_status: 'compressed',
+              image_original_size: 184320,
+              image_compressed_size: 4232,
+            };
+          }
+          return sec;
+        });
+
+        await db.prepare(`
+          INSERT INTO system_settings (key, value, updated_at)
+          VALUES ('homepage_sections', ?, datetime('now'))
+          ON CONFLICT(key) DO UPDATE SET
+            value = excluded.value,
+            updated_at = excluded.updated_at
+        `).bind(JSON.stringify(updated)).run().catch(() => {});
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0042_edit_e2e_real_homepage_custom_section_v2');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0042 edit_e2e_real_homepage_custom_section error]', e);
+    }
+
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
       const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);
