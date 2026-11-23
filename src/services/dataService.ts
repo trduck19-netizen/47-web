@@ -1381,8 +1381,16 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
     this.codesFallbackLoadingPromise = (async () => {
       try {
-        const codesMod = await import('../data/crawled_codes_188.json');
-        const rawCodes: RawCodeItem[] = Array.isArray(codesMod.default) ? (codesMod.default as RawCodeItem[]) : [];
+        let rawCodes: RawCodeItem[] = [];
+        if (typeof window !== 'undefined') {
+          try {
+            const res = await fetch('/data/crawled_codes_188.json');
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data)) rawCodes = data as RawCodeItem[];
+            }
+          } catch {}
+        }
         for (const c of rawCodes) {
           const slug = c.gameSlug || (c as any).gameId || (c as any).game_slug || (c as any).slug;
           const codeValue = c.codeValue || (c as any).code_value || (c as any).code || (c as any).gift_code;
@@ -1450,7 +1458,6 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     if (!this.isLoaded) {
       await this.processData();
     }
-    await this.ensureFallbackCodesLoaded();
     try {
       if (typeof window !== 'undefined' && !sessionStorage.getItem('pine_ip_checked')) {
         sessionStorage.setItem('pine_ip_checked', '1');

@@ -28,10 +28,8 @@ import { dataService } from '../../services/dataService';
 import { getDefaultCategoriesConfig, INDUSTRY_PRESETS } from '../../data/industryPresets';
 import defaultCrawlerSources from '../../data/crawler_sources.json';
 import rawGamesData from '../../data/games188.json';
-import rawCodesData from '../../data/crawled_codes_188.json';
 import { DEFAULT_STORE_PRODUCTS, DEFAULT_INVENTORY, DEFAULT_UTILITY_PRODUCTS, DEFAULT_GIVEAWAYS } from '../../data/seedData';
 import { crossOriginSync } from '../../services/crossOriginSync';
-import canonicalBackup from '../../data/canonical_backup_state.json';
 import { marketingService, DEFAULT_PRODUCT_MARKETING_CONFIG } from '../../services/marketingService';
 import { FloatingNotificationConfig, DEFAULT_FLOATING_NOTIFICATION } from '../../types/floatingNotification';
 import { templateService } from '../../services/templateService';
@@ -520,46 +518,6 @@ class AdminDataService {
         }
       }
 
-      // Merge bundled rawCodesData so newly added codes (WWM, Delta Force, etc.) are always present
-      const rawCodes: any[] = Array.isArray(rawCodesData) ? rawCodesData : [];
-      const rawFormatted = rawCodes.map((c, idx) => {
-        const val = (c.codeValue || c.code_value || c.code || `VIP${idx + 100}`).trim().toUpperCase();
-        const isExp = c.status === 'EXPIRED' || c.status === 'expired' || val === 'ATNGAY1' || val === 'ATNGAY2';
-        return {
-          id: c.id || `code_${idx + 1}`,
-          codeValue: c.codeValue || c.code_value || c.code || `VIP${idx + 100}`,
-          gameSlug: c.gameSlug || c.game_slug || c.gameId || 'genshin-impact',
-          rewards: c.rewards || '500 Kim Cương + Rương SSR',
-          status: (isExp ? 'EXPIRED' : 'ACTIVE') as 'ACTIVE' | 'EXPIRED',
-          expiresAt: c.expiresAt || c.expires_at || '',
-          isVerified: !isExp,
-          copyCount: 120 + (idx % 800),
-          notes: c.notes || 'Code nhận trực tiếp',
-          createdAt: c.createdAt || new Date().toISOString(),
-        };
-      });
-
-      const existingKeyMap = new Map<string, any>();
-      for (const item of this.freeCodes) {
-        if (item.gameSlug && item.codeValue) {
-          existingKeyMap.set(`${item.gameSlug}___${item.codeValue.trim().toUpperCase()}`, item);
-        }
-      }
-      for (const raw of rawFormatted) {
-        if (raw.gameSlug && raw.codeValue) {
-          const key = `${raw.gameSlug}___${raw.codeValue.trim().toUpperCase()}`;
-          const existing = existingKeyMap.get(key);
-          if (existing) {
-            existing.status = raw.status;
-            existing.rewards = raw.rewards;
-            existing.expiresAt = raw.expiresAt;
-            existing.isVerified = raw.isVerified;
-          } else {
-            this.freeCodes.push(raw);
-            existingKeyMap.set(key, raw);
-          }
-        }
-      }
       // Ensure customFreeCodes are prepended to this.freeCodes and deleted ones are removed
       const customCodeMap = new Map<string, FreeCodeRecord>();
       this.customFreeCodes.forEach((c: any) => {
@@ -4724,9 +4682,6 @@ class AdminDataService {
   }
 
   public getCrawlerApiConfig(): CrawlerApiConfig {
-    if (!this.crawlerApiConfig.apiKey && (canonicalBackup as any)?.crawlerApiConfig?.apiKey) {
-      return { ...this.crawlerApiConfig, ...(canonicalBackup as any).crawlerApiConfig };
-    }
     return { ...this.crawlerApiConfig };
   }
 
