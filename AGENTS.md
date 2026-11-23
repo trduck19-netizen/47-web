@@ -116,5 +116,23 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, tác nh�
   - Luôn thực hiện từng bước có kiểm soát, tuân thủ nghiêm ngặt giới hạn thời gian (tối đa 10 phút/bước, tối đa 3 lần thử).
   - Hoàn thành đầy đủ các tiêu chí thành công, kiểm thử toàn diện trước khi báo cáo kết quả cho người dùng.
 
+### 🛡️ 14. NGUYÊN TẮC KIỂM SOÁT KỸ THUẬT 5 CHỐT CHẶN (THE 5-GATE ANTI-ERROR PROTOCOL)
+- **1. Chốt Chặn 1: Quét Vét Cạn Trước & Sau Khi Đổi Nhãn UI (Exhaustive Pre/Post Grep)**:
+  - Khi sửa bất kỳ nhãn, từ ngữ hoặc chuỗi UI nào (ví dụ: đổi "sản phẩm" thành "gói"): **BẮT BUỘC** phải chạy lệnh `git grep -nE` quét toàn bộ các file liên quan trước khi sửa để lập danh sách toàn bộ các vị trí xuất hiện (bao gồm cả gợi ý tìm kiếm, placeholder, badge, phân trang, thông báo, tiêu đề).
+  - Sau khi sửa xong: **BẮT BUỘC** chạy lại lệnh grep để nộp bằng chứng xác nhận không còn bất kỳ vị trí nào bị bỏ sót trước khi tuyên bố hoàn tất.
+- **2. Chốt Chặn 2: Cấm Copy Số Cũ & Trích Xuất Số Liệu Tự Động (Zero-Manual-Copy Numbers)**:
+  - **TUYỆT ĐỐI CẤM** gõ tay hoặc sao chép con số đo lường (mili-giây, số test pass, số line diff, số khóa API, số lỗi i18n) từ báo cáo hoặc CHANGELOG của các đợt trước.
+  - Mọi con số đưa vào CHANGELOG, KNOWN_ISSUES và Báo cáo **BẮT BUỘC** phải được trích xuất bằng lệnh/script trực tiếp từ tệp log hoặc dữ liệu thực tế vừa sinh ra ở đợt hiện tại.
+- **3. Chốt Chặn 3: Xuất Log Thô Trực Tiếp Bằng Redirect Pipe (Direct Raw Output Pipe Only)**:
+  - **TUYỆT ĐỐI CẤM** tự viết script sinh nội dung tóm tắt để thay thế file log gốc.
+  - Mọi lệnh kiểm tra kiểu (tsc), kiểm thử (test suite) hay build **BẮT BUỘC** phải pipe trực tiếp luồng output thô của tool vào file log (ví dụ: `cmd /c npx tsc -p tsconfig.homepage.json --noEmit > docs/tsc_check_success.log 2>&1`). File `.log` thô này là bằng chứng bắt buộc phải tồn tại trong repo.
+- **4. Chốt Chặn 4: Kỷ Luật Ngôn Từ Chuẩn Xác & Giới Hạn Phạm Vi (Scoped Precision)**:
+  - **TUYỆT ĐỐI CẤM** dùng các từ ngữ tuyệt đối hóa mang tính phóng đại ("100%", "sạch bóng", "0 chuỗi UI cứng", "hoàn tất hoàn toàn") nếu chỉ kiểm tra trên một tập con hoặc một nhóm toán tử nhất định.
+  - Tác nhân **BẮT BUỘC** phải nêu rõ phạm vi khảo sát (Scoped Statement) và chỉ rõ các phần chưa khảo sát hoặc các vị trí literal còn tồn tại trong file.
+- **5. Chốt Chặn 5: Đo Lường Thực Tế Trên Dữ Liệu Live (Ground Truth Inspection)**:
+  - Báo cáo và kiểm chứng hồi quy **BẮT BUỘC** phải đo lường trực tiếp trên cấu trúc dữ liệu JSON thực tế trả về từ live API (ví dụ: đếm đúng số khóa JSON thực tế của response), không suy đoán dựa trên định nghĩa schema lý thuyết ban đầu.
+  - Không sử dụng các header HTTP không ổn định giữa các CDN POP (như `Last-Modified`) làm bằng chứng hồi quy cố định.
+
+
 
 
