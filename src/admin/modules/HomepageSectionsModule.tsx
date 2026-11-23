@@ -30,6 +30,8 @@ import {
   Download,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import viLocale from '../../locales/vi.json';
+import enLocale from '../../locales/en.json';
 import {
   HOMEPAGE_SECTIONS_REGISTRY,
   HOMEPAGE_SUBSECTIONS_REGISTRY,
@@ -1080,8 +1082,8 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
       group: newSubForm.group || 'shortcuts',
       groupNameVi: newSubForm.groupNameVi || SUBSECTION_GROUP_NAMES.custom.vi,
       groupNameEn: newSubForm.groupNameEn || SUBSECTION_GROUP_NAMES.customItems.en,
-      nameVi: newSubForm.title_vi.trim() || newSubForm.internal_name.trim(),
-      nameEn: newSubForm.title_en.trim() || newSubForm.internal_name.trim() || 'New Item',
+      nameVi: newSubForm.title_vi.trim() || newSubForm.internal_name.trim() || viLocale.homepageSectionsModule.newItem,
+      nameEn: newSubForm.title_en.trim() || newSubForm.internal_name.trim() || enLocale.homepageSectionsModule.newItem,
       descriptionVi: newSubForm.description_vi.trim(),
       descriptionEn: newSubForm.description_en.trim(),
       enabled: true,

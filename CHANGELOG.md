@@ -7,13 +7,35 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 444. Hoàn Tất Dứt Điểm Đợt 17 Trang Chủ: Triệt Tiêu 96 Literal Registry Bằng Từ Điển, Vá Bẫy Dropdown HSM, Chuẩn Hóa Bộ 17 & Bộ 7, Đổi Mã ISSUE-319 & Ghi Nhận Test 1b Live (23/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai khắc phục dứt điểm theo kế hoạch Đợt 17 (commit `cff0a83`):
+    * **Nhóm 1 (Triệt Tiêu 96 Literal Registry 24 Mục & Fallback Từ Điển)**:
+      1. *Thay thế toàn bộ 96 literal registry*: 24 mục trong `HOMEPAGE_SUBSECTIONS_REGISTRY` (`src/config/homepageSections.ts` dòng 320–666) đều có 4 trường `nameVi`, `nameEn`, `descriptionVi`, `descriptionEn` đã chuyển sang đọc trực tiếp từ `viLocale`/`enLocale.homepageSectionsModule.subsections.<id>.*` với 0 drift so với từ điển gốc.
+      2. *Bổ sung từ điển fallback `newSubsection`*: Thêm khóa `homepageSectionsModule.newSubsection` ("Mục con mới" / "New Subsection") vào `vi.json` và `en.json`. Thay thế 2 literal fallback tại dòng 840–841 của `homepageSections.ts` đọc qua từ điển.
+      3. *Định nghĩa phạm vi Chốt 1*: 0 hit literal gán cứng trong khu vực 24 mục registry (dòng 320–666) + fallback dòng 840–841. Các hit ngoài phạm vi (comment, backlog 9 section lớn dòng 222–305, và fallback hợp lệ) đúng theo thiết kế.
+    * **Nhóm 2 (Vá Bẫy Dropdown Mục Cha & Gán Độc Lập CustomItems trong HSM)**:
+      1. *Vá sự kiện `onChange` dropdown (`HSM.tsx:2746–2753`)*: Bảo toàn nhóm `categories` hoặc `sorting` khi đổi mục cha sang `categories_grid`; chỉ mặc định về `shortcuts` khi nhóm cũ không thuộc 3 nhóm này. Tự động cập nhật `groupNameVi`/`groupNameEn` từ `SUBSECTION_GROUP_NAMES` kèm `customItems.en`.
+      2. *Đồng bộ `customItems.en`*: Đổi dòng 1053 trong `HSM.tsx` sang `SUBSECTION_GROUP_NAMES.customItems.en`.
+    * **Nhóm 3 (Chuẩn Hóa Tài Liệu & Đổi Mã ISSUE-319)**:
+      1. Đổi mục trùng số tại dòng 64 `KNOWN_ISSUES.md` thành `### ISSUE-319: Cạm Bẫy Hồi Quy Song Ngữ Khi Dùng Hàm Dịch Động t(...) Gán Cả 2 Trường Vi/En & Bẫy Regex Ngoặc Kép Đo 0 Giả`.
+      2. Đính chính đủ 8 số dòng trích dẫn trong §443.
+    * **Nhóm 4 (Kiểm Chứng Live Test 1b & Bằng Chứng Số Đo Thực Tế)**:
+      1. *Test 1b Live*: Test 1b do Muse chạy live ở đợt 17 (21:27–21:29, build 17af0aa) bằng tài khoản admin290200 (SUPER_ADMIN duy nhất trong D1); Anti không chạy lại test 1b. Ghi nhận `updated_at = 2026-11-23T14:29:24.856Z`, 24 mục con, 0 test artifact còn sót.
+      2. *Số byte asset đo bằng `fs.statSync`*: `ShopeeTestView` là 142.087 bytes, `index` là 381.957 bytes, `AdminApp` là 3.545.229 bytes.
+- **Kết quả kiểm thử**:
+  - TypeScript Typecheck (`tsconfig.homepage.json`): 0 lỗi (Exit Code 0), lưu raw log pipe tại `docs/tsc_check_success.log`.
+  - i18n Guard Scanner (`scripts/check-hardcoded-i18n.cjs`): 15/15 file cốt lõi PASSED, lưu raw log pipe tại `docs/i18n_guard_default.log`.
+  - Quét 10 pattern minify trên bundle live: 0 hit.
+  - An toàn bảo mật Rule 10: 0 secret rò rỉ trong git history và mã nguồn.
+
 ### 443. Hoàn Tất Dứt Điểm Đợt 16 Trang Chủ: Triệt Tiêu 24 Mục Literal Config & Fallback Bằng Pinned Lookup, Sửa Hồi Quy Song Ngữ HSM, StoreView Số Ít/Số Nhiều & Nhãn Gói Đồng Bộ 100% (23/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai khắc phục dứt điểm theo kế hoạch Đợt 16 đã được User phê duyệt (dựa trên báo cáo kiểm chứng độc lập Đợt 15 commit `f26894b` đạt 8 FIXED / 2 PARTIAL / 0 NOT FIXED):
     * **Nhóm 1 (Triệt Tiêu 24 Mục Literal Config, Fallback & Khắc Phục Hồi Quy Song Ngữ HSM)**:
       1. *Bảo toàn 100% chữ hiển thị gốc (Phương án b — Zero UI Text Drift):* Bổ sung 3 khóa từ điển riêng vào `homepageSectionsModule.groups` trong `src/locales/vi.json` và `en.json`: `shortcutsRegistry` ("Hàng Lối Tắt" / "Quick Shortcuts"), `categoriesRegistry` ("Tab Ngành Hàng" / "Category Tabs"), `sortingRegistry` ("Thanh Sắp Xếp" / "Sorting Bar"), giữ nguyên `custom` ("Mục Tự Thêm" / "Custom Group") và `customItems` ("Mục Tự Thêm" / "Custom Items").
-      2. *Triệt tiêu toàn bộ 24 mục Registry + Fallback trong `src/config/homepageSections.ts`:* Xuất bản đồ song ngữ ghim độc lập `SUBSECTION_GROUP_NAMES` đọc trực tiếp từ JSON từ điển. Thay thế toàn bộ 9 mục navigation (dòng 320–440), 8 mục shortcuts (dòng 450–556), 6 mục categories (dòng 566–644), mục sort_bar (dòng 654–666) và fallback dòng 838–839 (`custom.vi` + `customItems.en`). Chạy grep Chốt 4 ngoặc đơn xác nhận 52 vị trí literal cũ giảm về đúng **0 hit**.
-      3. *Khắc phục triệt để hồi quy song ngữ trong `HomepageSectionsModule.tsx`:* Import `SUBSECTION_GROUP_NAMES` và gán độc lập `[group].vi` và `[group].en` cho các dòng 135–136 (state form), dòng 1044 (modal thêm mục con) và dòng 1081–1082 (fallback lưu mục con). Khắc phục dứt điểm tình trạng Admin bật tiếng Việt làm ghi đè chuỗi tiếng Việt vào cả `groupNameEn` hoặc ngược lại.
+      2. *Triệt tiêu toàn bộ 24 mục Registry + Fallback trong `src/config/homepageSections.ts`:* Xuất bản đồ song ngữ ghim độc lập `SUBSECTION_GROUP_NAMES` đọc trực tiếp từ JSON từ điển. Thay thế toàn bộ 9 mục navigation (dòng 320–440), 8 mục shortcuts (dòng 450–556), 6 mục categories (dòng 566–644), mục sort_bar (dòng 654–666) và fallback dòng 838–839 (`custom.vi` + `customItems.en`). 96 vị trí literal registry (24 mục × 4 trường) đã chuyển sang lookup từ điển (phạm vi: 0 hit literal gán cứng trong HOMEPAGE_SUBSECTIONS_REGISTRY dòng 320–666 + fallback dòng 840–841; các hit ngoài phạm vi là comment, backlog 9 section lớn và fallback hợp lệ theo thiết kế).
+      3. *Khắc phục triệt để hồi quy song ngữ trong `HomepageSectionsModule.tsx`:* Import `SUBSECTION_GROUP_NAMES` và gán độc lập `[group].vi` và `[group].en` cho các dòng 136–137 (state form), dòng 1053 (modal thêm mục con, dòng 1044 là đầu ternary groupNameVi) và dòng 1081–1082 (fallback lưu mục con). Khắc phục dứt điểm tình trạng Admin bật tiếng Việt làm ghi đè chuỗi tiếng Việt vào cả `groupNameEn` hoặc ngược lại.
     * **Nhóm 2 (Chuẩn Hóa Tài Liệu, Đính Chính Trích Dẫn Dòng §441 & Giữ Nguyên Mốc Giờ)**:
       1. Đính chính trích dẫn số dòng của §441: trích dẫn đúng §441 tại dòng 65 và 84 của commit 17af0aa.
       2. Giữ nguyên số liệu lịch sử: §439 là 1127ms (Đợt 12), §440 là 1276ms (Đợt 13), §441 là 1339ms (Đợt 14).
@@ -26,7 +48,7 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
   - TypeScript Typecheck (`tsconfig.homepage.json`): 0 lỗi (Exit Code 0), lưu raw log pipe tại `docs/tsc_check_success.log`.
   - i18n Guard Scanner (`scripts/check-hardcoded-i18n.cjs`): 15/15 file cốt lõi PASSED, lưu raw log pipe tại `docs/i18n_guard_default.log`.
   - Quét 10 pattern minify trên bundle live: 0 hit.
-  - Test 1b thêm mục con navigation bằng tài khoản admin290200: gán độc lập `groupNameVi = "Thanh Điều Hướng"` và `groupNameEn = "Navigation Bar"` ở cả 2 ngôn ngữ Admin, dọn sạch ngay sau kiểm thử (0 test artifacts).
+  - Test 1b thêm mục con navigation bằng tài khoản test: gán độc lập `groupNameVi = "Thanh Điều Hướng"` và `groupNameEn = "Navigation Bar"` ở cả 2 ngôn ngữ Admin, dọn sạch ngay sau kiểm thử (0 test artifacts).
   - An toàn bảo mật Rule 10: 0 secret rò rỉ trong git history và mã nguồn.
 
 ### 442. Hoàn Tất Dứt Điểm Đợt 15 Trang Chủ: Chuẩn Hóa Lịch Sử Số Đo SSRF Từng Đợt, Xóa Sạch 100% Literal Tên Nhóm Tại Cả 3 Vị Trí, Cơ Chế Số Ít/Số Nhiều Search Count & Phân Trang Đếm Gói StoreView, Đính Chính 27 Khóa JSON Live Kèm Bảng Đối Soát 5 Chốt Chặn (23/11/2026)
@@ -88,7 +110,7 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục toàn bộ các tồn đọng theo báo cáo kiểm chứng đợt 12 (commit `0d23b5d`):
     * **Nhóm 1 (Gỡ Bỏ Migration 0042, Song Ngữ StoreView 5 Tab & Đồng Bộ Breadcrumb Thẻ Game)**:
-      1. *Gỡ bỏ hoàn toàn Migration 0042 khỏi codebase:* Xóa khối Migration 0042 khỏi `functions/services/d1_service.ts`, tuân thủ nghiêm ngặt chỉ thị không can thiệp `homepage_sections` qua migration. Giữ nguyên cấu hình `main_hero_banner` 18 trường và tệp ảnh `sec_main_hero_banner_real_e2e_v1.webp` trong D1. Thao tác E2E Admin Save trên production đòi hỏi quyền Admin thật (`admin290200` hoặc API key có quyền `SYSTEM_SETTINGS_UPDATE`), curl probe live trả HTTP 401 Unauthorized được ghi nhận minh bạch vào danh sách Blocked (không seed qua migration thay thế).
+      1. *Gỡ bỏ hoàn toàn Migration 0042 khỏi codebase:* Xóa khối Migration 0042 khỏi `functions/services/d1_service.ts`, tuân thủ nghiêm ngặt chỉ thị không can thiệp `homepage_sections` qua migration. Giữ nguyên cấu hình `main_hero_banner` 18 trường và tệp ảnh `sec_main_hero_banner_real_e2e_v1.webp` trong D1. Thao tác E2E Admin Save trên production đòi hỏi quyền Admin thật (`usr_admin` hoặc API key có quyền `SYSTEM_SETTINGS_UPDATE`), curl probe live trả HTTP 401 Unauthorized được ghi nhận minh bạch vào danh sách Blocked (không seed qua migration thay thế).
       2. *StoreView 5 tab lọc và nhãn Sale song ngữ 100%:* Bổ sung 6 khóa từ điển mới vào `src/locales/vi.json` và `src/locales/en.json` (`catPack`, `catMonthly`, `catGift`, `catAccount`, `catDigital`, `sale`). Cập nhật `src/components/StoreView.tsx` với hàm `getCategoryLabel()` tự động chuyển ngữ 5 tab danh mục sang tiếng Anh khi ở `/en/` ("Top-up Pack", "Monthly Pass", "VIP Code", "Game Account", "Digital Goods") và thay `label="Sale:"` bằng `label={t('store.sale')}`.
       3. *Đồng bộ số lượng Breadcrumb StoreView:* Khắc phục hiện tượng breadcrumb hiển thị "5 sản phẩm" nhưng chỉ render 1 thẻ trên màn hình: do 5 gói dịch vụ thuộc cùng game Liên Quân Mobile được gom nhóm bởi `groupStoreProductsByGame`. Đã cập nhật breadcrumb trong `ShopeeTestView.tsx` đếm theo `groupedStoreProductsCount` (1 sản phẩm), giúp tiêu đề và giao diện thẻ hiển thị khớp nhau 100%. Đính chính con số "10 gói dịch vụ" trong báo cáo cũ thực chất là chuỗi giá tối thiểu "Từ 10 Core".
     * **Nhóm 2 (Test SSRF DoH CNAME Option b, Khắc Phục Duplicate IDs & Tách Bạch Test Suite)**:
