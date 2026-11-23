@@ -2471,7 +2471,9 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 });
               })()}
               <button onClick={() => { setSearchKeyword(''); setSelectedProductType('all'); }} className="hover:text-amber-200 transition font-bold text-amber-300 cursor-pointer">
-                {t('mall.search.allProductsCount', { count: currentStoreProducts?.length || storeProducts?.length || 0 })}
+                {(currentStoreProducts?.length || storeProducts?.length || 0) === 1
+                  ? t('mall.search.allProductsCount_singular')
+                  : t('mall.search.allProductsCount_plural', { count: currentStoreProducts?.length || storeProducts?.length || 0 })}
               </button>
             </div>
           </div>

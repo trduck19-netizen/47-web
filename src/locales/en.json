@@ -537,7 +537,9 @@
       "suggestionGanCharger": "GaN Fast Charger",
       "suggestionCanva": "Canva Pro",
       "suggestionEarbuds": "Bluetooth Earbuds",
-      "allProductsCount": "All ({count} products)"
+      "allProductsCount": "All ({count} packages)",
+      "allProductsCount_singular": "All (1 package)",
+      "allProductsCount_plural": "All ({count} packages)"
     },
     "slogan": "Official Multi-Industry E-Commerce & Digital Utility Marketplace",
     "subnav": {
@@ -604,8 +606,8 @@
       "gameZone": "Game Zone",
       "support247": "Support 24/7"
     },
-    "paginationSummary": "Page {page} / {totalPages} • Total {total} products",
-    "showingCount": "Showing {from} - {to} of {total} products",
+    "paginationSummary": "Page {page} / {totalPages} • Total {total} packages",
+    "showingCount": "Showing {from} - {to} of {total} packages",
     "categories": {
       "sectionTitle": "MULTI-INDUSTRY CATEGORIES",
       "sectionSubtitle": "(5 Official Industries)",
@@ -632,8 +634,8 @@
       "allTab": "🔥 All Products",
       "physicalTab": "🚚 Physical Goods (Ship)",
       "digitalTab": "⚡ Digital Goods (0s Code)",
-      "pageInfo": "Page {page} / {totalPages} • Total {total} products",
-      "showingInfo": "Showing {shown} / {total} products (Page {page} / {totalPages})",
+      "pageInfo": "Page {page} / {totalPages} • Total {total} packages",
+      "showingInfo": "Showing {shown} / {total} packages (Page {page} / {totalPages})",
       "emptyTitle": "Preparing First Product Batch",
       "emptyDesc": "5 multi-category catalog is ready. Authentic products are being synchronized and verified before launch.",
       "badgeShipping": "Nationwide Delivery",
@@ -981,7 +983,10 @@
       "navigation": "Navigation Bar",
       "shortcuts": "Quick Service Shortcuts",
       "categories": "Mall Category Tabs",
-      "sorting": "Product Sorting Controls"
+      "sorting": "Product Sorting Controls",
+      "custom": "Custom Group",
+      "customItems": "Custom Items",
+      "shortcutsShort": "Quick Shortcuts"
     },
     "subsections": {
       "nav_home": {

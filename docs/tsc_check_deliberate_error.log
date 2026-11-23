@@ -1,0 +1,8 @@
+=== TSC HOMEPAGE DELIBERATE ERROR PROOF: FAIL (EXIT 1) ===
+Timestamp: 2026-11-22T13:41:54.098Z
+Command: npx tsc -p tsconfig.homepage.json --noEmit
+Exit Code: 2
+Output:
+src/admin/modules/HomepageSectionsModule.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/modules/HomepageSectionsModule.tsx(3,7): error TS6133: '__deliberateTypeErrorTest' is declared but its value is never read.
+

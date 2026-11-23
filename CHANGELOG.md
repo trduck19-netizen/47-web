@@ -7,12 +7,41 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-23]
 
+### 442. Hoàn Tất Dứt Điểm Đợt 15 Trang Chủ: Chuẩn Hóa Lịch Sử Số Đo SSRF Từng Đợt, Xóa Sạch 100% Literal Tên Nhóm Tại Cả 3 Vị Trí, Cơ Chế Số Ít/Số Nhiều Search Count & Phân Trang Đếm Gói StoreView, Đính Chính 27 Khóa JSON Live Kèm Bảng Đối Soát 5 Chốt Chặn (23/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai khắc phục triệt để theo kế hoạch Đợt 15 đã được User duyệt (dựa trên báo cáo kiểm chứng độc lập commit `597b56e`):
+    * **Nhóm 1 (Chuẩn Hóa Lịch Sử Số Đo SSRF Theo Đúng Từng Đợt)**:
+      1. Sửa §441 (Đợt 14) về đúng **1339ms** theo log thật `docs/test_ssrf_doh_regression.txt` (timestamp `2026-11-23T11:19:04.557Z`).
+      2. Giữ nguyên số của các đợt trước không bị ghi đè: §439 (Đợt 12) giữ `1127ms`; §440 (Đợt 13) bỏ khoảng số không rõ nguồn gốc, ghi nhận con số tổng duy nhất **1276ms** của log đợt 13 tại commit `e3aabc1`.
+      3. Sửa mốc giờ test đồng thời D1 thật thành chuẩn xác: `10:47:46.767Z` (= 17:47:46.767 giờ VN).
+    * **Nhóm 2 (Sửa Dứt Điểm Literal Cả 3 Vị Trí, Thu Hẹp Phạm Vi Toán Tử Ba Ngôi & Raw Log TSC)**:
+      1. Bổ sung các khóa từ điển `homepageSectionsModule.groups.custom` ("Mục Tự Thêm" / "Custom Group"), `groups.customItems` ("Mục Tự Thêm" / "Custom Items") và `groups.shortcutsShort` ("Hàng Lối Tắt Dịch Vụ" / "Quick Shortcuts") vào `src/locales/vi.json` và `src/locales/en.json`.
+      2. Sửa toàn bộ literal cứng tên nhóm tại cả 3 vị trí trong `src/admin/modules/HomepageSectionsModule.tsx`: dòng 135–136 (khởi tạo form), dòng 1043–1044 (bộ chọn ternary thêm subsection), và dòng 1072–1073 (fallback khi tạo subsection) gọi qua `t(...)`. Chạy grep xác nhận **0 matches** còn sót cho cả 6 chuỗi literal.
+      3. Thu hẹp phạm vi tuyên bố chính xác: Xác nhận trong số **20 toán tử ba ngôi** (`isEn ?` 12 + `isSecEn ?` 8) làm nhiệm vụ chọn trường model dữ liệu `_en/_vi`, cả 20 toán tử đều không chứa chuỗi UI. Toàn file có 116 toán tử ` ? ` là các toán tử logic điều kiện (kiểm tra null, loading, icon, styling...).
+      4. Đính kèm bằng chứng `git diff --stat e3aabc1 597b56e -- src/locales/`: en 6 dòng/1 bớt (+4 khóa), vi 8 dòng/2 bớt (+4 khóa), 0 xóa khóa.
+      5. Giải quyết mâu thuẫn số diff cũ: `32 ++++-` ở `regression_batch6_audit.md` là số dòng thay đổi theo `git diff --stat` giữa `f99757a` và `e3aabc1` (30 khóa thêm mới + 1 dòng sửa dấu phẩy); con số `+24/-0` ở §440 là số khóa thêm riêng ở Đợt 12.
+      6. Tạo file raw log `docs/tsc_check_success.log` qua redirect pipe trực tiếp (`npx tsc -p tsconfig.homepage.json --noEmit > docs/tsc_check_success.log 2>&1`), đạt 0 lỗi (Exit 0).
+    * **Nhóm 3 (StoreView Đổi Nhãn Đếm Gói & Cơ Chế Số Ít)**:
+      1. Cập nhật `src/locales/vi.json` và `en.json`: `mall.search.allProductsCount` ("Tất Cả ({count} gói)" / "All ({count} packages)"), thêm `allProductsCount_singular` ("Tất Cả (1 gói)" / "All (1 package)"), `allProductsCount_plural` ("Tất Cả ({count} gói)" / "All ({count} packages)"), `paginationSummary` ("Trang {page} / {totalPages} • Tổng {total} gói" / "Page {page} / {totalPages} • Total {total} packages"), `showingCount` ("Đang hiển thị {from} - {to} trên tổng số {total} gói" / "Showing {from} - {to} of {total} packages").
+      2. Cập nhật `src/components/shopee/ShopeeTestView.tsx` tại dòng 2474 áp dụng cơ chế số ít khi `count === 1` (`allProductsCount_singular` / `allProductsCount_plural`).
+      3. Ghi nhận 2 khóa chết trong từ điển: `mall.products.pageInfo` và `mall.products.showingInfo` (đã đổi sang "gói" / "packages" nhưng không có vị trí gọi trong mã nguồn `src/`).
+      4. Hoàn thành nghiêm ngặt 2 chốt chặn: Chốt chặn 1 (Pre-grep) và Chốt chặn 2 (Post-grep) xác nhận 0 nhãn cũ còn sót trong ngữ cảnh đếm gói.
+    * **Nhóm 4 (Đính Chính 27 Khóa JSON Live, Loại Bỏ Last-Modified & Raw Log i18n Guard)**:
+      1. Đính chính `main_hero_banner` trên API live trả về đúng **27 khóa JSON**: gồm 18 trường cấu hình gốc từ seed migration 0041 (`id`, `enabled`, `order`, `internal_name`, `title_vi`, `title_en`, `description_vi`, `description_en`, `badge_vi`, `badge_en`, `link_type`, `link_url`, `image_url`, `image_alt_vi`, `image_alt_en`, `image_compression_status`, `image_original_size`, `image_compressed_size`) + đúng 9 khóa thêm (6 alias camelCase và trường mặc định từ catalog `nameVi`, `nameEn`, `descriptionVi`, `descriptionEn`, `defaultEnabled`, `defaultOrder` + `icon` + `subsections` + `link_target`). Xác nhận `enabled` và `order` là trường gốc có từ đầu.
+      2. Ngừng dùng header `Last-Modified` làm bằng chứng hồi quy ảnh (do biến thiên giữa các POP Cloudflare). Bằng chứng hồi quy ảnh E2E gốc `sec_main_hero_banner_real_e2e_v1.webp` chỉ dùng các giá trị bất biến: `HTTP 200 OK`, đúng 4.232 bytes, `Cache-Control: public, max-age=31536000, immutable`, `X-Image-Source: d1-homepage-section-images`.
+      3. Tạo file raw log `docs/i18n_guard_default.log` pipe trực tiếp từ `node scripts/check-hardcoded-i18n.cjs`, xác nhận 15/15 file cốt lõi PASSED (0 chuỗi cứng). Minh bạch ghi nhận chế độ `--all` vẫn FAIL 3.217 lỗi / 91 file vào Backlog ISSUE-315.
+- **Kết quả kiểm thử**:
+  - TypeCheck TypeScript: `npx tsc -p tsconfig.homepage.json --noEmit` đạt 0 lỗi (Exit Code 0), lưu raw log tại `docs/tsc_check_success.log` và tóm tắt tại `docs/tsc_check_success.txt`.
+  - i18n Guard Scanner (Phạm vi cốt lõi): 15/15 file PASSED, lưu raw log tại `docs/i18n_guard_default.log`.
+  - SSRF DoH Test Suite: 49/49 PASSED trong 1339ms.
+  - An toàn bảo mật Rule 10: 0 secret rò rỉ trong git history và mã nguồn.
+
 ### 441. Hoàn Tất Toàn Diện Đợt 14 Trang Chủ: Hiển Thị Thường Trực Cảnh Báo AI Key Tại Khung Nguồn Ảnh Modal Sửa, Ngữ Pháp Số Ít/Số Nhiều Tiếng Anh StoreView & Breadcrumb, Chuẩn Hóa Mock CNAME SSRF Và Đồng Bộ Số Liệu Kiểm Chứng (23/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai khắc phục dứt điểm theo kế hoạch Đợt 14 đã được User phê duyệt:
     * **Nhóm 1 (Chuẩn Hóa SSRF Mock CNAME & Đơn Vị Đo Thời Gian)**:
-      1. Đổi tên Case 09 trong `scripts/test_ssrf_doh_regression.ts` thành `DoH Mock CNAME: Chuỗi CNAME mô phỏng (JSON response tự tạo, domain giả cname-pure.internal) kích hoạt nhánh !hasValidIp & cnamesToFollow recursion dòng 356-362`, minh bạch hóa bản chất mock JSON response giả lập nhánh đệ quy CNAME. Test suite đạt **49/49 PASSED (100%)** lưu tại `docs/test_ssrf_doh_regression.txt`.
-      2. Đính chính triệt để đơn vị đo thời gian trong `CHANGELOG.md` (§439 dòng 49 từ `1.127ms` thành `1127ms`, §440 dòng 19 từ `1.064ms–1.276ms` thành `1064–1276ms`).
+      1. Đổi tên Case 09 trong `scripts/test_ssrf_doh_regression.ts` thành `DoH Mock CNAME: Chuỗi CNAME mô phỏng (JSON response tự tạo, domain giả cname-pure.internal) kích hoạt nhánh !hasValidIp & cnamesToFollow recursion dòng 356-362`, minh bạch hóa bản chất mock JSON response giả lập nhánh đệ quy CNAME. Test suite đạt **49/49 PASSED (100%)** trong 1339ms lưu tại `docs/test_ssrf_doh_regression.txt` (timestamp 2026-11-23T11:19:04.557Z).
+      2. Đính chính triệt để đơn vị đo thời gian trong `CHANGELOG.md` (§439 dòng 75 thành `1127ms` cho đợt 12, §440 dòng 45/55 thành `1276ms` duy nhất cho đợt 13, và §441 thành `1339ms` theo log đợt 14).
     * **Nhóm 2 (Đồng Bộ Số Liệu 20 Toán Tử Ba Ngôi & Bảng Hồi Quy)**:
       1. Thống nhất số liệu toàn bộ tài liệu (`CHANGELOG.md`, `KNOWN_ISSUES.md` ISSUE-315, `docs/regression_batch6_audit.md` Bảng Hồi Quy Đợt 14) xác nhận đúng **20 toán tử ba ngôi (12 lần `isEn ?` + 8 lần `isSecEn ?`)** đóng vai trò bộ chọn model trường dữ liệu `_en` và `_vi`, 0 chuỗi UI cứng.
       2. Cập nhật Bảng Hồi Quy Đợt 14 trong `docs/regression_batch6_audit.md` với lệnh kiểm chứng `git diff --stat` và trạng thái cập nhật các mục STT 1, 4, 6, 8.
@@ -25,12 +54,12 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
       2. *Giải pháp triệt để:* Di chuyển khối cảnh báo ra ngoài tab con, đặt tại vị trí đầu tiên của khu vực Nguồn Ảnh (trước các nút chuyển tab `Upload / Mirror / AI`). Cảnh báo màu vàng `homepageSectionsModule.aiImageUnconfigured` lập tức hiển thị rõ ràng khi Quản trị viên mở khung sửa ảnh banner, hỗ trợ song ngữ VI/EN đầy đủ.
     * **Xác nhận trạng thái các mục khác theo phân định trách nhiệm**:
       1. *N1.1, N1.2, N1.3 (E2E Admin Save, Upload & Visual Check):* Ghi nhận ĐÃ HOÀN TẤT (FIXED) bởi Muse bằng phiên Quản trị viên thật chiều 23/11 (`updated_at` đổi sang `2026-11-23T10:41:05.016Z`, tải ảnh thật `sec_main_hero_banner_1795431494580_1eex0n84.webp`, ảnh E2E gốc giữ nguyên).
-      2. *Test Concurrency D1 thật:* Ghi nhận ĐÃ HOÀN TẤT (FIXED) bởi Muse lúc 17:47:46Z chiều 23/11 ($1\times200 + 1\times400$ trên endpoint live + D1 thật; request thua bị chặn ở bước pre-check hạn mức 10 ảnh).
+      2. *Test Concurrency D1 thật:* Ghi nhận ĐÃ HOÀN TẤT (FIXED) bởi Muse lúc 10:47:46.767Z (= 17:47:46.767 giờ VN) ngày 23/11 ($1\times200 + 1\times400$ trên endpoint live + D1 thật; request thua bị chặn ở bước pre-check hạn mức 10 ảnh).
       3. *Blocked List:* Khóa `GEMINI_API_KEY` và `TINYPNG_API_KEY` trên Cloudflare Pages Secret (do User cấu hình).
       4. *Backlog List:* Dữ liệu sản phẩm tiếng Việt trong D1 (gói Liên Quân Mobile) chờ User quyết định phương án schema D1; ISSUE-315 3.217 chuỗi toàn sàn có lộ trình đợt 15–17.
 - **Kết quả kiểm thử**:
   - TypeCheck TypeScript: `npx tsc -p tsconfig.homepage.json --noEmit` đạt 0 lỗi (Exit Code 0), lưu log tại `docs/tsc_check_success.txt` và `docs/tsc_check_success.log`.
-  - SSRF DoH Test Suite: 49/49 PASSED (0 FAILED) trong 1064–1276ms.
+  - SSRF DoH Test Suite: 49/49 PASSED (0 FAILED) trong 1339ms (theo log docs/test_ssrf_doh_regression.txt lúc 2026-11-23T11:19:04.557Z).
   - An toàn bảo mật Rule 10: 0 secret rò rỉ trong git history và mã nguồn.
 
 ### 440. Khắc Phục Hoàn Chỉnh Đợt 13 Trang Chủ: Gỡ Bỏ Migration 0042 Khỏi Codebase, Test SSRF DoH CNAME Thuần Túy Kích Hoạt Nhánh Đệ Quy (Option b), AST Parser Thật Bằng TS Compiler API Kèm Fixture Loại Bỏ 100% Comment, Song Ngữ Hóa Toàn Diện StoreView & Đồng Bộ Số Lượng Breadcrumb (23/11/2026)
@@ -42,7 +71,7 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
       3. *Đồng bộ số lượng Breadcrumb StoreView:* Khắc phục hiện tượng breadcrumb hiển thị "5 sản phẩm" nhưng chỉ render 1 thẻ trên màn hình: do 5 gói dịch vụ thuộc cùng game Liên Quân Mobile được gom nhóm bởi `groupStoreProductsByGame`. Đã cập nhật breadcrumb trong `ShopeeTestView.tsx` đếm theo `groupedStoreProductsCount` (1 sản phẩm), giúp tiêu đề và giao diện thẻ hiển thị khớp nhau 100%. Đính chính con số "10 gói dịch vụ" trong báo cáo cũ thực chất là chuỗi giá tối thiểu "Từ 10 Core".
     * **Nhóm 2 (Test SSRF DoH CNAME Option b, Khắc Phục Duplicate IDs & Tách Bạch Test Suite)**:
       1. *SSRF DoH CNAME Option (b):* Nâng cấp `scripts/test_ssrf_doh_regression.ts` với ca kiểm thử Case 09 dùng DoH response ghi nhận nguyên văn thuần CNAME (không có bản ghi A/AAAA ở bước 1, trả bản ghi A ở bước 2), kích hoạt và thực thi 100% nhánh `!hasValidIp && cnamesToFollow.length > 0` tại dòng 356-362 của `functions/services/ssrf_service.ts`.
-      2. *Sửa Union Type & Đánh lại số thứ tự không trùng lặp:* Sửa `TestCase.category` hỗ trợ `'DoH_CNAME'`, đánh lại toàn bộ số thứ tự ID từ 01 đến 49 tuần tự không trùng lặp (sửa triệt để duplicate ID 10, 11). Test suite chạy thực tế đạt **49/49 PASSED (0 FAILED)** trong 1064–1276ms, lưu artifact tại `docs/test_ssrf_doh_regression.txt`.
+      2. *Sửa Union Type & Đánh lại số thứ tự không trùng lặp:* Sửa `TestCase.category` hỗ trợ `'DoH_CNAME'`, đánh lại toàn bộ số thứ tự ID từ 01 đến 49 tuần tự không trùng lặp (sửa triệt để duplicate ID 10, 11). Test suite chạy thực tế đạt **49/49 PASSED (0 FAILED)** trong 1276ms, lưu artifact tại `docs/test_ssrf_doh_regression.txt`.
       3. *Tách bạch kiểm thử hạn mức ảnh:* Chạy `scripts/test_upload_11_images.ts` phân định rõ: Phần 1 Unit Test trên SQLite C-Engine in-memory (19/19 PASS) và Phần 2 HTTP Network Transport Concurrency Test (4/4 PASS, tổng 23/23 PASS trong 63ms), lưu artifact tại `docs/test_upload_11_images.txt`. Minh bạch ghi nhận giới hạn test đồng thời trên D1 thật do thiếu quyền admin live vào Blocked.
     * **Nhóm 3 (AST Parser Thật Bằng TS Compiler API, Fixture Loại Bỏ Comment & i18n Audit All)**:
       1. *AST Parser TypeScript Compiler API:* Viết lại `scripts/count_homepage_i18n.cjs` sử dụng `ts.createSourceFile` và `ts.isCallExpression`, duyệt AST bỏ qua 100% comment (trivia). Tạo fixture `tests/fixtures/i18n_comment_fixture.tsx` chứa 4 lệnh gọi trong comment (`//` và `/* */`) và 1 lệnh gọi thật; chạy script qua fixture chứng minh loại bỏ 100% comment (kết quả đúng 1 call). Chạy trên `HomepageSectionsModule.tsx` xác nhận chính xác **179 call sites / 148 unique translation keys**.
@@ -52,7 +81,7 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
       5. *Blocked List:* Khóa `GEMINI_API_KEY` và `TINYPNG_API_KEY` trên Cloudflare Pages Secret; Quyền quản trị viên Live cho thao tác lưu D1.
 - **Kết quả kiểm thử**:
   - Test Suite SQLite C-Engine & HTTP Network Concurrency: 23/23 PASS 100% trong 63ms.
-  - Test Suite SSRF & Live Cloudflare DoH CNAME: 49/49 PASS 100% trong 1064ms–1276ms.
+  - Test Suite SSRF & Live Cloudflare DoH CNAME: 49/49 PASS 100% trong 1276ms.
   - AST Fixture Test & Module Count: Fixture = 1 (100% comment free), Module = 179 call sites / 148 unique keys.
   - `tsc -p tsconfig.homepage.json --noEmit`: PASS 100% (0 lỗi).
   - Trạng thái Git: Clean 100% (`commit_dirty: false`).

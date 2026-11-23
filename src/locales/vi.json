@@ -537,7 +537,9 @@
       "suggestionGanCharger": "Củ sạc GaN",
       "suggestionCanva": "Canva Pro",
       "suggestionEarbuds": "Tai nghe Bluetooth",
-      "allProductsCount": "Tất Cả ({count} sản phẩm)"
+      "allProductsCount": "Tất Cả ({count} gói)",
+      "allProductsCount_singular": "Tất Cả (1 gói)",
+      "allProductsCount_plural": "Tất Cả ({count} gói)"
     },
     "slogan": "Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số",
     "subnav": {
@@ -604,8 +606,8 @@
       "gameZone": "Game Zone",
       "support247": "Hỗ Trợ 24/7"
     },
-    "paginationSummary": "Trang {page} / {totalPages} • Tổng {total} sản phẩm",
-    "showingCount": "Đang hiển thị {from} - {to} trên tổng số {total} sản phẩm",
+    "paginationSummary": "Trang {page} / {totalPages} • Tổng {total} gói",
+    "showingCount": "Đang hiển thị {from} - {to} trên tổng số {total} gói",
     "categories": {
       "sectionTitle": "DANH MỤC NGÀNH HÀNG TOÀN SÀN",
       "sectionSubtitle": "(5 Ngành Hàng Chính Hãng)",
@@ -632,8 +634,8 @@
       "allTab": "🔥 Tất Cả Sản Phẩm",
       "physicalTab": "🚚 Hàng Vật Lý (Ship)",
       "digitalTab": "⚡ Hàng Số (Mã 0s)",
-      "pageInfo": "Trang {page} / {totalPages} • Tổng {total} sản phẩm",
-      "showingInfo": "Đang hiển thị {shown} / {total} sản phẩm (Trang {page} / {totalPages})",
+      "pageInfo": "Trang {page} / {totalPages} • Tổng {total} gói",
+      "showingInfo": "Đang hiển thị {shown} / {total} gói (Trang {page} / {totalPages})",
       "emptyTitle": "Sàn đang chuẩn bị danh sách sản phẩm đợt đầu",
       "emptyDesc": "Hệ thống danh mục 5 ngành hàng đã sẵn sàng. Sản phẩm chính hãng đang được đồng bộ và kiểm duyệt trước khi mở bán.",
       "badgeShipping": "Giao tận nơi",
@@ -981,7 +983,10 @@
       "navigation": "Thanh Điều Hướng",
       "shortcuts": "Hàng Lối Tắt Dịch Vụ",
       "categories": "Tab Ngành Hàng Toàn Sàn",
-      "sorting": "Thanh Sắp Xếp Sản Phẩm"
+      "sorting": "Thanh Sắp Xếp Sản Phẩm",
+      "custom": "Mục Tự Thêm",
+      "customItems": "Mục Tự Thêm",
+      "shortcutsShort": "Hàng Lối Tắt Dịch Vụ"
     },
     "subsections": {
       "nav_home": {
