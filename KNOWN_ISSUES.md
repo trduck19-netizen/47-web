@@ -61,7 +61,7 @@
   4. *Kiểm định Magic Bytes nhị phân*: Sau khi tải về, kiểm tra trực tiếp magic bytes của mảng byte thật (chỉ nhận JPEG, PNG, WebP, GIF, AVIF; chặn 100% SVG, HTML và file thực thi).
   5. *Nén lại WebP độc lập*: Mọi ảnh tải về đều được giải mã và tái mã hóa thành WebP mới hoàn toàn qua ImageScript, triệt tiêu mọi payload mã độc nhúng trong metadata ảnh.
 
-### ISSUE-316: Cạm Bẫy Hồi Quy Song Ngữ Khi Dùng Hàm Dịch Động t(...) Gán Cả 2 Trường Vi/En & Bẫy Regex Ngoặc Kép Đo 0 Giả
+### ISSUE-319: Cạm Bẫy Hồi Quy Song Ngữ Khi Dùng Hàm Dịch Động t(...) Gán Cả 2 Trường Vi/En & Bẫy Regex Ngoặc Kép Đo 0 Giả
 - **Triệu chứng & Rủi ro**:
   1. *Hồi quy song ngữ HSM (Đợt 15)*: Khi gán `groupNameVi` và `groupNameEn` bằng cùng 1 hàm dịch động `t(...)` (ví dụ: `groupNameVi: t('homepageSectionsModule.groups.shortcutsShort')`, `groupNameEn: t('homepageSectionsModule.groups.shortcutsShort')`), chuỗi trả về phụ thuộc hoàn toàn vào ngôn ngữ giao diện của Quản trị viên tại thời điểm đó:
      - Nếu Admin bật Tiếng Việt: cả `groupNameVi` VÀ `groupNameEn` đều bị gán chuỗi Tiếng Việt (`"Hàng Lối Tắt Dịch Vụ"`). Khách xem giao diện Tiếng Anh `/en/` bị hiển thị Tiếng Việt.

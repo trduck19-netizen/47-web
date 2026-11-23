@@ -1050,7 +1050,7 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
         ? SUBSECTION_GROUP_NAMES.navigation.en
         : group === 'shortcuts'
           ? SUBSECTION_GROUP_NAMES.shortcuts.en
-          : SUBSECTION_GROUP_NAMES.custom.en,
+          : SUBSECTION_GROUP_NAMES.customItems.en,
       internal_name: '',
       title_vi: '',
       title_en: '',
@@ -2745,10 +2745,23 @@ export const HomepageSectionsModule: React.FC<HomepageSectionsModuleProps> = ({ 
                   value={newSubForm.parentId}
                   onChange={(e) => {
                     const p = e.target.value;
-                    let grp = 'shortcuts';
+                    let grp = newSubForm.group;
                     if (p === 'top_announcement') grp = 'navigation';
-                    else if (p === 'categories_grid') grp = 'shortcuts';
-                    setNewSubForm({ ...newSubForm, parentId: p, group: grp });
+                    else if (p === 'categories_grid') {
+                      // Giữ nguyên nhóm hiện tại nếu đã là shortcuts/categories/sorting; chỉ mặc định shortcuts khi nhóm cũ không thuộc 3 nhóm này
+                      if (grp !== 'shortcuts' && grp !== 'categories' && grp !== 'sorting') grp = 'shortcuts';
+                    } else grp = 'custom';
+
+                    const validKey = (grp in SUBSECTION_GROUP_NAMES ? grp : 'custom') as keyof typeof SUBSECTION_GROUP_NAMES;
+                    setNewSubForm({
+                      ...newSubForm,
+                      parentId: p,
+                      group: grp,
+                      groupNameVi: SUBSECTION_GROUP_NAMES[validKey].vi,
+                      groupNameEn: grp === 'custom'
+                        ? SUBSECTION_GROUP_NAMES.customItems.en
+                        : SUBSECTION_GROUP_NAMES[validKey].en,
+                    });
                   }}
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs focus:outline-none"
                 >

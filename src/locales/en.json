@@ -800,6 +800,7 @@
     "editModalTitle": "Edit Display Information & Link",
     "addSubsection": "Add Subsection",
     "addSubsectionModalTitle": "Add New Subsection",
+    "newSubsection": "New Subsection",
     "parentSection": "Parent Section",
     "selectParentSection": "-- Select parent section --",
     "subsectionGroup": "Group category",
