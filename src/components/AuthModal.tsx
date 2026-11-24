@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -60,11 +60,149 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Turnstile configuration & states
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+  const [loginTurnstileToken, setLoginTurnstileToken] = useState('');
+  const [regTurnstileToken, setRegTurnstileToken] = useState('');
+  const loginWidgetIdRef = useRef<string | null>(null);
+  const regWidgetIdRef = useRef<string | null>(null);
+  const [isTurnstileLoaded, setIsTurnstileLoaded] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       setErrorMessage(null);
     }
   }, [isOpen, tab]);
+
+  // Load Cloudflare Turnstile script dynamically
+  useEffect(() => {
+    if (!isOpen || !turnstileSiteKey) return;
+
+    if ((window as any).turnstile) {
+      setIsTurnstileLoaded(true);
+      return;
+    }
+
+    const existingScript = document.querySelector('script[src*="challenges.cloudflare.com/turnstile"]');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setIsTurnstileLoaded(true);
+      script.onerror = () => {
+        console.error('[Turnstile] Failed to load SDK');
+        setErrorMessage(isEn ? 'Failed to load security verification widget.' : 'Không thể tải widget bảo mật chống bot. Vui lòng thử lại.');
+      };
+      document.head.appendChild(script);
+    } else {
+      const interval = setInterval(() => {
+        if ((window as any).turnstile) {
+          setIsTurnstileLoaded(true);
+          clearInterval(interval);
+        }
+      }, 200);
+      return () => clearInterval(interval);
+    }
+  }, [isOpen, turnstileSiteKey, isEn]);
+
+  // Render Turnstile widget for Login Tab
+  useEffect(() => {
+    if (!isOpen || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'login') return;
+
+    const timer = setTimeout(() => {
+      const container = document.getElementById('turnstile-login-container');
+      if (!container || !(window as any).turnstile) return;
+
+      setLoginTurnstileToken('');
+      if (loginWidgetIdRef.current) {
+        try {
+          (window as any).turnstile.remove(loginWidgetIdRef.current);
+        } catch {}
+        loginWidgetIdRef.current = null;
+      }
+
+      try {
+        const id = (window as any).turnstile.render('#turnstile-login-container', {
+          sitekey: turnstileSiteKey,
+          theme: 'auto',
+          callback: (token: string) => {
+            setLoginTurnstileToken(token);
+            setErrorMessage(null);
+          },
+          'expired-callback': () => {
+            setLoginTurnstileToken('');
+          },
+          'error-callback': () => {
+            setLoginTurnstileToken('');
+            setErrorMessage(isEn ? 'Security challenge failed. Please retry.' : 'Xác minh chống bot thất bại. Vui lòng thử lại.');
+          },
+        });
+        loginWidgetIdRef.current = id;
+      } catch (e) {
+        console.error('[Turnstile] Render error login:', e);
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (loginWidgetIdRef.current && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(loginWidgetIdRef.current);
+        } catch {}
+        loginWidgetIdRef.current = null;
+      }
+    };
+  }, [isOpen, isTurnstileLoaded, turnstileSiteKey, tab, isEn]);
+
+  // Render Turnstile widget for Register Tab
+  useEffect(() => {
+    if (!isOpen || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'register') return;
+
+    const timer = setTimeout(() => {
+      const container = document.getElementById('turnstile-register-container');
+      if (!container || !(window as any).turnstile) return;
+
+      setRegTurnstileToken('');
+      if (regWidgetIdRef.current) {
+        try {
+          (window as any).turnstile.remove(regWidgetIdRef.current);
+        } catch {}
+        regWidgetIdRef.current = null;
+      }
+
+      try {
+        const id = (window as any).turnstile.render('#turnstile-register-container', {
+          sitekey: turnstileSiteKey,
+          theme: 'auto',
+          callback: (token: string) => {
+            setRegTurnstileToken(token);
+            setErrorMessage(null);
+          },
+          'expired-callback': () => {
+            setRegTurnstileToken('');
+          },
+          'error-callback': () => {
+            setRegTurnstileToken('');
+            setErrorMessage(isEn ? 'Security challenge failed. Please retry.' : 'Xác minh chống bot thất bại. Vui lòng thử lại.');
+          },
+        });
+        regWidgetIdRef.current = id;
+      } catch (e) {
+        console.error('[Turnstile] Render error register:', e);
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (regWidgetIdRef.current && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(regWidgetIdRef.current);
+        } catch {}
+        regWidgetIdRef.current = null;
+      }
+    };
+  }, [isOpen, isTurnstileLoaded, turnstileSiteKey, tab, isEn]);
 
   if (!isOpen) return null;
 
@@ -78,7 +216,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!loginIdentifier.trim()) {
-      setErrorMessage('Vui lòng nhập tên đăng nhập hoặc email.');
+      setErrorMessage(isEn ? 'Please enter your username or email.' : 'Vui lòng nhập tên đăng nhập hoặc email.');
+      return;
+    }
+
+    if (turnstileSiteKey && !loginTurnstileToken) {
+      setErrorMessage(isEn ? 'Please complete the security check.' : 'Vui lòng hoàn tất xác minh bảo mật chống bot.');
       return;
     }
 
@@ -87,7 +230,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       identifier: loginIdentifier,
       password: loginPassword,
       rememberMe,
-      turnstileToken: 'cf_turnstile_verified',
+      turnstileToken: loginTurnstileToken,
     });
     setIsLoading(false);
 
@@ -100,13 +243,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       });
       onSuccess(res.user);
       onShowToast(
-        'Đăng nhập thành công!',
-        `Chào mừng ${res.user.displayName || res.user.username} quay trở lại!`,
+        isEn ? 'Login successful!' : 'Đăng nhập thành công!',
+        isEn ? `Welcome back, ${res.user.displayName || res.user.username}!` : `Chào mừng ${res.user.displayName || res.user.username} quay trở lại!`,
         'success'
       );
       onClose();
     } else {
-      setErrorMessage(res.message || 'Đăng nhập không thành công.');
+      if (loginWidgetIdRef.current && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.reset(loginWidgetIdRef.current);
+        } catch {}
+        setLoginTurnstileToken('');
+      }
+      setErrorMessage(res.message || (isEn ? 'Login failed.' : 'Đăng nhập không thành công.'));
     }
   };
 
@@ -117,27 +266,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const userCheck = isValidUsername(regUsername);
     if (!userCheck.valid) {
-      setErrorMessage(userCheck.message || 'Tên đăng nhập không hợp lệ.');
+      setErrorMessage(userCheck.message || (isEn ? 'Invalid username.' : 'Tên đăng nhập không hợp lệ.'));
       return;
     }
 
     if (!isValidEmail(regEmail)) {
-      setErrorMessage('Vui lòng nhập địa chỉ email hợp lệ.');
+      setErrorMessage(isEn ? 'Please enter a valid email address.' : 'Vui lòng nhập địa chỉ email hợp lệ.');
       return;
     }
 
     if (regPassword.length < 6) {
-      setErrorMessage('Mật khẩu cần tối thiểu 6 ký tự.');
+      setErrorMessage(isEn ? 'Password must be at least 6 characters.' : 'Mật khẩu cần tối thiểu 6 ký tự.');
       return;
     }
 
     if (regPassword !== regConfirmPassword) {
-      setErrorMessage('Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại.');
+      setErrorMessage(isEn ? 'Confirm password does not match.' : 'Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại.');
       return;
     }
 
     if (!agreeTerms) {
-      setErrorMessage('Vui lòng chấp thuận Điều khoản dịch vụ & Chính sách bảo mật.');
+      setErrorMessage(isEn ? 'Please accept the Terms of Service & Privacy Policy.' : 'Vui lòng chấp thuận Điều khoản dịch vụ & Chính sách bảo mật.');
+      return;
+    }
+
+    if (turnstileSiteKey && !regTurnstileToken) {
+      setErrorMessage(isEn ? 'Please complete the security check.' : 'Vui lòng hoàn tất xác minh bảo mật chống bot.');
       return;
     }
 
@@ -147,7 +301,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       displayName: regDisplayName || regUsername,
       email: regEmail,
       password: regPassword,
-      turnstileToken: 'cf_turnstile_verified',
+      turnstileToken: regTurnstileToken,
     });
     setIsLoading(false);
 
@@ -160,13 +314,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       });
       onSuccess(res.user);
       onShowToast(
-        'Đăng ký tài khoản thành công!',
-        `Tài khoản ${res.user.username} đã được kích hoạt thành công.`,
+        isEn ? 'Registration successful!' : 'Đăng ký tài khoản thành công!',
+        isEn ? `Account ${res.user.username} has been activated successfully.` : `Tài khoản ${res.user.username} đã được kích hoạt thành công.`,
         'success'
       );
       onClose();
     } else {
-      setErrorMessage(res.message || 'Đăng ký không thành công.');
+      if (regWidgetIdRef.current && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.reset(regWidgetIdRef.current);
+        } catch {}
+        setRegTurnstileToken('');
+      }
+      setErrorMessage(res.message || (isEn ? 'Registration failed.' : 'Đăng ký không thành công.'));
     }
   };
 
@@ -378,10 +538,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </label>
               </div>
 
+              {/* Turnstile Security Widget */}
+              {turnstileSiteKey ? (
+                <div className="flex justify-center my-2 min-h-[65px]">
+                  <div id="turnstile-login-container"></div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-center">
+                  {isEn ? 'Turnstile Site Key not configured (VITE_TURNSTILE_SITE_KEY).' : 'Chưa cấu hình VITE_TURNSTILE_SITE_KEY trên hệ thống.'}
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || (turnstileSiteKey ? !loginTurnstileToken : true)}
                 className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary-hover text-white font-display font-bold text-xs sm:text-sm shadow-glow-primary transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
               >
                 {isLoading ? (
@@ -537,10 +708,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </span>
               </label>
 
+              {/* Turnstile Security Widget */}
+              {turnstileSiteKey ? (
+                <div className="flex justify-center my-2 min-h-[65px]">
+                  <div id="turnstile-register-container"></div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-center">
+                  {isEn ? 'Turnstile Site Key not configured (VITE_TURNSTILE_SITE_KEY).' : 'Chưa cấu hình VITE_TURNSTILE_SITE_KEY trên hệ thống.'}
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || !isConfirmPasswordMatch || !agreeTerms}
+                disabled={isLoading || !isConfirmPasswordMatch || !agreeTerms || (turnstileSiteKey ? !regTurnstileToken : true)}
                 className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary-hover text-white font-display font-bold text-xs sm:text-sm shadow-glow-primary transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
               >
                 {isLoading ? (

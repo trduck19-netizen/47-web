@@ -81,7 +81,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Đơn hàng đã hoàn tất sau 168 giờ giữ tiền và đã giải ngân, không thể gửi khiếu nại tự động. Vui lòng liên hệ Quản trị viên để được hỗ trợ thủ công.',
+          error: 'Đơn hàng đã hoàn tất và đã giải ngân, không thể gửi khiếu nại tự động. Vui lòng liên hệ Quản trị viên để được hỗ trợ thủ công.',
         }),
         { status: 400, headers: CORS_HEADERS }
       );

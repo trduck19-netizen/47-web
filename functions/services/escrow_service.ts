@@ -556,11 +556,38 @@ export async function fileOrderDispute(
     // Nếu là đơn liên shop (Affiliate), bổ sung bản ghi tranh chấp cho NCC để cả 2 bên cùng thấy
     if (order.is_affiliate_order === 1 && order.supplier_seller_id && order.supplier_seller_id !== sellerId) {
       const supDisputeId = `dsp_sup_${Date.now().toString(36)}_${generateSecureIdSuffix(4)}`;
-      await db.prepare(`
-        INSERT INTO seller_disputes (
-          id, order_id, buyer_member_id, seller_id, reason, detail, status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)
-      `).bind(supDisputeId, order.id, userId, order.supplier_seller_id, reason, finalDetail, nowIso, nowIso).run().catch(() => {});
+      try {
+        const supDisputeRes = await db.prepare(`
+          INSERT INTO seller_disputes (
+            id, order_id, buyer_member_id, seller_id, reason, detail, status, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)
+        `).bind(supDisputeId, order.id, userId, order.supplier_seller_id, reason, finalDetail, nowIso, nowIso).run();
+
+        if (!supDisputeRes.success) {
+          throw new Error('Lỗi CSDL khi tạo bản ghi khiếu nại cho NCC.');
+        }
+      } catch (supErr: any) {
+        console.error('[Escrow] Lỗi tạo khiếu nại NCC:', supErr);
+        // Rollback 2 chiều đầy đủ: xóa dispute thứ 1 của shop gán và khôi phục đơn
+        await db.prepare("DELETE FROM seller_disputes WHERE id = ?").bind(disputeId).run().catch(() => {});
+        if (isSellerOrderTable) {
+          await db.prepare(`
+            UPDATE seller_orders
+            SET status = 'PAID', report_reason = NULL, report_note = NULL, reported_at = NULL, updated_at = ?
+            WHERE id = ? AND status = 'REPORTED'
+          `).bind(nowIso, order.id).run().catch(() => {});
+        } else {
+          await db.prepare(`
+            UPDATE orders
+            SET escrow_status = 'HELD', dispute_reason = NULL, dispute_detail = NULL, updated_at = ?
+            WHERE id = ? AND escrow_status = 'DISPUTED'
+          `).bind(nowIso, order.id).run().catch(() => {});
+        }
+        return {
+          success: false,
+          message: 'Lỗi ghi nhận khiếu nại cho Nhà cung cấp. Đã khôi phục trạng thái đơn hàng.',
+        };
+      }
     }
 
     const logId2 = 'sec_' + Date.now().toString(36) + '_' + generateSecureIdSuffix(4);
@@ -595,17 +622,27 @@ export async function resolveAdminDispute(
 ): Promise<{ success: boolean; message: string }> {
   try {
     const { orderId, resolution, adminId, note } = params;
-    const order = await db
+    let isSellerOrder = false;
+    let order = await db
       .prepare("SELECT * FROM orders WHERE id = ? COLLATE NOCASE LIMIT 1")
       .bind(orderId)
       .first<any>();
+
+    if (!order) {
+      order = await db
+        .prepare("SELECT * FROM seller_orders WHERE id = ? COLLATE NOCASE LIMIT 1")
+        .bind(orderId)
+        .first<any>();
+      if (order) isSellerOrder = true;
+    }
 
     if (!order) {
       return { success: false, message: `Không tìm thấy đơn hàng ${orderId}.` };
     }
 
     const sellerId = order.seller_id || (await ensureOfficialSeller(db));
-    const amount = Number(order.total_amount || 0);
+    const amount = Number(order.total_amount || order.price_core || 0);
+    const buyerMemberId = order.buyer_member_id || order.member_id;
     const nowIso = new Date().toISOString();
 
     if (resolution === 'RELEASE') {
@@ -640,19 +677,34 @@ export async function resolveAdminDispute(
       }
 
       // Cập nhật trạng thái đơn sang REFUNDED (State-guarded update first để chống hoàn trùng lặp)
-      const updateRes: any = await db
-        .prepare(`
-          UPDATE orders
-          SET status = 'REFUNDED',
-              escrow_status = 'REFUNDED',
-              updated_at = ?
-          WHERE id = ?
-            AND escrow_status != 'REFUNDED'
-            AND escrow_status != 'RELEASED'
-            AND status != 'COMPLETED'
-        `)
-        .bind(nowIso, order.id)
-        .run();
+      let updateRes: any;
+      if (isSellerOrder) {
+        updateRes = await db
+          .prepare(`
+            UPDATE seller_orders
+            SET status = 'REFUNDED',
+                updated_at = ?
+            WHERE id = ?
+              AND status != 'REFUNDED'
+              AND status != 'COMPLETED'
+          `)
+          .bind(nowIso, order.id)
+          .run();
+      } else {
+        updateRes = await db
+          .prepare(`
+            UPDATE orders
+            SET status = 'REFUNDED',
+                escrow_status = 'REFUNDED',
+                updated_at = ?
+            WHERE id = ?
+              AND escrow_status != 'REFUNDED'
+              AND escrow_status != 'RELEASED'
+              AND status != 'COMPLETED'
+          `)
+          .bind(nowIso, order.id)
+          .run();
+      }
 
       if (!updateRes || updateRes.meta?.changes === 0) {
         return { success: false, message: 'Đơn hàng này đã được xử lý hoàn tiền hoặc giải ngân trước đó.' };
@@ -669,13 +721,22 @@ export async function resolveAdminDispute(
 
       if (!refRes.success) {
         console.warn('[Escrow] Error recording ledger refund:', refRes.error);
-        await db.prepare(`
-          UPDATE orders
-          SET status = 'PROCESSING',
-              escrow_status = 'DISPUTED',
-              updated_at = ?
-          WHERE id = ?
-        `).bind(nowIso, order.id).run();
+        if (isSellerOrder) {
+          await db.prepare(`
+            UPDATE seller_orders
+            SET status = 'REPORTED',
+                updated_at = ?
+            WHERE id = ?
+          `).bind(nowIso, order.id).run().catch(() => {});
+        } else {
+          await db.prepare(`
+            UPDATE orders
+            SET status = 'PROCESSING',
+                escrow_status = 'DISPUTED',
+                updated_at = ?
+            WHERE id = ?
+          `).bind(nowIso, order.id).run().catch(() => {});
+        }
         return {
           success: false,
           message: `Lỗi khi ghi sổ cái hoàn tiền (${refRes.error}). Đã khôi phục trạng thái khiếu nại.`,
@@ -683,7 +744,7 @@ export async function resolveAdminDispute(
       }
 
       // Hoàn tiền vào ví thành viên
-      if (order.member_id) {
+      if (buyerMemberId) {
         await db
           .prepare(`
             UPDATE members
@@ -691,7 +752,7 @@ export async function resolveAdminDispute(
                 updated_at = ?
             WHERE id = ?
           `)
-          .bind(amount, nowIso, order.member_id)
+          .bind(amount, nowIso, buyerMemberId)
           .run();
 
         const txId = `tx_refund_${Date.now()}_${generateSecureIdSuffix(4)}`;
@@ -710,7 +771,7 @@ export async function resolveAdminDispute(
             `Hoàn tiền khiếu nại bảo chứng đơn ${order.id}`,
             order.id,
             nowIso,
-            order.member_id
+            buyerMemberId
           )
           .run()
           .catch(() => {});

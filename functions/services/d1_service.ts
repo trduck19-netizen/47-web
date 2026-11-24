@@ -2701,6 +2701,91 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0043 seller_affiliate_cross_shop error]', e);
     }
 
+    // Migration 0044: Bổ sung cột thiếu (AI call logs + affiliate partnerships) + sửa UNIQUE seller_disputes
+    try {
+      const m0044Check = await db.prepare(
+        "SELECT 1 FROM schema_migrations WHERE id = '0044_schema_fixes_affiliate_ai_disputes' LIMIT 1"
+      ).first().catch(() => null);
+
+      if (!m0044Check) {
+        // 1. Bổ sung cột response_time_ms cho user_ai_api_call_logs
+        await db.prepare("ALTER TABLE user_ai_api_call_logs ADD COLUMN response_time_ms INTEGER DEFAULT 0;").run().catch(() => {});
+
+        // 2. Bổ sung cột one_time_raw_key cho seller_affiliate_partnerships
+        await db.prepare("ALTER TABLE seller_affiliate_partnerships ADD COLUMN one_time_raw_key TEXT DEFAULT NULL;").run().catch(() => {});
+
+        // 3. Rebuild bảng seller_disputes an toàn (Idempotent + Row count check)
+        // Dọn dẹp bảng tạm dở dang nếu có từ lần chạy trước
+        await db.prepare("DROP TABLE IF EXISTS seller_disputes_new;").run().catch(() => {});
+
+        // Bước 3.1: Tạo bảng tạm thời với ràng buộc tổ hợp UNIQUE(order_id, seller_id)
+        await db.prepare(`
+          CREATE TABLE seller_disputes_new (
+            id TEXT PRIMARY KEY,
+            order_id TEXT NOT NULL,
+            buyer_member_id TEXT NOT NULL,
+            seller_id TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            detail TEXT,
+            seller_response TEXT,
+            seller_replacement_code TEXT,
+            seller_responded_at TEXT,
+            status TEXT NOT NULL DEFAULT 'OPEN',
+            resolved_by TEXT,
+            resolution_note TEXT,
+            is_flagged_abusive INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(order_id, seller_id)
+          );
+        `).run();
+
+        // Đếm số dòng bảng cũ
+        const oldRowRes = await db.prepare("SELECT COUNT(*) AS total FROM seller_disputes;").first<any>().catch(() => null);
+        const oldCount = Number(oldRowRes?.total ?? 0);
+
+        // Bước 3.2: Sao chép toàn vẹn 15 cột dữ liệu hiện có
+        await db.prepare(`
+          INSERT OR IGNORE INTO seller_disputes_new (
+            id, order_id, buyer_member_id, seller_id, reason, detail,
+            seller_response, seller_replacement_code, seller_responded_at,
+            status, resolved_by, resolution_note, is_flagged_abusive, created_at, updated_at
+          )
+          SELECT id, order_id, buyer_member_id, seller_id, reason, detail,
+                 seller_response, seller_replacement_code, seller_responded_at,
+                 status, resolved_by, resolution_note, is_flagged_abusive, created_at, updated_at
+          FROM seller_disputes;
+        `).run();
+
+        // Đếm số dòng bảng mới
+        const newRowRes = await db.prepare("SELECT COUNT(*) AS total FROM seller_disputes_new;").first<any>().catch(() => null);
+        const newCount = Number(newRowRes?.total ?? 0);
+
+        // Bước 3.3: CHỈ DROP và RENAME khi số dòng khớp nhau hoàn toàn (hoặc bảng cũ rỗng)
+        if (oldCount === newCount) {
+          await db.prepare("DROP TABLE seller_disputes;").run();
+          await db.prepare("ALTER TABLE seller_disputes_new RENAME TO seller_disputes;").run();
+
+          // Bước 3.4: Tái tạo đầy đủ 4 index của seller_disputes
+          await db.prepare("CREATE INDEX IF NOT EXISTS idx_seller_disputes_seller_status ON seller_disputes(seller_id, status);").run();
+          await db.prepare("CREATE INDEX IF NOT EXISTS idx_seller_disputes_order ON seller_disputes(order_id);").run();
+          await db.prepare("CREATE INDEX IF NOT EXISTS idx_seller_disputes_buyer ON seller_disputes(buyer_member_id);").run();
+          await db.prepare("CREATE INDEX IF NOT EXISTS idx_seller_disputes_status ON seller_disputes(status, created_at);").run();
+          console.log(`[Migration 0044] Rebuild seller_disputes thành công: ${oldCount} -> ${newCount} dòng.`);
+        } else {
+          console.error(`[Migration 0044] CẢNH BÁO: Lệch số dòng khi rebuild (${oldCount} != ${newCount}). Hủy bỏ bảng tạm.`);
+          await db.prepare("DROP TABLE IF EXISTS seller_disputes_new;").run().catch(() => {});
+          throw new Error(`Row count mismatch: oldCount=${oldCount}, newCount=${newCount}`);
+        }
+
+        // Bước 4: Đánh dấu hoàn tất migration 0044
+        await db.prepare(
+          "INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0044_schema_fixes_affiliate_ai_disputes');"
+        ).run();
+      }
+    } catch (e) {
+      console.warn('[Migration 0044 schema fixes error]', e);
+    }
 
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done

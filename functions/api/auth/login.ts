@@ -16,6 +16,7 @@ interface Env {
   PASSWORD_PEPPER?: string;
   TURNSTILE_SECRET_KEY?: string;
   CF_TURNSTILE_SECRET?: string;
+  ENVIRONMENT?: string;
 }
 
 const CORS_HEADERS = {
@@ -69,7 +70,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 1. Turnstile Anti-bot Verification
     const turnstileSecret = env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET;
-    if (turnstileSecret && turnstileToken && turnstileToken !== 'cf_turnstile_verified') {
+    if (!turnstileSecret) {
+      if (env.ENVIRONMENT === 'development') {
+        console.warn('[Turnstile] Dev mode bypass (ENVIRONMENT === development)');
+      } else {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Xác minh bảo mật chống bot chưa được cấu hình trên máy chủ. Vui lòng liên hệ quản trị viên.' }),
+          { status: 503, headers: CORS_HEADERS }
+        );
+      }
+    } else {
+      if (!turnstileToken) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Yêu cầu mã xác thực chống bot Cloudflare Turnstile.' }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
       try {
         const formData = new FormData();
         formData.append('secret', turnstileSecret);
@@ -88,7 +104,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           );
         }
       } catch (err: any) {
-        console.error('Turnstile verification error:', err);
+        console.error('Turnstile verification network error:', err);
+        return new Response(
+          JSON.stringify({ success: false, message: 'Dịch vụ xác thực bảo mật tạm thời không khả dụng, vui lòng thử lại sau.' }),
+          { status: 503, headers: CORS_HEADERS }
+        );
       }
     }
 
