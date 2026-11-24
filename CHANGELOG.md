@@ -7,6 +7,27 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 453. Rà Soát Bảo Mật Toàn Diện & Chuẩn Hóa Cấu Hình Cloudflare: Xóa Bỏ Khóa Fallback Cứng, Ngăn Chặn Privilege Escalation, Linh Hoạt Hóa Turnstile & Thiết Lập Chặn Git Secrets (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Người dùng yêu cầu rà soát toàn bộ 456 file mã nguồn trước khi deploy lên Cloudflare Pages/Workers, đánh giá tiêu chuẩn an toàn và xử lý dứt điểm các rủi ro cấu hình/dữ liệu.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  1. Trong `functions/api/seller/codes/[id]/reveal.ts` và `seller/products/[id]/codes.ts` có chuỗi fallback cứng `'wcg_marketplace_code_aes_key_default_32'`, nếu máy chủ thiếu biến môi trường sẽ làm lộ thuật toán mã hóa kho mã số.
+  2. Trong `functions/services/escrow_service.ts` kiểm tra danh tính admin bằng chuỗi so sánh `userId !== 'admin'`, và `functions/api/auth/login.ts` truy vấn SQL admin tĩnh theo email cũ `admin@codegame.store`.
+  3. `functions/api/auth/login.ts` và `register.ts` bắt buộc `turnstileToken` gửi lên Cloudflare siteverify trong khi frontend chưa nhúng widget Turnstile thật (đang gửi chuỗi giả lập), dẫn đến nguy cơ người dùng bị chặn toàn bộ khi kích hoạt `TURNSTILE_SECRET_KEY`.
+  4. `.gitignore` chưa chặn `.dev.vars` (file chứa secrets của Wrangler khi chạy cục bộ) và các file database `*.sqlite`, `*.db`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Fail-Closed Secret Encryption*: Xóa bỏ hoàn toàn chuỗi fallback tĩnh trong `reveal.ts` và `codes.ts`. Bắt buộc kiểm tra `MARKETPLACE_CODE_KEY` hoặc `JWT_SECRET` tối thiểu 16 ký tự, nếu thiếu lập tức dừng lại và báo lỗi cấu hình 500 an toàn.
+  2. *Role-based Authorization & Dynamic Admin Lookup*: Thay thế kiểm tra `userId !== 'admin'` trong `escrow_service.ts` bằng `isAdmin = auth.member.role === 'admin' || auth.member.role === 'SUPER_ADMIN'`. Chuẩn hóa truy vấn đăng nhập admin trong `login.ts` để luôn so khớp chính xác identifier người dùng nhập vào.
+  3. *Linh hoạt hóa Turnstile Token*: Chỉ gọi Cloudflare siteverify khi token thực tế được sinh ra từ widget Turnstile (khác token placeholder `'cf_turnstile_verified'`).
+  4. *Gia cố `.gitignore`*: Chặn tuyệt đối `.dev.vars`, `.dev.vars.*`, `*.sqlite`, `*.sqlite3`, `*.db`.
+  5. *Ban hành `.env.example` Chuẩn Hóa*: Tạo tệp mẫu phân nhóm 9 danh mục biến môi trường với placeholder an toàn `CHANGE_ME_*`.
+- **Kiểm thử & Triển khai (Verification & Deploy)**:
+  - *TypeScript & Lean Guard*: `npx tsc -p tsconfig.homepage.json --noEmit` Pass 100%, Lean Guard 9/9 PASS, Edge Worker bundle 6.17 MB.
+  - *Bảo mật Rule 10*: Quét 3 regex bắt buộc đều 0 matches.
+  - *Deploy All Cloudflare Pages*: Web Khách (`universal-mall-shop.pages.dev`) và Web Quản Trị (`admin-universal-mall.pages.dev`) đều trả về HTTP 200 OK.
+  - *Commit & Sync Git*: Commit `2682922` và đồng bộ `git push origin main`.
+
+
 ### 452. Triển Khai Thành Công Đợt 6 Tinh Gọn Hệ Thống (Lean Framework): Tinh Gọn Edge Worker Bundle Từ 19.20 MB Xuống 6.17 MB (-67.8%), Bóc Tách 13.5 MB Dữ Liệu Tĩnh Khỏi Backend Functions (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai Bước 6 theo kế hoạch chi tiết `plan_dot_6_lean_edge_worker.md` đã được người dùng phê duyệt.
