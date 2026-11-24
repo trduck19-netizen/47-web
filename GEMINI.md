@@ -147,6 +147,11 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, AI Agent
   - Báo cáo và kiểm chứng hồi quy **BẮT BUỘC** phải đo lường trực tiếp trên cấu trúc dữ liệu JSON thực tế trả về từ live API (ví dụ: đếm đúng số khóa JSON thực tế của response), không suy đoán dựa trên định nghĩa schema lý thuyết ban đầu.
   - Không sử dụng các header HTTP không ổn định giữa các CDN POP (như `Last-Modified`) làm bằng chứng hồi quy cố định.
 
+### ⚡ 15. NGUYÊN TẮC TỰ ĐỘNG THAO TÁC TRÊN CLOUDFLARE (ZERO REDUNDANT CONFIRMATION FOR CLOUDFLARE OPS EXCEPT BILLING)
+- Bất cứ thiết lập, cấu hình, hoặc tài nguyên nào có thể tạo/sửa đổi tự động trên Cloudflare (như tạo Turnstile Widgets, cấu hình Environment Variables trên Pages, bindings D1/KV/R2, rulesets, DNS, purge cache...): Tác nhân **BẮT BUỘC TỰ ĐỘNG THỰC HIỆN** thông qua Cloudflare API / MCP mà không cần dừng lại hỏi ý kiến người dùng.
+- **NGOẠI LỆ DUY NHẤT:** Tuyệt đối không tự động thực hiện các thao tác kích hoạt thanh toán hoặc gói tính phí (Billing / Upgrades / Paid Subscriptions có phát sinh chi phí tiền tệ thật) nếu chưa có sự phê duyệt rõ ràng từ người dùng.
+
+
 
 
 
