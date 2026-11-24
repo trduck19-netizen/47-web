@@ -140,7 +140,7 @@ export async function verifyPairShopAccess(
     .prepare(`
       SELECT COUNT(*) as recent_calls 
       FROM seller_affiliate_call_logs 
-      WHERE api_key_prefix = ? AND created_at >= datetime('now', '-1 minute')
+      WHERE key_prefix = ? AND created_at >= datetime('now', '-1 minute')
     `)
     .bind(keyPrefix)
     .first<{ recent_calls: number }>();

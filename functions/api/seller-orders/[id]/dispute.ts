@@ -61,7 +61,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     // 1. Kiểm tra đơn hàng thuộc về chính khách hàng
     const order = await env.DB
       .prepare(`
-        SELECT id, order_code, seller_id, buyer_member_id, status, price_core, hold_until
+        SELECT id, order_code, seller_id, buyer_member_id, status, price_core, hold_until, is_affiliate_order, supplier_seller_id
         FROM seller_orders
         WHERE id = ? AND buyer_member_id = ?
         LIMIT 1
@@ -148,8 +148,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const disputeId = `sdisp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const nowIso = new Date().toISOString();
 
-    // 4. Batch nguyên tử: Tạo bản ghi seller_disputes và cập nhật trạng thái đơn con sang DISPUTED
-    await env.DB.batch([
+    // 4. Batch nguyên tử: Tạo bản ghi seller_disputes (cả shop gán và NCC nếu là affiliate) và cập nhật trạng thái đơn con sang DISPUTED
+    const batchStatements: any[] = [
       env.DB.prepare(`
         INSERT INTO seller_disputes (
           id, order_id, buyer_member_id, seller_id, reason, detail,
@@ -174,7 +174,32 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             updated_at = ?
         WHERE id = ?
       `).bind(reason, nowIso, nowIso, orderId),
-    ]);
+    ];
+
+    let supplierDisputeId: string | null = null;
+    if (Number(order.is_affiliate_order) === 1 && order.supplier_seller_id) {
+      supplierDisputeId = `sdisp_${Date.now()}_sup_${Math.random().toString(36).substring(2, 7)}`;
+      batchStatements.push(
+        env.DB.prepare(`
+          INSERT INTO seller_disputes (
+            id, order_id, buyer_member_id, seller_id, reason, detail,
+            status, is_flagged_abusive, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?)
+        `).bind(
+          supplierDisputeId,
+          orderId,
+          buyerId,
+          order.supplier_seller_id,
+          reason,
+          detail || null,
+          isFlaggedAbusive,
+          nowIso,
+          nowIso
+        )
+      );
+    }
+
+    await env.DB.batch(batchStatements);
 
     return new Response(
       JSON.stringify({
