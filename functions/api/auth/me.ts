@@ -78,13 +78,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const callerAuth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
     let member: any = callerAuth.authenticated ? callerAuth.member : null;
+    let valid = false;
 
     if (!member) {
-      const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, signingSecret]);
-      if (valid && tokenUserId) {
+      const jwtResult = await verifyToken(token, [env.JWT_SECRET, signingSecret]);
+      valid = jwtResult.valid;
+      if (jwtResult.valid && jwtResult.userId) {
         member = await env.DB.prepare(
           'SELECT * FROM members WHERE id = ? LIMIT 1'
-        ).bind(tokenUserId).first<any>();
+        ).bind(jwtResult.userId).first<any>();
       }
     }
 
