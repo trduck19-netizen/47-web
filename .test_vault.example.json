@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Universal Mall Test Vault Template",
+  "description": "Bản mẫu cấu hình kho tài khoản và khóa API kiểm thử cho sàn Universal Mall. Sao chép thành .test_vault.local.json để sử dụng thực tế (file local được gitignore chặn 100%).",
+  "version": "1.0.0",
+  "environments": {
+    "live_client": "https://universal-mall-shop.pages.dev",
+    "live_admin": "https://admin-universal-mall.pages.dev/admin",
+    "local_dev": "http://localhost:5173"
+  },
+  "roles_and_test_accounts": {
+    "buyer": {
+      "role": "BUYER",
+      "display_name": "Khách Mua Hàng Test 01",
+      "email": "test.buyer01@universal-mall.local",
+      "password": "CHANGE_ME_PASSWORD_123",
+      "test_phone": "0900000001",
+      "purpose": "Kiểm thử giỏ hàng, đặt đơn, dùng voucher Shopee, đánh giá sản phẩm đã mua, tạo khiếu nại, tạo khóa AI người dùng (Personal AI API)"
+    },
+    "supplier_shop": {
+      "role": "SUPPLIER_SELLER",
+      "display_name": "Nhà Cung Cấp Gaming Hub",
+      "store_slug": "ncc-gaming-hub",
+      "store_name": "NCC Gaming Hub Official",
+      "email": "test.ncc@universal-mall.local",
+      "password": "CHANGE_ME_PASSWORD_123",
+      "test_phone": "0900000002",
+      "purpose": "Kiểm thử đăng bán hàng số/vật lý, cấu hình Mở Bán Lại (chiết khấu %, hoa hồng %, MAP), duyệt yêu cầu shop gán, cấp khóa cặp wcg_shop_, quản lý kho mã"
+    },
+    "reseller_shop": {
+      "role": "RESELLER_SELLER",
+      "display_name": "Shop Bán Lại Liên Shop B",
+      "store_slug": "reseller-mall-store",
+      "store_name": "Reseller Mall Store",
+      "email": "test.reseller@universal-mall.local",
+      "password": "CHANGE_ME_PASSWORD_123",
+      "test_phone": "0900000003",
+      "purpose": "Kiểm thử gửi yêu cầu liên kết tới NCC, xem catalog mở, gán sản phẩm với mức tăng (+% / +Core), kiểm tra chế độ FORMULA/LOCKED, tuân thủ MAP"
+    },
+    "admin": {
+      "role": "SUPER_ADMIN",
+      "display_name": "Quản Trị Viên Sàn",
+      "email": "admin@universal-mall.local",
+      "password": "CHANGE_ME_ADMIN_PASSWORD",
+      "purpose": "Kiểm thử 31 module admin, đối soát giao dịch, duyệt tranh chấp, quản trị khóa API toàn sàn"
+    }
+  },
+  "test_api_keys": {
+    "user_ai_key": {
+      "prefix": "wcg_ai_usr_sample••••••••",
+      "scope": "profile,shopping,reviews,rewards",
+      "daily_spend_limit": 500000,
+      "max_devices": 3,
+      "usage": "Header: Authorization: Bearer wcg_ai_usr_<32_hex>"
+    },
+    "store_api_key": {
+      "prefix": "pine_sk_sample••••••••",
+      "scope": "FULL",
+      "usage": "Header: X-Store-Key: pine_sk_<32_hex> hoặc Authorization: Bearer pine_sk_<32_hex>"
+    },
+    "reseller_pair_key": {
+      "prefix": "wcg_shop_sample••••••••",
+      "supplier_seller_id": "seller_ncc_id",
+      "reseller_seller_id": "seller_reseller_id",
+      "usage": "Header: Authorization: Bearer wcg_shop_<32_hex> (Gọi catalog mở /api/seller/affiliate/catalog)"
+    }
+  },
+  "quick_cli_test_commands": {
+    "probe_client": "curl.exe -I --max-time 10 --connect-timeout 5 https://universal-mall-shop.pages.dev",
+    "probe_admin": "curl.exe -I --max-time 10 --connect-timeout 5 https://admin-universal-mall.pages.dev/admin",
+    "test_suite_affiliate": "node scripts/test-affiliate-phase1.cjs",
+    "test_runner_mcp": "node scripts/mall-test-vault.cjs"
+  }
+}

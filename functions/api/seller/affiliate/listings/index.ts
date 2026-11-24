@@ -1,4 +1,4 @@
-import { authenticateCaller } from '../../../../services/auth_service';
+import { verifyStoreApiAccess } from '../../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../../services/d1_service';
 import { calculate3WaySplit } from '../../../../services/seller_affiliate_service';
 
@@ -24,21 +24,14 @@ export async function onRequestGet(context: { request: Request; env: { DB: D1Dat
       return new Response(JSON.stringify({ success: false, error: 'Database chưa sẵn sàng.' }), { status: 500, headers: CORS_HEADERS });
     }
 
-    const auth = await authenticateCaller(request, env.DB, env.JWT_SECRET);
-    if (!auth || !auth.member) {
-      return new Response(JSON.stringify({ success: false, error: 'Yêu cầu đăng nhập.' }), { status: 401, headers: CORS_HEADERS });
-    }
-
     await ensureSchemaUpgrades(env.DB);
 
-    const reseller = await env.DB
-      .prepare('SELECT id FROM sellers WHERE owner_member_id = ? AND status = "ACTIVE" LIMIT 1')
-      .bind(auth.member.id)
-      .first<any>();
-
-    if (!reseller) {
-      return new Response(JSON.stringify({ success: false, error: 'Gian hàng không tồn tại hoặc chưa kích hoạt.' }), { status: 403, headers: CORS_HEADERS });
+    const auth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'OWNER' });
+    if (!auth.authorized || !auth.seller) {
+      return new Response(JSON.stringify({ success: false, error: auth.error || 'Yêu cầu đăng nhập hoặc quyền gian hàng không hợp lệ.' }), { status: auth.status || 401, headers: CORS_HEADERS });
     }
+
+    const reseller = auth.seller;
 
     const query = `
       SELECT sal.*,
@@ -83,21 +76,14 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
       return new Response(JSON.stringify({ success: false, error: 'Database chưa sẵn sàng.' }), { status: 500, headers: CORS_HEADERS });
     }
 
-    const auth = await authenticateCaller(request, env.DB, env.JWT_SECRET);
-    if (!auth || !auth.member) {
-      return new Response(JSON.stringify({ success: false, error: 'Yêu cầu đăng nhập.' }), { status: 401, headers: CORS_HEADERS });
-    }
-
     await ensureSchemaUpgrades(env.DB);
 
-    const reseller = await env.DB
-      .prepare('SELECT id, name FROM sellers WHERE owner_member_id = ? AND status = "ACTIVE" LIMIT 1')
-      .bind(auth.member.id)
-      .first<any>();
-
-    if (!reseller) {
-      return new Response(JSON.stringify({ success: false, error: 'Gian hàng không tồn tại hoặc chưa kích hoạt.' }), { status: 403, headers: CORS_HEADERS });
+    const auth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'OWNER' });
+    if (!auth.authorized || !auth.seller) {
+      return new Response(JSON.stringify({ success: false, error: auth.error || 'Gian hàng không tồn tại hoặc chưa kích hoạt.' }), { status: auth.status || 401, headers: CORS_HEADERS });
     }
+
+    const reseller = auth.seller;
 
     const body: any = await request.json().catch(() => ({}));
     const partnershipId = (body.partnership_id || '').trim();

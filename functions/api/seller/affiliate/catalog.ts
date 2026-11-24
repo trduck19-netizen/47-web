@@ -1,4 +1,4 @@
-import { authenticateCaller } from '../../../services/auth_service';
+import { verifyStoreApiAccess } from '../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../services/d1_service';
 import { verifyPairShopAccess, logAffiliateCall } from '../../../services/seller_affiliate_service';
 
@@ -54,22 +54,13 @@ export async function onRequestGet(context: { request: Request; env: { DB: D1Dat
       keyPrefix = authPair.partnership.api_key_prefix;
       supplierId = authPair.partnership.supplier_seller_id;
     } else {
-      // Trường hợp 2: Gọi bằng phiên web đăng nhập (Session)
-      const auth = await authenticateCaller(request, env.DB, env.JWT_SECRET);
-      if (!auth || !auth.member) {
-        return new Response(JSON.stringify({ success: false, error: 'Yêu cầu đăng nhập hoặc khóa API hợp lệ.' }), { status: 401, headers: CORS_HEADERS });
+      // Trường hợp 2: Gọi bằng phiên web đăng nhập (Session) hoặc Store API Key
+      const auth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'ANY' });
+      if (!auth.authorized || !auth.seller) {
+        return new Response(JSON.stringify({ success: false, error: auth.error || 'Yêu cầu đăng nhập hoặc khóa API hợp lệ.' }), { status: auth.status || 401, headers: CORS_HEADERS });
       }
 
-      const reseller = await env.DB
-        .prepare('SELECT id, name FROM sellers WHERE owner_member_id = ? AND status = "ACTIVE" LIMIT 1')
-        .bind(auth.member.id)
-        .first<any>();
-
-      if (!reseller) {
-        return new Response(JSON.stringify({ success: false, error: 'Gian hàng không tồn tại hoặc chưa kích hoạt.' }), { status: 403, headers: CORS_HEADERS });
-      }
-
-      callerSellerId = reseller.id;
+      callerSellerId = auth.seller.id;
       const url = new URL(request.url);
       supplierId = url.searchParams.get('supplier_id') || '';
       partnerId = url.searchParams.get('partnership_id') || '';
@@ -77,7 +68,7 @@ export async function onRequestGet(context: { request: Request; env: { DB: D1Dat
       if (!supplierId && partnerId) {
         const pRecord = await env.DB
           .prepare('SELECT supplier_seller_id, status FROM seller_affiliate_partnerships WHERE id = ? AND reseller_seller_id = ? LIMIT 1')
-          .bind(partnerId, reseller.id)
+          .bind(partnerId, callerSellerId)
           .first<any>();
         if (pRecord && pRecord.status === 'APPROVED') {
           supplierId = pRecord.supplier_seller_id;

@@ -27,6 +27,11 @@ dist/
 *.db
 !Thumbs.db
 
+# Local Test Vaults & Private Credentials (Zero Secrets in Git)
+.test_vault.local.json
+.test_vault.*.json
+!.test_vault.example.json
+
 # Logs
 *.log
 !docs/*.log
