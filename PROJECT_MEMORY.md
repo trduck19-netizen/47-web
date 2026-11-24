@@ -2,7 +2,7 @@
 
 > **QUY TẮC BẮT BUỘC DÀNH CHO AI AGENT & DEVELOPER**:
 > Trước khi thực hiện bất kỳ chỉnh sửa nào trong codebase, **BẮT BUỘC** phải đọc file này cùng với `CHANGELOG.md` và `KNOWN_ISSUES.md`.
-> Tuân thủ tuyệt đối 12 quy tắc vàng trong `AGENTS.md` / `GEMINI.md`, đặc biệt là **Rule 9 (Single-Screen First 100%)** và **Rule 12 (100% Bilingual VI/EN First)**.
+> Tuân thủ tuyệt đối 14 quy tắc vàng trong `AGENTS.md` / `GEMINI.md`, đặc biệt là **Rule 9 (Single-Screen First 100%)**, **Rule 10 (Zero Secrets & Edge Security Integrity)**, **Rule 12 (100% Bilingual VI/EN First)**, và **Rule 14 (5-Gate Anti-Error Protocol)**.
 
 ---
 

@@ -49,16 +49,30 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, AI Agent
   3. Cắt tỉa văn bản dài bằng `truncate` kèm thuộc tính `title` để hiển thị tooltip khi rê chuột.
   4. Các nút thao tác phải thiết kế tinh gọn, có icon và nhãn văn bản súc tích, độ rộng vừa khít khung nhìn.
 
-### 🛡️ 10. QUY TẮC BẢO MẬT TUYỆT ĐỐI CHO PUBLIC REPOSITORY (ZERO SECRETS IN CODE & GIT HISTORY)
-- **Mọi khóa API, token, secret, mật khẩu CHỈ ĐƯỢC PHÉP lưu ở 2 nơi**: Cloudflare Environment Variables và D1 table `mission_ai_api_keys` (dưới dạng mã băm SHA-256 `api_key_hash`).
-- **TUYỆT ĐỐI KHÔNG** ghi cứng bất kỳ chuỗi khóa nào trong code (`token === 'wcg_...'`), tài liệu markdown (`CHANGELOG.md`, `KNOWN_ISSUES.md`), ghi chú, hay commit message. Giao diện và API chỉ được hiển thị tiền tố rút gọn (`key_prefix` dạng `wcg_gw_7193••••••••••••••••••••4b2a`).
-- **Cột `raw_key`**: Không bao giờ được lưu chuỗi khóa thô trong D1 hay trả về qua API.
-- **Dữ liệu mẫu**: Bắt buộc phải giả rõ ràng (ví dụ: `0900000001`, `sample.lead@example.com`, `sample-shop.example.com`). Khóa mẫu chỉ dùng dạng `wcg_sample_00000000000000000000000000000000` hoặc `CHANGE_ME`.
-- **Lệnh kiểm tra bắt buộc trước khi push**:
+### 🛡️ 10. QUY TẮC BẢO MẬT TUYỆT ĐỐI CHO CLOUDFLARE EDGE & PUBLIC REPOSITORY (ZERO SECRETS IN CODE & GIT HISTORY)
+- **1. Nơi lưu trữ khóa bí mật hợp lệ (Zero Hardcoded Secrets & Two Storage Locations Only)**:
+  - Mọi khóa API, token, secret, mật khẩu CHỈ ĐƯỢC PHÉP lưu ở 2 nơi: Cloudflare Environment Variables và D1 table `mission_ai_api_keys` (dưới dạng mã băm SHA-256 `api_key_hash`).
+  - **TUYỆT ĐỐI KHÔNG** ghi cứng bất kỳ chuỗi khóa nào trong code (`token === 'wcg_...'`), tài liệu markdown (`CHANGELOG.md`, `KNOWN_ISSUES.md`), ghi chú, hay commit message. Giao diện và API chỉ được hiển thị tiền tố rút gọn (`key_prefix` dạng `wcg_gw_7193••••••••••••••••••••4b2a`).
+  - **Cột `raw_key`**: Không bao giờ được lưu chuỗi khóa thô trong D1 hay trả về qua API.
+  - **Dữ liệu mẫu**: Bắt buộc phải giả rõ ràng (ví dụ: `0900000001`, `sample.lead@example.com`, `sample-shop.example.com`). Khóa mẫu chỉ dùng dạng `wcg_sample_00000000000000000000000000000000` hoặc `CHANGE_ME`.
+- **2. Nguyên tắc Fail-Closed cho khóa mã hóa (Zero Hardcoded Fallback Secret)**:
+  - **TUYỆT ĐỐI CẤM** fallback về chuỗi bí mật tĩnh (như `const key = env.KEY || 'default_secret_string'`).
+  - Khi mã hóa hoặc giải mã kho mã/dữ liệu nhạy cảm: BẮT BUỘC kiểm tra biến môi trường (`MARKETPLACE_CODE_KEY` hoặc `JWT_SECRET`). Nếu biến thiếu hoặc ngắn hơn 16 ký tự, API phải lập tức dừng thực thi và trả về HTTP 500 kèm mã lỗi cấu hình máy chủ, không bao giờ rơi về khóa mặc định.
+- **3. Phân quyền dựa trên Role & Token (Role-Based Authorization over Hardcoded Identity)**:
+  - **TUYỆT ĐỐI CẤM** kiểm tra quyền quản trị bằng cách so khớp chuỗi định danh cứng (như `userId !== 'admin'`, `username === 'admin'`, hay email cứng `admin@codegame.store`).
+  - Mọi quyền hạn admin/seller/buyer phải được giải mã và kiểm tra trực tiếp từ chữ ký số JWT / Auth session (`auth.member.role === 'admin' || auth.member.role === 'SUPER_ADMIN'`), loại bỏ triệt để nguy cơ leo thang đặc quyền (Privilege Escalation).
+- **4. Bảo vệ tệp môi trường & CSDL cục bộ trong Git (.gitignore Hardening)**:
+  - Tệp `.gitignore` BẮT BUỘC luôn chặn triệt để `.env`, `.env.*`, `.dev.vars`, `.dev.vars.*` (Wrangler local secrets) và các tệp CSDL cục bộ (`*.sqlite`, `*.sqlite3`, `*.db`).
+  - Mọi tệp biến môi trường mẫu phải dùng `.env.example` với placeholder `CHANGE_ME_*`, cấm chứa giá trị thật.
+- **5. Tách biệt hoàn toàn Pepper máy chủ và Client Bundle (Zero Server Pepper in Frontend)**:
+  - Biến băm mật khẩu `PASSWORD_PEPPER` chỉ tồn tại trên Cloudflare Serverless Environment.
+  - **TUYỆT ĐỐI CẤM** gán pepper máy chủ vào các biến frontend `VITE_*` (như `VITE_PASSWORD_PEPPER`) vì Vite sẽ nhúng chuỗi thô vào file JS bundle công khai phía client. Mật khẩu phải được băm 100% phía Edge Worker.
+- **6. Linh hoạt hóa Turnstile chống khóa nhầm toàn sàn (Resilient Bot Verification)**:
+  - Khi cấu hình Cloudflare Turnstile, backend chỉ gửi yêu cầu xác thực sang `challenges.cloudflare.com/turnstile/v0/siteverify` đối với token thực tế do widget Turnstile sinh ra (khác token placeholder `'cf_turnstile_verified'`). Điều này đảm bảo khi bật `TURNSTILE_SECRET_KEY` trên Cloudflare Dashboard thì sàn không bị nghẽn hay khóa nhầm toàn bộ người dùng đăng ký/đăng nhập.
+- **7. Lệnh kiểm tra bắt buộc trước khi push (Pre-push Security Scan)**:
   1. `git grep -nE "wcg_[a-z]+_[0-9a-f]{32}" -- functions/ src/` (Kết quả = 0).
   2. `git grep -nE "[0-9]{8,10}:[A-Za-z0-9_-]{35}" -- functions/ src/` (Kết quả = 0).
   3. `git grep -nE "BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY"` (Kết quả = 0).
-- **Giữ `.gitignore`**: Không bao giờ commit file `.env`, `*.secret`, `.muse_admin_key.secret`.
 
 ### ⏳ 11. NGUYÊN TẮC CHỐNG TREO MÁY & CHỐNG TÁC VỤ LẶP LẠI VÔ HẠN (STRICT TIMEOUT, ANTI-HANG & ZERO INFINITE LOOPS)
 - **1. Bắt buộc Timeout & An toàn cho mọi lệnh terminal & mạng (Strict Timeout & Safe Network Execution)**:
