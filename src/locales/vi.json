@@ -232,7 +232,7 @@
     "title": "Giỏ Hàng Của Bạn",
     "multiStoreTitle": "Giỏ Hàng Đa Gian Hàng",
     "clearAll": "Xóa tất cả",
-    "empty": "Giỏ hàng hiện đang trống",
+    "empty": "Giỏ hàng của bạn đang trống",
     "emptyDesc": "Khám phá ngay hàng trăm sản phẩm và ưu đãi hấp dẫn trên sàn!",
     "continueShopping": "Tiếp Tục Mua Sắm",
     "checkout": "Tiến Hành Thanh Toán",
@@ -243,13 +243,7 @@
     "remove": "Xóa khỏi giỏ",
     "quantity": "Số lượng:",
     "digitalItemBadge": "Hàng Số (Giao 0s)",
-    "physicalItemBadge": "Hàng Vật Lý"
-  },
-  "cart": {
-    "multiStoreTitle": "Giỏ Hàng Đa Gian Hàng",
-    "clearAll": "Xóa tất cả",
-    "empty": "Giỏ hàng của bạn đang trống",
-    "emptyDesc": "Hãy ghé thăm các gian hàng của người bán uy tín để chọn gói giftcode và tiện ích game bạn yêu thích.",
+    "physicalItemBadge": "Hàng Vật Lý",
     "addToCart": "Thêm Giỏ Hàng"
   },
   "checkout": {

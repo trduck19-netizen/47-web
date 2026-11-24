@@ -232,7 +232,7 @@
     "title": "Your Shopping Cart",
     "multiStoreTitle": "Multi-Store Cart",
     "clearAll": "Clear all",
-    "empty": "Your cart is currently empty",
+    "empty": "Your cart is empty",
     "emptyDesc": "Explore hundreds of exciting products and deals on our platform!",
     "continueShopping": "Continue Shopping",
     "checkout": "Proceed to Checkout",
@@ -243,13 +243,7 @@
     "remove": "Remove item",
     "quantity": "Quantity:",
     "digitalItemBadge": "Digital Item (0s Delivery)",
-    "physicalItemBadge": "Physical Delivery"
-  },
-  "cart": {
-    "multiStoreTitle": "Multi-Store Cart",
-    "clearAll": "Clear all",
-    "empty": "Your cart is empty",
-    "emptyDesc": "Explore verified stores to find your favorite giftcodes and utilities.",
+    "physicalItemBadge": "Physical Delivery",
     "addToCart": "Add to Cart"
   },
   "checkout": {
