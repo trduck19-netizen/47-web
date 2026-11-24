@@ -82,6 +82,8 @@
     "statGames": "Game Titles",
     "statCodes": "Active Codes",
     "statFree": "100% Free",
+    "statCopies": "Total Copies",
+    "codeUnit": "codes",
     "statUpdated": "Last Updated"
   },
   "search": {

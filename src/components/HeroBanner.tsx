@@ -27,7 +27,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onExploreClick,
   isFloatingActive = false,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [cmsHero, setCmsHero] = useState(() => dataService.getContentByKey('hero_banner'));
   const [liveCopies, setLiveCopies] = useState<number>(() => marketingService.getLiveCounter());
   const [totalCodesCount, setTotalCodesCount] = useState<number>(() => {
@@ -125,7 +126,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             <span className="text-emerald-400 font-bold font-mono inline-flex items-center gap-1 shrink-0">
               <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400 animate-pulse shrink-0" />
               <span>{totalCodesCount > 0 ? totalCodesCount.toLocaleString('vi-VN') : '15.050'}</span>
-              <span className="text-[9px] sm:text-[10px] text-slate-300 font-normal lowercase hidden xs:inline">mã code</span>
+              <span className="text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-300 font-normal lowercase hidden xs:inline">{t.hero.codeUnit || (isEn ? 'codes' : 'mã code')}</span>
             </span>
           </div>
 
@@ -140,7 +141,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           </h1>
 
           {/* Shortened Subtitle - Hidden on mobile to prioritize instant game visibility */}
-          <p className="hidden sm:block text-[11px] sm:text-sm text-slate-300 dark:text-slate-300 max-w-xl mx-auto leading-normal mb-2 sm:mb-3.5 font-sans px-1">
+          <p className="hidden sm:block text-[11px] sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-normal mb-2 sm:mb-3.5 font-sans px-1">
             {heroDescription}
           </p>
 
@@ -167,7 +168,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           {/* Quick search tags - Hidden on mobile, shown on desktop */}
           <div className="hidden sm:block w-full max-w-full overflow-hidden mb-1 sm:mb-4">
             <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto whitespace-nowrap flex-nowrap scrollbar-none py-0.5 sm:flex-wrap sm:justify-center w-full max-w-full">
-            <span className="text-[10px] sm:text-xs text-slate-300 font-medium flex items-center gap-1 shrink-0">
+            <span className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1 shrink-0">
               <Flame className="w-3 h-3 text-accent" /> {t.hero.hotTags}
             </span>
             <a
@@ -202,7 +203,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   {totalGames && totalGames > 0 ? `${totalGames}+` : '593+'}
                 </span>
               </div>
-              <span className="text-[11px] text-slate-300 font-medium">{t.hero.statGames}</span>
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{t.hero.statGames}</span>
             </div>
 
             <div className="p-3 rounded-xl bg-card/70 border border-border text-center shadow-sm">
@@ -212,7 +213,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   {totalCodesCount > 0 ? `${totalCodesCount.toLocaleString('vi-VN')}+` : '15.050+'}
                 </span>
               </div>
-              <span className="text-[11px] text-slate-300 font-medium">{t.hero.statCodes}</span>
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{t.hero.statCodes}</span>
             </div>
 
             <div className="p-3 rounded-xl bg-card/70 border border-border text-center shadow-sm">
@@ -222,7 +223,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   {liveCopies.toLocaleString('vi-VN')}
                 </span>
               </div>
-              <span className="text-[11px] text-slate-300 font-medium">Tổng lượt sao chép</span>
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{t.hero.statCopies || (isEn ? 'Total Copies' : 'Tổng Lượt Sao Chép')}</span>
             </div>
 
             <div className="p-3 rounded-xl bg-card/70 border border-border text-center shadow-sm">
@@ -230,7 +231,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 <Clock className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="font-display font-bold text-base text-foreground">{lastUpdatedTime}</span>
               </div>
-              <span className="text-[11px] text-slate-300 font-medium">{t.hero.statUpdated}</span>
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{t.hero.statUpdated}</span>
             </div>
           </div>
         </div>

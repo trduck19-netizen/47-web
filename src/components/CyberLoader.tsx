@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface CyberLoaderProps {
   title?: string;
@@ -10,15 +11,53 @@ export interface CyberLoaderProps {
 }
 
 export const CyberLoader: React.FC<CyberLoaderProps> = ({
-  title = 'CODE GAME',
+  title,
   subText,
   size = 180,
   avatarSize,
   isOverlay = false,
   className = '',
 }) => {
+  let isEn = false;
+  try {
+    const langCtx = useLanguage();
+    isEn = langCtx.language === 'en';
+  } catch {
+    if (typeof window !== 'undefined') {
+      isEn = window.location.pathname.startsWith('/en') || localStorage.getItem('pine_language') === 'en';
+    }
+  }
+
+  // Automatic bilingual fallback mapping for legacy or hardcoded titles
+  let resolvedTitle = title;
+  if (!resolvedTitle) {
+    resolvedTitle = isEn ? 'PINE MALL' : 'CODE GAME';
+  } else if (isEn) {
+    if (resolvedTitle === 'CODE GAME') resolvedTitle = 'PINE MALL';
+    else if (resolvedTitle === 'ĐANG GIẬT CODE...') resolvedTitle = 'CLAIMING CODE...';
+    else if (resolvedTitle === 'ĐANG XỬ LÝ ĐƠN...') resolvedTitle = 'PROCESSING ORDER...';
+    else if (resolvedTitle === 'ĐANG TẠO MÃ QR...') resolvedTitle = 'CREATING QR CODE...';
+    else if (resolvedTitle === 'ĐANG XỬ LÝ TIỆN ÍCH...') resolvedTitle = 'PROCESSING UTILITY...';
+    else if (resolvedTitle === 'ĐANG TẢI GIAO DIỆN...') resolvedTitle = 'LOADING INTERFACE...';
+  }
+
+  let resolvedSubText = subText;
+  if (isEn && resolvedSubText) {
+    if (resolvedSubText.includes('kết nối kho giftcode Cloudflare D1')) {
+      resolvedSubText = 'Connecting to Cloudflare D1 vault to distribute giftcode reward...';
+    } else if (resolvedSubText.includes('kiểm tra số dư ví & xuất mã quà tặng')) {
+      resolvedSubText = 'Verifying wallet balance & exporting voucher from Cloudflare D1 secure vault...';
+    } else if (resolvedSubText.includes('tạm giữ mã quà tặng trong kho bảo mật')) {
+      resolvedSubText = 'Temporarily reserving giftcode in secure vault for your order...';
+    } else if (resolvedSubText.includes('kiểm tra ví & xuất mã tiện ích')) {
+      resolvedSubText = 'Verifying balance & exporting utility code from Cloudflare D1 secure vault...';
+    } else if (resolvedSubText.includes('Đang nạp dữ liệu')) {
+      resolvedSubText = 'Loading data...';
+    }
+  }
+
   const calcAvatarSize = avatarSize || Math.round(size * 0.6);
-  const letters = title.split('');
+  const letters = resolvedTitle.split('');
 
   const content = (
     <div className={`flex flex-col items-center justify-center gap-4 text-center select-none ${className}`}>
@@ -46,7 +85,7 @@ export const CyberLoader: React.FC<CyberLoaderProps> = ({
       </div>
 
       {/* Bouncing neon letters */}
-      {title && (
+      {resolvedTitle && (
         <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-sm sm:text-base font-extrabold text-white tracking-widest font-display drop-shadow-[0_0_12px_rgba(139,92,246,0.6)]">
           {letters.map((char, idx) => (
             <span
@@ -61,9 +100,9 @@ export const CyberLoader: React.FC<CyberLoaderProps> = ({
       )}
 
       {/* Subtitle / Status details */}
-      {subText && (
+      {resolvedSubText && (
         <p className="text-xs sm:text-sm text-slate-300/90 font-medium max-w-xs leading-relaxed animate-pulse">
-          {subText}
+          {resolvedSubText}
         </p>
       )}
     </div>

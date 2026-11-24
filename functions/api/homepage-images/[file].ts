@@ -104,7 +104,16 @@ export const onRequestGet = async (context: {
         if (decoded && decoded.width > reqWidth) {
           const targetHeight = Math.max(1, Math.round((decoded.height * reqWidth) / decoded.width));
           decoded.resize(reqWidth, targetHeight);
-          finalBytes = await decoded.encodeWebP(80);
+          const quality = reqWidth <= 480 ? 70 : (reqWidth <= 800 ? 75 : 80);
+          let encoded = await decoded.encodeWebP({ quality, effort: 4 });
+          // Monotonic Byte Guard: Đảm bảo bản resize nhỏ hơn bản gốc theo cả byte
+          if (encoded.length >= bytes.length) {
+            const reEncoded = await decoded.encodeWebP({ quality: Math.max(45, quality - 20), effort: 4 });
+            if (reEncoded.length < bytes.length) {
+              encoded = reEncoded;
+            }
+          }
+          finalBytes = encoded;
           finalContentType = 'image/webp';
         }
       } catch (resizeErr) {

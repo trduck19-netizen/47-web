@@ -93,7 +93,7 @@ const ADMIN_HASH_PREFIXES = [
 
 export const App: React.FC = () => {
   const { language, t } = useLanguage();
-  const isEn = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
+  const isEn = language === 'en' || (typeof window !== 'undefined' && (window.location.pathname.startsWith('/en') || localStorage.getItem('pine_language') === 'en'));
   const [, startTransition] = useTransition();
 
   // Navigation Tab State (Decoupled Frontends Domain Detection & Hash Routing)
