@@ -226,3 +226,22 @@
 6. **Kiểm Toán & Giới Hạn Tốc Độ**:
    - Rate limit: 600 yêu cầu / phút / khóa.
    - Nhật ký đồng bộ `seller_affiliate_sync_logs` và nhật ký gọi `seller_affiliate_call_logs` lưu trữ $\ge 30$ ngày.
+
+---
+
+## 9. KHO BẢO MẬT TEST VAULT & KIỂM THỬ TỰ ĐỘNG (.test_vault.local.json)
+
+1. **Cấu Trúc Lưu Trữ Cục Bộ An Toàn (Rule 10 Compliant)**:
+   - `.test_vault.local.json`: File dữ liệu thực tế lưu trên máy cục bộ, bị `.gitignore` chặn 100% để không bao giờ lọt vào Git history.
+   - `.test_vault.example.json`: File schema mẫu an toàn cho repo, chứa cấu trúc 4 vai trò kiểm thử:
+     * `buyer`: Tài khoản người mua hàng (test giỏ hàng, voucher Shopee, ví Core, mở khóa Personal AI API).
+     * `supplier_seller`: Nhà Cung Cấp (test mở bán lại, chiết khấu %, hoa hồng %, MAP, duyệt và cấp khóa cặp).
+     * `reseller_seller`: Shop Gán (test gửi yêu cầu, xem catalog mở, gán sản phẩm, chế độ FORMULA/LOCKED).
+     * `super_admin`: Quản Trị Viên (test 31 module admin, split-order, duyệt tranh chấp khiếu nại).
+2. **3 Nhóm Khóa API Mẫu Cho Kiểm Thử**:
+   - `USER_AI_KEY`: Dùng header `Authorization: Bearer wcg_ai_usr_...` cho API người dùng AI.
+   - `STORE_API_KEY`: Dùng header `X-Store-Key: wcg_gw_...` cho API quản lý kho/sản phẩm gian hàng.
+   - `RESELLER_PAIR_KEY`: Dùng header `Authorization: Bearer wcg_shop_...` cho API gán shop liên kết.
+3. **Lệnh Kiểm Tra Tự Động Toàn Hệ Thống**:
+   - Chạy: `node scripts/mall-test-vault.cjs`
+   - Kiểm tra đồng thời tình trạng kết nối, HTTP status, Build ID và CF-Ray của Client Portal, Admin Portal, Public Products API và Affiliate API.

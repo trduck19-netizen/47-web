@@ -7,6 +7,41 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 456. Thiết Lập Kho Bảo Mật Test Vault (.test_vault.local.json) & Chuẩn Hóa Xác Thực verifyStoreApiAccess Toàn Bộ Phân Hệ Affiliate (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Người dùng yêu cầu tạo kho bảo mật tài khoản, API và MCP riêng cho từng trang web để người dùng và AI Agent có thể sử dụng kiểm thử chức năng của web bất cứ lúc nào.
+  - Quá trình kiểm tra môi trường bằng script phát hiện các endpoint affiliate trả về mã lỗi HTTP 500 do gọi nhầm chữ ký hàm `authenticateCaller(request, env.DB, env.JWT_SECRET)` (truyền đối tượng `Request` vào vị trí của `D1Database`).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Kho Bảo Mật Cục Bộ An Toàn (.test_vault.local.json & .test_vault.example.json)*:
+     - Cập nhật `.gitignore` để chặn tuyệt đối `.test_vault.local.json` và `.test_vault.*.json` (chỉ cho phép `.test_vault.example.json`), tuân thủ 100% Rule 10 (Zero Secrets in Git).
+     - Tạo file mẫu `.test_vault.example.json` chứa định dạng chuẩn 4 vai trò kiểm thử: `BUYER`, `SUPPLIER_SELLER`, `RESELLER_SELLER`, `SUPER_ADMIN` và 3 nhóm khóa API (`USER_AI_KEY`, `STORE_API_KEY`, `RESELLER_PAIR_KEY`).
+     - Tạo file cục bộ `.test_vault.local.json` trên máy làm việc để Agent và người dùng có thể nạp tài khoản và token kiểm thử khi chạy tác vụ.
+  2. *Script Kiểm Tra Tự Động (`scripts/mall-test-vault.cjs`)*:
+     - Đọc cấu hình từ `.test_vault.local.json` (hoặc fallback `.test_vault.example.json`), in bảng tài khoản, mục đích sử dụng và các dạng header xác thực.
+     - Tự động gửi request kiểm tra tình trạng kết nối, HTTP status, Build ID và CF-Ray của Client Portal, Admin Portal, Public Products API và Affiliate API.
+  3. *Chuẩn Hóa Xác Thực `verifyStoreApiAccess` trên 9 Endpoint Affiliate*:
+     - Thay thế toàn bộ lời gọi nhầm trong các file sau sang chuẩn `verifyStoreApiAccess(request, env as any, { requiredRole: 'OWNER' })` (hoặc role `'ANY'` cho catalog):
+       * `functions/api/seller/affiliate/catalog.ts`
+       * `functions/api/seller/affiliate/requests.ts`
+       * `functions/api/seller/affiliate/requests/[id]/approve.ts`
+       * `functions/api/seller/affiliate/requests/[id]/reject.ts`
+       * `functions/api/seller/affiliate/partners/index.ts`
+       * `functions/api/seller/affiliate/partners/[id].ts`
+       * `functions/api/seller/affiliate/listings/index.ts`
+       * `functions/api/seller/affiliate/listings/[id].ts`
+       * `functions/api/seller/products/[id]/resell.ts`
+     - Sửa lỗi tham chiếu `reseller.id` thành `callerSellerId` trong `catalog.ts`.
+- **Kiểm chứng thực tế & Kết quả**:
+  - Test Suite Affiliate: Chạy `node scripts/test-affiliate-phase1.cjs` đạt **23/23 PASS** (100%).
+  - Pre-push Scan: Kết quả **0 chuỗi secret** cứng theo quy chuẩn Rule 10.
+  - Lean Guard & Build: Vượt qua toàn bộ 5/5 bài pre-build và 4/4 bài post-build, Edge Worker Bundle đạt chuẩn tinh gọn (6.29 MB <= 10 MB).
+  - Health Check Live Cloudflare (`node scripts/mall-test-vault.cjs`):
+    * Web Khách Hàng (Client Portal): `200 OK` (719ms, Build ID: `c06e25b`, CF-RAY: `a5f6c2222bed0719-HKG`).
+    * Cổng Quản Trị (Admin Portal): `200 OK` (842ms, Build ID: `c06e25b`, CF-RAY: `a5f6c2290987a6a8-HKG`).
+    * API Danh Mục Sản Phẩm Công Khai: `200 OK` (967ms, Build ID: `c06e25b`, CF-RAY: `a5f6c22c090402ca-HKG`).
+    * API Khóa Cặp Liên Shop: `401 AUTH REQUIRED` (1301ms, Chuẩn bảo mật - từ chối khi thiếu Bearer token).
+  - Triển khai Cloudflare Pages và GitHub thành công (Commit ID: `c06e25b`).
+
 ### 455. Triển Khai Tính Năng API Gán Shop / Bán Lại Liên Shop (Giai Đoạn 1): Khóa Cặp API wcg_shop_, Chia Tiền 3 Bên Khớp Tuyệt Đối, Single-Tier Guard & Đồng Bộ Kho Giá (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Người dùng yêu cầu triển khai tính năng "API GÁN SHOP / BÁN LẠI LIÊN SHOP, GIAI ĐOẠN 1 (UNIVERSAL MALL)" theo 5 nhóm tính năng đã duyệt (24/11/2026):
