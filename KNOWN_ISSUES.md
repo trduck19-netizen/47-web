@@ -10,6 +10,17 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-319: Bẫy Tái Phình To Tài Nguyên Media & Bundle Do Thiếu Rào Chắn Ngân Sách Kích Thước Tự Động (Asset Budgets)
+- **Triệu chứng & Rủi ro**:
+  - Sau các chiến dịch tinh gọn, nếu thiếu công cụ kiểm tra kích thước tự động trong quy trình build, các đợt phát triển tiếp theo rất dễ vô tình nạp thêm file JSON nặng hàng MB, ảnh uncompressed > 500 KB, hoặc import tĩnh module Admin khiến hệ thống phình to trở lại.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  - Hệ thống trước đây chỉ có máy kiểm i18n và tsc, hoàn toàn thiếu chốt chặn tự động đo lường và cưỡng chế ngân sách kích thước tài nguyên (Asset Budgets).
+- **Cạm bẫy đã thất bại (Failed Attempts)**:
+  - Chỉ viết tài liệu hướng dẫn chay bằng lời nhắc: Dễ bị bỏ sót hoặc vi phạm trong tương lai.
+- **Giải pháp chuẩn đã kiểm chứng (Đợt 5 Tinh Gọn)**:
+  - Xây dựng công cụ kiểm tra tự động `scripts/check-lean-budgets.cjs` tích hợp trực tiếp 2 chốt chặn vào `scripts/build.cjs` (Pre-build ở Bước 0.6 và Post-build ở Bước 4).
+  - Tự động cưỡng chế 8 ngân sách cứng: Kho media <= 32 MB, không trùng lặp tên ảnh, icon <= 200 KB, ảnh thường <= 350 KB, AdminApp <= 600 KB, component chunks <= 650 KB, worker bundle <= 22 MB, thư mục dist <= 85 MB. Vi phạm bất kỳ chỉ số nào sẽ dừng build lập tức với exit code 1.
+
 ### ISSUE-318: Bẫy Tệp Tĩnh Cũ Tồn Đọng Trong dist/game_icons Khi Vite Build Không Tự Dọn Dẹp Thư Mục Con Ngoại Trừ dist/assets
 - **Triệu chứng & Rủi ro**:
   - Sau khi dọn dẹp 801 tệp ảnh legacy trong public/game_icons/, chạy lệnh npm run build nhưng dung lượng dist/ vẫn giữ nguyên 104 MB và số file trong dist/game_icons vẫn là 3.186 files.

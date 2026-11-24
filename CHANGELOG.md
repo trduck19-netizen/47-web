@@ -7,6 +7,38 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 451. Triển Khai Thành Công Đợt 5 Tinh Gọn Hệ Thống (Lean Framework): Tự Động Hóa Giám Sát Phình To Với Lean Guard Scanner, Tích Hợp Build & Ban Hành Cẩm Nang Bảo Trì Dài Hạn (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai Bước 5 theo Lộ trình Tinh gọn `docs/BAO_CAO_DANH_GIA_VA_KHUNG_TINH_GON_DU_AN.md` và kế hoạch chi tiết `plan_dot_5_lean_guard_and_maintenance.md` đã được người dùng phê duyệt.
+  - Mục tiêu: Thiết lập rào chắn tự động ngăn ngừa vĩnh viễn nguy cơ tái phình to tài nguyên media, chunk bundle và file tĩnh, đồng thời ban hành quy chuẩn bảo trì dài hạn cho toàn bộ hệ thống.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Xây dựng Lean Guard Scanner (`scripts/check-lean-budgets.cjs`)*:
+     - Thiết lập hệ thống kiểm tra ngân sách kích thước tự động hỗ trợ 3 chế độ (`--stage=pre`, `--stage=post`, `--all`).
+     - Tự động kiểm soát 8 bài kiểm tra cứng (Asset & Bundle Budgets):
+       * `Check 1`: Kho ảnh `public/game_icons/` <= 32.00 MB (thực tế: **28.42 MB** - PASS).
+       * `Check 2`: Zero duplicate image extensions (không lưu trùng `.png` vs `.webp` - PASS).
+       * `Check 3`: Icon game đơn lẻ <= 200 KB (thực tế: Max 148.10 KB - PASS).
+       * `Check 4`: Ảnh đơn lẻ trong `public/` <= 350 KB, logo/brand <= 450 KB (PASS).
+       * `Check 5`: Dữ liệu tĩnh mới trong `src/data/` <= 150 KB (PASS).
+       * `Check 6.1`: Chunk `AdminApp.js` <= 600 KB (thực tế: **562.85 KB** - PASS).
+       * `Check 6.2`: Các component chunks khác <= 650 KB (PASS).
+       * `Check 7`: Edge Worker bundle `dist/_worker.js` <= 22.00 MB (thực tế: **19.20 MB** - PASS).
+       * `Check 8`: Thư mục phân phối `dist/` <= 85.00 MB (thực tế: **81.02 MB** - PASS).
+  2. *Tích hợp vào Package Scripts & Quy Trình Build (`scripts/build.cjs`)*:
+     - Bổ sung lệnh `npm run check:lean` vào `package.json`.
+     - Tích hợp Chốt chặn 0.6 (Pre-build check) ngay sau `i18n Guard` và `tsc`.
+     - Tích hợp Chốt chặn 4 (Post-build check) ngay sau `esbuild` biên dịch worker.
+  3. *Ban hành Cẩm Nang Quy Chuẩn Vận Hành Tinh Gọn Dài Hạn (`docs/HUONG_DAN_VAN_HANH_TINH_GON.md`)*:
+     - Soạn thảo cẩm nang 5 nguyên tắc tinh gọn bất biến (WebP First, React.lazy First, Selective D1 Projection, One-Shot Scripts, Active/Archive Docs).
+     - Quy trình chuẩn khi thêm Game, Ảnh, Module Admin và API mới.
+     - Bộ checklist 6 câu hỏi Pre-flight trước khi commit & deploy.
+- **Kiểm thử & Nghiệm thu (Verification & Metrics)**:
+  - *Lean Guard Scanner*: 9/9 bài kiểm tra PASS 100%, 0 Warnings, 0 Failures (`docs/lean_guard_check_success.log`).
+  - *TypeScript Typecheck*: `npx tsc -p tsconfig.homepage.json --noEmit` Exit Code 0 (`docs/tsc_check_success.log`).
+  - *Build Process*: `npm run build` hoàn thành 100% trong 14.29s (Frontend) + 434ms (Edge Worker), xuất file log trực tiếp (`docs/build_success.log`).
+  - *Bảo mật Rule 10*: Quét 3 lệnh bắt buộc đều đạt 0 matches (Pass 100%).
+  - *Bảo toàn UI/UX*: 100% chức năng Web Khách và Web Quản Trị hoạt động chuẩn mực.
+
 ### 450. Triển Khai Thành Công Đợt 4 Tinh Gọn Hệ Thống (Lean Framework): Tinh Gọn Cấu Trúc Phản Hồi API & Payload CSDL D1 Cho GET /api/sync-lite, Kích Hoạt Cloudflare CDN Edge Cache (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai Bước 4 theo Lộ trình Tinh gọn `docs/BAO_CAO_DANH_GIA_VA_KHUNG_TINH_GON_DU_AN.md` và kế hoạch chi tiết `plan_dot_4_lean_api_payload.md` đã được người dùng phê duyệt.

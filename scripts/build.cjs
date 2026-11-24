@@ -13,6 +13,14 @@ try {
   process.exit(1);
 }
 
+console.log('🛡️ 0.6. Running Pre-build Asset & Media Budget Check (Lean Guard)...');
+try {
+  execSync('node scripts/check-lean-budgets.cjs --stage=pre', { stdio: 'inherit' });
+} catch (err) {
+  console.error('❌ [Build Error] Lean Guard pre-build check failed! Media or static data exceeds budget.');
+  process.exit(1);
+}
+
 console.log('📦 1. Building Vite Frontend...');
 const distAssets = path.join(__dirname, '..', 'dist', 'assets');
 if (fs.existsSync(distAssets)) {
@@ -50,6 +58,14 @@ const routesDist = path.join(__dirname, '..', 'dist', '_routes.json');
 if (fs.existsSync(routesSrc)) {
   fs.copyFileSync(routesSrc, routesDist);
   console.log('   _routes.json copied to dist/_routes.json');
+}
+
+console.log('🛡️ 4. Running Post-build Chunk & Worker Budget Check (Lean Guard)...');
+try {
+  execSync('node scripts/check-lean-budgets.cjs --stage=post', { stdio: 'inherit' });
+} catch (err) {
+  console.error('❌ [Build Error] Lean Guard post-build check failed! JS chunks or Worker bundle exceeds budget.');
+  process.exit(1);
 }
 
 console.log('✅ Build completed successfully with active Cloudflare Edge Worker bundle (dist/_worker.js)!');

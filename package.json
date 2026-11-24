@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "check:i18n": "node scripts/check-hardcoded-i18n.cjs",
+    "check:lean": "node scripts/check-lean-budgets.cjs",
     "build": "node scripts/build.cjs",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=universal-mall-shop --branch=main",

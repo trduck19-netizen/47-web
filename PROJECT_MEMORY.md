@@ -46,11 +46,18 @@
 - **Database**: Cloudflare D1 SQL (`47webdanganh`).
 - **Quy trình Build hoàn chỉnh**:
   - Lệnh build: `node scripts/build.cjs`
-  - Build Vite Frontend vào `dist/`
-  - Compile Worker bundle từ `functions/_worker.ts` vào `dist/_worker.js`
-  - Copy `public/_routes.json` vào `dist/_routes.json`
+  - Bước 0: Quét chuỗi tiếng Việt ghi cứng (`check-hardcoded-i18n.cjs`)
+  - Bước 0.5: TypeScript type check (`tsc -p tsconfig.homepage.json --noEmit`)
+  - Bước 0.6: Pre-build Lean Guard Scanner (`check-lean-budgets.cjs --stage=pre`)
+  - Bước 1: Dọn sạch `dist/assets` và `dist/game_icons`, build Vite Frontend vào `dist/`
+  - Bước 2: Compile Edge Worker bundle từ `functions/_worker.ts` vào `dist/_worker.js`
+  - Bước 3: Copy `public/_routes.json` vào `dist/_routes.json`
+  - Bước 4: Post-build Lean Guard Scanner (`check-lean-budgets.cjs --stage=post` kiểm tra chunks, worker bundle <= 22 MB, dist <= 85 MB)
 - **Quy trình Deploy**:
   - `npm run deploy:all` (Deploy đồng thời cả `universal-mall-shop` và `admin-universal-mall`).
+- **Khung Tinh Gọn Hệ Thống (Lean Framework)**:
+  - Cẩm nang quy chuẩn: [`docs/HUONG_DAN_VAN_HANH_TINH_GON.md`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/docs/HUONG_DAN_VAN_HANH_TINH_GON.md).
+  - Lệnh kiểm tra ngân sách độc lập: `npm run check:lean`.
 
 ---
 
