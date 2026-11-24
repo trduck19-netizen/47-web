@@ -1748,9 +1748,8 @@ export const App: React.FC = () => {
   const handleOpenShareGame = (game: GameItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const origin = getShareOrigin();
-    const rawIcon = game.icon_url || (game.slug ? `/game_icons/${game.slug}.jpg` : '/og-image.jpg');
-    const jpgIcon = rawIcon.replace(/\.webp$/i, '.jpg');
-    const fullIcon = jpgIcon.startsWith('http') ? jpgIcon : `${origin}${jpgIcon.startsWith('/') ? jpgIcon : `/${jpgIcon}`}`;
+    const rawIcon = game.icon_url || (game.slug ? `/game_icons/${game.slug}.webp` : '/og-image.jpg');
+    const fullIcon = rawIcon.startsWith('http') ? rawIcon : `${origin}${rawIcon.startsWith('/') ? rawIcon : `/${rawIcon}`}`;
     const codeCount = game.codes_count || game.codes?.length || 0;
     setSharePayload({
       title: `Giftcode ${game.name}`,
@@ -1769,10 +1768,9 @@ export const App: React.FC = () => {
     if (!rawIcon && campaign.game_slug) {
       const g = allGames.find((x) => x && (x.slug?.toLowerCase() === campaign.game_slug?.toLowerCase() || x.id?.toLowerCase() === campaign.game_slug?.toLowerCase()));
       if (g?.icon_url) rawIcon = g.icon_url;
-      else rawIcon = `/game_icons/${campaign.game_slug}.jpg`;
+      else rawIcon = `/game_icons/${campaign.game_slug}.webp`;
     }
-    const jpgIcon = (rawIcon || '/og-image.jpg').replace(/\.webp$/i, '.jpg');
-    const fullIcon = jpgIcon.startsWith('http') ? jpgIcon : `${origin}${jpgIcon.startsWith('/') ? jpgIcon : `/${jpgIcon}`}`;
+    const fullIcon = (rawIcon || '/og-image.jpg').startsWith('http') ? (rawIcon || '/og-image.jpg') : `${origin}${(rawIcon || '/og-image.jpg').startsWith('/') ? (rawIcon || '/og-image.jpg') : `/${rawIcon || '/og-image.jpg'}`}`;
 
     setSharePayload({
       title: campaign.title,
@@ -1791,10 +1789,9 @@ export const App: React.FC = () => {
     if (!rawIcon && product.game_slug) {
       const g = allGames.find((x) => x && (x.slug?.toLowerCase() === product.game_slug?.toLowerCase() || x.id?.toLowerCase() === product.game_slug?.toLowerCase()));
       if (g?.icon_url) rawIcon = g.icon_url;
-      else rawIcon = `/game_icons/${product.game_slug}.jpg`;
+      else rawIcon = `/game_icons/${product.game_slug}.webp`;
     }
-    const jpgIcon = (rawIcon || '/og-image.jpg').replace(/\.webp$/i, '.jpg');
-    const fullIcon = jpgIcon.startsWith('http') ? jpgIcon : `${origin}${jpgIcon.startsWith('/') ? jpgIcon : `/${jpgIcon}`}`;
+    const fullIcon = (rawIcon || '/og-image.jpg').startsWith('http') ? (rawIcon || '/og-image.jpg') : `${origin}${(rawIcon || '/og-image.jpg').startsWith('/') ? (rawIcon || '/og-image.jpg') : `/${rawIcon || '/og-image.jpg'}`}`;
 
     setSharePayload({
       title: product.title,

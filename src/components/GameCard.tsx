@@ -120,12 +120,8 @@ export const GameCard: React.FC<GameCardProps> = ({
       setFallbackStage(1);
       setCurrentIconSrc(`/game_icons/${slug}.webp`);
     } else if (fallbackStage === 1) {
-      // Stage 2: Try JPG version of the icon
+      // Stage 2: Try remote store icon or Edge Proxy endpoint
       setFallbackStage(2);
-      setCurrentIconSrc(`/game_icons/${slug}.jpg`);
-    } else if (fallbackStage === 2) {
-      // Stage 3: Try remote store icon or Edge Proxy endpoint
-      setFallbackStage(3);
       const rawUrl = game.icon_url && game.icon_url.startsWith('http') && !game.icon_url.includes('codemoi.net')
         ? game.icon_url
         : ((game as any).cover_image_url && (game as any).cover_image_url.startsWith('http') && !(game as any).cover_image_url.includes('codemoi.net') ? (game as any).cover_image_url : '');
@@ -135,8 +131,8 @@ export const GameCard: React.FC<GameCardProps> = ({
       if (pkg) queryParams.set('pkg', pkg);
       setCurrentIconSrc(`/api/game-icon?${queryParams.toString()}`);
     } else {
-      // Stage 4: Cleanly fallback to colorful branded gradient avatar with initials
-      setFallbackStage(4);
+      // Stage 3: Cleanly fallback to colorful branded gradient avatar with initials
+      setFallbackStage(3);
     }
   };
 

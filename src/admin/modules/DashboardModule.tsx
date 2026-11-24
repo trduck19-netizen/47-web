@@ -175,9 +175,6 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({ onNavigate }) 
                       if (!target.dataset.triedLocal) {
                         target.dataset.triedLocal = '1';
                         target.src = `/game_icons/${slug}.webp`;
-                      } else if (!target.dataset.triedJpg) {
-                        target.dataset.triedJpg = '1';
-                        target.src = `/game_icons/${slug}.jpg`;
                       } else if (!target.dataset.triedProxy) {
                         target.dataset.triedProxy = '1';
                         const raw = game.icon_url && game.icon_url.startsWith('http') ? game.icon_url : '';

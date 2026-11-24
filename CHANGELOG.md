@@ -5,6 +5,38 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-24]
+
+### 449. Triển Khai Thành Công Đợt 3 Tinh Gọn Hệ Thống (Lean Framework): Tối Ưu Kho Ảnh Media Tĩnh, Xóa Sạch 801 Files Legacy Trùng Lặp, Giảm 45.2% Dung Lượng public/game_icons (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai Bước 3 theo Lộ trình Tinh gọn `docs/BAO_CAO_DANH_GIA_VA_KHUNG_TINH_GON_DU_AN.md` và kế hoạch chi tiết `plan_dot_3_lean_media_optimization.md` đã được người dùng phê duyệt.
+  - Mục tiêu: Giải quyết hiện tượng phình to kho ảnh tĩnh `public/game_icons/` (51.88 MB, 3.186 files) làm `dist/` phình to > 110 MB khi build.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nâng cấp Fallback Router 2 lớp tại Cloudflare Edge Functions*:
+     - Bổ sung logic tự động rewrite trong [`functions/game_icons/[file].ts`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/functions/game_icons/[file].ts): Khi client gọi tệp đuôi `.jpg`, `.jpeg`, hoặc `.png`, Edge Functions tự động nạp bản `.webp` tương ứng từ `env.ASSETS` trả về HTTP `200 OK`.
+     - Hỗ trợ fallback từ `-thumb-256.webp` sang `-thumb.webp` (128px nhẹ) nếu không tìm thấy bản 256px.
+     - Đảm bảo tính nhất quán 100% giữa Cloudflare Edge Functions và Edge Worker `functions/_worker.ts`.
+  2. *Chuẩn hóa onError Fallback trên Frontend (React Components)*:
+     - Rà soát và cập nhật 6 file giao diện (`src/components/GameCard.tsx`, `src/admin/modules/DashboardModule.tsx`, `src/admin/modules/PrivateCodesModule.tsx`, `src/components/BookmarkDrawer.tsx`, `src/components/SearchAutocomplete.tsx`, `src/components/GiveawaysView.tsx`, `src/components/GameDetailModal.tsx`, `src/App.tsx`).
+     - Gỡ bỏ hoàn toàn việc chủ động gọi URL `.jpg` khi có lỗi ảnh, chuyển sang nạp bản WebP hoặc Edge Proxy endpoint (`/api/game-icon?slug=...`).
+  3. *Dọn dẹp An toàn bằng Script Strict Pre-Check (`scripts/lean-media-cleanup.cjs`)*:
+     - Thiết lập cơ chế kiểm tra nghiêm ngặt: Chỉ xóa tệp `.jpg` / `.png` khi và chỉ khi tệp `.webp` tương ứng tồn tại trên đĩa và có kích thước > 0 bytes.
+     - Xóa đúng 801 files legacy trùng lặp (795 file `.jpg` và 6 file `.png`).
+     - Cập nhật `scripts/build.cjs` tự động dọn sạch `dist/game_icons` trước khi Vite build để `dist` luôn đồng bộ chuẩn xác với `public/`.
+- **Kiểm thử & Nghiệm thu (Verification & Metrics)**:
+  - *Đo lường Kho Ảnh Thực Tế (`docs/lean_media_cleanup_result.json`)*:
+    * Số files ban đầu: 3.186 files (51.88 MB).
+    * Số files đã xóa an toàn: **801 files** (giải phóng **23.47 MB**).
+    * Số files bỏ qua: 0 files (100% 801 game đều có bản WebP tương ứng hợp lệ).
+    * Số files còn lại trong `public/game_icons/`: **2.385 files** (dung lượng **28.42 MB**, **giảm 45.23%**).
+    * Cả 795 game vẫn sở hữu 100% hình ảnh WebP chất lượng cao gồm: ảnh gốc (`.webp`), thumbnail 128px (`-thumb.webp`) và Retina 256px (`-thumb-256.webp`).
+  - *Đo lường Thư Mục `dist/` Thực Tế*:
+    * Tổng dung lượng `dist/`: **Giảm từ 104.49 MB xuống 81.02 MB** (giảm 23.47 MB).
+    * Thư mục `dist/game_icons/`: **Giảm từ 51.88 MB xuống 28.42 MB** (2.385 files).
+  - *TypeScript Typecheck*: `npx tsc -p tsconfig.homepage.json --noEmit` Exit Code 0 (`docs/tsc_check_success.log`).
+  - *i18n Guard Scanner*: 18/18 file giao diện PASSED, 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - *Bảo mật Rule 10*: 0 secrets detected.
+
 ## [2026-11-23]
 
 ### 448. Triển Khai Thành Công Đợt 2 Tinh Gọn Hệ Thống (Lean Framework): Code-Splitting & Lazy Loading 30 Module Admin, Giảm Chunk AdminApp Từ 3.32 MB Xuống 551 KB (24/11/2026)

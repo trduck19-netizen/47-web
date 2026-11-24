@@ -693,8 +693,6 @@ export const GameDetailModal: React.FC<GameDetailModalProps> = ({
                     }}
                     src={
                       modalFallbackStage === 1
-                        ? `/game_icons/${currentGame.slug}.jpg`
-                        : modalFallbackStage === 2
                         ? (() => {
                             const pkg = (currentGame as any).android_package_name ||
                               (currentGame.google_play_url ? (((currentGame.google_play_url.match(/id=([a-zA-Z0-9._]+)/) || [])[1] || '')) : '') ||

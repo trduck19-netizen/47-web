@@ -97,8 +97,8 @@ export const BookmarkDrawer: React.FC<BookmarkDrawerProps> = ({
                       className="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        if (!target.src.endsWith('.jpg')) {
-                          target.src = `/game_icons/${game.slug}.jpg`;
+                        if (!target.src.includes('-thumb.webp') && game.slug) {
+                          target.src = `/game_icons/${game.slug}-thumb.webp`;
                         } else {
                           target.style.display = 'none';
                         }

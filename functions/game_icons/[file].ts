@@ -120,7 +120,29 @@ export const onRequestGet = async (context: {
       if (assetRes && assetRes.status === 200) {
         return assetRes;
       }
-    } catch {}
+
+      // Fallback 3a: Nếu yêu cầu -thumb-256.webp mà chưa có trong assets, thử -thumb.webp (128px nhẹ)
+      if (filename.toLowerCase().endsWith('-thumb-256.webp')) {
+        const thumbUrl = new URL(request.url);
+        thumbUrl.pathname = `/game_icons/${baseSlug}-thumb.webp`;
+        const thumbRes = await env.ASSETS.fetch(new Request(thumbUrl, request));
+        if (thumbRes && thumbRes.status === 200) {
+          return thumbRes;
+        }
+      }
+
+      // Fallback 3b: Nếu yêu cầu .jpg / .jpeg / .png mà không có trong assets, tự động nạp bản .webp tương ứng
+      if (/\.(jpg|jpeg|png)$/i.test(filename)) {
+        const webpUrl = new URL(request.url);
+        webpUrl.pathname = `/game_icons/${baseSlug}.webp`;
+        const webpRes = await env.ASSETS.fetch(new Request(webpUrl, request));
+        if (webpRes && webpRes.status === 200) {
+          return webpRes;
+        }
+      }
+    } catch (err) {
+      console.warn('[GameIconFunction] Asset fetch error:', err);
+    }
   }
 
   return new Response('Icon not found', { status: 404, headers: CORS_HEADERS });

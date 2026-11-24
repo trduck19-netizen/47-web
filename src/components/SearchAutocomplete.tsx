@@ -78,8 +78,7 @@ const GameSearchIcon: React.FC<GameSearchIconProps> = ({ game, size = 'md' }) =>
   const iconSrc = useMemo(() => {
     const slug = game?.slug || '';
     if (fallbackStage === 1) return `/game_icons/${slug}.webp`;
-    if (fallbackStage === 2) return `/game_icons/${slug}.jpg`;
-    if (fallbackStage === 3) return `/api/game-icon?slug=${encodeURIComponent(slug)}`;
+    if (fallbackStage === 2) return `/api/game-icon?slug=${encodeURIComponent(slug)}`;
     if (!game?.icon_url || game.icon_url.includes('codemoi.net') || game.icon_url.startsWith('/game-icons')) {
       return `/game_icons/${slug}-thumb.webp`;
     }

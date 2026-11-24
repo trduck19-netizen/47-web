@@ -423,8 +423,6 @@ const GiveawayDetailModal: React.FC<GiveawayDetailModalProps> = ({
                 target.onerror = null;
                 if (campaign.game_slug && !target.src.includes(`/game_icons/${campaign.game_slug}.webp`)) {
                   target.src = `/game_icons/${campaign.game_slug}.webp`;
-                } else if (campaign.game_slug && !target.src.includes(`/game_icons/${campaign.game_slug}.jpg`)) {
-                  target.src = `/game_icons/${campaign.game_slug}.jpg`;
                 }
               }}
             />
@@ -1815,8 +1813,6 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
                                 target.onerror = null;
                                 if (campaign.game_slug && !target.src.includes(`/game_icons/${campaign.game_slug}.webp`)) {
                                   target.src = `/game_icons/${campaign.game_slug}.webp`;
-                                } else if (campaign.game_slug && !target.src.includes(`/game_icons/${campaign.game_slug}.jpg`)) {
-                                  target.src = `/game_icons/${campaign.game_slug}.jpg`;
                                 }
                               }}
                             />
@@ -2346,8 +2342,6 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
                             target.onerror = null;
                             if (item.game_slug && !target.src.includes(`/game_icons/${item.game_slug}.webp`)) {
                               target.src = `/game_icons/${item.game_slug}.webp`;
-                            } else if (item.game_slug && !target.src.includes(`/game_icons/${item.game_slug}.jpg`)) {
-                              target.src = `/game_icons/${item.game_slug}.jpg`;
                             }
                           }}
                         />
@@ -2714,8 +2708,6 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
                     const slug = limitNoticeModal.campaign?.game_slug;
                     if (slug && !target.src.includes(`/game_icons/${slug}.webp`)) {
                       target.src = `/game_icons/${slug}.webp`;
-                    } else if (slug && !target.src.includes(`/game_icons/${slug}.jpg`)) {
-                      target.src = `/game_icons/${slug}.jpg`;
                     }
                   }}
                 />

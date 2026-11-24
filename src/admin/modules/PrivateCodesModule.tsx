@@ -2366,8 +2366,8 @@ async function toggleGiveaway(giveawayId, isActive) {
                       const target = e.target as HTMLImageElement;
                       if (g.slug && !target.src.includes(`/game_icons/${g.slug}.webp`)) {
                         target.src = `/game_icons/${g.slug}.webp`;
-                      } else if (g.slug && !target.src.includes(`/game_icons/${g.slug}.jpg`)) {
-                        target.src = `/game_icons/${g.slug}.jpg`;
+                      } else {
+                        target.style.display = 'none';
                       }
                     }}
                   />
@@ -2562,8 +2562,6 @@ async function toggleGiveaway(giveawayId, isActive) {
                               target.onerror = null;
                               if (gw.game_slug && !target.src.includes(`/game_icons/${gw.game_slug}.webp`)) {
                                 target.src = `/game_icons/${gw.game_slug}.webp`;
-                              } else if (gw.game_slug && !target.src.includes(`/game_icons/${gw.game_slug}.jpg`)) {
-                                target.src = `/game_icons/${gw.game_slug}.jpg`;
                               } else {
                                 target.style.display = 'none';
                               }

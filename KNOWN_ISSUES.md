@@ -10,6 +10,20 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-318: Bẫy Tệp Tĩnh Cũ Tồn Đọng Trong dist/game_icons Khi Vite Build Không Tự Dọn Dẹp Thư Mục Con Ngoại Trừ dist/assets
+- **Triệu chứng & Rủi ro**:
+  - Sau khi dọn dẹp 801 tệp ảnh legacy trong public/game_icons/, chạy lệnh npm run build nhưng dung lượng dist/ vẫn giữ nguyên 104 MB và số file trong dist/game_icons vẫn là 3.186 files.
+  - Các tệp đã bị xóa khỏi mã nguồn vẫn bị đóng gói và tải lên Cloudflare Pages trong lượt deploy tiếp theo.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  - File scripts/build.cjs chỉ chủ động xóa dist/assets (fs.rmSync(distAssets, { recursive: true })) trước khi chạy Vite build.
+  - Vite khi build mặc định sao chép đè các tệp từ public/ sang dist/, nhưng không bao giờ tự động xóa các tệp đã có sẵn trong dist/ nhưng không còn trong public/.
+- **Cạm bẫy đã thất bại (Failed Attempts)**:
+  - Chỉ xóa file trong public/ rồi chạy ngay lệnh deploy: Khiến dist/ vẫn chứa đầy đủ các file rác cũ.
+- **Giải pháp chuẩn đã kiểm chứng (Đợt 20 - Bước 3 Tinh Gọn)**:
+  - Cập nhật scripts/build.cjs: Thêm bước dọn dẹp sạch sẽ cả dist/game_icons (fs.rmSync(distIcons, { recursive: true, force: true })) cùng với dist/assets trước khi chạy npx vite build.
+  - Kết quả: dist/game_icons luôn đồng bộ 1:1 chính xác tuyệt đối với public/game_icons (đúng 2.385 files, 28.42 MB).
+
+
 ### ISSUE-316: Lỗi Endpoint Probe Chậm 10–16 Giây Do Tự Chạy Schema Migration D1 (`ensureSchemaUpgrades`) Trên Endpoint Đọc Thường Xuyên
 - **Triệu chứng & Rủi ro**:
   - Giao diện Quản trị (`/admin`) bị treo đơ từ 10 đến 16 giây mỗi lần mở trang cấu hình hoặc kiểm tra trạng thái ảnh.

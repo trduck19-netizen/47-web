@@ -18,6 +18,10 @@ const distAssets = path.join(__dirname, '..', 'dist', 'assets');
 if (fs.existsSync(distAssets)) {
   fs.rmSync(distAssets, { recursive: true, force: true });
 }
+const distIcons = path.join(__dirname, '..', 'dist', 'game_icons');
+if (fs.existsSync(distIcons)) {
+  fs.rmSync(distIcons, { recursive: true, force: true });
+}
 execSync('npx vite build', { stdio: 'inherit' });
 
 console.log('⚡ 2. Compiling Cloudflare Pages Edge Worker bundle...');
