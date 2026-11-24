@@ -42,7 +42,20 @@ export class OrderService {
         this.db.prepare('SELECT id, email, display_name, balance, status FROM users WHERE id = ?').bind(userId).first<any>(),
       ]);
 
-      if (!product || product.is_active === 0) {
+      let resolvedProduct = product;
+      if (!resolvedProduct) {
+        const sp = await this.db.prepare(`
+          SELECT id, name, price_core as price,
+                 CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END as is_active,
+                 is_affiliate, origin_product_id
+          FROM seller_products
+          WHERE id = ? AND deleted_at IS NULL
+          LIMIT 1
+        `).bind(productId).first<any>();
+        if (sp) resolvedProduct = sp;
+      }
+
+      if (!resolvedProduct || resolvedProduct.is_active === 0) {
         return { success: false, error: 'Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.', errorCode: 'PRODUCT_NOT_FOUND' };
       }
 
@@ -50,7 +63,7 @@ export class OrderService {
         return { success: false, error: 'Tài khoản người dùng không hợp lệ hoặc đã bị khóa.', errorCode: 'USER_NOT_FOUND' };
       }
 
-      const unitPrice = Number(product.price) || 0;
+      const unitPrice = Number(resolvedProduct.price) || 0;
       const totalAmount = unitPrice * quantity;
       const currentBalance = Number(user.balance) || 0;
 
@@ -144,7 +157,7 @@ export class OrderService {
       `).bind(
         orderId,
         productId,
-        product.name,
+        resolvedProduct.name,
         quantity,
         unitPrice,
         totalAmount,

@@ -5,6 +5,7 @@ import {
   isTestSellerAllowed,
   generateVietQrPayload,
 } from '../../services/marketplace_service';
+import { calculate3WaySplit } from '../../services/seller_affiliate_service';
 
 interface Env {
   DB: D1Database;
@@ -196,14 +197,48 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const isRealMoneyAllowed = isTestSellerAllowed(config, product.seller_id);
       const isPhysical = product.product_type === 'physical';
 
+      // Kiểm tra sản phẩm gán liên shop (Affiliate / Reseller)
+      const isAffiliate = product.is_affiliate === 1 && Boolean(product.origin_product_id);
+      const sourceProductId = isAffiliate ? product.origin_product_id : product.id;
+      const supplierSellerId = isAffiliate ? product.origin_seller_id : null;
+      let affiliateBreakdownJson: string | null = null;
+
+      if (isAffiliate) {
+        const origProd = await env.DB
+          .prepare('SELECT price_core, resell_discount_pct, resell_commission_pct, resell_map_price, product_type FROM seller_products WHERE id = ? LIMIT 1')
+          .bind(product.origin_product_id)
+          .first<any>();
+
+        const listing = await env.DB
+          .prepare('SELECT markup_type, markup_value, price_mode, locked_price FROM seller_affiliate_listings WHERE reseller_product_id = ? LIMIT 1')
+          .bind(product.id)
+          .first<any>();
+
+        if (origProd && listing) {
+          const split = calculate3WaySplit({
+            basePrice: Number(origProd.price_core) || 0,
+            markupType: listing.markup_type || 'PERCENT',
+            markupValue: Number(listing.markup_value) || 0,
+            discountPct: Number(origProd.resell_discount_pct) || 0,
+            commissionPct: Number(origProd.resell_commission_pct) || 0,
+            isPhysical: origProd.product_type === 'physical',
+            mapPrice: Number(origProd.resell_map_price) || 0,
+            priceMode: listing.price_mode,
+            lockedPrice: listing.locked_price,
+          });
+          affiliateBreakdownJson = JSON.stringify(split);
+        }
+      }
+
       let availableCode: any = null;
       if (!isPhysical) {
         // Tìm 1 mã IN_STOCK để giữ mã nguyên tử (§4.1: IN_STOCK -> RESERVED)
+        // Nếu là đơn liên shop thì giữ mã trực tiếp từ kho của NCC (sourceProductId)
         availableCode = await env.DB.prepare(`
           SELECT id FROM seller_codes
           WHERE product_id = ? AND status = 'IN_STOCK' AND deleted_at IS NULL
           ORDER BY created_at ASC LIMIT 1
-        `).bind(product.id).first<any>();
+        `).bind(sourceProductId).first<any>();
 
         if (!availableCode) {
           return new Response(
@@ -250,6 +285,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         bank_name: bankName,
         account_number: accountNumber,
         bank_account: bankAccount,
+        is_affiliate_order: isAffiliate ? 1 : 0,
+        affiliate_breakdown: affiliateBreakdownJson,
+        supplier_seller_id: supplierSellerId,
       });
 
       // Statement giữ mã cho đơn con (chỉ áp dụng cho hàng số)
@@ -300,8 +338,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           INSERT INTO seller_orders (
             id, order_code, parent_order_id, buyer_member_id, buyer_name, buyer_email,
             seller_id, product_id, product_name, game_slug, code_id,
-            price_core, payment_method, product_type, status, expires_at, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'QR_SEPAY', ?, 'PENDING_PAYMENT', ?, ?, ?)
+            price_core, payment_method, product_type, status, expires_at, created_at, updated_at,
+            is_affiliate_order, affiliate_breakdown, supplier_seller_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'QR_SEPAY', ?, 'PENDING_PAYMENT', ?, ?, ?, ?, ?, ?)
         `).bind(
           co.id,
           co.order_code,
@@ -318,7 +357,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           co.product_type || 'digital',
           expiresAt,
           nowIso,
-          nowIso
+          nowIso,
+          co.is_affiliate_order || 0,
+          co.affiliate_breakdown || null,
+          co.supplier_seller_id || null
         )
       );
     }
