@@ -1,6 +1,6 @@
 import { ensureSchemaUpgrades, logAdminAudit } from '../../../services/d1_service';
 import { verifyAdminAuth } from '../../../services/mission_service';
-import canonicalBackup from '../../../data/canonical_backup_state.json';
+import canonicalBackup from '../../../data/compact_canonical_state.json';
 
 interface Env {
   DB: D1Database;

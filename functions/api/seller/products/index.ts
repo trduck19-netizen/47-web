@@ -2,7 +2,7 @@ import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../../services/d1_service';
 import { verifySellerAccess, getMarketplaceConfig } from '../../../services/marketplace_service';
 import { verifyStoreApiAccess } from '../../../services/store_api_service';
-import fallbackGamesData from '../../../../src/data/games188.json';
+import fallbackGamesData from '../../../data/compact_games_fallback.json';
 
 interface Env {
   DB: D1Database;

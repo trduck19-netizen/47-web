@@ -213,8 +213,8 @@ import * as platformLeadsIdApi from './api/platform-leads/[id]';
 import { getMultipleSettingsD1 } from './services/d1_service';
 import { invalidateCatalogEdgeCache } from './services/cache_service';
 import fallbackGiveawaysData from '../src/data/giveaways.json';
-import fallbackGamesData from '../src/data/games188.json';
-import fallbackCodesData from '../src/data/crawled_codes_188.json';
+import fallbackGamesData from './data/compact_games_fallback.json';
+import fallbackCodesData from './data/compact_fallback_codes.json';
 import { isCodeExpired } from '../src/utils/codeUtils';
 
 function attachBuildHeaders(res: Response): Response {

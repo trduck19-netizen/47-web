@@ -7,6 +7,31 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 452. Triển Khai Thành Công Đợt 6 Tinh Gọn Hệ Thống (Lean Framework): Tinh Gọn Edge Worker Bundle Từ 19.20 MB Xuống 6.17 MB (-67.8%), Bóc Tách 13.5 MB Dữ Liệu Tĩnh Khỏi Backend Functions (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai Bước 6 theo kế hoạch chi tiết `plan_dot_6_lean_edge_worker.md` đã được người dùng phê duyệt.
+  - Mục tiêu: Bóc tách 13.5 MB dữ liệu tĩnh khổng lồ (`crawled_codes_188.json` 10.17 MB, `canonical_backup_state.json` 1.23 MB, `seedNews.ts` 1.10 MB, `games188.json` 1.00 MB) khỏi Backend Cloudflare Pages Functions, đưa kích thước bundle `dist/_worker.js` từ 19.20 MB xuống < 10.00 MB (kỳ vọng < 6.50 MB).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Khởi tạo 4 Tệp Compact Fallback Chuẩn Hóa Tại `functions/data/`*:
+     - `compact_fallback_codes.json`: Giảm từ 10.17 MB (12.251 codes) xuống còn **492.73 KB** (2.502 codes chất lượng cao cho 546 games, lọc bỏ các trường rườm rà).
+     - `compact_seed_news.ts`: Giảm từ 1.10 MB (253 bài viết) xuống **80.54 KB** (10 bài viết tiêu biểu mới nhất).
+     - `compact_canonical_state.json`: Giảm từ 1.23 MB xuống **122.29 KB** (lược bỏ 253 bài viết trùng lặp, giữ nguyên các cấu hình crawler và growth).
+     - `compact_games_fallback.json`: Giảm từ 1.00 MB xuống **149.53 KB** (lược bỏ văn bản `instructions` dài hàng ngàn ký tự, giữ metadata chuẩn).
+     - Tổng dung lượng static inputs giảm từ **13.19 MB xuống 0.83 MB (-93.75%)**.
+  2. *Cập nhật 100% Import Backend Trong `functions/`*:
+     - Cập nhật 11 files backend (`_worker.ts`, `sync.ts`, `sync-lite.ts`, `games.ts`, `ingest-codes.ts`, `news/index.ts`, `news/[id].ts`, `growth.ts`, `marketing/config.ts`, `d1_service.ts`, `seller/products/index.ts`) chuyển sang nạp từ các compact fallbacks.
+     - Xác nhận 0 file backend nào còn tham chiếu đến các tệp static nặng ban đầu.
+  3. *Siết Chặt Ngân Sách Lean Guard Scanner (`scripts/check-lean-budgets.cjs`)*:
+     - Hạ trần cảnh báo Edge Worker: từ 20.00 MB xuống **8.00 MB**.
+     - Hạ trần chặn lỗi Edge Worker: từ 22.00 MB xuống **10.00 MB**.
+- **Kiểm thử & Nghiệm thu (Verification & Metrics)**:
+  - *Kích thước Edge Worker Bundle (`dist/_worker.js`)*: **Giảm từ 19.20 MB xuống 6.17 MB (giảm 13.03 MB, tức -67.86%)**!
+  - *Thời gian biên dịch esbuild*: Giảm từ ~434ms xuống **113ms** (nhanh hơn ~4 lần).
+  - *Tổng dung lượng thư mục `dist/`*: **Giảm từ 81.02 MB xuống 67.99 MB** (tiết kiệm thêm 13.03 MB băng thông deploy).
+  - *Lean Guard Scanner*: 9/9 bài kiểm tra PASS 100%, 0 Warnings, 0 Failures với trần 10 MB mới.
+  - *TypeScript Typecheck*: `npx tsc -p tsconfig.homepage.json --noEmit` Exit Code 0.
+  - *Bảo mật Rule 10*: Quét 3 regex bắt buộc đều đạt 0 matches (Pass 100%).
+
 ### 451. Triển Khai Thành Công Đợt 5 Tinh Gọn Hệ Thống (Lean Framework): Tự Động Hóa Giám Sát Phình To Với Lean Guard Scanner, Tích Hợp Build & Ban Hành Cẩm Nang Bảo Trì Dài Hạn (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai Bước 5 theo Lộ trình Tinh gọn `docs/BAO_CAO_DANH_GIA_VA_KHUNG_TINH_GON_DU_AN.md` và kế hoạch chi tiết `plan_dot_5_lean_guard_and_maintenance.md` đã được người dùng phê duyệt.

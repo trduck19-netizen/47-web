@@ -1,11 +1,11 @@
 import { getMultipleSettingsD1, loadAllStoreProductsD1 } from '../services/d1_service';
-import fallbackGamesData from '../../src/data/games188.json';
+import fallbackGamesData from '../data/compact_games_fallback.json';
 import fallbackGiveawaysData from '../../src/data/giveaways.json';
-import { DEFAULT_NEWS_ARTICLES as fallbackNewsArticles } from '../../src/data/seedNews';
+import { DEFAULT_NEWS_ARTICLES as fallbackNewsArticles } from '../data/compact_seed_news';
 import { SEED_GAME_EVENTS } from '../../src/data/seedGameEvents';
 import { DEFAULT_UPCOMING_GAMES as fallbackUpcomingGames } from '../../src/types/game';
 import { DEFAULT_MARKETING_CONFIG } from '../../src/services/marketingService';
-import canonicalBackupState from '../data/canonical_backup_state.json';
+import canonicalBackupState from '../data/compact_canonical_state.json';
 import { getActiveTombstonesMap, filterOutTombstones } from '../services/soft_delete_service';
 
 interface Env {

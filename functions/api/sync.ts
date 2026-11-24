@@ -28,17 +28,17 @@ import { verifyToken, computeHash, verifyTemporaryAuditToken } from '../services
 import { invalidateGamesCatalogCache, SQL_JUNK_CODE_CONDITION } from './games';
 import { invalidateCatalogEdgeCache } from '../services/cache_service';
 import { recordSoftDelete, isRecordTombstoned, getActiveTombstonesMap, filterOutTombstones } from '../services/soft_delete_service';
-import fallbackGamesData from '../../src/data/games188.json';
-import fallbackCodesData from '../../src/data/crawled_codes_188.json';
+import fallbackGamesData from '../data/compact_games_fallback.json';
+import fallbackCodesData from '../data/compact_fallback_codes.json';
 import fallbackUtilitiesData from '../../src/data/utilities.json';
 import fallbackGiveawaysData from '../../src/data/giveaways.json';
 import fallbackStoreProductsData from '../../src/data/storeProducts.json';
-import { DEFAULT_NEWS_ARTICLES as fallbackNewsArticles } from '../../src/data/seedNews';
+import { DEFAULT_NEWS_ARTICLES as fallbackNewsArticles } from '../data/compact_seed_news';
 import { SEED_GAME_EVENTS } from '../../src/data/seedGameEvents';
 import { DEFAULT_UPCOMING_GAMES as fallbackUpcomingGames } from '../../src/types/game';
 import { DEFAULT_MARKETING_CONFIG } from '../../src/services/marketingService';
 import { computeSha256, hasScope } from '../services/mission_service';
-import canonicalBackupState from '../data/canonical_backup_state.json';
+import canonicalBackupState from '../data/compact_canonical_state.json';
 
 interface Env {
   SYNC_SECRET?: string;

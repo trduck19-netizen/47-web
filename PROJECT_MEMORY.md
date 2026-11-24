@@ -52,7 +52,7 @@
   - Bước 1: Dọn sạch `dist/assets` và `dist/game_icons`, build Vite Frontend vào `dist/`
   - Bước 2: Compile Edge Worker bundle từ `functions/_worker.ts` vào `dist/_worker.js`
   - Bước 3: Copy `public/_routes.json` vào `dist/_routes.json`
-  - Bước 4: Post-build Lean Guard Scanner (`check-lean-budgets.cjs --stage=post` kiểm tra chunks, worker bundle <= 22 MB, dist <= 85 MB)
+  - Bước 4: Post-build Lean Guard Scanner (`check-lean-budgets.cjs --stage=post` kiểm tra chunks, worker bundle <= 10 MB [thực tế 6.17 MB], dist <= 85 MB [thực tế 67.99 MB])
 - **Quy trình Deploy**:
   - `npm run deploy:all` (Deploy đồng thời cả `universal-mall-shop` và `admin-universal-mall`).
 - **Khung Tinh Gọn Hệ Thống (Lean Framework)**:

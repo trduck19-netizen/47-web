@@ -4,7 +4,7 @@ import { recordEscrowHold } from './escrow_service';
  * D1 Database Service for web-code-game
  * Implements atomic batch operations, strict constraint validations, and schema management.
  */
-import canonicalBackupState from '../data/canonical_backup_state.json';
+import canonicalBackupState from '../data/compact_canonical_state.json';
 
 export interface D1PurchaseParams {
   orderId: string;

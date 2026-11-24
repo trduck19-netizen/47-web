@@ -1,4 +1,4 @@
-import { DEFAULT_NEWS_ARTICLES as fallbackNewsArticles } from '../../../src/data/seedNews';
+import { DEFAULT_NEWS_ARTICLES as fallbackNewsArticles } from '../../data/compact_seed_news';
 import { computeSha256, hasScope } from '../../services/mission_service';
 import { authenticateAdmin } from '../../services/auth_service';
 import { getSettingD1, setSettingD1, invalidateSettingMemoryCache } from '../../services/d1_service';

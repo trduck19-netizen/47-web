@@ -15,8 +15,8 @@ import { recordSoftDelete, isRecordTombstoned, getActiveTombstonesMap, filterOut
 import { normalizeVietnamese, stripAccents, GAME_ACRONYM_MAP, invalidateGamesCatalogCache, isJunkCode, SQL_JUNK_CODE_CONDITION } from '../games';
 import { invalidateCatalogEdgeCache } from '../../services/cache_service';
 import { parseExpirationDate, isCodeExpired, decodeHtmlEntities } from '../../../src/utils/codeUtils';
-import fallbackGamesData from '../../../src/data/games188.json';
-import fallbackCodesData from '../../../src/data/crawled_codes_188.json';
+import fallbackGamesData from '../../data/compact_games_fallback.json';
+import fallbackCodesData from '../../data/compact_fallback_codes.json';
 import {
   authenticateMarketingAuditor,
   getLiveMarketingConfig,
@@ -82,7 +82,7 @@ const DESTRUCTIVE_AND_MODERATION_ACTIONS = [
   'migrate_remove_fake_expiry_dates',
 ];
 
-import canonicalBackupState from '../../data/canonical_backup_state.json';
+import canonicalBackupState from '../../data/compact_canonical_state.json';
 
 /**
  * Xác thực API Key

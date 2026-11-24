@@ -7,8 +7,8 @@ import {
   isJunkCode,
   SQL_JUNK_CODE_CONDITION,
 } from '../../src/utils/codeUtils';
-import fallbackGamesData from '../../src/data/games188.json';
-import fallbackCodesData from '../../src/data/crawled_codes_188.json';
+import fallbackGamesData from '../data/compact_games_fallback.json';
+import fallbackCodesData from '../data/compact_fallback_codes.json';
 
 export { JUNK_CODE_REGEX, isJunkCode, SQL_JUNK_CODE_CONDITION };
 

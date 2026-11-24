@@ -6,7 +6,7 @@
  * 3. Kích thước file ảnh đơn lẻ trong public/ (<= 200 KB cho icon, <= 350 KB cho ảnh thông thường)
  * 4. Dữ liệu tĩnh mới trong src/data/ (<= 150 KB)
  * 5. Frontend Component Chunks trong dist/assets/ (AdminApp.js <= 600 KB, các chunk khác <= 650 KB)
- * 6. Cloudflare Pages Edge Worker Bundle (dist/_worker.js <= 22 MB)
+ * 6. Cloudflare Pages Edge Worker Bundle (dist/_worker.js <= 10.00 MB - Đã tinh gọn ở Bước 6)
  * 7. Tổng dung lượng thư mục phân phối dist/ (<= 85 MB)
  */
 
@@ -260,13 +260,13 @@ if (stage === 'post' || stage === 'all') {
       const workerBytes = fs.statSync(workerFile).size;
       const workerMB = workerBytes / (1024 * 1024);
       console.log(`   ⚡ Edge Worker Bundle (dist/_worker.js): ${formatMB(workerBytes)}`);
-      if (workerMB > 22.0) {
-        failures.push(`[Check 7 FAIL] dist/_worker.js (${formatMB(workerBytes)}) vượt trần giới hạn an toàn Cloudflare Pages (22.00 MB)!`);
-      } else if (workerMB > 20.0) {
-        warnings.push(`[Check 7 WARN] dist/_worker.js (${formatMB(workerBytes)}) tiệm cận ngưỡng 20 MB.`);
+      if (workerMB > 10.0) {
+        failures.push(`[Check 7 FAIL] dist/_worker.js (${formatMB(workerBytes)}) vượt trần giới hạn tinh gọn Bước 6 (10.00 MB)!`);
+      } else if (workerMB > 8.0) {
+        warnings.push(`[Check 7 WARN] dist/_worker.js (${formatMB(workerBytes)}) tiệm cận ngưỡng 8 MB.`);
         passCount++;
       } else {
-        console.log(`   ✅ [Check 7 PASS] Edge Worker Bundle (${formatMB(workerBytes)}) nằm trong giới hạn cho phép (<= 22.00 MB).`);
+        console.log(`   ✅ [Check 7 PASS] Edge Worker Bundle (${formatMB(workerBytes)}) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).`);
         passCount++;
       }
     } else {
