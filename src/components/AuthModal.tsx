@@ -336,7 +336,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!forgotIdentifier.trim()) {
-      setErrorMessage('Vui lòng nhập email hoặc tên tài khoản cần khôi phục.');
+      setErrorMessage(isEn ? 'Please enter the email or username to recover.' : 'Vui lòng nhập email hoặc tên tài khoản cần khôi phục.');
       return;
     }
 
@@ -346,9 +346,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     if (res.success) {
       setForgotStep(2);
-      onShowToast('Đã gửi mã xác minh', res.message || 'Mã OTP đã được gửi đến email của bạn.', 'info');
+      onShowToast(isEn ? 'Verification code sent' : 'Đã gửi mã xác minh', res.message || (isEn ? 'An OTP code has been sent to your email.' : 'Mã OTP đã được gửi đến email của bạn.'), 'info');
     } else {
-      setErrorMessage(res.message || 'Không thể tạo yêu cầu đặt lại mật khẩu.');
+      setErrorMessage(res.message || (isEn ? 'Unable to create password reset request.' : 'Không thể tạo yêu cầu đặt lại mật khẩu.'));
     }
   };
 
@@ -358,12 +358,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!forgotOtp.trim()) {
-      setErrorMessage('Vui lòng nhập mã xác minh OTP.');
+      setErrorMessage(isEn ? 'Please enter the OTP verification code.' : 'Vui lòng nhập mã xác minh OTP.');
       return;
     }
 
     if (forgotNewPassword.length < 6) {
-      setErrorMessage('Mật khẩu mới phải có ít nhất 6 ký tự.');
+      setErrorMessage(isEn ? 'New password must be at least 6 characters.' : 'Mật khẩu mới phải có ít nhất 6 ký tự.');
       return;
     }
 
@@ -372,12 +372,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(false);
 
     if (res.success) {
-      onShowToast('Thành công', res.message, 'success');
+      onShowToast(isEn ? 'Success' : 'Thành công', res.message, 'success');
       setTab('login');
       setLoginIdentifier(forgotIdentifier);
       setForgotStep(1);
     } else {
-      setErrorMessage(res.message || 'Xác minh OTP thất bại.');
+      setErrorMessage(res.message || (isEn ? 'OTP verification failed.' : 'Xác minh OTP thất bại.'));
     }
   };
 
@@ -417,8 +417,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <button
               onClick={onClose}
               className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-slate-600 shadow-md cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0"
-              aria-label="Đóng"
-              title="Đóng"
+              aria-label={isEn ? "Close" : "Đóng"}
+              title={isEn ? "Close" : "Đóng"}
             >
               <X className="w-5 h-5 text-white" />
             </button>
@@ -481,7 +481,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Identifier Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-foreground">
-                  Tên tài khoản hoặc Email <span className="text-accent">*</span>
+                  {isEn ? 'Username or Email' : 'Tên tài khoản hoặc Email'} <span className="text-accent">*</span>
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -489,7 +489,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="text"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder="Nhập tên tài khoản hoặc email"
+                    placeholder={isEn ? "Enter username or email" : "Nhập tên tài khoản hoặc email"}
                     required
                     autoComplete="username"
                     className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -501,7 +501,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-foreground">
-                    Mật khẩu <span className="text-accent">*</span>
+                    {isEn ? 'Password' : 'Mật khẩu'} <span className="text-accent">*</span>
                   </label>
                 </div>
                 <div className="relative">
@@ -510,7 +510,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type={showLoginPassword ? 'text' : 'password'}
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu"
+                    placeholder={isEn ? "Enter password" : "Nhập mật khẩu"}
                     required
                     autoComplete="current-password"
                     className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -534,7 +534,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-background"
                   />
-                  <span className="text-xs text-muted-foreground">Ghi nhớ đăng nhập</span>
+                  <span className="text-xs text-muted-foreground">{isEn ? 'Remember me' : 'Ghi nhớ đăng nhập'}</span>
                 </label>
               </div>
 
@@ -545,7 +545,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               ) : (
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-center">
-                  {isEn ? 'Turnstile Site Key not configured (VITE_TURNSTILE_SITE_KEY).' : 'Chưa cấu hình VITE_TURNSTILE_SITE_KEY trên hệ thống.'}
+                  {t('authModal.turnstileNotConfigured')}
                 </div>
               )}
 
@@ -558,10 +558,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Đang xử lý đăng nhập...</span>
+                    <span>{isEn ? 'Logging in...' : 'Đang xử lý đăng nhập...'}</span>
                   </>
                 ) : (
-                  <span>Đăng Nhập</span>
+                  <span>{isEn ? 'Log In' : 'Đăng Nhập'}</span>
                 )}
               </button>
             </form>
@@ -574,7 +574,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Username */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-foreground">
-                    Tên đăng nhập <span className="text-accent">*</span>
+                    {isEn ? 'Username' : 'Tên đăng nhập'} <span className="text-accent">*</span>
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -582,7 +582,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       type="text"
                       value={regUsername}
                       onChange={(e) => setRegUsername(e.target.value)}
-                      placeholder="Tên đăng nhập"
+                      placeholder={isEn ? "Username" : "Tên đăng nhập"}
                       required
                       autoComplete="username"
                       className="w-full pl-10 pr-3 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -593,13 +593,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Display Name */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-foreground">
-                    Tên hiển thị
+                    {isEn ? 'Display name' : 'Tên hiển thị'}
                   </label>
                   <input
                     type="text"
                     value={regDisplayName}
                     onChange={(e) => setRegDisplayName(e.target.value)}
-                    placeholder="Tên hiển thị"
+                    placeholder={isEn ? "Display name" : "Tên hiển thị"}
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
                   />
                 </div>
@@ -626,7 +626,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Password */}
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-foreground">
-                  Mật khẩu <span className="text-accent">*</span>
+                  {isEn ? 'Password' : 'Mật khẩu'} <span className="text-accent">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -634,7 +634,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type={showRegPassword ? 'text' : 'password'}
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    placeholder="Tối thiểu 6 ký tự"
+                    placeholder={isEn ? "At least 6 characters" : "Tối thiểu 6 ký tự"}
                     required
                     autoComplete="new-password"
                     className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -652,7 +652,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {regPassword && (
                   <div className="space-y-1 pt-1">
                     <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="text-muted-foreground">Độ mạnh mật khẩu:</span>
+                      <span className="text-muted-foreground">{isEn ? 'Password strength:' : 'Độ mạnh mật khẩu:'}</span>
                       <span className={`font-bold ${passwordStrength.color.split(' ')[1] || 'text-foreground'}`}>
                         {passwordStrength.label}
                       </span>
@@ -670,7 +670,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Confirm Password */}
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-foreground">
-                  Xác nhận lại mật khẩu <span className="text-accent">*</span>
+                  {isEn ? 'Confirm Password' : 'Xác nhận lại mật khẩu'} <span className="text-accent">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -678,7 +678,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type={showRegPassword ? 'text' : 'password'}
                     value={regConfirmPassword}
                     onChange={(e) => setRegConfirmPassword(e.target.value)}
-                    placeholder="Nhập lại mật khẩu"
+                    placeholder={isEn ? "Confirm password" : "Nhập lại mật khẩu"}
                     required
                     autoComplete="new-password"
                     className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -704,7 +704,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-4 h-4 mt-0.5 rounded border-border text-primary focus:ring-primary focus:ring-offset-background"
                 />
                 <span className="text-xs text-muted-foreground leading-tight">
-                  Tôi đồng ý với <strong className="text-foreground">Điều khoản dịch vụ</strong> và bảo mật tài khoản.
+                  {isEn ? 'I agree to the ' : 'Tôi đồng ý với '}
+                  <strong className="text-foreground">{isEn ? 'Terms of Service' : 'Điều khoản dịch vụ'}</strong>
+                  {isEn ? ' and account security policy.' : ' và bảo mật tài khoản.'}
                 </span>
               </label>
 
@@ -715,7 +717,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               ) : (
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-center">
-                  {isEn ? 'Turnstile Site Key not configured (VITE_TURNSTILE_SITE_KEY).' : 'Chưa cấu hình VITE_TURNSTILE_SITE_KEY trên hệ thống.'}
+                  {t('authModal.turnstileNotConfigured')}
                 </div>
               )}
 
@@ -728,10 +730,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Đang tạo tài khoản...</span>
+                    <span>{isEn ? 'Creating account...' : 'Đang tạo tài khoản...'}</span>
                   </>
                 ) : (
-                  <span>Đăng Ký Tài Khoản</span>
+                  <span>{isEn ? 'Create Account' : 'Đăng Ký Tài Khoản'}</span>
                 )}
               </button>
             </form>
@@ -743,12 +745,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {forgotStep === 1 ? (
                 <form onSubmit={handleRequestOtp} className="space-y-4">
                   <div className="p-3.5 rounded-2xl bg-muted/40 border border-border text-xs text-muted-foreground leading-relaxed">
-                    Nhập tên tài khoản hoặc email đăng ký để nhận mã OTP khôi phục.
+                    {isEn ? 'Enter your registered username or email to receive a recovery OTP code.' : 'Nhập tên tài khoản hoặc email đăng ký để nhận mã OTP khôi phục.'}
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      Tên tài khoản hoặc Email <span className="text-accent">*</span>
+                      {isEn ? 'Username or Email' : 'Tên tài khoản hoặc Email'} <span className="text-accent">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -756,7 +758,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         type="text"
                         value={forgotIdentifier}
                         onChange={(e) => setForgotIdentifier(e.target.value)}
-                        placeholder="Nhập tên tài khoản hoặc email"
+                        placeholder={isEn ? "Enter username or email" : "Nhập tên tài khoản hoặc email"}
                         required
                         className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
                       />
@@ -771,12 +773,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {isLoading ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Đang gửi mã...</span>
+                        <span>{isEn ? 'Sending code...' : 'Đang gửi mã...'}</span>
                       </>
                     ) : (
                       <>
                         <KeyRound className="w-4 h-4" />
-                        <span>Gửi Mã Xác Minh OTP</span>
+                        <span>{isEn ? 'Send OTP Verification Code' : 'Gửi Mã Xác Minh OTP'}</span>
                       </>
                     )}
                   </button>
@@ -785,13 +787,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <form onSubmit={handleConfirmReset} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      Nhập mã OTP <span className="text-accent">*</span>
+                      {isEn ? 'Enter OTP Code' : 'Nhập mã OTP'} <span className="text-accent">*</span>
                     </label>
                     <input
                       type="text"
                       value={forgotOtp}
                       onChange={(e) => setForgotOtp(e.target.value)}
-                      placeholder="Mã OTP"
+                      placeholder={isEn ? "OTP Code" : "Mã OTP"}
                       required
                       className="w-full px-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 font-mono text-sm tracking-widest text-center font-bold shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
                     />
@@ -799,13 +801,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      Mật khẩu mới <span className="text-accent">*</span>
+                      {isEn ? 'New Password' : 'Mật khẩu mới'} <span className="text-accent">*</span>
                     </label>
                     <input
                       type="password"
                       value={forgotNewPassword}
                       onChange={(e) => setForgotNewPassword(e.target.value)}
-                      placeholder="Mật khẩu mới"
+                      placeholder={isEn ? "New password" : "Mật khẩu mới"}
                       required
                       autoComplete="new-password"
                       className="w-full px-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -818,7 +820,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       onClick={() => setForgotStep(1)}
                       className="px-4 py-3 rounded-2xl bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold cursor-pointer"
                     >
-                      Quay lại
+                      {isEn ? 'Back' : 'Quay lại'}
                     </button>
                     <button
                       type="submit"
@@ -828,10 +830,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {isLoading ? (
                         <>
                           <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>Đang lưu...</span>
+                          <span>{isEn ? 'Saving...' : 'Đang lưu...'}</span>
                         </>
                       ) : (
-                        <span>Xác Nhận Đổi Mật Khẩu</span>
+                        <span>{isEn ? 'Confirm Password Reset' : 'Xác Nhận Đổi Mật Khẩu'}</span>
                       )}
                     </button>
                   </div>

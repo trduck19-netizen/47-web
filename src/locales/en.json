@@ -698,7 +698,8 @@
     "later": "Later",
     "tabLogin": "Log In",
     "tabRegister": "Register",
-    "tabForgot": "Forgot Password"
+    "tabForgot": "Forgot Password",
+    "turnstileNotConfigured": "Turnstile Site Key not configured (VITE_TURNSTILE_SITE_KEY)."
   },
   "common": {
     "loading": "Loading data...",

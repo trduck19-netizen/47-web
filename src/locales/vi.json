@@ -698,7 +698,8 @@
     "later": "Để sau",
     "tabLogin": "Đăng Nhập",
     "tabRegister": "Đăng Ký",
-    "tabForgot": "Quên Mật Khẩu"
+    "tabForgot": "Quên Mật Khẩu",
+    "turnstileNotConfigured": "Chưa cấu hình VITE_TURNSTILE_SITE_KEY trên hệ thống."
   },
   "common": {
     "loading": "Đang tải dữ liệu...",
