@@ -7,6 +7,26 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 458. Sửa Gộp Các Lỗi Nhỏ (Tổng Hợp 24/11/2026): Turnstile i18n & Mở Rộng i18n Guard (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Người dùng yêu cầu xử lý chuỗi cảnh báo Turnstile ghi cứng trong `src/components/AuthModal.tsx` (dòng 548, 718).
+  - Bổ sung khóa từ điển tập trung `authModal.turnstileNotConfigured` vào `vi.json` và `en.json`.
+  - Mở rộng script `scripts/check-hardcoded-i18n.cjs` đưa `AuthModal.tsx` vào danh sách `IN_SCOPE_UI_FILES` (tăng từ 18 lên 19 tệp), bảo đảm máy kiểm chạy exit code 0.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Đa ngôn ngữ tập trung*:
+     - Khai báo `"turnstileNotConfigured"` trong `src/locales/vi.json` và `src/locales/en.json`.
+     - Thay thế toán tử 3 ngôi kiểm tra `isEn` bằng `{t('authModal.turnstileNotConfigured')}`.
+     - Chuẩn hóa toàn bộ các nhãn, placeholder và nút bấm trong `AuthModal.tsx` theo cú pháp song ngữ `{isEn ? ... : ...}`.
+  2. *Mở rộng rào chắn i18n Guard*:
+     - Cập nhật `IN_SCOPE_UI_FILES` trong `scripts/check-hardcoded-i18n.cjs` lên 19 tệp.
+     - Chạy kiểm tra: Đạt 19/19 files PASS, 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  3. *Lean Guard & Triển khai*:
+     - Lean Guard đạt 9/9 tiêu chí; Edge Worker bundle đạt 6.34 MB (<= 10.00 MB).
+     - Commit `9c6200b`, build và deploy Cloudflare Pages: `universal-mall-shop` (`X-Build-Id: 9c6200b`) và `admin-universal-mall`.
+- **Kiểm chứng thực tế & Kết quả**:
+  - `node scripts/check-hardcoded-i18n.cjs`: Exit code 0 (19/19 PASS).
+  - `curl.exe -sI https://universal-mall-shop.pages.dev`: `HTTP/1.1 200 OK`, `X-Build-Id: 9c6200b`.
+
 ### 457. Hoàn Thiện & Khắc Phục Toàn Diện 5 Nhóm Lỗi: Chia Tiền 3 Bên Affiliate, Thực Thi Scope Khóa AI, Rate Limit Khóa Cặp & Xóa Bỏ Cửa Hậu Turnstile (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Người dùng gửi "LỆNH SỬA NỐT — API AI NGƯỜI DÙNG + API GÁN SHOP GĐ1 + BYPASS TURNSTILE" dựa trên kiểm thử live 3 tài khoản và đơn hàng affiliate thật (`sord_1795509779120_fg0d4`).
