@@ -1357,7 +1357,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             is_new: Boolean(g.is_new || g.isNew || relDate.startsWith('2026-09')),
             is_active: true,
             codes_count: typeof g.codes_count === 'number' ? g.codes_count : existingCodes.filter((c: any) => !isCodeExpired(c)).length,
-            active_codes_count: typeof g.active_codes_count === 'number' ? g.active_codes_count : existingCodes.filter((c: any) => !isCodeExpired(c)).length,
+            active_codes_count: typeof g.active_codes_count === 'number' ? g.active_codes_count : (typeof g.codes_count === 'number' ? g.codes_count : existingCodes.filter((c: any) => !isCodeExpired(c)).length),
             free_codes_count: typeof g.free_codes_count === 'number' ? g.free_codes_count : (typeof g.codes_count === 'number' ? g.codes_count : existingCodes.filter((c: any) => !isCodeExpired(c)).length),
             total_codes_count: existingCodes.length || (typeof g.total_codes_count === 'number' ? g.total_codes_count : 0),
             expired_codes_count: existingCodes.filter((c: any) => isCodeExpired(c)).length,

@@ -120,6 +120,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       if (!icon || icon.includes('codemoi.net') || icon.includes('googleusercontent.com') || icon.startsWith('/game-icons')) {
         icon = `/game_icons/${slug}.webp`;
       }
+      const codesCount = typeof g.codes_count === 'number' ? g.codes_count : (typeof g.active_codes_count === 'number' ? g.active_codes_count : 0);
       return {
         id: g.id || slug,
         name: g.name || slug,
@@ -128,19 +129,35 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         category: g.category || '',
         rating: typeof g.rating === 'number' ? g.rating : 5,
         icon_url: icon,
-        codes_count: typeof g.codes_count === 'number' ? g.codes_count : (typeof g.active_codes_count === 'number' ? g.active_codes_count : 0),
-        active_codes_count: typeof g.active_codes_count === 'number' ? g.active_codes_count : (typeof g.codes_count === 'number' ? g.codes_count : 0),
+        codes_count: codesCount,
         is_hot: Boolean(g.is_hot),
         is_new: Boolean(g.is_new),
         is_featured: Boolean(g.is_featured),
-        platform: g.platform || 'Android, iOS, PC',
+        platform: g.platform && g.platform !== 'Android, iOS, PC' ? g.platform : undefined,
       };
     });
 
-    // 2. Upcoming Games
+    // 2. Upcoming Games (Lean Homepage Projection)
     const rawUpcoming = d1Settings['wcg_admin_upcoming_games_v1'];
     const upcomingList = (Array.isArray(rawUpcoming) && rawUpcoming.length > 0) ? rawUpcoming : fallbackUpcomingGames;
-    const upcomingGames = filterOutTombstones(upcomingList, 'upcoming_game', tombstonesMap, (g: any) => ({ id: g?.id, slug: g?.slug }));
+    const filteredUpcoming = filterOutTombstones(upcomingList, 'upcoming_game', tombstonesMap, (g: any) => ({ id: g?.id, slug: g?.slug }));
+    const upcomingGames = filteredUpcoming.map((ug: any) => ({
+      id: ug.id,
+      name: ug.name || '',
+      slug: ug.slug || '',
+      publisher: ug.publisher || '',
+      releaseDate: ug.releaseDate || '',
+      category: ug.category || '',
+      platform: ug.platform || 'PC, Mobile',
+      icon_url: ug.icon_url || ug.iconUrl || `/game_icons/${ug.slug || ug.id}.webp`,
+      bannerUrl: ug.bannerUrl || '',
+      description: ug.description || '',
+      subscribersCount: Number(ug.subscribersCount || 0),
+      status: ug.status || 'UPCOMING',
+      displayOrder: Number(ug.displayOrder || 0),
+      isLaunched: Boolean(ug.isLaunched),
+      isRolledOver: Boolean(ug.isRolledOver),
+    }));
 
     // 3. Active Game Events
     const rawEvents = d1Settings['wcg_game_events_v1'];
@@ -148,21 +165,39 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const delEventsSet = new Set(Array.isArray(d1Settings['wcg_deleted_game_events_v1']) ? d1Settings['wcg_deleted_game_events_v1'] : []);
     const gameEvents = eventsList.filter((e: any) => e && e.id && !delEventsSet.has(e.id));
 
-    // 4. Giveaways (Sanitized, Active, In-Stock First)
+    // 4. Giveaways (Sanitized, Active, In-Stock First - Lean Projection)
     const rawGws = d1Settings['wcg_admin_giveaways_v4'];
     const delGwSet = new Set(Array.isArray(d1Settings['wcg_deleted_giveaways']) ? d1Settings['wcg_deleted_giveaways'] : []);
     const gwCandidates = (Array.isArray(rawGws) && rawGws.length > 0) ? rawGws : (fallbackGiveawaysData as any[]);
     const giveaways = gwCandidates
       .filter((g: any) => g && g.id && !delGwSet.has(g.id) && g.id !== 'gw_alienware_vaultbreakers' && g.id !== 'gw_garena_delta_force')
       .map((gw: any) => {
-        const { codes_pool, claim_history, ...rest } = gw;
         const isClosed = gw.is_active === false || gw.is_active === 0 || gw.status === 'PAUSED' || gw.status === 'CLOSED';
-        const rem = gw.remaining_codes !== undefined && gw.remaining_codes !== null ? Number(gw.remaining_codes) : (Array.isArray(codes_pool) ? codes_pool.length : 0);
+        const rem = gw.remaining_codes !== undefined && gw.remaining_codes !== null ? Number(gw.remaining_codes) : (Array.isArray(gw.codes_pool) ? gw.codes_pool.length : 0);
         return {
-          ...rest,
+          id: gw.id,
+          title: gw.title || '',
+          game_slug: gw.game_slug || '',
+          game_name: gw.game_name || '',
+          description: gw.description || '',
+          rewards: gw.rewards || 'Giftcode',
+          total_codes: Number(gw.total_codes || 0),
+          remaining_codes: isClosed ? 0 : rem,
+          claimed_codes: Number(gw.claimed_codes || 0),
+          virtual_claimed_offset: Number(gw.virtual_claimed_offset || 0),
+          show_claimed_count: gw.show_claimed_count !== false,
+          show_remaining_count: gw.show_remaining_count !== false,
+          start_time: gw.start_time || '',
+          end_time: gw.end_time || '',
           is_active: !isClosed,
           status: gw.status === 'ENDED' ? 'ENDED' : (isClosed ? 'PAUSED' : 'ACTIVE'),
-          remaining_codes: isClosed ? 0 : rem,
+          cover_image_url: gw.cover_image_url || gw.game_icon_url || '',
+          game_icon_url: gw.game_icon_url || gw.cover_image_url || '',
+          fomo_anchor_time: gw.fomo_anchor_time || null,
+          custom_banner_enabled: Boolean(gw.custom_banner_enabled),
+          custom_banner_link: gw.custom_banner_link || '',
+          custom_banner_text: gw.custom_banner_text || '',
+          last_claimer_name: gw.last_claimer_name || '',
         };
       })
       .sort((a: any, b: any) => (Number(b.remaining_codes) || 0) - (Number(a.remaining_codes) || 0));
@@ -313,9 +348,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         ...CORS_HEADERS,
         'Cache-Control': isNoCache
           ? 'no-cache, no-store, must-revalidate'
-          : 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
+          : 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+        'CDN-Cache-Control': isNoCache ? 'no-store' : 'public, max-age=300',
         'X-Server-Time': new Date().toISOString(),
-        'X-Cache-Status': isNoCache ? 'BYPASS' : 'MISS',
+        'X-Cache-Status': isNoCache ? 'BYPASS' : 'DYNAMIC',
       },
     });
 

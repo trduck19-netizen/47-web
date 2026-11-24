@@ -7,6 +7,29 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 450. Triển Khai Thành Công Đợt 4 Tinh Gọn Hệ Thống (Lean Framework): Tinh Gọn Cấu Trúc Phản Hồi API & Payload CSDL D1 Cho GET /api/sync-lite, Kích Hoạt Cloudflare CDN Edge Cache (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai Bước 4 theo Lộ trình Tinh gọn `docs/BAO_CAO_DANH_GIA_VA_KHUNG_TINH_GON_DU_AN.md` và kế hoạch chi tiết `plan_dot_4_lean_api_payload.md` đã được người dùng phê duyệt.
+  - Mục tiêu: Khắc phục hiện tượng payload `/api/sync-lite` phình to tới 302.85 KB gây nghẽn TTFB ~1.9s, bóc tách các trường nội bộ thừa thãi của Giveaways, Upcoming Games và Games gửi về cho khách vãng lai.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Tinh gọn Projection mảng Giveaways*:
+     - Lọc bỏ 20+ trường cấu hình Backend/Admin nội bộ không dùng cho hiển thị Web Khách (`cooldown_hours`, `cooldown_minutes`, `global_cooldown_seconds`, `enable_waiting_room`, `waiting_users_min`, `waiting_users_max`, `use_template`, `virtual_remaining_addition`, `virtual_remaining_current`, `last_simulated_claim_at`, v.v.).
+     - Giữ nguyên 100% các trường cần thiết cho `GiveawaysView.tsx` và `marketingService.ts` (`id`, `title`, `game_slug`, `game_name`, `description`, `rewards`, `total_codes`, `remaining_codes`, `claimed_codes`, `virtual_claimed_offset`, `show_claimed_count`, `show_remaining_count`, `start_time`, `end_time`, `is_active`, `status`, `cover_image_url`, `game_icon_url`, `fomo_anchor_time`, `custom_banner_*`, `last_claimer_name`).
+  2. *Tinh gọn Projection mảng Upcoming Games*:
+     - Lọc bỏ các trường thừa (`hoursRemainingOnBanner`, `minutesRemainingOnBanner`, `expectedCodes`, `source`, `createdAt`, `updatedAt`, `rolloverStatus`).
+     - Chuẩn hóa loại bỏ trường trùng lặp `iconUrl` (dùng `icon_url`).
+  3. *Tinh gọn mảng Games (593 games)*:
+     - Bỏ trường trùng lặp `active_codes_count` (client tự động fallback về `codes_count`).
+     - Tối ưu trường `platform`: Omit khi là giá trị mặc định "Android, iOS, PC" để client tự động điền fallback, giảm ~10 KB chuỗi lặp.
+  4. *Kích hoạt Cloudflare CDN Edge Cache*:
+     - Bổ sung header `Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=600` và `CDN-Cache-Control: public, max-age=300`.
+     - Giúp Edge POP của Cloudflare cache bản phản hồi, giảm độ trễ phản hồi từ ~1.900 ms xuống < 100 ms.
+- **Kiểm thử & Nghiệm thu (Verification & Metrics)**:
+  - *TypeScript Typecheck*: `npx tsc -p tsconfig.homepage.json --noEmit` Exit Code 0 (`docs/tsc_check_success.log`).
+  - *i18n Guard Scanner*: 18/18 file giao diện PASSED, 0 chuỗi tiếng Việt ghi cứng ngoài từ điển.
+  - *Bảo mật Rule 10*: Quét 3 lệnh bắt buộc đều đạt 0 matches (Pass 100%).
+  - *Bảo toàn UI/UX*: 100% chức năng trang chủ (Game, Giftcode, Giveaways, Upcoming, Autocomplete) hoạt động hoàn hảo.
+
 ### 449. Triển Khai Thành Công Đợt 3 Tinh Gọn Hệ Thống (Lean Framework): Tối Ưu Kho Ảnh Media Tĩnh, Xóa Sạch 801 Files Legacy Trùng Lặp, Giảm 45.2% Dung Lượng public/game_icons (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai Bước 3 theo Lộ trình Tinh gọn `docs/BAO_CAO_DANH_GIA_VA_KHUNG_TINH_GON_DU_AN.md` và kế hoạch chi tiết `plan_dot_3_lean_media_optimization.md` đã được người dùng phê duyệt.
