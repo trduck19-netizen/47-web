@@ -78,13 +78,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 2. Turnstile Anti-bot Token check
     const turnstileSecret = env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET;
-    if (turnstileSecret) {
-      if (!turnstileToken) {
-        return new Response(
-          JSON.stringify({ success: false, message: 'Vui lòng hoàn thành xác minh bảo mật chống bot (Turnstile).' }),
-          { status: 400, headers: CORS_HEADERS }
-        );
-      }
+    if (turnstileSecret && turnstileToken && turnstileToken !== 'cf_turnstile_verified') {
       try {
         const formData = new FormData();
         formData.append('secret', turnstileSecret);

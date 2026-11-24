@@ -94,7 +94,8 @@ export async function confirmReceivedAndRelease(
   db: D1Database,
   orderId: string,
   userId?: string,
-  actor = 'customer_confirm'
+  actor = 'customer_confirm',
+  isAdmin = false
 ): Promise<{ success: boolean; message: string; releasedAmount?: number }> {
   try {
     const order = await db
@@ -106,8 +107,8 @@ export async function confirmReceivedAndRelease(
       return { success: false, message: `Không tìm thấy đơn hàng ${orderId}.` };
     }
 
-    // Kiểm tra quyền sở hữu nếu có userId
-    if (userId && order.member_id && order.member_id !== userId && userId !== 'admin') {
+    // Kiểm tra quyền sở hữu nếu có userId và không phải quyền quản trị viên
+    if (userId && !isAdmin && order.member_id && order.member_id !== userId) {
       return { success: false, message: 'Bạn không có quyền thao tác trên đơn hàng này.' };
     }
 

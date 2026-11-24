@@ -55,7 +55,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const codeSecretKey = env.MARKETPLACE_CODE_KEY || env.JWT_SECRET || 'wcg_marketplace_code_aes_key_default_32';
+    const codeSecretKey = (env.MARKETPLACE_CODE_KEY || env.JWT_SECRET || '').trim();
+    if (!codeSecretKey || codeSecretKey.length < 16) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Chưa cấu hình khóa mã hóa an toàn (MARKETPLACE_CODE_KEY hoặc JWT_SECRET tối thiểu 16 ký tự) trên máy chủ.' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
 
     const plainCode = await decryptCode(codeRow.code_encrypted, codeSecretKey);
     const viewLogId = `scv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;

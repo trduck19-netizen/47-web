@@ -861,7 +861,8 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           const match = pathname.match(/^\/api\/orders\/([^\/]+)\/confirm-received$/);
           const orderId = match ? match[1] : '';
           const userId = auth.member.id;
-          const result = await confirmReceivedAndRelease(env.DB, orderId, userId, `user_${userId}`);
+          const isAdmin = auth.member.role === 'admin' || auth.member.role === 'SUPER_ADMIN';
+          const result = await confirmReceivedAndRelease(env.DB, orderId, userId, `user_${userId}`, isAdmin);
           return new Response(JSON.stringify(result), {
             status: result.success ? 200 : 400,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },

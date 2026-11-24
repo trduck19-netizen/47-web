@@ -12,12 +12,20 @@ dist/
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
 *.pem
 *.key
 *.secret
 .muse_admin_key.secret
 *.cert
 *.pfx
+
+# Local Database Files
+*.sqlite
+*.sqlite3
+*.db
+!Thumbs.db
 
 # Logs
 *.log

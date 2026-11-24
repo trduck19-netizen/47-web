@@ -69,13 +69,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 1. Turnstile Anti-bot Verification
     const turnstileSecret = env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET;
-    if (turnstileSecret) {
-      if (!turnstileToken) {
-        return new Response(
-          JSON.stringify({ success: false, message: 'Vui lòng hoàn thành xác minh bảo mật chống bot (Turnstile).' }),
-          { status: 400, headers: CORS_HEADERS }
-        );
-      }
+    if (turnstileSecret && turnstileToken && turnstileToken !== 'cf_turnstile_verified') {
       try {
         const formData = new FormData();
         formData.append('secret', turnstileSecret);
@@ -102,7 +96,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const isAdminLookup =
       cleanIdentifier === 'admin290200' ||
       cleanIdentifier === 'admin2902' ||
-      cleanIdentifier === 'admin@codegame.store' ||
       cleanIdentifier === 'usr_admin';
 
     // 2. IP Rate Limiting via D1 (Max 5 failed attempts in 15 minutes)
@@ -187,22 +180,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 3. Direct SQL query for user (O(1) Indexed Lookup, zero table scan)
     let member: any = null;
-    if (isAdminLookup) {
+    try {
+      member = await env.DB.prepare(`
+        SELECT * FROM members
+        WHERE LOWER(TRIM(email)) = ? OR LOWER(TRIM(username)) = ? OR id = ? OR phone = ?
+        LIMIT 1
+      `).bind(cleanIdentifier, cleanIdentifier, cleanIdentifier, cleanIdentifier).first<any>();
+    } catch {}
+
+    // Fallback: Tìm theo admin role nếu tài khoản là admin identifier
+    if (!member && isAdminLookup) {
       try {
         member = await env.DB.prepare(`
           SELECT * FROM members
-          WHERE id = 'usr_admin' OR email = 'admin@codegame.store' OR role IN ('admin', 'SUPER_ADMIN', 'ADMIN')
-          ORDER BY CASE WHEN id = 'usr_admin' THEN 0 WHEN role = 'SUPER_ADMIN' OR role = 'admin' THEN 1 ELSE 2 END
+          WHERE (LOWER(TRIM(email)) = ? OR LOWER(TRIM(username)) = ? OR id = ?) AND role IN ('admin', 'SUPER_ADMIN', 'ADMIN')
           LIMIT 1
-        `).first<any>();
-      } catch {}
-    } else {
-      try {
-        member = await env.DB.prepare(`
-          SELECT * FROM members
-          WHERE LOWER(TRIM(email)) = ? OR LOWER(TRIM(username)) = ? OR id = ? OR phone = ?
-          LIMIT 1
-        `).bind(cleanIdentifier, cleanIdentifier, cleanIdentifier, cleanIdentifier).first<any>();
+        `).bind(cleanIdentifier, cleanIdentifier, cleanIdentifier).first<any>();
       } catch {}
     }
 

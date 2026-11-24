@@ -87,13 +87,19 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
     const countResult = await env.DB.prepare(countQuery).bind(...countBinds).first<{ total: number }>();
 
+    const getSecretKey = (env.MARKETPLACE_CODE_KEY || env.JWT_SECRET || '').trim();
+
     // Che mã bằng maskCode (§5.2: xem mã che ••••••)
     const items = await Promise.all(
       (codesResult.results || []).map(async (row) => {
         let plainCode = '';
-        try {
-          plainCode = await decryptCode(row.code_encrypted, env.MARKETPLACE_CODE_KEY);
-        } catch {
+        if (getSecretKey && getSecretKey.length >= 16) {
+          try {
+            plainCode = await decryptCode(row.code_encrypted, getSecretKey);
+          } catch {
+            plainCode = 'CODE_MASKED';
+          }
+        } else {
           plainCode = 'CODE_MASKED';
         }
         return {
@@ -192,7 +198,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const codeSecretKey = env.MARKETPLACE_CODE_KEY || env.JWT_SECRET || 'wcg_marketplace_code_aes_key_default_32';
+    const codeSecretKey = (env.MARKETPLACE_CODE_KEY || env.JWT_SECRET || '').trim();
+    if (!codeSecretKey || codeSecretKey.length < 16) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Chưa cấu hình khóa mã hóa an toàn (MARKETPLACE_CODE_KEY hoặc JWT_SECRET tối thiểu 16 ký tự) trên máy chủ.' }),
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
 
     const batchId = `bat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const nowIso = new Date().toISOString();
