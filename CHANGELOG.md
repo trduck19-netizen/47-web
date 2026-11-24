@@ -7,6 +7,39 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 454. Triển Khai Tính Năng API Riêng Cho AI Của Từng Người Dùng (Personal AI API Keys): Phân Quyền Theo Phạm Vi, Bảo Vệ Ví Core & Kiểm Soát Thiết Bị Kết Nối (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Người dùng yêu cầu triển khai tính năng "API RIÊNG CHO AI CỦA TỪNG NGƯỜI DÙNG (UNIVERSAL MALL)" theo 5 nhóm tính năng đã duyệt (2026-11-22):
+    1. *Nhóm 1:* Khóa AI theo người dùng + trang quản lý khóa (tạo khóa, băm SHA-256 trong D1, hiển thị rawKey DUY NHẤT 1 lần, nút "Ngắt tất cả kết nối" khẩn cấp, chỉ quản lý trong phiên web).
+    2. *Nhóm 2:* Endpoint API theo phạm vi quyền thành viên (`profile`, `shopping`, `reviews`, `disputes`, `seller`, `rewards`, `notifications`). CẤM TUYỆT ĐỐI endpoint admin, đổi pass, đổi email, quản lý khóa.
+    3. *Nhóm 3:* Ví Core (mặc định tắt, bật riêng từng quyền `vi_xem`, `vi_nap`, `vi_chi`, `seller_withdraw`), hạn mức chi/rút theo ngày, tắt có hiệu lực ngay lập tức.
+    4. *Nhóm 4:* Giới hạn thiết bị / kết nối (`max_devices`, đếm qua `X-Device-Id` + `cf-connecting-ip`), vượt hạn mức chặn 403 `DEVICE_LIMIT_EXCEEDED`, gửi cảnh báo bảo mật lặp lại 1 giờ/lần tối đa 24h cho tới khi bấm "Đã biết / Xác nhận".
+    5. *Nhóm 5:* Ghi log mọi lần gọi (thời gian, prefix, endpoint, ip, deviceId, kết quả), giữ log >= 30 ngày, rate limit 600 req/phút/khóa, song ngữ VI/EN 100%.
+- **Giải pháp áp dụng (Solution)**:
+  1. *D1 Schema Migration 0042 (`functions/services/d1_service.ts`)*:
+     - Khởi tạo 4 bảng CSDL D1 kèm đầy đủ indexes: `user_ai_api_keys`, `user_ai_api_devices`, `user_ai_api_call_logs`, `user_ai_api_security_alerts`.
+  2. *Dịch Vụ AI API Backend (`functions/services/user_ai_api_service.ts`)*:
+     - Hàm sinh khóa `wcg_ai_usr_...` và băm SHA-256 an toàn `hashUserAiKey`.
+     - Xác thực truy cập `verifyUserAiApiAccess` kèm kiểm tra hết hạn, thu hồi, phân quyền scopes, hạn mức chi tiêu theo ngày `daily_spend_limit` và giới hạn kết nối thiết bị `max_devices`.
+     - Cơ chế ghi nhật ký gọi `logAiCall` và xử lý cảnh báo kết nối bất thường `handleSecurityAlertForDeviceLimit`.
+  3. *Hệ Thống API Endpoints (`functions/api/user/ai-keys/`)*:
+     - `index.ts`: GET danh sách khóa, POST tạo khóa mới (trả `rawKey` duy nhất 1 lần).
+     - `[id].ts`: PUT sửa tên/gia hạn/scopes/ví/thiết bị, DELETE thu hồi khóa tức thì.
+     - `revoke-all.ts`: POST ngắt toàn bộ kết nối khẩn cấp của tài khoản.
+     - `[id]/logs.ts`: GET tra cứu nhật ký gọi API với phân trang.
+     - `[id]/devices.ts`: GET danh sách thiết bị/IP đã đăng ký, DELETE xóa slot thiết bị.
+     - `alerts.ts`: GET danh sách cảnh báo kết nối, POST xác nhận "Đã biết".
+  4. *Định Tuyến & Tích Hợp Xác Thực Edge Worker (`functions/_worker.ts`, `auth_service.ts`)*:
+     - Hỗ trợ Bearer token bắt đầu bằng tiền tố `wcg_ai_usr_` cho toàn bộ các endpoint người dùng hợp lệ.
+     - Chặn tuyệt đối khóa AI khi truy cập các endpoint quản trị hoặc thao tác nhạy cảm.
+  5. *Giao Diện Quản Lý & Từ Điển Song Ngữ (`src/components/UserAiKeysManager.tsx`, `UserProfileModal.tsx`, `vi.json`, `en.json`)*:
+     - Bổ sung tab "Khóa API AI" trong modal Hồ sơ cá nhân với 42 nhãn song ngữ chuẩn.
+     - Giao diện trực quan: Banner cảnh báo bảo mật, danh sách khóa hoạt động/đã thu hồi, modal tạo khóa mới kèm hiển thị token 1 lần, modal xem log chi tiết, modal quản lý thiết bị kết nối.
+- **Kiểm thử & Triển khai (Verification & Deploy)**:
+  - *TypeScript & Lean Guard*: `tsc -p tsconfig.homepage.json --noEmit` pass 100%, i18n Guard pass 100% (0 chuỗi ghi cứng), Lean Guard 9/9 PASS, Edge Worker bundle 6.22 MB.
+  - *Bảo mật Rule 10*: Quét mã độc, regex secrets đều 0 matches.
+  - *Deploy All Cloudflare Pages*: Web Khách (`universal-mall-shop.pages.dev`) và Web Quản Trị (`admin-universal-mall.pages.dev`).
+
 ### 453. Rà Soát Bảo Mật Toàn Diện & Chuẩn Hóa Cấu Hình Cloudflare: Xóa Bỏ Khóa Fallback Cứng, Ngăn Chặn Privilege Escalation, Linh Hoạt Hóa Turnstile & Thiết Lập Chặn Git Secrets (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Người dùng yêu cầu rà soát toàn bộ 456 file mã nguồn trước khi deploy lên Cloudflare Pages/Workers, đánh giá tiêu chuẩn an toàn và xử lý dứt điểm các rủi ro cấu hình/dữ liệu.

@@ -47,6 +47,7 @@ import { telegramService, type TelegramUserStatus } from '../services/telegramSe
 import { missionService } from '../services/missionService';
 import type { Mission } from '../types/mission';
 import { MissionDetailModal } from './MissionDetailModal';
+import { UserAiKeysManager } from './UserAiKeysManager';
 import { formatCore, formatFullDateTime } from '../utils/textUtils';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguage } from '../context/LanguageContext';
@@ -62,7 +63,7 @@ interface UserProfileModalProps {
   onShowToast: (title: string, message?: string, type?: 'success' | 'error' | 'info') => void;
   isDarkMode?: boolean;
   onToggleTheme?: () => void;
-  initialTab?: 'profile' | 'security' | 'telegram' | 'missions';
+  initialTab?: 'profile' | 'security' | 'telegram' | 'missions' | 'ai_keys';
   onOpenAuth?: () => void;
   onNavigateToSellerCenter?: () => void;
 }
@@ -100,7 +101,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'telegram' | 'missions'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'telegram' | 'missions' | 'ai_keys'>(initialTab);
 
   // Sync initialTab when modal opens
   useEffect(() => {
@@ -603,6 +604,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <KeyRound className="w-4 h-4" />
             <span>Bảo Mật</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('ai_keys')}
+            className={`py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
+              activeTab === 'ai_keys'
+                ? 'border-indigo-400 text-indigo-400 bg-indigo-500/5'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-indigo-400" />
+            <span>{isEn ? 'AI API Keys' : 'Khóa API AI'}</span>
+          </button>
         </div>
 
         {/* Modal Scrollable Body */}
@@ -722,7 +735,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </div>
 
               {/* Lối Tắt Nhanh: Nhiệm Vụ, Kênh Người Bán & Tiện Ích */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -775,6 +788,16 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <KeyRound className="w-5 h-5 text-primary-light group-hover:scale-110 transition-transform" />
                   <span className="text-center font-bold">Bảo Mật Mật Khẩu</span>
                   <span className="text-[9px] font-normal text-muted-foreground">Đổi mật khẩu</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('ai_keys')}
+                  className="p-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 group shadow-sm"
+                >
+                  <Sparkles className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-center font-bold">{isEn ? 'AI API Keys' : 'Khóa API AI'}</span>
+                  <span className="text-[9px] font-normal text-indigo-300/80">{isEn ? 'Personal AI' : 'Kết nối AI của tôi'}</span>
                 </button>
               </div>
 
@@ -1718,6 +1741,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               )}
               </div>
             </div>
+          ) : activeTab === 'ai_keys' ? (
+            /* TAB 5: KHÓA API CHO AI CỦA TÔI */
+            <UserAiKeysManager
+              currentUser={currentUser}
+              onShowToast={onShowToast}
+              isDarkMode={isDarkMode}
+            />
           ) : (
             /* TAB 4: BẢO MẬT & MẬT KHẨU */
             <form onSubmit={handleSaveProfile} className="space-y-5">

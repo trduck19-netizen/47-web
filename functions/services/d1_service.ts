@@ -2490,6 +2490,106 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0041 seed_e2e_real_homepage_custom_section error]', e);
     }
 
+    // Migration 0042: User AI API Keys, Scopes, Devices, Call Logs & Security Alerts
+    try {
+      const uakCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0042_user_ai_api_keys_and_security_v1' LIMIT 1").first().catch(() => null);
+      if (!uakCheck) {
+        // 1. Bảng khóa API riêng cấp người dùng
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS user_ai_api_keys (
+            id TEXT PRIMARY KEY,
+            member_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            key_hash TEXT NOT NULL UNIQUE,
+            key_prefix TEXT NOT NULL,
+            scopes TEXT NOT NULL,
+            wallet_permissions TEXT NOT NULL,
+            daily_spend_limit INTEGER NOT NULL DEFAULT 500000,
+            daily_spent_today INTEGER NOT NULL DEFAULT 0,
+            daily_spent_date TEXT DEFAULT '',
+            daily_withdraw_limit INTEGER NOT NULL DEFAULT 1000000,
+            daily_withdrawn_today INTEGER NOT NULL DEFAULT 0,
+            max_devices INTEGER NOT NULL DEFAULT 3,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            call_count INTEGER NOT NULL DEFAULT 0,
+            expires_at TEXT,
+            revoked_at TEXT,
+            last_used_at TEXT DEFAULT '',
+            last_used_endpoint TEXT DEFAULT '',
+            last_used_ip TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_uak_member ON user_ai_api_keys(member_id);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_uak_hash ON user_ai_api_keys(key_hash);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_uak_active ON user_ai_api_keys(is_active);").run().catch(() => {});
+
+        // 2. Bảng quản lý kết nối thiết bị / IP theo khóa
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS user_ai_api_devices (
+            id TEXT PRIMARY KEY,
+            key_id TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            ip_address TEXT NOT NULL,
+            device_id TEXT NOT NULL DEFAULT '',
+            first_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+            last_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+            is_blocked INTEGER NOT NULL DEFAULT 0
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_uai_dev_key ON user_ai_api_devices(key_id);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_uai_dev_ip_dev ON user_ai_api_devices(key_id, ip_address, device_id);").run().catch(() => {});
+
+        // 3. Bảng nhật ký gọi API chi tiết (giữ tối thiểu 30 ngày)
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS user_ai_api_call_logs (
+            id TEXT PRIMARY KEY,
+            key_id TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            key_prefix TEXT NOT NULL,
+            endpoint TEXT NOT NULL,
+            method TEXT NOT NULL,
+            status_code INTEGER NOT NULL,
+            ip_address TEXT DEFAULT '',
+            device_id TEXT DEFAULT '',
+            error_code TEXT DEFAULT '',
+            response_summary TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_ucl_key_time ON user_ai_api_call_logs(key_id, created_at);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_ucl_member_time ON user_ai_api_call_logs(member_id, created_at);").run().catch(() => {});
+
+        // 4. Bảng cảnh báo bảo mật khi vượt giới hạn thiết bị
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS user_ai_api_security_alerts (
+            id TEXT PRIMARY KEY,
+            key_id TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            ip_address TEXT NOT NULL,
+            device_id TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'UNACKNOWLEDGED',
+            email_sent_count INTEGER NOT NULL DEFAULT 1,
+            first_alert_at TEXT NOT NULL DEFAULT (datetime('now')),
+            last_email_sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+            acknowledged_at TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_uasa_member_status ON user_ai_api_security_alerts(member_id, status);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_uasa_key ON user_ai_api_security_alerts(key_id);").run().catch(() => {});
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0042_user_ai_api_keys_and_security_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0042 user_ai_api_keys_and_security error]', e);
+    }
+
 
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done

@@ -5,6 +5,7 @@
 
 import bcrypt from 'bcryptjs';
 import { getSettingD1 } from './d1_service';
+import { computeSha256 } from './mission_service';
 
 /**
  * Kiểm tra xem chuỗi hash có phải định dạng Bcrypt ($2a$, $2b$, $2y$) hay không.
@@ -345,6 +346,36 @@ export async function authenticateCaller(
   const clean = token.replace(/^Bearer\s+/i, '').trim();
   if (!clean) return { authenticated: false, member: null };
 
+  // 0. Xác thực Khóa API AI của người dùng (Personal AI API Key: wcg_ai_usr_...)
+  if (clean.startsWith('wcg_ai_usr_')) {
+    try {
+      const keyHash = await computeSha256(clean);
+      const apiKey = await db
+        .prepare(`
+          SELECT * FROM user_ai_api_keys 
+          WHERE key_hash = ? AND is_active = 1 AND (revoked_at IS NULL OR revoked_at = '')
+          LIMIT 1
+        `)
+        .bind(keyHash)
+        .first<any>();
+
+      if (apiKey) {
+        if (apiKey.expires_at && new Date(apiKey.expires_at).getTime() < Date.now()) {
+          return { authenticated: false, member: null };
+        }
+        const member = await db
+          .prepare('SELECT * FROM members WHERE id = ? LIMIT 1')
+          .bind(apiKey.member_id)
+          .first<any>();
+
+        if (member && member.status !== 'BANNED') {
+          return { authenticated: true, member, authType: 'USER_AI_KEY', apiKey } as any;
+        }
+      }
+    } catch {}
+    return { authenticated: false, member: null };
+  }
+
   // 1. Kiểm tra session_token chính xác trong bảng members
   try {
     const memberBySession = await db.prepare(
@@ -384,6 +415,11 @@ export async function authenticateAdmin(
   if (!token) return { authenticated: false, adminId: null, isMasterSecret: false };
   const clean = token.replace(/^Bearer\s+/i, '').trim();
   if (!clean) return { authenticated: false, adminId: null, isMasterSecret: false };
+
+  // CẤM TUYỆT ĐỐI: Khóa AI của người dùng không bao giờ được cấp quyền Quản trị viên
+  if (clean.startsWith('wcg_ai_usr_')) {
+    return { authenticated: false, adminId: null, isMasterSecret: false };
+  }
 
   // 1. Master Admin API Key match (Tách bạch độc lập khỏi sync secret)
   if (env.ADMIN_API_KEY && env.ADMIN_API_KEY.length >= 16 && clean === env.ADMIN_API_KEY.trim()) {

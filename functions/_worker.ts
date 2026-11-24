@@ -102,6 +102,12 @@ import * as sellerApiKeysIndexApi from './api/seller/api-keys/index';
 import * as sellerApiKeysIdApi from './api/seller/api-keys/[id]';
 import * as sellerAppsIndexApi from './api/seller/apps/index';
 import * as sellerAppsIdApi from './api/seller/apps/[id]';
+import * as userAiKeysIndexApi from './api/user/ai-keys/index';
+import * as userAiKeysIdApi from './api/user/ai-keys/[id]';
+import * as userAiKeysRevokeAllApi from './api/user/ai-keys/revoke-all';
+import * as userAiKeysLogsApi from './api/user/ai-keys/[id]/logs';
+import * as userAiKeysDevicesApi from './api/user/ai-keys/[id]/devices';
+import * as userAiKeysAlertsApi from './api/user/ai-keys/alerts';
 import * as storesSlugIndexApi from './api/stores/[slug]/index';
 import * as storesSlugProductsApi from './api/stores/[slug]/products';
 import * as sellerOrdersCreateApi from './api/seller-orders/index';
@@ -2043,6 +2049,53 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS') return await sellerApiKeysIdApi.onRequestOptions();
         if (method === 'POST') return await sellerApiKeysIdApi.onRequestPost(context);
         if (method === 'DELETE') return await sellerApiKeysIdApi.onRequestDelete(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      // 20.4b-2. User AI API Keys (API Riêng Cho AI Của Từng Người Dùng)
+      if (pathname === '/api/user/ai-keys') {
+        if (method === 'OPTIONS') return await userAiKeysIndexApi.onRequestOptions();
+        if (method === 'GET') return await userAiKeysIndexApi.onRequestGet(context);
+        if (method === 'POST') return await userAiKeysIndexApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/user/ai-keys/revoke-all') {
+        if (method === 'OPTIONS') return await userAiKeysRevokeAllApi.onRequestOptions();
+        if (method === 'POST') return await userAiKeysRevokeAllApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/user/ai-keys/alerts') {
+        if (method === 'OPTIONS') return await userAiKeysAlertsApi.onRequestOptions();
+        if (method === 'GET') return await userAiKeysAlertsApi.onRequestGet(context);
+        if (method === 'POST') return await userAiKeysAlertsApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchUserAiKeyLogs = pathname.match(/^\/api\/user\/ai-keys\/([^/]+)\/logs$/);
+      if (matchUserAiKeyLogs) {
+        context.params = { ...(context.params || {}), id: matchUserAiKeyLogs[1] };
+        if (method === 'OPTIONS') return await userAiKeysLogsApi.onRequestOptions();
+        if (method === 'GET') return await userAiKeysLogsApi.onRequestGet(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchUserAiKeyDevices = pathname.match(/^\/api\/user\/ai-keys\/([^/]+)\/devices$/);
+      if (matchUserAiKeyDevices) {
+        context.params = { ...(context.params || {}), id: matchUserAiKeyDevices[1] };
+        if (method === 'OPTIONS') return await userAiKeysDevicesApi.onRequestOptions();
+        if (method === 'GET') return await userAiKeysDevicesApi.onRequestGet(context);
+        if (method === 'DELETE') return await userAiKeysDevicesApi.onRequestDelete(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchUserAiKeyId = pathname.match(/^\/api\/user\/ai-keys\/([^/]+)$/);
+      if (matchUserAiKeyId) {
+        context.params = { ...(context.params || {}), id: matchUserAiKeyId[1] };
+        if (method === 'OPTIONS') return await userAiKeysIdApi.onRequestOptions();
+        if (method === 'PUT') return await userAiKeysIdApi.onRequestPut(context);
+        if (method === 'DELETE') return await userAiKeysIdApi.onRequestDelete(context);
         return new Response('Method Not Allowed', { status: 405 });
       }
 

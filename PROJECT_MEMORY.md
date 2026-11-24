@@ -18,7 +18,7 @@
   - Tên Database: `47webdanganh`
   - UUID: `f1c32d22-9ad3-41a7-93a4-e9025240c6b2`
   - Binding Name trong Cloudflare Pages: `DB`
-  - Tổng số bảng: **54 bảng dữ liệu** (Kiểm tra qua `GET /api/db-status`)
+  - Tổng số bảng: **58 bảng dữ liệu** (54 bảng ban đầu + 4 bảng Khóa AI Người Dùng `user_ai_api_*`)
 - **🛑 VÙNG CẤM TUYỆT ĐỐI (RESTRICTED ZONES)**:
   - **TUYỆT ĐỐI KHÔNG SỬA ĐỔI** mã nguồn dự án cũ `C:\4 Antigravity all\13 web code game`.
   - **TUYỆT ĐỐI CẤM ĐỘNG VÀO** thư mục `C:\4 Antigravity all\3 Codegame store` (`codegame.store`).
@@ -171,3 +171,25 @@
    - Luôn kiểm chứng cơ chế này bằng SQLite D1 C-Engine thật (`node:sqlite`).
 4. **Điều Hướng Liên Kết Cửa Hàng Thật (Real Store Navigation)**:
    - Khi người dùng hoặc quản trị viên click vào liên kết `/store`, hệ thống chuyển thẳng `subView: 'store'` (mở `StoreView` chuyên biệt) và cuộn lên đầu trang, tuyệt đối không giữ ở trang chủ và chỉ cuộn xuống sản phẩm.
+
+---
+
+## 7. KIẾN TRÚC KHÓA API CHO AI CỦA TỪNG NGƯỜI DÙNG (USER AI API KEYS)
+
+1. **Nguyên Tắc Lưu Trữ & Hiển Thị (Zero Raw Secret Retention)**:
+   - Khóa có tiền tố `wcg_ai_usr_<32_hex_chars>`.
+   - Khóa thô (raw key) CHỈ hiển thị DUY NHẤT 1 lần ngay sau khi tạo trên giao diện web.
+   - Trong D1 `user_ai_api_keys`, chỉ lưu mã băm SHA-256 (`key_hash`), tiền tố rút gọn (`key_prefix`), và 4 ký tự cuối. Tuyệt đối không lưu khóa gốc, không in ra log/báo cáo.
+2. **Quyền Hạn Phạm Vi (Scopes) & Phân Tách Đặc Quyền**:
+   - Chỉ gồm các quyền thành viên hợp pháp: `profile`, `shopping`, `reviews` (chỉ đánh giá hàng đã mua), `disputes`, `seller` (nếu có gian hàng), `rewards`, `notifications`.
+   - **CẤM TUYỆT ĐỐI**: Các endpoint admin, đổi mật khẩu, đổi email, quản lý/tạo/thu hồi khóa API.
+   - Khóa API chỉ dùng qua HTTP Header `Authorization: Bearer <key>`, không dùng để đăng nhập phiên web.
+3. **Bảo Vệ Ví Core & Hạn Mức Chi Tiêu Ngày**:
+   - Mặc định toàn bộ quyền ví bị TẮT. Chỉ được bật trong phiên web đã đăng nhập, riêng từng khóa (`vi_xem`, `vi_nap`, `vi_chi`, `seller_withdraw`).
+   - Bắt buộc đặt hạn mức chi ngày (`daily_spend_limit`), kiểm tra atomic và từ chối khi vượt hạn mức mà không trừ tiền.
+4. **Kiểm Soát Thiết Bị & Cảnh Báo An Toàn**:
+   - Đếm thiết bị qua `X-Device-Id` + `cf-connecting-ip` so với `max_devices` (mặc định 3).
+   - Vượt hạn mức: Trả HTTP 403 `DEVICE_LIMIT_EXCEEDED`, chặn gọi tiếp và gửi cảnh báo lặp lại 1 giờ/lần (tối đa 24h) cho tới khi user xác nhận "Đã biết" trên web.
+5. **Giới Hạn Tốc Độ & Nhật Ký Kiểm Toán (Audit Logs)**:
+   - Rate limit: 600 yêu cầu / phút / khóa.
+   - Ghi log 100% cuộc gọi vào `user_ai_api_call_logs`, lưu giữ ít nhất 30 ngày.
