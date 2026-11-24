@@ -147,7 +147,63 @@ export async function confirmReceivedAndRelease(
       return { success: false, message: 'Đơn hàng này đã được giải ngân hoặc hoàn tiền trước đó.' };
     }
 
-    // 2. Ghi dòng RELEASE sau khi đã xác nhận state guard thành công
+    // Nhóm 4: Động cơ chia tiền 3 bên cho đơn liên shop (Affiliate / Reseller)
+    if (order.is_affiliate_order === 1 && order.affiliate_breakdown) {
+      let breakdown: any = {};
+      try {
+        breakdown = JSON.parse(order.affiliate_breakdown);
+      } catch {}
+
+      const supplierId = order.supplier_seller_id;
+      const resellerId = order.seller_id;
+      const supplierPayout = Number(breakdown.supplierPayout) || 0;
+      const resellerPayout = Number(breakdown.resellerPayout) || 0;
+      const platformFee = Number(breakdown.platformFee) || 0;
+      const shippingFee = Number(breakdown.shippingFee) || 0;
+
+      // 1. Giải ngân tiền hàng cho NCC (Shop A): supplierPayout + shippingFee
+      if (supplierId && supplierPayout + shippingFee > 0) {
+        await recordLedgerTransaction(db, {
+          sellerId: supplierId,
+          orderId: order.id,
+          type: 'RELEASE',
+          amountCore: supplierPayout + shippingFee,
+          actor,
+          reason: `Giải ngân tiền hàng NCC đơn liên shop ${order.id} (Giá gốc - Chiết khấu - Phí sàn - Hoa hồng + Ship)`,
+        });
+      }
+
+      // 2. Giải ngân tiền hoa hồng & mức tăng cho Shop Gán (Shop B): resellerPayout
+      if (resellerId && resellerPayout > 0) {
+        await recordLedgerTransaction(db, {
+          sellerId: resellerId,
+          orderId: order.id,
+          type: 'RELEASE',
+          amountCore: resellerPayout,
+          actor,
+          reason: `Giải ngân doanh thu Shop Gán đơn liên shop ${order.id} (Mức tăng + Hoa hồng + Chiết khấu)`,
+        });
+      }
+
+      // 3. Ghi nhận phí sàn
+      if (platformFee > 0) {
+        await recordLedgerTransaction(db, {
+          sellerId: supplierId || resellerId,
+          orderId: order.id,
+          type: 'FEE',
+          amountCore: platformFee,
+          actor: 'platform_fee',
+          reason: `Thu phí sàn ${isPhysical ? '2%' : '5%'} trên giá gốc cho đơn liên shop ${order.id}`,
+        });
+      }
+
+      return {
+        success: true,
+        message: `Đã giải ngân thành công đơn liên shop ${order.id}: NCC nhận ${(supplierPayout + shippingFee).toLocaleString('vi-VN')} Core, Shop gán nhận ${resellerPayout.toLocaleString('vi-VN')} Core, Sàn thu ${platformFee.toLocaleString('vi-VN')} Core.`,
+      };
+    }
+
+    // 2. Ghi dòng RELEASE sau khi đã xác nhận state guard thành công (Đơn thông thường)
     const relRes = await recordLedgerTransaction(db, {
       sellerId,
       orderId: order.id,

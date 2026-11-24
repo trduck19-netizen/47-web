@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../services/d1_service';
 import { decryptCode, getMarketplaceConfig } from '../../services/marketplace_service';
+import { calculate3WaySplit } from '../../services/seller_affiliate_service';
 
 interface Env {
   DB: D1Database;
@@ -93,6 +94,39 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // 2. Tìm 1 mã IN_STOCK sẵn sàng
+    // Nhóm 4: Nếu là sản phẩm gán liên shop (affiliate) thì lấy mã trực tiếp từ kho của NCC (Shop A)
+    const isAffiliate = product.is_affiliate === 1 && Boolean(product.origin_product_id);
+    const sourceProductId = isAffiliate ? product.origin_product_id : product.id;
+    const supplierSellerId = isAffiliate ? product.origin_seller_id : null;
+    let affiliateBreakdownJson: string | null = null;
+
+    if (isAffiliate) {
+      const origProd = await env.DB
+        .prepare('SELECT price_core, resell_discount_pct, resell_commission_pct, resell_map_price, product_type FROM seller_products WHERE id = ? LIMIT 1')
+        .bind(product.origin_product_id)
+        .first<any>();
+
+      const listing = await env.DB
+        .prepare('SELECT markup_type, markup_value, price_mode, locked_price FROM seller_affiliate_listings WHERE reseller_product_id = ? LIMIT 1')
+        .bind(product.id)
+        .first<any>();
+
+      if (origProd && listing) {
+        const split = calculate3WaySplit({
+          basePrice: Number(origProd.price_core) || 0,
+          markupType: listing.markup_type || 'PERCENT',
+          markupValue: Number(listing.markup_value) || 0,
+          discountPct: Number(origProd.resell_discount_pct) || 0,
+          commissionPct: Number(origProd.resell_commission_pct) || 0,
+          isPhysical: origProd.product_type === 'physical',
+          mapPrice: Number(origProd.resell_map_price) || 0,
+          priceMode: listing.price_mode,
+          lockedPrice: listing.locked_price,
+        });
+        affiliateBreakdownJson = JSON.stringify(split);
+      }
+    }
+
     const availableCode = await env.DB
       .prepare(`
         SELECT id, code_encrypted FROM seller_codes
@@ -100,7 +134,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         ORDER BY created_at ASC
         LIMIT 1
       `)
-      .bind(product.id)
+      .bind(sourceProductId)
       .first<any>();
 
     if (!availableCode) {
@@ -203,14 +237,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         nowIso
       ),
 
-      // Statement 4: Thêm đơn hàng trạng thái PAID trong 168h giữ tiền
+      // Statement 4: Thêm đơn hàng trạng thái PAID trong 168h giữ tiền (lưu phân rã tài chính 3 bên nếu là liên shop)
       env.DB.prepare(`
         INSERT INTO seller_orders (
           id, order_code, buyer_member_id, buyer_name, buyer_email,
           seller_id, product_id, product_name, game_slug, code_id,
           delivered_code, price_core, payment_method, hold_until,
-          status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CORE', ?, 'PAID', ?, ?)
+          status, supplier_seller_id, is_affiliate_order, affiliate_breakdown,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CORE', ?, 'PAID', ?, ?, ?, ?, ?)
       `).bind(
         orderId,
         orderCode,
@@ -225,6 +260,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         plainDeliveredCode,
         priceCore,
         holdUntil,
+        supplierSellerId,
+        isAffiliate ? 1 : 0,
+        affiliateBreakdownJson,
         nowIso,
         nowIso
       ),

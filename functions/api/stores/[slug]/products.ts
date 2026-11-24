@@ -53,11 +53,18 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           sp.description, sp.price_core, sp.original_price_core, sp.warranty_type,
           sp.warranty_hours, sp.delivery_type, COALESCE(sp.product_type, 'digital') as product_type,
           sp.weight_grams, sp.warehouse_address, sp.created_at,
+          sp.is_affiliate, sp.origin_seller_id, sp.origin_product_id,
+          s_orig.name as supplier_name,
+          (
+            SELECT sal.show_supplier FROM seller_affiliate_listings sal
+            WHERE sal.reseller_product_id = sp.id LIMIT 1
+          ) as show_supplier,
           (
             SELECT COUNT(*) FROM seller_codes sc
-            WHERE sc.product_id = sp.id AND sc.status = 'IN_STOCK' AND sc.deleted_at IS NULL
+            WHERE sc.product_id = COALESCE(sp.origin_product_id, sp.id) AND sc.status = 'IN_STOCK' AND sc.deleted_at IS NULL
           ) as stock_count
         FROM seller_products sp
+        LEFT JOIN sellers s_orig ON sp.origin_seller_id = s_orig.id
         WHERE sp.seller_id = ? AND sp.status = 'APPROVED' AND sp.deleted_at IS NULL
         ORDER BY sp.created_at DESC
       `)
@@ -67,6 +74,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const safeProducts = (products.results || []).map((p) => ({
       id: p.id,
       seller_id: p.seller_id,
+      seller_name: seller.name,
       game_slug: p.game_slug,
       game_name: p.game_name,
       name: p.name,
@@ -81,6 +89,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       weight_grams: p.weight_grams,
       warehouse_address: p.warehouse_address,
       has_stock: p.product_type === 'physical' ? true : (p.stock_count || 0) > 0, // Không lộ số lượng thật (§6.1)
+      is_affiliate: p.is_affiliate === 1,
+      supplier_name: (p.is_affiliate === 1 && p.show_supplier !== 0) ? p.supplier_name : null,
+      show_supplier: p.show_supplier !== 0,
     }));
 
     return new Response(

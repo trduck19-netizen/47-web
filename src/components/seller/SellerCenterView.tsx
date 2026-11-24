@@ -36,9 +36,11 @@ import {
   ExternalLink,
   Lock,
   Check,
+  Share2,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Game } from '../../types/game';
+import { SellerAffiliateManager, ResellSettingsModal } from './SellerAffiliateManager';
 
 interface SellerCenterViewProps {
   currentUser: any;
@@ -58,7 +60,8 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [sellerData, setSellerData] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders' | 'disputes' | 'finance' | 'settings' | 'api_keys'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders' | 'disputes' | 'finance' | 'settings' | 'api_keys' | 'affiliate'>('dashboard');
+  const [resellModalProduct, setResellModalProduct] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
 
@@ -1161,6 +1164,14 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         >
           <Code2 className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'API Keys & Integrations' : 'Khóa API & Tích Hợp'}
         </button>
+        <button
+          onClick={() => setActiveTab('affiliate')}
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'affiliate' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
+          }`}
+        >
+          <Share2 className="w-3.5 h-3.5 shrink-0" /> {t('sellerAffiliate.tabTitle', 'Bán Lại & Gán Shop')}
+        </button>
       </div>
 
       {/* Tab 1: Dashboard (§4) */}
@@ -1279,11 +1290,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               <table className="table-fixed w-full text-xs text-left">
                 <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                   <tr>
-                    <th className="p-3 w-[40%]">{isEn ? 'Product & Game' : 'Sản Phẩm & Game'}</th>
+                    <th className="p-3 w-[36%]">{isEn ? 'Product & Game' : 'Sản Phẩm & Game'}</th>
                     <th className="p-3 w-[15%] text-right">{isEn ? 'Price' : 'Giá Bán'}</th>
-                    <th className="p-3 w-[15%] text-center">{isEn ? 'Stock' : 'Tồn Kho'}</th>
+                    <th className="p-3 w-[14%] text-center">{isEn ? 'Stock' : 'Tồn Kho'}</th>
                     <th className="p-3 w-[15%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
-                    <th className="p-3 w-[15%] text-center">{isEn ? 'Actions' : 'Thao Tác'}</th>
+                    <th className="p-3 w-[20%] text-center">{isEn ? 'Actions' : 'Thao Tác'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -1301,6 +1312,16 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                               }`}>
                                 {p.product_type === 'physical' ? (isEn ? 'Physical' : 'Hàng Vật Lý') : (isEn ? 'Digital' : 'Hàng Số')}
                               </span>
+                              {p.is_affiliate === 1 && (
+                                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30" title={p.supplier_name ? `NCC: ${p.supplier_name}` : ''}>
+                                  {isEn ? 'Reseller' : 'Gán Shop'}
+                                </span>
+                              )}
+                              {p.resell_enabled === 1 && (
+                                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                  {isEn ? 'Resell' : 'Mở Bán Lại'}
+                                </span>
+                              )}
                               <span className="font-bold truncate" title={p.name}>{p.name}</span>
                             </div>
                             <div className="text-[11px] text-muted-foreground truncate">
@@ -1348,21 +1369,33 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                         </span>
                       </td>
                       <td className="p-3 text-center">
-                        {p.product_type === 'physical' ? (
-                          <span className="px-2 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-semibold">
-                            {isEn ? 'Parcel' : 'Bưu phẩm'}
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setSelectedProductId(p.id);
-                              setActiveTab('codes');
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/80 text-[11px] font-semibold mr-1"
-                          >
-                            {isEn ? 'Vault' : 'Kho Mã'}
-                          </button>
-                        )}
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                          {p.product_type === 'physical' ? (
+                            <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-semibold">
+                              {isEn ? 'Parcel' : 'Bưu phẩm'}
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setSelectedProductId(p.id);
+                                setActiveTab('codes');
+                              }}
+                              className="px-2 py-0.5 rounded-lg bg-muted hover:bg-muted/80 text-[10px] font-semibold"
+                            >
+                              {isEn ? 'Vault' : 'Kho Mã'}
+                            </button>
+                          )}
+                          {p.is_affiliate !== 1 && (
+                            <button
+                              onClick={() => setResellModalProduct(p)}
+                              className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1"
+                              title={t('sellerAffiliate.resellSettingsTitle', 'Cài đặt bán lại')}
+                            >
+                              <Share2 className="w-2.5 h-2.5" />
+                              {isEn ? 'Resell' : 'Bán Lại'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -2279,6 +2312,17 @@ const data = await res.json();`}
         </div>
       )}
 
+      {/* Tab 8: Resell & Cross-Shop (§Affiliate) */}
+      {activeTab === 'affiliate' && (
+        <SellerAffiliateManager
+          getHeaders={getHeaders}
+          isEn={isEn}
+          t={t}
+          products={products}
+          fetchProducts={fetchProducts}
+        />
+      )}
+
       {/* Modal: Thêm Sản Phẩm Mới */}
       {showAddProductModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -2907,6 +2951,20 @@ const data = await res.json();`}
           </div>
         </div>
       )}
+
+      {/* Modal: Cài Đặt Mở Bán Lại Cho Sản Phẩm (Dành cho NCC) */}
+      <ResellSettingsModal
+        product={resellModalProduct}
+        isOpen={Boolean(resellModalProduct)}
+        onClose={() => setResellModalProduct(null)}
+        getHeaders={getHeaders}
+        onSuccess={() => {
+          setSuccessMsg(isEn ? 'Resell settings updated successfully!' : 'Cập nhật cài đặt bán lại thành công!');
+          fetchProducts();
+        }}
+        isEn={isEn}
+        t={t}
+      />
     </div>
   );
 };

@@ -27,6 +27,7 @@ import {
   Truck,
   Tag,
   BadgeCheck,
+  Store,
 } from 'lucide-react';
 import type { StoreProduct, UtilityProduct, UserProfile, ProductPackageVariant } from '../types/game';
 import { formatCore, formatCurrencyVND } from '../utils/textUtils';
@@ -473,9 +474,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <h3 className="font-heading font-bold text-sm sm:text-base text-foreground truncate">
                   {product.title}
                 </h3>
-                <span className="text-[11px] sm:text-xs text-secondary font-semibold truncate block">
-                  {gameName}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] sm:text-xs text-secondary font-semibold truncate block">
+                    {gameName}
+                  </span>
+                  {(product as any).is_affiliate && (product as any).show_supplier !== false && (product as any).supplier_name && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-muted/80 text-[10px] text-muted-foreground font-medium border border-border/60">
+                      <Store className="w-3 h-3 text-secondary shrink-0" />
+                      <span>{t('productDetailModal.resoldBy', { seller: (product as any).store_name || (product as any).seller_name || 'Shop', supplier: (product as any).supplier_name })}</span>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

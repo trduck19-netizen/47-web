@@ -264,6 +264,17 @@ export interface StoreProduct {
   origin?: string; // Xuất xứ (Việt Nam, Hàn Quốc, Nhật Bản, Mỹ...)
   attributes?: ProductAttribute[]; // Danh sách nhóm phân loại (Size, Màu sắc...)
   variants?: ProductVariantItem[]; // Danh sách các SKU biến thể thực tế
+
+  // --- LIÊN KẾT BÁN LẠI LIÊN SHOP (AFFILIATE RESELLER EXTENSIONS GĐ1) ---
+  is_affiliate?: boolean;
+  supplier_name?: string | null;
+  show_supplier?: boolean;
+  origin_seller_id?: string | null;
+  origin_product_id?: string | null;
+  resell_enabled?: boolean | number;
+  resell_discount_pct?: number;
+  resell_commission_pct?: number;
+  resell_map_price?: number;
 }
 
 // Store Category Model (Danh Mục Gói Code / Cửa Hàng)

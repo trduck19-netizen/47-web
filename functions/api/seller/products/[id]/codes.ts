@@ -2,6 +2,7 @@ import { verifyMemberAuth } from '../../../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../../../services/d1_service';
 import { encryptCode, decryptCode, hashCode, maskCode } from '../../../../services/marketplace_service';
 import { verifyStoreApiAccess } from '../../../../services/store_api_service';
+import { syncAffiliatePriceAndStock } from '../../../../services/seller_affiliate_service';
 
 interface Env {
   DB: D1Database;
@@ -281,6 +282,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       for (let i = 0; i < insertStatements.length; i += chunkSize) {
         const chunk = insertStatements.slice(i, i + chunkSize);
         await env.DB.batch(chunk);
+      }
+
+      // Nhóm 3: Đồng bộ khôi phục trạng thái cho các listing gán nếu có thêm mã vào kho
+      if (addedCount > 0) {
+        await syncAffiliatePriceAndStock(env.DB, product.id, 'STOCK_CHANGE', { newStock: addedCount });
       }
     }
 

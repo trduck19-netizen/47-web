@@ -7,6 +7,49 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 455. Triển Khai Tính Năng API Gán Shop / Bán Lại Liên Shop (Giai Đoạn 1): Khóa Cặp API wcg_shop_, Chia Tiền 3 Bên Khớp Tuyệt Đối, Single-Tier Guard & Đồng Bộ Kho Giá (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Người dùng yêu cầu triển khai tính năng "API GÁN SHOP / BÁN LẠI LIÊN SHOP, GIAI ĐOẠN 1 (UNIVERSAL MALL)" theo 5 nhóm tính năng đã duyệt (24/11/2026):
+    1. *Nhóm 1:* NCC mở bán lại theo từng sản phẩm (chiết khấu %, hoa hồng %, giá sàn MAP), khóa riêng theo cặp dạng `wcg_shop_<32 hex>` chỉ hiện DUY NHẤT 1 lần, lưu D1 chỉ dạng băm SHA-256, xem/thu hồi khóa theo cặp, danh sách shop đang bán lại kèm doanh thu.
+    2. *Nhóm 2:* Shop gán gắn API, xem catalog mở của NCC, gán listing với mức tăng (+% hoặc +Core), chọn chế độ giá (`FORMULA` hoặc `LOCKED`), kiểm tra tuân thủ MAP, tùy chọn hiển thị NCC ("Bán bởi B, cung cấp bởi A", mặc định bật), tính bất biến của metadata gốc.
+    3. *Nhóm 3:* Tự động đồng bộ kho/giá: giá công thức tự cập nhật, NCC hết hàng hoặc xóa/tắt thì listing gán tự ẩn + báo; **Chặn gán lại tầng 2** (sản phẩm đã gán tuyệt đối cấm mở bán lại tiếp, cấm vòng lặp $A \to B \to A$), ghi nhật ký biến động `seller_affiliate_sync_logs`.
+    4. *Nhóm 4:* Đơn hàng lưu chi tiết 2 bên; hàng số tự động bốc từ kho NCC giao ngay; hàng vật lý NCC dropship giao thẳng; ký quỹ 48h/168h; **Chia tiền 3 bên**: Khách trả $P = \text{base\_price} + \text{markup}$, Phí sàn $F = (5\% \text{ digital} / 2\% \text{ physical}) \times \text{base\_price}$ (tính trên giá gốc), NCC nhận $= \text{base\_price} - D - F - H$, Shop gán nhận $= \text{markup} + H + D$, Sàn nhận $= F$. Tổng 3 bên khớp tuyệt đối 100% $P$.
+    5. *Nhóm 5:* Audit log mọi cuộc gọi lưu >= 30 ngày, rate limit 600 req/phút/khóa, song ngữ 100% VI/EN, kiểm thử kỹ thuật 23 bài pass 100%.
+- **Giải pháp áp dụng (Solution)**:
+  1. *D1 Schema Migration 0043 (`functions/services/d1_service.ts`)*:
+     - Mở rộng bảng `seller_products`: thêm `resell_enabled`, `resell_discount_pct`, `resell_commission_pct`, `resell_map_price`, `is_affiliate`, `origin_seller_id`, `origin_product_id`.
+     - Mở rộng bảng `orders` & `seller_orders`: thêm `supplier_seller_id`, `is_affiliate_order`, `affiliate_breakdown`.
+     - Khởi tạo 4 bảng CSDL D1 kèm đầy đủ indexes: `seller_affiliate_partnerships`, `seller_affiliate_listings`, `seller_affiliate_sync_logs`, `seller_affiliate_call_logs`.
+  2. *Dịch Vụ Affiliate & Thuật Toán Chia Tiền (`functions/services/seller_affiliate_service.ts`, `escrow_service.ts`)*:
+     - Hàm sinh khóa cặp `generatePairShopApiKey` (`wcg_shop_...`) và băm SHA-256 an toàn `hashPairShopKey`.
+     - Xác thực truy cập theo cặp `verifyPairShopAccess` kèm kiểm tra trạng thái quan hệ đối tác, thu hồi và quyền đọc catalog mở.
+     - Hàm tính toán chia tiền 3 bên `calculate3WaySplit` với thuật toán điều hòa làm tròn (rounding reconciliation), đảm bảo $\text{NCC} + \text{Shop gán} + \text{Sàn} == P$.
+     - Hàm đồng bộ giá & kho `syncAffiliatePriceAndStock` kích hoạt tự động khi NCC cập nhật giá, trạng thái, xóa sản phẩm hoặc nạp thêm mã.
+  3. *Hệ Thống API Endpoints (`functions/api/seller/`)*:
+     - `products/[id]/resell.ts`: PUT cài đặt mở bán lại (chiết khấu %, hoa hồng %, MAP, chặn tầng 2).
+     - `affiliate/requests.ts`: GET danh sách yêu cầu (nhận/gửi), POST gửi yêu cầu liên kết.
+     - `affiliate/requests/[id]/approve.ts`: POST duyệt yêu cầu, sinh khóa `wcg_shop_...`, lưu hash SHA-256, trả `rawKey` 1 lần duy nhất.
+     - `affiliate/requests/[id]/reject.ts`: POST từ chối yêu cầu.
+     - `affiliate/partners/index.ts`: GET danh sách shop đang bán lại, đếm active listings và tổng doanh thu.
+     - `affiliate/partners/[id].ts`: DELETE thu hồi khóa cặp, ẩn toàn bộ listing của shop đối tác ngay lập tức.
+     - `affiliate/catalog.ts`: GET đọc danh mục mở của NCC qua web session hoặc khóa Bearer `wcg_shop_...`.
+     - `affiliate/listings/index.ts`: GET danh sách listing đã gán, POST gán sản phẩm mới kèm kiểm tra MAP và kế thừa metadata gốc.
+     - `affiliate/listings/[id].ts`: PUT sửa mức tăng/chế độ giá, DELETE hủy gán sản phẩm.
+  4. *Đơn Hàng & Kho Mã (`functions/api/seller-orders/index.ts`, `seller/orders/index.ts`, `stores/[slug]/products.ts`)*:
+     - Khi khách mua hàng số từ shop gán, backend tự động định tuyến bốc mã từ kho của NCC (`sourceProductId = product.origin_product_id`), áp dụng chia tiền 3 bên và lưu chi tiết `affiliate_breakdown`.
+     - Đơn hàng liên shop hiển thị trên cả kênh người bán của NCC và Shop gán.
+  5. *Giao Diện UI Kênh Người Bán & Web Khách (`src/components/seller/SellerAffiliateManager.tsx`, `SellerCenterView.tsx`, `ProductDetailModal.tsx`, `PublicStoreView.tsx`)*:
+     - Tạo module quản trị `SellerAffiliateManager.tsx` với 2 phân hệ: "Nhà Cung Cấp (NCC)" và "Shop Bán Lại (Shop Gán)".
+     - Modal cấu hình mở bán lại `ResellSettingsModal` tích hợp trực tiếp vào danh sách sản phẩm.
+     - Modal hiển thị khóa cặp duy nhất 1 lần khi duyệt yêu cầu.
+     - Badge & attribution "Bán bởi [B] • Cung cấp bởi [A]" trên Web Khách (`ProductDetailModal.tsx`) và Storefront (`PublicStoreView.tsx`).
+     - Bổ sung 52 chuỗi từ điển đối xứng trong `src/locales/vi.json` và `en.json`.
+- **Kiểm thử & Triển khai (Verification & Deploy)**:
+  - *Bộ kiểm thử tự động 5 kịch bản (`scripts/test-affiliate-phase1.cjs`)*: 23/23 bài kiểm tra PASS 100% (chia tiền 3 bên, khóa cặp hex/hash, Single-Tier Guard, giá sàn MAP, Rate Limit 600 req/min).
+  - *TypeScript & Lean Guard*: `tsc -p tsconfig.homepage.json --noEmit` pass 100%, i18n Guard pass 100% (0 chuỗi ghi cứng), Lean Guard 9/9 PASS, Edge Worker bundle 6.30 MB.
+  - *Bảo mật Rule 10*: 3 bài quét pre-push grep đều 0 matches.
+  - *Deploy All Cloudflare Pages*: Web Khách (`universal-mall-shop.pages.dev`) và Web Quản Trị (`admin-universal-mall.pages.dev`).
+
 ### 454. Triển Khai Tính Năng API Riêng Cho AI Của Từng Người Dùng (Personal AI API Keys): Phân Quyền Theo Phạm Vi, Bảo Vệ Ví Core & Kiểm Soát Thiết Bị Kết Nối (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Người dùng yêu cầu triển khai tính năng "API RIÊNG CHO AI CỦA TỪNG NGƯỜI DÙNG (UNIVERSAL MALL)" theo 5 nhóm tính năng đã duyệt (2026-11-22):

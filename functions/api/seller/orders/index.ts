@@ -44,11 +44,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       SELECT id, order_code, parent_order_id, buyer_member_id, buyer_name, product_id, product_name, game_slug,
              price_core, payment_method, status, hold_until, released_at, fee_core, refund_core,
              sepay_transaction_id, report_reason, report_note, reported_at,
-             resolution_type, resolution_note, resolved_at, created_at, updated_at
+             resolution_type, resolution_note, resolved_at,
+             supplier_seller_id, is_affiliate_order, affiliate_breakdown,
+             created_at, updated_at
       FROM seller_orders
-      WHERE seller_id = ?
+      WHERE (seller_id = ? OR supplier_seller_id = ?)
     `;
-    const binds: any[] = [seller.id];
+    const binds: any[] = [seller.id, seller.id];
 
     if (statusFilter) {
       query += ` AND status = ?`;
@@ -60,8 +62,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const ordersResult = await env.DB.prepare(query).bind(...binds).all<any>();
 
-    let countQuery = `SELECT COUNT(*) as total FROM seller_orders WHERE seller_id = ?`;
-    const countBinds: any[] = [seller.id];
+    let countQuery = `SELECT COUNT(*) as total FROM seller_orders WHERE (seller_id = ? OR supplier_seller_id = ?)`;
+    const countBinds: any[] = [seller.id, seller.id];
     if (statusFilter) {
       countQuery += ` AND status = ?`;
       countBinds.push(statusFilter);

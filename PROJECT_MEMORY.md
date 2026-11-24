@@ -18,7 +18,7 @@
   - Tên Database: `47webdanganh`
   - UUID: `f1c32d22-9ad3-41a7-93a4-e9025240c6b2`
   - Binding Name trong Cloudflare Pages: `DB`
-  - Tổng số bảng: **58 bảng dữ liệu** (54 bảng ban đầu + 4 bảng Khóa AI Người Dùng `user_ai_api_*`)
+  - Tổng số bảng: **62 bảng dữ liệu** (54 bảng ban đầu + 4 bảng Khóa AI Người Dùng `user_ai_api_*` + 4 bảng Liên Shop Bán Lại `seller_affiliate_*`)
 - **🛑 VÙNG CẤM TUYỆT ĐỐI (RESTRICTED ZONES)**:
   - **TUYỆT ĐỐI KHÔNG SỬA ĐỔI** mã nguồn dự án cũ `C:\4 Antigravity all\13 web code game`.
   - **TUYỆT ĐỐI CẤM ĐỘNG VÀO** thư mục `C:\4 Antigravity all\3 Codegame store` (`codegame.store`).
@@ -193,3 +193,36 @@
 5. **Giới Hạn Tốc Độ & Nhật Ký Kiểm Toán (Audit Logs)**:
    - Rate limit: 600 yêu cầu / phút / khóa.
    - Ghi log 100% cuộc gọi vào `user_ai_api_call_logs`, lưu giữ ít nhất 30 ngày.
+
+---
+
+## 8. KIẾN TRÚC API GÁN SHOP / BÁN LẠI LIÊN SHOP (CROSS-SHOP RESELLER ARCHITECTURE - GĐ1)
+
+1. **Khóa Cặp API NCC - Shop Gán (`wcg_shop_<32_hex>`)**:
+   - Sinh tự động khi NCC duyệt yêu cầu liên kết của Shop gán. Chỉ hiển thị thô DUY NHẤT 1 lần.
+   - Lưu D1 `seller_affiliate_partnerships` chỉ dạng băm SHA-256 (`api_key_hash`), tiền tố `wcg_shop_xxxx••••xxxx`.
+   - Khóa có thẩm quyền đọc catalog mở của đúng NCC đó, cấm đọc đơn/khách/ví của NCC.
+   - Khi NCC thu hồi: toàn bộ listing của shop gán lập tức ẩn, nhưng đơn hàng đang giao vẫn tiếp tục hoàn tất.
+2. **Quy Tắc Chặn Gán Lại Tầng 2 (Single-Tier Guard & Anti-loop)**:
+   - Sản phẩm đã được gán lại (`is_affiliate === 1` hoặc `origin_product_id != null`) TUYỆT ĐỐI CẤM mở bán lại tiếp cho shop thứ 3 (chặn $A \to B \to C$).
+   - Chặn vòng lặp và tự gán ($A \to B \to A$ hoặc $A \to A$) qua kiểm tra `supplier_seller_id !== reseller_seller_id`.
+3. **Chế Độ Giá & Tuân Thủ Giá Sàn MAP**:
+   - Giá bán bên gán: $P = \text{base\_price} + \text{markup}$ (với $\text{markup} \ge 0$).
+   - Chế độ `FORMULA`: Tự động cập nhật giá bán khi giá gốc của NCC thay đổi.
+   - Chế độ `LOCKED`: Khóa giá bán cố định; nếu giá gốc vượt giá bán, hệ thống phát cảnh báo tức thì.
+   - Giá sàn MAP: Nếu công thức ra thấp hơn MAP do NCC quy định, giá bán tự động nâng lên đúng MAP.
+4. **Thuật Toán Chia Tiền 3 Bên & Điều Hòa Làm Tròn (3-Way Escrow Split & Rounding Reconciliation)**:
+   - Khách trả: $P = \text{base\_price} + \text{markup}$
+   - Phí sàn: $F = (5\% \text{ digital} / 2\% \text{ physical}) \times \text{base\_price}$ (tính trên giá gốc NCC)
+   - Chiết khấu: $D = \text{discount\_pct} \times \text{base\_price}$
+   - Hoa hồng: $H = \text{commission\_pct} \times \text{base\_price}$
+   - NCC nhận: $\text{base\_price} - D - F - H$
+   - Shop gán nhận: $\text{markup} + H + D$
+   - Sàn nhận: $F$
+   - Thuật toán điều hòa: $\text{NCC} + \text{Shop gán} + \text{Sàn} == P$ (chênh lệch số lẻ làm tròn bù vào Shop gán). Đảo ngược hoàn tiền theo cùng tỷ lệ.
+5. **Đồng Bộ Kho Mã Số & Dropship Hàng Vật Lý**:
+   - Hàng số: Tự động bốc mã từ kho của NCC (`sourceProductId = product.origin_product_id`), giao ngay cho khách sau thanh toán.
+   - Hàng vật lý: NCC dropship giao thẳng cho người mua, phí vận chuyển 100% về NCC.
+6. **Kiểm Toán & Giới Hạn Tốc Độ**:
+   - Rate limit: 600 yêu cầu / phút / khóa.
+   - Nhật ký đồng bộ `seller_affiliate_sync_logs` và nhật ký gọi `seller_affiliate_call_logs` lưu trữ $\ge 30$ ngày.

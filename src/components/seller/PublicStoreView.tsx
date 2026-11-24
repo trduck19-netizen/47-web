@@ -323,6 +323,12 @@ export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
                     <h3 className="font-bold text-sm text-foreground truncate mt-0.5" title={p.name}>
                       {p.name}
                     </h3>
+                    {p.is_affiliate && p.show_supplier !== false && p.supplier_name && (
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                        <Store className="w-3 h-3 text-secondary shrink-0" />
+                        <span className="truncate">{isEn ? `Supplied by ${p.supplier_name}` : `Cung cấp bởi ${p.supplier_name}`}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

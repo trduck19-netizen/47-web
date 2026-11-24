@@ -2590,6 +2590,111 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0042 user_ai_api_keys_and_security error]', e);
     }
 
+    // Migration 0043: Cross-Shop Reseller / Affiliate API GĐ1 (Partnerships, Listings, Sync Logs, Call Logs)
+    try {
+      const affCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0043_seller_affiliate_cross_shop_v1' LIMIT 1").first().catch(() => null);
+      if (!affCheck) {
+        // 1. Mở rộng bảng seller_products
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN resell_enabled INTEGER DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN resell_discount_pct REAL DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN resell_commission_pct REAL DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN resell_map_price INTEGER DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN is_affiliate INTEGER DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN origin_seller_id TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN origin_product_id TEXT DEFAULT NULL;").run().catch(() => {});
+
+        // 2. Mở rộng bảng orders & seller_orders cho phân rã tài chính 3 bên
+        await db.prepare("ALTER TABLE orders ADD COLUMN supplier_seller_id TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE orders ADD COLUMN is_affiliate_order INTEGER DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE orders ADD COLUMN affiliate_breakdown TEXT DEFAULT NULL;").run().catch(() => {});
+
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN supplier_seller_id TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN is_affiliate_order INTEGER DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN affiliate_breakdown TEXT DEFAULT NULL;").run().catch(() => {});
+
+        // 3. Bảng quan hệ đối tác và cặp khóa API (seller_affiliate_partnerships)
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_affiliate_partnerships (
+            id TEXT PRIMARY KEY,
+            supplier_seller_id TEXT NOT NULL,
+            reseller_seller_id TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'PENDING',
+            api_key_hash TEXT NOT NULL,
+            api_key_prefix TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            revoked_at TEXT
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sap_supplier ON seller_affiliate_partnerships(supplier_seller_id, status);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sap_reseller ON seller_affiliate_partnerships(reseller_seller_id, status);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sap_key_hash ON seller_affiliate_partnerships(api_key_hash);").run().catch(() => {});
+
+        // 4. Bảng liên kết sản phẩm gán (seller_affiliate_listings)
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_affiliate_listings (
+            id TEXT PRIMARY KEY,
+            partnership_id TEXT NOT NULL,
+            supplier_seller_id TEXT NOT NULL,
+            reseller_seller_id TEXT NOT NULL,
+            supplier_product_id TEXT NOT NULL,
+            reseller_product_id TEXT NOT NULL,
+            markup_type TEXT NOT NULL DEFAULT 'PERCENT',
+            markup_value REAL NOT NULL DEFAULT 0,
+            price_mode TEXT NOT NULL DEFAULT 'FORMULA',
+            locked_price INTEGER,
+            show_supplier INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'ACTIVE',
+            price_warning TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sal_supplier_prod ON seller_affiliate_listings(supplier_product_id, status);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sal_reseller_prod ON seller_affiliate_listings(reseller_product_id, status);").run().catch(() => {});
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sal_partner ON seller_affiliate_listings(partnership_id);").run().catch(() => {});
+
+        // 5. Bảng nhật ký biến động đồng bộ giá/kho (seller_affiliate_sync_logs)
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_affiliate_sync_logs (
+            id TEXT PRIMARY KEY,
+            supplier_product_id TEXT NOT NULL,
+            change_type TEXT NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            affected_resellers_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sasl_supplier_prod ON seller_affiliate_sync_logs(supplier_product_id, created_at);").run().catch(() => {});
+
+        // 6. Bảng nhật ký gọi API gán shop (seller_affiliate_call_logs)
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_affiliate_call_logs (
+            id TEXT PRIMARY KEY,
+            partnership_id TEXT,
+            caller_seller_id TEXT,
+            key_prefix TEXT,
+            endpoint TEXT NOT NULL,
+            method TEXT NOT NULL,
+            ip_address TEXT,
+            status_code INTEGER NOT NULL,
+            response_time_ms INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+
+        await db.prepare("CREATE INDEX IF NOT EXISTS idx_sacl_partner ON seller_affiliate_call_logs(partnership_id, created_at);").run().catch(() => {});
+
+        await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0043_seller_affiliate_cross_shop_v1');").run().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[Migration 0043 seller_affiliate_cross_shop error]', e);
+    }
+
 
     try {
       // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done

@@ -2,6 +2,7 @@ import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema } from '../../../services/d1_service';
 import { getMarketplaceConfig } from '../../../services/marketplace_service';
 import { verifyStoreApiAccess } from '../../../services/store_api_service';
+import { syncAffiliatePriceAndStock } from '../../../services/seller_affiliate_service';
 
 interface Env {
   DB: D1Database;
@@ -256,6 +257,11 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
         .catch(() => {});
     }
 
+    // Nhóm 3: Tự động đồng bộ giá sang các shop gán nếu giá gốc thay đổi
+    if (newPrice !== product.price_core) {
+      await syncAffiliatePriceAndStock(env.DB, productId, 'PRICE_CHANGE', { newBasePrice: newPrice });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -318,6 +324,11 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
       .prepare('UPDATE seller_products SET status = ?, updated_at = ? WHERE id = ?')
       .bind(targetStatus, nowIso, productId)
       .run();
+
+    // Nhóm 3: Nếu tắt bán hoặc chuyển về nháp thì tự động ẩn listing bên shop gán
+    if (targetStatus !== 'APPROVED') {
+      await syncAffiliatePriceAndStock(env.DB, productId, 'STATUS_CHANGE', { isDisabled: true });
+    }
 
     return new Response(
       JSON.stringify({
@@ -385,6 +396,9 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       .prepare("UPDATE seller_products SET deleted_at = ?, updated_at = ? WHERE id = ?")
       .bind(nowIso, nowIso, productId)
       .run();
+
+    // Nhóm 3: Xóa mềm sản phẩm -> Tự động vô hiệu và ẩn toàn bộ listing bên shop gán
+    await syncAffiliatePriceAndStock(env.DB, productId, 'STATUS_CHANGE', { isDeleted: true });
 
     return new Response(
       JSON.stringify({ success: true, message: 'Đã xóa sản phẩm thành công.' }),

@@ -102,6 +102,15 @@ import * as sellerApiKeysIndexApi from './api/seller/api-keys/index';
 import * as sellerApiKeysIdApi from './api/seller/api-keys/[id]';
 import * as sellerAppsIndexApi from './api/seller/apps/index';
 import * as sellerAppsIdApi from './api/seller/apps/[id]';
+import * as sellerProductsResellApi from './api/seller/products/[id]/resell';
+import * as sellerAffiliateRequestsApi from './api/seller/affiliate/requests';
+import * as sellerAffiliateApproveApi from './api/seller/affiliate/requests/[id]/approve';
+import * as sellerAffiliateRejectApi from './api/seller/affiliate/requests/[id]/reject';
+import * as sellerAffiliatePartnersApi from './api/seller/affiliate/partners/index';
+import * as sellerAffiliatePartnerIdApi from './api/seller/affiliate/partners/[id]';
+import * as sellerAffiliateCatalogApi from './api/seller/affiliate/catalog';
+import * as sellerAffiliateListingsApi from './api/seller/affiliate/listings/index';
+import * as sellerAffiliateListingIdApi from './api/seller/affiliate/listings/[id]';
 import * as userAiKeysIndexApi from './api/user/ai-keys/index';
 import * as userAiKeysIdApi from './api/user/ai-keys/[id]';
 import * as userAiKeysRevokeAllApi from './api/user/ai-keys/revoke-all';
@@ -1975,6 +1984,14 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return new Response('Method Not Allowed', { status: 405 });
       }
 
+      const matchSellerProdResell = pathname.match(/^\/api\/seller\/products\/([^/]+)\/resell$/);
+      if (matchSellerProdResell) {
+        context.params = { ...(context.params || {}), id: matchSellerProdResell[1] };
+        if (method === 'OPTIONS') return await sellerProductsResellApi.onRequestOptions();
+        if (method === 'PUT') return await sellerProductsResellApi.onRequestPut(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
       const matchSellerProdId = pathname.match(/^\/api\/seller\/products\/([^/]+)$/);
       if (matchSellerProdId) {
         context.params = { ...(context.params || {}), id: matchSellerProdId[1] };
@@ -2129,6 +2146,66 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS') return await sellerAppsIdApi.onRequestOptions();
         if (method === 'POST') return await sellerAppsIdApi.onRequestPost(context);
         if (method === 'DELETE') return await sellerAppsIdApi.onRequestDelete(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      // 20.4d. Cross-Shop Reseller / Affiliate API (Gán Shop & Bán Lại Liên Shop GĐ1)
+      if (pathname === '/api/seller/affiliate/requests') {
+        if (method === 'OPTIONS') return await sellerAffiliateRequestsApi.onRequestOptions();
+        if (method === 'GET') return await sellerAffiliateRequestsApi.onRequestGet(context);
+        if (method === 'POST') return await sellerAffiliateRequestsApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchAffiliateApprove = pathname.match(/^\/api\/seller\/affiliate\/requests\/([^/]+)\/approve$/);
+      if (matchAffiliateApprove) {
+        context.params = { ...(context.params || {}), id: matchAffiliateApprove[1] };
+        if (method === 'OPTIONS') return await sellerAffiliateApproveApi.onRequestOptions();
+        if (method === 'POST') return await sellerAffiliateApproveApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchAffiliateReject = pathname.match(/^\/api\/seller\/affiliate\/requests\/([^/]+)\/reject$/);
+      if (matchAffiliateReject) {
+        context.params = { ...(context.params || {}), id: matchAffiliateReject[1] };
+        if (method === 'OPTIONS') return await sellerAffiliateRejectApi.onRequestOptions();
+        if (method === 'POST') return await sellerAffiliateRejectApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/affiliate/partners') {
+        if (method === 'OPTIONS') return await sellerAffiliatePartnersApi.onRequestOptions();
+        if (method === 'GET') return await sellerAffiliatePartnersApi.onRequestGet(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchAffiliatePartnerId = pathname.match(/^\/api\/seller\/affiliate\/partners\/([^/]+)$/);
+      if (matchAffiliatePartnerId) {
+        context.params = { ...(context.params || {}), id: matchAffiliatePartnerId[1] };
+        if (method === 'OPTIONS') return await sellerAffiliatePartnerIdApi.onRequestOptions();
+        if (method === 'DELETE') return await sellerAffiliatePartnerIdApi.onRequestDelete(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/affiliate/catalog') {
+        if (method === 'OPTIONS') return await sellerAffiliateCatalogApi.onRequestOptions();
+        if (method === 'GET') return await sellerAffiliateCatalogApi.onRequestGet(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/affiliate/listings') {
+        if (method === 'OPTIONS') return await sellerAffiliateListingsApi.onRequestOptions();
+        if (method === 'GET') return await sellerAffiliateListingsApi.onRequestGet(context);
+        if (method === 'POST') return await sellerAffiliateListingsApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchAffiliateListingId = pathname.match(/^\/api\/seller\/affiliate\/listings\/([^/]+)$/);
+      if (matchAffiliateListingId) {
+        context.params = { ...(context.params || {}), id: matchAffiliateListingId[1] };
+        if (method === 'OPTIONS') return await sellerAffiliateListingIdApi.onRequestOptions();
+        if (method === 'PUT') return await sellerAffiliateListingIdApi.onRequestPut(context);
+        if (method === 'DELETE') return await sellerAffiliateListingIdApi.onRequestDelete(context);
         return new Response('Method Not Allowed', { status: 405 });
       }
 
