@@ -245,6 +245,13 @@
     "digitalItemBadge": "Digital Item (0s Delivery)",
     "physicalItemBadge": "Physical Delivery"
   },
+  "cart": {
+    "multiStoreTitle": "Multi-Store Cart",
+    "clearAll": "Clear all",
+    "empty": "Your cart is empty",
+    "emptyDesc": "Explore verified stores to find your favorite giftcodes and utilities.",
+    "addToCart": "Add to Cart"
+  },
   "checkout": {
     "title": "Confirm Order & Checkout",
     "orderTypeDigital": "⚡ Digital Product (Instant 0s delivery)",

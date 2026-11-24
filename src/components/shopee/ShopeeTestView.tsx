@@ -2052,7 +2052,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                             }`}
                           >
                             <ShoppingCart className="w-3 h-3" />
-                            <span>{isOutOfStock ? (language === 'en' ? 'Out of Stock' : 'Hết Hàng') : (prod.variants && prod.variants.length > 1 ? (language === 'en' ? 'Select Variant' : 'Chọn Phân Loại') : (t.cart?.addToCart || (language === 'en' ? 'Add to Cart' : 'Thêm Giỏ Hàng')))}</span>
+                            <span>{isOutOfStock ? (language === 'en' ? 'Out of Stock' : 'Hết Hàng') : (prod.variants && prod.variants.length > 1 ? (language === 'en' ? 'Select Variant' : 'Chọn Phân Loại') : (t.store?.addToCart || (language === 'en' ? 'Add to Cart' : 'Thêm Giỏ Hàng')))}</span>
                           </button>
                         </div>
                       </div>

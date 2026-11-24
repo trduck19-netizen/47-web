@@ -245,6 +245,13 @@
     "digitalItemBadge": "Hàng Số (Giao 0s)",
     "physicalItemBadge": "Hàng Vật Lý"
   },
+  "cart": {
+    "multiStoreTitle": "Giỏ Hàng Đa Gian Hàng",
+    "clearAll": "Xóa tất cả",
+    "empty": "Giỏ hàng của bạn đang trống",
+    "emptyDesc": "Hãy ghé thăm các gian hàng của người bán uy tín để chọn gói giftcode và tiện ích game bạn yêu thích.",
+    "addToCart": "Thêm Giỏ Hàng"
+  },
   "checkout": {
     "title": "Xác Nhận Đặt Hàng & Thanh Toán",
     "orderTypeDigital": "⚡ Sản Phẩm Kỹ Thuật Số (Giao mã tự động 0s)",
