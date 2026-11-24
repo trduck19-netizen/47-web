@@ -56,7 +56,7 @@ flowchart LR
 | **1** | **Migration 0044** (Thêm 2 cột D1 + Rebuild `seller_disputes`) | **HOÀN TẤT** | `GET /api/admin/seller-disputes` $\rightarrow$ **200 OK**, `seller_disputes` mang ràng buộc `UNIQUE(order_id, seller_id)`, 4 index hoạt động |
 | **2** | **Turnstile Fail-Closed & Widget Thật** | **HOÀN TẤT & ĐÃ BẬT LIVE** | Widget tạo tự động trên Cloudflare, Secret Key đã gán, `git grep cf_turnstile_verified = 0`, Token giả trả về HTTP 400 |
 | **3** | **Dispute 3 Bên & Rollback** | **HOÀN TẤT** | Bỏ nuốt lỗi insert NCC, cơ chế rollback 2 chiều khôi phục đơn hàng, fallback `seller_orders` và `buyerMemberId` trong phán quyết |
-| **4** | **Cấp Core Test & Quality Gates** | **HOÀN TẤT** | Tài khoản A (`muse-e2e-a-f9ok1r`) đạt **140 Core**; TypeScript 0 lỗi; i18n Guard 0 chuỗi cứng; Lean Guard 9/9 checks PASS (Worker 6.34 MB) |
+| **4** | **Cấp Core Test & Quality Gates** | **HOÀN TẤT** | Tài khoản A (`muse-e2e-a-f9ok1r`) đạt **140 Core**; TypeScript 0 lỗi; i18n Guard 0 chuỗi cứng; Lean Guard 4/4 chốt chặn PASS (Worker 6.34 MB) |
 
 ---
 
