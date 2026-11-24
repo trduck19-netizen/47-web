@@ -1,5 +1,6 @@
 import * as syncApi from './api/sync';
 import { confirmReceivedAndRelease, fileOrderDispute, autoReleaseDueEscrow, resolveAdminDispute } from './services/escrow_service';
+import { verifyUserAiApiAccess } from './services/user_ai_api_service';
 import { getProductReviews, createProductReview, approveReview, rejectReview, deleteReview, listAdminReviews } from './services/review_service';
 import { authenticateCaller, authenticateAdmin } from './services/auth_service';
 import * as syncLiteApi from './api/sync-lite';
@@ -375,6 +376,51 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
     };
 
     try {
+      // Global Enforcement of Scopes & Device Limits for User AI API Keys (wcg_ai_usr_...)
+      const rawAuthHeader = request.headers.get('Authorization') || '';
+      const rawAiKeyHeader = request.headers.get('X-User-AI-Key') || request.headers.get('x-user-ai-key') || '';
+      const aiTokenCandidate = (rawAiKeyHeader || rawAuthHeader.replace(/^Bearer\s+/i, '')).trim();
+
+      if (aiTokenCandidate.startsWith('wcg_ai_usr_') && pathname.startsWith('/api') && method !== 'OPTIONS') {
+        let requiredScope = '';
+        if (pathname.match(/^\/api\/orders\/[^\/]+\/dispute/) || pathname.match(/^\/api\/seller-orders\/[^\/]+\/dispute/)) {
+          requiredScope = 'disputes';
+        } else if (pathname.startsWith('/api/reviews') || pathname.match(/\/rate$/)) {
+          requiredScope = 'reviews';
+        } else if (pathname.startsWith('/api/seller')) {
+          requiredScope = 'seller';
+        } else if (
+          pathname.startsWith('/api/orders') ||
+          pathname.startsWith('/api/seller-orders') ||
+          pathname.startsWith('/api/cart') ||
+          pathname.startsWith('/api/checkout') ||
+          pathname.startsWith('/api/my-seller-orders')
+        ) {
+          requiredScope = 'shopping';
+        } else if (pathname.startsWith('/api/rewards') || pathname.startsWith('/api/giveaways')) {
+          requiredScope = 'rewards';
+        } else if (pathname.startsWith('/api/notifications')) {
+          requiredScope = 'notifications';
+        } else if (pathname === '/api/me' || pathname.startsWith('/api/user/profile') || pathname.startsWith('/api/telegram')) {
+          requiredScope = 'profile';
+        }
+
+        if (requiredScope && env.DB) {
+          const aiAccess = await verifyUserAiApiAccess(request, env, { requiredScope });
+          if (!aiAccess.authorized) {
+            return new Response(JSON.stringify({
+              success: false,
+              error: aiAccess.error || 'Khóa API không có quyền truy cập phạm vi này',
+              required_scope: requiredScope,
+              code: aiAccess.errorCode || 'FORBIDDEN_SCOPE',
+            }), {
+              status: aiAccess.status || 403,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+        }
+      }
+
       // 0. /api/db-status
       if (pathname === '/api/db-status') {
         if (!env.DB) {

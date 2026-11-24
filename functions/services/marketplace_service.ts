@@ -530,6 +530,108 @@ export async function releaseDueSellerOrders(
   for (const order of dueOrders) {
     try {
       const priceCore = Number(order.price_core) || 0;
+
+      // Xử lý đơn liên shop (Affiliate / Reseller) theo breakdown 3 bên
+      if (order.is_affiliate_order === 1 && order.affiliate_breakdown) {
+        let breakdown: any = {};
+        try {
+          breakdown = JSON.parse(order.affiliate_breakdown);
+        } catch {}
+
+        const supplierId = order.supplier_seller_id;
+        const resellerId = order.seller_id;
+        const supplierPayout = Number(breakdown.supplierPayout) || 0;
+        const resellerPayout = Number(breakdown.resellerPayout) || 0;
+        const platformFee = Number(breakdown.platformFee) || 0;
+        const shippingFee = Number(breakdown.shippingFee) || 0;
+
+        // 1. Trừ pending_balance_core của shop gán (toàn bộ priceCore giữ lúc mua), cộng available_balance_core = resellerPayout
+        if (resellerId) {
+          const reseller = await db.prepare("SELECT * FROM sellers WHERE id = ?").bind(resellerId).first<any>();
+          const curResHeld = Number(reseller?.pending_balance_core) || 0;
+          const curResAvail = Number(reseller?.available_balance_core) || 0;
+          const newResHeld = Math.max(0, curResHeld - priceCore);
+          const newResAvail = curResAvail + resellerPayout;
+
+          await db.prepare(`
+            UPDATE sellers
+            SET pending_balance_core = ?, available_balance_core = ?, updated_at = ?
+            WHERE id = ?
+          `).bind(newResHeld, newResAvail, nowIso, resellerId).run();
+
+          const ledgResId = `ledg_${Date.now()}_res_${Math.random().toString(36).slice(2, 6)}`;
+          await db.prepare(`
+            INSERT INTO seller_ledger (
+              id, seller_id, order_id, type, amount_core,
+              balance_held_after, balance_available_after, balance_withdrawn_after,
+              actor, reason, created_at
+            ) VALUES (?, ?, ?, 'RELEASE', ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            ledgResId, resellerId, order.id, resellerPayout,
+            newResHeld, newResAvail, Number(reseller?.withdrawn_balance_core) || 0,
+            actor, `Giải ngân tự động Shop Gán đơn liên shop ${order.order_code || order.id} (Mức tăng + Hoa hồng + Chiết khấu)`, nowIso
+          ).run();
+        }
+
+        // 2. Cộng available_balance_core của NCC = supplierPayout + shippingFee
+        if (supplierId && supplierPayout + shippingFee > 0) {
+          const supplier = await db.prepare("SELECT * FROM sellers WHERE id = ?").bind(supplierId).first<any>();
+          const curSupHeld = Number(supplier?.pending_balance_core) || 0;
+          const curSupAvail = Number(supplier?.available_balance_core) || 0;
+          const newSupAvail = curSupAvail + supplierPayout + shippingFee;
+
+          await db.prepare(`
+            UPDATE sellers
+            SET available_balance_core = ?, updated_at = ?
+            WHERE id = ?
+          `).bind(newSupAvail, nowIso, supplierId).run();
+
+          const ledgSupId = `ledg_${Date.now()}_sup_${Math.random().toString(36).slice(2, 6)}`;
+          await db.prepare(`
+            INSERT INTO seller_ledger (
+              id, seller_id, order_id, type, amount_core,
+              balance_held_after, balance_available_after, balance_withdrawn_after,
+              actor, reason, created_at
+            ) VALUES (?, ?, ?, 'RELEASE', ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            ledgSupId, supplierId, order.id, supplierPayout + shippingFee,
+            curSupHeld, newSupAvail, Number(supplier?.withdrawn_balance_core) || 0,
+            actor, `Giải ngân tự động NCC đơn liên shop ${order.order_code || order.id} (Giá gốc - Chiết khấu - Phí sàn - Hoa hồng + Ship)`, nowIso
+          ).run();
+        }
+
+        // 3. Phí sàn tính trên giá gốc
+        if (platformFee > 0) {
+          const ledgFeeId = `ledg_${Date.now()}_fee_${Math.random().toString(36).slice(2, 6)}`;
+          await db.prepare(`
+            INSERT INTO seller_ledger (
+              id, seller_id, order_id, type, amount_core,
+              balance_held_after, balance_available_after, balance_withdrawn_after,
+              actor, reason, created_at
+            ) VALUES (?, ?, ?, 'FEE', ?, 0, 0, 0, 'platform_fee', ?, ?)
+          `).bind(
+            ledgFeeId, supplierId || resellerId, order.id, platformFee,
+            `Thu phí sàn trên giá gốc cho đơn liên shop ${order.order_code || order.id}`, nowIso
+          ).run();
+        }
+
+        // 4. Cập nhật trạng thái seller_orders sang COMPLETED
+        await db
+          .prepare(`
+            UPDATE seller_orders
+            SET status = 'COMPLETED',
+                released_at = ?,
+                fee_core = ?,
+                updated_at = ?
+            WHERE id = ? AND status = 'PAID'
+          `)
+          .bind(nowIso, platformFee, nowIso, order.id)
+          .run();
+
+        successCount++;
+        continue;
+      }
+
       const feeRate = config.fee_rate || 0.05;
       const feeCore = Math.round(priceCore * feeRate);
 

@@ -98,51 +98,80 @@ export async function confirmReceivedAndRelease(
   isAdmin = false
 ): Promise<{ success: boolean; message: string; releasedAmount?: number }> {
   try {
-    const order = await db
+    let order = await db
       .prepare("SELECT * FROM orders WHERE id = ? COLLATE NOCASE LIMIT 1")
       .bind(orderId)
       .first<any>();
+
+    let isSellerOrderTable = false;
+    if (!order) {
+      order = await db
+        .prepare("SELECT * FROM seller_orders WHERE (id = ? OR order_code = ?) AND deleted_at IS NULL LIMIT 1")
+        .bind(orderId, orderId)
+        .first<any>();
+      if (order) {
+        isSellerOrderTable = true;
+      }
+    }
 
     if (!order) {
       return { success: false, message: `Không tìm thấy đơn hàng ${orderId}.` };
     }
 
     // Kiểm tra quyền sở hữu nếu có userId và không phải quyền quản trị viên
-    if (userId && !isAdmin && order.member_id && order.member_id !== userId) {
+    const orderBuyerId = isSellerOrderTable ? (order.buyer_member_id || order.member_id) : order.member_id;
+    if (userId && !isAdmin && orderBuyerId && orderBuyerId !== userId) {
       return { success: false, message: 'Bạn không có quyền thao tác trên đơn hàng này.' };
     }
 
-    if (order.escrow_status === 'RELEASED' || order.status === 'COMPLETED') {
+    if (order.escrow_status === 'RELEASED' || order.status === 'COMPLETED' || order.released_at) {
       return { success: false, message: 'Đơn hàng này đã được giải ngân hoàn tất trước đó.' };
     }
 
-    if (order.escrow_status === 'DISPUTED') {
+    if (order.escrow_status === 'DISPUTED' || order.status === 'REPORTED' || order.status === 'DISPUTED') {
       return { success: false, message: 'Đơn hàng đang có khiếu nại chưa giải quyết. Vui lòng chờ Quản trị viên xử lý.' };
     }
 
     const sellerId = order.seller_id || (await ensureOfficialSeller(db));
-    const amount = Number(order.total_amount || 0);
+    const amount = Number(order.total_amount || order.price_core || 0);
     const isPhysical = order.product_type === 'physical' || Boolean(order.shipping_address);
     const feeRate = isPhysical ? 0.02 : 0.05; // Phí sàn đa tầng: Hàng vật lý 2%, Hàng số 5%
     const feeCore = Math.round(amount * feeRate);
     const nowIso = new Date().toISOString();
 
     // 1. Cập nhật trạng thái đơn hàng sang COMPLETED & RELEASED (State-guarded FIRST để chống race condition)
-    const updateRes: any = await db
-      .prepare(`
-        UPDATE orders
-        SET status = 'COMPLETED',
-            escrow_status = 'RELEASED',
-            released_at = ?,
-            updated_at = ?
-        WHERE id = ?
-          AND escrow_status != 'RELEASED'
-          AND escrow_status != 'REFUNDED'
-      `)
-      .bind(nowIso, nowIso, order.id)
-      .run();
+    let changes = 0;
+    if (isSellerOrderTable) {
+      const updateRes: any = await db
+        .prepare(`
+          UPDATE seller_orders
+          SET status = 'COMPLETED',
+              released_at = ?,
+              updated_at = ?
+          WHERE id = ?
+            AND status != 'COMPLETED'
+            AND released_at IS NULL
+        `)
+        .bind(nowIso, nowIso, order.id)
+        .run();
+      changes = updateRes?.meta?.changes ?? updateRes?.changes ?? 0;
+    } else {
+      const updateRes: any = await db
+        .prepare(`
+          UPDATE orders
+          SET status = 'COMPLETED',
+              escrow_status = 'RELEASED',
+              released_at = ?,
+              updated_at = ?
+          WHERE id = ?
+            AND escrow_status != 'RELEASED'
+            AND escrow_status != 'REFUNDED'
+        `)
+        .bind(nowIso, nowIso, order.id)
+        .run();
+      changes = updateRes?.meta?.changes ?? updateRes?.changes ?? 0;
+    }
 
-    const changes = updateRes?.meta?.changes ?? updateRes?.changes ?? 0;
     if (changes === 0) {
       return { success: false, message: 'Đơn hàng này đã được giải ngân hoặc hoàn tiền trước đó.' };
     }
@@ -161,40 +190,79 @@ export async function confirmReceivedAndRelease(
       const platformFee = Number(breakdown.platformFee) || 0;
       const shippingFee = Number(breakdown.shippingFee) || 0;
 
-      // 1. Giải ngân tiền hàng cho NCC (Shop A): supplierPayout + shippingFee
-      if (supplierId && supplierPayout + shippingFee > 0) {
-        await recordLedgerTransaction(db, {
-          sellerId: supplierId,
-          orderId: order.id,
-          type: 'RELEASE',
-          amountCore: supplierPayout + shippingFee,
-          actor,
-          reason: `Giải ngân tiền hàng NCC đơn liên shop ${order.id} (Giá gốc - Chiết khấu - Phí sàn - Hoa hồng + Ship)`,
-        });
+      // 1. Giải ngân tiền hoa hồng & mức tăng cho Shop Gán (Shop B): resellerPayout
+      // Đồng thời khấu trừ toàn bộ amount khỏi pending_balance_core của Shop Gán
+      if (resellerId) {
+        const reseller = await db.prepare("SELECT * FROM sellers WHERE id = ?").bind(resellerId).first<any>();
+        const curResHeld = Number(reseller?.pending_balance_core) || 0;
+        const curResAvail = Number(reseller?.available_balance_core) || 0;
+        const newResHeld = Math.max(0, curResHeld - amount);
+        const newResAvail = curResAvail + resellerPayout;
+
+        await db.prepare(`
+          UPDATE sellers
+          SET pending_balance_core = ?, available_balance_core = ?, updated_at = ?
+          WHERE id = ?
+        `).bind(newResHeld, newResAvail, nowIso, resellerId).run();
+
+        const ledgResId = `ledg_${Date.now()}_res_${Math.random().toString(36).slice(2, 6)}`;
+        await db.prepare(`
+          INSERT INTO seller_ledger (
+            id, seller_id, order_id, type, amount_core,
+            balance_held_after, balance_available_after, balance_withdrawn_after,
+            actor, reason, created_at
+          ) VALUES (?, ?, ?, 'RELEASE', ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          ledgResId, resellerId, order.id, resellerPayout,
+          newResHeld, newResAvail, Number(reseller?.withdrawn_balance_core) || 0,
+          actor, `Giải ngân doanh thu Shop Gán đơn liên shop ${order.order_code || order.id} (Mức tăng + Hoa hồng + Chiết khấu)`, nowIso
+        ).run();
       }
 
-      // 2. Giải ngân tiền hoa hồng & mức tăng cho Shop Gán (Shop B): resellerPayout
-      if (resellerId && resellerPayout > 0) {
-        await recordLedgerTransaction(db, {
-          sellerId: resellerId,
-          orderId: order.id,
-          type: 'RELEASE',
-          amountCore: resellerPayout,
-          actor,
-          reason: `Giải ngân doanh thu Shop Gán đơn liên shop ${order.id} (Mức tăng + Hoa hồng + Chiết khấu)`,
-        });
+      // 2. Giải ngân tiền hàng cho NCC (Shop A): supplierPayout + shippingFee vào available_balance_core
+      if (supplierId && supplierPayout + shippingFee > 0) {
+        const supplier = await db.prepare("SELECT * FROM sellers WHERE id = ?").bind(supplierId).first<any>();
+        const curSupHeld = Number(supplier?.pending_balance_core) || 0;
+        const curSupAvail = Number(supplier?.available_balance_core) || 0;
+        const newSupAvail = curSupAvail + supplierPayout + shippingFee;
+
+        await db.prepare(`
+          UPDATE sellers
+          SET available_balance_core = ?, updated_at = ?
+          WHERE id = ?
+        `).bind(newSupAvail, nowIso, supplierId).run();
+
+        const ledgSupId = `ledg_${Date.now()}_sup_${Math.random().toString(36).slice(2, 6)}`;
+        await db.prepare(`
+          INSERT INTO seller_ledger (
+            id, seller_id, order_id, type, amount_core,
+            balance_held_after, balance_available_after, balance_withdrawn_after,
+            actor, reason, created_at
+          ) VALUES (?, ?, ?, 'RELEASE', ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          ledgSupId, supplierId, order.id, supplierPayout + shippingFee,
+          curSupHeld, newSupAvail, Number(supplier?.withdrawn_balance_core) || 0,
+          actor, `Giải ngân tiền hàng NCC đơn liên shop ${order.order_code || order.id} (Giá gốc - Chiết khấu - Phí sàn - Hoa hồng + Ship)`, nowIso
+        ).run();
       }
 
       // 3. Ghi nhận phí sàn
       if (platformFee > 0) {
-        await recordLedgerTransaction(db, {
-          sellerId: supplierId || resellerId,
-          orderId: order.id,
-          type: 'FEE',
-          amountCore: platformFee,
-          actor: 'platform_fee',
-          reason: `Thu phí sàn ${isPhysical ? '2%' : '5%'} trên giá gốc cho đơn liên shop ${order.id}`,
-        });
+        const ledgFeeId = `ledg_${Date.now()}_fee_${Math.random().toString(36).slice(2, 6)}`;
+        await db.prepare(`
+          INSERT INTO seller_ledger (
+            id, seller_id, order_id, type, amount_core,
+            balance_held_after, balance_available_after, balance_withdrawn_after,
+            actor, reason, created_at
+          ) VALUES (?, ?, ?, 'FEE', ?, 0, 0, 0, 'platform_fee', ?, ?)
+        `).bind(
+          ledgFeeId, supplierId || resellerId, order.id, platformFee,
+          `Thu phí sàn ${isPhysical ? '2%' : '5%'} trên giá gốc cho đơn liên shop ${order.order_code || order.id}`, nowIso
+        ).run();
+      }
+
+      if (isSellerOrderTable) {
+        await db.prepare("UPDATE seller_orders SET fee_core = ? WHERE id = ?").bind(platformFee, order.id).run().catch(() => {});
       }
 
       return {
@@ -325,8 +393,32 @@ export async function autoReleaseDueEscrow(
       }
     }
 
+    // Quét thêm đơn từ bảng seller_orders (đơn sàn người bán / liên shop affiliate)
+    const dueSellerOrdersRes = await db
+      .prepare(`
+        SELECT id FROM seller_orders
+        WHERE status = 'PAID'
+          AND hold_until IS NOT NULL
+          AND datetime(hold_until) <= datetime('now')
+          AND released_at IS NULL
+          AND (report_reason IS NULL OR status != 'REPORTED')
+          AND deleted_at IS NULL
+        LIMIT 50
+      `)
+      .all<any>();
+
+    const dueSellerOrders = dueSellerOrdersRes?.results || [];
+    for (const sord of dueSellerOrders) {
+      const res = await confirmReceivedAndRelease(db, sord.id, undefined, actor);
+      if (res.success) {
+        successCount++;
+      } else {
+        errors.push(`Đơn ${sord.id}: ${res.message}`);
+      }
+    }
+
     return {
-      processed: dueOrders.length,
+      processed: dueOrders.length + dueSellerOrders.length,
       successCount,
       errors,
     };
@@ -349,24 +441,34 @@ export async function fileOrderDispute(
 ): Promise<{ success: boolean; message: string; disputeId?: string }> {
   try {
     const { orderId, userId, reason, detail } = params;
-    const order = await db
+    let order = await db
       .prepare("SELECT * FROM orders WHERE id = ? COLLATE NOCASE LIMIT 1")
       .bind(orderId)
       .first<any>();
+
+    let isSellerOrderTable = false;
+    if (!order) {
+      order = await db
+        .prepare("SELECT * FROM seller_orders WHERE (id = ? OR order_code = ?) AND deleted_at IS NULL LIMIT 1")
+        .bind(orderId, orderId)
+        .first<any>();
+      if (order) isSellerOrderTable = true;
+    }
 
     if (!order) {
       return { success: false, message: `Không tìm thấy đơn hàng ${orderId}.` };
     }
 
-    if (order.member_id && order.member_id !== userId) {
+    const orderBuyerId = isSellerOrderTable ? (order.buyer_member_id || order.member_id) : order.member_id;
+    if (orderBuyerId && orderBuyerId !== userId) {
       return { success: false, message: 'Bạn không có quyền khiếu nại đơn hàng của người khác.' };
     }
 
-    if (order.escrow_status === 'RELEASED') {
+    if (order.escrow_status === 'RELEASED' || order.status === 'COMPLETED' || order.released_at) {
       return { success: false, message: 'Đơn hàng này đã được giải ngân hoàn tất, không thể khiếu nại bảo chứng.' };
     }
 
-    if (order.escrow_status === 'DISPUTED') {
+    if (order.escrow_status === 'DISPUTED' || order.status === 'REPORTED' || order.status === 'DISPUTED') {
       return { success: false, message: 'Đơn hàng này đã có khiếu nại đang được xử lý.' };
     }
 
@@ -375,21 +477,42 @@ export async function fileOrderDispute(
     const sellerId = order.seller_id || (await ensureOfficialSeller(db));
 
     // Cập nhật trạng thái đơn sang DISPUTED (đóng băng giải ngân)
-    const updateOrderRes = await db
-      .prepare(`
-        UPDATE orders
-        SET escrow_status = 'DISPUTED',
-            dispute_reason = ?,
-            dispute_detail = ?,
-            updated_at = ?
-        WHERE id = ? AND escrow_status != 'DISPUTED'
-      `)
-      .bind(reason, detail || '', nowIso, order.id)
-      .run();
+    let updateOrderRes: any;
+    if (isSellerOrderTable) {
+      updateOrderRes = await db
+        .prepare(`
+          UPDATE seller_orders
+          SET status = 'REPORTED',
+              report_reason = ?,
+              report_note = ?,
+              reported_at = ?,
+              updated_at = ?
+          WHERE id = ? AND status != 'REPORTED'
+        `)
+        .bind(reason, detail || '', nowIso, nowIso, order.id)
+        .run();
+    } else {
+      updateOrderRes = await db
+        .prepare(`
+          UPDATE orders
+          SET escrow_status = 'DISPUTED',
+              dispute_reason = ?,
+              dispute_detail = ?,
+              updated_at = ?
+          WHERE id = ? AND escrow_status != 'DISPUTED'
+        `)
+        .bind(reason, detail || '', nowIso, order.id)
+        .run();
+    }
 
     if (!updateOrderRes.success || (updateOrderRes.meta?.changes ?? 0) === 0) {
       return { success: false, message: 'Không thể chuyển trạng thái đơn hàng sang khiếu nại hoặc đơn hàng đã bị khiếu nại trước đó.' };
     }
+
+    // Nếu là đơn liên shop (Affiliate), bổ sung thông tin NCC vào chi tiết khiếu nại để giải quyết 3 bên
+    const finalDetail = order.is_affiliate_order === 1 && order.supplier_seller_id
+      ? `[Affiliate 3-Way Dispute: NCC ${order.supplier_seller_id} & Shop Gán ${order.seller_id}] ${detail || ''}`
+      : (detail || '');
 
     // Ghi vào bảng seller_disputes (Hard error nếu thất bại, không nuốt lỗi)
     const insertDisputeRes = await db
@@ -398,24 +521,46 @@ export async function fileOrderDispute(
           id, order_id, buyer_member_id, seller_id, reason, detail, status, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)
       `)
-      .bind(disputeId, order.id, userId, sellerId, reason, detail || '', nowIso, nowIso)
+      .bind(disputeId, order.id, userId, sellerId, reason, finalDetail, nowIso, nowIso)
       .run();
 
     if (!insertDisputeRes.success) {
       // Rollback trạng thái đơn hàng để đảm bảo toàn vẹn dữ liệu
-      await db.prepare(`
-        UPDATE orders
-        SET escrow_status = 'HELD',
-            dispute_reason = NULL,
-            dispute_detail = NULL,
-            updated_at = ?
-        WHERE id = ? AND escrow_status = 'DISPUTED'
-      `).bind(nowIso, order.id).run().catch(() => {});
+      if (isSellerOrderTable) {
+        await db.prepare(`
+          UPDATE seller_orders
+          SET status = 'PAID',
+              report_reason = NULL,
+              report_note = NULL,
+              reported_at = NULL,
+              updated_at = ?
+          WHERE id = ? AND status = 'REPORTED'
+        `).bind(nowIso, order.id).run().catch(() => {});
+      } else {
+        await db.prepare(`
+          UPDATE orders
+          SET escrow_status = 'HELD',
+              dispute_reason = NULL,
+              dispute_detail = NULL,
+              updated_at = ?
+          WHERE id = ? AND escrow_status = 'DISPUTED'
+        `).bind(nowIso, order.id).run().catch(() => {});
+      }
 
       return {
         success: false,
         message: 'Lỗi ghi nhận khiếu nại vào cơ sở dữ liệu. Yêu cầu khiếu nại không thành công.',
       };
+    }
+
+    // Nếu là đơn liên shop (Affiliate), bổ sung bản ghi tranh chấp cho NCC để cả 2 bên cùng thấy
+    if (order.is_affiliate_order === 1 && order.supplier_seller_id && order.supplier_seller_id !== sellerId) {
+      const supDisputeId = `dsp_sup_${Date.now().toString(36)}_${generateSecureIdSuffix(4)}`;
+      await db.prepare(`
+        INSERT INTO seller_disputes (
+          id, order_id, buyer_member_id, seller_id, reason, detail, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)
+      `).bind(supDisputeId, order.id, userId, order.supplier_seller_id, reason, finalDetail, nowIso, nowIso).run().catch(() => {});
     }
 
     const logId2 = 'sec_' + Date.now().toString(36) + '_' + generateSecureIdSuffix(4);

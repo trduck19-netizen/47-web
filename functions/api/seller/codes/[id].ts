@@ -1,6 +1,7 @@
 import { verifyMemberAuth } from '../../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../../services/d1_service';
 import { verifyStoreApiAccess } from '../../../services/store_api_service';
+import { syncAffiliatePriceAndStock } from '../../../services/seller_affiliate_service';
 
 interface Env {
   DB: D1Database;
@@ -67,6 +68,14 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       .prepare("UPDATE seller_codes SET deleted_at = ?, updated_at = ? WHERE id = ?")
       .bind(nowIso, nowIso, codeId)
       .run();
+
+    // Đồng bộ tức thời cập nhật lại tồn kho thực tế cho các listing gán liên shop
+    const totalStockRes = await env.DB
+      .prepare("SELECT COUNT(*) as cnt FROM seller_codes WHERE product_id = ? AND status = 'IN_STOCK' AND deleted_at IS NULL")
+      .bind(codeRow.product_id)
+      .first<{ cnt: number }>();
+    const totalStock = Number(totalStockRes?.cnt) || 0;
+    await syncAffiliatePriceAndStock(env.DB, codeRow.product_id, 'STOCK_CHANGE', { newStock: totalStock });
 
     const actorName = storeAuth.authType === 'STORE_API_KEY' 
       ? `API_KEY:${storeAuth.keyName || 'StoreKey'}`

@@ -340,8 +340,9 @@ export async function verifyTemporaryAuditToken(
 export async function authenticateCaller(
   db: D1Database,
   token: string,
-  envSecret?: string
-): Promise<{ authenticated: boolean; member: any | null }> {
+  envSecret?: string,
+  options?: { requiredScope?: string }
+): Promise<{ authenticated: boolean; member: any | null; authType?: string; apiKey?: any; error?: string; required_scope?: string }> {
   if (!token || !db) return { authenticated: false, member: null };
   const clean = token.replace(/^Bearer\s+/i, '').trim();
   if (!clean) return { authenticated: false, member: null };
@@ -361,7 +362,7 @@ export async function authenticateCaller(
 
       if (apiKey) {
         if (apiKey.expires_at && new Date(apiKey.expires_at).getTime() < Date.now()) {
-          return { authenticated: false, member: null };
+          return { authenticated: false, member: null, error: 'Khóa API đã hết hạn' };
         }
         const member = await db
           .prepare('SELECT * FROM members WHERE id = ? LIMIT 1')
@@ -369,7 +370,32 @@ export async function authenticateCaller(
           .first<any>();
 
         if (member && member.status !== 'BANNED') {
-          return { authenticated: true, member, authType: 'USER_AI_KEY', apiKey } as any;
+          // Kiểm tra scope nếu được yêu cầu
+          if (options?.requiredScope) {
+            let allowedScopes: string[] = [];
+            try {
+              allowedScopes = JSON.parse(apiKey.scopes || '[]');
+            } catch {
+              allowedScopes = [];
+            }
+            const reqScope = options.requiredScope;
+            const hasScope = allowedScopes.includes(reqScope) ||
+              (reqScope === 'profile' && allowedScopes.includes('read_profile')) ||
+              (reqScope === 'shopping' && (allowedScopes.includes('orders') || allowedScopes.includes('shop')));
+
+            if (!hasScope) {
+              return {
+                authenticated: false,
+                member: null,
+                authType: 'USER_AI_KEY',
+                apiKey,
+                error: `Khóa API không có quyền truy cập phạm vi này`,
+                required_scope: reqScope,
+              };
+            }
+          }
+
+          return { authenticated: true, member, authType: 'USER_AI_KEY', apiKey };
         }
       }
     } catch {}
@@ -436,4 +462,34 @@ export async function authenticateAdmin(
   }
 
   return { authenticated: false, adminId: null, isMasterSecret: false };
+}
+
+/**
+ * Kiểm tra scope của Khóa API AI
+ */
+export function checkAiScope(
+  auth: any,
+  requiredScope: string
+): { allowed: boolean; error?: string; required_scope?: string } {
+  if (!auth || auth.authType !== 'USER_AI_KEY' || !auth.apiKey) {
+    return { allowed: true };
+  }
+  let allowedScopes: string[] = [];
+  try {
+    allowedScopes = JSON.parse(auth.apiKey.scopes || '[]');
+  } catch {
+    allowedScopes = [];
+  }
+  const hasScope = allowedScopes.includes(requiredScope) ||
+    (requiredScope === 'profile' && allowedScopes.includes('read_profile')) ||
+    (requiredScope === 'shopping' && (allowedScopes.includes('orders') || allowedScopes.includes('shop')));
+
+  if (!hasScope) {
+    return {
+      allowed: false,
+      error: 'Khóa API không có quyền truy cập phạm vi này',
+      required_scope: requiredScope,
+    };
+  }
+  return { allowed: true };
 }

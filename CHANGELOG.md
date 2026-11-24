@@ -7,6 +7,38 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-24]
 
+### 457. Hoàn Thiện & Khắc Phục Toàn Diện 5 Nhóm Lỗi: Chia Tiền 3 Bên Affiliate, Thực Thi Scope Khóa AI, Rate Limit Khóa Cặp & Xóa Bỏ Cửa Hậu Turnstile (24/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Người dùng gửi "LỆNH SỬA NỐT — API AI NGƯỜI DÙNG + API GÁN SHOP GĐ1 + BYPASS TURNSTILE" dựa trên kiểm thử live 3 tài khoản và đơn hàng affiliate thật (`sord_1795509779120_fg0d4`).
+  - Thẩm định xác nhận 100% các vấn đề được nêu trong báo cáo là chính xác.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Sửa Chia Tiền 3 Bên Đơn Affiliate Thật*:
+     - Cập nhật `confirmReceivedAndRelease`, `autoReleaseDueEscrow` (`escrow_service.ts`) và `releaseDueSellerOrders` (`marketplace_service.ts`) bổ sung fallback truy vấn bảng `seller_orders`.
+     - Nhận diện `is_affiliate_order === 1` và parse `affiliate_breakdown`: Trừ đủ toàn bộ số tiền `price_core` khỏi `pending_balance_core` của Shop Gán, tăng `available_balance_core` của Shop Gán theo `resellerPayout`, tăng `available_balance_core` của NCC theo `supplierPayout + shippingFee`.
+     - Phí sàn `platformFee` tính trên GIÁ GỐC (5% hàng số, 2% hàng vật lý), không tính trên giá bán. Ghi đầy đủ 3 bản ghi `seller_ledger` (RELEASE Shop Gán, RELEASE NCC, FEE sàn).
+  2. *Nhóm 2 — Thực Thi Scope, Hạn Mức Ví & Audit Log Khóa AI*:
+     - Bổ sung bộ chặn và kiểm tra scope tập trung ở đầu `functions/_worker.ts` và tích hợp tùy chọn `requiredScope` trong `authenticateCaller`, `checkAiScope` (`auth_service.ts`). Chặn 403 nếu thiếu scope tương ứng (`profile`, `shopping`, `seller`, `rewards`, `notifications`, `reviews`, `disputes`).
+     - Route rút tiền `/api/seller/finance/withdraw`: Chặn khóa AI nếu thiếu scope `seller` hoặc chưa bật quyền `seller_withdraw` trong `wallet_permissions`; kiểm tra và cộng dồn `daily_withdrawn_today` theo hạn mức `daily_withdraw_limit`.
+     - Thêm cột `response_time_ms` vào `user_ai_api_call_logs`, đo thời gian xử lý thực tế và ghi nhận `user_ai_api_devices` (sử dụng `X-Device-Id` hoặc fingerprint từ UA + IP).
+     - Cập nhật `sendDeviceAlertNotification` gửi email cảnh báo bảo mật thật (song ngữ VI/EN) qua Resend / Brevo tới chủ khóa khi phát hiện thiết bị lạ kết nối.
+  3. *Nhóm 3 — Rate Limit 600 req/phút cho Khóa Cặp wcg_shop_*:
+     - Trong `verifyPairShopAccess` (`seller_affiliate_service.ts`): Đếm số lần gọi trong 1 phút vừa qua qua `seller_affiliate_call_logs`. Nếu >= 600, ghi log 429 và trả HTTP 429 kèm thông báo giới hạn.
+  4. *Nhóm 4 — Xóa Bỏ Hoàn Toàn Cửa Hậu Bypass Turnstile*:
+     - Trong `functions/api/auth/register.ts`: Xóa hoàn toàn nhánh `turnstileToken !== 'cf_turnstile_verified'`. Bắt buộc gửi token sang Cloudflare `siteverify` khi có biến `TURNSTILE_SECRET_KEY`. Ghi cảnh báo dev khi chưa cấu hình secret.
+  5. *Nhóm 5 — Các Lỗi Vừa & Nhỏ*:
+     - Khóa cặp `wcg_shop_`: Trong `approve.ts`, không trả `raw_key` cho NCC (NCC chỉ thấy prefix). Lưu vào `one_time_raw_key` và chỉ hiển thị duy nhất 1 lần khi Shop Gán đọc qua `GET /api/seller/affiliate/requests`, sau đó xóa ngay khỏi D1.
+     - Ràng buộc tỷ lệ trong `resell.ts`: Kiểm tra `discountPct + commissionPct + feeRatePct <= 100%`, trả 400 nếu vượt quá. Gọi `syncAffiliatePriceAndStock` khi NCC đổi thông số resell.
+     - Đồng bộ kho mã: Trong `codes/[id].ts` (xóa mã) và `products/[id]/codes.ts` (thêm mã): Luôn query `COUNT(*)` tồn kho thực tế (`status = 'IN_STOCK' AND deleted_at IS NULL`) trước khi truyền sang `syncAffiliatePriceAndStock`.
+     - Bổ sung xử lý khiếu nại cho đơn `seller_orders` trong `fileOrderDispute` (`escrow_service.ts`) và tự động tạo bản ghi tranh chấp cho cả NCC lẫn Shop Gán.
+     - Migration schema D1: `seller_affiliate_partnerships` hỗ trợ `api_key_hash DEFAULT NULL` và `one_time_raw_key DEFAULT NULL`.
+     - Xác nhận định dạng khóa AI `wcg_ai_usr_<shortId<=8>_<40 hex>` và 65 khóa từ điển trong mục `aiApiKeys`.
+- **Kiểm chứng thực tế & Kết quả**:
+  - Test Suite Affiliate (`node scripts/test-affiliate-phase1.cjs`): Đạt **23/23 PASS** (100%).
+  - Pre-push Security Scan (Rule 10): **0 chuỗi khóa cứng**, **0 token Telegram**, **0 Private Key**.
+  - TypeScript Check (`npx tsc -p tsconfig.homepage.json --noEmit`): Exit code 0, 0 lỗi.
+  - i18n Guard Scanner (`node scripts/check-hardcoded-i18n.cjs`): 18/18 files clean, 0 chuỗi Tiếng Việt ngoài từ điển.
+  - Lean Guard Scanner (`node scripts/check-lean-budgets.cjs`): Đạt 9/9 bài kiểm tra, dist/ đạt 68.24 MB (<= 85 MB), Edge Worker bundle 6.33 MB (<= 10.00 MB).
+
 ### 456. Thiết Lập Kho Bảo Mật Test Vault (.test_vault.local.json) & Chuẩn Hóa Xác Thực verifyStoreApiAccess Toàn Bộ Phân Hệ Affiliate (24/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Người dùng yêu cầu tạo kho bảo mật tài khoản, API và MCP riêng cho từng trang web để người dùng và AI Agent có thể sử dụng kiểm thử chức năng của web bất cứ lúc nào.

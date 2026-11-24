@@ -78,7 +78,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 2. Turnstile Anti-bot Token check
     const turnstileSecret = env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET;
-    if (turnstileSecret && turnstileToken && turnstileToken !== 'cf_turnstile_verified') {
+    if (turnstileSecret) {
+      if (!turnstileToken) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Yêu cầu mã xác thực chống bot Cloudflare Turnstile.' }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
       try {
         const formData = new FormData();
         formData.append('secret', turnstileSecret);
@@ -99,6 +105,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       } catch (err: any) {
         console.error('Turnstile verification error:', err);
       }
+    } else {
+      console.warn('TURNSTILE_SECRET_KEY not configured, allowing registration in dev mode.');
     }
 
     // 3. Check for duplicates in D1 (SSOT)

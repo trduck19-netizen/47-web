@@ -55,6 +55,7 @@ export interface UserAiApiCallLogRecord {
   device_id: string;
   error_code: string;
   response_summary: string;
+  response_time_ms?: number;
   created_at: string;
 }
 
@@ -134,6 +135,7 @@ export async function verifyUserAiApiAccess(
     requiredWalletPerm?: 'wallet_view' | 'wallet_deposit' | 'wallet_pay' | 'seller_withdraw';
   } = {}
 ): Promise<UserAiAuthResult> {
+  const startTime = Date.now();
   if (!env.DB) {
     return { authorized: false, status: 500, error: 'Cơ sở dữ liệu chưa sẵn sàng.' };
   }
@@ -142,7 +144,13 @@ export async function verifyUserAiApiAccess(
   const pathname = url.pathname;
   const method = request.method.toUpperCase();
   const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
-  const deviceId = (request.headers.get('X-Device-Id') || request.headers.get('x-device-id') || '').trim();
+  const customDeviceId = (request.headers.get('X-Device-Id') || request.headers.get('x-device-id') || '').trim();
+  const userAgent = request.headers.get('user-agent') || 'Unknown';
+  let deviceId = customDeviceId;
+  if (!deviceId) {
+    const uaHash = await computeSha256(`${userAgent}:${clientIp}`);
+    deviceId = `dev_${uaHash.substring(0, 16)}`;
+  }
 
   // 1. Trích xuất Authorization Bearer hoặc X-User-AI-Key
   const customHeader = request.headers.get('X-User-AI-Key') || request.headers.get('x-user-ai-key') || '';
@@ -170,7 +178,7 @@ export async function verifyUserAiApiAccess(
 
   for (const pat of forbiddenPatterns) {
     if (pat.test(pathname)) {
-      await logAiCall(env.DB, 'FORBIDDEN', 'system', 'N/A', pathname, method, 403, clientIp, deviceId, 'FORBIDDEN_ENDPOINT', 'Cố gắng truy cập endpoint bị cấm qua khóa AI.');
+      await logAiCall(env.DB, 'FORBIDDEN', 'system', 'N/A', pathname, method, 403, clientIp, deviceId, 'FORBIDDEN_ENDPOINT', 'Cố gắng truy cập endpoint bị cấm qua khóa AI.', Date.now() - startTime);
       return {
         authorized: false,
         status: 403,
@@ -192,7 +200,7 @@ export async function verifyUserAiApiAccess(
     .first<UserAiApiKeyRecord>();
 
   if (!apiKey) {
-    await logAiCall(env.DB, 'UNKNOWN', 'unknown', 'N/A', pathname, method, 401, clientIp, deviceId, 'KEY_NOT_FOUND', 'Khóa không tồn tại hoặc đã bị thu hồi.');
+    await logAiCall(env.DB, 'UNKNOWN', 'unknown', 'N/A', pathname, method, 401, clientIp, deviceId, 'KEY_NOT_FOUND', 'Khóa không tồn tại hoặc đã bị thu hồi.', Date.now() - startTime);
     return {
       authorized: false,
       status: 401,
@@ -205,7 +213,7 @@ export async function verifyUserAiApiAccess(
   if (apiKey.expires_at) {
     const expDate = new Date(apiKey.expires_at).getTime();
     if (Date.now() > expDate) {
-      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 401, clientIp, deviceId, 'KEY_EXPIRED', 'Khóa đã hết hạn sử dụng.');
+      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 401, clientIp, deviceId, 'KEY_EXPIRED', 'Khóa đã hết hạn sử dụng.', Date.now() - startTime);
       return {
         authorized: false,
         status: 401,
@@ -226,7 +234,7 @@ export async function verifyUserAiApiAccess(
     .first<{ recent_calls: number }>();
 
   if (recentCallsRes && recentCallsRes.recent_calls >= 600) {
-    await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 429, clientIp, deviceId, 'RATE_LIMIT_EXCEEDED', 'Vượt quá 600 yêu cầu/phút.');
+    await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 429, clientIp, deviceId, 'RATE_LIMIT_EXCEEDED', 'Vượt quá 600 yêu cầu/phút.', Date.now() - startTime);
     return {
       authorized: false,
       status: 429,
@@ -245,13 +253,11 @@ export async function verifyUserAiApiAccess(
   let isMatched = false;
 
   for (const dev of deviceList) {
-    // Trùng địa chỉ mạng HOẶC trùng mã thiết bị
     const ipMatch = dev.ip_address === clientIp;
     const deviceMatch = Boolean(deviceId && dev.device_id && dev.device_id === deviceId);
 
     if (ipMatch || deviceMatch) {
       isMatched = true;
-      // Cập nhật lại thời gian thấy gần nhất
       await env.DB
         .prepare("UPDATE user_ai_api_devices SET last_seen_at = datetime('now'), ip_address = ?, device_id = ? WHERE id = ?")
         .bind(clientIp, deviceId || dev.device_id, dev.id)
@@ -261,15 +267,13 @@ export async function verifyUserAiApiAccess(
     }
   }
 
-  // Nếu cả địa chỉ mạng lẫn mã thiết bị đều mới
   if (!isMatched) {
     const currentDeviceCount = deviceList.length;
     const maxDevices = Math.max(1, apiKey.max_devices || 3);
 
     if (currentDeviceCount >= maxDevices) {
-      // VƯỢT GIỚI HẠN: CHẶN LUÔN KẾT NỐI MỚI (403 DEVICE_LIMIT_EXCEEDED)
       await handleSecurityAlertForDeviceLimit(env, apiKey, clientIp, deviceId);
-      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'DEVICE_LIMIT_EXCEEDED', `Vượt giới hạn kết nối (${currentDeviceCount}/${maxDevices}).`);
+      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'DEVICE_LIMIT_EXCEEDED', `Vượt giới hạn kết nối (${currentDeviceCount}/${maxDevices}).`, Date.now() - startTime);
       
       return {
         authorized: false,
@@ -278,7 +282,6 @@ export async function verifyUserAiApiAccess(
         errorCode: 'DEVICE_LIMIT_EXCEEDED',
       };
     } else {
-      // Thêm kết nối mới vào danh sách thiết bị
       const newDevId = `uai_dev_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       await env.DB
         .prepare(`
@@ -299,12 +302,18 @@ export async function verifyUserAiApiAccess(
     allowedScopes = [];
   }
 
-  if (options.requiredScope && !allowedScopes.includes(options.requiredScope)) {
-    await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'SCOPE_FORBIDDEN', `Yêu cầu quyền ${options.requiredScope}.`);
+  const reqScope = options.requiredScope;
+  const hasScope = !reqScope ||
+    allowedScopes.includes(reqScope) ||
+    (reqScope === 'profile' && allowedScopes.includes('read_profile')) ||
+    (reqScope === 'shopping' && (allowedScopes.includes('orders') || allowedScopes.includes('shop')));
+
+  if (!hasScope) {
+    await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'SCOPE_FORBIDDEN', `Yêu cầu quyền ${reqScope}.`, Date.now() - startTime);
     return {
       authorized: false,
       status: 403,
-      error: `Khóa API '${apiKey.name}' không có quyền truy cập phạm vi '${options.requiredScope}'. Vui lòng cấp quyền trong Cài đặt tài khoản.`,
+      error: `Khóa API '${apiKey.name}' không có quyền truy cập phạm vi '${reqScope}'. Vui lòng cấp quyền trong Cài đặt tài khoản.`,
       errorCode: 'SCOPE_FORBIDDEN',
     };
   }
@@ -322,7 +331,7 @@ export async function verifyUserAiApiAccess(
 
   if (options.requiredWalletPerm) {
     if (!walletPerms[options.requiredWalletPerm]) {
-      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'WALLET_PERMISSION_DENIED', `Chưa bật quyền ví ${options.requiredWalletPerm}.`);
+      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'WALLET_PERMISSION_DENIED', `Chưa bật quyền ví ${options.requiredWalletPerm}.`, Date.now() - startTime);
       return {
         authorized: false,
         status: 403,
@@ -335,7 +344,7 @@ export async function verifyUserAiApiAccess(
   // Kiểm tra hạn mức chi theo ngày (wallet_pay)
   if (options.spendAmount && options.spendAmount > 0) {
     if (!walletPerms.wallet_pay) {
-      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'WALLET_PAY_DISABLED', 'Chưa bật quyền thanh toán bằng ví.');
+      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'WALLET_PAY_DISABLED', 'Chưa bật quyền thanh toán bằng ví.', Date.now() - startTime);
       return {
         authorized: false,
         status: 403,
@@ -348,7 +357,7 @@ export async function verifyUserAiApiAccess(
     const dailyLimit = Number(apiKey.daily_spend_limit || 0);
 
     if (dailyLimit <= 0) {
-      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'WALLET_SPEND_LIMIT_ZERO', 'Hạn mức chi ngày = 0đ.');
+      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'WALLET_SPEND_LIMIT_ZERO', 'Hạn mức chi ngày = 0đ.', Date.now() - startTime);
       return {
         authorized: false,
         status: 403,
@@ -359,7 +368,7 @@ export async function verifyUserAiApiAccess(
 
     let spentToday = apiKey.daily_spent_date === todayStr ? Number(apiKey.daily_spent_today || 0) : 0;
     if (spentToday + options.spendAmount > dailyLimit) {
-      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'WALLET_DAILY_LIMIT_EXCEEDED', `Chi ${options.spendAmount}đ vượt hạn mức ngày ${dailyLimit}đ (đã chi ${spentToday}đ).`);
+      await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 403, clientIp, deviceId, 'WALLET_DAILY_LIMIT_EXCEEDED', `Chi ${options.spendAmount}đ vượt hạn mức ngày ${dailyLimit}đ (đã chi ${spentToday}đ).`, Date.now() - startTime);
       return {
         authorized: false,
         status: 403,
@@ -408,7 +417,7 @@ export async function verifyUserAiApiAccess(
     .catch(() => {});
 
   // Ghi log lần gọi thành công
-  await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 200, clientIp, deviceId, '', 'OK');
+  await logAiCall(env.DB, apiKey.id, apiKey.member_id, apiKey.key_prefix, pathname, method, 200, clientIp, deviceId, '', 'OK', Date.now() - startTime);
 
   return {
     authorized: true,
@@ -436,17 +445,18 @@ export async function logAiCall(
   ipAddress: string,
   deviceId: string,
   errorCode = '',
-  summary = ''
+  summary = '',
+  responseTimeMs = 0
 ): Promise<void> {
   try {
     const logId = `ucl_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     await db
       .prepare(`
         INSERT INTO user_ai_api_call_logs (
-          id, key_id, member_id, key_prefix, endpoint, method, status_code, ip_address, device_id, error_code, response_summary, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          id, key_id, member_id, key_prefix, endpoint, method, status_code, ip_address, device_id, error_code, response_summary, response_time_ms, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `)
-      .bind(logId, keyId, memberId, keyPrefix, endpoint, method, statusCode, ipAddress, deviceId || '', errorCode, summary)
+      .bind(logId, keyId, memberId, keyPrefix, endpoint, method, statusCode, ipAddress, deviceId || '', errorCode, summary, responseTimeMs)
       .run();
   } catch (err) {
     console.warn('[UserAiApiService logAiCall error]', err);
@@ -535,7 +545,7 @@ export async function handleSecurityAlertForDeviceLimit(
 }
 
 /**
- * Gửi thông báo cảnh báo thiết bị lạ qua kênh hệ thống
+ * Gửi thông báo cảnh báo thiết bị lạ qua email và kênh an ninh
  */
 async function sendDeviceAlertNotification(
   env: { DB: D1Database; [key: string]: any },
@@ -548,7 +558,7 @@ async function sendDeviceAlertNotification(
     const userEmail = member?.email || 'N/A';
     const alertMessage = `⚠️ CẢNH BÁO BẢO MẬT KHÓA AI: Khóa '${apiKey.name}' của tài khoản ${member?.username || apiKey.member_id} vừa bị chặn do vượt giới hạn kết nối!\n- Địa chỉ IP lạ: ${ipAddress}\n- Mã thiết bị: ${deviceId || 'Không cung cấp'}\n- Giới hạn tối đa: ${apiKey.max_devices} thiết bị\n- Email tài khoản: ${userEmail}\nVui lòng truy cập Cài đặt tài khoản để xác nhận hoặc nâng giới hạn kết nối.`;
     
-    // Ghi log vào security_logs nếu bảng tồn tại
+    // Ghi log vào security_logs
     const secLogId = `sec_ai_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     await env.DB
       .prepare(`
@@ -558,5 +568,59 @@ async function sendDeviceAlertNotification(
       .bind(secLogId, alertMessage, ipAddress, apiKey.member_id)
       .run()
       .catch(() => {});
+
+    // Gửi email thật qua Resend / Brevo / SMTP nếu có cấu hình
+    if (userEmail && userEmail.includes('@') && !userEmail.endsWith('.local') && !userEmail.includes('example.com')) {
+      const resendKey = env.RESEND_API_KEY || '';
+      const brevoKey = env.BREVO_API_KEY || '';
+      const fromEmail = env.EMAIL_FROM || 'security@webcodegame.vn';
+      const fromName = 'Pine Universal Mall Security';
+      const timeStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+      const emailSubject = `[Pine Universal Mall] ⚠️ Cảnh báo thiết bị lạ kết nối Khóa AI '${apiKey.name}'`;
+      const htmlBody = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid #334155;">
+          <h2 style="color: #ef4444; margin-top: 0;">⚠️ Cảnh Báo An Ninh Khóa AI / Security Alert</h2>
+          <p>Xin chào <strong>${member?.username || 'Quý khách'}</strong>,</p>
+          <p>Hệ thống vừa phát hiện và <strong>ngăn chặn</strong> một kết nối từ thiết bị hoặc địa chỉ mạng mới vượt quá giới hạn thiết bị cho phép (${apiKey.max_devices} thiết bị) của Khóa API AI của bạn.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0; background: #1e293b; border-radius: 8px; overflow: hidden;">
+            <tr><td style="padding: 10px; color: #94a3b8; border-bottom: 1px solid #334155;">Tên Khóa AI / Key Name:</td><td style="padding: 10px; font-weight: bold; border-bottom: 1px solid #334155;">${apiKey.name}</td></tr>
+            <tr><td style="padding: 10px; color: #94a3b8; border-bottom: 1px solid #334155;">Địa chỉ IP / Client IP:</td><td style="padding: 10px; font-family: monospace; border-bottom: 1px solid #334155;">${ipAddress}</td></tr>
+            <tr><td style="padding: 10px; color: #94a3b8; border-bottom: 1px solid #334155;">Mã thiết bị / Device ID:</td><td style="padding: 10px; font-family: monospace; border-bottom: 1px solid #334155;">${deviceId || 'Unknown'}</td></tr>
+            <tr><td style="padding: 10px; color: #94a3b8;">Thời gian / Timestamp:</td><td style="padding: 10px;">${timeStr} (GMT+7)</td></tr>
+          </table>
+          <p style="color: #cbd5e1; font-size: 14px;">Nếu đây không phải là bạn hoặc bạn nghi ngờ khóa bị lộ, hãy đăng nhập và thu hồi khóa ngay lập tức:</p>
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="https://universal-mall-shop.pages.dev/user/ai-keys" style="background: #ef4444; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Quản Lý & Thu Hồi Khóa AI</a>
+          </div>
+          <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #64748b; margin: 0;">© 2026 Pine Universal Mall. All rights reserved.</p>
+        </div>
+      `;
+
+      if (resendKey) {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: `${fromName} <${fromEmail}>`,
+            to: [userEmail],
+            subject: emailSubject,
+            html: htmlBody,
+          }),
+        }).catch((e) => console.warn('[resend alert error]', e));
+      } else if (brevoKey) {
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender: { name: fromName, email: fromEmail },
+            to: [{ email: userEmail, name: member?.username || userEmail }],
+            subject: emailSubject,
+            htmlContent: htmlBody,
+          }),
+        }).catch((e) => console.warn('[brevo alert error]', e));
+      }
+    }
   } catch {}
 }

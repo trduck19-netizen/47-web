@@ -62,10 +62,11 @@ export async function onRequestPost(context: { request: Request; params: any; en
         SET status = 'APPROVED',
             api_key_hash = ?,
             api_key_prefix = ?,
+            one_time_raw_key = ?,
             updated_at = datetime('now')
         WHERE id = ?
       `)
-      .bind(keyHash, keyPrefix, requestId)
+      .bind(keyHash, keyPrefix, rawKey, requestId)
       .run();
 
     return new Response(JSON.stringify({
@@ -74,8 +75,6 @@ export async function onRequestPost(context: { request: Request; params: any; en
       partnership_id: requestId,
       reseller_name: reqRecord.reseller_name,
       key_prefix: keyPrefix,
-      raw_key: rawKey, // Chỉ trả DUY NHẤT 1 LẦN ngay lúc duyệt!
-      warning: 'LƯU Ý QUAN TRỌNG: Khóa API đầy đủ chỉ hiển thị DUY NHẤT 1 lần này. Hãy sao chép và gửi cho đối tác hoặc lưu trữ cẩn thận.'
     }), { status: 200, headers: CORS_HEADERS });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err?.message || 'Lỗi phê duyệt yêu cầu.' }), { status: 500, headers: CORS_HEADERS });

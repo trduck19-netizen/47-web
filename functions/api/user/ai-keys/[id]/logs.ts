@@ -53,7 +53,7 @@ export async function onRequestGet(context: { request: Request; params: any; env
 
     const rows = await env.DB
       .prepare(`
-        SELECT id, endpoint, method, status_code, ip_address, device_id, error_code, response_summary, created_at
+        SELECT id, endpoint, method, status_code, ip_address, device_id, error_code, response_summary, response_time_ms, created_at
         FROM user_ai_api_call_logs
         WHERE key_id = ? AND member_id = ?
         ORDER BY created_at DESC

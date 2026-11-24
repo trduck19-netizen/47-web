@@ -1,7 +1,3 @@
-
-> universal-commerce-platform@1.0.0 check:lean
-> node scripts/check-lean-budgets.cjs
-
 ================================================================================
 🛡️  LEAN GUARD SCANNER — HỆ THỐNG GIÁM SÁT NGÂN SÁCH KÍCH THƯỚC DỰ ÁN
    Chế độ kiểm tra: [ALL] | Thư mục gốc: C:\4 Antigravity all\47 web da nganh
@@ -18,10 +14,10 @@
 🔍 [STAGE: POST-BUILD] Đang quét đầu ra Vite & Cloudflare Edge Worker bundle...
    ✅ [Check 6.1 PASS] Chunk AdminApp (562.85 KB) duy trì mức tối ưu (< 600 KB).
    ✅ [Check 6.2 PASS] Tất cả các component chunks khác đều nằm trong ngân sách (< 650 KB).
-   ⚡ Edge Worker Bundle (dist/_worker.js): 19.20 MB
-   ✅ [Check 7 PASS] Edge Worker Bundle (19.20 MB) nằm trong giới hạn cho phép (<= 22.00 MB).
-   📦 Tổng dung lượng thư mục phân phối dist/: 81.02 MB
-   ✅ [Check 8 PASS] Thư mục dist/ (81.02 MB) đạt chuẩn phân phối tối ưu (<= 85.00 MB).
+   ⚡ Edge Worker Bundle (dist/_worker.js): 6.33 MB
+   ✅ [Check 7 PASS] Edge Worker Bundle (6.33 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).
+   📦 Tổng dung lượng thư mục phân phối dist/: 68.24 MB
+   ✅ [Check 8 PASS] Thư mục dist/ (68.24 MB) đạt chuẩn phân phối tối ưu (<= 85.00 MB).
 
 --------------------------------------------------------------------------------
 📊 BÁO CÁO KẾT QUẢ KIỂM TRA LEAN GUARD:

@@ -48,13 +48,67 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 1. Xác thực đăng nhập qua session_token hoặc mã ký HMAC hợp lệ (chống giả mạo chủ gian hàng)
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+    const auth = await authenticateCaller(env.DB, token, env.JWT_SECRET, { requiredScope: 'seller' });
     if (!auth.authenticated || !auth.member) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Vui lòng đăng nhập tài khoản hợp lệ để rút tiền.' }),
-        { status: 401, headers: CORS_HEADERS }
+        JSON.stringify({ success: false, error: auth.error || 'Vui lòng đăng nhập tài khoản hợp lệ để rút tiền.', required_scope: auth.required_scope }),
+        { status: auth.required_scope ? 403 : 401, headers: CORS_HEADERS }
       );
     }
+
+    // Nếu gọi bằng Khóa API AI của người dùng: bắt buộc kiểm tra quyền rút ví & hạn mức ngày
+    if ((auth as any).authType === 'USER_AI_KEY') {
+      const apiKey = (auth as any).apiKey;
+      let allowedScopes: string[] = [];
+      try {
+        allowedScopes = JSON.parse(apiKey?.scopes || '[]');
+      } catch {}
+
+      if (!allowedScopes.includes('seller')) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Khóa API không có quyền truy cập phạm vi seller.',
+            required_scope: 'seller',
+          }),
+          { status: 403, headers: CORS_HEADERS }
+        );
+      }
+
+      let walletPerms: any = {};
+      try {
+        walletPerms = JSON.parse(apiKey?.wallet_permissions || '{}');
+      } catch {}
+
+      if (!walletPerms.seller_withdraw) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Khóa API '${apiKey?.name}' chưa được bật quyền rút tiền ví gian hàng (seller_withdraw). Vui lòng bật trong Cài đặt tài khoản.`,
+            required_permission: 'seller_withdraw',
+          }),
+          { status: 403, headers: CORS_HEADERS }
+        );
+      }
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const dailyWithdrawLimit = Number(apiKey?.daily_withdraw_limit || 0);
+      if (dailyWithdrawLimit > 0) {
+        const withdrawnToday = apiKey?.daily_spent_date === todayStr ? Number(apiKey?.daily_withdrawn_today || 0) : 0;
+        if (withdrawnToday + amount > dailyWithdrawLimit) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Yêu cầu rút tiền bị từ chối: Số tiền rút ${amount.toLocaleString('vi-VN')} Core vượt quá hạn mức rút theo ngày còn lại của khóa AI (${Math.max(0, dailyWithdrawLimit - withdrawnToday).toLocaleString('vi-VN')} Core / ${dailyWithdrawLimit.toLocaleString('vi-VN')} Core).`,
+              daily_withdraw_limit: dailyWithdrawLimit,
+              withdrawn_today: withdrawnToday,
+            }),
+            { status: 403, headers: CORS_HEADERS }
+          );
+        }
+      }
+    }
+
     const memberId = auth.member.id;
 
     // 2. Kiểm tra quyền chủ gian hàng (subaccount cấm rút tiền §0.5)
@@ -186,6 +240,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         status: initialStatus,
       },
     });
+
+    if ((auth as any).authType === 'USER_AI_KEY') {
+      const apiKey = (auth as any).apiKey;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const currentWithdrawn = apiKey.daily_spent_date === todayStr ? Number(apiKey.daily_withdrawn_today || 0) : 0;
+      await env.DB
+        .prepare("UPDATE user_ai_api_keys SET daily_withdrawn_today = ?, daily_spent_date = ? WHERE id = ?")
+        .bind(currentWithdrawn + amount, todayStr, apiKey.id)
+        .run()
+        .catch(() => {});
+    }
 
     return new Response(
       JSON.stringify({

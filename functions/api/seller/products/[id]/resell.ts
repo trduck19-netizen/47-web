@@ -1,5 +1,6 @@
 import { verifyStoreApiAccess } from '../../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../../services/d1_service';
+import { syncAffiliatePriceAndStock } from '../../../../services/seller_affiliate_service';
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -35,7 +36,7 @@ export async function onRequestPut(context: { request: Request; params: any; env
 
     const productId = params.id;
     const existing = await env.DB
-      .prepare('SELECT id, seller_id, is_affiliate, origin_product_id FROM seller_products WHERE id = ? AND deleted_at IS NULL LIMIT 1')
+      .prepare('SELECT id, seller_id, is_affiliate, origin_product_id, price_core, product_type FROM seller_products WHERE id = ? AND deleted_at IS NULL LIMIT 1')
       .bind(productId)
       .first<any>();
 
@@ -63,6 +64,17 @@ export async function onRequestPut(context: { request: Request; params: any; env
     const commissionPct = Math.max(0, Math.min(100, Number(body.resell_commission_pct) || 0));
     const mapPrice = Math.max(0, Math.round(Number(body.resell_map_price) || 0));
 
+    // Ràng buộc kiểm tra tổng tỷ lệ chiết khấu + hoa hồng + phí sàn <= 100% (Nhóm 5)
+    const isPhysical = existing.product_type === 'PHYSICAL';
+    const feeRatePct = isPhysical ? 2 : 5;
+    if (resellEnabled && (discountPct + commissionPct + feeRatePct > 100)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Tổng chiết khấu (${discountPct}%) + hoa hồng (${commissionPct}%) + phí sàn (${feeRatePct}%) = ${discountPct + commissionPct + feeRatePct}% vượt quá 100% giá gốc. Vui lòng giảm chiết khấu hoặc hoa hồng.`,
+        code: 'EXCEEDS_100_PERCENT'
+      }), { status: 400, headers: CORS_HEADERS });
+    }
+
     await env.DB
       .prepare(`
         UPDATE seller_products
@@ -75,6 +87,13 @@ export async function onRequestPut(context: { request: Request; params: any; env
       `)
       .bind(resellEnabled, discountPct, commissionPct, mapPrice, productId)
       .run();
+
+    // Đồng bộ tức thời thông số resell mới sang các listing gán đang active
+    if (resellEnabled) {
+      await syncAffiliatePriceAndStock(env.DB, productId, 'RESELL_PARAM_CHANGE', { newBasePrice: existing.price_core, newMapPrice: mapPrice });
+    } else {
+      await syncAffiliatePriceAndStock(env.DB, productId, 'STATUS_CHANGE', { isDisabled: true });
+    }
 
     return new Response(JSON.stringify({
       success: true,

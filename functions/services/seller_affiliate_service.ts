@@ -134,6 +134,33 @@ export async function verifyPairShopAccess(
     return { authorized: false, status: 403, error: 'Khóa API này chỉ có quyền truy cập sản phẩm của Nhà Cung Cấp đã cấp khóa.' };
   }
 
+  // Giới hạn tốc độ: 600 yêu cầu / phút / khóa cặp (Nhóm 3)
+  const keyPrefix = partnership.api_key_prefix || (cleanKey.substring(0, 13) + '••••' + cleanKey.substring(cleanKey.length - 4));
+  const recentCallsRes = await db
+    .prepare(`
+      SELECT COUNT(*) as recent_calls 
+      FROM seller_affiliate_call_logs 
+      WHERE api_key_prefix = ? AND created_at >= datetime('now', '-1 minute')
+    `)
+    .bind(keyPrefix)
+    .first<{ recent_calls: number }>();
+
+  if (recentCallsRes && Number(recentCallsRes.recent_calls) >= 600) {
+    await logAffiliateCall(db, {
+      partnershipId: partnership.id,
+      callerSellerId: partnership.reseller_seller_id,
+      keyPrefix,
+      endpoint: '/api/seller/affiliate/catalog',
+      method: 'GET',
+      statusCode: 429,
+    });
+    return {
+      authorized: false,
+      status: 429,
+      error: 'Quá giới hạn 600 yêu cầu / phút cho khóa liên shop này. Vui lòng thử lại sau giây lát.',
+    };
+  }
+
   return { authorized: true, partnership };
 }
 

@@ -286,7 +286,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       // Nhóm 3: Đồng bộ khôi phục trạng thái cho các listing gán nếu có thêm mã vào kho
       if (addedCount > 0) {
-        await syncAffiliatePriceAndStock(env.DB, product.id, 'STOCK_CHANGE', { newStock: addedCount });
+        const totalStockRes = await env.DB
+          .prepare("SELECT COUNT(*) as cnt FROM seller_codes WHERE product_id = ? AND status = 'IN_STOCK' AND deleted_at IS NULL")
+          .bind(product.id)
+          .first<{ cnt: number }>();
+        const totalStock = Number(totalStockRes?.cnt) || 0;
+        await syncAffiliatePriceAndStock(env.DB, product.id, 'STOCK_CHANGE', { newStock: totalStock });
       }
     }
 

@@ -73,6 +73,7 @@ interface ApiLog {
   device_id: string;
   error_code: string;
   response_summary: string;
+  response_time_ms?: number;
   created_at: string;
 }
 
@@ -992,6 +993,9 @@ export const UserAiKeysManager: React.FC<UserAiKeysManagerProps> = ({
                       <div className="text-[10px] text-slate-500 flex items-center gap-2">
                         <span>IP: {lg.ip_address}</span>
                         {lg.device_id && <span>Dev: {lg.device_id}</span>}
+                        {lg.response_time_ms !== undefined && lg.response_time_ms !== null && lg.response_time_ms > 0 && (
+                          <span className="text-amber-400 font-mono">⚡{lg.response_time_ms}ms</span>
+                        )}
                         {lg.error_code && <span className="text-rose-400 font-bold">[{lg.error_code}]</span>}
                       </div>
                     </div>

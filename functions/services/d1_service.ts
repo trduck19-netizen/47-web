@@ -2557,9 +2557,12 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
             device_id TEXT DEFAULT '',
             error_code TEXT DEFAULT '',
             response_summary TEXT DEFAULT '',
+            response_time_ms INTEGER DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
           );
         `).run().catch(() => {});
+
+        await db.prepare("ALTER TABLE user_ai_api_call_logs ADD COLUMN response_time_ms INTEGER DEFAULT 0;").run().catch(() => {});
 
         await db.prepare("CREATE INDEX IF NOT EXISTS idx_ucl_key_time ON user_ai_api_call_logs(key_id, created_at);").run().catch(() => {});
         await db.prepare("CREATE INDEX IF NOT EXISTS idx_ucl_member_time ON user_ai_api_call_logs(member_id, created_at);").run().catch(() => {});
@@ -2619,13 +2622,16 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
             supplier_seller_id TEXT NOT NULL,
             reseller_seller_id TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'PENDING',
-            api_key_hash TEXT NOT NULL,
-            api_key_prefix TEXT NOT NULL,
+            api_key_hash TEXT DEFAULT NULL,
+            api_key_prefix TEXT DEFAULT NULL,
+            one_time_raw_key TEXT DEFAULT NULL,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
             revoked_at TEXT
           );
         `).run().catch(() => {});
+
+        await db.prepare("ALTER TABLE seller_affiliate_partnerships ADD COLUMN one_time_raw_key TEXT DEFAULT NULL;").run().catch(() => {});
 
         await db.prepare("CREATE INDEX IF NOT EXISTS idx_sap_supplier ON seller_affiliate_partnerships(supplier_seller_id, status);").run().catch(() => {});
         await db.prepare("CREATE INDEX IF NOT EXISTS idx_sap_reseller ON seller_affiliate_partnerships(reseller_seller_id, status);").run().catch(() => {});
