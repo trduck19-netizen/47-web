@@ -1,5 +1,6 @@
 import { ensureSchemaUpgrades, getSettingD1, isMemberEmailVerified } from '../../services/d1_service';
 import {
+  authenticateCaller,
   verifyToken,
   computeHash,
   createSignedToken,
@@ -75,16 +76,16 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, signingSecret]);
+    const callerAuth = await authenticateCaller(env.DB, token, env.JWT_SECRET);
+    let member: any = callerAuth.authenticated ? callerAuth.member : null;
 
-    let member: any = await env.DB.prepare(
-      'SELECT * FROM members WHERE session_token = ? LIMIT 1'
-    ).bind(token).first<any>();
-
-    if (!member && valid && tokenUserId) {
-      member = await env.DB.prepare(
-        'SELECT * FROM members WHERE id = ? LIMIT 1'
-      ).bind(tokenUserId).first<any>();
+    if (!member) {
+      const { valid, userId: tokenUserId } = await verifyToken(token, [env.JWT_SECRET, signingSecret]);
+      if (valid && tokenUserId) {
+        member = await env.DB.prepare(
+          'SELECT * FROM members WHERE id = ? LIMIT 1'
+        ).bind(tokenUserId).first<any>();
+      }
     }
 
     if (!member) {
