@@ -15,6 +15,7 @@ import { adminDataService } from '../services/adminDataService';
 import { authService } from '../../services/authService';
 import { useLanguage } from '../../context/LanguageContext';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { TurnstileWidget } from '../../components/TurnstileWidget';
 
 interface AdminLoginGuardProps {
   onLoginSuccess: (user: AdminUser) => void;
@@ -33,6 +34,9 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(initialErrorMessage || '');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [isTurnstileEnabled, setIsTurnstileEnabled] = useState<boolean | null>(null);
+  const [turnstileResetTrigger, setTurnstileResetTrigger] = useState(0);
 
   useEffect(() => {
     if (initialErrorMessage) {
@@ -82,6 +86,16 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
       return;
     }
 
+    if (isTurnstileEnabled === true && !turnstileToken) {
+      setErrorMessage(
+        t.admin?.login?.errTurnstileRequired ||
+          (language === 'en'
+            ? 'Please complete the Cloudflare Turnstile security verification.'
+            : 'Vui lòng hoàn thành xác thực bảo mật chống bot Cloudflare Turnstile.')
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -90,6 +104,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
         identifier: identifier.trim(),
         password,
         rememberMe: rememberSession,
+        turnstileToken: turnstileToken || undefined,
       });
 
       if (res.success && res.user) {
@@ -136,6 +151,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
           );
         }
       } else {
+        setTurnstileResetTrigger((n) => n + 1);
         setErrorMessage(
           res.message ||
             t.admin?.login?.errInvalidAuth ||
@@ -145,6 +161,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
         );
       }
     } catch {
+      setTurnstileResetTrigger((n) => n + 1);
       setErrorMessage(
         t.admin?.login?.errGeneric ||
           (language === 'en'
@@ -267,9 +284,17 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
               </label>
             </div>
 
+            <TurnstileWidget
+              theme="dark"
+              onTokenChange={setTurnstileToken}
+              onEnabledChange={setIsTurnstileEnabled}
+              onError={setErrorMessage}
+              resetTrigger={turnstileResetTrigger}
+            />
+
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isTurnstileEnabled === null || (isTurnstileEnabled === true && !turnstileToken)}
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-lg shadow-cyan-500/20 transition active:scale-[0.99] cursor-pointer mt-2"
             >
               {isLoading ? (

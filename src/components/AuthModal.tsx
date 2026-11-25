@@ -62,11 +62,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Turnstile configuration & states
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+  const [isTurnstileEnabled, setIsTurnstileEnabled] = useState<boolean>(Boolean(turnstileSiteKey));
   const [loginTurnstileToken, setLoginTurnstileToken] = useState('');
   const [regTurnstileToken, setRegTurnstileToken] = useState('');
   const loginWidgetIdRef = useRef<string | null>(null);
   const regWidgetIdRef = useRef<string | null>(null);
   const [isTurnstileLoaded, setIsTurnstileLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    fetch('/api/auth/turnstile-config')
+      .then((res) => res.json())
+      .then((data: any) => {
+        if (active && data && typeof data.enabled === 'boolean') {
+          setIsTurnstileEnabled(data.enabled);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -76,7 +93,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Load Cloudflare Turnstile script dynamically
   useEffect(() => {
-    if (!isOpen || !turnstileSiteKey) return;
+    if (!isOpen || !isTurnstileEnabled || !turnstileSiteKey) return;
 
     if ((window as any).turnstile) {
       setIsTurnstileLoaded(true);
@@ -108,7 +125,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Render Turnstile widget for Login Tab
   useEffect(() => {
-    if (!isOpen || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'login') return;
+    if (!isOpen || !isTurnstileEnabled || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'login') return;
 
     const timer = setTimeout(() => {
       const container = document.getElementById('turnstile-login-container');
@@ -157,7 +174,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Render Turnstile widget for Register Tab
   useEffect(() => {
-    if (!isOpen || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'register') return;
+    if (!isOpen || !isTurnstileEnabled || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'register') return;
 
     const timer = setTimeout(() => {
       const container = document.getElementById('turnstile-register-container');
@@ -220,7 +237,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (turnstileSiteKey && !loginTurnstileToken) {
+    if (isTurnstileEnabled && turnstileSiteKey && !loginTurnstileToken) {
       setErrorMessage(isEn ? 'Please complete the security check.' : 'Vui lòng hoàn tất xác minh bảo mật chống bot.');
       return;
     }
@@ -290,7 +307,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (turnstileSiteKey && !regTurnstileToken) {
+    if (isTurnstileEnabled && turnstileSiteKey && !regTurnstileToken) {
       setErrorMessage(isEn ? 'Please complete the security check.' : 'Vui lòng hoàn tất xác minh bảo mật chống bot.');
       return;
     }
@@ -539,7 +556,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Turnstile Security Widget */}
-              {turnstileSiteKey ? (
+              {isTurnstileEnabled && (turnstileSiteKey ? (
                 <div className="flex justify-center my-2 min-h-[65px]">
                   <div id="turnstile-login-container"></div>
                 </div>
@@ -547,12 +564,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-center">
                   {t('authModal.turnstileNotConfigured')}
                 </div>
-              )}
+              ))}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || (turnstileSiteKey ? !loginTurnstileToken : true)}
+                disabled={isLoading || (isTurnstileEnabled ? (turnstileSiteKey ? !loginTurnstileToken : true) : false)}
                 className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary-hover text-white font-display font-bold text-xs sm:text-sm shadow-glow-primary transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
               >
                 {isLoading ? (
@@ -711,7 +728,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </label>
 
               {/* Turnstile Security Widget */}
-              {turnstileSiteKey ? (
+              {isTurnstileEnabled && (turnstileSiteKey ? (
                 <div className="flex justify-center my-2 min-h-[65px]">
                   <div id="turnstile-register-container"></div>
                 </div>
@@ -719,12 +736,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-center">
                   {t('authModal.turnstileNotConfigured')}
                 </div>
-              )}
+              ))}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || !isConfirmPasswordMatch || !agreeTerms || (turnstileSiteKey ? !regTurnstileToken : true)}
+                disabled={isLoading || !isConfirmPasswordMatch || !agreeTerms || (isTurnstileEnabled ? (turnstileSiteKey ? !regTurnstileToken : true) : false)}
                 className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary-hover text-white font-display font-bold text-xs sm:text-sm shadow-glow-primary transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
               >
                 {isLoading ? (

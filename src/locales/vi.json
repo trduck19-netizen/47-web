@@ -375,7 +375,8 @@
       "errEnterPass": "Vui lòng nhập mật khẩu quản trị viên.",
       "errNoAccess": "Tài khoản này không có quyền truy cập bảng Quản Trị.",
       "errInvalidAuth": "Tên đăng nhập hoặc mật khẩu quản trị không chính xác.",
-      "errGeneric": "Đã xảy ra lỗi khi xác thực tài khoản. Vui lòng thử lại."
+      "errGeneric": "Đã xảy ra lỗi khi xác thực tài khoản. Vui lòng thử lại.",
+      "errTurnstileRequired": "Vui lòng hoàn thành xác thực bảo mật chống bot Cloudflare Turnstile."
     },
     "sidebar": {
       "overview": "TỔNG QUAN",

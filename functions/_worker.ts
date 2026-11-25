@@ -8,6 +8,7 @@ import * as statsApi from './api/stats';
 import * as voteApi from './api/vote';
 import * as loginApi from './api/auth/login';
 import * as registerApi from './api/auth/register';
+import * as turnstileConfigApi from './api/auth/turnstile-config';
 import * as meApi from './api/auth/me';
 import * as resetPasswordApi from './api/auth/reset-password';
 import * as verifyEmailApi from './api/auth/verify-email';
@@ -876,6 +877,10 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       if (pathname === '/api/auth/verify-email') {
         if (method === 'OPTIONS' && verifyEmailApi.onRequestOptions) return await verifyEmailApi.onRequestOptions(context);
         if (method === 'POST' && verifyEmailApi.onRequestPost) return await verifyEmailApi.onRequestPost(context);
+      }
+      if (pathname === '/api/auth/turnstile-config') {
+        if (method === 'OPTIONS') return await turnstileConfigApi.onRequestOptions(context);
+        if (method === 'GET') return await turnstileConfigApi.onRequestGet(context);
       }
 
       // 5. /api/orders/*

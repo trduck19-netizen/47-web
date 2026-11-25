@@ -375,7 +375,8 @@
       "errEnterPass": "Please enter your administrator password.",
       "errNoAccess": "This account does not have administrator privileges.",
       "errInvalidAuth": "Incorrect username or password.",
-      "errGeneric": "Authentication error occurred. Please try again."
+      "errGeneric": "Authentication error occurred. Please try again.",
+      "errTurnstileRequired": "Please complete the Cloudflare Turnstile security verification."
     },
     "sidebar": {
       "overview": "OVERVIEW",

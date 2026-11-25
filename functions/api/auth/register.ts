@@ -1,4 +1,5 @@
 import { ensureSchemaUpgrades } from '../../services/d1_service';
+import { verifyTurnstileRequest } from '../../services/turnstile_service';
 import { createSignedToken, getSigningSecret, computeHash, hashPasswordPBKDF2 } from '../../services/auth_service';
 
 interface Env {
@@ -8,6 +9,7 @@ interface Env {
   PASSWORD_PEPPER?: string;
   TURNSTILE_SECRET_KEY?: string;
   CF_TURNSTILE_SECRET?: string;
+  TURNSTILE_ENABLED?: string;
   ENVIRONMENT?: string;
 }
 
@@ -78,47 +80,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const country = request.headers.get('cf-ipcountry') || 'VN';
 
     // 2. Turnstile Anti-bot Token check
-    const turnstileSecret = env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET;
-    if (!turnstileSecret) {
-      if (env.ENVIRONMENT === 'development') {
-        console.warn('[Turnstile] Dev mode bypass (ENVIRONMENT === development)');
-      } else {
-        return new Response(
-          JSON.stringify({ success: false, message: 'Xác minh bảo mật chống bot chưa được cấu hình trên máy chủ. Vui lòng liên hệ quản trị viên.' }),
-          { status: 503, headers: CORS_HEADERS }
-        );
-      }
-    } else {
-      if (!turnstileToken) {
-        return new Response(
-          JSON.stringify({ success: false, message: 'Yêu cầu mã xác thực chống bot Cloudflare Turnstile.' }),
-          { status: 400, headers: CORS_HEADERS }
-        );
-      }
-      try {
-        const formData = new FormData();
-        formData.append('secret', turnstileSecret);
-        formData.append('response', turnstileToken);
-        formData.append('remoteip', clientIp);
-
-        const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-          method: 'POST',
-          body: formData,
-        });
-        const outcome: any = await verifyRes.json();
-        if (!outcome.success) {
-          return new Response(
-            JSON.stringify({ success: false, message: 'Xác minh bảo mật chống bot thất bại hoặc đã hết hạn.' }),
-            { status: 400, headers: CORS_HEADERS }
-          );
-        }
-      } catch (err: any) {
-        console.error('Turnstile verification network error:', err);
-        return new Response(
-          JSON.stringify({ success: false, message: 'Dịch vụ xác thực bảo mật tạm thời không khả dụng, vui lòng thử lại sau.' }),
-          { status: 503, headers: CORS_HEADERS }
-        );
-      }
+    const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
+    if (!turnstileCheck.ok) {
+      return turnstileCheck.response;
     }
 
     // 3. Check for duplicates in D1 (SSOT)
