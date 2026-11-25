@@ -188,13 +188,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     if (!member) {
-      if (skipAdminTurnstilePrecheck) {
-        // Không cho phép dùng isAdminLogin để dò tài khoản không phải admin
-        const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
-        if (!turnstileCheck.ok) {
-          return turnstileCheck.response;
-        }
-      }
       return await recordFailedAttempt(undefined, cleanIdentifier);
     }
 
