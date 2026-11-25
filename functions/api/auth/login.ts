@@ -1,5 +1,5 @@
 import { ensureSchemaUpgrades } from '../../services/d1_service';
-import { verifyTurnstileRequest } from '../../services/turnstile_service';
+import { verifyTurnstileRequest, isAdminTurnstileEnabled } from '../../services/turnstile_service';
 import {
   computeHash,
   hashPasswordPBKDF2,
@@ -18,6 +18,7 @@ interface Env {
   TURNSTILE_SECRET_KEY?: string;
   CF_TURNSTILE_SECRET?: string;
   TURNSTILE_ENABLED?: string;
+  ADMIN_TURNSTILE_ENABLED?: string;
   ENVIRONMENT?: string;
 }
 
@@ -56,7 +57,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     await ensureSchemaUpgrades(env.DB);
 
     const body: any = await request.json().catch(() => ({}));
-    const { identifier, password, rememberMe, turnstileToken } = body;
+    const { identifier, password, rememberMe, turnstileToken, isAdminLogin } = body;
 
     if (!identifier || !password) {
       return new Response(
@@ -70,10 +71,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const country = request.headers.get('cf-ipcountry') || 'VN';
     const nowMs = Date.now();
 
-    // 1. Turnstile Anti-bot Verification
-    const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
-    if (!turnstileCheck.ok) {
-      return turnstileCheck.response;
+    // 1. Turnstile Anti-bot Verification (bắt buộc cho trang khách; admin dùng cờ ADMIN_TURNSTILE_ENABLED)
+    const skipAdminTurnstilePrecheck = Boolean(isAdminLogin) && !isAdminTurnstileEnabled(env);
+    if (!skipAdminTurnstilePrecheck) {
+      const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
+      if (!turnstileCheck.ok) {
+        return turnstileCheck.response;
+      }
     }
 
     const cleanPassword = String(password || '').trim();
@@ -184,7 +188,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     if (!member) {
+      if (skipAdminTurnstilePrecheck) {
+        // Không cho phép dùng isAdminLogin để dò tài khoản không phải admin
+        const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
+        if (!turnstileCheck.ok) {
+          return turnstileCheck.response;
+        }
+      }
       return await recordFailedAttempt(undefined, cleanIdentifier);
+    }
+
+    // Nếu tài khoản tìm thấy không phải ADMIN/SUPER_ADMIN mà gửi isAdminLogin: true -> vẫn bắt buộc Turnstile trang khách
+    const roleUpper = String(member.role || '').toUpperCase();
+    if (skipAdminTurnstilePrecheck && roleUpper !== 'ADMIN' && roleUpper !== 'SUPER_ADMIN') {
+      const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
+      if (!turnstileCheck.ok) {
+        return turnstileCheck.response;
+      }
     }
 
     if (member.status === 'BANNED') {
@@ -340,7 +360,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       JSON.stringify({ country, rememberMe: Boolean(rememberMe) })
     ).run().catch(() => {});
 
-    const roleUpper = String(member.role || '').toUpperCase();
     const isAdmin = roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN';
 
     return new Response(

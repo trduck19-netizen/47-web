@@ -35,8 +35,21 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(initialErrorMessage || '');
   const [turnstileToken, setTurnstileToken] = useState('');
-  const [isTurnstileEnabled, setIsTurnstileEnabled] = useState<boolean | null>(null);
+  const [isTurnstileEnabled, setIsTurnstileEnabled] = useState<boolean>(false);
   const [turnstileResetTrigger, setTurnstileResetTrigger] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/auth/turnstile-config?scope=admin')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && typeof data.enabled === 'boolean') {
+          setIsTurnstileEnabled(data.enabled);
+        }
+      })
+      .catch(() => {
+        setIsTurnstileEnabled(false);
+      });
+  }, []);
 
   useEffect(() => {
     if (initialErrorMessage) {
@@ -105,6 +118,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
         password,
         rememberMe: rememberSession,
         turnstileToken: turnstileToken || undefined,
+        isAdminLogin: true,
       });
 
       if (res.success && res.user) {
@@ -284,17 +298,19 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
               </label>
             </div>
 
-            <TurnstileWidget
-              theme="dark"
-              onTokenChange={setTurnstileToken}
-              onEnabledChange={setIsTurnstileEnabled}
-              onError={setErrorMessage}
-              resetTrigger={turnstileResetTrigger}
-            />
+            {isTurnstileEnabled && (
+              <TurnstileWidget
+                theme="dark"
+                onTokenChange={setTurnstileToken}
+                onEnabledChange={setIsTurnstileEnabled}
+                onError={setErrorMessage}
+                resetTrigger={turnstileResetTrigger}
+              />
+            )}
 
             <button
               type="submit"
-              disabled={isLoading || isTurnstileEnabled === null || (isTurnstileEnabled === true && !turnstileToken)}
+              disabled={isLoading || (isTurnstileEnabled === true && !turnstileToken)}
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-lg shadow-cyan-500/20 transition active:scale-[0.99] cursor-pointer mt-2"
             >
               {isLoading ? (

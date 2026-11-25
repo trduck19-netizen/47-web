@@ -7,6 +7,22 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-25]
 
+### 466. Tắt Turnstile Riêng Cho Đăng Nhập Admin (`ADMIN_TURNSTILE_ENABLED`), Chốt Chặn Đăng Xuất `pine_explicit_logout`, Sửa Wishlist Metadata (`0 Core`) & Thêm RAM Cache + Timing Headers D1 (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý 4 nhóm yêu cầu sau kiểm chứng commit `4b98b4a`: (0) Tắt Turnstile riêng cho form đăng nhập Admin (`admin-universal-mall.pages.dev/admin`), giữ nguyên Turnstile bắt buộc trên Web Khách; (1) Chống hồi sinh phiên sau khi đăng xuất & giữ badge/drawer Wishlist về `0`; (2) Sửa `toggleWishlistItem()` đọc `params.metadata` để tránh `"0 Core"` và mất tên; (3) Bổ sung RAM cache cho `ensureCodeReportsSchema`/`ensureGameCommentsSchema` và header đo thời gian `X-Timing-D1-Ms` / `X-Timing-Total-Ms`.
+- **Nguyên nhân gốc rễ & Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 0 — Tắt Turnstile riêng cho Admin Login*:
+     - `functions/services/turnstile_service.ts` & `functions/api/auth/turnstile-config.ts`: Thêm `isAdminTurnstileEnabled(env)` (mặc định `false`, chỉ bật khi `ADMIN_TURNSTILE_ENABLED === 'true'|'1'|'on'`) và hỗ trợ `?scope=admin`.
+     - `functions/api/auth/login.ts`: Hỗ trợ `isAdminLogin`; chỉ bỏ qua kiểm tra Turnstile trước khi truy vấn nếu `isAdminLogin && !isAdminTurnstileEnabled(env)`, sau đó xác minh bắt buộc `member.role` là `'ADMIN'` hoặc `'SUPER_ADMIN'` (nếu tài khoản không tồn tại hoặc không phải Admin thì vẫn ép `verifyTurnstileRequest` chống giả mạo từ client). Giữ nguyên IP lockout 5 lần (`429`) và trả `401` khi sai mật khẩu.
+     - `src/admin/components/AdminLoginGuard.tsx` & `src/services/authService.ts`: Gọi `/api/auth/turnstile-config?scope=admin`, ẩn widget Turnstile khi tắt, bỏ chặn nút Submit, gửi `isAdminLogin: true` khi đăng nhập Admin.
+  2. *Nhóm 1 — Chốt chặn đăng xuất tuyệt đối (`pine_explicit_logout`)*:
+     - `src/services/dataService.ts` & `src/services/authService.ts`: Ghi `localStorage.setItem('pine_explicit_logout', '1')` trong `clearUserMultiTier()`, chặn `getCurrentUser()`, `persistUserMultiTier()`, `saveCurrentUser(user !== null)` và `refreshCurrentUserBalance()` khi cờ tồn tại; chỉ gỡ cờ trong `saveSession()` khi người dùng đăng nhập/đăng ký lại thực sự.
+  3. *Nhóm 2 — Đồng bộ metadata vào D1 Wishlist*:
+     - `functions/services/wishlist_service.ts`: Đọc fallback từ `params.metadata` (`title`/`name`/`item_title`, `image_url`/`item_image`/`coverUrl`, `price`/`price_core`/`priceCore`) trong `toggleWishlistItem()` để lưu đúng tên, ảnh và giá vào D1.
+  4. *Nhóm 3 — Hoàn thiện RAM cache D1 & Timing Headers*:
+     - `functions/services/d1_service.ts`: Thêm cờ RAM cache `_codeReportsSchemaEnsured` và `_gameCommentsSchemaEnsured` (đạt 5/5 hàm `ensure*Schema` có cache RAM).
+     - `functions/api/sync-lite.ts` & `functions/api/admin/automation/status.ts`: Trả thêm header `X-Timing-D1-Ms` và `X-Timing-Total-Ms` phục vụ profiling thực tế.
+
 ### 465. Đăng Xuất Bền Vững Mọi Tầng, Sửa Wishlist Drawer, Cắt Độ Trễ 5 Hàm `ensure*Schema`, Phát Sự Kiện Đồng Bộ Khi Đăng Nhập & Bắt Buộc Turnstile (25/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Xử lý 4 nhóm lỗi phát hiện sau kiểm chứng commit `032fd12` theo bản kế hoạch đã duyệt với 2 sửa (`ke_hoach_sua_not_sau_032fd12_25_11.md`).

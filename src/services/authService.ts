@@ -22,6 +22,7 @@ export interface LoginPayload {
   password?: string;
   rememberMe?: boolean;
   turnstileToken?: string;
+  isAdminLogin?: boolean;
 }
 
 export interface AuthResponse {
@@ -203,7 +204,7 @@ class AuthService {
 
   // Login Member
   async login(payload: LoginPayload): Promise<AuthResponse> {
-    const { identifier, password, rememberMe, turnstileToken } = payload;
+    const { identifier, password, rememberMe, turnstileToken, isAdminLogin } = payload;
 
     if (!identifier || !identifier.trim()) {
       return { success: false, message: 'Vui lòng nhập tên đăng nhập hoặc email.' };
@@ -225,6 +226,7 @@ class AuthService {
           password,
           rememberMe,
           turnstileToken,
+          isAdminLogin: Boolean(isAdminLogin),
         }),
       });
 
@@ -429,6 +431,11 @@ class AuthService {
 
   // Session Management
   saveSession(user: UserProfile, token: string, remember: boolean = true): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('pine_explicit_logout');
+      }
+    } catch {}
     if (user && token) {
       user.session_token = token;
     }

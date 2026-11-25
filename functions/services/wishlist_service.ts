@@ -57,11 +57,12 @@ export async function toggleWishlistItem(
       return { success: false, is_bookmarked: false, message: 'Thiếu item_id.' };
     }
 
-    const rawType = params.item_type || params.target_type || 'game';
+    const meta = (params as any).metadata || {};
+    const rawType = params.item_type || params.target_type || meta.item_type || meta.target_type || 'game';
     const item_type = rawType === 'product' ? 'product' : 'game';
-    const item_title = (params.item_title || params.title || params.name || '').trim();
-    const item_image = (params.item_image || params.image_url || params.coverUrl || '').trim();
-    const price_core = Number(params.price_core ?? params.priceCore ?? 0);
+    const item_title = (params.item_title || params.title || params.name || meta.title || meta.name || meta.item_title || '').trim();
+    const item_image = (params.item_image || params.image_url || params.coverUrl || meta.image_url || meta.item_image || meta.coverUrl || '').trim();
+    const price_core = Number(params.price_core ?? params.priceCore ?? meta.price ?? meta.price_core ?? meta.priceCore ?? 0);
 
     // Kiểm tra đã có trong wishlist chưa
     const existing = await db

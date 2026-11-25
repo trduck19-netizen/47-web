@@ -3856,6 +3856,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   public persistUserMultiTier(user: UserProfile): void {
     if (typeof window === 'undefined' || !user || !user.id) return;
     try {
+      if (localStorage.getItem('pine_explicit_logout') === '1') return;
+    } catch {}
+    try {
       const userStr = JSON.stringify(user);
       localStorage.setItem(this.USER_KEY, userStr);
       localStorage.setItem('pine_persistent_account', userStr);
@@ -3885,6 +3888,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     this.logoutEpoch += 1;
     if (typeof window === 'undefined') return;
     try {
+      localStorage.setItem('pine_explicit_logout', '1');
       localStorage.removeItem(this.USER_KEY);
       localStorage.removeItem('pine_persistent_account');
       localStorage.removeItem('pine_auth_token');
@@ -3921,6 +3925,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   // --- USER AUTH & WALLET ---
   getCurrentUser(): UserProfile | null {
     try {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('pine_explicit_logout') === '1') {
+        return null;
+      }
       let data = typeof localStorage !== 'undefined' ? localStorage.getItem(this.USER_KEY) : null;
       if (!data && typeof localStorage !== 'undefined') {
         data = localStorage.getItem('pine_persistent_account');
@@ -3977,6 +3984,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
   saveCurrentUser(user: UserProfile | null): void {
     if (user) {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('pine_explicit_logout') === '1') {
+        return;
+      }
       if (!user.session_token && typeof localStorage !== 'undefined') {
         let savedToken =
           localStorage.getItem('pine_auth_token') ||
@@ -4638,6 +4648,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   // Refresh current user's balance from Cloudflare Edge and local transactions
   async refreshCurrentUserBalance(): Promise<number> {
     const startEpoch = this.logoutEpoch;
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('pine_explicit_logout') === '1') {
+      return 0;
+    }
     const user = this.getCurrentUser();
     if (!user || !user.id) return 0;
 

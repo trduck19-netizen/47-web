@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-327: Chặn Hồi Sinh Phiên Qua `pine_explicit_logout`, Bắt Buộc Role Admin Khi Bỏ Turnstile Admin & Đọc `metadata` Trong `toggleWishlistItem` (25/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - Người dùng đăng xuất nhưng session vẫn có thể bị ghi lại bởi `persistUserMultiTier`/`saveCurrentUser`/`refreshCurrentUserBalance` nếu có tab khác hoặc event ngầm kích hoạt.
+  - `toggleWishlistItem()` nhận dữ liệu từ `params.metadata` của client nhưng chỉ đọc top-level `params.item_title`/`params.price_core`, gây lưu `0 Core` và fallback ID thô trong D1.
+  - Mở khóa Admin Login không cần Turnstile có thể bị client thường lạm dụng nếu backend không xác minh `member.role` là `ADMIN`/`SUPER_ADMIN`.
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 466)**:
+  - Dùng chốt `localStorage['pine_explicit_logout'] = '1'` tại `clearUserMultiTier()`, chỉ xóa tại `authService.saveSession()`.
+  - Tách riêng `ADMIN_TURNSTILE_ENABLED` (mặc định `false`) và `/api/auth/turnstile-config?scope=admin`; backend chỉ bỏ qua Turnstile khi `isAdminLogin` và tài khoản thực tế có role `ADMIN` hoặc `SUPER_ADMIN`.
+  - Cập nhật `toggleWishlistItem()` đọc fallback từ `params.metadata`, bổ sung RAM cache cho `ensureCodeReportsSchema`/`ensureGameCommentsSchema` và header `X-Timing-D1-Ms`/`X-Timing-Total-Ms`.
+
 ### ISSUE-326: Bẫy Race Condition `/api/auth/me` Hồi Sinh Phiên Đã Đăng Xuất, 5 Hàm `ensure*Schema` Chạy Trước `appliedMigSet` & Magic-String Turnstile
 - **Triệu chứng & Rủi ro**:
   - Sau khi bấm Đăng xuất, nếu request `/api/auth/me` đang chạy ngầm trả về muộn thì `persistUserMultiTier(user)` hồi sinh lại toàn bộ 4 tầng session + 2 cookie, đồng thời `pine_admin_members_v4` còn sót `session_token`.

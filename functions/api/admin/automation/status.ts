@@ -75,6 +75,7 @@ async function readSystemSettingJson(db: D1Database, key: string): Promise<any> 
  * Lấy trạng thái sức khỏe và cấu hình tổng thể của 6 kênh tích hợp cốt lõi
  */
 export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const reqStart = Date.now();
   const { request, env } = context;
 
   try {
@@ -264,7 +265,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         },
         services,
       }),
-      { status: 200, headers: CORS_HEADERS }
+      {
+        status: 200,
+        headers: {
+          ...CORS_HEADERS,
+          'X-Timing-D1-Ms': String(d1Latency),
+          'X-Timing-Total-Ms': String(Date.now() - reqStart),
+        },
+      }
     );
   } catch (err: any) {
     return new Response(

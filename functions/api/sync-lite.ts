@@ -31,6 +31,7 @@ export const onRequestOptions: PagesFunction = async () => {
  * Chỉ chứa các trường thiết yếu để vẽ màn hình đầu tiên, banner, autocomplete và tin mới nhất.
  */
 export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const reqStart = Date.now();
   const { env, request } = context;
   const url = new URL(request.url);
 
@@ -73,8 +74,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     let d1Settings: Record<string, any> = {};
     let tombstonesMap = new Map();
     let spList: any[] = [];
+    let d1DurationMs = 0;
 
     if (env.DB) {
+      const d1Start = Date.now();
       const [tombstonesRes, settingsRes, storeProdsRes] = await Promise.all([
         getActiveTombstonesMap(env.DB),
         getMultipleSettingsD1(
@@ -101,6 +104,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         ),
         loadAllStoreProductsD1(env.DB),
       ]);
+      d1DurationMs = Date.now() - d1Start;
       tombstonesMap = tombstonesRes || new Map();
       d1Settings = settingsRes || {};
       spList = storeProdsRes || [];
@@ -352,6 +356,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         'CDN-Cache-Control': isNoCache ? 'no-store' : 'public, max-age=300',
         'X-Server-Time': new Date().toISOString(),
         'X-Cache-Status': isNoCache ? 'BYPASS' : 'DYNAMIC',
+        'X-Timing-D1-Ms': String(d1DurationMs),
+        'X-Timing-Total-Ms': String(Date.now() - reqStart),
       },
     });
 

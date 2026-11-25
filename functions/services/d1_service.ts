@@ -766,7 +766,10 @@ export async function ensureUtilitiesSchema(db: D1Database): Promise<void> {
 /**
  * Safe runtime schema for 1-Tap Code Reports (code_reports)
  */
+let _codeReportsSchemaEnsured = false;
+
 export async function ensureCodeReportsSchema(db: D1Database): Promise<void> {
+  if (_codeReportsSchemaEnsured) return;
   try {
     await db.prepare(`
       CREATE TABLE IF NOT EXISTS code_reports (
@@ -787,6 +790,7 @@ export async function ensureCodeReportsSchema(db: D1Database): Promise<void> {
     await db.prepare("CREATE INDEX IF NOT EXISTS idx_code_reports_game_code ON code_reports(game_slug, code);").run().catch(() => {});
     await db.prepare("CREATE INDEX IF NOT EXISTS idx_code_reports_user ON code_reports(user_id, created_at);").run().catch(() => {});
     await db.prepare("CREATE INDEX IF NOT EXISTS idx_code_reports_status ON code_reports(status, created_at);").run().catch(() => {});
+    _codeReportsSchemaEnsured = true;
   } catch (err: any) {
     console.warn('[ensureCodeReportsSchema error]', err?.message);
   }
@@ -795,7 +799,10 @@ export async function ensureCodeReportsSchema(db: D1Database): Promise<void> {
 /**
  * Safe runtime schema for Game Comments & Reviews (game_comments)
  */
+let _gameCommentsSchemaEnsured = false;
+
 export async function ensureGameCommentsSchema(db: D1Database): Promise<void> {
+  if (_gameCommentsSchemaEnsured) return;
   try {
     await db.prepare(`
       CREATE TABLE IF NOT EXISTS game_comments (
@@ -816,6 +823,7 @@ export async function ensureGameCommentsSchema(db: D1Database): Promise<void> {
 
     await db.prepare("CREATE INDEX IF NOT EXISTS idx_game_comments_game_status ON game_comments(game_slug, status, created_at);").run().catch(() => {});
     await db.prepare("CREATE INDEX IF NOT EXISTS idx_game_comments_user_game ON game_comments(user_id, game_slug);").run().catch(() => {});
+    _gameCommentsSchemaEnsured = true;
   } catch (err: any) {
     console.warn('[ensureGameCommentsSchema error]', err?.message);
   }
