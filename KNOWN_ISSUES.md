@@ -10,6 +10,29 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-320: Bẫy Ghi Cứng Số Liệu Catalog/Pending Codes Trong Kiểm Tra Toàn Vẹn Tầng Dữ Liệu & Nhầm Lẫn Substring Automation
+- **Triệu chứng & Rủi ro**:
+  - Trang Crawler (`#/crawler`) liên tục báo động đỏ `🚨 LỆCH TẦNG DỮ LIỆU` dù hệ thống và kết nối hoàn toàn khỏe mạnh.
+  - Trang SePay (`#/sepay`) mâu thuẫn hiển thị giữa banner đầu trang và kết quả kiểm tra API key.
+  - Bộ quét kiểm thử tự động báo sai rằng nút "Ảo" trong Tiện ích chuyển tab sang "Nhật Ký Bảo Mật".
+  - Nút "Làm Mới" trang Telegram bị disabled vĩnh viễn khi mạng chậm.
+  - Nút nguy hiểm "Reset Ví & Doanh Thu" nằm sát nút "Điều Chỉnh Ví" có nguy cơ bấm nhầm.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  1. Trong `CrawlerModule.tsx` và `functions/api/sync.ts`, cờ `isMismatch` so khớp với **số ghi cứng** `pendingGames.length !== 63 || pendingCodes.length !== 22`. Khi số game chờ thực tế thay đổi (ví dụ: duyệt 1 game còn 62), cờ lập tức kích hoạt báo động sai.
+  2. Top Banner SePay ban đầu không liên kết với `apiTestResult`, trong khi nếu chỉ kiểm tra `apiKey.length >= 6` thì gõ ký tự bừa cũng làm banner xanh trong khi chưa có key thật.
+  3. Script automation tìm nút theo substring `ảo` đã vô tình khớp vào menu "Nhật Ký B**ảo** Mật" trên sidebar, và `Kho` khớp vào "Kho Mã & Gói Bán".
+  4. Hàm `loadTelegramData` gọi API thiếu `AbortController` timeout, khiến request treo thì khối `finally` không chạy, kẹt `isLoading = true`.
+  5. Nút Reset ví thiếu khu vực cách ly và thiếu chốt chặn gõ xác nhận bắt buộc.
+- **Cạm bẫy đã thất bại (Failed Attempts)**:
+  - Chỉ sửa câu chữ cảnh báo mà không xóa số ghi cứng 63/22 trong `isMismatch`: Cờ báo động vẫn bị bật.
+  - Cho phép banner SePay xanh khi `apiKey.length >= 6`: Gây mâu thuẫn hiển thị xanh ảo khi người dùng mới chỉ gõ text vào ô input.
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 459)**:
+  - Bỏ hoàn toàn số ghi cứng khỏi `isMismatch` và `authoritativeBaseline`. Cờ chỉ bật khi có alert thực sự từ server hoặc offline fallback lỗi.
+  - Banner SePay chỉ xanh khi đã lưu (`isConnected`) hoặc test thành công (`apiTestResult.success`). Tự động lưu `isConnected: true` khi test pass.
+  - Đổi nhãn `Ảo` → `Số ảo`, `Kho` → `Kho mã` và gắn `data-testid` chuyên biệt, loại bỏ 100% rủi ro khớp nhầm substring.
+  - Bổ sung `AbortController` timeout 8s cho cả Telegram và Crawler.
+  - Cách ly nút Reset ví vào Danger Zone có viền nét đứt cảnh báo và yêu cầu gõ chính xác `RESET_ZERO` trước khi mở modal 2FA.
+
 ### ISSUE-319: Bẫy Tái Phình To Tài Nguyên Media & Bundle Do Thiếu Rào Chắn Ngân Sách Kích Thước Tự Động (Asset Budgets)
 - **Triệu chứng & Rủi ro**:
   - Sau các chiến dịch tinh gọn, nếu thiếu công cụ kiểm tra kích thước tự động trong quy trình build, các đợt phát triển tiếp theo rất dễ vô tình nạp thêm file JSON nặng hàng MB, ảnh uncompressed > 500 KB, hoặc import tĩnh module Admin khiến hệ thống phình to trở lại.

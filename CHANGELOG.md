@@ -5,6 +5,43 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-25]
+
+### 459. Sửa Gộp 5 Bất Thường Admin Console v4.0 & Gia Cố Chốt Chặn An Toàn Nút Ví (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Dựa trên Báo Cáo Kiểm Tra Toàn Bộ Nút Bấm Trang Quản Trị (Admin Console v4.0) ngày 25/11/2026 và phê duyệt của người dùng kèm 3 sửa đổi bắt buộc (Sửa 1 Crawler, Sửa 2 SePay, Sửa 3 Tiện Ích).
+  - Khắc phục triệt để 5 điểm bất thường hiển thị và tăng cường cơ chế bảo vệ chống bấm nhầm dữ liệu tài chính.
+- **Giải pháp áp dụng (Solution)**:
+  1. *B.1 — Marketing (`#/marketing`)*:
+     - Chuyển toàn bộ các chuỗi cứng `6 mục`, `mục 6/6`, `/6` sang biến độ dài động `{MARKETING_SUB_TABS.length}` (8 mục).
+     - Điều chỉnh lưới hiển thị 8 tab: `grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-1.5 sm:gap-2` hiển thị trọn vẹn 8 mục trên cùng 1 hàng theo chuẩn Single-Screen First.
+  2. *SỬA 2 — SePay (`#/sepay`)*:
+     - Loại bỏ hoàn toàn điều kiện `apiKey.length >= 6`. Cờ `isKeyEffective = Boolean(config?.isConnected || apiTestResult?.success)`.
+     - Trong `handleTestApiKey`: Khi API test trả về thành công, tự động gọi `adminDataService.updateSePayConfig({ isConnected: true })` lưu xuống D1/localStorage để banner xanh ngay lập tức và giữ nguyên trạng thái khi tải lại trang.
+  3. *SỬA 1 — Crawler (`#/crawler` - Sửa Gốc)*:
+     - Bỏ toàn bộ các số ghi cứng `560/63/22/7` khỏi `authoritativeBaseline`, fallback và điều kiện `isMismatch` trong cả `src/admin/modules/CrawlerModule.tsx` lẫn server endpoint `functions/api/sync.ts`.
+     - Cập nhật dòng cảnh báo 2212 dùng số liệu thực tế: `(${pendingGames.length} game chờ duyệt, ${pendingCodes.length} mã code)`.
+     - Thêm `AbortController` timeout an toàn 8 giây cho cả `loadData` và `fetchSyncStatus`.
+     - Bổ sung chú thích giải thích: D1 Catalog là 560 game chính thức đã duyệt trên D1; UI Client Cache hiển thị 593 game (bao gồm 33 game mới/danh mục mở rộng). Với dữ liệu hiện tại, trang hiển thị `✓ ĐỒNG NHẤT 100%`.
+  4. *SỬA 3 — Tiện Ích (`#/utilities` - Đính Chính & Phòng Ngừa)*:
+     - Đổi nhãn `Ảo` → `Số ảo`, `Kho` → `Kho mã` và gắn thuộc tính nhận diện `data-testid="btn-quick-fomo-util"`, `data-testid="btn-util-inventory-detail"`.
+     - *Đính chính*: Mã nguồn nút hoàn toàn không có lỗi điều hướng sang `#/security-logs`. Hiện tượng nhảy trang trước đó xảy ra do công cụ kiểm thử tự động so khớp chuỗi con `ảo` không phân biệt biên từ trúng menu sidebar "Nhật Ký B**ảo** Mật" và `Kho` trúng "Kho Mã & Gói Bán".
+  5. *B.5 — Telegram (`#/telegram`)*:
+     - Thêm `AbortController` timeout 8 giây cho hàm `loadTelegramData`, đảm bảo khối `finally` luôn giải phóng `setIsLoading(false)`, không để nút "Làm Mới" bị vô hiệu hóa (disabled).
+  6. *Mục D — Quản Lý Ví (`#/wallet`)*:
+     - Tách nút "Reset Ví & Doanh Thu" sang khu vực Danger Zone riêng biệt có viền nét đứt cảnh báo rủi ro, tách rời nút "Điều Chỉnh Ví".
+     - Bổ sung modal xác nhận gõ bắt buộc chuỗi ký tự `RESET_ZERO` trước khi mở modal xác thực bước 2 (2FA), loại bỏ 100% rủi ro vô tình bấm nhầm.
+- **Kiểm chứng thực tế & Kết quả**:
+  - `npm run check:i18n`: 19/19 files PASS (0 chuỗi tiếng Việt ghi cứng ngoài từ điển).
+  - `Lean Guard`: 5/5 Pre-build checks PASS, 4/4 Post-build checks PASS.
+  - `npm run build`: Exit code 0, Vite bundle và Edge Worker (`dist/_worker.js` 6.35 MB <= 10 MB) hoàn tất thành công.
+  - Commit ID: `688c683` đã đẩy lên nhánh `main` của GitHub.
+  - Deploy Live Cloudflare Pages:
+    - Web Khách: `https://universal-mall-shop.pages.dev` (Deployment: `6f6caaea`)
+    - Web Quản Trị: `https://admin-universal-mall.pages.dev` (Deployment: `ab44b102`)
+
+---
+
 ## [2026-11-24]
 
 ### 458. Sửa Gộp Các Lỗi Nhỏ (Tổng Hợp 24/11/2026): Turnstile i18n & Mở Rộng i18n Guard (24/11/2026)
