@@ -94,10 +94,11 @@ export async function authenticateWithGoogle(
 ): Promise<GoogleAuthResult> {
   const verifyRes = await verifyGoogleCredential(credential, expectedClientId);
   if (!verifyRes.valid || !verifyRes.payload) {
+    const errMsg = verifyRes.error || 'Xác thực Google thất bại.';
     return {
       success: false,
-      message: verifyRes.error || 'Xác thực Google thất bại.',
-      code: 'GOOGLE_VERIFY_FAILED',
+      message: errMsg,
+      code: errMsg.startsWith('GOOGLE_CLIENT_ID_MISMATCH') ? 'GOOGLE_CLIENT_ID_MISMATCH' : 'GOOGLE_VERIFY_FAILED',
     };
   }
 

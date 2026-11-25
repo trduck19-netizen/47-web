@@ -243,6 +243,36 @@ function runScanner() {
     }
   }
 
+  // Strict zero-ternary guard cho các file đã chuẩn hóa 100% sang t()
+  const STRICT_NO_TERNARY_FILES = [
+    'src/components/Header.tsx',
+    'src/components/AuthModal.tsx',
+    'src/admin/components/AdminSidebar.tsx',
+    'src/components/wishlist/WishlistDrawerModal.tsx',
+    'src/admin/modules/AutomationCenterModule.tsx',
+    'src/components/ProductDetailModal.tsx',
+  ];
+  for (const rel of STRICT_NO_TERNARY_FILES) {
+    const abs = path.join(__dirname, '..', rel);
+    if (!fs.existsSync(abs)) continue;
+    const lines = fs.readFileSync(abs, 'utf8').split('\n');
+    const ternaryViolations = [];
+    lines.forEach((line, idx) => {
+      if (/\bisEn\s*\?/.test(line)) {
+        ternaryViolations.push({
+          line: idx + 1,
+          type: 'TERNARY_IS_EN',
+          content: 'isEn ? ... : ...',
+          snippet: line.trim().slice(0, 120),
+        });
+      }
+    });
+    if (ternaryViolations.length > 0) {
+      totalViolations += ternaryViolations.length;
+      violationResults.push({ file: abs, violations: ternaryViolations });
+    }
+  }
+
   if (totalViolations > 0) {
     console.error('\n' + '='.repeat(80));
     console.error('🚨 [I18N SCANNER FAILED] PHÁT HIỆN CHUỖI TIẾNG VIỆT GHI CỨNG NGOÀI TỪ ĐIỂN!');

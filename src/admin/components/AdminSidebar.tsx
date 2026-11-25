@@ -110,82 +110,82 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const sections: NavSection[] = [
     {
-      title: isEn ? 'OVERVIEW' : 'TỔNG QUAN',
+      title: t('adminSidebarStrict.k1'),
       items: [
         {
           id: 'dashboard',
-          label: isEn ? 'Overview' : 'Tổng quan',
+          label: t('adminSidebarStrict.k2'),
           icon: LayoutDashboard,
         },
       ],
     },
     {
-      title: isEn ? 'CONTENT & GAMES' : 'NỘI DUNG & GAME',
+      title: t('adminSidebarStrict.k3'),
       items: [
         {
           id: 'games',
-          label: isEn ? 'Game Directory' : 'Quản lý Game',
+          label: t('adminSidebarStrict.k4'),
           icon: Gamepad2,
         },
         {
           id: 'news',
-          label: isEn ? 'News & Events' : 'Tin Tức Game & Code',
+          label: t('adminSidebarStrict.k5'),
           icon: Newspaper,
         },
         {
           id: 'free-codes',
-          label: isEn ? 'Free Codes' : 'Code Miễn Phí',
+          label: t('adminSidebarStrict.k6'),
           icon: Gift,
         },
         {
           id: 'giftcodes',
-          label: isEn ? 'User Submissions' : 'Duyệt Giftcode Khách',
+          label: t('adminSidebarStrict.k7'),
           icon: CheckSquare,
           badge: pendingGiftcodesCount,
           badgeColor: 'bg-amber-500 text-white',
         },
         {
           id: 'crawler',
-          label: isEn ? 'Crawler & Auto Sync' : 'Crawler & Auto Sync',
+          label: t('adminSidebarStrict.k8'),
           icon: Bot,
         },
         {
           id: 'content',
-          label: isEn ? 'Website CMS' : 'Nội Dung Web',
+          label: t('adminSidebarStrict.k9'),
           icon: Globe,
         },
         {
           id: 'translations',
-          label: isEn ? 'Translations (i18n)' : 'Quản Lý Bản Dịch (i18n)',
+          label: t('adminSidebarStrict.k10'),
           icon: Globe,
           badge: 'VI+EN',
           badgeColor: 'bg-cyan-500 text-neutral-950 font-bold',
         },
         {
           id: 'floating-notification',
-          label: isEn ? 'Floating Notifications' : 'Thông Báo Nổi',
+          label: t('adminSidebarStrict.k11'),
           icon: BellRing,
         },
         {
           id: 'homepage-sections',
-          label: isEn ? 'Homepage Layout' : 'Hiển Thị Trang Chủ',
+          label: t('adminSidebarStrict.k12'),
           icon: SlidersHorizontal,
         },
         {
           id: 'marketing',
-          label: isEn ? 'Marketing & FOMO' : 'Thông Báo Marketing',
+          label: t('adminSidebarStrict.k13'),
           icon: Megaphone,
         },
         {
           id: 'email-notifications',
-          label: isEn ? 'Email Alerts' : 'Thông Báo Email & Khách',
+          label: t('adminSidebarStrict.k14'),
           icon: Mail,
-          badge: isEn ? 'NEW' : 'MỚI',
+          badge: t('adminSidebarStrict.k15'),
           badgeColor: 'bg-emerald-500 text-neutral-950 font-bold',
         },
         {
           id: 'telegram',
-          label: isEn ? 'Telegram Bot' : 'Tích Hợp Telegram',
+          label: t('adminSidebarStrict.k16'),
           icon: Send,
           badge: 'BOT',
           badgeColor: 'bg-[#229ED9] text-white font-bold',
@@ -193,61 +193,61 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       ],
     },
     {
-      title: isEn ? 'COMMERCE & INVENTORY' : 'THƯƠNG MẠI & KHO',
+      title: t('adminSidebarStrict.k17'),
       items: [
         {
           id: 'code-inventory',
-          label: isEn ? 'Code Inventory' : 'Kho Code & Gói Bán',
+          label: t('adminSidebarStrict.k18'),
           icon: Package,
         },
         {
           id: 'utilities',
-          label: isEn ? 'Utilities' : 'Quản Lý Tiện Ích',
+          label: t('adminSidebarStrict.k19'),
           icon: Wrench,
         },
         {
           id: 'private-codes',
-          label: isEn ? 'VIP Codes & Giveaways' : 'Phát Code & Giveaway',
+          label: t('adminSidebarStrict.k20'),
           icon: KeyRound,
         },
         {
           id: 'event-scheduler',
-          label: isEn ? 'Event Scheduler' : 'Lịch Đếm Ngược Sự Kiện',
+          label: t('adminSidebarStrict.k21'),
           icon: Clock,
-          badge: isEn ? 'NEW' : 'MỚI',
+          badge: t('adminSidebarStrict.k22'),
           badgeColor: 'bg-amber-500 text-neutral-950 font-bold',
         },
         {
           id: 'orders',
-          label: isEn ? 'Orders & Fulfillment' : 'Đơn Hàng Code',
+          label: t('adminSidebarStrict.k23'),
           icon: ShoppingCart,
           badge: pendingOrdersCount,
           badgeColor: 'bg-sky-500 text-white',
         },
         {
           id: 'vouchers',
-          label: isEn ? 'Vouchers & Freeship' : 'Voucher & Freeship',
+          label: t('adminSidebarStrict.k24'),
           icon: Ticket,
           badge: 'SHOPEE',
           badgeColor: 'bg-orange-500 text-white font-bold',
         },
         {
           id: 'first-purchase',
-          label: isEn ? 'First Purchase Offers' : 'Ưu Đãi Mua Lần Đầu',
+          label: t('adminSidebarStrict.k25'),
           icon: Sparkles,
           badge: 'HOT',
           badgeColor: 'bg-rose-500 text-white font-bold',
         },
         {
           id: 'marketplace',
-          label: isEn ? 'Merchants Marketplace' : 'Sàn TMĐT & Gian Hàng',
+          label: t('adminSidebarStrict.k26'),
           icon: Store,
-          badge: isEn ? 'NEW' : 'MỚI',
+          badge: t('adminSidebarStrict.k27'),
           badgeColor: 'bg-emerald-500 text-neutral-950 font-bold',
         },
         {
           id: 'platform-leads',
-          label: isEn ? 'Platform SaaS Leads' : 'Khách Thuê / Mua Sàn',
+          label: t('adminSidebarStrict.k28'),
           icon: Rocket,
           badge: 'LEADS',
           badgeColor: 'bg-amber-500 text-neutral-950 font-bold',
@@ -255,42 +255,42 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       ],
     },
     {
-      title: isEn ? 'FINANCE & USERS' : 'TÀI CHÍNH & NGƯỜI DÙNG',
+      title: t('adminSidebarStrict.k29'),
       items: [
         {
           id: 'members',
-          label: isEn ? 'Members' : 'Thành viên',
+          label: t('adminSidebarStrict.k30'),
           icon: Users,
         },
         {
           id: 'wallet',
-          label: isEn ? 'Wallet Ledger' : 'Quản lý Ví',
+          label: t('adminSidebarStrict.k31'),
           icon: Wallet,
         },
         {
           id: 'sepay',
-          label: isEn ? 'SePay Gateway' : 'Liên Kết SePay',
+          label: t('adminSidebarStrict.k32'),
           icon: Zap,
         },
       ],
     },
     {
-      title: isEn ? 'GROWTH & MISSIONS' : 'TĂNG TRƯỞNG & NHIỆM VỤ',
+      title: t('adminSidebarStrict.k33'),
       items: [
         {
           id: 'missions',
-          label: isEn ? 'Missions & Tasks' : 'Quản Lý Nhiệm Vụ',
+          label: t('adminSidebarStrict.k34'),
           icon: CheckSquare,
         },
         {
           id: 'growth',
-          label: isEn ? 'Growth & Viral' : 'Tăng Trưởng & Viral',
+          label: t('adminSidebarStrict.k35'),
           icon: Rocket,
         },
       ],
     },
     {
-      title: isEn ? 'SYSTEM & SECURITY' : 'HỆ THỐNG & BẢO MẬT',
+      title: t('adminSidebarStrict.k36'),
       items: [
         {
           id: 'automation-center',
@@ -301,19 +301,19 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         },
         {
           id: 'api-keys',
-          label: isEn ? 'API Keys & Scopes' : 'Quản Lý Khóa API',
+          label: t('adminSidebarStrict.k37'),
           icon: KeyRound,
-          badge: isEn ? 'NEW' : 'MỚI',
+          badge: t('adminSidebarStrict.k38'),
           badgeColor: 'bg-indigo-500 text-white font-bold',
         },
         {
           id: 'security-logs',
-          label: isEn ? 'Security Audit Logs' : 'Nhật Ký Bảo Mật',
+          label: t('adminSidebarStrict.k39'),
           icon: ShieldAlert,
         },
         {
           id: 'profile',
-          label: isEn ? 'My Account' : 'Tài Khoản Của Tôi',
+          label: t('adminSidebarStrict.k40'),
           icon: UserCircle,
         },
       ],
@@ -363,8 +363,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <button
             onClick={onCloseMobile}
             className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-            title={t?.admin?.sidebar?.collapse || (isEn ? 'Close menu' : 'Đóng menu')}
-            aria-label={t?.admin?.sidebar?.collapse || (isEn ? 'Close menu' : 'Đóng menu')}
+            title={t?.admin?.sidebar?.collapse || t('adminSidebarStrict.k41')}
+            aria-label={t?.admin?.sidebar?.collapse || t('adminSidebarStrict.k42')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -373,7 +373,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         <button
           onClick={onToggleCollapse}
           className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          title={collapsed ? (isEn ? 'Expand menu' : 'Mở rộng menu') : (isEn ? 'Collapse menu' : 'Thu nhỏ menu')}
+          title={collapsed ? t('adminSidebarStrict.k43') : t('adminSidebarStrict.k44')}
         >
           {collapsed ? (
             <ChevronRight className="h-4 w-4" />
@@ -392,7 +392,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               type="text"
               value={navSearch}
               onChange={(e) => setNavSearch(e.target.value)}
-              placeholder={isEn ? 'Search modules...' : 'Tìm nhanh module...'}
+              placeholder={t('adminSidebarStrict.k45')}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-7 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-200"
             />
             {navSearch && (
@@ -477,7 +477,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           }`}
                         >
                           <Newspaper className="w-3 h-3 shrink-0" />
-                          <span>{isEn ? (t?.admin?.sidebar?.seoNews || 'SEO News Articles') : (t?.admin?.sidebar?.seoNews || 'Tin Tức Chuẩn SEO')}</span>
+                          <span>{t('adminSidebarStrict.k50')}</span>
                         </button>
                         <button
                           type="button"
@@ -494,7 +494,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           }`}
                         >
                           <Zap className="w-3 h-3 text-amber-500 shrink-0" />
-                          <span>{isEn ? 'Game Events' : 'Sự Kiện Game'}</span>
+                          <span>{t('adminSidebarStrict.k46')}</span>
                         </button>
                         <button
                           type="button"
@@ -511,7 +511,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           }`}
                         >
                           <Clock className="w-3 h-3 text-purple-500 shrink-0" />
-                          <span>{isEn ? 'Pending Queue' : 'Hàng Chờ Duyệt'}</span>
+                          <span>{t('adminSidebarStrict.k47')}</span>
                         </button>
                       </div>
                     )}
@@ -531,11 +531,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             className={`flex w-full items-center rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors ${
               collapsed ? 'justify-center' : 'justify-between'
             }`}
-            title={isEn ? 'Open client website' : 'Mở trang chủ khách hàng'}
+            title={t('adminSidebarStrict.k48')}
           >
             <div className="flex items-center gap-2">
               <ExternalLink className="h-4 w-4 text-indigo-500" />
-              {!collapsed && <span>{isEn ? 'Client Store' : 'Trang Khách Hàng'}</span>}
+              {!collapsed && <span>{t('adminSidebarStrict.k49')}</span>}
             </div>
             {!collapsed && <span className="text-[10px] text-slate-400">↗</span>}
           </button>

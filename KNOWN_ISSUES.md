@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-324: Bẫy Checkpoint Early-Return 1 Key Cứng Nuốt Migration Mới & Trùng Lặp Sản Phẩm Khi Merge 2 Bảng (`store_products` + `seller_products`)
+- **Triệu chứng & Rủi ro**:
+  - Checkpoint thoát sớm ở `d1_service.ts` kiểm tra 1 key đơn lẻ (`0047_google_oauth_and_wishlist_v1`) khiến mọi migration bổ sung phía sau (`0048`) không bao giờ chạy trên D1 live, làm `POST /api/admin/automation/config` lỗi `500 no such table: admin_settings`.
+  - `loadAllStoreProductsD1` nối thẳng `[...mappedLegacy, ...sellerProductsList]` không khử trùng lặp `id`, làm 7 sản phẩm của seller bị nhân đôi thành 14 phần tử (tổng 15) và khiến React reconciliation nhân đôi DOM node trong `.grid` lên 28 thẻ.
+  - `isValidApiKey()` chỉ kiểm tra độ dài và thiếu blocklist không phân biệt hoa/thường nên chuỗi giữ chỗ `SEPAY_KEY_MUSE_ACTIVE` gây báo `connected` giả.
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 463)**:
+  - Gỡ bỏ hoàn toàn early-return 1 key cứng ở `d1_service.ts`; để từng migration tự kiểm tra key của chính nó trong `schema_migrations`.
+  - Khử trùng lặp theo `id` bằng `Map` trong `loadAllStoreProductsD1` và `ShopeeTestView.tsx`.
+  - Chặn chuỗi giữ chỗ không phân biệt hoa/thường (`active`, `api_key`, ...) và yêu cầu cờ `isConnected === true` cho `sepayConnected`.
+
 ### ISSUE-323: Bẫy Ghi Vào Bảng Chưa Tạo (`admin_settings`), Đọc Nhầm Bảng Cấu Hình (`sepay_config`), Độ Trễ Giả Lập & Lệch Bộ Đếm Tìm Kiếm UI
 - **Triệu chứng & Rủi ro**:
   - Bấm công tắc Bật/Tắt trong Automation Center gọi `POST /api/admin/automation/config` bị lỗi 500 do bảng `admin_settings` chưa tồn tại trong D1.

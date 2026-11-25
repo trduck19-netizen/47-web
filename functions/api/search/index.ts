@@ -40,6 +40,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const productType = (url.searchParams.get('product_type') as any) || undefined;
     const minPrice = url.searchParams.get('min_price') ? Number(url.searchParams.get('min_price')) : undefined;
     const maxPrice = url.searchParams.get('max_price') ? Number(url.searchParams.get('max_price')) : undefined;
+    const ratingParam = url.searchParams.get('rating') || url.searchParams.get('min_rating');
+    const rating = ratingParam ? Number(ratingParam) : undefined;
     const sort = (url.searchParams.get('sort') as any) || 'popular';
     const page = url.searchParams.get('page') ? Number(url.searchParams.get('page')) : 1;
     const limit = url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 20;
@@ -52,6 +54,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       productType,
       minPrice,
       maxPrice,
+      rating,
       sort,
       page,
       limit,

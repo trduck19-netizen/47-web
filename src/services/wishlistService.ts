@@ -36,7 +36,12 @@ class WishlistService {
         this.syncWishlistToServer().catch(() => {});
       });
       window.addEventListener('pine_auth_state_changed', () => {
-        this.fetchFromServer().catch(() => {});
+        if (this.getAuthToken()) {
+          this.fetchFromServer().catch(() => {});
+        } else {
+          this.inMemoryWishlist = [];
+          this.saveToLocalStorage();
+        }
       });
     }
   }
@@ -46,7 +51,10 @@ class WishlistService {
     try {
       const raw = localStorage.getItem(this.STORAGE_KEY);
       if (raw) {
-        this.inMemoryWishlist = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        this.inMemoryWishlist = Array.isArray(parsed)
+          ? parsed.filter((item: any) => item && typeof item.target_id === 'string' && item.target_id.trim() !== '')
+          : [];
       }
     } catch {
       this.inMemoryWishlist = [];

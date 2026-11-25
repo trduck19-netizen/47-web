@@ -153,7 +153,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
         [serviceId]: {
           success: false,
           message: errMsg,
-          latencyMs: 8000,
+          latencyMs: 0,
         },
       }));
       if (onShowToast) onShowToast(errMsg, 'error');

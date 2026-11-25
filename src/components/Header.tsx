@@ -180,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
             className="flex items-center gap-1.5 sm:gap-2 group shrink-0 cursor-pointer select-none"
-            aria-label={isEn ? 'Return to Home / Code Lookup' : 'Về trang chủ tra cứu code'}
+            aria-label={t('headerStrict.k1')}
           >
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary via-primary-hover to-accent flex items-center justify-center shadow-glow-primary group-hover:scale-105 transition-transform overflow-hidden shrink-0">
               {branding?.logoUrl ? (
@@ -302,10 +302,10 @@ export const Header: React.FC<HeaderProps> = ({
             <a
               href="#giai-phap-san"
               className="hidden lg:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:border-amber-500/60"
-              title={isEn ? 'Turnkey E-commerce Mall Solutions & Licensing' : 'Giải pháp bán đứt hoặc cho thuê sàn TMĐT chuyên nghiệp'}
+              title={t('headerStrict.k2')}
             >
               <Rocket className="w-3.5 h-3.5 text-amber-400" />
-              <span>{isEn ? 'Rent / Buy Mall' : 'Thuê / Mua Sàn'}</span>
+              <span>{t('headerStrict.k3')}</span>
               <span className="text-[9px] px-1 rounded bg-amber-500 text-neutral-950 font-black">HOT</span>
             </a>
 
@@ -319,10 +319,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenPlayground}
                 className="hidden sm:flex relative items-center gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 hover:from-amber-500/25 hover:to-rose-500/25 border border-amber-500/40 text-amber-300 font-extrabold text-xs transition-all active:scale-95 shadow-sm cursor-pointer group"
-                title={isEn ? 'Newbie Rewards, Lucky Wheel & Affiliate Commission' : 'Săn Quà Tân Thủ, Vòng Quay May Mắn & Mời Bạn Nhận Hoa Hồng'}
+                title={t('headerStrict.k4')}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform animate-pulse" />
-                <span className="hidden xs:inline">{isEn ? 'Rewards' : 'Săn Quà'}</span>
+                <span className="hidden xs:inline">{t('headerStrict.k5')}</span>
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-sm">
                   FREE
                 </span>
@@ -334,10 +334,10 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onOpenDownloadApp}
               className="relative flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-2 rounded-xl bg-gradient-to-r from-primary/15 via-purple-500/15 to-accent/15 hover:from-primary/25 hover:to-accent/25 border border-primary/40 text-primary-light font-extrabold text-xs transition-all active:scale-95 shadow-sm cursor-pointer group shrink-0"
-              title={isEn ? 'Install App on mobile (Get instant codes & gifts)' : 'Cài đặt App Pine Universal Mall lên điện thoại (Nhận code mới & Quà tặng tức thì)'}
+              title={t('headerStrict.k6')}
             >
               <Smartphone className="w-3.5 h-3.5 text-primary-light group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">{isEn ? 'Download App' : 'Tải App'}</span>
+              <span className="hidden sm:inline">{t('headerStrict.k7')}</span>
               <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm">
                 APP
               </span>
@@ -349,8 +349,8 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenCart}
                 className="relative p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border text-muted-foreground hover:text-foreground transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
-                title={isEn ? 'Mall Shopping Cart' : 'Giỏ hàng đa gian hàng'}
-                aria-label={isEn ? 'Mall Shopping Cart' : 'Giỏ hàng đa gian hàng'}
+                title={t('headerStrict.k8')}
+                aria-label={t('headerStrict.k9')}
               >
                 <ShoppingCart className="w-4 h-4 text-primary" />
                 {cartCount > 0 && (
@@ -411,7 +411,7 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     className="relative flex items-center gap-1.5 p-1 sm:p-1.5 rounded-xl bg-card hover:bg-card-hover border border-border text-xs transition-all cursor-pointer shadow-sm active:scale-95 group shrink-0"
                     title={`${currentUser.displayName || currentUser.username} • ${formatCore(currentUser.wallet_balance)}`}
-                    aria-label={isEn ? 'Character & Account Info' : 'Thông tin nhân vật'}
+                    aria-label={t('headerStrict.k10')}
                   >
                     <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-primary/20 text-primary-light flex items-center justify-center overflow-hidden border border-border shrink-0">
                       {currentUser.avatar_url ? (
@@ -448,7 +448,7 @@ export const Header: React.FC<HeaderProps> = ({
                           if (onOpenProfile) onOpenProfile();
                         }}
                         className="w-full p-2.5 border-b border-border/60 flex items-start gap-2.5 rounded-xl hover:bg-primary/10 transition-colors text-left cursor-pointer group"
-                        title={isEn ? 'View & Edit Profile' : 'Xem & Chỉnh sửa thông tin nhân vật'}
+                        title={t('headerStrict.k11')}
                       >
                         <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden border border-border shrink-0 mt-0.5 group-hover:border-primary/50 transition-colors">
                           {currentUser.avatar_url ? (
@@ -463,7 +463,7 @@ export const Header: React.FC<HeaderProps> = ({
                               {currentUser.displayName || currentUser.username}
                             </span>
                             <span className="text-[10px] text-primary-light font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                              {isEn ? 'Edit ↗' : 'Sửa ↗'}
+                              {t('headerStrict.k12')}
                             </span>
                           </div>
                           <span className="text-[10px] text-muted-foreground truncate block mb-1">
@@ -471,7 +471,7 @@ export const Header: React.FC<HeaderProps> = ({
                           </span>
                           {/* Số dư ngay dưới mail */}
                           <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
-                            <span className="text-[10px] text-muted-foreground">{isEn ? 'Balance:' : 'Số dư:'}</span>
+                            <span className="text-[10px] text-muted-foreground">{t('headerStrict.k13')}</span>
                             <span className="font-mono font-bold text-emerald-400 text-xs">
                               {formatCore(currentUser.wallet_balance)}
                             </span>
@@ -491,10 +491,10 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <User className="w-4 h-4 text-primary-light group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">{isEn ? 'Character Profile' : 'Thông Tin Nhân Vật'}</span>
+                          <span className="font-medium">{t('headerStrict.k14')}</span>
                         </span>
                         <span className="text-[10px] text-primary-light font-bold">
-                          {isEn ? 'Profile ↗' : 'Hồ sơ ↗'}
+                          {t('headerStrict.k15')}
                         </span>
                       </button>
 
@@ -549,14 +549,14 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <span className="flex items-center gap-2">
                             <ShoppingCart className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                            <span className="font-medium">{isEn ? 'Mall Cart' : 'Giỏ Hàng Đa Gian Hàng'}</span>
+                            <span className="font-medium">{t('headerStrict.k16')}</span>
                           </span>
                           {cartCount > 0 ? (
                             <span className="text-[10px] text-primary font-bold bg-primary/20 px-2 py-0.5 rounded-full">
-                              {cartCount} {isEn ? 'items' : 'món'}
+                              {cartCount} {t('headerStrict.k17')}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground font-medium">{isEn ? '0 items' : '0 món'}</span>
+                            <span className="text-[10px] text-muted-foreground font-medium">{t('headerStrict.k18')}</span>
                           )}
                         </button>
                       )}
@@ -574,14 +574,14 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <span className="flex items-center gap-2">
                             <Heart className={`w-4 h-4 group-hover:scale-110 transition-transform ${wishlistCount > 0 ? 'text-rose-500 fill-rose-500' : 'text-muted-foreground'}`} />
-                            <span className="font-medium">{isEn ? 'Wishlist' : 'Danh Sách Yêu Thích'}</span>
+                            <span className="font-medium">{t('headerStrict.k19')}</span>
                           </span>
                           {wishlistCount > 0 ? (
                             <span className="text-[10px] text-rose-500 font-bold bg-rose-500/20 px-2 py-0.5 rounded-full">
-                              {wishlistCount} {isEn ? 'items' : 'mục'}
+                              {wishlistCount} {t('headerStrict.k20')}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground font-medium">{isEn ? '0 items' : '0 mục'}</span>
+                            <span className="text-[10px] text-muted-foreground font-medium">{t('headerStrict.k21')}</span>
                           )}
                         </button>
                       )}
@@ -598,10 +598,10 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <Store className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-                          <span className="font-bold text-purple-300">{isEn ? 'Seller Center' : 'Kênh Người Bán'}</span>
+                          <span className="font-bold text-purple-300">{t('headerStrict.k22')}</span>
                         </span>
                         <span className="text-[10px] text-purple-300 font-bold bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30">
-                          {isEn ? 'Shop' : 'Gian Hàng'}
+                          {t('headerStrict.k23')}
                         </span>
                       </button>
 
@@ -617,7 +617,7 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <Award className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                          <span className="font-bold text-amber-300">{isEn ? 'Daily Missions' : 'Nhiệm Vụ Nhận Quà'}</span>
+                          <span className="font-bold text-amber-300">{t('headerStrict.k24')}</span>
                         </span>
                         <span className="text-[10px] text-amber-400 font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
                           HOT
@@ -636,7 +636,7 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <Send className="w-4 h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
-                          <span className="font-bold text-foreground">{isEn ? 'Telegram Alerts' : 'Thông Báo Telegram'}</span>
+                          <span className="font-bold text-foreground">{t('headerStrict.k25')}</span>
                         </span>
                         <span className="text-[10px] text-[#229ED9] font-bold bg-[#229ED9]/20 px-2 py-0.5 rounded-full border border-[#229ED9]/40">
                           BOT
@@ -652,19 +652,19 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenBookmarks();
                         }}
                         className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
-                        title={isEn ? 'Saved games and watchlist' : 'Xem danh sách game đã lưu và theo dõi'}
+                        title={t('headerStrict.k26')}
                       >
                         <span className="flex items-center gap-2">
                           <Bookmark className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">{isEn ? 'Saved Games' : 'Tủ Game Đã Lưu'}</span>
+                          <span className="font-medium">{t('headerStrict.k27')}</span>
                         </span>
                         {bookmarkCount > 0 ? (
                           <span className="text-[10px] text-amber-300 font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                            {bookmarkCount} {isEn ? 'games' : 'game'}
+                            {bookmarkCount} {t('headerStrict.k28')}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground font-medium">{isEn ? 'Empty' : 'Trống'}</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">{t('headerStrict.k29')}</span>
                         )}
                       </button>
 
@@ -681,7 +681,7 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <span className="flex items-center gap-2">
                             <Bell className="w-4 h-4 text-secondary group-hover:scale-110 transition-transform" />
-                            <span className="font-medium">{isEn ? 'Email Alerts' : 'Thông Báo Email'}</span>
+                            <span className="font-medium">{t('headerStrict.k30')}</span>
                           </span>
                           <span className="text-[10px] text-secondary font-bold bg-secondary/15 px-2 py-0.5 rounded-full border border-secondary/30">
                             Cài đặt
@@ -768,7 +768,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {/* Shared: Giao Diện & Ngôn Ngữ */}
                       <div className="pt-2 pb-1 border-t border-border/60 space-y-2">
                         <div className="px-2 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                          <span>{isEn ? 'Appearance & Language' : 'Giao Diện & Ngôn Ngữ'}</span>
+                          <span>{t('headerStrict.k31')}</span>
                         </div>
 
                         {/* Sáng / Tối Theme Toggle */}
@@ -786,10 +786,10 @@ export const Header: React.FC<HeaderProps> = ({
                             ) : (
                               <Moon className="w-4 h-4 text-muted-foreground shrink-0" />
                             )}
-                            <span className="font-medium">{isDarkMode ? (isEn ? 'Light Mode' : 'Chế độ Sáng') : (isEn ? 'Dark Mode' : 'Chế độ Tối')}</span>
+                            <span className="font-medium">{isDarkMode ? t('headerStrict.k32') : t('headerStrict.k33')}</span>
                           </span>
                           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted border border-border/60 text-muted-foreground">
-                            {isDarkMode ? (isEn ? 'Light' : 'Sáng') : (isEn ? 'Dark' : 'Tối')}
+                            {isDarkMode ? t('headerStrict.k34') : t('headerStrict.k35')}
                           </span>
                         </button>
 
@@ -797,7 +797,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <div className="p-1.5 rounded-xl bg-muted/40 border border-border/50 flex items-center justify-between gap-2">
                           <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pl-1">
                             <Globe className="w-3.5 h-3.5 text-primary-light shrink-0" />
-                            <span>{isEn ? 'Language:' : 'Ngôn ngữ:'}</span>
+                            <span>{t('headerStrict.k36')}</span>
                           </span>
                           <LanguageSelector variant="pill" />
                         </div>
@@ -828,7 +828,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setIsUserMenuOpen((prev) => !prev);
                     }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 min-h-[32px] sm:min-h-[38px] rounded-xl text-xs font-bold bg-primary/20 hover:bg-primary/30 text-primary-light border border-primary/40 transition-all cursor-pointer active:scale-95 shrink-0"
-                    aria-label={isEn ? 'Account & Settings' : 'Tài khoản & Cài đặt'}
+                    aria-label={t('headerStrict.k37')}
                   >
                     <User className="w-3.5 h-3.5 text-primary-light shrink-0" />
                     <span>{t.header.account}</span>
@@ -844,9 +844,9 @@ export const Header: React.FC<HeaderProps> = ({
                             <User className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-bold text-foreground text-xs">{isEn ? 'Guest Account' : 'Tài Khoản Khách'}</p>
+                            <p className="font-bold text-foreground text-xs">{t('headerStrict.k38')}</p>
                             <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                              {isEn ? 'Log in to claim exclusive giftcodes & accumulate Core' : 'Đăng nhập để nhận Giftcode riêng & tích lũy điểm Core'}
+                              {t('headerStrict.k39')}
                             </p>
                           </div>
                           <button
@@ -857,7 +857,7 @@ export const Header: React.FC<HeaderProps> = ({
                             }}
                             className="w-full py-2 px-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-extrabold text-xs shadow-glow-primary transition-all cursor-pointer active:scale-95"
                           >
-                            {isEn ? 'Log In / Register' : 'Đăng Nhập / Đăng Ký'}
+                            {t('headerStrict.k40')}
                           </button>
                         </div>
 
@@ -873,7 +873,7 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <span className="flex items-center gap-2">
                             <Send className="w-4 h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
-                            <span className="font-bold text-foreground">{isEn ? 'Community & Telegram Bot' : 'Cộng Đồng & Bot Telegram'}</span>
+                            <span className="font-bold text-foreground">{t('headerStrict.k41')}</span>
                           </span>
                           <span className="text-[10px] text-[#229ED9] font-bold bg-[#229ED9]/20 px-2 py-0.5 rounded-full border border-[#229ED9]/40">
                             BOT
@@ -884,7 +884,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {/* Shared: Giao Diện & Ngôn Ngữ */}
                       <div className="pt-2 pb-1 border-t border-border/60 space-y-2">
                         <div className="px-2 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                          <span>{isEn ? 'Appearance & Language' : 'Giao Diện & Ngôn Ngữ'}</span>
+                          <span>{t('headerStrict.k42')}</span>
                         </div>
 
                         {/* Sáng / Tối Theme Toggle */}
@@ -902,10 +902,10 @@ export const Header: React.FC<HeaderProps> = ({
                             ) : (
                               <Moon className="w-4 h-4 text-muted-foreground shrink-0" />
                             )}
-                            <span className="font-medium">{isDarkMode ? (isEn ? 'Light Mode' : 'Chế độ Sáng') : (isEn ? 'Dark Mode' : 'Chế độ Tối')}</span>
+                            <span className="font-medium">{isDarkMode ? t('headerStrict.k43') : t('headerStrict.k44')}</span>
                           </span>
                           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted border border-border/60 text-muted-foreground">
-                            {isDarkMode ? (isEn ? 'Light' : 'Sáng') : (isEn ? 'Dark' : 'Tối')}
+                            {isDarkMode ? t('headerStrict.k45') : t('headerStrict.k46')}
                           </span>
                         </button>
 
@@ -913,7 +913,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <div className="p-1.5 rounded-xl bg-muted/40 border border-border/50 flex items-center justify-between gap-2">
                           <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pl-1">
                             <Globe className="w-3.5 h-3.5 text-primary-light shrink-0" />
-                            <span>{isEn ? 'Language:' : 'Ngôn ngữ:'}</span>
+                            <span>{t('headerStrict.k47')}</span>
                           </span>
                           <LanguageSelector variant="pill" />
                         </div>
@@ -935,8 +935,8 @@ export const Header: React.FC<HeaderProps> = ({
                 }
               }}
               className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 relative group bg-card hover:bg-[#229ED9]/15 border border-border/80 hover:border-[#229ED9]/40 text-muted-foreground hover:text-[#229ED9]"
-              title={isEn ? 'Telegram Community & Exclusive Bot Codes' : 'Cộng đồng Telegram & Bot nhận code riêng'}
-              aria-label={isEn ? 'Telegram Community' : 'Cộng đồng Telegram'}
+              title={t('headerStrict.k48')}
+              aria-label={t('headerStrict.k49')}
             >
               <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#229ED9] group-hover:scale-110 transition-transform" />
             </button>
@@ -946,8 +946,8 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenNotificationModal}
                 className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border/80 hover:border-secondary/40 text-muted-foreground hover:text-secondary transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 relative group"
-                title={isEn ? 'Subscribe to Giftcodes & Events via Email' : 'Đăng ký nhận mã code & sự kiện qua Email'}
-                aria-label={isEn ? 'Email Notifications' : 'Nhận thông báo email'}
+                title={t('headerStrict.k50')}
+                aria-label={t('headerStrict.k51')}
               >
                 <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary group-hover:scale-110 transition-transform" />
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-secondary rounded-full border border-card animate-pulse" />

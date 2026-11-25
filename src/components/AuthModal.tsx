@@ -109,7 +109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       script.onload = () => setIsTurnstileLoaded(true);
       script.onerror = () => {
         console.error('[Turnstile] Failed to load SDK');
-        setErrorMessage(isEn ? 'Failed to load security verification widget.' : 'Không thể tải widget bảo mật chống bot. Vui lòng thử lại.');
+        setErrorMessaget('authStrict.k1');
       };
       document.head.appendChild(script);
     } else {
@@ -147,14 +147,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const res = await authService.loginWithGoogle(credential);
       if (res.success && res.user) {
-        onShowToast(isEn ? 'Google Login Successful' : 'Đăng nhập Google thành công', res.message, 'success');
+        onShowToast(t('authStrict.k2'), res.message, 'success');
         onSuccess(res.user);
         onClose();
       } else {
-        setErrorMessage(res.message || (isEn ? 'Google sign in failed' : 'Đăng nhập Google thất bại'));
+        setErrorMessage(res.message || t('authStrict.k3'));
       }
     } catch (err: any) {
-      setErrorMessage(err?.message || (isEn ? 'Google sign in error' : 'Lỗi khi đăng nhập Google'));
+      setErrorMessage(err?.message || t('authStrict.k4'));
     } finally {
       setIsLoading(false);
     }
@@ -165,10 +165,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
     if (!googleClientId) {
       onShowToast(
-        isEn ? 'Google Sign-In Ready' : 'Đăng nhập Google sẵn sàng',
-        isEn
-          ? 'Please configure VITE_GOOGLE_CLIENT_ID to connect your Google Cloud Console project.'
-          : 'Vui lòng cấu hình biến VITE_GOOGLE_CLIENT_ID để kết nối Google Cloud Console.',
+        t('authStrict.k5'),
+        t('authStrict.k6'),
         'info'
       );
       return;
@@ -212,7 +210,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           },
           'error-callback': () => {
             setLoginTurnstileToken('');
-            setErrorMessage(isEn ? 'Security challenge failed. Please retry.' : 'Xác minh chống bot thất bại. Vui lòng thử lại.');
+            setErrorMessaget('authStrict.k7');
           },
         });
         loginWidgetIdRef.current = id;
@@ -261,7 +259,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           },
           'error-callback': () => {
             setRegTurnstileToken('');
-            setErrorMessage(isEn ? 'Security challenge failed. Please retry.' : 'Xác minh chống bot thất bại. Vui lòng thử lại.');
+            setErrorMessaget('authStrict.k8');
           },
         });
         regWidgetIdRef.current = id;
@@ -293,12 +291,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!loginIdentifier.trim()) {
-      setErrorMessage(isEn ? 'Please enter your username or email.' : 'Vui lòng nhập tên đăng nhập hoặc email.');
+      setErrorMessaget('authStrict.k9');
       return;
     }
 
     if (isTurnstileEnabled && turnstileSiteKey && !loginTurnstileToken) {
-      setErrorMessage(isEn ? 'Please complete the security check.' : 'Vui lòng hoàn tất xác minh bảo mật chống bot.');
+      setErrorMessaget('authStrict.k10');
       return;
     }
 
@@ -320,8 +318,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       });
       onSuccess(res.user);
       onShowToast(
-        isEn ? 'Login successful!' : 'Đăng nhập thành công!',
-        isEn ? `Welcome back, ${res.user.displayName || res.user.username}!` : `Chào mừng ${res.user.displayName || res.user.username} quay trở lại!`,
+        t('authStrict.k11'),
+        t('authStrict.welcomeBack', { name: res.user.displayName || res.user.username }),
         'success'
       );
       onClose();
@@ -332,7 +330,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         } catch {}
         setLoginTurnstileToken('');
       }
-      setErrorMessage(res.message || (isEn ? 'Login failed.' : 'Đăng nhập không thành công.'));
+      setErrorMessage(res.message || t('authStrict.k12'));
     }
   };
 
@@ -343,32 +341,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const userCheck = isValidUsername(regUsername);
     if (!userCheck.valid) {
-      setErrorMessage(userCheck.message || (isEn ? 'Invalid username.' : 'Tên đăng nhập không hợp lệ.'));
+      setErrorMessage(userCheck.message || t('authStrict.k13'));
       return;
     }
 
     if (!isValidEmail(regEmail)) {
-      setErrorMessage(isEn ? 'Please enter a valid email address.' : 'Vui lòng nhập địa chỉ email hợp lệ.');
+      setErrorMessaget('authStrict.k14');
       return;
     }
 
     if (regPassword.length < 6) {
-      setErrorMessage(isEn ? 'Password must be at least 6 characters.' : 'Mật khẩu cần tối thiểu 6 ký tự.');
+      setErrorMessaget('authStrict.k15');
       return;
     }
 
     if (regPassword !== regConfirmPassword) {
-      setErrorMessage(isEn ? 'Confirm password does not match.' : 'Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại.');
+      setErrorMessaget('authStrict.k16');
       return;
     }
 
     if (!agreeTerms) {
-      setErrorMessage(isEn ? 'Please accept the Terms of Service & Privacy Policy.' : 'Vui lòng chấp thuận Điều khoản dịch vụ & Chính sách bảo mật.');
+      setErrorMessaget('authStrict.k17');
       return;
     }
 
     if (isTurnstileEnabled && turnstileSiteKey && !regTurnstileToken) {
-      setErrorMessage(isEn ? 'Please complete the security check.' : 'Vui lòng hoàn tất xác minh bảo mật chống bot.');
+      setErrorMessaget('authStrict.k18');
       return;
     }
 
@@ -391,8 +389,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       });
       onSuccess(res.user);
       onShowToast(
-        isEn ? 'Registration successful!' : 'Đăng ký tài khoản thành công!',
-        isEn ? `Account ${res.user.username} has been activated successfully.` : `Tài khoản ${res.user.username} đã được kích hoạt thành công.`,
+        t('authStrict.k19'),
+        t('authStrict.accountActivated', { username: res.user.username }),
         'success'
       );
       onClose();
@@ -403,7 +401,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         } catch {}
         setRegTurnstileToken('');
       }
-      setErrorMessage(res.message || (isEn ? 'Registration failed.' : 'Đăng ký không thành công.'));
+      setErrorMessage(res.message || t('authStrict.k20'));
     }
   };
 
@@ -413,7 +411,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!forgotIdentifier.trim()) {
-      setErrorMessage(isEn ? 'Please enter the email or username to recover.' : 'Vui lòng nhập email hoặc tên tài khoản cần khôi phục.');
+      setErrorMessaget('authStrict.k21');
       return;
     }
 
@@ -423,9 +421,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     if (res.success) {
       setForgotStep(2);
-      onShowToast(isEn ? 'Verification code sent' : 'Đã gửi mã xác minh', res.message || (isEn ? 'An OTP code has been sent to your email.' : 'Mã OTP đã được gửi đến email của bạn.'), 'info');
+      onShowToast(t('authStrict.k22'), res.message || t('authStrict.k23'), 'info');
     } else {
-      setErrorMessage(res.message || (isEn ? 'Unable to create password reset request.' : 'Không thể tạo yêu cầu đặt lại mật khẩu.'));
+      setErrorMessage(res.message || t('authStrict.k24'));
     }
   };
 
@@ -435,12 +433,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!forgotOtp.trim()) {
-      setErrorMessage(isEn ? 'Please enter the OTP verification code.' : 'Vui lòng nhập mã xác minh OTP.');
+      setErrorMessaget('authStrict.k25');
       return;
     }
 
     if (forgotNewPassword.length < 6) {
-      setErrorMessage(isEn ? 'New password must be at least 6 characters.' : 'Mật khẩu mới phải có ít nhất 6 ký tự.');
+      setErrorMessaget('authStrict.k26');
       return;
     }
 
@@ -449,12 +447,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(false);
 
     if (res.success) {
-      onShowToast(isEn ? 'Success' : 'Thành công', res.message, 'success');
+      onShowToast(t('authStrict.k27'), res.message, 'success');
       setTab('login');
       setLoginIdentifier(forgotIdentifier);
       setForgotStep(1);
     } else {
-      setErrorMessage(res.message || (isEn ? 'OTP verification failed.' : 'Xác minh OTP thất bại.'));
+      setErrorMessage(res.message || t('authStrict.k28'));
     }
   };
 
@@ -478,14 +476,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-heading font-extrabold text-base sm:text-lg text-foreground truncate">
-                  {tab === 'login' && (isEn ? 'Account Login' : 'Đăng Nhập Tài Khoản')}
-                  {tab === 'register' && (isEn ? 'Member Registration' : 'Đăng Ký Thành Viên')}
-                  {tab === 'forgot' && (isEn ? 'Password Recovery' : 'Khôi Phục Mật Khẩu')}
+                  {tab === 'login' && t('authStrict.k29')}
+                  {tab === 'register' && t('authStrict.k30')}
+                  {tab === 'forgot' && t('authStrict.k31')}
                 </h3>
                 <p className="text-xs text-muted-foreground truncate">
-                  {tab === 'login' && (isEn ? 'Enter login credentials to continue' : 'Nhập thông tin đăng nhập để tiếp tục')}
-                  {tab === 'register' && (isEn ? 'Create a new member account' : 'Tạo tài khoản thành viên mới')}
-                  {tab === 'forgot' && (isEn ? 'Verify identity to reset password' : 'Xác thực để đặt lại mật khẩu')}
+                  {tab === 'login' && t('authStrict.k32')}
+                  {tab === 'register' && t('authStrict.k33')}
+                  {tab === 'forgot' && t('authStrict.k34')}
                 </p>
               </div>
             </div>
@@ -494,8 +492,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <button
               onClick={onClose}
               className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-slate-600 shadow-md cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0"
-              aria-label={isEn ? "Close" : "Đóng"}
-              title={isEn ? "Close" : "Đóng"}
+              aria-label={t('authStrict.k35')}
+              title={t('authStrict.k36')}
             >
               <X className="w-5 h-5 text-white" />
             </button>
@@ -516,7 +514,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {isEn ? 'Log In' : 'Đăng Nhập'}
+              {t('authStrict.k37')}
             </button>
             <button
               onClick={() => {
@@ -529,7 +527,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {isEn ? 'Register' : 'Đăng Ký'}
+              {t('authStrict.k38')}
             </button>
           </div>
         </div>
@@ -558,7 +556,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Identifier Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-foreground">
-                  {isEn ? 'Username or Email' : 'Tên tài khoản hoặc Email'} <span className="text-accent">*</span>
+                  {t('authStrict.k39')} <span className="text-accent">*</span>
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -566,7 +564,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="text"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder={isEn ? "Enter username or email" : "Nhập tên tài khoản hoặc email"}
+                    placeholder={t('authStrict.k40')}
                     required
                     autoComplete="username"
                     className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -578,7 +576,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-foreground">
-                    {isEn ? 'Password' : 'Mật khẩu'} <span className="text-accent">*</span>
+                    {t('authStrict.k41')} <span className="text-accent">*</span>
                   </label>
                 </div>
                 <div className="relative">
@@ -587,7 +585,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type={showLoginPassword ? 'text' : 'password'}
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder={isEn ? "Enter password" : "Nhập mật khẩu"}
+                    placeholder={t('authStrict.k42')}
                     required
                     autoComplete="current-password"
                     className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -611,7 +609,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-background"
                   />
-                  <span className="text-xs text-muted-foreground">{isEn ? 'Remember me' : 'Ghi nhớ đăng nhập'}</span>
+                  <span className="text-xs text-muted-foreground">{t('authStrict.k43')}</span>
                 </label>
               </div>
 
@@ -635,17 +633,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{isEn ? 'Logging in...' : 'Đang xử lý đăng nhập...'}</span>
+                    <span>{t('authStrict.k44')}</span>
                   </>
                 ) : (
-                  <span>{isEn ? 'Log In' : 'Đăng Nhập'}</span>
+                  <span>{t('authStrict.k45')}</span>
                 )}
               </button>
 
               {/* Google Sign-in Divider & Button */}
               <div className="relative my-3 flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/80"></div></div>
-                <div className="relative bg-card px-3 text-[11px] text-muted-foreground uppercase">{isEn ? 'Or continue with' : 'Hoặc đăng nhập với'}</div>
+                <div className="relative bg-card px-3 text-[11px] text-muted-foreground uppercase">{t('authStrict.k46')}</div>
               </div>
 
               <button
@@ -672,7 +670,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Username */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-foreground">
-                    {isEn ? 'Username' : 'Tên đăng nhập'} <span className="text-accent">*</span>
+                    {t('authStrict.k47')} <span className="text-accent">*</span>
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -680,7 +678,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       type="text"
                       value={regUsername}
                       onChange={(e) => setRegUsername(e.target.value)}
-                      placeholder={isEn ? "Username" : "Tên đăng nhập"}
+                      placeholder={t('authStrict.k48')}
                       required
                       autoComplete="username"
                       className="w-full pl-10 pr-3 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -691,13 +689,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Display Name */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-foreground">
-                    {isEn ? 'Display name' : 'Tên hiển thị'}
+                    {t('authStrict.k49')}
                   </label>
                   <input
                     type="text"
                     value={regDisplayName}
                     onChange={(e) => setRegDisplayName(e.target.value)}
-                    placeholder={isEn ? "Display name" : "Tên hiển thị"}
+                    placeholder={t('authStrict.k50')}
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
                   />
                 </div>
@@ -724,7 +722,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Password */}
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-foreground">
-                  {isEn ? 'Password' : 'Mật khẩu'} <span className="text-accent">*</span>
+                  {t('authStrict.k51')} <span className="text-accent">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -732,7 +730,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type={showRegPassword ? 'text' : 'password'}
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    placeholder={isEn ? "At least 6 characters" : "Tối thiểu 6 ký tự"}
+                    placeholder={t('authStrict.k52')}
                     required
                     autoComplete="new-password"
                     className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -750,7 +748,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {regPassword && (
                   <div className="space-y-1 pt-1">
                     <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="text-muted-foreground">{isEn ? 'Password strength:' : 'Độ mạnh mật khẩu:'}</span>
+                      <span className="text-muted-foreground">{t('authStrict.k53')}</span>
                       <span className={`font-bold ${passwordStrength.color.split(' ')[1] || 'text-foreground'}`}>
                         {passwordStrength.label}
                       </span>
@@ -768,7 +766,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Confirm Password */}
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-foreground">
-                  {isEn ? 'Confirm Password' : 'Xác nhận lại mật khẩu'} <span className="text-accent">*</span>
+                  {t('authStrict.k54')} <span className="text-accent">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -776,7 +774,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type={showRegPassword ? 'text' : 'password'}
                     value={regConfirmPassword}
                     onChange={(e) => setRegConfirmPassword(e.target.value)}
-                    placeholder={isEn ? "Confirm password" : "Nhập lại mật khẩu"}
+                    placeholder={t('authStrict.k55')}
                     required
                     autoComplete="new-password"
                     className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -802,9 +800,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-4 h-4 mt-0.5 rounded border-border text-primary focus:ring-primary focus:ring-offset-background"
                 />
                 <span className="text-xs text-muted-foreground leading-tight">
-                  {isEn ? 'I agree to the ' : 'Tôi đồng ý với '}
-                  <strong className="text-foreground">{isEn ? 'Terms of Service' : 'Điều khoản dịch vụ'}</strong>
-                  {isEn ? ' and account security policy.' : ' và bảo mật tài khoản.'}
+                  {t('authStrict.k56')}
+                  <strong className="text-foreground">{t('authStrict.k57')}</strong>
+                  {t('authStrict.k58')}
                 </span>
               </label>
 
@@ -828,17 +826,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{isEn ? 'Creating account...' : 'Đang tạo tài khoản...'}</span>
+                    <span>{t('authStrict.k59')}</span>
                   </>
                 ) : (
-                  <span>{isEn ? 'Create Account' : 'Đăng Ký Tài Khoản'}</span>
+                  <span>{t('authStrict.k60')}</span>
                 )}
               </button>
 
               {/* Google Sign-in Divider & Button */}
               <div className="relative my-3 flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/80"></div></div>
-                <div className="relative bg-card px-3 text-[11px] text-muted-foreground uppercase">{isEn ? 'Or continue with' : 'Hoặc đăng ký với'}</div>
+                <div className="relative bg-card px-3 text-[11px] text-muted-foreground uppercase">{t('authStrict.k61')}</div>
               </div>
 
               <button
@@ -864,12 +862,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {forgotStep === 1 ? (
                 <form onSubmit={handleRequestOtp} className="space-y-4">
                   <div className="p-3.5 rounded-2xl bg-muted/40 border border-border text-xs text-muted-foreground leading-relaxed">
-                    {isEn ? 'Enter your registered username or email to receive a recovery OTP code.' : 'Nhập tên tài khoản hoặc email đăng ký để nhận mã OTP khôi phục.'}
+                    {t('authStrict.k62')}
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      {isEn ? 'Username or Email' : 'Tên tài khoản hoặc Email'} <span className="text-accent">*</span>
+                      {t('authStrict.k63')} <span className="text-accent">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -877,7 +875,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         type="text"
                         value={forgotIdentifier}
                         onChange={(e) => setForgotIdentifier(e.target.value)}
-                        placeholder={isEn ? "Enter username or email" : "Nhập tên tài khoản hoặc email"}
+                        placeholder={t('authStrict.k64')}
                         required
                         className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
                       />
@@ -892,12 +890,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {isLoading ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>{isEn ? 'Sending code...' : 'Đang gửi mã...'}</span>
+                        <span>{t('authStrict.k65')}</span>
                       </>
                     ) : (
                       <>
                         <KeyRound className="w-4 h-4" />
-                        <span>{isEn ? 'Send OTP Verification Code' : 'Gửi Mã Xác Minh OTP'}</span>
+                        <span>{t('authStrict.k66')}</span>
                       </>
                     )}
                   </button>
@@ -906,13 +904,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <form onSubmit={handleConfirmReset} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      {isEn ? 'Enter OTP Code' : 'Nhập mã OTP'} <span className="text-accent">*</span>
+                      {t('authStrict.k67')} <span className="text-accent">*</span>
                     </label>
                     <input
                       type="text"
                       value={forgotOtp}
                       onChange={(e) => setForgotOtp(e.target.value)}
-                      placeholder={isEn ? "OTP Code" : "Mã OTP"}
+                      placeholder={t('authStrict.k68')}
                       required
                       className="w-full px-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 font-mono text-sm tracking-widest text-center font-bold shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
                     />
@@ -920,13 +918,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      {isEn ? 'New Password' : 'Mật khẩu mới'} <span className="text-accent">*</span>
+                      {t('authStrict.k69')} <span className="text-accent">*</span>
                     </label>
                     <input
                       type="password"
                       value={forgotNewPassword}
                       onChange={(e) => setForgotNewPassword(e.target.value)}
-                      placeholder={isEn ? "New password" : "Mật khẩu mới"}
+                      placeholder={t('authStrict.k70')}
                       required
                       autoComplete="new-password"
                       className="w-full px-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
@@ -939,7 +937,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       onClick={() => setForgotStep(1)}
                       className="px-4 py-3 rounded-2xl bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold cursor-pointer"
                     >
-                      {isEn ? 'Back' : 'Quay lại'}
+                      {t('authStrict.k71')}
                     </button>
                     <button
                       type="submit"
@@ -949,10 +947,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {isLoading ? (
                         <>
                           <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>{isEn ? 'Saving...' : 'Đang lưu...'}</span>
+                          <span>{t('authStrict.k72')}</span>
                         </>
                       ) : (
-                        <span>{isEn ? 'Confirm Password Reset' : 'Xác Nhận Đổi Mật Khẩu'}</span>
+                        <span>{t('authStrict.k73')}</span>
                       )}
                     </button>
                   </div>

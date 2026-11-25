@@ -682,9 +682,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     return g.name;
   };
 
-  // 2. Filter store products (Sản phẩm cửa hàng đa ngành / gói game, hỗ trợ tiếng Việt không dấu)
+  // 2. Filter store products (Sản phẩm cửa hàng đa ngành / gói game, hỗ trợ tiếng Việt không dấu & khử trùng lặp theo id)
   const filteredStoreProducts = useMemo(() => {
-    let list = currentStoreProducts && currentStoreProducts.length > 0 ? currentStoreProducts : (storeProducts || []);
+    const rawList = currentStoreProducts && currentStoreProducts.length > 0 ? currentStoreProducts : (storeProducts || []);
+    const seenIds = new Set<string>();
+    let list = rawList.filter((p) => {
+      if (!p || !p.id || seenIds.has(p.id)) return false;
+      seenIds.add(p.id);
+      return true;
+    });
     if (searchKeyword.trim()) {
       const q = searchKeyword.trim().toLowerCase();
       const normQ = q.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
@@ -2079,7 +2085,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                               <span className="text-4xl">📦</span>
                             )}
                             <span className="absolute top-0 left-0 bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-br">
-                              {prod.product_type === 'physical' ? (language === 'en' ? 'Physical Goods' : 'Hàng Vật Lý') : (prod.badge || (language === 'en' ? 'Digital' : 'Hàng Số'))}
+                              {prod.product_type === 'physical'
+                                ? t('mall.products.physicalBadge')
+                                : (prod.badge && prod.badge !== 'Hàng Số' && prod.badge !== 'Hàng Vật Lý'
+                                    ? prod.badge
+                                    : t('mall.products.digitalBadge'))}
                             </span>
                             {discountPercent > 0 && (
                               <span className="absolute top-0 right-0 bg-yellow-400 text-red-600 text-[10px] font-bold px-1 py-0.2">

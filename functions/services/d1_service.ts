@@ -2820,14 +2820,8 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       console.warn('[Migration 0045 sanitize_homepage_images error]', e);
     }
 
-    try {
-      // Fast 1-subrequest check: If 0047_google_oauth_and_wishlist_v1 exists, all schema migrations are already done
-      const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0047_google_oauth_and_wishlist_v1' LIMIT 1").first().catch(() => null);
-      if (check !== null) {
-        schemaUpgradesDone = true;
-        return;
-      }
-    } catch {}
+    // Đã gỡ bỏ hoàn toàn cơ chế early-return theo 1 key cứng (0047) tại đây.
+    // Mỗi khối migration phía dưới tự kiểm tra key riêng của chính nó trong bảng schema_migrations.
 
     try {
       await db.prepare(`
@@ -5449,7 +5443,20 @@ export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
       console.warn('[loadAllStoreProductsD1 seller_products error]', e);
     }
 
-    return [...mappedLegacy, ...sellerProductsList];
+    // Khử trùng lặp theo id: ưu tiên giữ đầy đủ metadata từ mappedLegacy + dữ liệu live từ sellerProductsList
+    const dedupMap = new Map<string, any>();
+    for (const item of mappedLegacy) {
+      if (item && item.id) {
+        dedupMap.set(item.id, item);
+      }
+    }
+    for (const sp of sellerProductsList) {
+      if (sp && sp.id) {
+        const prev = dedupMap.get(sp.id) || {};
+        dedupMap.set(sp.id, { ...prev, ...sp });
+      }
+    }
+    return Array.from(dedupMap.values());
   } catch {
     return [];
   }

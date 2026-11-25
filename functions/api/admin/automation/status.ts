@@ -40,7 +40,21 @@ function isValidApiKey(str?: string | null): boolean {
   if (s.length < 16) return false;
   if (s.includes('*') || s.includes('•')) return false;
   const lower = s.toLowerCase();
-  if (lower.includes('change_me') || lower.includes('placeholder') || lower.includes('your_') || lower.includes('example')) {
+  const blockedPlaceholders = [
+    'change_me',
+    'placeholder',
+    'your_',
+    'example',
+    'api_key',
+    'apikey',
+    'active',
+    'sepay_api',
+    'sample',
+    'dummy',
+    'test_key',
+    'demo_key',
+  ];
+  if (blockedPlaceholders.some((kw) => lower.includes(kw))) {
     return false;
   }
   return true;
@@ -100,7 +114,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const sepayConfig = await readSystemSettingJson(env.DB, 'wcg_admin_sepay_v4');
     const sepayKey = String(sepayConfig?.apiKey || sepayConfig?.api_key || env.SEPAY_API_KEY || '').trim();
     const sepayValidKey = isValidApiKey(sepayKey);
-    const sepayConnected = Boolean(sepayValidKey && (sepayConfig?.enabled !== false));
+    const sepayHasConnectedFlag = Boolean(sepayConfig?.isConnected === true || sepayConfig?.is_connected === true);
+    const sepayConnected = Boolean(sepayValidKey && sepayHasConnectedFlag && (sepayConfig?.enabled !== false));
 
     // 3. Kiểm tra Telegram Bot (đọc đúng từ system_settings key 'telegram_settings_v1')
     const teleConfig = await readSystemSettingJson(env.DB, 'telegram_settings_v1');

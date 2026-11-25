@@ -126,83 +126,99 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
     }
 
     try {
-      const countRes = await db
-        .prepare(`SELECT COUNT(*) as total FROM store_products WHERE ${whereClause}`)
-        .bind(...queryBinds)
-        .first<{ total: number }>();
-      totalProducts = countRes?.total || 0;
-
-      if (totalProducts > 0 || !rawQ) {
-        const listRes = await db
-          .prepare(`
-            SELECT id, title, game_slug, game_name, original_price,
-                   current_price as price_core,
-                   discount_percent,
-                   COALESCE(cover_image_url, game_icon_url, '') as cover_url,
-                   sold_count
-            FROM store_products
-            WHERE ${whereClause}
-            ${orderClause}
-            LIMIT ? OFFSET ?
-          `)
-          .bind(...queryBinds, limit, offset)
-          .all<any>();
-
-        const rows = listRes?.results || [];
-        results.products = rows.map((r: any) => ({
-          id: r.id,
-          title: r.title,
-          gameSlug: r.game_slug,
-          gameName: r.game_name,
-          priceCore: r.price_core || 0,
-          originalPrice: r.original_price || r.price_core || 0,
-          discountPercent: r.discount_percent || 0,
-          productType: 'digital',
-          coverUrl: r.cover_url || undefined,
-          soldCount: r.sold_count || 0,
-          rating: 5,
-          itemType: 'product',
-        }));
+      // Nếu lọc rating > 5 (ví dụ rating=6), mọi sản phẩm tối đa 5 sao đều bị loại ngay lập tức
+      if (params.rating !== undefined && params.rating > 5) {
+        totalProducts = 0;
+        results.products = [];
       } else {
-        // Fallback tìm kiếm tiếng Việt không dấu (vd: "lien quan" khớp "Liên Quân Mobile")
-        const baseWhere = baseConditions.join(' AND ');
-        const candRes = await db
-          .prepare(`
-            SELECT id, title, game_slug, game_name, description, original_price,
-                   current_price as price_core,
-                   discount_percent,
-                   COALESCE(cover_image_url, game_icon_url, '') as cover_url,
-                   sold_count
-            FROM store_products
-            WHERE ${baseWhere}
-            ${orderClause}
-            LIMIT 400
-          `)
-          .bind(...baseBinds)
-          .all<any>();
+        const countRes = await db
+          .prepare(`SELECT COUNT(*) as total FROM store_products WHERE ${whereClause}`)
+          .bind(...queryBinds)
+          .first<{ total: number }>();
+        totalProducts = countRes?.total || 0;
 
-        const matched = (candRes?.results || []).filter((r: any) => {
-          const hay = removeVietnameseTones(
-            `${r.title || ''} ${r.game_name || ''} ${r.game_slug || ''} ${r.description || ''}`
-          ).toLowerCase();
-          return hay.includes(normQ) || hay.includes(slugQ);
-        });
+        if (totalProducts > 0 || !rawQ) {
+          const listRes = await db
+            .prepare(`
+              SELECT id, title, game_slug, game_name, original_price,
+                     current_price as price_core,
+                     discount_percent,
+                     COALESCE(cover_image_url, game_icon_url, '') as cover_url,
+                     sold_count
+              FROM store_products
+              WHERE ${whereClause}
+              ${orderClause}
+              LIMIT ? OFFSET ?
+            `)
+            .bind(...queryBinds, limit, offset)
+            .all<any>();
 
-        totalProducts = matched.length;
-        results.products = matched.slice(offset, offset + limit).map((r: any) => ({
-          id: r.id,
-          title: r.title,
-          gameSlug: r.game_slug,
-          gameName: r.game_name,
-          priceCore: r.price_core || 0,
-          originalPrice: r.original_price || r.price_core || 0,
-          discountPercent: r.discount_percent || 0,
-          productType: 'digital',
-          coverUrl: r.cover_url || undefined,
-          soldCount: r.sold_count || 0,
-          rating: 5,
-          itemType: 'product',
-        }));
+          const rows = listRes?.results || [];
+          const mappedProducts = rows.map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            gameSlug: r.game_slug,
+            gameName: r.game_name,
+            priceCore: r.price_core || 0,
+            originalPrice: r.original_price || r.price_core || 0,
+            discountPercent: r.discount_percent || 0,
+            productType: 'digital' as const,
+            coverUrl: r.cover_url || undefined,
+            soldCount: r.sold_count || 0,
+            rating: 5,
+            itemType: 'product' as const,
+          }));
+          results.products = params.rating && params.rating > 0
+            ? mappedProducts.filter((p) => (p.rating || 5) >= params.rating!)
+            : mappedProducts;
+          if (params.rating && params.rating > 0) {
+            totalProducts = results.products.length;
+          }
+        } else {
+          // Fallback tìm kiếm tiếng Việt không dấu (vd: "lien quan" khớp "Liên Quân Mobile")
+          const baseWhere = baseConditions.join(' AND ');
+          const candRes = await db
+            .prepare(`
+              SELECT id, title, game_slug, game_name, description, original_price,
+                     current_price as price_core,
+                     discount_percent,
+                     COALESCE(cover_image_url, game_icon_url, '') as cover_url,
+                     sold_count
+              FROM store_products
+              WHERE ${baseWhere}
+              ${orderClause}
+              LIMIT 400
+            `)
+            .bind(...baseBinds)
+            .all<any>();
+
+          const matched = (candRes?.results || []).filter((r: any) => {
+            const hay = removeVietnameseTones(
+              `${r.title || ''} ${r.game_name || ''} ${r.game_slug || ''} ${r.description || ''}`
+            ).toLowerCase();
+            return hay.includes(normQ) || hay.includes(slugQ);
+          });
+
+          const mappedMatched = matched.map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            gameSlug: r.game_slug,
+            gameName: r.game_name,
+            priceCore: r.price_core || 0,
+            originalPrice: r.original_price || r.price_core || 0,
+            discountPercent: r.discount_percent || 0,
+            productType: 'digital' as const,
+            coverUrl: r.cover_url || undefined,
+            soldCount: r.sold_count || 0,
+            rating: 5,
+            itemType: 'product' as const,
+          }));
+          const filteredByRating = params.rating && params.rating > 0
+            ? mappedMatched.filter((p) => (p.rating || 5) >= params.rating!)
+            : mappedMatched;
+          totalProducts = filteredByRating.length;
+          results.products = filteredByRating.slice(offset, offset + limit);
+        }
       }
     } catch (err) {
       console.warn('[searchUnified products error]', err);

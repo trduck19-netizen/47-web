@@ -7,7 +7,31 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-25]
 
+### 463. Sửa Tận Gốc Checkpoint Migration, Logic `sepayConnected`, Khử Trùng Lặp Lưới Tìm Kiếm, Lọc Rating & Chuẩn Hóa 169 Chuỗi Ternary (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý triệt để các lỗi phát hiện sau commit `cae7c36` (`kiem-chung-bao-cao-trien-khai-5-goi-cae7c36` & `prompt-anti-sua-not-cae7c36`).
+- **Nguyên nhân gốc rễ & Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Sửa tận gốc Checkpoint Migration (`functions/services/d1_service.ts`)*:
+     - Gỡ bỏ hoàn toàn khối early-return kiểm tra 1 key cứng `0047_google_oauth_and_wishlist_v1` ở dòng 2825; mỗi khối migration phía dưới tự kiểm tra key của chính nó trong `schema_migrations`, đảm bảo Migration `0048_admin_settings_and_search_indexes_v1` (và mọi migration sau này) luôn tự động chạy trên D1 live.
+  2. *Nhóm 2 — Sửa logic `sepayConnected` chống dương tính giả (`functions/api/admin/automation/status.ts`)*:
+     - Bổ sung blocklist không phân biệt hoa/thường (`active`, `api_key`, `apikey`, `sepay_api`, `sample`, `dummy`, `test_key`, `demo_key`) trong `isValidApiKey()`, chặn chuỗi giữ chỗ `SEPAY_KEY_MUSE_ACTIVE`.
+     - Yêu cầu `sepayConnected` phải có cờ `isConnected === true` / `is_connected === true` trong `wcg_admin_sepay_v4` (chỉ bật sau khi test key thành công).
+  3. *Nhóm 3 — Khử trùng lặp lưới tìm kiếm, đồng bộ D1 & mở lọc rating*:
+     - `functions/services/d1_service.ts` (`loadAllStoreProductsD1`): Khử trùng lặp theo `id` bằng `Map` khi hợp nhất `store_products` và `seller_products`, giữ nguyên toàn bộ các sản phẩm gốc & listing affiliate khác `id` (như 2 dòng `"Muse E2E Test Pack"`).
+     - `src/components/shopee/ShopeeTestView.tsx`: Khử trùng lặp theo `id` ở `filteredStoreProducts`, đảm bảo 1 sản phẩm = 1 thẻ duy nhất, bộ đếm và lưới DOM khớp 100%.
+     - `functions/api/search/index.ts` & `search_service.ts`: Đọc tham số `rating` / `min_rating` từ query string và áp dụng lọc `rating` cho cả `products` lẫn `games` (`rating=6` trả `0`).
+  4. *Nhóm 4 — Song ngữ 169 chuỗi ternary, dịch badge `"Hàng Số"` & bỏ `latencyMs: 8000`*:
+     - Chuyển toàn bộ 169+ chuỗi `isEn ? ... : ...` trong `Header.tsx`, `AuthModal.tsx` và `AdminSidebar.tsx` sang `t()` với key đối xứng trong `vi.json` / `en.json`; bổ sung strict guard quét `isEn ?` vào `scripts/check-hardcoded-i18n.cjs`.
+     - `ShopeeTestView.tsx`: Dịch badge `Hàng Số` / `Hàng Vật Lý` qua `t('mall.products.digitalBadge')` / `t('mall.products.physicalBadge')`.
+     - `AutomationCenterModule.tsx`: Bỏ `latencyMs: 8000` ghi cứng khi test lỗi (`latencyMs: 0`).
+  5. *Nhóm 5 — Google OAuth error code & Wishlist Header sync*:
+     - `functions/services/google_auth_service.ts`: Trả đúng `code: 'GOOGLE_CLIENT_ID_MISMATCH'` khi `aud` không khớp Client ID.
+     - `src/services/wishlistService.ts`: Tự động reset `inMemoryWishlist` và phát `pine_wishlist_updated` về `0` khi đăng xuất, lọc sạch phần tử rỗng từ `localStorage`.
+
 ### 462. Khắc Phục Toàn Diện Các Tồn Đọng Sau Kiểm Chứng Độc Lập (Nhóm 2, 3, 4 & 3 Bất Thường Admin) (25/11/2026)
+- **Lưu ý đính chính phạm vi thực tế (theo kiểm chứng `cae7c36`)**:
+  - Đợt `cae7c36` mới chuyển `isEn ?` sang `t()` cho 3/6 file (`WishlistDrawerModal.tsx`, `AutomationCenterModule.tsx`, `ProductDetailModal.tsx`); 3 file còn lại (`Header.tsx`, `AuthModal.tsx`, `AdminSidebar.tsx`) được hoàn tất ở Mục 463.
+  - Đợt `cae7c36` mới hỗ trợ `rating` trong `search_service.ts` chứ chưa mở tham số query ở route `functions/api/search/index.ts` (đã mở đầy đủ ở Mục 463).
 - **Bối cảnh & Yêu cầu**:
   - Xử lý dứt điểm toàn bộ lỗi và thiếu sót được chỉ ra trong báo cáo kiểm chứng độc lập (`kiem-chung-bao-cao-tong-hop-nhom2-nhom3-nhom4-2026-11-25.md`).
 - **Nguyên nhân gốc rễ & Giải pháp áp dụng (Solution)**:
