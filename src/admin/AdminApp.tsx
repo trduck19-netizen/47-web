@@ -39,6 +39,7 @@ const PlatformLeadsModule = React.lazy(() => import('./modules/PlatformLeadsModu
 const TranslationsModule = React.lazy(() => import('./modules/TranslationsModule').then((m) => ({ default: m.TranslationsModule })));
 const VouchersModule = React.lazy(() => import('./modules/VouchersModule').then((m) => ({ default: m.VouchersModule })));
 const HomepageSectionsModule = React.lazy(() => import('./modules/HomepageSectionsModule').then((m) => ({ default: m.HomepageSectionsModule })));
+const AutomationCenterModule = React.lazy(() => import('./modules/AutomationCenterModule').then((m) => ({ default: m.AutomationCenterModule })));
 import { MarketingNotificationToast } from '../components/MarketingNotificationToast';
 import { LanguageProvider, useLanguage } from '../context/LanguageContext';
 
@@ -75,6 +76,7 @@ const tabTitlesVi: Record<AdminModuleTab, string> = {
   sepay: 'Cổng Thanh Toán Tự Động SePay',
   content: 'Quản Trị Nội Dung & CMS',
   'api-keys': 'Quản Lý Khóa API & Phân Quyền',
+  'automation-center': 'Trung Tâm Tự Động Hóa & Tích Hợp API',
   'security-logs': 'Nhật Ký Bảo Mật & Audit Log',
   profile: 'Tài Khoản & Bảo Mật Admin',
 };
@@ -108,6 +110,7 @@ const tabTitlesEn: Record<AdminModuleTab, string> = {
   sepay: 'SePay Automated Gateway',
   content: 'Website Content CMS',
   'api-keys': 'API Keys & Scopes',
+  'automation-center': 'Automation Center & Integrations',
   'security-logs': 'Security Audit Logs',
   profile: 'Admin Account & Security',
 };
@@ -740,6 +743,10 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
 
         {currentTab === 'api-keys' && (
           <ApiKeysModule onShowToast={showToast} />
+        )}
+
+        {currentTab === 'automation-center' && (
+          <AutomationCenterModule onShowToast={showToast} />
         )}
 
         {currentTab === 'security-logs' && (

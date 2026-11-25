@@ -31,6 +31,7 @@ import {
   Store,
   Ticket,
   SlidersHorizontal,
+  Cpu,
 } from 'lucide-react';
 import { AdminUser } from '../types/adminTypes';
 import { normalizeVietnamese } from '../../utils/textUtils';
@@ -65,6 +66,7 @@ export type AdminModuleTab =
   | 'sepay'
   | 'content'
   | 'api-keys'
+  | 'automation-center'
   | 'security-logs'
   | 'profile';
 
@@ -290,6 +292,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     {
       title: isEn ? 'SYSTEM & SECURITY' : 'HỆ THỐNG & BẢO MẬT',
       items: [
+        {
+          id: 'automation-center',
+          label: isEn ? 'Automation Center' : 'Trung Tâm Tự Động Hóa',
+          icon: Cpu,
+          badge: 'LIVE',
+          badgeColor: 'bg-purple-500 text-white font-bold',
+        },
         {
           id: 'api-keys',
           label: isEn ? 'API Keys & Scopes' : 'Quản Lý Khóa API',

@@ -58,6 +58,9 @@ import * as userAddressesDefaultApi from './api/user/addresses/[id]/default';
 import * as googleAuthApi from './api/auth/oauth/google';
 import * as searchIndexApi from './api/search/index';
 import * as wishlistIndexApi from './api/user/wishlist/index';
+import * as adminAutomationStatusApi from './api/admin/automation/status';
+import * as adminAutomationTestApi from './api/admin/automation/test';
+import * as adminAutomationConfigApi from './api/admin/automation/config';
 import * as wishlistToggleApi from './api/user/wishlist/toggle';
 import * as wishlistSyncApi from './api/user/wishlist/sync';
 import * as missionsIdApi from './api/missions/[id]';
@@ -1698,6 +1701,24 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       if (pathname === '/api/admin/homepage-sections/ai-generate-image') {
         if (method === 'OPTIONS') return await homepageSectionsAiGenerateImageApi.onRequestOptions();
         if (method === 'POST') return await homepageSectionsAiGenerateImageApi.onRequestPost(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 8c-30. /api/admin/automation (Automation Center Hub API)
+      if (pathname === '/api/admin/automation/status') {
+        if (method === 'OPTIONS') return await adminAutomationStatusApi.onRequestOptions();
+        if (method === 'GET') return await adminAutomationStatusApi.onRequestGet(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (pathname === '/api/admin/automation/test') {
+        if (method === 'OPTIONS') return await adminAutomationTestApi.onRequestOptions();
+        if (method === 'POST') return await adminAutomationTestApi.onRequestPost(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (pathname === '/api/admin/automation/config') {
+        if (method === 'OPTIONS') return await adminAutomationConfigApi.onRequestOptions();
+        if (method === 'GET') return await adminAutomationConfigApi.onRequestGet(context);
+        if (method === 'POST' || method === 'PUT') return await adminAutomationConfigApi.onRequestPost(context);
         return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
       }
 

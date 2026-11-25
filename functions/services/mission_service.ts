@@ -152,6 +152,7 @@ export function hasScope(scopeStr: string | undefined | null, requiredScope: str
   if ((target === 'PRODUCTS_FULL' || target === 'PRODUCTS_MANAGE') && (scopes.includes('PRODUCTS_FULL') || scopes.includes('PRODUCTS_MANAGE') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
   if ((target === 'CATEGORIES_FULL' || target === 'CATEGORIES_MANAGE') && (scopes.includes('CATEGORIES_FULL') || scopes.includes('CATEGORIES_MANAGE') || scopes.includes('STORE_FULL') || scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
   if ((target === 'PLATFORM_LEADS_FULL' || target === 'PLATFORM_LEADS_MANAGE') && (scopes.includes('PLATFORM_LEADS_FULL') || scopes.includes('PLATFORM_LEADS_MANAGE') || scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
+  if (target === 'AUTOMATION_CENTER_FULL' && (scopes.includes('AUTOMATION_CENTER_FULL') || scopes.includes('ADMIN_FULL') || scopes.includes('SYSTEM_SETTINGS_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
   if (target === 'UNIVERSAL_MALL_FULL' && (scopes.includes('ADMIN_FULL') || scopes.includes('UNIVERSAL_MALL_FULL'))) return true;
   return scopes.includes(target);
 }

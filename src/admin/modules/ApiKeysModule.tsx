@@ -102,6 +102,7 @@ export type ApiKeyScope =
   | 'SECURITY_LOGS_FULL'
   | 'SYSTEM_SETTINGS_FULL'
   | 'HOMEPAGE_SECTIONS_MANAGE'
+  | 'AUTOMATION_CENTER_FULL'
   | 'SYNC_FULL' 
   | 'API_KEYS_FULL'
   | 'HISTORY_FULL'
@@ -121,6 +122,17 @@ export interface ScopeOption {
 }
 
 export const ALL_API_SCOPES: ScopeOption[] = [
+  {
+    id: 'AUTOMATION_CENTER_FULL',
+    name: 'Trung Tâm Tự Động Hóa (Automation Center API)',
+    category: 'Hệ Thống',
+    description: 'Toàn quyền kiểm tra trạng thái sức khỏe, test kết nối trực tiếp và cấu hình 6 kênh tích hợp qua /api/admin/automation/*.',
+    color: 'purple',
+    badgeBg: 'bg-purple-500/10',
+    badgeText: 'text-purple-500',
+    badgeBorder: 'border-purple-500/20',
+    icon: Boxes,
+  },
   {
     id: 'TELEGRAM_NOTIFY',
     name: 'Đăng Thông Báo Telegram (Telegram Notify & Followers API)',
