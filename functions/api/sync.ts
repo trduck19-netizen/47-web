@@ -5773,7 +5773,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           const merged = await mergeContentIntoD1(env.DB, body.content);
           currentMaster.content = merged;
         }
-        if (body.sepay !== undefined || body.key === 'wcg_admin_sepay_v4') {
+        if (body.sepay !== undefined || body.key === 'wcg_admin_sepay_v4' || body.key === 'pine_admin_sepay_v4') {
           const incomingSepay = (body.sepay ?? body.data) || {};
           const existingSepay = await getSettingD1<any>(env.DB, 'wcg_admin_sepay_v4', {});
           const secureSepay = await getSettingD1<any>(env.DB, 'wcg_admin_sepay_private_v1', {});

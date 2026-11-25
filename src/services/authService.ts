@@ -525,10 +525,15 @@ class AuthService {
     try {
       localStorage.removeItem(this.TOKEN_KEY);
       localStorage.removeItem(this.REMEMBER_KEY);
+      localStorage.removeItem('pine_user_wishlist_local');
       sessionStorage.removeItem(this.TOKEN_KEY);
       if (typeof document !== 'undefined') {
         document.cookie = `${this.TOKEN_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
         document.cookie = 'pine_auth_user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
+      }
+      // BẮT BUỘC phát sự kiện SAU KHI đã xóa toàn bộ token để listener kiểm tra getAuthToken() === '' và reset sạch wishlist
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('pine_auth_state_changed', { detail: { loggedIn: false } }));
       }
     } catch {}
   }

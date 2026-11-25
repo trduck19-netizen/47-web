@@ -1765,7 +1765,7 @@ class AdminDataService {
       localStorage.setItem(this.KEYS.SEPAY, JSON.stringify(this.sepayConfig));
       crossOriginSync.setItem(this.KEYS.SEPAY, this.sepayConfig);
       this.broadcastSync('SEPAY_UPDATED');
-      await this.syncToCloudflareKV(this.KEYS.SEPAY, this.sepayConfig);
+      await this.syncToCloudflareKV('wcg_admin_sepay_v4', this.sepayConfig);
     } catch {}
   }
   private saveSecurityLogs() {

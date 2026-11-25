@@ -1255,16 +1255,19 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     await ensureCodeReportsSchema(db);
     await ensureGameCommentsSchema(db);
     await ensureMarketplaceSchema(db);
+    let appliedMigSet = new Set<string>();
     // Safe schema migrations tracking
     try {
       await db.prepare("CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, executed_at TEXT DEFAULT (datetime('now')));").run().catch(() => {});
+      const migRows = await db.prepare('SELECT id FROM schema_migrations').all<{ id: string }>().catch(() => ({ results: [] }));
+      appliedMigSet = new Set<string>((migRows?.results || []).map((r: any) => String(r.id)));
     } catch (e) {
       console.error('[SchemaUpgrade] Migration table error:', e);
     }
 
     // Migration 0013: Self-healing for Avatar Land metadata, Thức Thần Ký, and Giveaway offsets
     try {
-      const fixCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'fix_metadata_and_giveaways_v2' LIMIT 1").first().catch(() => null);
+      const fixCheck = appliedMigSet.has('fix_metadata_and_giveaways_v2');
       if (!fixCheck) {
         // 1. Fix Thức Thần Ký
         await db.prepare("UPDATE games SET name = 'Thức Thần Ký' WHERE slug = 'thuc-than-ky' OR name = 'Thực Thần Ký'").run().catch(() => {});
@@ -1303,7 +1306,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0014: First Purchase Offer Campaign v1 (Columns in orders & members, reset audit table, indexes)
     try {
-      const fpCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'first_purchase_campaign_v1' LIMIT 1").first().catch(() => null);
+      const fpCheck = appliedMigSet.has('first_purchase_campaign_v1');
       if (!fpCheck) {
         // 1. Thêm cột đơn hàng: original_price, price_paid, discount_type, discount_amount
         await db.prepare('ALTER TABLE orders ADD COLUMN original_price INTEGER;').run().catch(() => {});
@@ -1356,7 +1359,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0015: Escalating Price Model v1 (Columns in store_products & orders, reset audit table, indexes)
     try {
-      const epCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'escalating_price_v1' LIMIT 1").first().catch(() => null);
+      const epCheck = appliedMigSet.has('escalating_price_v1');
       if (!epCheck) {
         // 1. Thêm cột hình thức mua cho store_products
         await db.prepare("ALTER TABLE store_products ADD COLUMN sale_mode TEXT DEFAULT 'normal';").run().catch(() => {});
@@ -1393,7 +1396,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0016: First Purchase Per Package v1 (Separate settings per package)
     try {
-      const fppCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'first_purchase_per_package_v1' LIMIT 1").first().catch(() => null);
+      const fppCheck = appliedMigSet.has('first_purchase_per_package_v1');
       if (!fppCheck) {
         // 1. Thêm 3 cột cài đặt ưu đãi mua lần đầu riêng cho từng gói
         await db.prepare('ALTER TABLE store_products ADD COLUMN first_purchase_enabled INTEGER DEFAULT 1;').run().catch(() => {});
@@ -1431,7 +1434,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration direct_qr_payment_v1: Hỗ trợ thanh toán QR trực tiếp theo giá sản phẩm, bảo lưu mã kho và xử lý ngoại lệ SePay
     try {
-      const qrMigDone = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'direct_qr_payment_v1' LIMIT 1").first().catch(() => null);
+      const qrMigDone = appliedMigSet.has('direct_qr_payment_v1');
       if (!qrMigDone) {
         await db.prepare("ALTER TABLE orders ADD COLUMN payment_method TEXT DEFAULT 'WALLET';").run().catch(() => {});
         await db.prepare("ALTER TABLE orders ADD COLUMN expires_at TEXT;").run().catch(() => {});
@@ -1451,7 +1454,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration security_logs_target_user_v1: Thêm cột target_user cho bảng security_logs
     try {
-      const secMigDone = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'security_logs_target_user_v1' LIMIT 1").first().catch(() => null);
+      const secMigDone = appliedMigSet.has('security_logs_target_user_v1');
       if (!secMigDone) {
         await db.prepare("ALTER TABLE security_logs ADD COLUMN target_user TEXT;").run().catch(() => {});
         await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('security_logs_target_user_v1');").run().catch(() => {});
@@ -1462,7 +1465,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration utilities_first_purchase_v1: Thêm 3 cột cờ ưu đãi mua lần đầu cho bảng utilities
     try {
-      const utFpDone = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'utilities_first_purchase_v1' LIMIT 1").first().catch(() => null);
+      const utFpDone = appliedMigSet.has('utilities_first_purchase_v1');
       if (!utFpDone) {
         await db.prepare("ALTER TABLE utilities ADD COLUMN first_purchase_enabled INTEGER DEFAULT 0;").run().catch(() => {});
         await db.prepare("ALTER TABLE utilities ADD COLUMN first_purchase_price INTEGER;").run().catch(() => {});
@@ -1477,7 +1480,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration admin_scope_and_telegram_full_v1: Cấp MEMBERS_FULL cho khóa Store và tạo preset Telegram Full key
     try {
-      const scopeMig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'admin_scope_and_telegram_full_v1' LIMIT 1").first().catch(() => null);
+      const scopeMig = appliedMigSet.has('admin_scope_and_telegram_full_v1');
       if (!scopeMig) {
         // Cấp scope MEMBERS_FULL cho các key store hiện có
         await db.prepare(`
@@ -1506,7 +1509,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration store_key_grant_games_and_news_v1: Cấp GAMES_FULL và NEWS_FULL cho khóa Store hiện có
     try {
-      const storeScopeMig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'store_key_grant_games_and_news_v1' LIMIT 1").first().catch(() => null);
+      const storeScopeMig = appliedMigSet.has('store_key_grant_games_and_news_v1');
       if (!storeScopeMig) {
         // Cấp scope GAMES_FULL, NEWS_FULL, FREE_CODES_FULL, SUBMISSIONS_FULL, CONTENT_FULL cho các key store hiện có
         await db.prepare(`
@@ -1524,7 +1527,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 14. Migration 0012: Sửa tận gốc hàng D1 ngày ra mắt KOF: Legend thành 2026-11-04 (0012_fix_kof_legend_release_date.sql)
   try {
-    const kofMig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0012_fix_kof_legend_release_date' LIMIT 1;").first<any>().catch(() => null);
+    const kofMig = appliedMigSet.has('0012_fix_kof_legend_release_date');
     if (!kofMig) {
       await db.prepare("UPDATE games SET release_date = '2026-11-04', updated_at = datetime('now') WHERE slug = 'kof-legend'").run().catch(() => {});
       await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0012_fix_kof_legend_release_date');").run().catch(() => {});
@@ -1535,7 +1538,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 15. Migration 0013: Sửa NPH game Pirate Legends thành Neotrix (0013_fix_pirate_legends_publisher.sql)
   try {
-    const plMig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0013_fix_pirate_legends_publisher' LIMIT 1;").first<any>().catch(() => null);
+    const plMig = appliedMigSet.has('0013_fix_pirate_legends_publisher');
     if (!plMig) {
       await db.prepare("UPDATE games SET publisher = 'Neotrix', updated_at = datetime('now') WHERE slug = 'pirate-legends' OR id = 'pirate-legends'").run().catch(() => {});
       await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0013_fix_pirate_legends_publisher');").run().catch(() => {});
@@ -1546,7 +1549,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 16. Migration 0014: Sửa ảnh bìa bài tin Clone Drone sang WebP (0014_fix_clone_drone_news_cover.sql)
   try {
-    const cdMig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0014_fix_clone_drone_news_cover' LIMIT 1;").first<any>().catch(() => null);
+    const cdMig = appliedMigSet.has('0014_fix_clone_drone_news_cover');
     if (!cdMig) {
       await db.prepare("UPDATE system_settings SET value = REPLACE(value, '/game_icons/clone-drone-in-the-danger-zone.png', '/game_icons/clone-drone-in-the-danger-zone.webp'), updated_at = datetime('now') WHERE key = 'wcg_news_articles_v1' AND value LIKE '%clone-drone-in-the-danger-zone.png%'").run().catch(() => {});
       await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0014_fix_clone_drone_news_cover');").run().catch(() => {});
@@ -1557,7 +1560,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 17. Migration 0015: Dọn sạch icon cũ của idle-cat-gunner trong uploaded_game_icons (0015_clean_idle_cat_gunner_icon.sql)
   try {
-    const icgMig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0015_clean_idle_cat_gunner_icon' LIMIT 1;").first<any>().catch(() => null);
+    const icgMig = appliedMigSet.has('0015_clean_idle_cat_gunner_icon');
     if (!icgMig) {
       await db.prepare("DELETE FROM uploaded_game_icons WHERE slug IN ('idle-cat-gunner', 'idle-cat-gunner.webp', 'idle-cat-gunner-thumb', 'idle-cat-gunner-thumb-256')").run().catch(() => {});
       await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0015_clean_idle_cat_gunner_icon');").run().catch(() => {});
@@ -1568,7 +1571,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 18. Migration 0016: Chuẩn hóa markdown bài tin Clone Drone (0016_clean_clone_drone_markdown.sql)
   try {
-    const m16Mig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0016_clean_clone_drone_markdown' LIMIT 1;").first<any>().catch(() => null);
+    const m16Mig = appliedMigSet.has('0016_clean_clone_drone_markdown');
     if (!m16Mig) {
       await db.prepare(`
         UPDATE system_settings
@@ -1620,7 +1623,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 19. Migration 0017: Gộp 3 bản Where Winds Meet thành 1 bản chính duy nhất + Xóa 5 sản phẩm test khỏi CSDL D1
   try {
-    const m17Mig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0017_merge_wwm_and_purge_test_products' LIMIT 1;").first<any>().catch(() => null);
+    const m17Mig = appliedMigSet.has('0017_merge_wwm_and_purge_test_products');
     if (!m17Mig) {
       // 1. Xóa sạch 5 sản phẩm test và kho mã test liên quan
       await db.prepare(`
@@ -1729,7 +1732,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 20. Migration 0018: Khôi phục ngày hết hạn cho 14 mã Where Winds Meet + Bổ sung 2 game chuẩn hóa 593 game + Xóa sản phẩm test
   try {
-    const m18Mig = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0018_restore_wwm_14_codes_expiration' LIMIT 1;").first<any>().catch(() => null);
+    const m18Mig = appliedMigSet.has('0018_restore_wwm_14_codes_expiration');
     if (!m18Mig) {
       // 1. Khôi phục expires_at = '2026-11-09' cho đúng 14 mã WWM
       await db.prepare(`
@@ -1826,7 +1829,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0025: Align members and orders schema with D1 Universal Mall tables
     try {
-      const alignCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0025_align_members_and_orders_v1' LIMIT 1").first().catch(() => null);
+      const alignCheck = appliedMigSet.has('0025_align_members_and_orders_v1');
       if (!alignCheck) {
         // Safe column additions to members
         const memberCols = ['username TEXT', 'display_name TEXT', 'salt TEXT', 'total_spent INTEGER DEFAULT 0', 'session_token TEXT', 'avatar_url TEXT'];
@@ -1860,7 +1863,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0026: Elevate preset keys in mission_ai_api_keys to full admin scopes for Muse audit
     try {
-      const scopeCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0026_elevate_preset_scopes_v1' LIMIT 1").first().catch(() => null);
+      const scopeCheck = appliedMigSet.has('0026_elevate_preset_scopes_v1');
       if (!scopeCheck) {
         await db.prepare(`
           UPDATE mission_ai_api_keys 
@@ -1875,7 +1878,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0027: Register dedicated Muse Full Admin key in mission_ai_api_keys
     try {
-      const museCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0027_seed_muse_full_admin_key_v1' LIMIT 1").first().catch(() => null);
+      const museCheck = appliedMigSet.has('0027_seed_muse_full_admin_key_v1');
       if (!museCheck) {
         await db.prepare(`
           INSERT OR REPLACE INTO mission_ai_api_keys (
@@ -1901,7 +1904,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0028: Rotate compromised preset keys and purge raw_key from D1
     try {
-      const rotCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0028_rotate_compromised_keys_and_purge_raw_keys_v1' LIMIT 1").first().catch(() => null);
+      const rotCheck = appliedMigSet.has('0028_rotate_compromised_keys_and_purge_raw_keys_v1');
       if (!rotCheck) {
         // 1. Rotate ak_preset_giveaways_full
         await db.prepare(`
@@ -1958,7 +1961,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0029: Seed 5 multi-industry categories and configure Universal Mall SePay prefix UM
     try {
-      const catCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0029_seed_multi_industry_categories_v1' LIMIT 1").first().catch(() => null);
+      const catCheck = appliedMigSet.has('0029_seed_multi_industry_categories_v1');
       if (!catCheck) {
         // Ensure categories table exists
         await db.prepare(`
@@ -2043,7 +2046,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0031: Purge all 7 test products permanently from products table per Owner Order
     try {
-      const pCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0031_purge_test_products_v1' LIMIT 1").first().catch(() => null);
+      const pCheck = appliedMigSet.has('0031_purge_test_products_v1');
       if (!pCheck) {
         await db.prepare("DELETE FROM products WHERE title LIKE '%[TEST]%' OR title LIKE '%Temporary%' OR is_active = 0;").run().catch(() => {});
         await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0031_purge_test_products_v1');").run().catch(() => {});
@@ -2054,7 +2057,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0032: Purge test product permanently from store_products table (Việc 3)
     try {
-      const spPurgeCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0032_purge_store_products_test_v1' LIMIT 1").first().catch(() => null);
+      const spPurgeCheck = appliedMigSet.has('0032_purge_store_products_test_v1');
       if (!spPurgeCheck) {
         await db.prepare("DELETE FROM store_products WHERE id = 'sp_test_1' OR LOWER(id) LIKE '%test%' OR LOWER(title) LIKE '%test%';").run().catch(() => {});
         await db.prepare("DELETE FROM inventory_codes WHERE product_id = 'sp_test_1';").run().catch(() => {});
@@ -2066,7 +2069,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0033: Product reviews schema & Escrow columns (Việc 1 & 2)
     try {
-      const prCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0033_product_reviews_and_escrow_v1' LIMIT 1").first().catch(() => null);
+      const prCheck = appliedMigSet.has('0033_product_reviews_and_escrow_v1');
       if (!prCheck) {
         // 1. Tạo bảng đánh giá sản phẩm product_reviews
         await db.prepare(`
@@ -2120,7 +2123,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0034: Store API Keys & Third-party App Integration Schema (Việc 2 & Việc 3)
     try {
-      const sakCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0034_seller_api_keys_and_third_party_apps_v1' LIMIT 1").first().catch(() => null);
+      const sakCheck = appliedMigSet.has('0034_seller_api_keys_and_third_party_apps_v1');
       if (!sakCheck) {
         // 1. Bảng khóa API riêng theo gian hàng
         await db.prepare(`
@@ -2220,7 +2223,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0035: Purge hardcoded test IDs and restore Gian Hàng Test Muse ownership to usr_1795086871229_87qa
     try {
-      const mig0035 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0035_purge_hardcoded_test_ids_and_restore_seller_v1' LIMIT 1").first().catch(() => null);
+      const mig0035 = appliedMigSet.has('0035_purge_hardcoded_test_ids_and_restore_seller_v1');
       if (!mig0035) {
         // 1. Trả lại quyền sở hữu gian hàng test về cho tài khoản test thật usr_1795086871229_87qa (muse-test-seller)
         await db.prepare(`
@@ -2258,7 +2261,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0036: Split-Order Engine (Product type digital/physical, satellite config tables)
     try {
-      const mig0036 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0036_split_order_engine_v1' LIMIT 1").first().catch(() => null);
+      const mig0036 = appliedMigSet.has('0036_split_order_engine_v1');
       if (!mig0036) {
         // 1. Thêm cột phân loại sản phẩm số / vật lý và thông số kho vào seller_products và products
         await db.prepare("ALTER TABLE seller_products ADD COLUMN product_type TEXT DEFAULT 'digital';").run().catch(() => {});
@@ -2316,7 +2319,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0037: Ensure Gian Hàng Test Muse is ACTIVE permanently
     try {
-      const mig0037 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0037_ensure_test_muse_seller_active_v1' LIMIT 1").first().catch(() => null);
+      const mig0037 = appliedMigSet.has('0037_ensure_test_muse_seller_active_v1');
       if (!mig0037) {
         await db.prepare(`
           UPDATE sellers 
@@ -2331,7 +2334,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0038: Ensure test seller member usr_1795086871229_87qa exists and unblock login IP limits
     try {
-      const mig0038 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0038_seed_test_seller_member_v1' LIMIT 1").first().catch(() => null);
+      const mig0038 = appliedMigSet.has('0038_seed_test_seller_member_v1');
       if (!mig0038) {
         await db.prepare(`
           INSERT OR IGNORE INTO members (id, username, display_name, email, role, balance, status, created_at)
@@ -2346,7 +2349,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0039: Homepage Section Images Table (Phase 2/3 - WebP storage & anti-ballooning)
     try {
-      const mig0039 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0039_homepage_section_images_v1' LIMIT 1").first().catch(() => null);
+      const mig0039 = appliedMigSet.has('0039_homepage_section_images_v1');
       if (!mig0039) {
         await db.prepare(`
           CREATE TABLE IF NOT EXISTS homepage_section_images (
@@ -2373,7 +2376,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0040: Add section_id column to homepage_section_images for exact 10-image limit tracking
     try {
-      const mig0040 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0040_homepage_section_images_section_id_v1' LIMIT 1").first().catch(() => null);
+      const mig0040 = appliedMigSet.has('0040_homepage_section_images_section_id_v1');
       if (!mig0040) {
         await db.prepare("ALTER TABLE homepage_section_images ADD COLUMN section_id TEXT;").run().catch(() => {});
         await db.prepare(`
@@ -2392,7 +2395,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0041: Seed real E2E custom homepage section with image & backfill unassigned legacy images
     try {
-      const mig0041 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0041_seed_e2e_real_homepage_custom_section_v1' LIMIT 1").first().catch(() => null);
+      const mig0041 = appliedMigSet.has('0041_seed_e2e_real_homepage_custom_section_v1');
       if (!mig0041) {
         // 1. Backfill legacy images safely: only assign to 'main_hero_banner' if actually a hero/banner, otherwise 'legacy_unassigned'
         await db.prepare(`
@@ -2500,7 +2503,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0042: User AI API Keys, Scopes, Devices, Call Logs & Security Alerts
     try {
-      const uakCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0042_user_ai_api_keys_and_security_v1' LIMIT 1").first().catch(() => null);
+      const uakCheck = appliedMigSet.has('0042_user_ai_api_keys_and_security_v1');
       if (!uakCheck) {
         // 1. Bảng khóa API riêng cấp người dùng
         await db.prepare(`
@@ -2603,7 +2606,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0043: Cross-Shop Reseller / Affiliate API GĐ1 (Partnerships, Listings, Sync Logs, Call Logs)
     try {
-      const affCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0043_seller_affiliate_cross_shop_v1' LIMIT 1").first().catch(() => null);
+      const affCheck = appliedMigSet.has('0043_seller_affiliate_cross_shop_v1');
       if (!affCheck) {
         // 1. Mở rộng bảng seller_products
         await db.prepare("ALTER TABLE seller_products ADD COLUMN resell_enabled INTEGER DEFAULT 0;").run().catch(() => {});
@@ -2711,9 +2714,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0044: Bổ sung cột thiếu (AI call logs + affiliate partnerships) + sửa UNIQUE seller_disputes
     try {
-      const m0044Check = await db.prepare(
-        "SELECT 1 FROM schema_migrations WHERE id = '0044_schema_fixes_affiliate_ai_disputes' LIMIT 1"
-      ).first().catch(() => null);
+      const m0044Check = appliedMigSet.has('0044_schema_fixes_affiliate_ai_disputes');
 
       if (!m0044Check) {
         // 1. Bổ sung cột response_time_ms cho user_ai_api_call_logs
@@ -2797,7 +2798,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     // Migration 0045: Sanitize homepage_section_images backfill - prevent legacy images from misattributing to main_hero_banner quota
     try {
-      const mig0045 = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0045_sanitize_homepage_images_section_backfill_v1' LIMIT 1").first().catch(() => null);
+      const mig0045 = appliedMigSet.has('0045_sanitize_homepage_images_section_backfill_v1');
       if (!mig0045) {
         // Re-assign images misattributed to 'main_hero_banner' that are not actually hero banner images
         await db.prepare(`
@@ -3343,7 +3344,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // Data Recovery & Balance Reconciliation (Self-healing migration v6)
   try {
-    const healCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'heal_and_restore_wallets_v6' LIMIT 1;").first<any>().catch(() => null);
+    const healCheck = appliedMigSet.has('heal_and_restore_wallets_v6');
     if (!healCheck) {
       // 1. Restore wallet transactions if missing
       await db.prepare(`
@@ -3396,7 +3397,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // Migration 0010: Game download links and click tracking (Idempotent)
   try {
-    const dlCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'download_links_and_clicks_v1' LIMIT 1;").first<any>().catch(() => null);
+    const dlCheck = appliedMigSet.has('download_links_and_clicks_v1');
     if (!dlCheck) {
       // 1. Create download_clicks table
       await db.prepare(`
@@ -3442,7 +3443,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // Migration 0011: Precomputed games & codes tables with high-speed indexes (Idempotent)
   try {
-    const gamesCodesCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'games_and_codes_optimized_v1' LIMIT 1;").first<any>().catch(() => null);
+    const gamesCodesCheck = appliedMigSet.has('games_and_codes_optimized_v1');
     if (!gamesCodesCheck) {
       // 1. Create games table if not exists
       await db.prepare(`
@@ -3594,7 +3595,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 14. Migration 0046: Cart Items & User Addresses (Customer Experience APIs)
   try {
-    const cCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0046_cart_and_user_addresses_v1' LIMIT 1").first().catch(() => null);
+    const cCheck = appliedMigSet.has('0046_cart_and_user_addresses_v1');
     if (!cCheck) {
       // 1. Bảng giỏ hàng người dùng (Cart Sync API)
       await db.prepare(`
@@ -3650,7 +3651,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 15. Migration 0047: Google OAuth2, Wishlist & Search Indexes
   try {
-    const oCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0047_google_oauth_and_wishlist_v1' LIMIT 1").first().catch(() => null);
+    const oCheck = appliedMigSet.has('0047_google_oauth_and_wishlist_v1');
     if (!oCheck) {
       // 1. Cột OAuth2 cho bảng members
       await db.prepare("ALTER TABLE members ADD COLUMN auth_provider TEXT DEFAULT 'local';").run().catch(() => {});
@@ -3676,8 +3677,6 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       await db.prepare('CREATE INDEX IF NOT EXISTS idx_wishlist_item ON user_wishlist(item_type, item_id);').run().catch(() => {});
 
       // 3. Search indexes cho bảng store_products & games
-      await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_search ON store_products(status, price_core, created_at);').run().catch(() => {});
-      await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_seller ON store_products(seller_id, status);').run().catch(() => {});
       await db.prepare('CREATE INDEX IF NOT EXISTS idx_games_search ON games(status, release_date);').run().catch(() => {});
 
       await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0047_google_oauth_and_wishlist_v1');").run().catch(() => {});
@@ -3688,7 +3687,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
   // 16. Migration 0048: Bảng admin_settings cho Automation Center & Search Indexes chuẩn cột thực tế
   try {
-    const aCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0048_admin_settings_and_search_indexes_v1' LIMIT 1").first().catch(() => null);
+    const aCheck = appliedMigSet.has('0048_admin_settings_and_search_indexes_v1');
     if (!aCheck) {
       await db.prepare(`
         CREATE TABLE IF NOT EXISTS admin_settings (
@@ -3699,12 +3698,28 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       `).run().catch(() => {});
 
       await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_search_v2 ON store_products(is_active, current_price, created_at);').run().catch(() => {});
-      await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_seller_v2 ON store_products(seller_id, is_active);').run().catch(() => {});
 
       await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0048_admin_settings_and_search_indexes_v1');").run().catch(() => {});
     }
   } catch (err: any) {
     console.warn('[Migration 0048_admin_settings_and_search_indexes_v1 error]', err?.message);
+  }
+
+
+  // 17. Migration 0049: Bổ sung cột seller_id cho store_products (nếu thiếu) và tạo idx_store_products_seller_v2
+  try {
+    const s49Check = appliedMigSet.has('0049_store_products_seller_column_and_index_v1');
+    if (!s49Check) {
+      const colRes = await db.prepare('PRAGMA table_info(store_products)').all<{ name: string }>().catch(() => ({ results: [] }));
+      const hasSellerIdCol = (colRes?.results || []).some((col: any) => String(col.name) === 'seller_id');
+      if (!hasSellerIdCol) {
+        await db.prepare('ALTER TABLE store_products ADD COLUMN seller_id TEXT;').run().catch(() => {});
+      }
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_seller_v2 ON store_products(seller_id, is_active);').run().catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0049_store_products_seller_column_and_index_v1');").run().catch(() => {});
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0049_store_products_seller_column_and_index_v1 error]', err?.message);
   }
 
   schemaUpgradesDone = true;

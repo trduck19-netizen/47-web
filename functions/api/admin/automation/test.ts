@@ -123,6 +123,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         const latencyMs = Math.max(1, Date.now() - t0);
 
         if (pingRes.ok || pingRes.status === 200) {
+          // Ghi nhận cờ isConnected: true vào system_settings['wcg_admin_sepay_v4'] khi test thành công
+          try {
+            const nextCfg = { ...(cfg && typeof cfg === 'object' ? cfg : {}), apiKey: key, isConnected: true, is_connected: true };
+            await env.DB.prepare(
+              "INSERT INTO system_settings (key, value, updated_at) VALUES ('wcg_admin_sepay_v4', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+            ).bind(JSON.stringify(nextCfg)).run();
+          } catch {}
           return new Response(
             JSON.stringify({
               success: true,

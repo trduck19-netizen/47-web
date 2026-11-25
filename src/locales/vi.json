@@ -1453,6 +1453,7 @@
     "removeTooltip": "Bỏ lưu yêu thích"
   },
   "automationCenter": {
+    "checkingStatus": "Đang kiểm tra kết nối các dịch vụ...",
     "title": "Trung Tâm Tự Động Hóa & Tích Hợp API",
     "subtitle": "Giám sát tập trung, bật/tắt và đo lường kết nối trực tiếp cho toàn bộ 6 dịch vụ cốt lõi.",
     "menuLabel": "Trung Tâm Tự Động Hóa",

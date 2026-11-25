@@ -10,6 +10,18 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-325: Bẫy Lệch Key Đồng Bộ `pine_admin_sepay_v4` vs `wcg_admin_sepay_v4`, `totalProducts` Tính Trên Lát Cắt Phân Trang & Chưa Phát Sự Kiện Đăng Xuất Cho Wishlist
+- **Triệu chứng & Rủi ro**:
+  - `saveSePay()` gửi `{ key: 'pine_admin_sepay_v4' }` lên `/api/sync` trong khi `status.ts` đọc `wcg_admin_sepay_v4`; đồng thời `executeSaveConfig` tự đặt `isConnected: Boolean(apiKey.trim())` không qua test.
+  - `search_service.ts` gán `totalProducts = results.products.length` sau khi đã `LIMIT/OFFSET` khi có `rating`, làm `totalPages` bị kẹt ở 1.
+  - `authService.logout()` không xóa `pine_user_wishlist_local` và không phát `pine_auth_state_changed` sau khi xóa token.
+  - `ensureSchemaUpgrades` chạy ~42 truy vấn `SELECT 1 FROM schema_migrations` tuần tự làm cold start mất 33–48s.
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 464)**:
+  - `saveSePay()` đồng bộ đúng key `wcg_admin_sepay_v4`; chỉ set `isConnected: true` sau khi test thành công.
+  - `totalProducts` tính bằng `COUNT(*)` có điều kiện `AVG(product_reviews)` (`status = 'approved'`) trước phân trang.
+  - `logout()` xóa sạch token + `pine_user_wishlist_local` rồi phát `pine_auth_state_changed`.
+  - Gộp 1 câu `SELECT id FROM schema_migrations` vào `appliedMigSet` trong RAM và thêm Migration `0049` bổ sung `seller_id` + `idx_store_products_seller_v2`.
+
 ### ISSUE-324: Bẫy Checkpoint Early-Return 1 Key Cứng Nuốt Migration Mới & Trùng Lặp Sản Phẩm Khi Merge 2 Bảng (`store_products` + `seller_products`)
 - **Triệu chứng & Rủi ro**:
   - Checkpoint thoát sớm ở `d1_service.ts` kiểm tra 1 key đơn lẻ (`0047_google_oauth_and_wishlist_v1`) khiến mọi migration bổ sung phía sau (`0048`) không bao giờ chạy trên D1 live, làm `POST /api/admin/automation/config` lỗi `500 no such table: admin_settings`.

@@ -7,6 +7,24 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-25]
 
+### 464. Sửa Đường Ghi SePay `wcg_admin_sepay_v4`, `totalProducts` Lọc Rating, Nối Dây Reset Wishlist Logout, Migration `0049` & Tối Ưu Cold Start `ensureSchemaUpgrades` (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý dứt điểm 5 nhóm lỗi phát hiện sau commit `2f1aefb` theo bản kế hoạch đã duyệt (`ke_hoach_sua_not_sau_2f1aefb_25_11.md` - Bản 4 sửa).
+- **Nguyên nhân gốc rễ & Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Đường ghi cờ `isConnected` SePay*:
+     - `src/admin/services/adminDataService.ts`: Chỉnh `saveSePay()` gọi `syncToCloudflareKV('wcg_admin_sepay_v4', this.sepayConfig)` thay cho `pine_admin_sepay_v4`.
+     - `src/admin/modules/SePayModule.tsx` (`executeSaveConfig`): Khi bấm Lưu mà chưa test, nếu `apiKey` thay đổi → gán `isConnected: false`, nếu `apiKey` giữ nguyên → giữ nguyên cờ cũ; chỉ set `isConnected: true` sau khi test thành công.
+     - `functions/api/admin/automation/test.ts`: Cập nhật `isConnected: true` vào `system_settings['wcg_admin_sepay_v4']` khi test SePay thành công; `functions/api/sync.ts` map phòng thủ cả `pine_admin_sepay_v4`.
+  2. *Nhóm 2 — Sửa `totalProducts` khi lọc `rating` & đọc AVG từ `product_reviews`*:
+     - `functions/services/search_service.ts`: Tính `totalProducts` từ `COUNT(*)` có điều kiện `rating` trên toàn bộ tập khớp trước khi phân trang `LIMIT/OFFSET`; lấy điểm trung bình `COALESCE(AVG(pr.rating), 5)` từ `product_reviews` (`status = 'approved'`).
+  3. *Nhóm 3 — Nối dây Reset Wishlist khi đăng xuất*:
+     - `src/services/authService.ts` (`logout()`): Xóa `TOKEN_KEY` (localStorage/sessionStorage/cookie) và `pine_user_wishlist_local` TRƯỚC, rồi phát `window.dispatchEvent(new CustomEvent('pine_auth_state_changed', { detail: { loggedIn: false } }))` để `wishlistService` reset sạch `inMemoryWishlist` và cập nhật huy hiệu tim về `0` ngay trong phiên.
+  4. *Nhóm 4 — Migration `0049` & rà soát `CREATE INDEX`*:
+     - `functions/services/d1_service.ts`: Thêm Migration `0049_store_products_seller_column_and_index_v1` kiểm tra `PRAGMA table_info(store_products)` bổ sung cột `seller_id TEXT` nếu thiếu và tạo `idx_store_products_seller_v2`; dọn sạch 2 lệnh index lỗi cũ ở khối 0047.
+  5. *Nhóm 5 — Tối ưu Cold Start `ensureSchemaUpgrades`*:
+     - `functions/services/d1_service.ts`: Đọc 1 câu `SELECT id FROM schema_migrations` đầu hàm lưu vào `appliedMigSet` (Set trong RAM) thay cho ~42 truy vấn riêng lẻ, giảm cold start từ 33–48s xuống ~1–2s.
+     - `src/admin/modules/AutomationCenterModule.tsx`: Tăng timeout `loadStatus` lên 15s và hiển thị trạng thái `t('automationCenter.checkingStatus')` song ngữ VI/EN khi đang tải.
+
 ### 463. Sửa Tận Gốc Checkpoint Migration, Logic `sepayConnected`, Khử Trùng Lặp Lưới Tìm Kiếm, Lọc Rating & Chuẩn Hóa 169 Chuỗi Ternary (25/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Xử lý triệt để các lỗi phát hiện sau commit `cae7c36` (`kiem-chung-bao-cao-trien-khai-5-goi-cae7c36` & `prompt-anti-sua-not-cae7c36`).

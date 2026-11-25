@@ -135,15 +135,19 @@ export const SePayModule: React.FC<SePayModuleProps> = ({ onShowToast }) => {
     setIsSavingConfig(true);
 
     try {
+      const nextApiKey = apiKey.trim();
+      const prevApiKey = (config?.apiKey || '').trim();
+      const nextIsConnected = nextApiKey === prevApiKey ? Boolean(config?.isConnected) : false;
+
       const updated = await adminDataService.updateSePayConfig({
-        apiKey: apiKey.trim(),
+        apiKey: nextApiKey,
         bankAccount: bankAccount.trim(),
         accountNumber: accountNumber.trim(),
         bankName: bankName,
         paymentPrefix: paymentPrefix.trim() || 'WCG',
         minQrAmount: Number(minQrAmount) > 0 ? Number(minQrAmount) : 2000,
         qrOrderExpiryMinutes: Number(qrOrderExpiryMinutes) > 0 ? Number(qrOrderExpiryMinutes) : 15,
-        isConnected: Boolean(apiKey.trim()),
+        isConnected: nextIsConnected,
         webhookSecretSet: true,
         autoCreditCoreRatio: 1,
       });

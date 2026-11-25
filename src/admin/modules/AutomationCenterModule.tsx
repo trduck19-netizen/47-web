@@ -88,7 +88,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
     else setIsRefreshing(true);
 
     try {
-      const res = await fetchWithTimeout('/api/admin/automation/status');
+      const res = await fetchWithTimeout('/api/admin/automation/status', {}, 15000);
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
@@ -242,7 +242,11 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                 {t('automationCenter.title')}
               </h1>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                {summary?.overallStatus === 'healthy' ? t('automationCenter.statusHealthy') : t('automationCenter.statusDegraded')}
+                {isLoading
+                  ? t('automationCenter.checkingStatus')
+                  : summary?.overallStatus === 'healthy'
+                  ? t('automationCenter.statusHealthy')
+                  : t('automationCenter.statusDegraded')}
               </span>
             </div>
             <p className="text-xs text-slate-400">

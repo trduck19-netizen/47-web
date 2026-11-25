@@ -1453,6 +1453,7 @@
     "removeTooltip": "Remove from wishlist"
   },
   "automationCenter": {
+    "checkingStatus": "Checking service connections...",
     "title": "Automation & Integrations Hub",
     "subtitle": "Centralized monitoring and live connection health for all 6 core edge services.",
     "menuLabel": "Automation Center",

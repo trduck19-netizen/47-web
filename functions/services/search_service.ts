@@ -131,9 +131,15 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
         totalProducts = 0;
         results.products = [];
       } else {
+        const ratingVal = params.rating && params.rating > 0 ? params.rating : 0;
+        const ratingWhere = ratingVal > 0
+          ? ` AND COALESCE((SELECT AVG(pr.rating) FROM product_reviews pr WHERE pr.product_id = store_products.id AND pr.status = 'approved'), 5) >= ?`
+          : '';
+        const ratingBinds = ratingVal > 0 ? [ratingVal] : [];
+
         const countRes = await db
-          .prepare(`SELECT COUNT(*) as total FROM store_products WHERE ${whereClause}`)
-          .bind(...queryBinds)
+          .prepare(`SELECT COUNT(*) as total FROM store_products WHERE ${whereClause}${ratingWhere}`)
+          .bind(...queryBinds, ...ratingBinds)
           .first<{ total: number }>();
         totalProducts = countRes?.total || 0;
 
@@ -144,17 +150,18 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
                      current_price as price_core,
                      discount_percent,
                      COALESCE(cover_image_url, game_icon_url, '') as cover_url,
-                     sold_count
+                     sold_count,
+                     COALESCE((SELECT AVG(pr.rating) FROM product_reviews pr WHERE pr.product_id = store_products.id AND pr.status = 'approved'), 5) as avg_rating
               FROM store_products
-              WHERE ${whereClause}
+              WHERE ${whereClause}${ratingWhere}
               ${orderClause}
               LIMIT ? OFFSET ?
             `)
-            .bind(...queryBinds, limit, offset)
+            .bind(...queryBinds, ...ratingBinds, limit, offset)
             .all<any>();
 
           const rows = listRes?.results || [];
-          const mappedProducts = rows.map((r: any) => ({
+          results.products = rows.map((r: any) => ({
             id: r.id,
             title: r.title,
             gameSlug: r.game_slug,
@@ -165,15 +172,9 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
             productType: 'digital' as const,
             coverUrl: r.cover_url || undefined,
             soldCount: r.sold_count || 0,
-            rating: 5,
+            rating: Number(Number(r.avg_rating ?? 5).toFixed(1)),
             itemType: 'product' as const,
           }));
-          results.products = params.rating && params.rating > 0
-            ? mappedProducts.filter((p) => (p.rating || 5) >= params.rating!)
-            : mappedProducts;
-          if (params.rating && params.rating > 0) {
-            totalProducts = results.products.length;
-          }
         } else {
           // Fallback tìm kiếm tiếng Việt không dấu (vd: "lien quan" khớp "Liên Quân Mobile")
           const baseWhere = baseConditions.join(' AND ');
@@ -183,13 +184,14 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
                      current_price as price_core,
                      discount_percent,
                      COALESCE(cover_image_url, game_icon_url, '') as cover_url,
-                     sold_count
+                     sold_count,
+                     COALESCE((SELECT AVG(pr.rating) FROM product_reviews pr WHERE pr.product_id = store_products.id AND pr.status = 'approved'), 5) as avg_rating
               FROM store_products
-              WHERE ${baseWhere}
+              WHERE ${baseWhere}${ratingWhere}
               ${orderClause}
               LIMIT 400
             `)
-            .bind(...baseBinds)
+            .bind(...baseBinds, ...ratingBinds)
             .all<any>();
 
           const matched = (candRes?.results || []).filter((r: any) => {
@@ -199,7 +201,8 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
             return hay.includes(normQ) || hay.includes(slugQ);
           });
 
-          const mappedMatched = matched.map((r: any) => ({
+          totalProducts = matched.length;
+          results.products = matched.slice(offset, offset + limit).map((r: any) => ({
             id: r.id,
             title: r.title,
             gameSlug: r.game_slug,
@@ -210,14 +213,9 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
             productType: 'digital' as const,
             coverUrl: r.cover_url || undefined,
             soldCount: r.sold_count || 0,
-            rating: 5,
+            rating: Number(Number(r.avg_rating ?? 5).toFixed(1)),
             itemType: 'product' as const,
           }));
-          const filteredByRating = params.rating && params.rating > 0
-            ? mappedMatched.filter((p) => (p.rating || 5) >= params.rating!)
-            : mappedMatched;
-          totalProducts = filteredByRating.length;
-          results.products = filteredByRating.slice(offset, offset + limit);
         }
       }
     } catch (err) {
