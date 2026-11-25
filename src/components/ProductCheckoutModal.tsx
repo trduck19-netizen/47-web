@@ -141,6 +141,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   const isPhysical = Boolean(product?.product_type === 'physical' || liveProduct?.product_type === 'physical');
   const shippingFee = isPhysical ? Number(product?.shipping_fee ?? liveProduct?.shipping_fee ?? 0) : 0;
 
+  const [shippingAddressType, setShippingAddressType] = useState<'home' | 'office'>('home');
   const [shippingName, setShippingName] = useState<string>(() => {
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('pine_shipping_info');
@@ -1427,7 +1428,26 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                     {/* Carrier & Tracking Code Card */}
                     {completedOrder.tracking_code && (
-                      <div className="p-3 rounded-xl bg-card border border-emerald-500/40 space-y-2 mt-2">
+                      <div className="p-3 rounded-xl bg-card border border-emerald-500/40 space-y-2.5 mt-2">
+                        {/* Shopee 4-Step Physical Order Progress Bar */}
+                        <div className="grid grid-cols-4 gap-1 pb-2 border-b border-border/70 text-center">
+                          {[
+                            { label: t('shopeePhysical.stepPlaced'), active: true },
+                            { label: t('shopeePhysical.stepPickup'), active: true },
+                            { label: t('shopeePhysical.stepTransit'), active: false },
+                            { label: t('shopeePhysical.stepDone'), active: false },
+                          ].map((st, idx) => (
+                            <div key={idx} className="flex flex-col items-center gap-1">
+                              <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${st.active ? 'bg-[#ee4d2d] text-white' : 'bg-muted text-muted-foreground'}`}>
+                                {idx + 1}
+                              </span>
+                              <span className={`text-[9px] leading-tight font-semibold ${st.active ? 'text-[#ee4d2d]' : 'text-muted-foreground'}`}>
+                                {st.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm">
@@ -1437,14 +1457,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                               {completedOrder.carrier_name || completedOrder.carrier || 'GHTK Express'}
                             </span>
                           </div>
-                          <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                             {completedOrder.estimated_delivery || '1 - 2 ngày'}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between bg-muted/60 p-2 rounded-lg">
                           <div className="space-y-0.5">
-                            <div className="text-[10px] text-muted-foreground uppercase font-semibold">Mã Vận Đơn Tự Động:</div>
+                            <div className="text-[10px] text-muted-foreground uppercase font-semibold">{t('shopeePhysical.trackingAutoLabel')}:</div>
                             <div className="font-mono font-bold text-xs sm:text-sm text-foreground tracking-wide">
                               {completedOrder.tracking_code}
                             </div>
@@ -1453,10 +1473,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             type="button"
                             onClick={() => {
                               navigator.clipboard.writeText(completedOrder.tracking_code || '');
-                              onShowToast('Đã sao chép mã vận đơn', completedOrder.tracking_code, 'success');
+                              onShowToast(t('shopeePhysical.copiedToast'), completedOrder.tracking_code, 'success');
                             }}
-                            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                            title="Sao chép"
+                            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            title={t('shopeePhysical.copyBtn')}
                           >
                             <Copy className="w-4 h-4" />
                           </button>
@@ -1472,10 +1492,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             }
                             setIsTrackingModalOpen(true);
                           }}
-                          className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                          className="w-full py-2 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                         >
                           <Truck className="w-3.5 h-3.5" />
-                          <span>Tra Cứu Hành Trình Vận Đơn (Live Tracking)</span>
+                          <span>{t('shopeePhysical.liveTrackingBtn')}</span>
                         </button>
                       </div>
                     )}
@@ -1636,10 +1656,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     {checkoutDisplayStock > 0 ? (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>Sẵn sàng • Giao tức thì</span>
+                        <span>{isPhysical ? t('shopeePhysical.nationwideShip') : t('shopeePhysical.instant0s')}</span>
                       </>
                     ) : (
-                      'Tạm hết hàng'
+                      t('shopeePhysical.outOfStock')
                     )}
                   </span>
                 </div>
@@ -1782,221 +1802,252 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 </div>
               )}
 
-              {/* Khối Nhập Thông Tin Nhận Hàng Toàn Quốc (Khi là hàng vật lý) */}
+              {/* Khối Nhập Thông Tin Nhận Hàng Toàn Quốc Chuẩn Shopee (Phong Bì Thư Đỏ-Xanh + Autofill Form) */}
               {isPhysical && (
-                <div className="p-4 rounded-2xl bg-card border border-border space-y-3 animate-in fade-in">
-                  <div className="flex items-center justify-between pb-2 border-b border-border/80">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400">
-                        <Truck className="w-4 h-4" />
-                      </div>
-                      <span className="text-xs font-bold text-foreground uppercase tracking-wider">
-                        {t.checkout?.shippingSectionTitle || 'Thông Tin Nhận Hàng Toàn Quốc'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {currentUser && savedAddresses.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAddressPicker(!showAddressPicker)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold border border-primary/20 transition-all cursor-pointer"
-                        >
-                          <BookOpen className="w-3 h-3" />
-                          <span>{isEn ? `Address Book (${savedAddresses.length})` : `Sổ Địa Chỉ (${savedAddresses.length})`}</span>
-                        </button>
-                      )}
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        {isEn ? '🚚 Courier Delivery' : '🚚 Giao Tận Nơi'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Sổ Địa Chỉ Dropdown Picker */}
-                  {showAddressPicker && savedAddresses.length > 0 && (
-                    <div className="p-3 rounded-xl bg-muted/70 border border-border space-y-2 animate-in fade-in">
-                      <div className="flex items-center justify-between text-[11px] font-bold text-foreground">
-                        <span className="flex items-center gap-1.5">
-                          <BookOpen className="w-3.5 h-3.5 text-primary" />
-                          {isEn ? 'Select a saved shipping address:' : 'Chọn địa chỉ nhận hàng đã lưu:'}
+                <div className="rounded-2xl bg-card border border-border overflow-hidden shadow-xs animate-in fade-in">
+                  {/* Dải Kẻ Sọc Đỏ-Xanh Đặc Trưng Địa Chỉ Shopee */}
+                  <div
+                    aria-hidden="true"
+                    className="h-1 w-full"
+                    style={{
+                      backgroundImage:
+                        'repeating-linear-gradient(45deg, #6fa6d6, #6fa6d6 28px, transparent 0, transparent 36px, #f18d9b 0, #f18d9b 64px, transparent 0, transparent 72px)',
+                    }}
+                  />
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-border/80 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-[#ee4d2d] shrink-0" />
+                        <span className="text-xs font-extrabold text-[#ee4d2d] uppercase tracking-wider">
+                          {t('shopeePhysical.addressHeader')}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowAddressPicker(false)}
-                          className="text-[10px] text-muted-foreground hover:text-foreground"
-                        >
-                          {isEn ? 'Close' : 'Đóng'}
-                        </button>
                       </div>
-                      <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
-                        {savedAddresses.map((addr) => (
-                          <div
-                            key={addr.id}
-                            onClick={() => {
-                              setShippingName(addr.recipient_name);
-                              setShippingPhone(addr.phone_number);
-                              setShippingAddress(addr.full_address || addr.detail_address);
-                              setShowAddressPicker(false);
-                            }}
-                            className="p-2 rounded-lg bg-card hover:bg-primary/5 border border-border/80 hover:border-primary/40 flex items-center justify-between gap-2 cursor-pointer transition-all"
-                          >
-                            <div className="min-w-0 truncate text-left">
-                              <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                                <span>{addr.recipient_name}</span>
-                                <span className="font-mono text-[11px] text-muted-foreground font-normal">({addr.phone_number})</span>
-                                {addr.is_default === 1 && (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
-                                    {isEn ? 'Default' : 'Mặc định'}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-muted-foreground truncate" title={addr.full_address || addr.detail_address}>
-                                {addr.full_address || addr.detail_address}
-                              </div>
-                            </div>
-                            <span className="text-[10px] font-bold text-primary shrink-0">
-                              {isEn ? 'Select' : 'Chọn'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                        {t.checkout?.fullName || 'Họ và tên người nhận'} <span className="text-rose-400">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={shippingName}
-                          onChange={(e) => setShippingName(e.target.value)}
-                          placeholder={t.checkout?.fullNamePlaceholder || 'Ví dụ: Nguyễn Văn A'}
-                          className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
-                        />
-                        <User className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                        {t.checkout?.phone || 'Số điện thoại nhận hàng'} <span className="text-rose-400">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="tel"
-                          value={shippingPhone}
-                          onChange={(e) => setShippingPhone(e.target.value)}
-                          placeholder={t.checkout?.phonePlaceholder || 'Ví dụ: 0987654321'}
-                          className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
-                        />
-                        <Phone className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                      {t.checkout?.address || 'Địa chỉ nhận hàng chi tiết'} <span className="text-rose-400">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={shippingAddress}
-                        onChange={(e) => setShippingAddress(e.target.value)}
-                        placeholder={t.checkout?.addressPlaceholder || 'Số nhà, ngõ/đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành phố'}
-                        className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
-                      />
-                      <MapPin className="w-3.5 h-3.5 text-rose-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                      {t.checkout?.note || 'Ghi chú cho shipper (Không bắt buộc)'}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={shippingNote}
-                        onChange={(e) => setShippingNote(e.target.value)}
-                        placeholder={t.checkout?.notePlaceholder || 'Ví dụ: Giao giờ hành chính, gọi trước khi đến...'}
-                        className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
-                      />
-                      <FileText className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Lựa chọn Đơn Vị Vận Chuyển Tự Động (GHTK, GHN, Viettel Post) */}
-                  <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1.5 flex items-center justify-between">
-                      <span>{isEn ? 'Shipping Carrier (Auto Tracking)' : 'Đơn Vị Vận Chuyển (Tự Sinh Mã Vận Đơn)'}</span>
-                      <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
-                        ⚡ API Kết Nối Tự Động
-                      </span>
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      {(['GHTK', 'GHN', 'VTP'] as CarrierCode[]).map((cCode) => {
-                        const c = CARRIERS[cCode];
-                        const isSelected = selectedCarrier === cCode;
-                        const cFee = shippingService.calculateFee(cCode, shippingAddress);
-                        return (
+                      <div className="flex items-center gap-2">
+                        {currentUser && savedAddresses.length > 0 && (
                           <button
-                            key={cCode}
                             type="button"
-                            onClick={() => setSelectedCarrier(cCode)}
-                            className={`p-2.5 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
-                              isSelected
-                                ? 'border-emerald-500 bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500'
-                                : 'border-border/80 bg-muted/30 hover:border-border'
-                            }`}
+                            onClick={() => setShowAddressPicker(!showAddressPicker)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ee4d2d]/10 hover:bg-[#ee4d2d]/20 text-[#ee4d2d] text-[10px] font-bold border border-[#ee4d2d]/30 transition-all cursor-pointer"
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="text-base">{c.logoIcon}</span>
-                              <span className="font-mono text-[11px] font-bold text-foreground">
-                                {formatCurrency(cFee)}
-                              </span>
-                            </div>
-                            <div className="mt-1">
-                              <div className="font-bold text-xs text-foreground flex items-center gap-1">
-                                {c.shortName}
-                                {isSelected && <Check className="w-3 h-3 text-emerald-500 stroke-[3]" />}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground truncate">{c.estimatedDelivery}</div>
-                            </div>
+                            <BookOpen className="w-3 h-3" />
+                            <span>{t('shopeePhysical.addressBookBtn', { count: savedAddresses.length })}</span>
                           </button>
-                        );
-                      })}
+                        )}
+                        <div className="inline-flex rounded-lg border border-border overflow-hidden text-[10px] font-bold">
+                          <button
+                            type="button"
+                            onClick={() => setShippingAddressType('home')}
+                            className={`px-2 py-0.5 cursor-pointer transition ${shippingAddressType === 'home' ? 'bg-[#ee4d2d] text-white' : 'bg-muted/40 text-muted-foreground hover:text-foreground'}`}
+                          >
+                            {t('shopeePhysical.addressTypeHome')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShippingAddressType('office')}
+                            className={`px-2 py-0.5 cursor-pointer transition ${shippingAddressType === 'office' ? 'bg-[#ee4d2d] text-white' : 'bg-muted/40 text-muted-foreground hover:text-foreground'}`}
+                          >
+                            {t('shopeePhysical.addressTypeOffice')}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Phí vận chuyển Badge */}
-                  <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground flex items-center gap-1.5">
-                      <Truck className="w-3.5 h-3.5 text-emerald-400" />
-                      {isEn ? 'Courier Shipping Fee:' : 'Cước phí vận chuyển:'}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {voucherStacking.freeshipDiscount > 0 && (
-                        <span className="text-[11px] text-muted-foreground line-through">
-                          {formatCurrency(rawShippingFee)}
-                        </span>
-                      )}
-                      <span className="font-bold text-emerald-400">
-                        {finalShippingFee === 0
-                          ? (isEn ? 'Free Shipping (0đ)' : 'Miễn phí toàn quốc (0đ)')
-                          : formatCurrency(finalShippingFee)}
-                      </span>
+                    {/* Sổ Địa Chỉ Dropdown Picker */}
+                    {showAddressPicker && savedAddresses.length > 0 && (
+                      <div className="p-3 rounded-xl bg-muted/70 border border-border space-y-2 animate-in fade-in">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5 text-[#ee4d2d]" />
+                            {t('shopeePhysical.addressSelectPrompt')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowAddressPicker(false)}
+                            className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            {t('shopeePhysical.closeBtn')}
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+                          {savedAddresses.map((addr) => (
+                            <button
+                              key={addr.id}
+                              type="button"
+                              onClick={() => {
+                                setShippingName(addr.recipient_name);
+                                setShippingPhone(addr.phone_number);
+                                setShippingAddress(addr.full_address || addr.detail_address);
+                                setShowAddressPicker(false);
+                              }}
+                              className="w-full p-2.5 rounded-lg bg-card hover:bg-[#ee4d2d]/5 border border-border/80 hover:border-[#ee4d2d]/50 flex items-center justify-between gap-2 cursor-pointer transition-all text-left"
+                            >
+                              <div className="min-w-0 truncate">
+                                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                  <span>{addr.recipient_name}</span>
+                                  <span className="font-mono text-[11px] text-muted-foreground font-normal">({addr.phone_number})</span>
+                                  {addr.is_default === 1 && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#ee4d2d]/10 text-[#ee4d2d] border border-[#ee4d2d]/30">
+                                      {t('shopeePhysical.addressDefaultBadge')}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground truncate" title={addr.full_address || addr.detail_address}>
+                                  {addr.full_address || addr.detail_address}
+                                </div>
+                              </div>
+                              <span className="text-[10px] font-bold text-[#ee4d2d] shrink-0">
+                                {t('shopeePhysical.addressSelectAction')}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label htmlFor="checkout-shipping-name" className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                          {t.checkout?.fullName || 'Họ và tên người nhận'} <span className="text-rose-400" aria-hidden="true">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="checkout-shipping-name"
+                            name="full_name"
+                            type="text"
+                            autoComplete="name"
+                            enterKeyHint="next"
+                            required
+                            value={shippingName}
+                            onChange={(e) => setShippingName(e.target.value)}
+                            placeholder={t.checkout?.fullNamePlaceholder || 'Ví dụ: Nguyễn Văn A'}
+                            className="w-full min-h-[42px] px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-base sm:text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-[#ee4d2d]"
+                          />
+                          <User className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="checkout-shipping-phone" className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                          {t.checkout?.phone || 'Số điện thoại nhận hàng'} <span className="text-rose-400" aria-hidden="true">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="checkout-shipping-phone"
+                            name="phone"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            enterKeyHint="next"
+                            required
+                            value={shippingPhone}
+                            onChange={(e) => setShippingPhone(e.target.value)}
+                            placeholder={t.checkout?.phonePlaceholder || 'Ví dụ: 0987654321'}
+                            className="w-full min-h-[42px] px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-base sm:text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-[#ee4d2d]"
+                          />
+                          <Phone className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
                     </div>
+
+                    <div>
+                      <label htmlFor="checkout-shipping-address" className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                        {t.checkout?.address || 'Địa chỉ nhận hàng chi tiết'} <span className="text-rose-400" aria-hidden="true">*</span>
+                      </label>
+                      <div className="relative">
+                        <textarea
+                          id="checkout-shipping-address"
+                          name="street_address"
+                          rows={2}
+                          autoComplete="street-address"
+                          enterKeyHint="next"
+                          required
+                          value={shippingAddress}
+                          onChange={(e) => setShippingAddress(e.target.value)}
+                          placeholder={t.checkout?.addressPlaceholder || 'Số nhà, ngõ/đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành phố'}
+                          className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-base sm:text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-[#ee4d2d] resize-y"
+                        />
+                        <MapPin className="w-3.5 h-3.5 text-[#ee4d2d] absolute left-2.5 top-3 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="checkout-shipping-note" className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                        {t('shopeePhysical.sellerMessageLabel')}
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="checkout-shipping-note"
+                          name="delivery_note"
+                          type="text"
+                          enterKeyHint="done"
+                          value={shippingNote}
+                          onChange={(e) => setShippingNote(e.target.value)}
+                          placeholder={t('shopeePhysical.sellerMessagePlaceholder')}
+                          className="w-full min-h-[42px] px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-base sm:text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-[#ee4d2d]"
+                        />
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {/* Lựa chọn Đơn Vị Vận Chuyển Tự Động (GHTK, GHN, Viettel Post) chuẩn <fieldset> + <legend> */}
+                    <fieldset className="space-y-2 pt-1">
+                      <legend className="w-full text-[11px] font-bold text-foreground flex items-center justify-between mb-1.5">
+                        <span className="flex items-center gap-1.5">
+                          <Truck className="w-3.5 h-3.5 text-[#00bfa5]" />
+                          <span>{t('shopeePhysical.shippingMethodLegend')}</span>
+                        </span>
+                        <span className="text-[10px] text-[#00bfa5] font-bold">
+                          ⚡ {t('shopeePhysical.shippingAutoApi')}
+                        </span>
+                      </legend>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {(['GHTK', 'GHN', 'VTP'] as CarrierCode[]).map((cCode) => {
+                          const c = CARRIERS[cCode];
+                          const isSelected = selectedCarrier === cCode;
+                          const cFee = shippingService.calculateFee(cCode, shippingAddress);
+                          return (
+                            <button
+                              key={cCode}
+                              type="button"
+                              aria-pressed={isSelected}
+                              onClick={() => setSelectedCarrier(cCode)}
+                              className={`p-2.5 rounded-xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+                                isSelected
+                                  ? 'border-[#00bfa5] bg-[#00bfa5]/10 shadow-xs ring-1 ring-[#00bfa5]'
+                                  : 'border-border/80 bg-muted/30 hover:border-[#00bfa5]/50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-base">{c.logoIcon}</span>
+                                <span className="font-mono text-[11px] font-bold text-foreground">
+                                  {formatCurrency(cFee)}
+                                </span>
+                              </div>
+                              <div className="mt-1">
+                                <div className="font-bold text-xs text-foreground flex items-center gap-1">
+                                  {c.shortName}
+                                  {isSelected && <Check className="w-3 h-3 text-[#00bfa5] stroke-[3]" />}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground truncate">{c.estimatedDelivery}</div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
+                        <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                        <span>{t('shopeePhysical.shippingProtectionNote')}</span>
+                      </p>
+                    </fieldset>
                   </div>
                 </div>
               )}
 
               {/* Shopee Voucher Stacking Trigger Card */}
-              <div
+              <button
+                type="button"
                 onClick={() => setIsCouponModalOpen(true)}
-                className="p-3 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-rose-500/10 border border-orange-500/30 hover:border-orange-500/50 cursor-pointer transition-all flex items-center justify-between group"
+                className="w-full text-left p-3 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-rose-500/10 border border-[#ee4d2d]/30 hover:border-[#ee4d2d]/60 cursor-pointer transition-all flex items-center justify-between group"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-8 h-8 rounded-xl bg-[#ee4d2d] text-white flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/30">
@@ -2004,9 +2055,9 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs font-bold text-foreground">Shopee Voucher Đa Tầng</span>
+                      <span className="text-xs font-bold text-foreground">{t('shopeePhysical.voucherSectionTitle')}</span>
                       {selectedFreeship && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#00bfa5]/15 text-[#00897b] dark:text-[#00bfa5] border border-[#00bfa5]/30">
                           🚚 -{formatCurrency(voucherStacking.freeshipDiscount)}
                         </span>
                       )}
@@ -2018,39 +2069,41 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate">
                       {selectedFreeship || selectedDiscount
-                        ? `Đã áp dụng • Tiết kiệm ${formatCurrency(voucherStacking.totalSavings)}`
-                        : 'Chọn hoặc nhập mã giảm giá Shopee / Sàn'}
+                        ? t('shopeePhysical.voucherAppliedDesc', { amount: formatCurrency(voucherStacking.totalSavings) })
+                        : t('shopeePhysical.voucherSelectDesc')}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1 text-xs text-[#ee4d2d] font-semibold shrink-0 group-hover:translate-x-0.5 transition-transform">
-                  <span>{selectedFreeship || selectedDiscount ? 'Đổi mã' : 'Chọn mã'}</span>
+                  <span>{selectedFreeship || selectedDiscount ? t('shopeePhysical.voucherChangeBtn') : t('shopeePhysical.voucherChooseBtn')}</span>
                   <ChevronRight className="w-4 h-4" />
                 </div>
-              </div>
+              </button>
 
               {/* Payment Method Selector (Chỉ hiện khi đơn hàng >= ngưỡng minQrAmount, mặc định 2.000) */}
               {isQrAvailable && (
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                    Phương Thức Thanh Toán
-                  </label>
+                <fieldset className="space-y-1.5">
+                  <legend className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                    {t('shopeePhysical.paymentMethodLegend')}
+                  </legend>
                   <div className="grid grid-cols-2 gap-2 p-1 bg-muted/50 border border-border/80 rounded-2xl">
                     <button
                       type="button"
+                      aria-pressed={paymentMethod === 'wallet'}
                       onClick={() => setPaymentMethod('wallet')}
                       className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs transition-all cursor-pointer ${
                         paymentMethod === 'wallet'
-                          ? 'bg-card text-foreground shadow-sm border border-border font-black'
+                          ? 'bg-card text-foreground shadow-sm border border-[#ee4d2d]/60 font-black'
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      <Wallet className="w-4 h-4 text-amber-400" />
-                      <span className="truncate">Số Dư Core ({formatCore(userBalance)})</span>
+                      <Wallet className="w-4 h-4 text-[#ee4d2d] shrink-0" />
+                      <span className="truncate">{t('shopeePhysical.paymentWalletLabel')} ({formatCore(userBalance)})</span>
                     </button>
                     <button
                       type="button"
+                      aria-pressed={paymentMethod === 'vietqr'}
                       onClick={() => setPaymentMethod('vietqr')}
                       className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs transition-all cursor-pointer ${
                         paymentMethod === 'vietqr'
@@ -2058,11 +2111,11 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      <QrCode className="w-4 h-4 text-emerald-300" />
-                      <span className="truncate">Mã VietQR ({totalPrice.toLocaleString('vi-VN')}đ)</span>
+                      <QrCode className="w-4 h-4 text-emerald-300 shrink-0" />
+                      <span className="truncate">{t('shopeePhysical.paymentVietqrLabel')} ({formatCurrency(finalGrandTotal)})</span>
                     </button>
                   </div>
-                </div>
+                </fieldset>
               )}
 
               {paymentMethod === 'vietqr' ? (
@@ -2109,7 +2162,9 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <div className="space-y-1">
                           <p className="font-bold text-foreground text-sm">Thanh Toán Trực Tiếp Không Cần Nạp Core</p>
                           <p className="text-muted-foreground leading-relaxed">
-                            Quét mã bằng ứng dụng ngân hàng bất kỳ để thanh toán đúng <strong>{totalPrice.toLocaleString('vi-VN')} đ</strong>. Hệ thống tự động giao mã ngay trong 3 giây khi tiền vào tài khoản shop.
+                            {isPhysical
+                              ? t('shopeePhysical.paymentVietqrPhysicalDesc', { amount: formatCurrency(finalGrandTotal) })
+                              : <>Quét mã bằng ứng dụng ngân hàng bất kỳ để thanh toán đúng <strong>{totalPrice.toLocaleString('vi-VN')} đ</strong>. Hệ thống tự động giao mã ngay trong 3 giây khi tiền vào tài khoản shop.</>}
                           </p>
                         </div>
                       </div>
@@ -2497,27 +2552,42 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   )}
 
                   {isPhysical && (
-                    <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Truck className="w-3.5 h-3.5 text-emerald-400" /> Cước vận chuyển ({CARRIERS[selectedCarrier]?.shortName}):
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        {voucherStacking.freeshipDiscount > 0 && (
-                          <span className="text-[11px] text-muted-foreground line-through">
-                            {formatCurrency(rawShippingFee)}
-                          </span>
-                        )}
-                        <span className="font-mono font-semibold text-emerald-400">
-                          {finalShippingFee === 0 ? 'Miễn phí (0đ)' : formatCurrency(finalShippingFee)}
+                    <div className="pt-1 border-t border-border/70 space-y-1.5 text-xs">
+                      <div className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                        {t('shopeePhysical.paymentDetailsTitle')}
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>{t('shopeePhysical.subtotalProducts')} ({safeQty})</span>
+                        <span className="font-mono text-foreground">{formatCurrency(effectiveRegularPrice * safeQty)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Truck className="w-3.5 h-3.5 text-[#00bfa5]" />
+                          {t('shopeePhysical.subtotalShipping')} ({CARRIERS[selectedCarrier]?.shortName})
+                        </span>
+                        <span className="font-mono text-foreground">
+                          {rawShippingFee === 0 ? t('shopeePhysical.freeShippingLabel') : formatCurrency(rawShippingFee)}
                         </span>
                       </div>
+                      {voucherStacking.freeshipDiscount > 0 && (
+                        <div className="flex items-center justify-between text-[#00897b] dark:text-[#00bfa5]">
+                          <span>{t('shopeePhysical.discountShipping')}</span>
+                          <span className="font-mono font-semibold">-{formatCurrency(voucherStacking.freeshipDiscount)}</span>
+                        </div>
+                      )}
+                      {voucherStacking.productDiscount > 0 && (
+                        <div className="flex items-center justify-between text-[#ee4d2d]">
+                          <span>{t('shopeePhysical.discountVoucher')}</span>
+                          <span className="font-mono font-semibold">-{formatCurrency(voucherStacking.productDiscount)}</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {voucherStacking.totalSavings > 0 && (
+                  {!isPhysical && voucherStacking.totalSavings > 0 && (
                     <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between text-xs">
                       <span className="text-orange-500 font-semibold flex items-center gap-1.5">
-                        <Ticket className="w-3.5 h-3.5" /> Shopee Voucher Tiết Kiệm:
+                        <Ticket className="w-3.5 h-3.5" /> {t('shopeePhysical.voucherSectionTitle')}:
                       </span>
                       <span className="font-mono font-bold text-orange-500">
                         -{formatCurrency(voucherStacking.totalSavings)}
@@ -2525,10 +2595,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     </div>
                   )}
 
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
-                    <span className="font-bold text-foreground">Tổng thanh toán:</span>
-                    <span className="font-display font-black text-base text-emerald-400">
-                      {formatCore(finalGrandTotal)}
+                  <div className={`p-3 rounded-xl border flex items-center justify-between text-xs ${isPhysical ? 'bg-[#ee4d2d]/10 border-[#ee4d2d]/30' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
+                    <span className="font-bold text-foreground">{t('shopeePhysical.grandTotalLabel')}:</span>
+                    <span className={`font-display font-black text-lg ${isPhysical ? 'text-[#ee4d2d]' : 'text-emerald-400'}`}>
+                      {isPhysical ? formatCurrency(finalGrandTotal) : formatCore(finalGrandTotal)}
                     </span>
                   </div>
                 </div>
@@ -2595,11 +2665,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
               {/* Action Button */}
               <button
+                type="button"
                 onClick={!isBalanceEnough ? handleOpenTopup : handlePayWithWallet}
                 disabled={isProcessing || maxStock <= 0 || !isPriceValid}
-                className={`w-full py-3.5 rounded-2xl font-display font-bold text-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
+                className={`w-full min-h-[48px] py-3.5 rounded-2xl font-display font-bold text-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
                   !isBalanceEnough
                     ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:opacity-95 text-slate-950 font-black shadow-amber-500/20'
+                    : isPhysical
+                    ? 'bg-[#ee4d2d] hover:bg-[#d73211] text-white shadow-lg shadow-orange-500/25'
                     : isEscalating
                     ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black shadow-amber-500/30'
                     : 'bg-gradient-to-r from-secondary to-primary hover:opacity-95 text-white shadow-glow-primary'
@@ -2618,7 +2691,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   {isProcessing
                     ? (isEn ? 'Processing order...' : 'Đang xử lý thanh toán...')
                     : maxStock <= 0
-                    ? (isEn ? 'Temporarily out of stock' : 'Sản phẩm tạm hết hàng')
+                    ? t('shopeePhysical.outOfStock')
                     : !isPriceValid
                     ? (isEn ? 'Updating price...' : 'Đang cập nhật giá...')
                     : !isBalanceEnough
@@ -2626,10 +2699,15 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     : isEscalating
                     ? (isEn ? `Confirm Tier Price • ${formatCurrency(finalGrandTotal)}` : `Xác Nhận Mua Gói Nâng Giá • ${formatCurrency(finalGrandTotal)}`)
                     : isPhysical
-                    ? (isEn ? `Confirm Order & Nationwide Shipping • ${formatCurrency(finalGrandTotal)}` : `Xác Nhận Đặt Hàng & Giao Toàn Quốc • ${formatCurrency(finalGrandTotal)}`)
+                    ? t('shopeePhysical.placeOrderPhysical', { amount: formatCurrency(finalGrandTotal) })
                     : (isEn ? `Confirm Payment ${safeQty > 1 ? `(${safeQty} Items)` : ''} • ${formatCurrency(finalGrandTotal)}` : `Xác Nhận Mua ${safeQty > 1 ? `(${safeQty} Gói)` : ''} • ${formatCurrency(finalGrandTotal)}`)}
                 </span>
               </button>
+              {isPhysical && (
+                <p className="text-[10px] text-center text-muted-foreground">
+                  {t('shopeePhysical.placeOrderNote')}
+                </p>
+              )}
 
               {!isBalanceEnough && (
                 <button

@@ -29,6 +29,9 @@ import {
   BadgeCheck,
   Store,
   Heart,
+  MapPin,
+  Ticket,
+  Check,
 } from 'lucide-react';
 import type { StoreProduct, UtilityProduct, UserProfile, ProductPackageVariant } from '../types/game';
 import { formatCore, formatCurrencyVND } from '../utils/textUtils';
@@ -476,6 +479,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   if (typeof document === 'undefined') return null;
 
+  const isPhysicalProduct = (product as any).product_type === 'physical';
+  const physicalShipFrom = (product as any).warehouse_address || (product as any).origin || t('shopeePhysical.warehouseDefault');
+  const physicalWeightGrams = Number((product as any).weight_grams || 0);
+  const physicalWarrantyHours = Number((product as any).warranty_hours || 0);
+
   return createPortal(
     <div
       onClick={onClose}
@@ -511,13 +519,27 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-heading font-bold text-sm sm:text-base text-foreground truncate">
-                  {product.title}
-                </h3>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] sm:text-xs text-secondary font-semibold truncate block">
-                    {gameName}
-                  </span>
+                <div className="flex items-center gap-1.5">
+                  {isPhysicalProduct && (
+                    <span className="px-1.5 py-0.5 rounded bg-[#d0011b] text-white text-[10px] font-bold shrink-0">
+                      {t('shopeePhysical.mallBadge')}
+                    </span>
+                  )}
+                  <h3 className="font-heading font-bold text-sm sm:text-base text-foreground truncate">
+                    {product.title}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                  {isPhysicalProduct ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#ee4d2d]">
+                      <Truck className="w-3 h-3 shrink-0" />
+                      <span>{t('shopeePhysical.physicalTag')}</span>
+                    </span>
+                  ) : (
+                    <span className="text-[11px] sm:text-xs text-secondary font-semibold truncate block">
+                      {gameName}
+                    </span>
+                  )}
                   {(product as any).is_affiliate && (product as any).show_supplier !== false && (product as any).supplier_name && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-muted/80 text-[10px] text-muted-foreground font-medium border border-border/60">
                       <Store className="w-3 h-3 text-secondary shrink-0" />
@@ -563,7 +585,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="lg:col-span-7 space-y-4 sm:space-y-5">
               {/* Main Image Gallery */}
               <div className="space-y-2.5">
-                <div className="relative h-52 sm:h-80 rounded-2xl bg-muted overflow-hidden border border-border group select-none shadow-inner">
+                <div className={`relative rounded-2xl bg-muted overflow-hidden border border-border group select-none shadow-inner ${isPhysicalProduct ? 'aspect-square max-h-[360px] sm:max-h-[420px] mx-auto w-full' : 'h-52 sm:h-80'}`}>
                   <img
                     src={images[activeImageIdx]}
                     alt={product.title}
@@ -582,6 +604,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       target.src = '/package-placeholder.svg';
                     }}
                   />
+                  {isPhysicalProduct && (
+                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                      <span className="px-2 py-0.5 rounded bg-[#00bfa5] text-white text-[10px] font-extrabold shadow flex items-center gap-1">
+                        <Truck className="w-3 h-3" />
+                        <span>{t('shopeePhysical.freeshipXtra')}</span>
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-[#ee4d2d] text-white text-[10px] font-bold shadow">
+                        {t('shopeePhysical.return15Days')}
+                      </span>
+                    </div>
+                  )}
 
                   {images.length > 1 && (
                     <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-sm text-white text-[11px] font-mono font-medium shadow-md border border-white/10 z-10">
@@ -721,7 +754,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               
               {/* Thông Số & Cam Kết Bán Hàng Đa Ngành */}
-              {((product as any).brand || (product as any).origin || (product as any).warranty_period || (product as any).shipping_fee !== undefined) && (
+              {(isPhysicalProduct || (product as any).brand || (product as any).origin || (product as any).warranty_period || (product as any).shipping_fee !== undefined) && (
                 <div className="p-3.5 rounded-2xl bg-card border border-border space-y-2 text-xs">
                   <div className="font-bold text-foreground flex items-center gap-1.5 pb-1.5 border-b border-border/60">
                     <BadgeCheck className="w-4 h-4 text-emerald-500" />
@@ -738,7 +771,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       <div>
                         <span className="text-muted-foreground">{t('productDetailModal.productType')} </span>
                         <span className="font-bold text-foreground">
-                          {(product as any).product_type === 'physical' ? (t('productDetailModal.productTypePhysical')) : (t('productDetailModal.productTypeDigital'))}
+                          {isPhysicalProduct ? (t('productDetailModal.productTypePhysical')) : (t('productDetailModal.productTypeDigital'))}
                         </span>
                       </div>
                     )}
@@ -746,6 +779,30 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       <div>
                         <span className="text-muted-foreground">{t('productDetailModal.origin')} </span>
                         <span className="font-bold text-foreground">{(product as any).origin}</span>
+                      </div>
+                    )}
+                    {isPhysicalProduct && (
+                      <div>
+                        <span className="text-muted-foreground">{t('shopeePhysical.warehouseLabel')}: </span>
+                        <span className="font-bold text-foreground">{physicalShipFrom}</span>
+                      </div>
+                    )}
+                    {isPhysicalProduct && physicalWeightGrams > 0 && (
+                      <div>
+                        <span className="text-muted-foreground">{t('shopeePhysical.weightLabel')}: </span>
+                        <span className="font-bold text-foreground">{physicalWeightGrams}g</span>
+                      </div>
+                    )}
+                    {isPhysicalProduct && (
+                      <div>
+                        <span className="text-muted-foreground">{t('shopeePhysical.deliveryMethodLabel')}: </span>
+                        <span className="font-bold text-foreground">{t('shopeePhysical.deliveryStandard')}</span>
+                      </div>
+                    )}
+                    {isPhysicalProduct && physicalWarrantyHours > 0 && (
+                      <div>
+                        <span className="text-muted-foreground">{t('shopeePhysical.warrantyLabel')}: </span>
+                        <span className="font-bold text-emerald-500">{physicalWarrantyHours} {t('shopeePhysical.warrantyHoursUnit')}</span>
                       </div>
                     )}
                     {(product as any).shipping_fee !== undefined && (
@@ -788,9 +845,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {selectedPackage.name}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-2">
+                  <div className={`flex items-baseline justify-between gap-2 ${isPhysicalProduct ? 'p-3 rounded-xl bg-orange-50/80 dark:bg-slate-800/80 border border-orange-200/70 dark:border-orange-500/20' : ''}`}>
                     <div className="flex items-baseline gap-2 flex-wrap">
-                      <span className="font-display font-extrabold text-2xl sm:text-3xl text-emerald-400 tracking-tight">
+                      <span className={`font-display font-extrabold text-2xl sm:text-3xl tracking-tight ${isPhysicalProduct ? 'text-[#ee4d2d]' : 'text-emerald-400'}`}>
                         {formatPriceVal(displayCurrentPrice)}
                       </span>
                       {!isSelectedEscalating && isSelectedOfferEligible && displayCurrentPrice !== currentPrice && (
@@ -904,6 +961,110 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* KHỐI THÔNG TIN ĐẶC THÙ HÀNG VẬT LÝ CHUẨN SHOPEE (Voucher, Vận chuyển, An tâm mua sắm, Số lượng) */}
+                  {isPhysicalProduct && (
+                    <div className="mt-3 pt-3 border-t border-border/70 space-y-2.5 text-xs">
+                      {/* Mã Giảm Giá Của Shop */}
+                      <div className="grid grid-cols-12 gap-2 items-center">
+                        <span className="col-span-4 text-[11px] text-muted-foreground font-medium">
+                          {t('shopeePhysical.shopVoucherLabel')}
+                        </span>
+                        <div className="col-span-8 flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#ee4d2d]/10 border border-dashed border-[#ee4d2d]/50 text-[#ee4d2d] text-[10px] font-bold">
+                            <Ticket className="w-3 h-3" />
+                            <span>{t('shopeePhysical.voucherOff15k')}</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#00bfa5]/10 border border-dashed border-[#00bfa5]/50 text-[#00897b] dark:text-[#00bfa5] text-[10px] font-bold">
+                            <Truck className="w-3 h-3" />
+                            <span>{t('shopeePhysical.voucherFreeship30k')}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Vận Chuyển */}
+                      <div className="grid grid-cols-12 gap-2 items-start">
+                        <span className="col-span-4 text-[11px] text-muted-foreground font-medium pt-0.5">
+                          {t('shopeePhysical.shippingLabel')}
+                        </span>
+                        <div className="col-span-8 space-y-1 text-[11px]">
+                          <div className="flex items-center gap-1.5 text-foreground font-semibold">
+                            <Truck className="w-3.5 h-3.5 text-[#00bfa5] shrink-0" />
+                            <span>{t('shopeePhysical.shippingEta')}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <MapPin className="w-3 h-3 shrink-0 text-slate-400" />
+                            <span>{t('shopeePhysical.shippingFrom')}: <strong className="text-foreground">{physicalShipFrom}</strong> • {t('shopeePhysical.shippingCarrierList')}</span>
+                          </div>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            {t('shopeePhysical.shippingFreeNote')}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {t('shopeePhysical.shippingDelayVoucher')}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* An Tâm Mua Sắm */}
+                      <div className="grid grid-cols-12 gap-2 items-start">
+                        <span className="col-span-4 text-[11px] text-muted-foreground font-medium pt-0.5">
+                          {t('shopeePhysical.guaranteeLabel')}
+                        </span>
+                        <div className="col-span-8 flex items-start gap-1.5 text-[11px] text-foreground">
+                          <ShieldCheck className="w-3.5 h-3.5 text-[#ee4d2d] shrink-0 mt-0.5" />
+                          <span>{t('shopeePhysical.guaranteeSummary')}</span>
+                        </div>
+                      </div>
+
+                      {/* Bộ Chọn Số Lượng Chuẩn Shopee */}
+                      {!isSelectedEscalating && (
+                        <div className="grid grid-cols-12 gap-2 items-center pt-1">
+                          <span className="col-span-4 text-[11px] text-muted-foreground font-medium">
+                            {t('shopeePhysical.quantityLabel')}
+                          </span>
+                          <div className="col-span-8 flex items-center gap-2.5 flex-wrap">
+                            <div className="inline-flex items-center border border-border rounded-lg overflow-hidden bg-card">
+                              <button
+                                type="button"
+                                disabled={quantity <= 1 || isOutOfStock}
+                                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                                className="w-8 h-8 flex items-center justify-center text-foreground hover:bg-muted disabled:opacity-40 cursor-pointer transition"
+                                aria-label="-"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={quantity}
+                                disabled={isOutOfStock}
+                                onChange={(e) => {
+                                  const parsed = parseInt(e.target.value.replace(/\D/g, ''), 10);
+                                  if (!isNaN(parsed)) {
+                                    setQuantity(Math.min(Math.max(1, parsed), Math.max(1, realStock)));
+                                  }
+                                }}
+                                aria-label={t('shopeePhysical.quantityLabel')}
+                                className="w-11 h-8 text-center text-xs font-bold font-mono bg-transparent text-foreground border-x border-border focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                disabled={isOutOfStock || quantity >= realStock}
+                                onClick={() => setQuantity((q) => Math.min(Math.max(1, realStock), q + 1))}
+                                className="w-8 h-8 flex items-center justify-center text-foreground hover:bg-muted disabled:opacity-40 cursor-pointer transition"
+                                aria-label="+"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <span className="text-[11px] text-muted-foreground">
+                              {isOutOfStock ? t('shopeePhysical.outOfStock') : t('shopeePhysical.inStockAvailable')}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Khối Thông Tin Chi Tiết Gói Đang Chọn & Nút Mua Ngay Duy Nhất (Sticky Ghim trên Mobile & Desktop khi cuộn) */}
@@ -960,6 +1121,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
+                        {isPhysicalProduct && (
+                          <button
+                            type="button"
+                            disabled={isOutOfStock}
+                            onClick={handleAddToCart}
+                            className="flex-1 px-3 min-h-[44px] h-[48px] rounded-xl font-bold text-xs sm:text-sm border-2 border-[#ee4d2d] bg-[#ee4d2d]/10 hover:bg-[#ee4d2d]/20 text-[#ee4d2d] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={t('productDetailModal.addToCartTitle')}
+                          >
+                            <ShoppingCart className="w-4 h-4 shrink-0" />
+                            <span className="truncate">{t('shopeePhysical.addToCart')}</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                         disabled={isOutOfStock}
@@ -993,16 +1166,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         }}
                         className={`flex-1 min-h-[44px] h-[48px] py-3 px-3 rounded-xl font-display font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 shadow-lg active:scale-95 cursor-pointer ${
                           !isOutOfStock
-                            ? isSelectedEscalating
-                              ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black shadow-amber-500/25'
-                              : isSelectedOfferEligible
-                                ? 'bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:to-orange-600 text-white shadow-rose-500/20'
-                                : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-emerald-500/20'
+                            ? isPhysicalProduct
+                              ? 'bg-[#ee4d2d] hover:bg-[#d73211] text-white shadow-orange-500/25'
+                              : isSelectedEscalating
+                                ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black shadow-amber-500/25'
+                                : isSelectedOfferEligible
+                                  ? 'bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:to-orange-600 text-white shadow-rose-500/20'
+                                  : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-emerald-500/20'
                             : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
                         }`}
                       >
-                        <Zap className={`w-4 h-4 ${isSelectedEscalating ? 'fill-slate-950 text-slate-950' : ''}`} />
-                        <span>
+                        {isPhysicalProduct ? <Truck className="w-4 h-4 shrink-0" /> : <Zap className={`w-4 h-4 ${isSelectedEscalating ? 'fill-slate-950 text-slate-950' : ''}`} />}
+                        <span className="truncate">
                           {!isOutOfStock
                             ? (isSelectedEscalating || isSelectedOfferEligible
                                 ? t('productDetailModal.buyNowOffer', { price: formatPriceVal(totalPrice) })
@@ -1010,16 +1185,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             : (t('productDetailModal.outOfStock'))}
                         </span>
                       </button>
-                      <button
-                        type="button"
-                        disabled={isOutOfStock}
-                        onClick={handleAddToCart}
-                        className="flex-1 sm:w-auto px-4 min-h-[44px] h-[48px] rounded-xl font-bold text-xs sm:text-sm border-2 border-secondary/60 text-secondary hover:bg-secondary/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                        title={t('productDetailModal.addToCartTitle')}
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        <span>{t('productDetailModal.addToCart')}</span>
-                      </button>
+                      {!isPhysicalProduct && (
+                        <button
+                          type="button"
+                          disabled={isOutOfStock}
+                          onClick={handleAddToCart}
+                          className="flex-1 sm:w-auto px-4 min-h-[44px] h-[48px] rounded-xl font-bold text-xs sm:text-sm border-2 border-secondary/60 text-secondary hover:bg-secondary/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                          title={t('productDetailModal.addToCartTitle')}
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          <span>{t('productDetailModal.addToCart')}</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={handleToggleWishlist}
@@ -1126,13 +1303,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                       setSelectedPackageId(matchedPkg.id);
                                     }
                                   }}
-                                  className={`px-3 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                                  className={`relative px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer overflow-hidden ${
                                     isValSelected
-                                      ? 'bg-secondary text-white border-secondary shadow-sm'
-                                      : 'bg-card text-foreground border-border hover:border-secondary/50'
+                                      ? isPhysicalProduct
+                                        ? 'bg-[#ee4d2d]/10 text-[#ee4d2d] border-[#ee4d2d] shadow-xs'
+                                        : 'bg-secondary text-white border-secondary shadow-sm'
+                                      : 'bg-card text-foreground border-border hover:border-[#ee4d2d]/60'
                                   }`}
                                 >
-                                  {val}
+                                  <span>{val}</span>
+                                  {isValSelected && isPhysicalProduct && (
+                                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#ee4d2d] text-white flex items-center justify-center rounded-tl">
+                                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                    </span>
+                                  )}
                                 </button>
                               );
                             })}

@@ -5,6 +5,21 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-26]
+
+### 469. Nâng Cấp Giao Diện Trưng Bày, Mua Hàng & Thanh Toán Hàng Vật Lý Chuẩn Shopee (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Tham khảo trải nghiệm sàn Shopee để nâng cấp toàn diện giao diện trưng bày sản phẩm, chi tiết mua hàng và thanh toán cho hàng vật lý, đồng bộ 100% song ngữ VI/EN qua từ điển tập trung (`shopeePhysical` trong `vi.json` & `en.json`).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Trưng bày sản phẩm & thanh sắp xếp Shopee (`src/components/shopee/ShopeeTestView.tsx`, `src/components/ProductCard.tsx`)*:
+     - Chuẩn hóa ảnh sản phẩm vuông `aspect-square`, ruy-băng `Mall` góc trái, cờ giảm giá vàng `#ffe97a` góc phải, dải `FREESHIP XTRA` cho hàng vật lý, nhãn `Rẻ Vô Địch` / `Trả hàng 15 ngày`, đánh giá sao + số đã bán + vị trí kho gửi (`warehouse_address`/`origin`).
+     - Thêm thanh sắp xếp Shopee ngay trên kệ hàng (`Phổ Biến`, `Mới Nhất`, `Bán Chạy`, `Giá Thấp→Cao / Cao→Thấp`) và nút lọc nhanh `Freeship Xtra`.
+  2. *Chi tiết & mua hàng vật lý (`src/components/ProductDetailModal.tsx`)*:
+     - Gallery ảnh vuông + badge `Mall` / `Freeship Xtra` / `Trả hàng 15 ngày`, khối giá cam Shopee `#ee4d2d`, bảng 2 cột đặc thù hàng vật lý (Mã giảm giá của Shop, Vận chuyển GHTK/GHN/Viettel Post + ETA, An tâm mua sắm 15 ngày, Bộ chọn Số lượng `- [qty] +`), chip phân loại có dấu tick góc cam Shopee, cặp nút `Thêm Vào Giỏ Hàng` (viền cam) + `Mua Ngay` (nền cam `#ee4d2d`), và bổ sung thông số trọng lượng/kho gửi/bảo hành.
+  3. *Thanh toán hàng vật lý chuẩn Shopee (`src/components/ProductCheckoutModal.tsx`)*:
+     - Khối Địa chỉ nhận hàng có dải phong bì thư kẻ sọc đỏ–xanh đặc trưng Shopee, chọn nhãn `Nhà Riêng`/`Văn Phòng`, áp dụng chuẩn `modern-web-guidance` (`autofill-address-form` & `forms`: `<label htmlFor>`, `autocomplete="name"/"tel"/"street-address"`, `<textarea>` cho địa chỉ, `<fieldset>` + `<legend>` cho vận chuyển và thanh toán, `text-base sm:text-xs` chống iOS zoom).
+     - Chuẩn hóa bảng **Chi Tiết Thanh Toán** 5 dòng (Tiền hàng, Phí vận chuyển, Giảm giá vận chuyển, Voucher giảm giá, Tổng thanh toán `#ee4d2d`), nút **Đặt Hàng** kèm số tiền cụ thể, sửa mô tả VietQR riêng cho hàng vật lý, và thêm thanh tiến trình 4 bước trên màn hình Đặt hàng thành công.
+
 ## [2026-11-25]
 
 ### 468. Gating 4 Vị Trí DDL Vô Điều Kiện Trong `ensureSchemaUpgrades`, Tách `Server-Timing` Schema, Nối Dây `preloadedMetaSettingPromise`, Sửa Nhãn `status.ts` & Bypass 16 Key Khi `?nocache=1` (25/11/2026)

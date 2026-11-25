@@ -9,7 +9,7 @@ import {
   ShoppingBag, Package, User, Tag, Plus, CheckCircle, CheckCircle2, ExternalLink,
   Layers, Clock, PhoneCall, Send, ShieldAlert, Sparkle, Rocket,
   Calendar, Newspaper, Store, List, FileText, Globe, Award, ArrowUpDown, SlidersHorizontal,
-  Filter, X, Bookmark, ChevronDown, Wallet, Settings, LogOut, Lock, Heart
+  Filter, X, Bookmark, ChevronDown, Wallet, Settings, LogOut, Lock, Heart, Truck, MapPin, Star
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { cartService } from '../../services/cartService';
@@ -252,7 +252,9 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     };
   }, [language]);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [selectedProductType, setSelectedProductType] = useState<'all' | 'giftcode' | 'utility' | 'account' | 'giveaway'>('all');
+  const [selectedProductType, setSelectedProductType] = useState<'all' | 'physical' | 'digital' | 'giftcode' | 'utility' | 'account' | 'giveaway'>('all');
+  const [mallSortBy, setMallSortBy] = useState<'popular' | 'newest' | 'sales' | 'price_asc' | 'price_desc'>('popular');
+  const [onlyFreeshipFilter, setOnlyFreeshipFilter] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'latest' | 'codes' | 'licensed'>('latest');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -779,16 +781,29 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     return filteredStoreProducts.slice(start, start + pageSize);
   }, [filteredStoreProducts, selectedProductType, currentPage, pageSize]);
 
-  // Bộ phân loại và phân trang riêng cho Sàn Đa Ngành Universal Mall
+  // Bộ phân loại, sắp xếp Shopee và phân trang riêng cho Sàn Đa Ngành Universal Mall
   const currentMallProducts = useMemo(() => {
+    let list = filteredStoreProducts;
     if (selectedProductType === 'physical') {
-      return filteredStoreProducts.filter((p) => p.product_type === 'physical');
+      list = list.filter((p) => p.product_type === 'physical');
+    } else if (selectedProductType === 'digital') {
+      list = list.filter((p) => p.product_type !== 'physical');
     }
-    if (selectedProductType === 'digital') {
-      return filteredStoreProducts.filter((p) => p.product_type !== 'physical');
+    if (onlyFreeshipFilter) {
+      list = list.filter((p) => p.product_type === 'physical' || Number((p as any).shipping_fee ?? 0) === 0);
     }
-    return filteredStoreProducts;
-  }, [filteredStoreProducts, selectedProductType]);
+    const sorted = [...list];
+    if (mallSortBy === 'price_asc') {
+      sorted.sort((a, b) => (Number(a.current_price) || 0) - (Number(b.current_price) || 0));
+    } else if (mallSortBy === 'price_desc') {
+      sorted.sort((a, b) => (Number(b.current_price) || 0) - (Number(a.current_price) || 0));
+    } else if (mallSortBy === 'sales') {
+      sorted.sort((a, b) => (Number(b.sold_count || 0) + Number(b.virtual_sold_count || 0)) - (Number(a.sold_count || 0) + Number(a.virtual_sold_count || 0)));
+    } else if (mallSortBy === 'newest') {
+      sorted.sort((a, b) => String((b as any).created_at || '').localeCompare(String((a as any).created_at || '')));
+    }
+    return sorted;
+  }, [filteredStoreProducts, selectedProductType, onlyFreeshipFilter, mallSortBy]);
 
   const mallTotalPages = Math.max(1, Math.ceil(currentMallProducts.length / pageSize));
 
@@ -2035,6 +2050,77 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 </div>
               </div>
 
+              {/* THANH SẮP XẾP & LỌC NHANH PHONG CÁCH SHOPEE */}
+              <div className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border text-xs ${isShopeeDark ? 'bg-slate-900/90 border-slate-800' : 'bg-[#ededed]/80 border-slate-200'}`}>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mr-1">
+                    {t('shopeePhysical.sortBy')}
+                  </span>
+                  {([
+                    { id: 'popular', label: t('shopeePhysical.sortPopular') },
+                    { id: 'newest', label: t('shopeePhysical.sortNewest') },
+                    { id: 'sales', label: t('shopeePhysical.sortBestSelling') },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        setMallSortBy(opt.id);
+                        setCurrentPage(1);
+                      }}
+                      className={`px-3 py-1.5 rounded text-xs font-semibold transition cursor-pointer ${
+                        mallSortBy === opt.id
+                          ? 'bg-[#ee4d2d] text-white shadow-xs'
+                          : isShopeeDark
+                            ? 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                            : 'bg-white text-slate-700 hover:text-[#ee4d2d]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                  <select
+                    aria-label={t('shopeePhysical.sortBy')}
+                    value={mallSortBy === 'price_asc' || mallSortBy === 'price_desc' ? mallSortBy : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setMallSortBy(e.target.value as 'price_asc' | 'price_desc');
+                        setCurrentPage(1);
+                      }
+                    }}
+                    className={`px-2.5 py-1.5 rounded text-xs font-semibold border cursor-pointer focus:outline-none focus:border-[#ee4d2d] ${
+                      mallSortBy === 'price_asc' || mallSortBy === 'price_desc'
+                        ? 'border-[#ee4d2d] text-[#ee4d2d] bg-white dark:bg-slate-800'
+                        : isShopeeDark
+                          ? 'bg-slate-800 border-slate-700 text-slate-200'
+                          : 'bg-white border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <option value="">{t('shopeePhysical.sortPriceAsc').split(':')[0]}</option>
+                    <option value="price_asc">{t('shopeePhysical.sortPriceAsc')}</option>
+                    <option value="price_desc">{t('shopeePhysical.sortPriceDesc')}</option>
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOnlyFreeshipFilter((v) => !v);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1.5 rounded text-[11px] font-bold flex items-center gap-1.5 border transition cursor-pointer ${
+                    onlyFreeshipFilter
+                      ? 'bg-[#00bfa5] text-white border-[#00bfa5] shadow-xs'
+                      : isShopeeDark
+                        ? 'bg-slate-800 border-slate-700 text-emerald-400 hover:border-[#00bfa5]'
+                        : 'bg-white border-slate-200 text-[#00897b] hover:border-[#00bfa5]'
+                  }`}
+                >
+                  <Truck className="w-3.5 h-3.5" />
+                  <span>{t('shopeePhysical.filterFreeship')}</span>
+                </button>
+              </div>
+
               {/* LƯỚI SẢN PHẨM SÀN ĐA NGÀNH HOẶC EMPTY STATE */}
               {currentMallProducts.length === 0 ? (
                 <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-8 my-4">
@@ -2060,86 +2146,111 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       ? Math.round(((displayOriginalPrice - displayCurrentPrice) / displayOriginalPrice) * 100)
                       : (prod.discount_percent || 0);
 
+                    const isPhysicalProd = prod.product_type === 'physical';
+                    const totalSoldCount = Math.max(0, Number(prod.sold_count || 0) + Number(prod.virtual_sold_count || 0));
+                    const shipLocation = (prod as any).warehouse_address || (prod as any).origin || t('shopeePhysical.warehouseDefault');
+
                     return (
                       <div
                         key={prod.id}
-                        onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`Chi tiết sản phẩm: ${prod.title}`, 'info')}
-                        className={`rounded-lg border hover:border-[#ee4d2d] hover:-translate-y-0.5 transition duration-150 shadow-sm cursor-pointer overflow-hidden flex flex-col justify-between group ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+                        onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`${prod.title}`, 'info')}
+                        className={`rounded-md border hover:border-[#ee4d2d] hover:-translate-y-0.5 transition duration-150 shadow-xs hover:shadow-md cursor-pointer overflow-hidden flex flex-col justify-between group ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
                       >
                         <div>
-                          <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
+                          <div className="w-full aspect-square bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
                             {prod.cover_image_url || prod.product_images?.[0] ? (
                               <img
-                              src={prod.cover_image_url || prod.product_images?.[0]}
-                              alt={prod.title}
-                              onError={(e) => {
-                                const img = e.currentTarget;
-                                if (!img.dataset.fallbackApplied) {
-                                  img.dataset.fallbackApplied = '1';
-                                  img.src = '/package-placeholder.svg';
-                                }
-                              }}
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
-                            />
+                                src={prod.cover_image_url || prod.product_images?.[0]}
+                                alt={prod.title}
+                                loading="lazy"
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  if (!img.dataset.fallbackApplied) {
+                                    img.dataset.fallbackApplied = '1';
+                                    img.src = '/package-placeholder.svg';
+                                  }
+                                }}
+                                className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                              />
                             ) : (
                               <span className="text-4xl">📦</span>
                             )}
-                            <span className="absolute top-0 left-0 bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-br">
-                              {prod.product_type === 'physical'
-                                ? t('mall.products.physicalBadge')
+                            {/* Top-left Mall / Preferred Shopee Ribbon */}
+                            <span className={`absolute top-2 left-0 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-r shadow-xs ${isPhysicalProd ? 'bg-[#d0011b]' : 'bg-emerald-600'}`}>
+                              {isPhysicalProd
+                                ? t('shopeePhysical.mallBadge')
                                 : (prod.badge && prod.badge !== 'Hàng Số' && prod.badge !== 'Hàng Vật Lý'
                                     ? prod.badge
                                     : t('mall.products.digitalBadge'))}
                             </span>
+                            {/* Top-right Shopee Yellow Discount Flag */}
                             {discountPercent > 0 && (
-                              <span className="absolute top-0 right-0 bg-yellow-400 text-red-600 text-[10px] font-bold px-1 py-0.2">
+                              <span className="absolute top-0 right-0 bg-[#ffe97a] text-[#ee4d2d] text-[10px] font-extrabold px-1.5 py-0.5 rounded-bl shadow-xs">
                                 -{discountPercent}%
                               </span>
                             )}
+                            {/* Bottom-left Freeship Xtra Overlay for Physical Goods */}
+                            {isPhysicalProd && (
+                              <div className="absolute bottom-0 left-0 right-0 px-1.5 py-1 bg-gradient-to-t from-black/55 to-transparent flex items-center justify-between">
+                                <span className="bg-[#00bfa5] text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-xs inline-flex items-center gap-0.5 tracking-tight">
+                                  <Truck className="w-2.5 h-2.5 shrink-0" />
+                                  <span>{t('shopeePhysical.freeshipXtra')}</span>
+                                </span>
+                              </div>
+                            )}
                           </div>
 
-                          <div className="p-2 space-y-1">
-                            <div className="text-[11px] font-semibold line-clamp-2 leading-snug group-hover:text-[#ee4d2d] transition" title={prod.title}>
+                          <div className="p-2 space-y-1.5">
+                            <div className="text-xs font-medium line-clamp-2 leading-snug min-h-[2rem] group-hover:text-[#ee4d2d] transition" title={prod.title}>
                               {contentTranslationService.translateField('product', prod.id, 'name', prod.title, language)}
                             </div>
                             <div className="flex items-center gap-1 flex-wrap">
-                              {prod.product_type === 'physical' ? (
-                                <span className="text-[9px] border border-blue-500 text-blue-500 px-1 rounded font-medium">
-                                  {language === 'en' ? 'Nationwide Shipping' : 'Giao tận nơi'}
-                                </span>
+                              {isPhysicalProd ? (
+                                <>
+                                  <span className="text-[9px] border border-[#ee4d2d] text-[#ee4d2d] px-1 rounded-xs font-semibold">
+                                    {t('shopeePhysical.cheapGuarantee')}
+                                  </span>
+                                  <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1 rounded-xs font-medium">
+                                    {t('shopeePhysical.return15Days')}
+                                  </span>
+                                </>
                               ) : (
-                                <span className="text-[9px] border border-emerald-500 text-emerald-500 px-1 rounded font-medium">
-                                  {language === 'en' ? 'Instant 0s' : 'Giao 0s'}
+                                <span className="text-[9px] border border-emerald-500 text-emerald-500 px-1 rounded-xs font-medium">
+                                  {t('shopeePhysical.instant0s')}
                                 </span>
-                              )}
-                              {prod.brand ? (
-                                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[100px]">
-                                  {contentTranslationService.translateField('brand', prod.brand, 'name', prod.brand, language)}
-                                </span>
-                              ) : (
-                                <span className="text-[9px] text-slate-400 truncate max-w-[100px]">{prod.game_name || 'Universal Mall'}</span>
                               )}
                               {prod.variants && prod.variants.length > 0 && (
-                                <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1 rounded">
-                                  {prod.variants.length} {language === 'en' ? 'variants' : 'phân loại'}
+                                <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1 rounded-xs">
+                                  {prod.variants.length} {t('shopeePhysical.selectVariant')}
                                 </span>
                               )}
                             </div>
 
-                            {/* Điểm đánh giá sản phẩm hoặc Chưa có đánh giá */}
-                            <div className="flex items-center gap-1 text-[10px] pt-0.5">
+                            {/* Rating & Sold count row (Shopee style) */}
+                            <div className="flex items-center justify-between gap-1 text-[10px] pt-0.5">
                               {prod.rating && prod.review_count && prod.review_count > 0 ? (
                                 <div className="flex items-center gap-0.5 text-amber-500 font-medium">
                                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                                   <span className="font-bold">{Number(prod.rating).toFixed(1)}</span>
-                                  <span className="text-slate-400 font-mono">({prod.review_count})</span>
                                 </div>
                               ) : (
-                                <span className="text-slate-400 text-[10px]">
-                                  {language === 'en' ? 'No reviews yet' : 'Chưa có đánh giá'}
+                                <span className="text-slate-400 text-[10px] truncate">
+                                  {prod.brand ? contentTranslationService.translateField('brand', prod.brand, 'name', prod.brand, language) : (prod.game_name || 'Universal Mall')}
+                                </span>
+                              )}
+                              {prod.show_sold_count !== false && totalSoldCount > 0 && (
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
+                                  {t('shopeePhysical.soldPrefix')} {totalSoldCount}
                                 </span>
                               )}
                             </div>
+
+                            {isPhysicalProd && (
+                              <div className="flex items-center gap-1 text-[9px] text-slate-400 truncate">
+                                <MapPin className="w-2.5 h-2.5 shrink-0" />
+                                <span className="truncate">{shipLocation}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -2147,13 +2258,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                           <div className="flex items-baseline justify-between gap-1 flex-wrap">
                             {hasFirstOffer ? (
                               <div className="flex items-center gap-1">
-                                <span className="text-[#ee4d2d] font-bold text-xs">{formatPrice(firstPrice)}</span>
-                                <span className="text-[9px] font-bold px-1 py-0.2 bg-rose-500/10 text-rose-500 rounded">
-                                  {language === 'en' ? 'Promo' : 'Ưu đãi'}
-                                </span>
+                                <span className="text-[#ee4d2d] font-bold text-xs sm:text-sm">{formatPrice(firstPrice)}</span>
                               </div>
                             ) : (
-                              <div className="text-[#ee4d2d] font-bold text-xs">{formatPrice(prod.current_price)}</div>
+                              <div className="text-[#ee4d2d] font-bold text-xs sm:text-sm">{formatPrice(prod.current_price)}</div>
                             )}
                             {displayOriginalPrice > displayCurrentPrice && (
                               <div className="text-[10px] text-slate-400 line-through font-mono">{formatPrice(displayOriginalPrice)}</div>
@@ -2161,6 +2269,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                           </div>
 
                           <button
+                            type="button"
                             disabled={isOutOfStock}
                             onClick={isOutOfStock ? undefined : (e) => {
                               e.stopPropagation();
@@ -2170,14 +2279,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                                 handleAddProductToCart(prod, e);
                               }
                             }}
-                            className={`w-full py-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-sm ${
+                            className={`w-full py-1.5 rounded text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-xs ${
                               isOutOfStock
                                 ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed'
-                                : 'bg-[#ee4d2d] hover:bg-orange-600 text-white cursor-pointer'
+                                : 'bg-[#ee4d2d] hover:bg-[#d73211] text-white cursor-pointer'
                             }`}
                           >
                             <ShoppingCart className="w-3 h-3" />
-                            <span>{isOutOfStock ? (language === 'en' ? 'Out of Stock' : 'Hết Hàng') : (prod.variants && prod.variants.length > 1 ? (language === 'en' ? 'Select Variant' : 'Chọn Phân Loại') : (t.store?.addToCart || (language === 'en' ? 'Add to Cart' : 'Thêm Giỏ Hàng')))}</span>
+                            <span>{isOutOfStock ? t('shopeePhysical.outOfStock') : (prod.variants && prod.variants.length > 1 ? t('shopeePhysical.selectVariant') : t('shopeePhysical.addToCart'))}</span>
                           </button>
                         </div>
                       </div>
