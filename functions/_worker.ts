@@ -48,6 +48,13 @@ import * as newsIdApi from './api/news/[id]';
 import * as eventsIndexApi from './api/events/index';
 import * as eventsIdApi from './api/events/[id]';
 import * as missionsIndexApi from './api/missions/index';
+import * as cartIndexApi from './api/cart/index';
+import * as cartSyncApi from './api/cart/sync';
+import * as cartItemsApi from './api/cart/items/index';
+import * as cartItemsIdApi from './api/cart/items/[id]';
+import * as userAddressesIndexApi from './api/user/addresses/index';
+import * as userAddressesIdApi from './api/user/addresses/[id]/index';
+import * as userAddressesDefaultApi from './api/user/addresses/[id]/default';
 import * as missionsIdApi from './api/missions/[id]';
 import * as missionsSubmitApi from './api/missions/submit';
 import * as missionsMySubmissionsApi from './api/missions/my-submissions';
@@ -2606,6 +2613,48 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS') return await homepageImagesApi.onRequestOptions();
         if (method === 'GET' || method === 'HEAD') return await homepageImagesApi.onRequestGet(imageContext);
         return new Response('Method Not Allowed', { status: 405 });
+      }
+
+            // 21. Cart API (Customer Experience)
+      if (pathname === '/api/cart') {
+        if (method === 'OPTIONS' && cartIndexApi.onRequestOptions) return await cartIndexApi.onRequestOptions(context);
+        if (method === 'GET' && cartIndexApi.onRequestGet) return await cartIndexApi.onRequestGet(context);
+        if (method === 'DELETE' && cartIndexApi.onRequestDelete) return await cartIndexApi.onRequestDelete(context);
+      }
+      if (pathname === '/api/cart/sync') {
+        if (method === 'OPTIONS' && cartSyncApi.onRequestOptions) return await cartSyncApi.onRequestOptions(context);
+        if (method === 'POST' && cartSyncApi.onRequestPost) return await cartSyncApi.onRequestPost(context);
+      }
+      if (pathname === '/api/cart/items') {
+        if (method === 'OPTIONS' && cartItemsApi.onRequestOptions) return await cartItemsApi.onRequestOptions(context);
+        if (method === 'POST' && cartItemsApi.onRequestPost) return await cartItemsApi.onRequestPost(context);
+      }
+      if (pathname.startsWith('/api/cart/items/')) {
+        const itemId = pathname.replace('/api/cart/items/', '').trim();
+        const itemContext = { ...context, params: { id: itemId } };
+        if (method === 'OPTIONS' && cartItemsIdApi.onRequestOptions) return await cartItemsIdApi.onRequestOptions(itemContext);
+        if (method === 'PUT' && cartItemsIdApi.onRequestPut) return await cartItemsIdApi.onRequestPut(itemContext);
+        if (method === 'DELETE' && cartItemsIdApi.onRequestDelete) return await cartItemsIdApi.onRequestDelete(itemContext);
+      }
+
+      // 22. User Addresses API (Customer Experience)
+      if (pathname === '/api/user/addresses') {
+        if (method === 'OPTIONS' && userAddressesIndexApi.onRequestOptions) return await userAddressesIndexApi.onRequestOptions(context);
+        if (method === 'GET' && userAddressesIndexApi.onRequestGet) return await userAddressesIndexApi.onRequestGet(context);
+        if (method === 'POST' && userAddressesIndexApi.onRequestPost) return await userAddressesIndexApi.onRequestPost(context);
+      }
+      if (pathname.match(/^\/api\/user\/addresses\/([^/]+)\/default$/)) {
+        const addrMatch = pathname.match(/^\/api\/user\/addresses\/([^/]+)\/default$/);
+        const addrContext = { ...context, params: { id: addrMatch ? addrMatch[1] : '' } };
+        if (method === 'OPTIONS' && userAddressesDefaultApi.onRequestOptions) return await userAddressesDefaultApi.onRequestOptions(addrContext);
+        if (method === 'POST' && userAddressesDefaultApi.onRequestPost) return await userAddressesDefaultApi.onRequestPost(addrContext);
+      }
+      if (pathname.startsWith('/api/user/addresses/') && !pathname.endsWith('/default')) {
+        const addrId = pathname.replace('/api/user/addresses/', '').trim();
+        const addrContext = { ...context, params: { id: addrId } };
+        if (method === 'OPTIONS' && userAddressesIdApi.onRequestOptions) return await userAddressesIdApi.onRequestOptions(addrContext);
+        if (method === 'PUT' && userAddressesIdApi.onRequestPut) return await userAddressesIdApi.onRequestPut(addrContext);
+        if (method === 'DELETE' && userAddressesIdApi.onRequestDelete) return await userAddressesIdApi.onRequestDelete(addrContext);
       }
 
       // Fallback for any unknown /api route
