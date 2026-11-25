@@ -294,7 +294,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       items: [
         {
           id: 'automation-center',
-          label: isEn ? 'Automation Center' : 'Trung Tâm Tự Động Hóa',
+          label: t('automationCenter.menuLabel'),
           icon: Cpu,
           badge: 'LIVE',
           badgeColor: 'bg-purple-500 text-white font-bold',

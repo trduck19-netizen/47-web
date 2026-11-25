@@ -367,8 +367,8 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenWishlist}
                 className="relative p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border text-muted-foreground hover:text-rose-500 transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
-                title={isEn ? 'Saved Wishlist' : 'Danh sách yêu thích'}
-                aria-label={isEn ? 'Saved Wishlist' : 'Danh sách yêu thích'}
+                title={t('wishlist.title')}
+                aria-label={t('wishlist.title')}
               >
                 <Heart className={`w-4 h-4 ${wishlistCount > 0 ? 'text-rose-500 fill-rose-500' : 'text-muted-foreground'}`} />
                 {wishlistCount > 0 && (

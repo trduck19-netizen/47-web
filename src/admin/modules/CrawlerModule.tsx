@@ -2247,7 +2247,7 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Cloudflare D1 là Nguồn Chân Lý Duy Nhất (Single Source of Truth). D1 Catalog lưu 560 game chính thức đã duyệt; Client UI Cache hiển thị 593 game (bao gồm 33 game mới/danh mục mở rộng).
+                Cloudflare D1 là Nguồn Chân Lý Duy Nhất (Single Source of Truth). D1 Catalog hiện lưu {(syncStatus?.d1Counts?.games && syncStatus.d1Counts.games > 0) ? syncStatus.d1Counts.games : games.length} game chính thức đã duyệt; Client UI Cache hiển thị {games.length} game.
               </p>
             </div>
           </div>
@@ -2315,7 +2315,7 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
             <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
               <div>
                 <span className="text-slate-400">Game catalog:</span>{' '}
-                <strong className="text-white">{syncStatus?.d1Counts?.games ?? games.length}</strong>
+                <strong className="text-white">{(syncStatus?.d1Counts?.games && syncStatus.d1Counts.games > 0) ? syncStatus.d1Counts.games : games.length}</strong>
               </div>
               <div>
                 <span className="text-slate-400">Game chờ:</span>{' '}

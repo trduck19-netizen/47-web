@@ -12,6 +12,7 @@ import {
   User,
   Wallet,
   AlertCircle,
+  AlertTriangle,
   Check,
 } from 'lucide-react';
 import { DataTable, Column } from '../components/ui/DataTable';
@@ -515,22 +516,7 @@ export const WalletModule: React.FC<WalletModuleProps> = ({ onShowToast }) => {
           },
         ]}
         actions={
-          <div className="flex flex-wrap items-center justify-between gap-3 w-full sm:w-auto">
-            {/* Danger Zone: Nút đặt riêng có viền nét đứt cảnh báo */}
-            <div className="p-1 rounded-2xl border border-dashed border-rose-300 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20">
-              <button
-                type="button"
-                onClick={handleOpenResetAllModal}
-                data-action-danger="true"
-                data-testid="btn-danger-reset-wallets"
-                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all cursor-pointer"
-                title="CẢNH BÁO NGUY HIỂM: Đặt lại số dư tất cả thành viên về 0 và reset tổng doanh thu"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span>Reset Ví & Doanh Thu</span>
-              </button>
-            </div>
-
+          <div className="flex flex-wrap items-center justify-end gap-3 w-full sm:w-auto">
             <button
               onClick={() => handleOpenAdjustModal()}
               data-testid="btn-open-adjust-wallet"
@@ -542,6 +528,30 @@ export const WalletModule: React.FC<WalletModuleProps> = ({ onShowToast }) => {
           </div>
         }
       />
+
+      {/* Vùng Nguy Hiểm (Danger Zone): Tách biệt hoàn toàn khỏi thanh công cụ chính */}
+      <div className="rounded-2xl border-2 border-dashed border-rose-300 dark:border-rose-900/70 bg-rose-50/60 dark:bg-rose-950/20 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-bold text-sm">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>Vùng Nguy Hiểm (Danger Zone)</span>
+          </div>
+          <p className="text-xs text-rose-600/90 dark:text-rose-300/80 max-w-2xl">
+            Thao tác dưới đây sẽ đặt lại số dư toàn bộ thành viên về 0 và xóa thống kê doanh thu. Yêu cầu nhập mã xác nhận <code>RESET_ZERO</code> và xác thực 2FA trước khi thực thi.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleOpenResetAllModal}
+          data-action-danger="true"
+          data-testid="btn-danger-reset-wallets"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-rose-950/60 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 px-4 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-300 shadow-xs transition-all cursor-pointer shrink-0"
+          title="CẢNH BÁO NGUY HIỂM: Đặt lại số dư tất cả thành viên về 0 và reset tổng doanh thu"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span>Reset Ví & Doanh Thu</span>
+        </button>
+      </div>
 
       {/* Manual Wallet Adjustment Modal */}
       <FormModal

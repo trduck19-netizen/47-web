@@ -51,8 +51,7 @@ interface AutomationCenterModuleProps {
 }
 
 export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ onShowToast }) => {
-  const { language, t } = useLanguage();
-  const isEn = language === 'en';
+  const { t } = useLanguage();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -98,14 +97,14 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
         }
       } else {
         const err = await res.json().catch(() => ({}));
-        if (onShowToast) onShowToast(err.message || (isEn ? 'Failed to fetch automation status' : 'Lỗi tải trạng thái tự động hóa'), 'error');
+        if (onShowToast) onShowToast(err.message || t('automationCenter.fetchError'), 'error');
       }
     } catch (err: any) {
       if (onShowToast) {
         onShowToast(
           err.name === 'AbortError'
-            ? (isEn ? 'Connection timed out (8s)' : 'Hết thời gian chờ kết nối (8s)')
-            : (err.message || (isEn ? 'Network error' : 'Lỗi kết nối')),
+            ? t('automationCenter.timeoutError')
+            : (err.message || t('automationCenter.networkError')),
           'error'
         );
       }
@@ -113,7 +112,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [isEn, onShowToast]);
+  }, [t, onShowToast]);
 
   useEffect(() => {
     loadStatus();
@@ -133,7 +132,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
         ...prev,
         [serviceId]: {
           success: Boolean(data.success),
-          message: data.message || (data.success ? (isEn ? 'Connection OK' : 'Kết nối tốt') : (isEn ? 'Connection failed' : 'Kết nối thất bại')),
+          message: data.message || (data.success ? t('automationCenter.testOk') : t('automationCenter.testFailed')),
           latencyMs: data.latencyMs || 0,
         },
       }));
@@ -148,7 +147,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
         if (onShowToast) onShowToast(data.message, 'warning');
       }
     } catch (err: any) {
-      const errMsg = err.name === 'AbortError' ? (isEn ? 'Timeout (8s)' : 'Quá thời gian chờ (8s)') : err.message;
+      const errMsg = err.name === 'AbortError' ? t('automationCenter.timeoutShort') : err.message;
       setTestResults((prev) => ({
         ...prev,
         [serviceId]: {
@@ -166,7 +165,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
   // Test all services in sequence with timeout
   const handleTestAll = async () => {
     if (services.length === 0) return;
-    if (onShowToast) onShowToast(isEn ? 'Testing all 6 services...' : 'Đang kiểm tra kết nối 6 dịch vụ...', 'info');
+    if (onShowToast) onShowToast(t('automationCenter.testingAllToast'), 'info');
 
     for (const s of services) {
       await handleTestService(s.id);
@@ -191,18 +190,19 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
         );
         if (onShowToast) {
           onShowToast(
-            isEn
-              ? `${service.name} has been ${nextState ? 'enabled' : 'disabled'}.`
-              : `Đã ${nextState ? 'bật' : 'tắt'} dịch vụ ${service.name}.`,
+            t('automationCenter.toggledToast', {
+              state: nextState ? t('automationCenter.stateEnabled') : t('automationCenter.stateDisabled'),
+              name: service.name,
+            }),
             'success'
           );
         }
       } else {
         const err = await res.json().catch(() => ({}));
-        if (onShowToast) onShowToast(err.message || (isEn ? 'Update failed' : 'Cập nhật thất bại'), 'error');
+        if (onShowToast) onShowToast(err.message || t('automationCenter.updateFailed'), 'error');
       }
     } catch (err: any) {
-      if (onShowToast) onShowToast(err.message || (isEn ? 'Network error' : 'Lỗi mạng'), 'error');
+      if (onShowToast) onShowToast(err.message || t('automationCenter.networkError'), 'error');
     } finally {
       setIsTogglingId(null);
     }
@@ -239,16 +239,14 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-bold text-white">
-                {isEn ? 'Automation & Integrations Hub' : 'Trung Tâm Tự Động Hóa & Tích Hợp API'}
+                {t('automationCenter.title')}
               </h1>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                {summary?.overallStatus === 'healthy' ? (isEn ? 'ALL SYSTEMS NORMAL' : 'HỆ THỐNG ỔN ĐỊNH') : (isEn ? 'DEGRADED' : 'CẦN KIỂM TRA')}
+                {summary?.overallStatus === 'healthy' ? t('automationCenter.statusHealthy') : t('automationCenter.statusDegraded')}
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              {isEn
-                ? 'Centralized monitoring and live connection health for all 6 core edge services.'
-                : 'Giám sát tập trung, bật/tắt và đo lường kết nối trực tiếp cho toàn bộ 6 dịch vụ cốt lõi.'}
+              {t('automationCenter.subtitle')}
             </p>
           </div>
         </div>
@@ -256,7 +254,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Active Services Badge */}
           <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-1.5 text-center">
-            <div className="text-[10px] uppercase font-bold text-slate-400">{isEn ? 'Active Channels' : 'Kênh Hoạt Động'}</div>
+            <div className="text-[10px] uppercase font-bold text-slate-400">{t('automationCenter.activeChannels')}</div>
             <div className="text-sm font-extrabold text-white">
               <span className="text-emerald-400">{summary?.activeCount || 0}</span> / {summary?.totalServices || 6}
             </div>
@@ -264,9 +262,9 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
 
           {/* Average Latency */}
           <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-1.5 text-center">
-            <div className="text-[10px] uppercase font-bold text-slate-400">{isEn ? 'Avg Edge Latency' : 'Độ Trễ Trung Bình'}</div>
+            <div className="text-[10px] uppercase font-bold text-slate-400">{t('automationCenter.avgLatency')}</div>
             <div className="text-sm font-extrabold text-cyan-400">
-              ~{summary?.averageLatencyMs || 45}ms
+              {summary?.averageLatencyMs ? `${summary.averageLatencyMs}ms` : '--'}
             </div>
           </div>
 
@@ -275,10 +273,10 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
             onClick={() => loadStatus(true)}
             disabled={isRefreshing || isLoading}
             className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition cursor-pointer disabled:opacity-50"
-            title={isEn ? 'Refresh Status' : 'Tải Lại Trạng Thái'}
+            title={t('automationCenter.refreshTitle')}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-purple-400' : ''}`} />
-            <span className="hidden sm:inline">{isEn ? 'Refresh' : 'Làm Mới'}</span>
+            <span className="hidden sm:inline">{t('automationCenter.refresh')}</span>
           </button>
 
           <button
@@ -287,7 +285,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
             className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-md hover:shadow-purple-500/20 transition cursor-pointer disabled:opacity-50"
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Test All Services' : 'Kiểm Tra Toàn Bộ'}</span>
+            <span>{t('automationCenter.testAll')}</span>
           </button>
         </div>
       </div>
@@ -331,10 +329,10 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                         />
                         <span className="text-[11px] font-semibold uppercase text-slate-300">
                           {service.status === 'connected'
-                            ? (isEn ? 'Connected' : 'Đã Kết Nối')
+                            ? t('automationCenter.connected')
                             : service.status === 'configuring'
-                            ? (isEn ? 'Configuring' : 'Cần Hoàn Thiện')
-                            : (isEn ? 'Disconnected' : 'Chưa Kết Nối')}
+                            ? t('automationCenter.configuring')
+                            : t('automationCenter.disconnected')}
                         </span>
                         {service.latencyMs !== undefined && (
                           <span className="text-[10px] text-cyan-400 font-mono">
@@ -352,7 +350,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                       service.enabled ? 'bg-purple-600' : 'bg-slate-700'
                     }`}
-                    title={service.enabled ? (isEn ? 'Disable' : 'Tắt Dịch Vụ') : (isEn ? 'Enable' : 'Bật Dịch Vụ')}
+                    title={service.enabled ? t('automationCenter.disableService') : t('automationCenter.enableService')}
                   >
                     <span
                       className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
@@ -375,14 +373,14 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                       {service.maskedKey}
                     </span>
                     <span className="text-[10px] text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded font-semibold">
-                      {isEn ? 'SECURED' : 'BẢO VỆ'}
+                      {t('automationCenter.secured')}
                     </span>
                   </div>
                 ) : (
                   <div className="bg-slate-950/40 border border-dashed border-slate-800 rounded-lg px-2.5 py-1.5 mb-3 text-xs text-slate-400 italic">
                     {service.id === 'd1'
-                      ? (isEn ? 'Native Cloudflare Binding' : 'Gắn kết D1 Native Cloudflare')
-                      : (isEn ? 'No Key/Token configured' : 'Chưa cấu hình Khóa/Token')}
+                      ? t('automationCenter.d1Binding')
+                      : t('automationCenter.noKeyConfigured')}
                   </div>
                 )}
 
@@ -404,7 +402,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                       <div className="font-semibold">{result.message}</div>
                       {result.latencyMs > 0 && (
                         <div className="text-[10px] opacity-80 mt-0.5 font-mono">
-                          {isEn ? 'Response Time:' : 'Thời gian phản hồi:'} {result.latencyMs}ms
+                          {t('automationCenter.responseTime')} {result.latencyMs}ms
                         </div>
                       )}
                     </div>
@@ -420,16 +418,16 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                   className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-1.5 px-2.5 rounded-lg text-xs font-semibold border border-slate-700/80 flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-40"
                 >
                   <Play className={`w-3 h-3 ${isTesting ? 'animate-spin text-purple-400' : 'text-slate-400'}`} />
-                  <span>{isTesting ? (isEn ? 'Testing...' : 'Đang Kiểm Tra...') : (isEn ? 'Test Connection' : 'Kiểm Tra')}</span>
+                  <span>{isTesting ? t('automationCenter.testing') : t('automationCenter.testConnection')}</span>
                 </button>
 
                 <button
                   onClick={() => setSelectedServiceForConfig(service)}
                   className="bg-slate-800/70 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded-lg text-xs font-semibold border border-slate-700 flex items-center justify-center gap-1 transition cursor-pointer"
-                  title={isEn ? 'View Parameters' : 'Xem Cấu Hình'}
+                  title={t('automationCenter.viewParams')}
                 >
                   <SlidersHorizontal className="w-3 h-3 text-slate-400" />
-                  <span className="hidden sm:inline">{isEn ? 'Details' : 'Chi Tiết'}</span>
+                  <span className="hidden sm:inline">{t('automationCenter.details')}</span>
                 </button>
               </div>
             </div>
@@ -449,7 +447,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white">{selectedServiceForConfig.name}</h3>
-                  <p className="text-xs text-slate-400">{isEn ? 'Integration Details & Parameters' : 'Thông Số Kỹ Thuật & Cấu Hình'}</p>
+                  <p className="text-xs text-slate-400">{t('automationCenter.modalSubtitle')}</p>
                 </div>
               </div>
               <button
@@ -463,7 +461,7 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
             {/* Modal Body */}
             <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-400 uppercase">{isEn ? 'Status' : 'Trạng Thái'}</label>
+                <label className="text-xs font-bold text-slate-400 uppercase">{t('automationCenter.modalStatus')}</label>
                 <div className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
                   <span
                     className={`w-2 h-2 rounded-full ${
@@ -472,22 +470,22 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                   />
                   <span className="text-xs font-semibold text-white uppercase">
                     {selectedServiceForConfig.status === 'connected'
-                      ? (isEn ? 'Connected (Operational)' : 'Đã Kết Nối (Hoạt Động Tốt)')
-                      : (isEn ? 'Not Connected / Needs Setup' : 'Chưa Kết Nối / Cần Cấu Hình')}
+                      ? t('automationCenter.modalConnectedOp')
+                      : t('automationCenter.modalNotConnected')}
                   </span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-400 uppercase">{isEn ? 'Active Masked Key' : 'Khóa Xác Thực (Bảo Mật)'}</label>
+                <label className="text-xs font-bold text-slate-400 uppercase">{t('automationCenter.modalActiveKey')}</label>
                 <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 font-mono text-xs text-slate-300">
-                  {selectedServiceForConfig.maskedKey || (isEn ? 'No key required or configured via Cloudflare env' : 'Cấu hình qua Biến Môi Trường Cloudflare')}
+                  {selectedServiceForConfig.maskedKey || t('automationCenter.modalEnvFallback')}
                 </div>
               </div>
 
               {selectedServiceForConfig.details && Object.keys(selectedServiceForConfig.details).length > 0 && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-400 uppercase">{isEn ? 'Runtime Details' : 'Thông Tin Vận Hành'}</label>
+                  <label className="text-xs font-bold text-slate-400 uppercase">{t('automationCenter.modalRuntimeDetails')}</label>
                   <pre className="p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto">
                     {JSON.stringify(selectedServiceForConfig.details, null, 2)}
                   </pre>
@@ -503,14 +501,14 @@ export const AutomationCenterModule: React.FC<AutomationCenterModuleProps> = ({ 
                 className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Run Live Test' : 'Chạy Kiểm Tra Ngay'}</span>
+                <span>{t('automationCenter.runLiveTest')}</span>
               </button>
 
               <button
                 onClick={() => setSelectedServiceForConfig(null)}
                 className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition cursor-pointer"
               >
-                {isEn ? 'Close' : 'Đóng'}
+                {t('automationCenter.close')}
               </button>
             </div>
           </div>

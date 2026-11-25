@@ -64,10 +64,13 @@ export async function verifyGoogleCredential(
       return { valid: false, error: 'Email Google chưa được xác minh hoặc không hợp lệ.' };
     }
 
-    // 2. Kiểm tra Client ID nếu có cấu hình
-    if (expectedClientId && expectedClientId.length >= 10 && payload.aud) {
-      if (payload.aud !== expectedClientId.trim()) {
-        console.warn(`[Google OAuth warning] Client ID mismatch: expected ${expectedClientId}, got ${payload.aud}`);
+    // 2. Kiểm tra Client ID nếu có cấu hình (từ chối nếu không khớp aud)
+    if (expectedClientId && expectedClientId.length >= 10) {
+      if (!payload.aud || payload.aud !== expectedClientId.trim()) {
+        return {
+          valid: false,
+          error: 'GOOGLE_CLIENT_ID_MISMATCH: Token không thuộc về ứng dụng này.',
+        };
       }
     }
 

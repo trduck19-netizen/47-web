@@ -7,6 +7,27 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-25]
 
+### 462. Khắc Phục Toàn Diện Các Tồn Đọng Sau Kiểm Chứng Độc Lập (Nhóm 2, 3, 4 & 3 Bất Thường Admin) (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý dứt điểm toàn bộ lỗi và thiếu sót được chỉ ra trong báo cáo kiểm chứng độc lập (`kiem-chung-bao-cao-tong-hop-nhom2-nhom3-nhom4-2026-11-25.md`).
+- **Nguyên nhân gốc rễ & Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 4 — Automation Center (`functions/services/d1_service.ts`, `status.ts`, `test.ts`)*:
+     - Bổ sung Migration `0048_admin_settings_and_search_indexes_v1` tạo bảng `admin_settings` trong D1 để `POST /api/admin/automation/config` lưu công tắc Bật/Tắt thành công.
+     - Sửa `status.ts` và `test.ts` đọc đúng cấu hình từ `system_settings` (`wcg_admin_sepay_v4`, `telegram_settings_v1`) thay vì query nhầm các bảng không tồn tại `sepay_config` / `telegram_config`.
+     - Loại bỏ các hằng số độ trễ ghi cứng (`42, 68, 55, 80, 38`) và fallback `45ms`; chỉ hiển thị số đo D1 thực tế hoặc kết quả sau khi bấm kiểm tra trực tiếp.
+     - Chuẩn hóa đếm số bảng D1 thực tế qua `sqlite_master` loại trừ bảng hệ thống; loại bỏ điều kiện lỏng lẻo `length >= 6` bằng `isValidApiKey()`; phân biệt rõ `Config Check` cho `shipping` / `google`.
+  2. *Nhóm 2 + Nhóm 3 — Tìm kiếm, Index D1 & Google OAuth*:
+     - `src/components/shopee/ShopeeTestView.tsx`: Sửa `handleHeroSearchSubmit` luôn reset `selectedProductType` và `selectedCategory` về `'all'` khi nhấn Enter tìm kiếm, khắc phục triệt để lỗi bộ đếm `"Trang 1 / 1 • Tổng 0 gói"`.
+     - `functions/services/search_service.ts`: Nối `removeVietnameseTones` vào pipeline tìm kiếm `store_products` và `games` (hỗ trợ tìm không dấu như `lien quan` -> `Liên Quân Mobile`) và bổ sung lọc `rating` (`min_rating`).
+     - `functions/services/d1_service.ts`: Tạo lại index `idx_store_products_search_v2` và `idx_store_products_seller_v2` dùng đúng cột thực tế (`is_active`, `current_price`, `created_at`, `seller_id`).
+     - `functions/services/google_auth_service.ts`: Từ chối xác thực (`GOOGLE_CLIENT_ID_MISMATCH`, HTTP 401) khi `payload.aud` không khớp Client ID thay vì chỉ ghi `console.warn`.
+  3. *3 Bất thường Admin còn lại*:
+     - `src/admin/modules/SePayModule.tsx`: Ràng buộc động badge `ACTIVE (IDEMPOTENT)` và `Live SePay` theo `isKeyEffective`, chuyển sang trạng thái chờ cấu hình khi chưa có API key.
+     - `src/admin/modules/CrawlerModule.tsx`: Sửa số liệu Tầng 1 và dòng mô tả sang đọc động số lượng game D1 thực tế thay cho số `0` và văn bản tĩnh `560 / 33`.
+     - `src/admin/modules/WalletModule.tsx`: Tách nút `Reset Ví & Doanh Thu` khỏi thanh công cụ trên đầu, đặt vào thẻ **Vùng Nguy Hiểm (Danger Zone)** riêng biệt ở cuối danh sách giao dịch.
+  4. *Chuẩn hóa Song ngữ Rule 12*:
+     - Chuyển toàn bộ chuỗi `isEn ? ... : ...` trong `WishlistDrawerModal.tsx` (12 vị trí), `AutomationCenterModule.tsx` (35 vị trí), `AdminSidebar.tsx`, `Header.tsx`, `AuthModal.tsx`, `ProductDetailModal.tsx` sang `t()` với đầy đủ key đối xứng trong `vi.json` và `en.json`.
+
 ### 461. Triển Khai Bộ 3 API Nâng Cao (Nhóm 3): Google OAuth2 Login, Server-Side Search D1 & User Wishlist Sync (25/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Dựa trên phê duyệt kế hoạch triển khai Bộ 3 API Nhóm 3 (`ke_hoach_trien_khai_api_nhom_3_dang_nhap_google_search_wishlist_25_11.md`).

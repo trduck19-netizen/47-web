@@ -467,8 +467,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setIsWishlisted(res.inWishlist);
     if (onShowToast) {
       onShowToast(
-        res.inWishlist ? (isEn ? 'Added to wishlist' : 'Đã thêm vào yêu thích') : (isEn ? 'Removed from wishlist' : 'Đã xóa khỏi yêu thích'),
-        res.inWishlist ? (isEn ? 'Saved to your wishlist' : 'Đã lưu sản phẩm vào danh sách yêu thích') : '',
+        res.inWishlist ? t('wishlist.addedToast') : t('wishlist.removedToast'),
+        res.inWishlist ? t('wishlist.addedDesc') : '',
         'info'
       );
     }
@@ -1028,7 +1028,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             ? 'border-rose-500 bg-rose-500/10 text-rose-500'
                             : 'border-border text-muted-foreground hover:border-rose-500/50 hover:text-rose-500'
                         }`}
-                        title={isWishlisted ? (isEn ? 'Remove from wishlist' : 'Bỏ lưu yêu thích') : (isEn ? 'Add to wishlist' : 'Lưu vào yêu thích')}
+                        title={isWishlisted ? t('wishlist.removeTooltip') : t('wishlist.addTooltip')}
                       >
                         <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
                       </button>

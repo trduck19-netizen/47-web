@@ -34,6 +34,28 @@ function maskSecret(str?: string | null): string {
   return `${prefix}••••••••${suffix}`;
 }
 
+function isValidApiKey(str?: string | null): boolean {
+  if (!str) return false;
+  const s = String(str).trim();
+  if (s.length < 16) return false;
+  if (s.includes('*') || s.includes('•')) return false;
+  const lower = s.toLowerCase();
+  if (lower.includes('change_me') || lower.includes('placeholder') || lower.includes('your_') || lower.includes('example')) {
+    return false;
+  }
+  return true;
+}
+
+async function readSystemSettingJson(db: D1Database, key: string): Promise<any> {
+  try {
+    const row = await db.prepare('SELECT value FROM system_settings WHERE key = ? LIMIT 1').bind(key).first<any>();
+    if (row?.value) {
+      return typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+    }
+  } catch {}
+  return null;
+}
+
 /**
  * GET /api/admin/automation/status
  * Lấy trạng thái sức khỏe và cấu hình tổng thể của 6 kênh tích hợp cốt lõi
@@ -67,43 +89,40 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       const t0 = Date.now();
       await env.DB.prepare('SELECT 1').first();
       d1Latency = Math.max(1, Date.now() - t0);
-      const tablesRes = await env.DB.prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table'").first<any>();
+      const tablesRes = await env.DB.prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'").first<any>();
       d1TablesCount = tablesRes?.count || 0;
       d1Healthy = true;
     } catch {
       d1Healthy = false;
     }
 
-    // 2. Kiểm tra SePay Gateway
-    let sepayConfig: any = null;
-    try {
-      sepayConfig = await env.DB.prepare("SELECT * FROM sepay_config WHERE id = 'active_config' LIMIT 1").first<any>().catch(() => null);
-    } catch {}
-    const sepayKey = sepayConfig?.api_key || env.SEPAY_API_KEY || '';
-    const sepayConnected = Boolean(sepayConfig?.is_connected || (sepayKey && sepayKey.length >= 6));
+    // 2. Kiểm tra SePay Gateway (đọc đúng từ system_settings key 'wcg_admin_sepay_v4')
+    const sepayConfig = await readSystemSettingJson(env.DB, 'wcg_admin_sepay_v4');
+    const sepayKey = String(sepayConfig?.apiKey || sepayConfig?.api_key || env.SEPAY_API_KEY || '').trim();
+    const sepayValidKey = isValidApiKey(sepayKey);
+    const sepayConnected = Boolean(sepayValidKey && (sepayConfig?.enabled !== false));
 
-    // 3. Kiểm tra Telegram Bot
-    let teleConfig: any = null;
-    try {
-      teleConfig = await env.DB.prepare("SELECT * FROM telegram_config WHERE id = 'active_config' LIMIT 1").first<any>().catch(() => null);
-    } catch {}
-    const teleToken = teleConfig?.bot_token || env.TELEGRAM_BOT_TOKEN || '';
-    const teleConnected = Boolean(teleConfig?.is_connected || (teleToken && teleToken.length >= 10));
+    // 3. Kiểm tra Telegram Bot (đọc đúng từ system_settings key 'telegram_settings_v1')
+    const teleConfig = await readSystemSettingJson(env.DB, 'telegram_settings_v1');
+    const teleToken = String(teleConfig?.botToken || teleConfig?.bot_token || env.TELEGRAM_BOT_TOKEN || '').trim();
+    const teleValidToken = isValidApiKey(teleToken) && teleToken.includes(':');
+    const teleConnected = Boolean(teleValidToken && (teleConfig?.enabled !== false));
 
     // 4. Kiểm tra Resend Email
-    const resendKey = env.RESEND_API_KEY || '';
-    const resendConnected = Boolean(resendKey && resendKey.startsWith('re_'));
+    const resendKey = String(env.RESEND_API_KEY || '').trim();
+    const resendConnected = Boolean(isValidApiKey(resendKey) && resendKey.startsWith('re_'));
 
     // 5. Kiểm tra Logistics / Hãng Vận Chuyển
-    const ghtkToken = env.GHTK_API_TOKEN || '';
-    const ghnToken = env.GHN_API_TOKEN || '';
-    const viettelToken = env.VIETTEL_POST_TOKEN || '';
-    const shippingConnected = Boolean(ghtkToken || ghnToken || viettelToken);
-    const shippingCarriersCount = [ghtkToken, ghnToken, viettelToken].filter(Boolean).length;
+    const ghtkToken = String(env.GHTK_API_TOKEN || '').trim();
+    const ghnToken = String(env.GHN_API_TOKEN || '').trim();
+    const viettelToken = String(env.VIETTEL_POST_TOKEN || '').trim();
+    const shippingTokens = [ghtkToken, ghnToken, viettelToken].filter((t) => isValidApiKey(t));
+    const shippingConnected = shippingTokens.length > 0;
+    const shippingCarriersCount = shippingTokens.length;
 
     // 6. Kiểm tra Google OAuth2
-    const googleClientId = env.GOOGLE_CLIENT_ID || '';
-    const googleConnected = Boolean(googleClientId && googleClientId.includes('.apps.googleusercontent.com'));
+    const googleClientId = String(env.GOOGLE_CLIENT_ID || '').trim();
+    const googleConnected = Boolean(googleClientId && googleClientId.endsWith('.apps.googleusercontent.com') && googleClientId.length >= 20);
 
     // Lấy trạng thái Bật/Tắt từ bảng admin_settings
     let automationToggles: Record<string, boolean> = {
@@ -127,15 +146,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         name: 'SePay VietQR Gateway',
         category: 'payment',
         enabled: automationToggles.sepay ?? true,
-        status: sepayConnected ? 'connected' : (sepayKey ? 'configuring' : 'disconnected'),
-        maskedKey: maskSecret(sepayKey),
-        latencyMs: sepayConnected ? 42 : undefined,
+        status: sepayConnected ? 'connected' : (sepayValidKey ? 'configuring' : 'disconnected'),
+        maskedKey: sepayValidKey ? maskSecret(sepayKey) : '',
+        latencyMs: undefined,
         description: 'Cổng thanh toán tự động VietQR nhận tiền 0 giây và kích hoạt đơn hàng.',
         lastChecked: new Date().toISOString(),
         details: {
-          accountNumber: sepayConfig?.account_number || '',
-          bankName: sepayConfig?.bank_name || '',
-          autoFulfill: Boolean(sepayConfig?.auto_confirm_order),
+          accountNumber: sepayConfig?.accountNumber || sepayConfig?.account_number || '',
+          bankName: sepayConfig?.bankName || sepayConfig?.bank_name || '',
+          autoFulfill: Boolean(sepayConfig?.autoConfirm ?? sepayConfig?.auto_confirm_order),
         },
       },
       {
@@ -143,14 +162,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         name: 'Telegram Bot & Channel',
         category: 'alert',
         enabled: automationToggles.telegram ?? true,
-        status: teleConnected ? 'connected' : (teleToken ? 'configuring' : 'disconnected'),
-        maskedKey: maskSecret(teleToken),
-        latencyMs: teleConnected ? 68 : undefined,
+        status: teleConnected ? 'connected' : (teleValidToken ? 'configuring' : 'disconnected'),
+        maskedKey: teleValidToken ? maskSecret(teleToken) : '',
+        latencyMs: undefined,
         description: 'Bắn thông báo đơn mới, báo cáo doanh thu và cảnh báo bảo mật tới Quản trị.',
         lastChecked: new Date().toISOString(),
         details: {
-          chatId: teleConfig?.channel_id || teleConfig?.admin_chat_id || '',
-          webhookEnabled: Boolean(teleConfig?.webhook_active),
+          chatId: teleConfig?.chatId || teleConfig?.adminChatId || teleConfig?.channel_id || '',
+          webhookEnabled: Boolean(teleConfig?.webhook_active || teleConfig?.enabled),
         },
       },
       {
@@ -159,8 +178,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         category: 'notification',
         enabled: automationToggles.resend ?? true,
         status: resendConnected ? 'connected' : (resendKey ? 'configuring' : 'disconnected'),
-        maskedKey: maskSecret(resendKey),
-        latencyMs: resendConnected ? 55 : undefined,
+        maskedKey: resendConnected ? maskSecret(resendKey) : '',
+        latencyMs: undefined,
         description: 'Gửi email mã xác nhận OTP, hóa đơn mua hàng và email thông báo khách.',
         lastChecked: new Date().toISOString(),
         details: {
@@ -174,8 +193,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         category: 'logistics',
         enabled: automationToggles.shipping ?? true,
         status: shippingConnected ? 'connected' : 'disconnected',
-        maskedKey: maskSecret(ghtkToken || ghnToken || viettelToken),
-        latencyMs: shippingConnected ? 80 : undefined,
+        maskedKey: shippingConnected ? maskSecret(shippingTokens[0]) : '',
+        latencyMs: undefined,
         description: 'Đồng bộ tính phí vận chuyển tự động và cập nhật trạng thái đơn vật lý.',
         lastChecked: new Date().toISOString(),
         details: {
@@ -189,8 +208,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         category: 'auth',
         enabled: automationToggles.google ?? true,
         status: googleConnected ? 'connected' : (googleClientId ? 'configuring' : 'disconnected'),
-        maskedKey: maskSecret(googleClientId),
-        latencyMs: googleConnected ? 38 : undefined,
+        maskedKey: googleConnected ? maskSecret(googleClientId) : '',
+        latencyMs: undefined,
         description: 'Đăng nhập và tạo tài khoản 1 chạm cho khách hàng qua Google Account.',
         lastChecked: new Date().toISOString(),
         details: {
@@ -203,20 +222,20 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         category: 'database',
         enabled: automationToggles.d1 ?? true,
         status: d1Healthy ? 'connected' : 'error',
-        latencyMs: d1Latency,
+        latencyMs: d1Healthy ? d1Latency : undefined,
         description: 'Cơ sở dữ liệu Edge phân tán toàn cầu và bộ nhớ cache tốc độ cao.',
         lastChecked: new Date().toISOString(),
         details: {
           tablesCount: d1TablesCount,
           engine: 'Cloudflare D1 SQLite Edge',
-          latency: `${d1Latency}ms`,
+          latency: d1Healthy ? `${d1Latency}ms` : 'N/A',
         },
       },
     ];
 
     const activeCount = services.filter((s) => s.status === 'connected').length;
     const latencies = services.map((s) => s.latencyMs).filter((n): n is number => typeof n === 'number');
-    const avgLatency = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 45;
+    const avgLatency = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
 
     return new Response(
       JSON.stringify({

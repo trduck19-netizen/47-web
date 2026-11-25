@@ -272,11 +272,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   const handleHeroSearchSubmit = (overrideKeyword?: string) => {
     if (typeof overrideKeyword === 'string') {
       setSearchKeyword(overrideKeyword);
-      setSelectedProductType('all');
-      if (overrideKeyword === '') {
-        setSelectedCategory('all');
-      }
     }
+    setSelectedProductType('all');
+    setSelectedCategory('all');
+    setCurrentPage(1);
+    setIsSearchDropdownOpen(false);
     if (subView !== 'home') {
       setSubView('home');
     }
@@ -682,17 +682,17 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     return g.name;
   };
 
-  // 2. Filter store products (Sản phẩm cửa hàng đa ngành / gói game)
+  // 2. Filter store products (Sản phẩm cửa hàng đa ngành / gói game, hỗ trợ tiếng Việt không dấu)
   const filteredStoreProducts = useMemo(() => {
     let list = currentStoreProducts && currentStoreProducts.length > 0 ? currentStoreProducts : (storeProducts || []);
     if (searchKeyword.trim()) {
-      const q = searchKeyword.toLowerCase();
-      list = list.filter((p) => 
-        (p.title || '').toLowerCase().includes(q) || 
-        (p.brand || '').toLowerCase().includes(q) ||
-        (p.game_name || '').toLowerCase().includes(q) ||
-        (p.category_label || '').toLowerCase().includes(q)
-      );
+      const q = searchKeyword.trim().toLowerCase();
+      const normQ = q.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+      list = list.filter((p) => {
+        const hay = `${p.title || ''} ${p.brand || ''} ${p.game_name || ''} ${p.game_slug || ''} ${p.category_label || ''}`.toLowerCase();
+        const normHay = hay.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        return hay.includes(q) || normHay.includes(normQ);
+      });
     }
     // Lọc theo danh mục đã chọn
     if (selectedCategory !== 'all') {

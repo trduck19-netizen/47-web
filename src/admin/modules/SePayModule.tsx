@@ -540,11 +540,17 @@ export const SePayModule: React.FC<SePayModuleProps> = ({ onShowToast }) => {
           <div className="rounded-xl bg-slate-50 p-3.5 text-xs border border-slate-100 dark:bg-slate-800/60 dark:border-slate-800">
             <div className="flex items-center justify-between text-slate-400">
               <span className="flex items-center gap-1.5 font-semibold">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Chống Trùng Lặp Giao Dịch
+                <ShieldCheck className={`h-3.5 w-3.5 ${isKeyEffective ? 'text-emerald-600' : 'text-amber-500'}`} /> Chống Trùng Lặp Giao Dịch
               </span>
-              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded dark:bg-emerald-900/40">
-                ACTIVE (IDEMPOTENT)
-              </span>
+              {isKeyEffective ? (
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded dark:bg-emerald-900/40">
+                  ACTIVE (IDEMPOTENT)
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded dark:bg-amber-900/40 dark:text-amber-300">
+                  CHỜ API KEY
+                </span>
+              )}
             </div>
             <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-400">
               Khóa idempotency ngăn chặn tuyệt đối tình trạng cộng tiền trùng lặp cho cùng một mã GD.
@@ -754,9 +760,15 @@ export const SePayModule: React.FC<SePayModuleProps> = ({ onShowToast }) => {
                   Xem Trước Mã VietQR Tự Động
                 </h4>
               </div>
-              <span className="text-[10px] font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full dark:bg-teal-900/40 dark:text-teal-300">
-                Live SePay
-              </span>
+              {isKeyEffective ? (
+                <span className="text-[10px] font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full dark:bg-teal-900/40 dark:text-teal-300">
+                  Live SePay
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full dark:bg-slate-800 dark:text-slate-400">
+                  Chế Độ Xem Trước
+                </span>
+              )}
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">

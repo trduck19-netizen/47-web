@@ -32,8 +32,7 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
   onOpenCart,
   onNavigateDetail,
 }) => {
-  const { language } = useLanguage();
-  const isEn = language === 'en';
+  const { t } = useLanguage();
   const [items, setItems] = useState<WishlistRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -69,7 +68,7 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
   };
 
   const handleClearAll = async () => {
-    if (confirm(isEn ? 'Clear all items from wishlist?' : 'Xóa toàn bộ danh sách yêu thích?')) {
+    if (confirm(t('wishlist.clearConfirm'))) {
       await wishlistService.clearWishlist();
       setItems([]);
     }
@@ -106,13 +105,13 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-sm sm:text-base text-foreground flex items-center gap-2">
-                {isEn ? 'Saved Wishlist' : 'Danh Sách Yêu Thích'}
+                {t('wishlist.title')}
                 <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 font-bold border border-rose-500/20">
                   {items.length}
                 </span>
               </h3>
               <p className="text-xs text-muted-foreground">
-                {isEn ? 'All favorite products and items' : 'Các sản phẩm và game bạn đã lưu'}
+                {t('wishlist.subtitle')}
               </p>
             </div>
           </div>
@@ -121,7 +120,7 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
               <button
                 onClick={handleClearAll}
                 className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-                title={isEn ? 'Clear all' : 'Xóa tất cả'}
+                title={t('wishlist.clearAll')}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -129,7 +128,7 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
             <button
               onClick={onClose}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label={isEn ? 'Close' : 'Đóng'}
+              aria-label={t('wishlist.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -139,7 +138,7 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
         {/* Sync Status Banner */}
         {!currentUser && (
           <div className="mx-4 mt-3 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 flex items-center justify-between gap-2">
-            <span>{isEn ? 'Sign in to sync your wishlist across all devices.' : 'Đăng nhập để lưu yêu thích vĩnh viễn trên tài khoản.'}</span>
+            <span>{t('wishlist.syncNotice')}</span>
             <button
               onClick={() => {
                 onClose();
@@ -147,7 +146,7 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
               }}
               className="px-2.5 py-1 rounded-xl bg-amber-500 text-black font-bold shrink-0 hover:bg-amber-400"
             >
-              {isEn ? 'Sign In' : 'Đăng nhập'}
+              {t('wishlist.signIn')}
             </button>
           </div>
         )}
@@ -161,12 +160,10 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
               </div>
               <div className="space-y-1">
                 <h4 className="font-bold text-foreground text-sm sm:text-base">
-                  {isEn ? 'Wishlist is empty' : 'Chưa có sản phẩm yêu thích'}
+                  {t('wishlist.empty')}
                 </h4>
                 <p className="text-xs text-muted-foreground max-w-xs">
-                  {isEn
-                    ? 'Tap the heart icon on any product or item to save it here for later.'
-                    : 'Nhấn vào biểu tượng trái tim ở bất kỳ sản phẩm nào để lưu lại xem sau.'}
+                  {t('wishlist.emptyHint')}
                 </p>
               </div>
             </div>
@@ -220,14 +217,14 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
                     <button
                       onClick={() => handleAddToCart(record)}
                       className="p-2 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all cursor-pointer"
-                      title={isEn ? 'Add to cart' : 'Thêm vào giỏ'}
+                      title={t('wishlist.addToCart')}
                     >
                       <ShoppingCart className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleRemove(record.target_id, record.target_type)}
                       className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
-                      title={isEn ? 'Remove' : 'Xóa'}
+                      title={t('wishlist.remove')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -242,7 +239,7 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
         {items.length > 0 && (
           <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">
-              {items.length} {isEn ? 'items saved' : 'sản phẩm đã lưu'}
+              {t('wishlist.itemsSaved', { count: items.length })}
             </span>
             <button
               onClick={() => {
@@ -252,7 +249,7 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
               className="px-4 py-2.5 rounded-2xl bg-primary text-white font-bold text-xs flex items-center gap-2 hover:bg-primary-hover transition-colors shadow-glow-primary"
             >
               <ShoppingCart className="w-4 h-4" />
-              <span>{isEn ? 'View Shopping Cart' : 'Xem Giỏ Hàng'}</span>
+              <span>{t('wishlist.viewCart')}</span>
             </button>
           </div>
         )}

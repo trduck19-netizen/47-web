@@ -10,6 +10,19 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-323: Bẫy Ghi Vào Bảng Chưa Tạo (`admin_settings`), Đọc Nhầm Bảng Cấu Hình (`sepay_config`), Độ Trễ Giả Lập & Lệch Bộ Đếm Tìm Kiếm UI
+- **Triệu chứng & Rủi ro**:
+  - Bấm công tắc Bật/Tắt trong Automation Center gọi `POST /api/admin/automation/config` bị lỗi 500 do bảng `admin_settings` chưa tồn tại trong D1.
+  - `status.ts` và `test.ts` truy vấn `sepay_config` / `telegram_config` không tồn tại, đồng thời trả về độ trễ ghi cứng (`42, 68, 55, 80, 38`) gây sai lệch thông tin giám sát thực tế.
+  - Trên Web Khách, nhấn Enter tìm kiếm không reset `selectedProductType` dẫn tới dòng `paginationSummary` hiển thị `"Trang 1 / 1 • Tổng 0 gói"` dù lưới vẫn có kết quả.
+  - `removeVietnameseTones` được khai báo nhưng không nối vào truy vấn tìm kiếm; `idx_store_products_search` tạo bằng tên cột sai (`status, price_core`).
+- **Cạm bẫy đã thất bại (Failed Attempts)**:
+  - Để `.catch(() => null)` hoặc `.catch(() => {})` nuốt im lỗi thiếu bảng/thiếu cột trong migration và API, dẫn đến lỗi âm thầm không phát hiện khi kiểm thử bề mặt.
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 462)**:
+  - Tạo bảng `admin_settings` và index đúng cột (`is_active, current_price, created_at`) trong Migration `0048_admin_settings_and_search_indexes_v1`.
+  - Đọc đúng cấu hình từ `system_settings` (`wcg_admin_sepay_v4`, `telegram_settings_v1`), xóa bỏ hoàn toàn độ trễ giả lập, chỉ báo số đo thực tế.
+  - Reset `selectedProductType` & `selectedCategory` về `'all'` khi submit tìm kiếm trên `ShopeeTestView.tsx` và nối `removeVietnameseTones` vào `search_service.ts`.
+
 ### ISSUE-322: Bẫy Đăng Nhập Mạng Xã Hội Thiếu Cơ Chế Fail-Closed JWT Secret & Tìm Kiếm / Danh Sách Yêu Thích Không Đồng Bộ Đám Mây
 - **Triệu chứng & Rủi ro**:
   - Khi tích hợp đăng nhập Google OAuth2, nếu code backend fallback về khóa bí mật mặc định dạng tĩnh khi thiếu `JWT_SECRET` sẽ vi phạm nghiêm trọng Rule 10 bảo mật Cloudflare Edge.

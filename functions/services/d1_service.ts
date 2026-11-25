@@ -3692,6 +3692,27 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Migration 0047_google_oauth_and_wishlist_v1 error]', err?.message);
   }
 
+  // 16. Migration 0048: Bảng admin_settings cho Automation Center & Search Indexes chuẩn cột thực tế
+  try {
+    const aCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0048_admin_settings_and_search_indexes_v1' LIMIT 1").first().catch(() => null);
+    if (!aCheck) {
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS admin_settings (
+          key TEXT PRIMARY KEY,
+          value_json TEXT NOT NULL,
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `).run().catch(() => {});
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_search_v2 ON store_products(is_active, current_price, created_at);').run().catch(() => {});
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_seller_v2 ON store_products(seller_id, is_active);').run().catch(() => {});
+
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0048_admin_settings_and_search_indexes_v1');").run().catch(() => {});
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0048_admin_settings_and_search_indexes_v1 error]', err?.message);
+  }
+
   schemaUpgradesDone = true;
   })();
 

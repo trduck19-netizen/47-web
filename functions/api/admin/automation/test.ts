@@ -27,8 +27,18 @@ export const onRequestOptions: PagesFunction = async () => {
 
 /**
  * POST /api/admin/automation/test
- * Kích hoạt kiểm tra kết nối trực tiếp (Live Ping) cho từng dịch vụ với timeout nghiêm ngặt 8 giây
+ * Kích hoạt kiểm tra kết nối trực tiếp (Live Ping) hoặc kiểm tra cấu hình (Config Check) với timeout 6 giây
  */
+async function readSystemSettingJson(db: D1Database, key: string): Promise<any> {
+  try {
+    const row = await db.prepare('SELECT value FROM system_settings WHERE key = ? LIMIT 1').bind(key).first<any>();
+    if (row?.value) {
+      return typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+    }
+  } catch {}
+  return null;
+}
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
@@ -67,12 +77,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       try {
         await env.DB.prepare('SELECT 1').first();
         const latencyMs = Math.max(1, Date.now() - t0);
-        const count = await env.DB.prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table'").first<any>();
+        const count = await env.DB.prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'").first<any>();
         return new Response(
           JSON.stringify({
             success: true,
             latencyMs,
-            message: `Kết nối CSDL Cloudflare D1 phản hồi nhanh chóng trong ${latencyMs}ms.`,
+            message: `Kết nối CSDL Cloudflare D1 phản hồi thực tế trong ${latencyMs}ms (${count?.count || 0} bảng).`,
             details: { tables: count?.count || 0 },
           }),
           { status: 200, headers: CORS_HEADERS }
@@ -87,11 +97,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 2. SePay Gateway Test
     if (serviceId === 'sepay') {
-      let cfg: any = null;
-      try {
-        cfg = await env.DB.prepare("SELECT * FROM sepay_config WHERE id = 'active_config' LIMIT 1").first<any>().catch(() => null);
-      } catch {}
-      const key = cfg?.api_key || env.SEPAY_API_KEY || '';
+      const cfg = await readSystemSettingJson(env.DB, 'wcg_admin_sepay_v4');
+      const key = String(cfg?.apiKey || cfg?.api_key || env.SEPAY_API_KEY || '').trim();
 
       if (!key) {
         return new Response(
@@ -149,11 +156,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 3. Telegram Bot Test
     if (serviceId === 'telegram') {
-      let teleConfig: any = null;
-      try {
-        teleConfig = await env.DB.prepare("SELECT * FROM telegram_config WHERE id = 'active_config' LIMIT 1").first<any>().catch(() => null);
-      } catch {}
-      const token = teleConfig?.bot_token || env.TELEGRAM_BOT_TOKEN || '';
+      const teleConfig = await readSystemSettingJson(env.DB, 'telegram_settings_v1');
+      const token = String(teleConfig?.botToken || teleConfig?.bot_token || env.TELEGRAM_BOT_TOKEN || '').trim();
 
       if (!token) {
         return new Response(
@@ -276,7 +280,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
-    // 5. Shipping / Logistics Test
+    // 5. Shipping / Logistics Config Check
     if (serviceId === 'shipping') {
       const hasAnyToken = Boolean(env.GHTK_API_TOKEN || env.GHN_API_TOKEN || env.VIETTEL_POST_TOKEN);
       const latencyMs = Math.max(1, Date.now() - t0);
@@ -286,7 +290,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           JSON.stringify({
             success: false,
             latencyMs,
-            message: 'Chưa cấu hình Token hãng vận chuyển (GHTK_API_TOKEN / GHN_API_TOKEN / VIETTEL_POST_TOKEN).',
+            message: 'Kiểm tra cấu hình: Chưa thiết lập Token hãng vận chuyển (GHTK_API_TOKEN / GHN_API_TOKEN / VIETTEL_POST_TOKEN).',
           }),
           { status: 200, headers: CORS_HEADERS }
         );
@@ -296,8 +300,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         JSON.stringify({
           success: true,
           latencyMs,
-          message: 'Hệ thống định tuyến phí vận chuyển Logistics sẵn sàng hoạt động.',
+          message: 'Kiểm tra cấu hình: Token hãng vận chuyển đã sẵn sàng (Config Check).',
           details: {
+            checkType: 'config_check',
             ghtk: Boolean(env.GHTK_API_TOKEN),
             ghn: Boolean(env.GHN_API_TOKEN),
             viettelPost: Boolean(env.VIETTEL_POST_TOKEN),
@@ -307,7 +312,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 6. Google Identity OAuth2 Test
+    // 6. Google Identity OAuth2 Config Check
     if (serviceId === 'google') {
       const clientId = env.GOOGLE_CLIENT_ID || '';
       const latencyMs = Math.max(1, Date.now() - t0);
@@ -317,7 +322,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           JSON.stringify({
             success: false,
             latencyMs,
-            message: 'Chưa cấu hình biến môi trường GOOGLE_CLIENT_ID.',
+            message: 'Kiểm tra cấu hình: Chưa thiết lập biến môi trường GOOGLE_CLIENT_ID.',
           }),
           { status: 200, headers: CORS_HEADERS }
         );
@@ -328,7 +333,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           JSON.stringify({
             success: false,
             latencyMs,
-            message: 'GOOGLE_CLIENT_ID không đúng định dạng Google Cloud OAuth Client ID (*.apps.googleusercontent.com).',
+            message: 'Kiểm tra cấu hình: GOOGLE_CLIENT_ID không đúng định dạng (*.apps.googleusercontent.com).',
           }),
           { status: 200, headers: CORS_HEADERS }
         );
@@ -338,8 +343,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         JSON.stringify({
           success: true,
           latencyMs,
-          message: 'Google Identity Services OAuth Client ID hợp lệ và sẵn sàng đăng nhập 1 chạm.',
-          details: { clientIdPrefix: clientId.slice(0, 12) + '...' },
+          message: 'Kiểm tra cấu hình: Google OAuth Client ID đúng định dạng và sẵn sàng (Config Check).',
+          details: { checkType: 'config_check', clientIdPrefix: clientId.slice(0, 12) + '...' },
         }),
         { status: 200, headers: CORS_HEADERS }
       );
