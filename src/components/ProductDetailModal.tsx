@@ -93,22 +93,33 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     return getProductPackages(product);
   }, [product]);
 
-  const [selectedPackageId, setSelectedPackageId] = useState<string>(() => {
+  const getInitialPkgId = () => {
     if (initialPackageId && packages.some((p) => p.id === initialPackageId)) {
       return initialPackageId;
     }
-    return packages[0]?.id || product?.id || '';
-  });
+    const firstInStock = packages.find((p) => {
+      const s = typeof p.stock_quantity === 'number' ? p.stock_quantity : (product?.stock_quantity ?? 0);
+      return s > 0;
+    });
+    return firstInStock?.id || packages[0]?.id || product?.id || '';
+  };
+
+  const [selectedPackageId, setSelectedPackageId] = useState<string>(getInitialPkgId);
 
   useEffect(() => {
     setActiveImageIdx(0);
     setIsZoomed(false);
     setIsDescExpanded(false);
     setQuantity(1);
+    setLiveStock(null);
     if (initialPackageId && packages.some((p) => p.id === initialPackageId)) {
       setSelectedPackageId(initialPackageId);
     } else if (packages.length > 0) {
-      setSelectedPackageId(packages[0].id);
+      const firstInStock = packages.find((p) => {
+        const s = typeof p.stock_quantity === 'number' ? p.stock_quantity : (product?.stock_quantity ?? 0);
+        return s > 0;
+      });
+      setSelectedPackageId(firstInStock?.id || packages[0].id);
     }
   }, [product?.id, initialPackageId]);
 
@@ -194,6 +205,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Tải lại tồn kho thật (stock_quantity) từ máy chủ khi mở modal hoặc đổi gói
   useEffect(() => {
+    setLiveStock(null);
     const targetId = selectedPackage?.id || product?.id;
     if (!targetId) return;
 
@@ -1151,13 +1163,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <div
                           key={pkg.id}
                           role="button"
-                          tabIndex={0}
+                          tabIndex={isPkgOut ? -1 : 0}
+                          aria-disabled={isPkgOut}
                           onClick={() => {
+                            if (isPkgOut) return;
                             setSelectedPackageId(pkg.id);
                             setQuantity(1);
                             setIsDescExpanded(false);
                           }}
                           onKeyDown={(e) => {
+                            if (isPkgOut) return;
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
                               setSelectedPackageId(pkg.id);
@@ -1165,11 +1180,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               setIsDescExpanded(false);
                             }
                           }}
-                          className={`w-full text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 relative ${
-                            isSelected
-                              ? 'border-red-500 bg-red-500/10 shadow-md ring-1 ring-red-500/60'
-                              : 'border-border/80 bg-card/60 hover:bg-card hover:border-slate-600'
-                          } ${isPkgOut ? 'opacity-60' : ''}`}
+                          className={`w-full text-left p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 relative ${
+                            isPkgOut
+                              ? 'opacity-55 cursor-not-allowed border-border/50 bg-muted/20'
+                              : isSelected
+                              ? 'border-red-500 bg-red-500/10 shadow-md ring-1 ring-red-500/60 cursor-pointer'
+                              : 'border-border/80 bg-card/60 hover:bg-card hover:border-slate-600 cursor-pointer'
+                          }`}
                         >
                           <div className="min-w-0 flex-1 space-y-1">
                             <div className="flex items-center gap-1.5 flex-wrap">

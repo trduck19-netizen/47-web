@@ -693,6 +693,9 @@ export const MarketingNotificationToast: React.FC<MarketingNotificationToastProp
     } else if (notification.type === 'STATS_COPY') {
       onExploreClick?.();
       dismissNotification();
+    } else {
+      onExploreClick?.();
+      dismissNotification();
     }
   };
 

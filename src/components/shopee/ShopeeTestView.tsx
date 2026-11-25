@@ -24,6 +24,7 @@ import { homepageSectionsService } from '../../services/homepageSectionsService'
 import { getDefaultSubsectionsForParent } from '../../config/homepageSections';
 import { ShopeeGuaranteeModal } from './ShopeeGuaranteeModal';
 import { ShopeeSupportModal } from './ShopeeSupportModal';
+import { ShopeeCouponModal } from '../voucher/ShopeeCouponModal';
 
 // Subview components from codebase
 import { NewsView } from '../NewsView';
@@ -263,6 +264,24 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   // Modals state
   const [isGuaranteeOpen, setIsGuaranteeOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+
+  const handleHeroSearchSubmit = (overrideKeyword?: string) => {
+    if (typeof overrideKeyword === 'string') {
+      setSearchKeyword(overrideKeyword);
+      setSelectedProductType('all');
+    }
+    if (subView !== 'home') {
+      setSubView('home');
+    }
+    setTimeout(() => {
+      const el = document.getElementById('shopee-products-grid');
+      if (el) {
+        const y = el.getBoundingClientRect().top + window.scrollY - 120;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+      }
+    }, 60);
+  };
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSubmitCodeOpen, setIsSubmitCodeOpen] = useState(false);
   const [isBookmarkDrawerOpen, setIsBookmarkDrawerOpen] = useState(false);
@@ -611,17 +630,25 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     }
     // Lọc theo danh mục đã chọn
     if (selectedCategory !== 'all') {
+      const DEFAULT_CAT_KEYWORDS: Record<string, string[]> = {
+        fashion: ['áo', 'quần', 'váy', 'giày', 'túi', 'polo', 'hoodie', 'thời trang', 'phụ kiện'],
+        beauty: ['serum', 'son', 'kem', 'mỹ phẩm', 'nước hoa', 'chống nắng', 'dưỡng da', 'sắc đẹp'],
+        tech: ['sạc', 'gan', 'tai nghe', 'chuột', 'bàn phím', 'cáp', 'công nghệ', 'điện thoại', 'cloud phone', 'vs phone'],
+        services: ['khóa học', 'canva', 'office', 'chatgpt', 'vpn', 'dịch vụ', 'vip', 'tài khoản'],
+        gaming: ['game', 'gói nạp', 'thẻ', 'giftcode', 'liên quân', 'muse', 'test', 'roblox', 'garena', 'gaming'],
+      };
       const targetCat = categoriesConfig.categories.find((c) => c.id === selectedCategory);
-      if (targetCat) {
-        list = list.filter((p) => {
-          if (p.category === selectedCategory || p.game_slug === selectedCategory) return true;
-          if (targetCat.matchKeywords && targetCat.matchKeywords.length > 0) {
-            const textToMatch = `${p.title} ${p.category || ''} ${p.category_label || ''} ${p.brand || ''} ${p.game_name || ''} ${p.description || ''}`.toLowerCase();
-            return targetCat.matchKeywords.some((kw) => textToMatch.includes(kw.toLowerCase()));
-          }
-          return false;
-        });
-      }
+      const keywords = (targetCat?.matchKeywords && targetCat.matchKeywords.length > 0)
+        ? targetCat.matchKeywords
+        : (DEFAULT_CAT_KEYWORDS[selectedCategory] || []);
+      list = list.filter((p) => {
+        if (p.category === selectedCategory || p.game_slug === selectedCategory) return true;
+        if (keywords.length > 0) {
+          const textToMatch = `${p.title} ${p.category || ''} ${p.category_label || ''} ${p.brand || ''} ${p.game_name || ''} ${p.description || ''}`.toLowerCase();
+          return keywords.some((kw) => textToMatch.includes(kw.toLowerCase()));
+        }
+        return false;
+      });
     }
     return list;
   }, [currentStoreProducts, storeProducts, searchKeyword, selectedCategory, categoriesConfig]);
@@ -1768,7 +1795,18 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       <div>
                         <div className="relative w-full aspect-square rounded overflow-hidden bg-slate-100 dark:bg-slate-700 mb-2">
                           {prod.cover_image_url || prod.product_images?.[0] ? (
-                            <img src={prod.cover_image_url || prod.product_images?.[0]} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                            <img
+                              src={prod.cover_image_url || prod.product_images?.[0]}
+                              alt={prod.title}
+                              onError={(e) => {
+                                const img = e.currentTarget;
+                                if (!img.dataset.fallbackApplied) {
+                                  img.dataset.fallbackApplied = '1';
+                                  img.src = '/package-placeholder.svg';
+                                }
+                              }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                           )}
@@ -1959,7 +1997,18 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                         <div>
                           <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
                             {prod.cover_image_url || prod.product_images?.[0] ? (
-                              <img src={prod.cover_image_url || prod.product_images?.[0]} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                              <img
+                              src={prod.cover_image_url || prod.product_images?.[0]}
+                              alt={prod.title}
+                              onError={(e) => {
+                                const img = e.currentTarget;
+                                if (!img.dataset.fallbackApplied) {
+                                  img.dataset.fallbackApplied = '1';
+                                  img.src = '/package-placeholder.svg';
+                                }
+                              }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                            />
                             ) : (
                               <span className="text-4xl">📦</span>
                             )}
@@ -2418,6 +2467,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 type="text" 
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleHeroSearchSubmit();
+                  }
+                }}
                 placeholder={t.mall?.search?.placeholder || (language === 'en' ? 'Search games, giftcodes, accounts, VIP utilities...' : 'Tìm tựa game, thẻ nạp, gói code, tiện ích VIP...')} 
                 className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
               />
@@ -2427,9 +2482,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 </button>
               )}
               <button 
-                onClick={() => {
-                  if (subView !== 'home') setSubView('home');
-                }}
+                onClick={() => handleHeroSearchSubmit()}
                 className={`${currentAccent.buttonBg} hover:opacity-90 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded transition flex items-center justify-center flex-shrink-0 cursor-pointer`}
               >
                 <Search className="w-4 h-4" />
@@ -2471,10 +2524,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   return (
                     <button
                       key={i}
-                      onClick={() => {
-                        setSearchKeyword(searchTarget);
-                        setSelectedProductType('all');
-                      }}
+                      onClick={() => handleHeroSearchSubmit(searchTarget)}
                       className="hover:text-amber-200 transition cursor-pointer"
                     >
                       {displayLabel}
@@ -2482,7 +2532,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                   );
                 });
               })()}
-              <button onClick={() => { setSearchKeyword(''); setSelectedProductType('all'); }} className="hover:text-amber-200 transition font-bold text-amber-300 cursor-pointer">
+              <button onClick={() => handleHeroSearchSubmit('')} className="hover:text-amber-200 transition font-bold text-amber-300 cursor-pointer">
                 {(currentStoreProducts?.length || storeProducts?.length || 0) === 1
                   ? t('mall.search.allProductsCount_singular')
                   : t('mall.search.allProductsCount_plural', { count: currentStoreProducts?.length || storeProducts?.length || 0 })}
@@ -3762,6 +3812,30 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         onOpenReceivedCodes={() => onOpenReceivedCodes ? onOpenReceivedCodes('marketplace') : null}
         onShowToast={onShowToast}
       />
+
+      {isCouponModalOpen && (
+        <ShopeeCouponModal
+          isOpen={isCouponModalOpen}
+          onClose={() => setIsCouponModalOpen(false)}
+          productTotal={100000}
+          shippingFee={30000}
+          isPhysical={true}
+          onApply={(fs, disc) => {
+            const pickedCode = disc?.code || fs?.code;
+            if (pickedCode) {
+              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                navigator.clipboard.writeText(pickedCode).catch(() => {});
+              }
+              onShowToast(
+                language === 'en'
+                  ? `Copied voucher code: ${pickedCode}`
+                  : `Đã sao chép mã voucher: ${pickedCode}`,
+                'success'
+              );
+            }
+          }}
+        />
+      )}
 
       {/* User Profile Modal trong test1 */}
       <UserProfileModal

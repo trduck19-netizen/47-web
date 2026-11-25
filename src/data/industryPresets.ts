@@ -22,11 +22,11 @@ export const INDUSTRY_PRESETS: Record<string, IndustryPreset> = {
     ],
     categories: [
       { id: 'all', label: 'Tất Cả Sản Phẩm', icon: '🛍️', description: 'Toàn bộ ngành hàng trên sàn Universal Mall', isSystem: true },
-      { id: 'fashion', label: 'Thời Trang & Phụ Kiện', icon: '👕', description: 'Áo nam nữ, quần jeans, váy đầm, giày dép, túi xách' },
-      { id: 'beauty', label: 'Mỹ Phẩm & Sắc Đẹp', icon: '💄', description: 'Chăm sóc da mặt, son môi, nước hoa, body & tóc' },
-      { id: 'tech', label: 'Thiết Bị Số & Công Nghệ', icon: '📱', description: 'Điện thoại, cáp sạc, tai nghe Bluetooth, gaming gear' },
-      { id: 'services', label: 'Khóa Học & Dịch Vụ', icon: '🎓', description: 'Khóa học online, tài khoản VIP, thiết kế, marketing' },
-      { id: 'gaming', label: 'Gaming & Thẻ Nạp', icon: '🎮', description: 'Thẻ game, tài khoản VIP, giftcode & tiện ích' },
+      { id: 'fashion', label: 'Thời Trang & Phụ Kiện', icon: '👕', description: 'Áo nam nữ, quần jeans, váy đầm, giày dép, túi xách', matchKeywords: ['áo', 'quần', 'váy', 'giày', 'túi', 'polo', 'hoodie', 'thời trang', 'phụ kiện'] },
+      { id: 'beauty', label: 'Mỹ Phẩm & Sắc Đẹp', icon: '💄', description: 'Chăm sóc da mặt, son môi, nước hoa, body & tóc', matchKeywords: ['serum', 'son', 'kem', 'mỹ phẩm', 'nước hoa', 'chống nắng', 'dưỡng da', 'sắc đẹp'] },
+      { id: 'tech', label: 'Thiết Bị Số & Công Nghệ', icon: '📱', description: 'Điện thoại, cáp sạc, tai nghe Bluetooth, gaming gear', matchKeywords: ['sạc', 'gan', 'tai nghe', 'chuột', 'bàn phím', 'cáp', 'công nghệ', 'điện thoại', 'cloud phone', 'vs phone'] },
+      { id: 'services', label: 'Khóa Học & Dịch Vụ', icon: '🎓', description: 'Khóa học online, tài khoản VIP, thiết kế, marketing', matchKeywords: ['khóa học', 'canva', 'office', 'chatgpt', 'vpn', 'dịch vụ', 'vip', 'tài khoản'] },
+      { id: 'gaming', label: 'Gaming & Thẻ Nạp', icon: '🎮', description: 'Thẻ game, tài khoản VIP, giftcode & tiện ích', matchKeywords: ['game', 'gói nạp', 'thẻ', 'giftcode', 'liên quân', 'muse', 'test', 'roblox', 'garena', 'gaming'] },
     ],
   },
 

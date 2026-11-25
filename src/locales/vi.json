@@ -1410,5 +1410,15 @@
     "mapViolationWarning": "CẢNH BÁO: Giá bán hiện tại thấp hơn giá sàn MAP của NCC ({mapPrice} Core). Giá bán tối thiểu tự điều chỉnh bằng MAP.",
     "priceExceededWarning": "CẢNH BÁO: Giá gốc của NCC đã tăng vượt giá bán bạn đã khóa!",
     "copySuccess": "Đã sao chép vào bộ nhớ tạm!"
+  },
+  "receivedCodesOrders": {
+    "emptyTitle": "Bạn chưa có mã giao tự động 0s nào từ đơn hàng đã mua.",
+    "emptyDesc": "Khi mua các gói code, thẻ nạp hoặc tiện ích số tại cửa hàng, mã sẽ được hệ thống giao ngay lập tức (0s) và lưu tại đây.",
+    "viewMarketplaceBtn": "Xem Đơn Sàn TMĐT",
+    "copyCode": "Sao chép",
+    "copied": "Đã chép",
+    "instantBadge": "Giao Tự Động 0s",
+    "purchaseTime": "Thời gian mua:",
+    "priceLabel": "Giá:"
   }
 }

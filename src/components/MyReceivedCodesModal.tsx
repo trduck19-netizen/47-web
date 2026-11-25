@@ -28,6 +28,7 @@ import { marketingService } from '../services/marketingService';
 import type { ClaimedCodeRecord, OrderRecord } from '../types/game';
 import { formatCore, formatRelativeDate, formatFullDateTime } from '../utils/textUtils';
 import { GuideLinksBanner } from './GuideLinksBanner';
+import { useLanguage } from '../context/LanguageContext';
 
 interface MyReceivedCodesModalProps {
   isOpen: boolean;
@@ -46,6 +47,7 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
   onNavigateToMissions,
   onOpenAuth,
 }) => {
+  const { t } = useLanguage();
   const [tab, setTab] = useState<'giveaways' | 'orders' | 'privates' | 'missions' | 'marketplace'>(initialTab);
   const [copied, setCopied] = useState<string | null>(null);
   
@@ -468,6 +470,82 @@ export const MyReceivedCodesModal: React.FC<MyReceivedCodesModalProps> = ({
                       )}
                     </button>
                   </div>
+                </div>
+              ))
+            )
+          )}
+
+          {/* Tab Đã Mua (Mã giao tự động 0s) */}
+          {tab === 'orders' && (
+            displayOrdersList.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground space-y-3">
+                <ShoppingBag className="w-10 h-10 mx-auto opacity-30 text-orange-400" />
+                <div>
+                  <p className="text-xs font-medium text-foreground/80">{t('receivedCodesOrders.emptyTitle')}</p>
+                  <p className="text-[11px] text-muted-foreground/75 mt-1 max-w-md mx-auto">
+                    {t('receivedCodesOrders.emptyDesc')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTab('marketplace')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-muted hover:bg-muted/80 border border-border text-xs font-bold text-foreground transition cursor-pointer"
+                >
+                  <Store className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{t('receivedCodesOrders.viewMarketplaceBtn')}</span>
+                </button>
+              </div>
+            ) : (
+              displayOrdersList.map((order) => (
+                <div
+                  key={order.id}
+                  className="p-4 rounded-2xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-border-hover transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                        {t('receivedCodesOrders.instantBadge')}
+                      </span>
+                      <h4 className="font-heading font-bold text-sm text-foreground truncate">
+                        {order.product_title || order.game_name}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
+                      <span>
+                        {t('receivedCodesOrders.priceLabel')}{' '}
+                        <strong className="text-amber-500">{formatCore(order.amount || 0)} Core</strong>
+                      </span>
+                      <span>•</span>
+                      <span>
+                        {t('receivedCodesOrders.purchaseTime')}{' '}
+                        <strong className="text-foreground">{formatFullDateTime(order.created_at)}</strong>
+                      </span>
+                    </div>
+                  </div>
+                  {order.code_content && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="px-3 py-1.5 rounded-xl bg-card border border-border font-mono font-bold text-primary-light text-xs shadow-inner select-all">
+                        {order.code_content}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(order.code_content)}
+                        className="px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        {copied === order.code_content ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{t('receivedCodesOrders.copied')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>{t('receivedCodesOrders.copyCode')}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             )

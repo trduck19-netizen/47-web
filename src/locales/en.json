@@ -1410,5 +1410,15 @@
     "mapViolationWarning": "WARNING: Selling price is below supplier MAP ({mapPrice} Core). Minimum selling price automatically adjusted to MAP.",
     "priceExceededWarning": "WARNING: Supplier base price has increased above your locked selling price!",
     "copySuccess": "Copied to clipboard!"
+  },
+  "receivedCodesOrders": {
+    "emptyTitle": "You have no instant 0s delivered codes from purchased orders yet.",
+    "emptyDesc": "When you purchase code packages, top-up cards, or digital utilities in the store, codes are delivered instantly (0s) and stored here.",
+    "viewMarketplaceBtn": "View Store Orders",
+    "copyCode": "Copy",
+    "copied": "Copied",
+    "instantBadge": "Instant 0s Delivery",
+    "purchaseTime": "Purchased at:",
+    "priceLabel": "Price:"
   }
 }

@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { telegramService, TelegramPublicConfig } from '../services/telegramService';
 import { authService } from '../services/authService';
+import { dataService } from '../services/dataService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface TelegramViewProps {
   onOpenAuth?: () => void;
@@ -27,6 +29,8 @@ export const TelegramView: React.FC<TelegramViewProps> = ({
   onOpenProfile,
   onShowToast,
 }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [config, setConfig] = useState<TelegramPublicConfig>({
     enabled: false,
     bot_username: null,
@@ -49,10 +53,14 @@ export const TelegramView: React.FC<TelegramViewProps> = ({
   }, []);
 
   const handleLinkBot = async () => {
-    const currentUser = authService.getCurrentUser();
+    const currentUser = dataService.getCurrentUser();
     if (!currentUser) {
       if (onShowToast) {
-        onShowToast('Cần Đăng Nhập', 'Vui lòng đăng nhập tài khoản trước khi liên kết Telegram.', 'info');
+        onShowToast(
+          isEn ? 'Login Required' : 'Cần Đăng Nhập',
+          isEn ? 'Please log in before linking your Telegram account.' : 'Vui lòng đăng nhập tài khoản trước khi liên kết Telegram.',
+          'info'
+        );
       }
       if (onOpenAuth) onOpenAuth();
       return;
