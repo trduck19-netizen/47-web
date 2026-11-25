@@ -1,4 +1,4 @@
-import { ensureSchemaUpgrades } from '../../../services/d1_service';
+import { ensureSchemaUpgrades, lastSchemaTiming } from '../../../services/d1_service';
 import { verifyAdminAuth } from '../../../services/mission_service';
 
 interface Env {
@@ -79,7 +79,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         ...CORS_HEADERS,
         'X-Timing-D1-Ms': String(d1TotalMs),
         'X-Timing-Total-Ms': String(totalMs),
-        'Server-Timing': `auth;dur=${authMs},schema;dur=${schemaMs},settings;dur=${settingsMs},d1_total;dur=${d1TotalMs},total;dur=${totalMs};desc="colo=${colo}"`,
+        'Server-Timing': `auth;dur=${authMs},schema;dur=${schemaMs},schema_mig_select;dur=${lastSchemaTiming.migSelectMs},schema_ddl;dur=${lastSchemaTiming.ddlMs},settings;dur=${settingsMs},d1_total;dur=${d1TotalMs},total;dur=${totalMs};desc="colo=${colo}"`,
       },
     });
   } catch (err: any) {

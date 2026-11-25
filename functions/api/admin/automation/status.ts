@@ -1,4 +1,4 @@
-import { ensureSchemaUpgrades } from '../../../services/d1_service';
+import { ensureSchemaUpgrades, lastSchemaTiming } from '../../../services/d1_service';
 import { verifyAdminAuth } from '../../../services/mission_service';
 
 interface Env {
@@ -126,30 +126,45 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     };
 
     const parallelStart = Date.now();
-    const [probeRes, tablesRes, sysRows, toggleRow] = await Promise.all([
+    const [probeRes, tablesResult, sysRes, toggleRes] = await Promise.all([
       (async () => {
         const t0 = Date.now();
         try {
           await env.DB.prepare('SELECT 1').first();
           return { ok: true, ms: Math.max(1, Date.now() - t0) };
         } catch {
-          return { ok: false, ms: 0 };
+          return { ok: false, ms: Date.now() - t0 };
         }
       })(),
-      env.DB
-        .prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'")
-        .first<any>()
-        .catch(() => null),
-      env.DB
-        .prepare("SELECT key, value FROM system_settings WHERE key IN ('wcg_admin_sepay_v4', 'telegram_settings_v1')")
-        .all<any>()
-        .catch(() => ({ results: [] as any[] })),
-      env.DB
-        .prepare("SELECT value_json FROM admin_settings WHERE key = 'automation_toggles' LIMIT 1")
-        .first<any>()
-        .catch(() => null),
+      (async () => {
+        const t0 = Date.now();
+        const val = await env.DB
+          .prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'")
+          .first<any>()
+          .catch(() => null);
+        return { val, ms: Date.now() - t0 };
+      })(),
+      (async () => {
+        const t0 = Date.now();
+        const val = await env.DB
+          .prepare("SELECT key, value FROM system_settings WHERE key IN ('wcg_admin_sepay_v4', 'telegram_settings_v1')")
+          .all<any>()
+          .catch(() => ({ results: [] as any[] }));
+        return { val, ms: Date.now() - t0 };
+      })(),
+      (async () => {
+        const t0 = Date.now();
+        const val = await env.DB
+          .prepare("SELECT value_json FROM admin_settings WHERE key = 'automation_toggles' LIMIT 1")
+          .first<any>()
+          .catch(() => null);
+        return { val, ms: Date.now() - t0 };
+      })(),
     ]);
     const parallelMs = Date.now() - parallelStart;
+    const tablesRes = tablesResult.val;
+    const sysRows = sysRes.val;
+    const toggleRow = toggleRes.val;
 
     d1Healthy = probeRes.ok;
     d1Latency = probeRes.ms;
@@ -199,8 +214,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const googleClientId = String(env.GOOGLE_CLIENT_ID || '').trim();
     const googleConnected = Boolean(googleClientId && googleClientId.endsWith('.apps.googleusercontent.com') && googleClientId.length >= 20);
 
-    const probeMs = d1Latency;
-    const settingsMs = parallelMs;
+    const probeMs = Math.max(probeRes.ms, tablesResult.ms);
+    const settingsMs = Math.max(sysRes.ms, toggleRes.ms);
     const d1TotalMs = authMs + schemaMs + parallelMs;
 
     const services = [
@@ -318,7 +333,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           ...CORS_HEADERS,
           'X-Timing-D1-Ms': String(d1TotalMs),
           'X-Timing-Total-Ms': String(Date.now() - reqStart),
-          'Server-Timing': `auth;dur=${authMs},schema;dur=${schemaMs},probe;dur=${probeMs},settings;dur=${settingsMs},d1_total;dur=${d1TotalMs},total;dur=${Date.now() - reqStart};desc="colo=${colo}"`,
+          'Server-Timing': `auth;dur=${authMs},schema;dur=${schemaMs},schema_mig_select;dur=${lastSchemaTiming.migSelectMs},schema_ddl;dur=${lastSchemaTiming.ddlMs},probe;dur=${probeMs},settings;dur=${settingsMs},d1_total;dur=${d1TotalMs},total;dur=${Date.now() - reqStart};desc="colo=${colo}"`,
         },
       }
     );

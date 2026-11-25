@@ -10,6 +10,13 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-329: ~110 Lệnh DDL Vô Điều Kiện Trong `ensureSchemaUpgrades` Chạy Lại Trên Mọi Isolate Lạnh (17–28s Ngoài HKG) (25/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - Dù `appliedMigSet` đã bỏ qua các migration cũ và 5 hàm `ensure*Schema`, `ensureSchemaUpgrades` vẫn chứa ~110 lệnh DDL/seed nằm trực tiếp trong executor (4 vị trí không có guard `appliedMigSet.has()`), khiến mọi isolate lạnh của `search`, `automation/status`, `automation/config`, `/api/auth/me` chạy lại ~110 round-trip tuần tự (17–28 giây ở các POP Mỹ, gây abort timeout 3,5 giây ở lần đăng nhập admin đầu tiên nếu rơi vào isolate lạnh).
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 468)**:
+  - Bọc đủ 4 vị trí bằng guard `appliedMigSet.has(...)` (`baseline_unconditional_ddl_v1`, `schema_v5_full_upgrades`, `wcg_virtual_layer_tables_v1`, `deleted_records_history_v1`), ghi ledger ở câu cuối cùng kèm `console.warn`.
+  - Xuất `schema_mig_select` / `schema_ddl` vào `Server-Timing`, nối dây `preloadedMetaSettingPromise` không tuần tự hóa, sửa nhãn `probe`/`settings` trong `status.ts`, và bypass 16 key có điều kiện `isNoCache` trong `sync-lite.ts`.
+
 ### ISSUE-328: Độ Trễ `loadAllStoreProductsD1` Tuần Tự, `X-Timing-D1-Ms` Không Đồng Nhất & Fail-Open `AdminLoginGuard` (25/11/2026)
 - **Triệu chứng & Rủi ro**:
   - `Server-Timing` trên isolate lạnh (`e31773c`) cho thấy nhánh `products` (`loadAllStoreProductsD1`) tốn `1.540 ms` trong khi `tombstones` (`43 ms`) và `settings` (`42 ms`) rất nhanh, do gọi lặp `ensureSchemaUpgrades` + `getSettingD1` và chạy tuần tự `store_products` rồi `seller_products`.

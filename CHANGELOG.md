@@ -7,6 +7,17 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-25]
 
+### 468. Gating 4 Vị Trí DDL Vô Điều Kiện Trong `ensureSchemaUpgrades`, Tách `Server-Timing` Schema, Nối Dây `preloadedMetaSettingPromise`, Sửa Nhãn `status.ts` & Bypass 16 Key Khi `?nocache=1` (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý triệt để nguyên nhân gốc rễ khiến `search`, `automation/status`, `automation/config` vẫn tốn 17–28 giây trên isolate lạnh tại các POP ngoài HKG: `ensureSchemaUpgrades` chứa ~110 lệnh DDL vô điều kiện chạy lại trên mọi isolate lạnh.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Phần 1 — Gating 4 vị trí DDL vô điều kiện & tách `Server-Timing`*:
+     - `functions/services/d1_service.ts`: Bọc đủ 4 vị trí DDL vô điều kiện sau kiểm tra `appliedMigSet`: đoạn chính `2842–3358` (`baseline_unconditional_ddl_v1`), `3409–3411` (`schema_v5_full_upgrades`), `3550–3582` (`wcg_virtual_layer_tables_v1`), `3585–3609` (`deleted_records_history_v1`). Mỗi khối chỉ ghi `INSERT OR IGNORE INTO schema_migrations` ở câu cuối cùng và log `console.warn` nếu lỗi.
+     - Xuất `lastSchemaTiming` (`migSelectMs`, `ddlMs`, `cacheHit`) và đưa `schema_mig_select`, `schema_ddl` vào `Server-Timing` ở `search/index.ts`, `automation/status.ts`, `automation/config.ts`.
+  2. *Phần 2 — Sửa nhỏ kèm theo*:
+     - `functions/api/sync-lite.ts` & `functions/services/d1_service.ts`: Định nghĩa `SYNC_LITE_SETTING_KEYS` (16 key) và `DEFAULT_BYPASS_KEYS` (4 key), nối dây `preloadedMetaSettingPromise` theo cơ chế promise-passing (giữ song song 3 nhánh), và chỉ bypass memory cache đủ 16 key khi `isNoCache === true`.
+     - `functions/api/admin/automation/status.ts`: Đo riêng từng nhánh trong `Promise.all` để nhãn `probe;dur` và `settings;dur` phản ánh đúng chặng tương ứng.
+
 ### 467. Profiling Từng Chặng (`Server-Timing` + `colo`), Chuẩn Hóa `X-Timing-D1-Ms`, Song Song Hóa `loadAllStoreProductsD1` / `status` / `search` & Fail-Closed `AdminLoginGuard` (25/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Thực hiện kế hoạch đã duyệt có điều kiện sau kiểm chứng `2afd9f7`: Phần A (chuẩn hóa `X-Timing-D1-Ms` + `X-Timing-Total-Ms` + `Server-Timing` kèm `colo`), Phần C (fail-closed `AdminLoginGuard`), và Phần B dựa trên kết quả đo `Server-Timing` thực tế (phát hiện nhánh `products` `loadAllStoreProductsD1` tốn `1.540 ms` trong khi `tombstones` `43 ms` và `settings` `42 ms` trên isolate lạnh).

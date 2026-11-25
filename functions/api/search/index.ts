@@ -1,4 +1,4 @@
-import { ensureSchemaUpgrades } from '../../services/d1_service';
+import { ensureSchemaUpgrades, lastSchemaTiming } from '../../services/d1_service';
 import { searchUnified, SearchQueryParams } from '../../services/search_service';
 
 interface Env {
@@ -76,7 +76,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         ...CORS_HEADERS,
         'X-Timing-D1-Ms': String(d1TotalMs),
         'X-Timing-Total-Ms': String(totalMs),
-        'Server-Timing': `schema;dur=${schemaMs},search_queries;dur=${searchMs},d1_total;dur=${d1TotalMs},total;dur=${totalMs};desc="colo=${colo}"`,
+        'Server-Timing': `schema;dur=${schemaMs},schema_mig_select;dur=${lastSchemaTiming.migSelectMs},schema_ddl;dur=${lastSchemaTiming.ddlMs},search_queries;dur=${searchMs},d1_total;dur=${d1TotalMs},total;dur=${totalMs};desc="colo=${colo}"`,
       },
     });
   } catch (err: any) {

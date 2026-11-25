@@ -1252,11 +1252,18 @@ export async function logAdminAudit(
 /**
  * Safe runtime schema upgrades / migrations
  */
+export let lastSchemaTiming = { migSelectMs: 0, ddlMs: 0, cacheHit: false };
+
 export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
-  if (schemaUpgradesDone) return;
+  if (schemaUpgradesDone) {
+    lastSchemaTiming = { migSelectMs: 0, ddlMs: 0, cacheHit: true };
+    return;
+  }
   if (schemaUpgradesPromise) return schemaUpgradesPromise;
 
   schemaUpgradesPromise = (async () => {
+    const _schemaFnStart = Date.now();
+    let _migSelectMs = 0;
     // 0. Nạp toàn bộ danh sách migration đã chạy chỉ với 1 câu SELECT duy nhất trước khi chạy các ensure*Schema
     let appliedMigSet = new Set<string>();
     try {
@@ -1269,6 +1276,8 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     } catch (e) {
       console.error('[SchemaUpgrade] Migration table error:', e);
     }
+    _migSelectMs = Date.now() - _schemaFnStart;
+    const _ddlStart = Date.now();
 
     // Chỉ chạy 5 hàm ensure*Schema (109 lệnh DDL) 1 lần duy nhất nếu chưa ghi core_subschemas_v1
     if (!appliedMigSet.has('core_subschemas_v1')) {
@@ -2839,6 +2848,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     // Đã gỡ bỏ hoàn toàn cơ chế early-return theo 1 key cứng (0047) tại đây.
     // Mỗi khối migration phía dưới tự kiểm tra key riêng của chính nó trong bảng schema_migrations.
 
+    if (!appliedMigSet.has('baseline_unconditional_ddl_v1')) {
     try {
       await db.prepare(`
         CREATE TABLE IF NOT EXISTS members (
@@ -3356,6 +3366,8 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       );
     `).run().catch(() => {});
   } catch {}
+    await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('baseline_unconditional_ddl_v1');").run().catch((e) => { console.warn('[SchemaUpgrade] baseline_unconditional_ddl_v1 insert failed:', e); });
+    }
 
   // Data Recovery & Balance Reconciliation (Self-healing migration v6)
   try {
@@ -3406,9 +3418,11 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Heal migration error]', err?.message);
   }
 
-  try {
-    await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('schema_v5_full_upgrades');").run().catch(() => {});
-  } catch {}
+  if (!appliedMigSet.has('schema_v5_full_upgrades')) {
+    try {
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('schema_v5_full_upgrades');").run().catch((e) => { console.warn('[SchemaUpgrade] schema_v5_full_upgrades insert failed:', e); });
+    } catch {}
+  }
 
   // Migration 0010: Game download links and click tracking (Idempotent)
   try {
@@ -3547,6 +3561,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
   }
 
   // 12. Create Virtual Layer Tables (Zero pollution on raw tables)
+  if (!appliedMigSet.has('wcg_virtual_layer_tables_v1')) {
   try {
     await db.prepare(`
       CREATE TABLE IF NOT EXISTS wcg_virtual_aggregates (
@@ -3576,12 +3591,14 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
     await db.prepare('CREATE INDEX IF NOT EXISTS idx_wcg_virtual_events_created ON wcg_virtual_events(created_at DESC);').run().catch(() => {});
 
-    await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('wcg_virtual_layer_tables_v1');").run().catch(() => {});
+    await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('wcg_virtual_layer_tables_v1');").run().catch((e) => { console.warn('[SchemaUpgrade] wcg_virtual_layer_tables_v1 insert failed:', e); });
   } catch (err: any) {
     console.warn('[Migration wcg_virtual_layer_tables_v1 error]', err?.message);
   }
+  }
 
   // 13. Create Deleted Records History Table (Soft Delete & Tombstone Engine)
+  if (!appliedMigSet.has('deleted_records_history_v1')) {
   try {
     await db.prepare(`
       CREATE TABLE IF NOT EXISTS deleted_records_history (
@@ -3603,9 +3620,10 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     await db.prepare('CREATE INDEX IF NOT EXISTS idx_del_rec_type_id ON deleted_records_history(record_type, record_id);').run().catch(() => {});
     await db.prepare('CREATE INDEX IF NOT EXISTS idx_del_rec_restored ON deleted_records_history(restored_at);').run().catch(() => {});
 
-    await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('deleted_records_history_v1');").run().catch(() => {});
+    await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('deleted_records_history_v1');").run().catch((e) => { console.warn('[SchemaUpgrade] deleted_records_history_v1 insert failed:', e); });
   } catch (err: any) {
     console.warn('[Migration deleted_records_history_v1 error]', err?.message);
+  }
   }
 
   // 14. Migration 0046: Cart Items & User Addresses (Customer Experience APIs)
@@ -3737,6 +3755,7 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Migration 0049_store_products_seller_column_and_index_v1 error]', err?.message);
   }
 
+  lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };
   schemaUpgradesDone = true;
   })();
 
@@ -5328,15 +5347,17 @@ export async function resetAllWalletsAndRevenueD1(db: D1Database): Promise<void>
  */
 export async function loadAllStoreProductsD1(
   db: D1Database,
-  options?: { skipSchemaCheck?: boolean; preloadedMetaSetting?: any }
+  options?: { skipSchemaCheck?: boolean; preloadedMetaSetting?: any; preloadedMetaSettingPromise?: Promise<any> }
 ): Promise<any[]> {
   try {
     if (!options?.skipSchemaCheck) {
       await ensureSchemaUpgrades(db);
     }
-    const metaPromise = options?.preloadedMetaSetting !== undefined
-      ? Promise.resolve(options.preloadedMetaSetting)
-      : getSettingD1(db, 'wcg_admin_store_products_v4').catch(() => null);
+    const metaPromise = options?.preloadedMetaSettingPromise
+      ? options.preloadedMetaSettingPromise.catch(() => null)
+      : options?.preloadedMetaSetting !== undefined
+        ? Promise.resolve(options.preloadedMetaSetting)
+        : getSettingD1(db, 'wcg_admin_store_products_v4').catch(() => null);
 
     const legacyPromise = db.prepare(`
         SELECT 

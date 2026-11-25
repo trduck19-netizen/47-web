@@ -14,6 +14,32 @@ interface Env {
   JWT_SECRET?: string;
 }
 
+const SYNC_LITE_SETTING_KEYS = [
+  'wcg_admin_games_v5',
+  'wcg_admin_games_v4',
+  'wcg_admin_upcoming_games_v1',
+  'wcg_game_events_v1',
+  'wcg_deleted_game_events_v1',
+  'wcg_admin_giveaways_v4',
+  'wcg_deleted_giveaways',
+  'wcg_news_articles_v1',
+  'wcg_deleted_news_articles_v1',
+  'wcg_admin_content_v4',
+  'wcg_marketing_config_v1',
+  'wcg_growth_config_v1',
+  'wcg_admin_store_products_v4',
+  'wcg_admin_store_categories_v4',
+  'wcg_admin_store_categories_v1',
+  'wcg_deleted_store_products',
+];
+
+const DEFAULT_BYPASS_KEYS = [
+  'wcg_news_articles_v1',
+  'wcg_admin_upcoming_games_v1',
+  'wcg_marketing_config_v1',
+  'wcg_game_events_v1',
+];
+
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
@@ -91,33 +117,20 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         const val = await fn();
         return { val, ms: Date.now() - t0 };
       };
+      const settingsPromise = getMultipleSettingsD1(
+        env.DB,
+        SYNC_LITE_SETTING_KEYS,
+        isNoCache ? new Set(SYNC_LITE_SETTING_KEYS) : new Set(DEFAULT_BYPASS_KEYS)
+      );
       const [tombstonesRes, settingsRes, storeProdsRes] = await Promise.all([
         timed(() => getActiveTombstonesMap(env.DB)),
+        timed(() => settingsPromise),
         timed(() =>
-          getMultipleSettingsD1(
-            env.DB,
-            [
-              'wcg_admin_games_v5',
-              'wcg_admin_games_v4',
-              'wcg_admin_upcoming_games_v1',
-              'wcg_game_events_v1',
-              'wcg_deleted_game_events_v1',
-              'wcg_admin_giveaways_v4',
-              'wcg_deleted_giveaways',
-              'wcg_news_articles_v1',
-              'wcg_deleted_news_articles_v1',
-              'wcg_admin_content_v4',
-              'wcg_marketing_config_v1',
-              'wcg_growth_config_v1',
-              'wcg_admin_store_products_v4',
-              'wcg_admin_store_categories_v4',
-              'wcg_admin_store_categories_v1',
-              'wcg_deleted_store_products',
-            ],
-            new Set(['wcg_news_articles_v1', 'wcg_admin_upcoming_games_v1', 'wcg_marketing_config_v1', 'wcg_game_events_v1'])
-          )
+          loadAllStoreProductsD1(env.DB, {
+            skipSchemaCheck: true,
+            preloadedMetaSettingPromise: settingsPromise.then((s) => s['wcg_admin_store_products_v4']),
+          })
         ),
-        timed(() => loadAllStoreProductsD1(env.DB, { skipSchemaCheck: true })),
       ]);
       d1DurationMs = Date.now() - d1Start;
       tombstonesMs = tombstonesRes.ms;
