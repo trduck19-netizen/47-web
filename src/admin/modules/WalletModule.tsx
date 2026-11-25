@@ -38,6 +38,7 @@ export const WalletModule: React.FC<WalletModuleProps> = ({ onShowToast }) => {
   // Manual Adjustment Form
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [isResetAllModalOpen, setIsResetAllModalOpen] = useState(false);
+  const [resetConfirmInput, setResetConfirmInput] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [adjAmount, setAdjAmount] = useState(100000);
   const [adjType, setAdjType] = useState<'ADD' | 'SUBTRACT'>('ADD');
@@ -252,6 +253,16 @@ export const WalletModule: React.FC<WalletModuleProps> = ({ onShowToast }) => {
   };
 
   const handleOpenResetAllModal = () => {
+    setResetConfirmInput('');
+    setIsResetAllModalOpen(true);
+  };
+
+  const handleProceedTo2FA = () => {
+    if (resetConfirmInput.trim() !== 'RESET_ZERO') {
+      onShowToast('Chưa khớp mã', 'Vui lòng gõ chính xác RESET_ZERO để tiếp tục.', 'error');
+      return;
+    }
+    setIsResetAllModalOpen(false);
     setStep2Action({
       type: 'RESET_ALL',
       title: 'Xác Minh Bước 2: Reset Dữ Liệu Ví & Doanh Thu',
@@ -504,18 +515,26 @@ export const WalletModule: React.FC<WalletModuleProps> = ({ onShowToast }) => {
           },
         ]}
         actions={
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleOpenResetAllModal}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 shadow-sm hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all cursor-pointer"
-              title="Đặt toàn bộ số dư của tất cả các ví thành viên về 0 đồng và reset tổng doanh thu về 0"
-            >
-              <RotateCcw className="h-4 w-4" />
-              <span>Reset Ví & Doanh Thu Về 0</span>
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 w-full sm:w-auto">
+            {/* Danger Zone: Nút đặt riêng có viền nét đứt cảnh báo */}
+            <div className="p-1 rounded-2xl border border-dashed border-rose-300 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20">
+              <button
+                type="button"
+                onClick={handleOpenResetAllModal}
+                data-action-danger="true"
+                data-testid="btn-danger-reset-wallets"
+                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all cursor-pointer"
+                title="CẢNH BÁO NGUY HIỂM: Đặt lại số dư tất cả thành viên về 0 và reset tổng doanh thu"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Reset Ví & Doanh Thu</span>
+              </button>
+            </div>
+
             <button
               onClick={() => handleOpenAdjustModal()}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 cursor-pointer"
+              data-testid="btn-open-adjust-wallet"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer active:scale-95"
             >
               <PlusCircle className="h-4 w-4" />
               <span>Điều Chỉnh Ví</span>
@@ -767,6 +786,62 @@ export const WalletModule: React.FC<WalletModuleProps> = ({ onShowToast }) => {
             </button>
           </div>
         </form>
+      </FormModal>
+
+      {/* Danger Zone: Modal Xác Nhận Gõ RESET_ZERO */}
+      <FormModal
+        isOpen={isResetAllModalOpen}
+        onClose={() => setIsResetAllModalOpen(false)}
+        title="🚨 VÙNG NGUY HIỂM: Reset Toàn Bộ Ví & Doanh Thu"
+        subtitle="Hành động này sẽ xóa sổ toàn bộ dữ liệu tài chính ví và đưa doanh thu về 0."
+        maxWidth="md"
+      >
+        <div className="space-y-4 py-1">
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs space-y-1.5">
+            <div className="flex items-center gap-2 font-bold text-sm text-rose-600 dark:text-rose-400">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>CẢNH BÁO MẤT DỮ LIỆU VĨNH VIỄN</span>
+            </div>
+            <p>• Số dư của <strong>TẤT CẢ ({members.length}) thành viên</strong> sẽ bị đưa về <strong>0 VNĐ</strong>.</p>
+            <p>• Toàn bộ lịch sử giao dịch sổ cái ví ({transactions.length} dòng) sẽ bị xóa trắng.</p>
+            <p>• Tổng doanh thu sàn sẽ bị reset về 0 trên toàn bộ D1 Database và Cloudflare Edge.</p>
+            <p className="font-bold underline text-rose-600 dark:text-rose-400 pt-1">HÀNH ĐỘNG NÀY TUYỆT ĐỐI KHÔNG THỂ HOÀN TÁC!</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Để tiếp tục, vui lòng gõ chính xác: <span className="font-mono text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800">RESET_ZERO</span>
+            </label>
+            <input
+              type="text"
+              value={resetConfirmInput}
+              onChange={(e) => setResetConfirmInput(e.target.value)}
+              placeholder="Gõ RESET_ZERO vào đây"
+              className="w-full px-3.5 py-2 rounded-xl text-xs font-mono font-bold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setIsResetAllModalOpen(false)}
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
+            >
+              Hủy Bỏ
+            </button>
+            <button
+              type="button"
+              onClick={handleProceedTo2FA}
+              disabled={resetConfirmInput.trim() !== 'RESET_ZERO'}
+              data-testid="btn-confirm-reset-zero"
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold text-white shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Tiếp Tục Xác Thực 2FA →</span>
+            </button>
+          </div>
+        </div>
       </FormModal>
 
       {/* Step 2 Security Verification (2FA Confirmation) */}

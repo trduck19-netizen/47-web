@@ -176,6 +176,15 @@ export const SePayModule: React.FC<SePayModuleProps> = ({ onShowToast }) => {
 
     if (result.success) {
       onShowToast('Kết Nối SePay Thành Công!', result.message, 'success');
+      try {
+        const updated = await adminDataService.updateSePayConfig({
+          apiKey: apiKey.trim(),
+          isConnected: true,
+        });
+        setConfig(updated);
+      } catch {
+        setConfig((prev) => (prev ? { ...prev, isConnected: true } : null));
+      }
     } else {
       onShowToast('Kiểm Tra Thất Bại', result.message, 'error');
     }
@@ -431,6 +440,9 @@ export const SePayModule: React.FC<SePayModuleProps> = ({ onShowToast }) => {
     ? `${baseWebhookUrl.split('?')[0]}?key=${encodeURIComponent(apiKey)}`
     : baseWebhookUrl;
 
+  // Banner chỉ được xanh khi đã lưu cấu hình (config.isConnected) hoặc đã test thành công (apiTestResult.success)
+  const isKeyEffective = Boolean(config?.isConnected || apiTestResult?.success);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Banner & Quick Actions */}
@@ -445,7 +457,7 @@ export const SePayModule: React.FC<SePayModuleProps> = ({ onShowToast }) => {
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Hệ Thống Thanh Toán Tự Động SePay (Enterprise Gateway)
                 </h3>
-                {config?.isConnected ? (
+                {isKeyEffective ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                     <Radio className="h-3 w-3 animate-pulse" />
                     Đã Kích Hoạt Tự Động

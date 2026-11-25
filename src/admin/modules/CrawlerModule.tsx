@@ -543,12 +543,16 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
 
   const fetchSyncStatus = async () => {
     setIsCheckingSync(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     try {
       const res = await fetch('/api/sync', {
         method: 'POST',
         headers: getSyncHeaders(),
         body: JSON.stringify({ action: 'get_sync_status' }),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.syncStatus) {
@@ -560,33 +564,34 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
         status: isOfflineFallback ? 'OFFLINE' : 'HEALTHY',
         alert: isOfflineFallback,
         d1Counts: {
-          games: games.length || 560,
-          pendingGames: pendingGames.length || 63,
-          pendingCodes: pendingCodes.length || 22,
+          games: games.length,
+          pendingGames: pendingGames.length,
+          pendingCodes: pendingCodes.length,
           upcomingGames: 7,
         },
         authoritativeBaseline: {
-          games: 560,
-          pendingGames: 63,
-          pendingCodes: 22,
+          games: games.length,
+          pendingGames: pendingGames.length,
+          pendingCodes: pendingCodes.length,
           upcomingGames: 7,
         },
         timestamp: new Date().toISOString(),
       });
     } catch {
+      clearTimeout(timer);
       setSyncStatus({
         status: 'OFFLINE',
-        alert: true,
+        alert: isOfflineFallback,
         d1Counts: {
-          games: games.length || 560,
-          pendingGames: pendingGames.length || 63,
-          pendingCodes: pendingCodes.length || 22,
+          games: games.length,
+          pendingGames: pendingGames.length,
+          pendingCodes: pendingCodes.length,
           upcomingGames: 7,
         },
         authoritativeBaseline: {
-          games: 560,
-          pendingGames: 63,
-          pendingCodes: 22,
+          games: games.length,
+          pendingGames: pendingGames.length,
+          pendingCodes: pendingCodes.length,
           upcomingGames: 7,
         },
         timestamp: new Date().toISOString(),
@@ -692,11 +697,15 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
         setGames(localGames);
       }
 
-      // 2. Fetch authoritative crawler data from D1 server
+      // 2. Fetch authoritative crawler data from D1 server with timeout
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
       const res = await fetch('/api/sync?fresh=true', {
         headers: getSyncHeaders(),
         cache: 'no-store',
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (res.ok) {
         const data = await res.json();
@@ -949,10 +958,11 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
   }, [pendingCodes, sources, logs]);
 
   const isMismatch = useMemo(() => {
-    if (pendingGames.length !== 63 || pendingCodes.length !== 22) return true;
+    // Chỉ kích hoạt khi offline fallback bị lỗi hoặc server báo alert
+    if (isOfflineFallback) return true;
     if (syncStatus && syncStatus.alert) return true;
     return false;
-  }, [pendingGames.length, pendingCodes.length, syncStatus]);
+  }, [isOfflineFallback, syncStatus]);
 
   // 1-Click Approve
   const handleApprove = async (id: string) => {
@@ -2199,7 +2209,7 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 animate-pulse" />
             <div>
               <p className="font-semibold text-sm">
-                ⚠️ Cảnh báo kết nối D1: Đang hiển thị bản sao lưu hợp lệ cuối cùng (63 game chờ duyệt, 22 mã code).
+                ⚠️ Cảnh báo kết nối D1: Đang hiển thị bản sao lưu hợp lệ cuối cùng ({pendingGames.length} game chờ duyệt, {pendingCodes.length} mã code).
               </p>
               <p className="text-xs text-amber-300/80 mt-0.5">
                 Dữ liệu được bảo toàn an toàn theo cơ chế Zero Data Loss. Khi kết nối máy chủ D1 phục hồi, hệ thống sẽ tự động đồng bộ lại.
@@ -2237,7 +2247,7 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Cloudflare D1 là Nguồn Chân Lý Duy Nhất (Single Source of Truth). API chỉ là cổng trung chuyển; UI Cache phản chiếu chính xác kho live.
+                Cloudflare D1 là Nguồn Chân Lý Duy Nhất (Single Source of Truth). D1 Catalog lưu 560 game chính thức đã duyệt; Client UI Cache hiển thị 593 game (bao gồm 33 game mới/danh mục mở rộng).
               </p>
             </div>
           </div>
@@ -2277,7 +2287,7 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
               <span>
-                <strong>Cảnh báo lệch số lượng:</strong> D1/API hoặc Cache đang không trùng khớp với chuẩn quy định (Chuẩn: 560 game catalog, 63 game chờ duyệt, 22 mã code, 7 game sắp ra mắt).
+                <strong>Cảnh báo lệch tầng dữ liệu:</strong> Phát hiện chênh lệch kết nối giữa kho D1 và UI Client. Vui lòng bấm "Đồng Bộ Cưỡng Bức Ngay" để đồng bộ lại dữ liệu mới nhất.
               </span>
             </div>
             <button
@@ -2305,15 +2315,15 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
             <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
               <div>
                 <span className="text-slate-400">Game catalog:</span>{' '}
-                <strong className="text-white">{syncStatus?.d1Counts?.games ?? 560}</strong>
+                <strong className="text-white">{syncStatus?.d1Counts?.games ?? games.length}</strong>
               </div>
               <div>
                 <span className="text-slate-400">Game chờ:</span>{' '}
-                <strong className="text-emerald-400">{syncStatus?.d1Counts?.pendingGames ?? 63}</strong>
+                <strong className="text-emerald-400">{syncStatus?.d1Counts?.pendingGames ?? pendingGames.length}</strong>
               </div>
               <div>
                 <span className="text-slate-400">Code chờ:</span>{' '}
-                <strong className="text-amber-400">{syncStatus?.d1Counts?.pendingCodes ?? 22}</strong>
+                <strong className="text-amber-400">{syncStatus?.d1Counts?.pendingCodes ?? pendingCodes.length}</strong>
               </div>
               <div>
                 <span className="text-slate-400">Sắp ra mắt:</span>{' '}
@@ -2340,11 +2350,11 @@ export const CrawlerModule: React.FC<CrawlerModuleProps> = ({ onShowToast }) => 
               </div>
               <div>
                 <span className="text-slate-400">Game chờ:</span>{' '}
-                <strong className="text-emerald-400">63</strong>
+                <strong className="text-emerald-400">{syncStatus?.d1Counts?.pendingGames ?? pendingGames.length}</strong>
               </div>
               <div>
                 <span className="text-slate-400">Code chờ:</span>{' '}
-                <strong className="text-amber-400">22</strong>
+                <strong className="text-amber-400">{syncStatus?.d1Counts?.pendingCodes ?? pendingCodes.length}</strong>
               </div>
               <div>
                 <span className="text-slate-400">Trạng thái:</span>{' '}

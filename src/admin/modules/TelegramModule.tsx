@@ -153,10 +153,14 @@ export const TelegramModule: React.FC = () => {
   const loadTelegramData = async () => {
     setIsLoading(true);
     setActionNotice(null);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     try {
       const res = await fetch('/api/telegram/admin', {
         headers: getAuthHeaders(),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
       const data: any = await res.json().catch(() => null);
       if (res.ok && data && data.success) {
         // Robust handling for both nested data.data and root level data
@@ -207,7 +211,12 @@ export const TelegramModule: React.FC = () => {
         setActionNotice({ type: 'error', message: errorMsg });
       }
     } catch (err: any) {
-      setActionNotice({ type: 'error', message: err.message || 'Lỗi kết nối máy chủ.' });
+      clearTimeout(timer);
+      const isAbort = err?.name === 'AbortError';
+      setActionNotice({
+        type: 'error',
+        message: isAbort ? 'Quá thời gian kết nối Telegram máy chủ (Timeout 8s).' : (err.message || 'Lỗi kết nối máy chủ.')
+      });
     } finally {
       setIsLoading(false);
     }

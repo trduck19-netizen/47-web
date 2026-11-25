@@ -1161,20 +1161,23 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                                 type="button"
                                 onClick={() => handleOpenDetail(originalProd)}
                                 className="px-2 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:hover:bg-teal-900/50 dark:text-teal-300 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                                data-testid="btn-util-inventory-detail"
                                 title="Xem danh sách mã trong kho"
                               >
                                 <Boxes className="w-2.5 h-2.5" />
-                                <span>Kho</span>
+                                <span>Kho mã</span>
                               </button>
 
                               <button
                                 type="button"
                                 onClick={() => setFomoAdjustProduct(originalProd)}
                                 className="px-1.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-0.5 border border-amber-500/20"
+                                data-testid="btn-quick-fomo-util"
+                                aria-label="Chỉnh số ảo và FOMO tiện ích"
                                 title="Chỉnh số ảo & FOMO gói này"
                               >
                                 <Sparkles className="w-2.5 h-2.5 text-amber-500" />
-                                <span>Ảo</span>
+                                <span>Số ảo</span>
                               </button>
 
                               <button
@@ -1387,6 +1390,7 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                   </button>
 
                   <button
+                    data-testid="btn-util-inventory-detail-flat"
                     onClick={() => handleOpenDetail(prod)}
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition-colors cursor-pointer"
                   >
@@ -1397,6 +1401,8 @@ export const UtilitiesModule: React.FC<UtilitiesModuleProps> = ({ onShowToast })
                   {/* NÚT CHỈNH SỐ ẢO */}
                   <button
                     type="button"
+                    data-testid="btn-quick-fomo-util-flat"
+                    aria-label="Chỉnh số ảo và FOMO tiện ích"
                     onClick={() => setFomoAdjustProduct(prod)}
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-bold transition-colors cursor-pointer border border-amber-500/25 shadow-xs"
                     title="Điều chỉnh số ảo & FOMO hiển thị ngoài web cho tiện ích này"

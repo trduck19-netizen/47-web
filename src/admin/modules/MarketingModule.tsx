@@ -1320,31 +1320,31 @@ export const MarketingModule: React.FC<MarketingModuleProps> = ({ onShowToast })
       </div>
 
       {/* ==================================================================== */}
-      {/* THANH ĐIỀU HƯỚNG 6 MỤC CÀI ĐẶT: 100% HIỂN THỊ TRỌN VẸN TRONG 1 MÀN HÌNH */}
+      {/* THANH ĐIỀU HƯỚNG {MARKETING_SUB_TABS.length} MỤC CÀI ĐẶT: 100% HIỂN THỊ TRỌN VẸN TRONG 1 MÀN HÌNH */}
       {/* ==================================================================== */}
       <div className="sticky top-2 z-30 space-y-2 p-2 sm:p-2.5 rounded-2xl bg-card/95 backdrop-blur-md border border-border/90 shadow-md">
-        {/* Thanh trạng thái tổng quan: Làm rõ chính xác có 6/6 mục cài đặt, không có mục ẩn */}
+        {/* Thanh trạng thái tổng quan: Làm rõ chính xác có {MARKETING_SUB_TABS.length}/{MARKETING_SUB_TABS.length} mục cài đặt, không có mục ẩn */}
         <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-heading font-extrabold text-foreground flex items-center gap-1.5">
               <SlidersHorizontal className="w-4 h-4 text-primary" />
-              <span>Bản Đồ 6 Mục Cài Đặt FOMO</span>
+              <span>Bản Đồ {MARKETING_SUB_TABS.length} Mục Cài Đặt FOMO</span>
             </span>
             <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-primary/15 text-primary-light border border-primary/30 font-mono font-bold">
-              Đang xem: Mục {currentTabIndex + 1}/6 — {currentTab.fullTitle}
+              Đang xem: Mục {currentTabIndex + 1}/{MARKETING_SUB_TABS.length} — {currentTab.fullTitle}
             </span>
           </div>
 
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
-            <span className="hidden sm:inline">Tổng cộng: Đúng 6 mục cài đặt (Không có mục ẩn)</span>
+            <span className="hidden sm:inline">Tổng cộng: Đúng {MARKETING_SUB_TABS.length} mục cài đặt (Không có mục ẩn)</span>
             <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
-              Mục 6/6 là mục kết thúc
+              Mục {MARKETING_SUB_TABS.length}/{MARKETING_SUB_TABS.length} là mục kết thúc
             </span>
           </div>
         </div>
 
-        {/* Lưới 6 Tab Cân Bằng Hoàn Hảo (Grid 6 Columns on Desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-1.5 sm:gap-2">
+        {/* Lưới 8 Tab Cân Bằng Hoàn Hảo (Grid 8 Columns on Desktop) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-1.5 sm:gap-2">
           {MARKETING_SUB_TABS.map((tab) => {
             const isActive = activeSubTab === tab.id;
             const Icon = tab.icon;
@@ -1354,14 +1354,14 @@ export const MarketingModule: React.FC<MarketingModuleProps> = ({ onShowToast })
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveSubTab(tab.id)}
-                title={`${tab.index}/6: ${tab.fullTitle} • ${tab.subtext}`}
+                title={`${tab.index}/${MARKETING_SUB_TABS.length}: ${tab.fullTitle} • ${tab.subtext}`}
                 className={`group relative flex flex-col justify-between p-2 sm:p-2.5 rounded-xl text-left transition-all cursor-pointer border select-none ${
                   isActive
                     ? 'bg-gradient-to-br from-primary via-primary to-primary-hover text-white border-primary shadow-md shadow-primary/25 ring-2 ring-primary/40'
                     : 'bg-muted/30 hover:bg-muted/70 text-muted-foreground hover:text-foreground border-border/70 hover:border-border'
                 }`}
               >
-                {/* Dòng 1: Huy hiệu số thứ tự 1/6 -> 6/6 và nhãn trạng thái */}
+                {/* Dòng 1: Huy hiệu số thứ tự 1/8 -> 8/8 và nhãn trạng thái */}
                 <div className="flex items-center justify-between w-full gap-1 mb-1">
                   <span
                     className={`inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-md ${
@@ -1371,7 +1371,7 @@ export const MarketingModule: React.FC<MarketingModuleProps> = ({ onShowToast })
                     }`}
                   >
                     <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-white' : 'text-primary'}`} />
-                    <span>{tab.index}/6</span>
+                    <span>{tab.index}/{MARKETING_SUB_TABS.length}</span>
                   </span>
 
                   {tab.badge && (
