@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-328: Độ Trễ `loadAllStoreProductsD1` Tuần Tự, `X-Timing-D1-Ms` Không Đồng Nhất & Fail-Open `AdminLoginGuard` (25/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - `Server-Timing` trên isolate lạnh (`e31773c`) cho thấy nhánh `products` (`loadAllStoreProductsD1`) tốn `1.540 ms` trong khi `tombstones` (`43 ms`) và `settings` (`42 ms`) rất nhanh, do gọi lặp `ensureSchemaUpgrades` + `getSettingD1` và chạy tuần tự `store_products` rồi `seller_products`.
+  - `status.ts` trước đó chỉ đo `SELECT 1` vào `X-Timing-D1-Ms` và chạy 5 bước D1 tuần tự; `search` & `config` chưa có timing headers.
+  - `AdminLoginGuard.tsx` dùng `.catch(() => setIsTurnstileEnabled(false))` (fail-open khi lỗi mạng).
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 467)**:
+  - Chuẩn hóa `X-Timing-D1-Ms` (tổng thời gian D1 trong handler), `X-Timing-Total-Ms`, và `Server-Timing` kèm `colo` trên cả 4 endpoint.
+  - Chạy song song `Promise.all` trong `loadAllStoreProductsD1` (với `skipSchemaCheck`), `status.ts` (gộp `WHERE key IN`), và `search_service.ts` (`products` + `games`), giữ `?nocache=1` luôn bypass mọi tầng cache.
+  - Đổi `AdminLoginGuard.tsx` `.catch()` sang `setIsTurnstileEnabled(true)` (fail-closed).
+
 ### ISSUE-327: Chặn Hồi Sinh Phiên Qua `pine_explicit_logout`, Bắt Buộc Role Admin Khi Bỏ Turnstile Admin & Đọc `metadata` Trong `toggleWishlistItem` (25/11/2026)
 - **Triệu chứng & Rủi ro**:
   - Người dùng đăng xuất nhưng session vẫn có thể bị ghi lại bởi `persistUserMultiTier`/`saveCurrentUser`/`refreshCurrentUserBalance` nếu có tab khác hoặc event ngầm kích hoạt.

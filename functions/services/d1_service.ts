@@ -5326,20 +5326,19 @@ export async function resetAllWalletsAndRevenueD1(db: D1Database): Promise<void>
 /**
  * Load all Store Products from D1
  */
-export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
+export async function loadAllStoreProductsD1(
+  db: D1Database,
+  options?: { skipSchemaCheck?: boolean; preloadedMetaSetting?: any }
+): Promise<any[]> {
   try {
-    await ensureSchemaUpgrades(db);
-    const metaSetting = await getSettingD1(db, 'wcg_admin_store_products_v4').catch(() => null);
-    const metaMap = new Map<string, any>();
-    if (Array.isArray(metaSetting)) {
-      metaSetting.forEach((m: any) => {
-        if (m && m.id) metaMap.set(m.id, m);
-      });
+    if (!options?.skipSchemaCheck) {
+      await ensureSchemaUpgrades(db);
     }
+    const metaPromise = options?.preloadedMetaSetting !== undefined
+      ? Promise.resolve(options.preloadedMetaSetting)
+      : getSettingD1(db, 'wcg_admin_store_products_v4').catch(() => null);
 
-    let mappedLegacy: any[] = [];
-    try {
-      const res = await db.prepare(`
+    const legacyPromise = db.prepare(`
         SELECT 
           sp.id, 
           sp.title, 
@@ -5388,25 +5387,10 @@ export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
         ) ic_agg ON sp.id = ic_agg.product_id
         WHERE sp.is_active = 1 AND sp.id NOT LIKE 'ut_%'
         ORDER BY sp.id ASC
-      `).all();
-      const rows = (res && res.results) || [];
-      mappedLegacy = rows.map((r: any) => {
-        const meta = metaMap.get(r.id) || {};
-        return {
-          ...meta,
-          ...r,
-          virtual_sold_count: meta.virtual_sold_count !== undefined ? Math.max(0, Number(meta.virtual_sold_count) || 0) : Math.max(0, Number(r.virtual_sold_count) || 0),
-          fomo_anchor_time: meta.fomo_anchor_time || r.fomo_anchor_time || null,
-          show_stock_count: r.show_stock_count !== undefined ? Boolean(r.show_stock_count) : (meta.show_stock_count !== undefined ? Boolean(meta.show_stock_count) : true),
-          show_sold_count: r.show_sold_count !== undefined ? Boolean(r.show_sold_count) : (meta.show_sold_count !== undefined ? Boolean(meta.show_sold_count) : true),
-        };
-      });
-    } catch {}
+      `).all().catch(() => null);
 
     // Bổ sung: Đồng bộ sản phẩm thật đang bán từ các gian hàng đã duyệt (seller_products)
-    let sellerProductsList: any[] = [];
-    try {
-      const sellerRes = await db.prepare(`
+    const sellerPromise = db.prepare(`
         SELECT 
           sp.id,
           sp.seller_id,
@@ -5467,11 +5451,28 @@ export async function loadAllStoreProductsD1(db: D1Database): Promise<any[]> {
           AND s.deleted_at IS NULL
           AND s.status IN ('ACTIVE', 'TRIAL')
         ORDER BY sp.created_at DESC
-      `).all();
-      sellerProductsList = (sellerRes && sellerRes.results) || [];
-    } catch (e) {
-      console.warn('[loadAllStoreProductsD1 seller_products error]', e);
+      `).all().catch((e: any) => { console.warn('[loadAllStoreProductsD1 seller_products error]', e); return null; });
+
+    const [metaSetting, legacyRes, sellerRes] = await Promise.all([metaPromise, legacyPromise, sellerPromise]);
+    const metaMap = new Map<string, any>();
+    if (Array.isArray(metaSetting)) {
+      metaSetting.forEach((m: any) => {
+        if (m && m.id) metaMap.set(m.id, m);
+      });
     }
+    const legacyRows = (legacyRes && (legacyRes as any).results) || [];
+    const mappedLegacy: any[] = legacyRows.map((r: any) => {
+      const meta = metaMap.get(r.id) || {};
+      return {
+        ...meta,
+        ...r,
+        virtual_sold_count: meta.virtual_sold_count !== undefined ? Math.max(0, Number(meta.virtual_sold_count) || 0) : Math.max(0, Number(r.virtual_sold_count) || 0),
+        fomo_anchor_time: meta.fomo_anchor_time || r.fomo_anchor_time || null,
+        show_stock_count: r.show_stock_count !== undefined ? Boolean(r.show_stock_count) : (meta.show_stock_count !== undefined ? Boolean(meta.show_stock_count) : true),
+        show_sold_count: r.show_sold_count !== undefined ? Boolean(r.show_sold_count) : (meta.show_sold_count !== undefined ? Boolean(meta.show_sold_count) : true),
+      };
+    });
+    const sellerProductsList: any[] = (sellerRes && (sellerRes as any).results) || [];
 
     // Khử trùng lặp theo id: ưu tiên giữ đầy đủ metadata từ mappedLegacy + dữ liệu live từ sellerProductsList
     const dedupMap = new Map<string, any>();

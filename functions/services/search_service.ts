@@ -81,8 +81,9 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
   let totalProducts = 0;
   let totalGames = 0;
 
-  // 1. TÌM KIẾM SẢN PHẨM (STORE_PRODUCTS)
-  if (searchType === 'all' || searchType === 'products') {
+  // 1. TÌM KIẾM SẢN PHẨM (STORE_PRODUCTS) & 2. TÌM KIẾM GAME (GAMES) — chạy song song qua Promise.all
+  const runProductsSearch = async () => {
+    if (!(searchType === 'all' || searchType === 'products')) return;
     const baseConditions: string[] = ["(is_active = 1 OR is_active IS NULL)"];
     const baseBinds: any[] = [];
 
@@ -221,10 +222,11 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
     } catch (err) {
       console.warn('[searchUnified products error]', err);
     }
-  }
+  };
 
   // 2. TÌM KIẾM GAME (GAMES)
-  if (searchType === 'all' || searchType === 'games') {
+  const runGamesSearch = async () => {
+    if (!(searchType === 'all' || searchType === 'games')) return;
     if (rawQ) {
       try {
         const normQ = removeVietnameseTones(rawQ).toLowerCase();
@@ -293,7 +295,9 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
         console.warn('[searchUnified games error]', err);
       }
     }
-  }
+  };
+
+  await Promise.all([runProductsSearch(), runGamesSearch()]);
 
   const maxTotal = Math.max(totalProducts, totalGames);
   const totalPages = Math.ceil(maxTotal / limit) || 1;

@@ -117,7 +117,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
             new Set(['wcg_news_articles_v1', 'wcg_admin_upcoming_games_v1', 'wcg_marketing_config_v1', 'wcg_game_events_v1'])
           )
         ),
-        timed(() => loadAllStoreProductsD1(env.DB)),
+        timed(() => loadAllStoreProductsD1(env.DB, { skipSchemaCheck: true })),
       ]);
       d1DurationMs = Date.now() - d1Start;
       tombstonesMs = tombstonesRes.ms;

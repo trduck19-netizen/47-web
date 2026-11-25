@@ -110,33 +110,75 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     await ensureSchemaUpgrades(env.DB);
     const schemaMs = Date.now() - schemaStart;
 
-    // 1. Kiểm tra D1 & KV Storage Engine
+    // 1–6. Chạy song song toàn bộ truy vấn D1 độc lập bằng Promise.all (giảm từ 5 round-trip tuần tự xuống 1)
     let d1Latency = 0;
     let d1TablesCount = 0;
     let d1Healthy = false;
-    const probeStart = Date.now();
-    try {
-      const t0 = Date.now();
-      await env.DB.prepare('SELECT 1').first();
-      d1Latency = Math.max(1, Date.now() - t0);
-      const tablesRes = await env.DB.prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'").first<any>();
-      d1TablesCount = tablesRes?.count || 0;
-      d1Healthy = true;
-    } catch {
-      d1Healthy = false;
-    }
-    const probeMs = Date.now() - probeStart;
+    let sepayConfig: any = null;
+    let teleConfig: any = null;
+    let automationToggles: Record<string, boolean> = {
+      sepay: true,
+      telegram: true,
+      resend: true,
+      shipping: true,
+      google: true,
+      d1: true,
+    };
 
-    const settingsStart = Date.now();
-    // 2. Kiểm tra SePay Gateway (đọc đúng từ system_settings key 'wcg_admin_sepay_v4')
-    const sepayConfig = await readSystemSettingJson(env.DB, 'wcg_admin_sepay_v4');
+    const parallelStart = Date.now();
+    const [probeRes, tablesRes, sysRows, toggleRow] = await Promise.all([
+      (async () => {
+        const t0 = Date.now();
+        try {
+          await env.DB.prepare('SELECT 1').first();
+          return { ok: true, ms: Math.max(1, Date.now() - t0) };
+        } catch {
+          return { ok: false, ms: 0 };
+        }
+      })(),
+      env.DB
+        .prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'")
+        .first<any>()
+        .catch(() => null),
+      env.DB
+        .prepare("SELECT key, value FROM system_settings WHERE key IN ('wcg_admin_sepay_v4', 'telegram_settings_v1')")
+        .all<any>()
+        .catch(() => ({ results: [] as any[] })),
+      env.DB
+        .prepare("SELECT value_json FROM admin_settings WHERE key = 'automation_toggles' LIMIT 1")
+        .first<any>()
+        .catch(() => null),
+    ]);
+    const parallelMs = Date.now() - parallelStart;
+
+    d1Healthy = probeRes.ok;
+    d1Latency = probeRes.ms;
+    d1TablesCount = tablesRes?.count || 0;
+
+    if (sysRows && Array.isArray(sysRows.results)) {
+      for (const r of sysRows.results) {
+        if (!r?.key || !r?.value) continue;
+        try {
+          const parsed = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+          if (r.key === 'wcg_admin_sepay_v4') sepayConfig = parsed;
+          if (r.key === 'telegram_settings_v1') teleConfig = parsed;
+        } catch {}
+      }
+    }
+
+    if (toggleRow?.value_json) {
+      try {
+        automationToggles = { ...automationToggles, ...JSON.parse(toggleRow.value_json) };
+      } catch {}
+    }
+
+    // 2. Kiểm tra SePay Gateway
     const sepayKey = String(sepayConfig?.apiKey || sepayConfig?.api_key || env.SEPAY_API_KEY || '').trim();
     const sepayValidKey = isValidApiKey(sepayKey);
     const sepayHasConnectedFlag = Boolean(sepayConfig?.isConnected === true || sepayConfig?.is_connected === true);
     const sepayConnected = Boolean(sepayValidKey && sepayHasConnectedFlag && (sepayConfig?.enabled !== false));
 
-    // 3. Kiểm tra Telegram Bot (đọc đúng từ system_settings key 'telegram_settings_v1')
-    const teleConfig = await readSystemSettingJson(env.DB, 'telegram_settings_v1');
+    // 3. Kiểm tra Telegram Bot
     const teleToken = String(teleConfig?.botToken || teleConfig?.bot_token || env.TELEGRAM_BOT_TOKEN || '').trim();
     const teleValidToken = isValidApiKey(teleToken) && teleToken.includes(':');
     const teleConnected = Boolean(teleValidToken && (teleConfig?.enabled !== false));
@@ -157,23 +199,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const googleClientId = String(env.GOOGLE_CLIENT_ID || '').trim();
     const googleConnected = Boolean(googleClientId && googleClientId.endsWith('.apps.googleusercontent.com') && googleClientId.length >= 20);
 
-    // Lấy trạng thái Bật/Tắt từ bảng admin_settings
-    let automationToggles: Record<string, boolean> = {
-      sepay: true,
-      telegram: true,
-      resend: true,
-      shipping: true,
-      google: true,
-      d1: true,
-    };
-    try {
-      const toggleRow = await env.DB.prepare("SELECT value_json FROM admin_settings WHERE key = 'automation_toggles' LIMIT 1").first<any>();
-      if (toggleRow?.value_json) {
-        automationToggles = { ...automationToggles, ...JSON.parse(toggleRow.value_json) };
-      }
-    } catch {}
-    const settingsMs = Date.now() - settingsStart;
-    const d1TotalMs = authMs + schemaMs + probeMs + settingsMs;
+    const probeMs = d1Latency;
+    const settingsMs = parallelMs;
+    const d1TotalMs = authMs + schemaMs + parallelMs;
 
     const services = [
       {
