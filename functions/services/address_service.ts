@@ -20,14 +20,24 @@ export interface UserAddressRecord {
 }
 
 export interface CreateAddressParams {
-  recipient_name: string;
-  phone_number: string;
-  province_city: string;
-  district: string;
-  ward: string;
-  detail_address: string;
+  recipient_name?: string;
+  recipientName?: string;
+  phone_number?: string;
+  phoneNumber?: string;
+  phone?: string;
+  province_city?: string;
+  provinceCity?: string;
+  province?: string;
+  district?: string;
+  ward?: string;
+  detail_address?: string;
+  detailAddress?: string;
+  street_address?: string;
+  address?: string;
   address_type?: 'HOME' | 'OFFICE' | 'OTHER';
+  addressType?: 'HOME' | 'OFFICE' | 'OTHER';
   is_default?: boolean | number;
+  isDefault?: boolean | number;
 }
 
 /**
@@ -59,9 +69,14 @@ export async function createAddress(
   params: CreateAddressParams
 ): Promise<{ success: boolean; message: string; address?: UserAddressRecord }> {
   try {
-    const { recipient_name, phone_number, province_city, district, ward, detail_address } = params;
+    const recipient_name = (params.recipient_name || params.recipientName || '').trim();
+    const phone_number = (params.phone_number || params.phoneNumber || params.phone || '').trim();
+    const province_city = (params.province_city || params.provinceCity || params.province || '').trim();
+    const district = (params.district || '').trim();
+    const ward = (params.ward || '').trim();
+    const detail_address = (params.detail_address || params.detailAddress || params.street_address || params.address || '').trim();
 
-    if (!recipient_name?.trim() || !phone_number?.trim() || !province_city?.trim() || !detail_address?.trim()) {
+    if (!recipient_name || !phone_number || !province_city || !detail_address) {
       return { success: false, message: 'Vui lòng điền đầy đủ họ tên, số điện thoại, tỉnh thành và địa chỉ chi tiết.' };
     }
 
@@ -72,7 +87,7 @@ export async function createAddress(
       .first<{ count: number }>();
     const isFirst = (countRes?.count || 0) === 0;
 
-    const makeDefault = Boolean(params.is_default) || isFirst;
+    const makeDefault = Boolean(params.is_default ?? params.isDefault) || isFirst;
 
     if (makeDefault) {
       // Đặt tất cả địa chỉ cũ của user thành phụ
@@ -82,7 +97,7 @@ export async function createAddress(
     const id = `addr_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
     const nowIso = new Date().toISOString();
     const fullAddr = buildFullAddress(detail_address, ward, district, province_city);
-    const addrType = params.address_type || 'HOME';
+    const addrType = params.address_type || params.addressType || 'HOME';
 
     await db
       .prepare(`

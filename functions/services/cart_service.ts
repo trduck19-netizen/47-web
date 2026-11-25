@@ -165,24 +165,32 @@ export async function syncCartForUser(
   if (Array.isArray(clientItems) && clientItems.length > 0) {
     const nowIso = new Date().toISOString();
 
-    for (const cItem of clientItems) {
-      if (!cItem.productId) continue;
-      const vId = cItem.variantId || null;
-      const sellerId = cItem.sellerId || 'seller_universal_mall';
+    for (const rawItem of clientItems) {
+      const cItem: any = rawItem;
+      const productId = cItem.productId || cItem.product_id;
+      if (!productId) continue;
+      const vId = cItem.variantId || cItem.variant_id || null;
+      const sellerId = cItem.sellerId || cItem.seller_id || 'seller_universal_mall';
       const qty = Math.max(1, Number(cItem.quantity) || 1);
       const attrs = cItem.attributes ? JSON.stringify(cItem.attributes) : null;
+      const productName = cItem.productName || cItem.product_name || cItem.title || 'Sản phẩm';
+      const priceCore = Number(cItem.priceCore ?? cItem.price_core ?? cItem.price ?? 0);
+      const variantName = cItem.variantName || cItem.variant_name || null;
+      const productType = cItem.productType || cItem.product_type || 'digital';
+      const weightGrams = Number(cItem.weightGrams ?? cItem.weight_grams ?? 0);
+      const coverUrl = cItem.coverUrl || cItem.cover_url || cItem.image_url || null;
 
       // Kiểm tra sản phẩm đã có trong giỏ D1 chưa
       let existing: any = null;
       if (vId) {
         existing = await db
           .prepare('SELECT id, quantity FROM cart_items WHERE user_id = ? AND product_id = ? AND variant_id = ? LIMIT 1')
-          .bind(userId, cItem.productId, vId)
+          .bind(userId, productId, vId)
           .first<any>();
       } else {
         existing = await db
           .prepare('SELECT id, quantity FROM cart_items WHERE user_id = ? AND product_id = ? AND (variant_id IS NULL OR variant_id = \'\') LIMIT 1')
-          .bind(userId, cItem.productId)
+          .bind(userId, productId)
           .first<any>();
       }
 
@@ -207,17 +215,17 @@ export async function syncCartForUser(
           .bind(
             id,
             userId,
-            cItem.productId,
+            productId,
             sellerId,
-            cItem.productName || 'Sản phẩm',
-            cItem.priceCore || 0,
+            productName,
+            priceCore,
             qty,
             vId,
-            cItem.variantName || null,
+            variantName,
             attrs,
-            cItem.productType || 'digital',
-            cItem.weightGrams || 0,
-            cItem.coverUrl || null,
+            productType,
+            weightGrams,
+            coverUrl,
             nowIso,
             nowIso
           )

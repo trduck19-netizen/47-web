@@ -54,14 +54,32 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const body: ClientCartItem = await request.json();
+    const rawBody: any = await request.json();
+    const productId = rawBody?.productId || rawBody?.product_id;
 
-    if (!body?.productId) {
+    if (!productId) {
       return new Response(
         JSON.stringify({ success: false, message: 'Thiếu thông tin productId.' }),
         { status: 400, headers: CORS_HEADERS }
       );
     }
+
+    const body: ClientCartItem = {
+      productId,
+      productName: rawBody.productName || rawBody.product_name || rawBody.title || 'Sản phẩm',
+      priceCore: Number(rawBody.priceCore ?? rawBody.price_core ?? rawBody.price ?? 0),
+      sellerId: rawBody.sellerId || rawBody.seller_id || 'seller_universal_mall',
+      sellerName: rawBody.sellerName || rawBody.seller_name,
+      sellerSlug: rawBody.sellerSlug || rawBody.seller_slug,
+      sellerAvatar: rawBody.sellerAvatar || rawBody.seller_avatar,
+      coverUrl: rawBody.coverUrl || rawBody.cover_url || rawBody.image_url,
+      variantId: rawBody.variantId || rawBody.variant_id,
+      variantName: rawBody.variantName || rawBody.variant_name,
+      attributes: rawBody.attributes,
+      quantity: Number(rawBody.quantity || 1),
+      productType: rawBody.productType || rawBody.product_type || 'digital',
+      weightGrams: Number(rawBody.weightGrams ?? rawBody.weight_grams ?? 0),
+    };
 
     const summary = await addCartItem(env.DB, authRes.member.id, body);
 

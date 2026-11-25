@@ -15,11 +15,19 @@ export interface WishlistItem {
 }
 
 export interface ToggleWishlistParams {
-  item_type: 'game' | 'product';
-  item_id: string;
+  item_type?: 'game' | 'product';
+  target_type?: 'game' | 'product';
+  item_id?: string;
+  target_id?: string;
+  id?: string;
   item_title?: string;
+  title?: string;
+  name?: string;
   item_image?: string;
+  image_url?: string;
+  coverUrl?: string;
   price_core?: number;
+  priceCore?: number;
 }
 
 /**
@@ -43,18 +51,22 @@ export async function toggleWishlistItem(
   params: ToggleWishlistParams
 ): Promise<{ success: boolean; is_bookmarked: boolean; message: string; item?: WishlistItem }> {
   try {
-    const { item_type, item_id, item_title, item_image, price_core } = params;
+    const item_id = (params.item_id || params.target_id || params.id || '').trim();
 
     if (!item_id) {
       return { success: false, is_bookmarked: false, message: 'Thiếu item_id.' };
     }
 
-    const type = item_type === 'product' ? 'product' : 'game';
+    const rawType = params.item_type || params.target_type || 'game';
+    const item_type = rawType === 'product' ? 'product' : 'game';
+    const item_title = (params.item_title || params.title || params.name || '').trim();
+    const item_image = (params.item_image || params.image_url || params.coverUrl || '').trim();
+    const price_core = Number(params.price_core ?? params.priceCore ?? 0);
 
     // Kiểm tra đã có trong wishlist chưa
     const existing = await db
       .prepare('SELECT id FROM user_wishlist WHERE user_id = ? AND item_type = ? AND item_id = ? LIMIT 1')
-      .bind(userId, type, item_id)
+      .bind(userId, item_type, item_id)
       .first<{ id: string }>();
 
     if (existing) {
@@ -79,7 +91,7 @@ export async function toggleWishlistItem(
         .bind(
           id,
           userId,
-          type,
+          item_type,
           item_id,
           item_title || null,
           item_image || null,

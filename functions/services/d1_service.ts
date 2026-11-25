@@ -2821,8 +2821,8 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     }
 
     try {
-      // Fast 1-subrequest check: If wcg_virtual_layer_tables_v1 exists, all schema migrations are already done
-      const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = 'wcg_virtual_layer_tables_v1' LIMIT 1").first().catch(() => null);
+      // Fast 1-subrequest check: If 0047_google_oauth_and_wishlist_v1 exists, all schema migrations are already done
+      const check = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0047_google_oauth_and_wishlist_v1' LIMIT 1").first().catch(() => null);
       if (check !== null) {
         schemaUpgradesDone = true;
         return;
@@ -3598,9 +3598,9 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Migration deleted_records_history_v1 error]', err?.message);
   }
 
-  // 14. Migration 0034: Cart Items & User Addresses (Customer Experience APIs)
+  // 14. Migration 0046: Cart Items & User Addresses (Customer Experience APIs)
   try {
-    const cCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0034_cart_and_user_addresses_v1' LIMIT 1").first().catch(() => null);
+    const cCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0046_cart_and_user_addresses_v1' LIMIT 1").first().catch(() => null);
     if (!cCheck) {
       // 1. Bảng giỏ hàng người dùng (Cart Sync API)
       await db.prepare(`
@@ -3648,15 +3648,15 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
 
       await db.prepare('CREATE INDEX IF NOT EXISTS idx_user_addresses_user ON user_addresses(user_id, is_default);').run().catch(() => {});
 
-      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0034_cart_and_user_addresses_v1');").run().catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0046_cart_and_user_addresses_v1');").run().catch(() => {});
     }
   } catch (err: any) {
-    console.warn('[Migration 0034_cart_and_user_addresses_v1 error]', err?.message);
+    console.warn('[Migration 0046_cart_and_user_addresses_v1 error]', err?.message);
   }
 
-  // 15. Migration 0035: Google OAuth2, Wishlist & Search Indexes
+  // 15. Migration 0047: Google OAuth2, Wishlist & Search Indexes
   try {
-    const oCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0035_google_oauth_and_wishlist_v1' LIMIT 1").first().catch(() => null);
+    const oCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0047_google_oauth_and_wishlist_v1' LIMIT 1").first().catch(() => null);
     if (!oCheck) {
       // 1. Cột OAuth2 cho bảng members
       await db.prepare("ALTER TABLE members ADD COLUMN auth_provider TEXT DEFAULT 'local';").run().catch(() => {});
@@ -3686,10 +3686,10 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
       await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_seller ON store_products(seller_id, status);').run().catch(() => {});
       await db.prepare('CREATE INDEX IF NOT EXISTS idx_games_search ON games(status, release_date);').run().catch(() => {});
 
-      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0035_google_oauth_and_wishlist_v1');").run().catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0047_google_oauth_and_wishlist_v1');").run().catch(() => {});
     }
   } catch (err: any) {
-    console.warn('[Migration 0035_google_oauth_and_wishlist_v1 error]', err?.message);
+    console.warn('[Migration 0047_google_oauth_and_wishlist_v1 error]', err?.message);
   }
 
   schemaUpgradesDone = true;
