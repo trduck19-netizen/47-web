@@ -270,6 +270,9 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     if (typeof overrideKeyword === 'string') {
       setSearchKeyword(overrideKeyword);
       setSelectedProductType('all');
+      if (overrideKeyword === '') {
+        setSelectedCategory('all');
+      }
     }
     if (subView !== 'home') {
       setSubView('home');
@@ -280,7 +283,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         const y = el.getBoundingClientRect().top + window.scrollY - 120;
         window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
       }
-    }, 60);
+    }, 120);
   };
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSubmitCodeOpen, setIsSubmitCodeOpen] = useState(false);
@@ -2490,7 +2493,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             </div>
 
             {/* Từ khóa gợi ý song ngữ VI/EN */}
-            <div className="hidden sm:flex items-center gap-3 text-[11px] text-white/80 mt-1.5 overflow-hidden whitespace-nowrap">
+            <div className="hidden sm:flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-white/80 mt-1.5">
               {(() => {
                 const rawList = (categoriesConfig.searchSuggestions && categoriesConfig.searchSuggestions.length > 0)
                   ? categoriesConfig.searchSuggestions.slice(0, 5)

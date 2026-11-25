@@ -255,8 +255,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       ? product.product_images
       : [defaultImg].filter(Boolean) as string[];
 
-  // Tồn kho & Đã bán của gói được chọn
-  const displayStock = realStock <= 0 ? 0 : marketingService.getDisplayStock(selectedPackage.id || product.id, realStock);
+  // Tồn kho & Đã bán của gói được chọn (Khi còn tồn kho thật realStock > 0, đảm bảo displayStock >= 1)
+  const displayStock = realStock <= 0 ? 0 : Math.max(1, marketingService.getDisplayStock(selectedPackage.id || product.id, realStock));
   const displaySold = marketingService.getSoldDisplay({
     ...selectedPackage,
     created_at: product.created_at,
