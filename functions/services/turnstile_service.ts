@@ -6,11 +6,10 @@ export interface TurnstileEnv {
 }
 
 export function isTurnstileCheckEnabled(env: TurnstileEnv): boolean {
-  const flag = String(env.TURNSTILE_ENABLED ?? '').trim().toLowerCase();
-  if (flag === 'false' || flag === '0' || flag === 'off') {
+  if (env.ENVIRONMENT === 'development' && !(env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET)) {
     return false;
   }
-  return Boolean(env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET);
+  return true;
 }
 
 export async function verifyTurnstileRequest(
@@ -19,11 +18,6 @@ export async function verifyTurnstileRequest(
   clientIp: string,
   corsHeaders: Record<string, string>
 ): Promise<{ ok: true } | { ok: false; response: Response }> {
-  const flag = String(env.TURNSTILE_ENABLED ?? '').trim().toLowerCase();
-  if (flag === 'false' || flag === '0' || flag === 'off') {
-    return { ok: true };
-  }
-
   const turnstileSecret = env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET;
   if (!turnstileSecret) {
     if (env.ENVIRONMENT === 'development') {
@@ -51,11 +45,6 @@ export async function verifyTurnstileRequest(
         { status: 400, headers: corsHeaders }
       ),
     };
-  }
-
-  // Rule 10.6: Linh hoạt hóa Turnstile chống nghẽn cho token placeholder
-  if (cleanToken === 'cf_turnstile_verified') {
-    return { ok: true };
   }
 
   try {

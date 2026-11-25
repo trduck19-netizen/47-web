@@ -56,15 +56,27 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
     const handleUpdate = () => {
       wishlistService.getWishlist().then(setItems).catch(() => {});
     };
+    const handleAuthChanged = (e: any) => {
+      if (e?.detail?.loggedIn === false) {
+        setItems([]);
+        setIsLoading(false);
+      } else {
+        loadItems();
+      }
+    };
     window.addEventListener('pine_wishlist_updated', handleUpdate);
-    return () => window.removeEventListener('pine_wishlist_updated', handleUpdate);
+    window.addEventListener('pine_auth_state_changed', handleAuthChanged);
+    return () => {
+      window.removeEventListener('pine_wishlist_updated', handleUpdate);
+      window.removeEventListener('pine_auth_state_changed', handleAuthChanged);
+    };
   }, []);
 
   if (!isOpen || typeof document === 'undefined') return null;
 
   const handleRemove = async (targetId: string, targetType: 'game' | 'product') => {
     await wishlistService.toggleWishlist({ target_id: targetId, target_type: targetType });
-    setItems((prev) => prev.filter((it) => !(it.target_id === targetId && it.target_type === targetType)));
+    setItems((prev) => prev.filter((it: any) => !((it.item_id || it.target_id) === targetId && (it.item_type || it.target_type || 'product') === targetType)));
   };
 
   const handleClearAll = async () => {
@@ -153,7 +165,12 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
 
         {/* Content list */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {items.length === 0 ? (
+          {isLoading ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+              <div className="w-10 h-10 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+              <p className="text-xs text-muted-foreground font-medium">{t('wishlist.loading')}</p>
+            </div>
+          ) : items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
               <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
                 <Heart className="w-8 h-8 opacity-40" />
@@ -168,15 +185,17 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
               </div>
             </div>
           ) : (
-            items.map((record) => {
+            items.map((record: any) => {
               const meta = record.metadata || {};
-              const title = meta.title || record.target_id;
-              const price = Number(meta.price || 0);
-              const imageUrl = meta.image_url || '';
+              const targetId = record.item_id || record.target_id || '';
+              const targetType: 'game' | 'product' = (record.item_type || record.target_type) === 'game' ? 'game' : 'product';
+              const title = meta.title || record.item_title || targetId;
+              const price = Number(meta.price ?? record.price_core ?? 0);
+              const imageUrl = meta.image_url || record.item_image || '';
 
               return (
                 <div
-                  key={`${record.target_type}_${record.target_id}`}
+                  key={`${targetType}_${targetId}`}
                   className="p-3 rounded-2xl bg-muted/30 border border-border/70 hover:border-border transition-all flex items-center gap-3 group"
                 >
                   {/* Thumbnail */}
@@ -187,14 +206,14 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
                       <ShoppingBag className="w-6 h-6 text-muted-foreground" />
                     )}
                     <span className="absolute top-1 left-1 px-1 text-[9px] font-bold rounded bg-black/60 text-white uppercase">
-                      {record.target_type}
+                      {targetType}
                     </span>
                   </div>
 
                   {/* Details */}
                   <div className="min-w-0 flex-1">
                     <h5
-                      onClick={() => onNavigateDetail && onNavigateDetail(record.target_id, record.target_type)}
+                      onClick={() => onNavigateDetail && onNavigateDetail(targetId, targetType)}
                       className="text-xs sm:text-sm font-semibold text-foreground truncate cursor-pointer hover:text-primary transition-colors"
                       title={title}
                     >
@@ -215,14 +234,14 @@ export const WishlistDrawerModal: React.FC<WishlistDrawerModalProps> = ({
                   {/* Actions */}
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleAddToCart(record)}
+                      onClick={() => handleAddToCart({ ...record, target_id: targetId, target_type: targetType, metadata: { ...meta, title, price, image_url: imageUrl } })}
                       className="p-2 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all cursor-pointer"
                       title={t('wishlist.addToCart')}
                     >
                       <ShoppingCart className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleRemove(record.target_id, record.target_type)}
+                      onClick={() => handleRemove(targetId, targetType)}
                       className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
                       title={t('wishlist.remove')}
                     >

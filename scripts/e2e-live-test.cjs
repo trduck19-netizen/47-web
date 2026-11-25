@@ -82,7 +82,7 @@ async function runE2ETests() {
       email: testEmail,
       displayName: `Tester ${testUsername}`,
       password: testPassword,
-      turnstileToken: 'cf_turnstile_verified'
+      turnstileToken: process.env.E2E_TURNSTILE_TOKEN || ''
     });
 
     if ((registerRes.statusCode === 200 || registerRes.statusCode === 201) && registerRes.data?.success && registerRes.data?.token) {
@@ -98,7 +98,7 @@ async function runE2ETests() {
       const loginRes = await requestJson(`${BASE_URL}/api/auth/login`, { method: 'POST' }, {
         identifier: knownUser,
         password: testPassword,
-        turnstileToken: 'cf_turnstile_verified'
+        turnstileToken: process.env.E2E_TURNSTILE_TOKEN || ''
       });
 
       if (loginRes.statusCode === 200 && loginRes.data?.success && loginRes.data?.token) {

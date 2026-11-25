@@ -1433,6 +1433,7 @@
     "addNew": "Add new address"
   },
   "wishlist": {
+    "loading": "Loading your wishlist...",
     "title": "Saved Wishlist",
     "subtitle": "All favorite products and items",
     "empty": "Wishlist is empty",

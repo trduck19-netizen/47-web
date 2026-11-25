@@ -1433,6 +1433,7 @@
     "addNew": "Thêm địa chỉ mới"
   },
   "wishlist": {
+    "loading": "Đang tải danh sách yêu thích...",
     "title": "Danh Sách Yêu Thích",
     "subtitle": "Các sản phẩm và game bạn đã lưu",
     "empty": "Chưa có sản phẩm yêu thích",

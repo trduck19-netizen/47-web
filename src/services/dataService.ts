@@ -127,6 +127,7 @@ class DataService {
   private listeners: Set<() => void> = new Set();
   private codesFallbackLoadingPromise: Promise<void> | null = null;
   private codesFallbackLoaded: boolean = false;
+  private logoutEpoch: number = 0;
 
   // Local storage keys
   private readonly BOOKMARKS_KEY = 'pine_bookmarks';
@@ -3881,14 +3882,34 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
   }
 
   public clearUserMultiTier(): void {
+    this.logoutEpoch += 1;
     if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem(this.USER_KEY);
       localStorage.removeItem('pine_persistent_account');
       localStorage.removeItem('pine_auth_token');
       localStorage.removeItem('pine_remember_login');
+      localStorage.removeItem('pine_user_wishlist_local');
       sessionStorage.removeItem(this.USER_KEY);
       sessionStorage.removeItem('pine_auth_token');
+
+      // Xóa session_token / sessionToken khỏi bản ghi thành viên trong pine_admin_members_v4
+      const membersRaw = localStorage.getItem('pine_admin_members_v4');
+      if (membersRaw) {
+        try {
+          const members = JSON.parse(membersRaw);
+          if (Array.isArray(members)) {
+            const sanitized = members.map((m: any) => {
+              if (!m || typeof m !== 'object') return m;
+              const copy = { ...m };
+              delete copy.session_token;
+              delete copy.sessionToken;
+              return copy;
+            });
+            localStorage.setItem('pine_admin_members_v4', JSON.stringify(sanitized));
+          }
+        } catch {}
+      }
 
       if (typeof document !== 'undefined') {
         document.cookie = 'pine_auth_user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
@@ -3918,6 +3939,24 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       if (!data) return null;
       const user: UserProfile = JSON.parse(data);
       if (!user || !user.id) return null;
+
+      // SỬA 1: Kiểm tra còn token không — tính cả user.session_token lẫn pine_auth_token ở 3 chỗ lưu trữ
+      const isGuest = user.id.startsWith('guest_') || user.role === 'guest';
+      if (!isGuest) {
+        let hasToken = Boolean(user.session_token);
+        if (!hasToken && typeof localStorage !== 'undefined') {
+          hasToken = Boolean(localStorage.getItem('pine_auth_token'));
+        }
+        if (!hasToken && typeof sessionStorage !== 'undefined') {
+          hasToken = Boolean(sessionStorage.getItem('pine_auth_token'));
+        }
+        if (!hasToken && typeof document !== 'undefined') {
+          hasToken = /(?:^|;\s*)pine_auth_token=([^;]+)/.test(document.cookie);
+        }
+        if (!hasToken) {
+          return null;
+        }
+      }
 
       const resetFlag = 'pine_user_wallet_zero_v1';
       if (typeof localStorage !== 'undefined' && !localStorage.getItem(resetFlag)) {
@@ -4598,6 +4637,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
   // Refresh current user's balance from Cloudflare Edge and local transactions
   async refreshCurrentUserBalance(): Promise<number> {
+    const startEpoch = this.logoutEpoch;
     const user = this.getCurrentUser();
     if (!user || !user.id) return 0;
 
@@ -4652,6 +4692,10 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             (user.username && data.user.username?.toLowerCase() === user.username?.toLowerCase()));
 
         if (matchesUser) {
+          // Chống race condition: nếu người dùng đã bấm đăng xuất trong lúc /api/auth/me đang chờ phản hồi -> không hồi sinh phiên!
+          if (startEpoch !== this.logoutEpoch || !this.getCurrentUser()) {
+            return 0;
+          }
           if (data.token) {
             user.session_token = data.token;
             this.persistUserMultiTier(user);

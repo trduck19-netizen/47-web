@@ -432,7 +432,6 @@ class AuthService {
     if (user && token) {
       user.session_token = token;
     }
-    dataService.saveCurrentUser(user);
     if (token) {
       localStorage.setItem(this.TOKEN_KEY, token);
       sessionStorage.setItem(this.TOKEN_KEY, token);
@@ -441,6 +440,10 @@ class AuthService {
         const expires = new Date(Date.now() + 365 * 864e5).toUTCString();
         document.cookie = `${this.TOKEN_KEY}=${encodeURIComponent(token)}; expires=${expires}; path=/; SameSite=Lax`;
       } catch {}
+    }
+    dataService.saveCurrentUser(user);
+    if (typeof window !== 'undefined' && token) {
+      window.dispatchEvent(new CustomEvent('pine_auth_state_changed', { detail: { loggedIn: true } }));
     }
   }
 

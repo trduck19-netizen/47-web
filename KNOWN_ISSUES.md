@@ -10,6 +10,18 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-326: Bẫy Race Condition `/api/auth/me` Hồi Sinh Phiên Đã Đăng Xuất, 5 Hàm `ensure*Schema` Chạy Trước `appliedMigSet` & Magic-String Turnstile
+- **Triệu chứng & Rủi ro**:
+  - Sau khi bấm Đăng xuất, nếu request `/api/auth/me` đang chạy ngầm trả về muộn thì `persistUserMultiTier(user)` hồi sinh lại toàn bộ 4 tầng session + 2 cookie, đồng thời `pine_admin_members_v4` còn sót `session_token`.
+  - `WishlistDrawerModal` chỉ đọc `record.metadata` trong khi D1 trả cột phẳng (`item_title`, `price_core`), làm tiêu đề bị mất và hiện `"0 Core"`.
+  - 5 hàm `ensure*Schema` (~109 lệnh DDL) chạy trước `appliedMigSet` gây độ trễ cold start 23–37 giây.
+  - Magic-string `cf_turnstile_verified` và cờ `TURNSTILE_ENABLED=false` cho phép vượt qua xác minh chống bot khi đăng ký.
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 465)**:
+  - Dùng `logoutEpoch` trong `dataService`, xóa `session_token` ở `pine_admin_members_v4`, và kiểm tra token (gồm cả `user.session_token`) trong `getCurrentUser()`.
+  - Chuẩn hóa đọc cột phẳng D1 và trạng thái loading `t('wishlist.loading')` trong `WishlistDrawerModal`.
+  - Nạp `appliedMigSet` lên đầu `ensureSchemaUpgrades` và bọc 5 hàm `ensure*Schema` bằng `core_subschemas_v1`.
+  - Xóa hẳn `cf_turnstile_verified` và nhánh bypass `TURNSTILE_ENABLED` khỏi `turnstile_service.ts`.
+
 ### ISSUE-325: Bẫy Lệch Key Đồng Bộ `pine_admin_sepay_v4` vs `wcg_admin_sepay_v4`, `totalProducts` Tính Trên Lát Cắt Phân Trang & Chưa Phát Sự Kiện Đăng Xuất Cho Wishlist
 - **Triệu chứng & Rủi ro**:
   - `saveSePay()` gửi `{ key: 'pine_admin_sepay_v4' }` lên `/api/sync` trong khi `status.ts` đọc `wcg_admin_sepay_v4`; đồng thời `executeSaveConfig` tự đặt `isConnected: Boolean(apiKey.trim())` không qua test.

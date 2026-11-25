@@ -1249,20 +1249,27 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
   if (schemaUpgradesPromise) return schemaUpgradesPromise;
 
   schemaUpgradesPromise = (async () => {
-    // 0. Ensure Giveaway schema & Mission schema first
-    await ensureGiveawaySchema(db);
-    await ensureMissionSchema(db);
-    await ensureCodeReportsSchema(db);
-    await ensureGameCommentsSchema(db);
-    await ensureMarketplaceSchema(db);
+    // 0. Nạp toàn bộ danh sách migration đã chạy chỉ với 1 câu SELECT duy nhất trước khi chạy các ensure*Schema
     let appliedMigSet = new Set<string>();
-    // Safe schema migrations tracking
     try {
-      await db.prepare("CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, executed_at TEXT DEFAULT (datetime('now')));").run().catch(() => {});
-      const migRows = await db.prepare('SELECT id FROM schema_migrations').all<{ id: string }>().catch(() => ({ results: [] }));
-      appliedMigSet = new Set<string>((migRows?.results || []).map((r: any) => String(r.id)));
+      const migRows = await db.prepare('SELECT id FROM schema_migrations').all<{ id: string }>().catch(() => null);
+      if (migRows && Array.isArray(migRows.results)) {
+        appliedMigSet = new Set<string>(migRows.results.map((r: any) => String(r.id)));
+      } else {
+        await db.prepare("CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, executed_at TEXT DEFAULT (datetime('now')));").run().catch(() => {});
+      }
     } catch (e) {
       console.error('[SchemaUpgrade] Migration table error:', e);
+    }
+
+    // Chỉ chạy 5 hàm ensure*Schema (109 lệnh DDL) 1 lần duy nhất nếu chưa ghi core_subschemas_v1
+    if (!appliedMigSet.has('core_subschemas_v1')) {
+      await ensureGiveawaySchema(db);
+      await ensureMissionSchema(db);
+      await ensureCodeReportsSchema(db);
+      await ensureGameCommentsSchema(db);
+      await ensureMarketplaceSchema(db);
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('core_subschemas_v1');").run().catch(() => {});
     }
 
     // Migration 0013: Self-healing for Avatar Land metadata, Thức Thần Ký, and Giveaway offsets

@@ -7,6 +7,20 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-25]
 
+### 465. Đăng Xuất Bền Vững Mọi Tầng, Sửa Wishlist Drawer, Cắt Độ Trễ 5 Hàm `ensure*Schema`, Phát Sự Kiện Đồng Bộ Khi Đăng Nhập & Bắt Buộc Turnstile (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý 4 nhóm lỗi phát hiện sau kiểm chứng commit `032fd12` theo bản kế hoạch đã duyệt với 2 sửa (`ke_hoach_sua_not_sau_032fd12_25_11.md`).
+- **Nguyên nhân gốc rễ & Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Đăng xuất bền vững mọi tầng & sửa Wishlist Drawer*:
+     - `src/services/dataService.ts`: Thêm `logoutEpoch` chống race condition khi `refreshCurrentUserBalance()` (`/api/auth/me`) đang bay về muộn hồi sinh phiên đã đăng xuất; xóa sạch `session_token`/`sessionToken` khỏi `localStorage['pine_admin_members_v4']` trong `clearUserMultiTier()`; kiểm tra token hợp lệ (tính cả `user.session_token` lẫn `pine_auth_token`) trong `getCurrentUser()`.
+     - `src/components/wishlist/WishlistDrawerModal.tsx`: Lắng nghe `pine_auth_state_changed` xóa ngay `items` khi đăng xuất; hiển thị trạng thái đang tải `t('wishlist.loading')` thay vì `"Wishlist is empty"` giả; hỗ trợ đọc đầy đủ cột phẳng từ D1 (`item_title`, `item_image`, `price_core`, `item_id`, `item_type`).
+  2. *Nhóm 2 — Cắt triệt để độ trễ lần gọi đầu (Cold Start)*:
+     - `functions/services/d1_service.ts`: Đưa lệnh `SELECT id FROM schema_migrations` nạp `appliedMigSet` lên đầu `ensureSchemaUpgrades` (trước 5 hàm `ensure*Schema`), bọc 5 hàm này trong `if (!appliedMigSet.has('core_subschemas_v1'))` để loại bỏ ~109 lệnh DDL tuần tự trên mỗi isolate lạnh.
+  3. *Nhóm 3 — Đồng bộ Wishlist khi đăng nhập/đăng ký*:
+     - `src/services/authService.ts`: Phát `pine_auth_state_changed` (`{ loggedIn: true }`) trong `saveSession()` ngay sau khi lưu token thành công cho cả 3 luồng `register()`, `login()`, `loginWithGoogle()`.
+  4. *Nhóm 4 — Bảo mật Turnstile bắt buộc*:
+     - `functions/services/turnstile_service.ts` & `scripts/e2e-live-test.cjs`: Xóa hẳn magic-string `cf_turnstile_verified` và nhánh bypass `TURNSTILE_ENABLED=false`; bắt buộc xác minh Cloudflare Turnstile trên production.
+
 ### 464. Sửa Đường Ghi SePay `wcg_admin_sepay_v4`, `totalProducts` Lọc Rating, Nối Dây Reset Wishlist Logout, Migration `0049` & Tối Ưu Cold Start `ensureSchemaUpgrades` (25/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Xử lý dứt điểm 5 nhóm lỗi phát hiện sau commit `2f1aefb` theo bản kế hoạch đã duyệt (`ke_hoach_sua_not_sau_2f1aefb_25_11.md` - Bản 4 sửa).
