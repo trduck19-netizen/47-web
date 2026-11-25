@@ -82,7 +82,7 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
 
   // 1. TÌM KIẾM SẢN PHẨM (STORE_PRODUCTS)
   if (searchType === 'all' || searchType === 'products') {
-    const whereConditions: string[] = ["(status = 'ACTIVE' OR status IS NULL OR status = '')"];
+    const whereConditions: string[] = ["(is_active = 1 OR is_active IS NULL)"];
     const queryBinds: any[] = [];
 
     if (rawQ) {
@@ -92,27 +92,17 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
     }
 
     if (params.category) {
-      whereConditions.push('(category_slug = ? OR category_id = ?)');
-      queryBinds.push(params.category, params.category);
-    }
-
-    if (params.sellerId) {
-      whereConditions.push('seller_id = ?');
-      queryBinds.push(params.sellerId);
-    }
-
-    if (params.productType) {
-      whereConditions.push('product_type = ?');
-      queryBinds.push(params.productType);
+      whereConditions.push('(category = ? OR category_label LIKE ?)');
+      queryBinds.push(params.category, `%${params.category}%`);
     }
 
     if (params.minPrice !== undefined && params.minPrice > 0) {
-      whereConditions.push('price_core >= ?');
+      whereConditions.push('current_price >= ?');
       queryBinds.push(params.minPrice);
     }
 
     if (params.maxPrice !== undefined && params.maxPrice > 0) {
-      whereConditions.push('price_core <= ?');
+      whereConditions.push('current_price <= ?');
       queryBinds.push(params.maxPrice);
     }
 
@@ -132,21 +122,22 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
     // Sắp xếp
     let orderClause = 'ORDER BY created_at DESC';
     if (params.sort === 'price_asc') {
-      orderClause = 'ORDER BY price_core ASC';
+      orderClause = 'ORDER BY current_price ASC';
     } else if (params.sort === 'price_desc') {
-      orderClause = 'ORDER BY price_core DESC';
+      orderClause = 'ORDER BY current_price DESC';
     } else if (params.sort === 'popular') {
       orderClause = 'ORDER BY sold_count DESC, created_at DESC';
-    } else if (params.sort === 'rating') {
-      orderClause = 'ORDER BY rating DESC, created_at DESC';
     }
 
     // Lấy dữ liệu phân trang
     try {
       const listRes = await db
         .prepare(`
-          SELECT id, title, game_slug, game_name, original_price, price_core,
-                 discount_percent, product_type, cover_url, seller_id, sold_count, rating
+          SELECT id, title, game_slug, game_name, original_price,
+                 current_price as price_core,
+                 discount_percent,
+                 COALESCE(cover_image_url, game_icon_url, '') as cover_url,
+                 sold_count
           FROM store_products
           WHERE ${whereClause}
           ${orderClause}
@@ -164,11 +155,10 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
         priceCore: r.price_core || 0,
         originalPrice: r.original_price || r.price_core || 0,
         discountPercent: r.discount_percent || 0,
-        productType: r.product_type || 'digital',
+        productType: 'digital',
         coverUrl: r.cover_url || undefined,
-        sellerId: r.seller_id || undefined,
         soldCount: r.sold_count || 0,
-        rating: r.rating || 5,
+        rating: 5,
         itemType: 'product',
       }));
     } catch (err) {
@@ -189,10 +179,10 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
 
         const gamesRes = await db
           .prepare(`
-            SELECT id, slug, name, publisher, icon_url, cover_url, rating
+            SELECT id, slug, name, publisher, icon_url, banner_url, rating
             FROM games
             WHERE (name LIKE ? OR slug LIKE ? OR publisher LIKE ?)
-            ORDER BY rating DESC, release_date DESC
+            ORDER BY rating DESC
             LIMIT ? OFFSET ?
           `)
           .bind(likeParam, likeParam, likeParam, limit, offset)
@@ -206,7 +196,7 @@ export async function searchUnified(db: D1Database, params: SearchQueryParams): 
           gameSlug: g.slug,
           gameName: g.name,
           priceCore: 0,
-          coverUrl: g.icon_url || g.cover_url || undefined,
+          coverUrl: g.icon_url || g.banner_url || undefined,
           rating: g.rating || 5,
           itemType: 'game',
         }));
