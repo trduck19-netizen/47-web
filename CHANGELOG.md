@@ -7,6 +7,46 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-25]
 
+### 461. Triển Khai Bộ 3 API Nâng Cao (Nhóm 3): Google OAuth2 Login, Server-Side Search D1 & User Wishlist Sync (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Dựa trên phê duyệt kế hoạch triển khai Bộ 3 API Nhóm 3 (`ke_hoach_trien_khai_api_nhom_3_dang_nhap_google_search_wishlist_25_11.md`).
+  - Triển khai 3 phân hệ mở rộng cao cấp: Đăng nhập Google 1-chạm (C3), Tìm kiếm và lọc đa tầng trên CSDL D1 (C5), và Đồng bộ danh sách yêu thích đa thiết bị (C6).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Backend CSDL D1 & Migration 0035*:
+     - Bổ sung Migration `0035_google_oauth_and_wishlist_v1` vào `functions/services/d1_service.ts` và `schema.sql`.
+     - Thêm cột `auth_provider` và `google_id` vào bảng `members`.
+     - Tạo bảng `user_wishlist` (`id, user_id, target_type, target_id, metadata, created_at`) kèm unique constraint và index.
+     - Tạo index tìm kiếm cho bảng `store_products` và `games`.
+  2. *Phân hệ Google OAuth2 Authentication Service*:
+     - `functions/services/google_auth_service.ts`: Gọi Google tokeninfo endpoint trực tiếp từ Edge Worker với timeout 8s, kiểm tra `email_verified`, so khớp tài khoản theo `google_id` hoặc `email`, tự động tạo thành viên mới nếu chưa có, sinh JWT signed token chuẩn bảo mật fail-closed.
+     - `POST /api/auth/oauth/google`: Tiếp nhận Google Credential Token, xác thực và trả về session đăng nhập.
+  3. *Phân hệ Server-Side Search Unified API*:
+     - `functions/services/search_service.ts`: Tìm kiếm đa tầng trên `store_products` và `games`, loại bỏ dấu tiếng Việt chuẩn xác (`removeVietnameseTones`), lọc theo category, giá, sắp xếp theo độ phổ biến / giá / đánh giá / mới nhất, hỗ trợ phân trang chuẩn.
+     - `GET /api/search`: Public API phục vụ tìm kiếm nhanh cho toàn bộ sàn.
+  4. *Phân hệ Wishlist Sync API*:
+     - `functions/services/wishlist_service.ts`: CRUD danh sách yêu thích D1, hỗ trợ toggle 1-chạm, sync mảng từ `localStorage` khi đăng nhập.
+     - `GET /api/user/wishlist`: Lấy toàn bộ danh sách yêu thích của người dùng.
+     - `POST /api/user/wishlist/toggle`: Bật/tắt yêu thích cho sản phẩm hoặc game.
+     - `POST /api/user/wishlist/sync`: Đồng bộ hàng loạt từ client lên server.
+     - `DELETE /api/user/wishlist`: Xóa sạch danh sách yêu thích.
+  5. *Đăng ký Router Edge Worker `functions/_worker.ts`*:
+     - Bổ sung import và router handler cho cả 5 endpoint mới trước fallback 404.
+     - Thêm `/api/user/wishlist` vào scope `shopping` của User AI API Keys.
+  6. *Nâng cấp Frontend & UI Components*:
+     - `wishlistService.ts`: Quản lý state danh sách yêu thích phía client, lưu `localStorage`, tự động đồng bộ lên D1 khi có session đăng nhập, phát sự kiện `pine_wishlist_updated`.
+     - `WishlistDrawerModal.tsx`: Drawer xem danh sách yêu thích, hỗ trợ xóa từng mục, xóa tất cả, thêm thẳng vào giỏ hàng `handleAddToCart`, chuẩn Single-Screen First không tràn ngang.
+     - `Header.tsx`: Thêm nút Heart (Trái tim) bên cạnh giỏ hàng kèm badge số lượng thời gian thực, thêm mục Wishlist vào dropdown tài khoản.
+     - `ProductDetailModal.tsx`: Bổ sung nút bấm Heart (Yêu thích) trực tiếp trên trang chi tiết sản phẩm.
+     - `AuthModal.tsx`: Tích hợp Google Identity Services SDK và nút bấm "Tiếp tục với Google" trên cả Tab Đăng Nhập và Đăng Ký.
+     - `dataService.ts`: Bổ sung hàm `searchUnifiedServer` và kết nối `searchAllGamesAndCodesServer` ưu tiên gọi `/api/search?type=all`.
+     - `locales/vi.json` & `locales/en.json`: Bổ sung đối xứng 100% các từ khóa song ngữ cho `wishlist`.
+- **Kết quả kiểm chứng (Verification)**:
+  - Commit Git: `f714e9e`.
+  - Triển khai Pages: `universal-mall-shop` (Build ID `f714e9e`, deployment `91c93046`), `admin-universal-mall` (deployment `3dca4bc0`).
+  - `GET /api/search?q=game&limit=3` -> HTTP 200 OK.
+  - `GET /api/user/wishlist` -> HTTP 401 Unauthorized (yêu cầu token bảo mật).
+  - `POST /api/auth/oauth/google` -> HTTP 401 Unauthorized (`GOOGLE_VERIFY_FAILED` từ Google Identity endpoint khi gửi token mẫu).
+
 ### 460. Triển Khai Bộ 3 API Trải Nghiệm Khách Hàng (Nhóm 2): Cart Sync D1, Address Book & Public Product Reviews (25/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Dựa trên phê duyệt kế hoạch triển khai Bộ 3 API Trải Nghiệm Khách Hàng (`ke_hoach_trien_khai_api_trai_nghiem_khach_hang_25_11.md`).

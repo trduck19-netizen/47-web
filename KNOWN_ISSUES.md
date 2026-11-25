@@ -10,6 +10,23 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-322: Bẫy Đăng Nhập Mạng Xã Hội Thiếu Cơ Chế Fail-Closed JWT Secret & Tìm Kiếm / Danh Sách Yêu Thích Không Đồng Bộ Đám Mây
+- **Triệu chứng & Rủi ro**:
+  - Khi tích hợp đăng nhập Google OAuth2, nếu code backend fallback về khóa bí mật mặc định dạng tĩnh khi thiếu `JWT_SECRET` sẽ vi phạm nghiêm trọng Rule 10 bảo mật Cloudflare Edge.
+  - Tìm kiếm sản phẩm chỉ thực hiện phía client-side trên mảng tĩnh khiến người dùng không tìm được sản phẩm mới nhập trong CSDL D1.
+  - Danh sách yêu thích chỉ lưu ở bộ nhớ trình duyệt khiến khách hàng mất hết sản phẩm đã lưu khi xóa cookie hoặc chuyển thiết bị.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  1. Thiếu bảng D1 `user_wishlist` và các route API đồng bộ `/api/user/wishlist/*`.
+  2. Thiếu endpoint server-side search `/api/search` hỗ trợ tìm kiếm đa tầng và lọc trực tiếp trên CSDL D1 `store_products` và `games`.
+  3. Thiếu endpoint xác thực Google ID Token `/api/auth/oauth/google`.
+- **Cạm bẫy đã thất bại (Failed Attempts)**:
+  - Sử dụng khóa bí mật fallback tĩnh `wcg_edge_sec_salt_2026`: Vi phạm Rule 10 Fail-Closed. Đã loại bỏ hoàn toàn, bắt buộc kiểm tra `JWT_SECRET` từ Cloudflare Environment.
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 461)**:
+  - Triển khai Migration 0035 tạo bảng `user_wishlist`, mở rộng cột `auth_provider` và `google_id` trên `members`.
+  - Xây dựng `google_auth_service.ts` kết nối với Google tokeninfo endpoint, sinh JWT token an toàn chuẩn Fail-Closed.
+  - Xây dựng `search_service.ts` tìm kiếm D1 không dấu và có dấu, phân trang linh hoạt.
+  - Xây dựng `wishlist_service.ts` và `wishlistService.ts` kết hợp `WishlistDrawerModal.tsx` đồng bộ 2 chiều localStorage & D1.
+
 ### ISSUE-321: Bẫy Giỏ Hàng & Sổ Địa Chỉ Chỉ Lưu Trình Duyệt Cục Bộ (LocalStorage Isolation) Khi Khách Đổi Thiết Bị & Khuyết Tuyến Route Public Cho Đánh Giá Sản Phẩm D1
 - **Triệu chứng & Rủi ro**:
   - Khách hàng thêm sản phẩm vào giỏ hoặc nhập địa chỉ giao hàng trên điện thoại, khi chuyển sang máy tính hoặc đổi trình duyệt thì giỏ hàng trống trơn và phải nhập lại toàn bộ địa chỉ.
