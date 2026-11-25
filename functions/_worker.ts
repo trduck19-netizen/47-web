@@ -55,6 +55,11 @@ import * as cartItemsIdApi from './api/cart/items/[id]';
 import * as userAddressesIndexApi from './api/user/addresses/index';
 import * as userAddressesIdApi from './api/user/addresses/[id]/index';
 import * as userAddressesDefaultApi from './api/user/addresses/[id]/default';
+import * as googleAuthApi from './api/auth/oauth/google';
+import * as searchIndexApi from './api/search/index';
+import * as wishlistIndexApi from './api/user/wishlist/index';
+import * as wishlistToggleApi from './api/user/wishlist/toggle';
+import * as wishlistSyncApi from './api/user/wishlist/sync';
 import * as missionsIdApi from './api/missions/[id]';
 import * as missionsSubmitApi from './api/missions/submit';
 import * as missionsMySubmissionsApi from './api/missions/my-submissions';
@@ -402,7 +407,8 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           pathname.startsWith('/api/seller-orders') ||
           pathname.startsWith('/api/cart') ||
           pathname.startsWith('/api/checkout') ||
-          pathname.startsWith('/api/my-seller-orders')
+          pathname.startsWith('/api/my-seller-orders') ||
+          pathname.startsWith('/api/user/wishlist')
         ) {
           requiredScope = 'shopping';
         } else if (pathname.startsWith('/api/rewards') || pathname.startsWith('/api/giveaways')) {
@@ -2655,6 +2661,33 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS' && userAddressesIdApi.onRequestOptions) return await userAddressesIdApi.onRequestOptions(addrContext);
         if (method === 'PUT' && userAddressesIdApi.onRequestPut) return await userAddressesIdApi.onRequestPut(addrContext);
         if (method === 'DELETE' && userAddressesIdApi.onRequestDelete) return await userAddressesIdApi.onRequestDelete(addrContext);
+      }
+
+      // 23. Google OAuth API
+      if (pathname === '/api/auth/oauth/google') {
+        if (method === 'OPTIONS' && googleAuthApi.onRequestOptions) return await googleAuthApi.onRequestOptions(context);
+        if (method === 'POST' && googleAuthApi.onRequestPost) return await googleAuthApi.onRequestPost(context);
+      }
+
+      // 24. Search API
+      if (pathname === '/api/search') {
+        if (method === 'OPTIONS' && searchIndexApi.onRequestOptions) return await searchIndexApi.onRequestOptions(context);
+        if (method === 'GET' && searchIndexApi.onRequestGet) return await searchIndexApi.onRequestGet(context);
+      }
+
+      // 25. User Wishlist API
+      if (pathname === '/api/user/wishlist') {
+        if (method === 'OPTIONS' && wishlistIndexApi.onRequestOptions) return await wishlistIndexApi.onRequestOptions(context);
+        if (method === 'GET' && wishlistIndexApi.onRequestGet) return await wishlistIndexApi.onRequestGet(context);
+        if (method === 'DELETE' && wishlistIndexApi.onRequestDelete) return await wishlistIndexApi.onRequestDelete(context);
+      }
+      if (pathname === '/api/user/wishlist/toggle') {
+        if (method === 'OPTIONS' && wishlistToggleApi.onRequestOptions) return await wishlistToggleApi.onRequestOptions(context);
+        if (method === 'POST' && wishlistToggleApi.onRequestPost) return await wishlistToggleApi.onRequestPost(context);
+      }
+      if (pathname === '/api/user/wishlist/sync') {
+        if (method === 'OPTIONS' && wishlistSyncApi.onRequestOptions) return await wishlistSyncApi.onRequestOptions(context);
+        if (method === 'POST' && wishlistSyncApi.onRequestPost) return await wishlistSyncApi.onRequestPost(context);
       }
 
       // Fallback for any unknown /api route

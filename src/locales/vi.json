@@ -1429,5 +1429,20 @@
     "select": "Chọn",
     "close": "Đóng",
     "addNew": "Thêm địa chỉ mới"
+  },
+  "wishlist": {
+    "title": "Danh Sách Yêu Thích",
+    "subtitle": "Các sản phẩm và game bạn đã lưu",
+    "empty": "Chưa có sản phẩm yêu thích",
+    "emptyHint": "Nhấn vào biểu tượng trái tim ở bất kỳ sản phẩm nào để lưu lại xem sau.",
+    "clearAll": "Xóa tất cả",
+    "clearConfirm": "Xóa toàn bộ danh sách yêu thích?",
+    "addToCart": "Thêm vào giỏ",
+    "viewCart": "Xem Giỏ Hàng",
+    "itemsSaved": "{count} sản phẩm đã lưu",
+    "syncNotice": "Đăng nhập để lưu yêu thích vĩnh viễn trên tài khoản.",
+    "signIn": "Đăng nhập",
+    "addedToast": "Đã thêm vào yêu thích",
+    "removedToast": "Đã xóa khỏi yêu thích"
   }
 }

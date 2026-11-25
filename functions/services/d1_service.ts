@@ -3654,6 +3654,44 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Migration 0034_cart_and_user_addresses_v1 error]', err?.message);
   }
 
+  // 15. Migration 0035: Google OAuth2, Wishlist & Search Indexes
+  try {
+    const oCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0035_google_oauth_and_wishlist_v1' LIMIT 1").first().catch(() => null);
+    if (!oCheck) {
+      // 1. Cột OAuth2 cho bảng members
+      await db.prepare("ALTER TABLE members ADD COLUMN auth_provider TEXT DEFAULT 'local';").run().catch(() => {});
+      await db.prepare("ALTER TABLE members ADD COLUMN google_id TEXT;").run().catch(() => {});
+      await db.prepare("CREATE INDEX IF NOT EXISTS idx_members_google_id ON members(google_id);").run().catch(() => {});
+
+      // 2. Bảng danh sách yêu thích user_wishlist
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS user_wishlist (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          item_type TEXT NOT NULL DEFAULT 'game',
+          item_id TEXT NOT NULL,
+          item_title TEXT,
+          item_image TEXT,
+          price_core REAL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(user_id, item_type, item_id)
+        );
+      `).run().catch(() => {});
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_wishlist_user ON user_wishlist(user_id, created_at);').run().catch(() => {});
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_wishlist_item ON user_wishlist(item_type, item_id);').run().catch(() => {});
+
+      // 3. Search indexes cho bảng store_products & games
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_search ON store_products(status, price_core, created_at);').run().catch(() => {});
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_store_products_seller ON store_products(seller_id, status);').run().catch(() => {});
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_games_search ON games(status, release_date);').run().catch(() => {});
+
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0035_google_oauth_and_wishlist_v1');").run().catch(() => {});
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0035_google_oauth_and_wishlist_v1 error]', err?.message);
+  }
+
   schemaUpgradesDone = true;
   })();
 

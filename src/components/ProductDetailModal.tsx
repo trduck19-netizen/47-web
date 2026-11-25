@@ -28,12 +28,14 @@ import {
   Tag,
   BadgeCheck,
   Store,
+  Heart,
 } from 'lucide-react';
 import type { StoreProduct, UtilityProduct, UserProfile, ProductPackageVariant } from '../types/game';
 import { formatCore, formatCurrencyVND } from '../utils/textUtils';
 import { marketingService } from '../services/marketingService';
 import { dataService } from '../services/dataService';
 import { cartService } from '../services/cartService';
+import { wishlistService } from '../services/wishlistService';
 import { offerService } from '../services/offerService';
 import { getProductPackages } from '../utils/productPackageUtils';
 import { GuideLinksBanner } from './GuideLinksBanner';
@@ -105,6 +107,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const [selectedPackageId, setSelectedPackageId] = useState<string>(getInitialPkgId);
+  const [isWishlisted, setIsWishlisted] = useState<boolean>(() => Boolean(product?.id && wishlistService.isInWishlist(product.id, 'product')));
+
+  useEffect(() => {
+    if (product?.id) {
+      setIsWishlisted(wishlistService.isInWishlist(product.id, 'product'));
+    }
+  }, [product?.id]);
 
   useEffect(() => {
     setActiveImageIdx(0);
@@ -441,6 +450,27 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       } catch {}
     } else {
       if (onShowToast) onShowToast(t('productDetailModal.notice'), result.message, 'info');
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!product?.id) return;
+    const meta = {
+      target_id: product.id,
+      target_type: 'product' as const,
+      title: product.title,
+      price: displayCurrentPrice,
+      image_url: product.cover_image_url || product.product_images?.[0] || '',
+      category: (product as any).brand || (product as any).category || 'MALL',
+    };
+    const res = await wishlistService.toggleWishlist(meta);
+    setIsWishlisted(res.inWishlist);
+    if (onShowToast) {
+      onShowToast(
+        res.inWishlist ? (isEn ? 'Added to wishlist' : 'Đã thêm vào yêu thích') : (isEn ? 'Removed from wishlist' : 'Đã xóa khỏi yêu thích'),
+        res.inWishlist ? (isEn ? 'Saved to your wishlist' : 'Đã lưu sản phẩm vào danh sách yêu thích') : '',
+        'info'
+      );
     }
   };
 
@@ -984,11 +1014,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         type="button"
                         disabled={isOutOfStock}
                         onClick={handleAddToCart}
-                        className="w-full sm:w-auto px-4 min-h-[44px] h-[48px] rounded-xl font-bold text-xs sm:text-sm border-2 border-secondary/60 text-secondary hover:bg-secondary/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        className="flex-1 sm:w-auto px-4 min-h-[44px] h-[48px] rounded-xl font-bold text-xs sm:text-sm border-2 border-secondary/60 text-secondary hover:bg-secondary/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                         title={t('productDetailModal.addToCartTitle')}
                       >
                         <ShoppingCart className="w-4 h-4" />
                         <span>{t('productDetailModal.addToCart')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleToggleWishlist}
+                        className={`px-3 min-h-[44px] h-[48px] rounded-xl font-bold border-2 transition-all flex items-center justify-center cursor-pointer shrink-0 ${
+                          isWishlisted
+                            ? 'border-rose-500 bg-rose-500/10 text-rose-500'
+                            : 'border-border text-muted-foreground hover:border-rose-500/50 hover:text-rose-500'
+                        }`}
+                        title={isWishlisted ? (isEn ? 'Remove from wishlist' : 'Bỏ lưu yêu thích') : (isEn ? 'Add to wishlist' : 'Lưu vào yêu thích')}
+                      >
+                        <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
                       </button>
                     </div>
                     )}

@@ -1429,5 +1429,20 @@
     "select": "Select",
     "close": "Close",
     "addNew": "Add new address"
+  },
+  "wishlist": {
+    "title": "Saved Wishlist",
+    "subtitle": "All favorite products and items",
+    "empty": "Wishlist is empty",
+    "emptyHint": "Tap the heart icon on any product or item to save it here for later.",
+    "clearAll": "Clear all",
+    "clearConfirm": "Clear all items from wishlist?",
+    "addToCart": "Add to cart",
+    "viewCart": "View Shopping Cart",
+    "itemsSaved": "{count} items saved",
+    "syncNotice": "Sign in to sync your wishlist across all devices.",
+    "signIn": "Sign In",
+    "addedToast": "Added to wishlist",
+    "removedToast": "Removed from wishlist"
   }
 }

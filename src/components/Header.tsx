@@ -21,6 +21,7 @@ import {
   Send,
   Store,
   ShoppingCart,
+  Heart,
   Rocket,
 } from 'lucide-react';
 import type { GameItem, UserProfile } from '../types/game';
@@ -30,6 +31,7 @@ import { LanguageSelector } from './LanguageSelector';
 import { growthService } from '../services/growthService';
 import { telegramService } from '../services/telegramService';
 import { cartService } from '../services/cartService';
+import { wishlistService } from '../services/wishlistService';
 
 interface HeaderProps {
   currentTab: 'catalog' | 'news' | 'giveaways' | 'store' | 'utilities' | 'missions' | 'telegram' | 'today-codes' | 'seller-center' | 'store-detail';
@@ -43,6 +45,7 @@ interface HeaderProps {
   onOpenDownloadApp?: () => void;
   onOpenNotificationModal?: () => void;
   onOpenCart?: () => void;
+  onOpenWishlist?: () => void;
   onOpenAuth: () => void;
   onOpenWallet: () => void;
   onOpenReceivedCodes: (initialTab?: 'giveaways' | 'orders' | 'privates' | 'missions') => void;
@@ -74,6 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenDownloadApp,
   onOpenNotificationModal,
   onOpenCart,
+  onOpenWishlist,
   onOpenAuth,
   onOpenWallet,
   onOpenReceivedCodes,
@@ -89,13 +93,21 @@ export const Header: React.FC<HeaderProps> = ({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [cartCount, setCartCount] = useState<number>(() => cartService.getCartCount());
+  const [wishlistCount, setWishlistCount] = useState<number>(() => wishlistService.getCount());
 
   useEffect(() => {
     const handleCartUpdate = (e: any) => {
       setCartCount(Number(e?.detail?.count ?? cartService.getCartCount()));
     };
+    const handleWishlistUpdate = (e: any) => {
+      setWishlistCount(Number(e?.detail?.count ?? wishlistService.getCount()));
+    };
     window.addEventListener('pine_cart_updated', handleCartUpdate);
-    return () => window.removeEventListener('pine_cart_updated', handleCartUpdate);
+    window.addEventListener('pine_wishlist_updated', handleWishlistUpdate);
+    return () => {
+      window.removeEventListener('pine_cart_updated', handleCartUpdate);
+      window.removeEventListener('pine_wishlist_updated', handleWishlistUpdate);
+    };
   }, []);
 
   const [isGrowthEnabled, setIsGrowthEnabled] = useState(() => {
@@ -349,6 +361,24 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
+            {/* Danh Sách Yêu Thích (Wishlist) */}
+            {onOpenWishlist && (
+              <button
+                type="button"
+                onClick={onOpenWishlist}
+                className="relative p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[38px] sm:min-h-[38px] flex items-center justify-center rounded-xl bg-card hover:bg-card-hover border border-border text-muted-foreground hover:text-rose-500 transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
+                title={isEn ? 'Saved Wishlist' : 'Danh sách yêu thích'}
+                aria-label={isEn ? 'Saved Wishlist' : 'Danh sách yêu thích'}
+              >
+                <Heart className={`w-4 h-4 ${wishlistCount > 0 ? 'text-rose-500 fill-rose-500' : 'text-muted-foreground'}`} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center shadow-sm">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             {/* Language Selector (Always Visible in Header) */}
             <LanguageSelector variant="compact" />
 
@@ -527,6 +557,31 @@ export const Header: React.FC<HeaderProps> = ({
                             </span>
                           ) : (
                             <span className="text-[10px] text-muted-foreground font-medium">{isEn ? '0 items' : '0 món'}</span>
+                          )}
+                        </button>
+                      )}
+
+                      {/* 2.04b Danh Sách Yêu Thích */}
+                      {onOpenWishlist && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsUserMenuOpen(false);
+                            onOpenWishlist();
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted text-foreground cursor-pointer text-left group"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Heart className={`w-4 h-4 group-hover:scale-110 transition-transform ${wishlistCount > 0 ? 'text-rose-500 fill-rose-500' : 'text-muted-foreground'}`} />
+                            <span className="font-medium">{isEn ? 'Wishlist' : 'Danh Sách Yêu Thích'}</span>
+                          </span>
+                          {wishlistCount > 0 ? (
+                            <span className="text-[10px] text-rose-500 font-bold bg-rose-500/20 px-2 py-0.5 rounded-full">
+                              {wishlistCount} {isEn ? 'items' : 'mục'}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground font-medium">{isEn ? '0 items' : '0 mục'}</span>
                           )}
                         </button>
                       )}

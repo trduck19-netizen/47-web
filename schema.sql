@@ -238,3 +238,21 @@ CREATE TABLE IF NOT EXISTS user_addresses (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+
+-- Migration 0035: Google OAuth2 & Wishlist
+ALTER TABLE members ADD COLUMN auth_provider TEXT DEFAULT 'local';
+ALTER TABLE members ADD COLUMN google_id TEXT;
+CREATE INDEX IF NOT EXISTS idx_members_google_id ON members(google_id);
+
+CREATE TABLE IF NOT EXISTS user_wishlist (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  item_type TEXT NOT NULL DEFAULT 'game',
+  item_id TEXT NOT NULL,
+  item_title TEXT,
+  item_image TEXT,
+  price_core REAL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, item_type, item_id)
+);

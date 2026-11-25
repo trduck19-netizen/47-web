@@ -47,6 +47,7 @@ const EmailSubscriptionModal = lazyWithRetry(() => import('./components/notifica
 const SellerCenterView = lazyWithRetry(() => import('./components/seller/SellerCenterView').then((m) => ({ default: m.SellerCenterView })));
 const PublicStoreView = lazyWithRetry(() => import('./components/seller/PublicStoreView').then((m) => ({ default: m.PublicStoreView })));
 const CartDrawerModal = lazyWithRetry(() => import('./components/cart/CartDrawerModal').then((m) => ({ default: m.CartDrawerModal })));
+const WishlistDrawerModal = lazyWithRetry(() => import('./components/wishlist/WishlistDrawerModal').then((m) => ({ default: m.WishlistDrawerModal })));
 const ShopeeTestView = lazyWithRetry(() => import('./components/shopee/ShopeeTestView').then((m) => ({ default: m.ShopeeTestView })));
 const PlatformSolutionsView = lazyWithRetry(() => import('./components/showcase/PlatformSolutionsView').then((m) => ({ default: m.PlatformSolutionsView })));
 import { dataService } from './services/dataService';
@@ -333,6 +334,7 @@ export const App: React.FC = () => {
   const [receivedCodesInitialTab, setReceivedCodesInitialTab] = useState<'giveaways' | 'orders' | 'privates' | 'missions'>('giveaways');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'security' | 'telegram' | 'missions'>('profile');
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
@@ -1974,6 +1976,7 @@ export const App: React.FC = () => {
             onOpenDownloadApp={() => setIsDownloadModalOpen(true)}
             onOpenNotificationModal={() => setIsEmailModalOpen(true)}
             onOpenCart={() => setIsCartOpen(true)}
+            onOpenWishlist={() => setIsWishlistOpen(true)}
             onOpenAuth={() => setIsAuthModalOpen(true)}
             onOpenWallet={() => setIsWalletModalOpen(true)}
             onOpenReceivedCodes={handleOpenReceivedCodes}
@@ -2515,6 +2518,31 @@ export const App: React.FC = () => {
               setIsCartOpen(false);
               setCurrentStoreSlug(slug);
               handleSelectTab('store-detail');
+            }}
+          />
+        )}
+
+        {isWishlistOpen && (
+          <WishlistDrawerModal
+            isOpen={isWishlistOpen}
+            onClose={() => setIsWishlistOpen(false)}
+            currentUser={currentUser}
+            onOpenLogin={() => {
+              setIsWishlistOpen(false);
+              setIsAuthModalOpen(true);
+            }}
+            onOpenCart={() => {
+              setIsWishlistOpen(false);
+              setIsCartOpen(true);
+            }}
+            onNavigateDetail={(id, type) => {
+              setIsWishlistOpen(false);
+              if (type === 'game') {
+                const game = allGamesList.find((g) => g.id === id || g.slug === id);
+                if (game) handleSelectGame(game);
+              } else {
+                handleOpenStoreProduct(id);
+              }
             }}
           />
         )}

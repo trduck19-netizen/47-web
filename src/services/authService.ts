@@ -297,6 +297,67 @@ class AuthService {
     }
   }
 
+  // Google OAuth2 Login / Register
+  async loginWithGoogle(credential: string): Promise<AuthResponse> {
+    if (!credential || !credential.trim()) {
+      return { success: false, message: 'Thiếu Google Credential Token.' };
+    }
+
+    try {
+      const res = await fetch('/api/auth/oauth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+
+      const data: any = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success && data.member) {
+        const userObj: UserProfile = {
+          id: data.member.id,
+          username: data.member.username,
+          displayName: data.member.display_name || data.member.username,
+          email: data.member.email,
+          role: data.member.role || 'MEMBER',
+          avatar_url: data.member.avatar_url,
+          avatar: data.member.avatar_url,
+          wallet_balance: Number(data.member.balance) || 0,
+          total_spent: Number(data.member.total_spent) || 0,
+          session_token: data.token,
+          createdAt: data.member.created_at || new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+        };
+
+        this.saveSession(userObj, data.token || '', true);
+        this.notifyAdminRealtime(data.member, userObj);
+
+        // Kích hoạt đồng bộ wishlist sau khi đăng nhập Google
+        try {
+          const { wishlistService } = await import('./wishlistService');
+          wishlistService.syncWishlistToServer().catch(() => {});
+        } catch {}
+
+        return {
+          success: true,
+          message: data.message || 'Đăng nhập Google thành công!',
+          user: userObj,
+          token: data.token,
+          member: data.member,
+        };
+      }
+
+      return {
+        success: false,
+        message: data.message || 'Đăng nhập bằng Google không thành công. Vui lòng thử lại.',
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        message: 'Lỗi mạng khi kết nối tới máy chủ đăng nhập Google: ' + (err?.message || ''),
+      };
+    }
+  }
+
   // Request Password Reset OTP
   async requestResetOtp(identifier: string): Promise<AuthResponse> {
     if (!identifier || !identifier.trim()) {

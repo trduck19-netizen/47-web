@@ -2095,6 +2095,32 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     if (!q) return { games: [], codes: [], totalMatches: 0 };
 
     try {
+      // 1. Thử gọi API Search D1 Unified mới
+      const searchRes = await fetch(`/api/search?q=${encodeURIComponent(q)}&type=all&limit=${limit}`);
+      if (searchRes.ok) {
+        const searchJson = await searchRes.json();
+        if (searchJson && searchJson.success && searchJson.results) {
+          const rawGames = searchJson.results.games || [];
+          if (rawGames.length > 0) {
+            const mappedGames: GameItem[] = rawGames.map((g: any) => ({
+              id: g.id,
+              name: g.title,
+              slug: g.slug || g.gameSlug || g.id,
+              icon_url: g.coverUrl || '',
+              codes_count: 0,
+              is_hot: false,
+              categories: [],
+            }));
+            return {
+              games: mappedGames,
+              codes: [],
+              totalMatches: searchJson.pagination?.totalGames || mappedGames.length,
+            };
+          }
+        }
+      }
+
+      // 2. Fallback sang autocomplete games truyền thống
       const res = await fetch(`/api/games?autocomplete=1&search=${encodeURIComponent(q)}&limit=${limit}`);
       if (res.ok) {
         const json = await res.json();
@@ -2109,6 +2135,49 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     } catch {}
 
     return this.searchAllGamesAndCodes(query, limit);
+  }
+
+  /**
+   * Tìm kiếm Server D1 đa tầng (Game & Sản phẩm Store Products)
+   */
+  async searchUnifiedServer(params: {
+    q: string;
+    type?: 'all' | 'products' | 'games';
+    category?: string;
+    sort?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    success: boolean;
+    results: { products: any[]; games: any[] };
+    pagination: any;
+  }> {
+    const { q, type = 'all', category, sort = 'popular', page = 1, limit = 20 } = params;
+    try {
+      const qs = new URLSearchParams({
+        q,
+        type,
+        sort,
+        page: String(page),
+        limit: String(limit),
+      });
+      if (category) qs.set('category', category);
+
+      const res = await fetch(`/api/search?${qs.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success) {
+          return json;
+        }
+      }
+    } catch (e) {
+      console.warn('[dataService] searchUnifiedServer error:', e);
+    }
+    return {
+      success: false,
+      results: { products: [], games: [] },
+      pagination: { page: 1, limit, totalProducts: 0, totalGames: 0, totalPages: 0 },
+    };
   }
 
   // --- UPCOMING GAMES SYSTEM ---
