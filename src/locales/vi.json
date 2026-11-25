@@ -1420,5 +1420,14 @@
     "instantBadge": "Giao Tự Động 0s",
     "purchaseTime": "Thời gian mua:",
     "priceLabel": "Giá:"
+  },
+  "addressBook": {
+    "title": "Sổ Địa Chỉ Nhận Hàng",
+    "savedAddresses": "Sổ Địa Chỉ",
+    "selectSavedAddress": "Chọn địa chỉ nhận hàng đã lưu:",
+    "defaultBadge": "Mặc định",
+    "select": "Chọn",
+    "close": "Đóng",
+    "addNew": "Thêm địa chỉ mới"
   }
 }

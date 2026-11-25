@@ -1420,5 +1420,14 @@
     "instantBadge": "Instant 0s Delivery",
     "purchaseTime": "Purchased at:",
     "priceLabel": "Price:"
+  },
+  "addressBook": {
+    "title": "Shipping Address Book",
+    "savedAddresses": "Address Book",
+    "selectSavedAddress": "Select a saved shipping address:",
+    "defaultBadge": "Default",
+    "select": "Select",
+    "close": "Close",
+    "addNew": "Add new address"
   }
 }

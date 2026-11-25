@@ -201,3 +201,40 @@ INSERT OR IGNORE INTO vouchers (id, code, voucher_type, discount_type, discount_
   ('v_free_02', 'FREESHIPMAX', 'freeship', 'fixed', 50000, 300000, 50000),
   ('v_disc_01', 'MALL50K', 'discount', 'fixed', 50000, 200000, 50000),
   ('v_disc_02', 'UNIVERSAL10', 'discount', 'percent', 10, 150000, 100000);
+
+
+-- Migration 0034: Cart Items & User Addresses
+CREATE TABLE IF NOT EXISTS cart_items (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  seller_id TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  price_core REAL NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  variant_id TEXT,
+  variant_name TEXT,
+  attributes_json TEXT,
+  product_type TEXT DEFAULT 'digital',
+  weight_grams INTEGER DEFAULT 0,
+  cover_url TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, product_id, variant_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_addresses (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  recipient_name TEXT NOT NULL,
+  phone_number TEXT NOT NULL,
+  province_city TEXT NOT NULL,
+  district TEXT NOT NULL,
+  ward TEXT NOT NULL,
+  detail_address TEXT NOT NULL,
+  full_address TEXT NOT NULL,
+  address_type TEXT DEFAULT 'HOME',
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

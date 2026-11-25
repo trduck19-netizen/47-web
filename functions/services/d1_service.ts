@@ -3598,6 +3598,62 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Migration deleted_records_history_v1 error]', err?.message);
   }
 
+  // 14. Migration 0034: Cart Items & User Addresses (Customer Experience APIs)
+  try {
+    const cCheck = await db.prepare("SELECT 1 FROM schema_migrations WHERE id = '0034_cart_and_user_addresses_v1' LIMIT 1").first().catch(() => null);
+    if (!cCheck) {
+      // 1. Bảng giỏ hàng người dùng (Cart Sync API)
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS cart_items (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          product_id TEXT NOT NULL,
+          seller_id TEXT NOT NULL,
+          product_name TEXT NOT NULL,
+          price_core REAL NOT NULL,
+          quantity INTEGER NOT NULL DEFAULT 1,
+          variant_id TEXT,
+          variant_name TEXT,
+          attributes_json TEXT,
+          product_type TEXT DEFAULT 'digital',
+          weight_grams INTEGER DEFAULT 0,
+          cover_url TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(user_id, product_id, variant_id)
+        );
+      `).run().catch(() => {});
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_cart_items_user ON cart_items(user_id, updated_at);').run().catch(() => {});
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_cart_items_seller ON cart_items(seller_id);').run().catch(() => {});
+
+      // 2. Bảng sổ địa chỉ giao hàng (Address Book API)
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS user_addresses (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          recipient_name TEXT NOT NULL,
+          phone_number TEXT NOT NULL,
+          province_city TEXT NOT NULL,
+          district TEXT NOT NULL,
+          ward TEXT NOT NULL,
+          detail_address TEXT NOT NULL,
+          full_address TEXT NOT NULL,
+          address_type TEXT DEFAULT 'HOME',
+          is_default INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `).run().catch(() => {});
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_user_addresses_user ON user_addresses(user_id, is_default);').run().catch(() => {});
+
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0034_cart_and_user_addresses_v1');").run().catch(() => {});
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0034_cart_and_user_addresses_v1 error]', err?.message);
+  }
+
   schemaUpgradesDone = true;
   })();
 

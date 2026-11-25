@@ -7,6 +7,48 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-25]
 
+### 460. Triển Khai Bộ 3 API Trải Nghiệm Khách Hàng (Nhóm 2): Cart Sync D1, Address Book & Public Product Reviews (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Dựa trên phê duyệt kế hoạch triển khai Bộ 3 API Trải Nghiệm Khách Hàng (`ke_hoach_trien_khai_api_trai_nghiem_khach_hang_25_11.md`).
+  - Nâng cấp 3 phân hệ cốt lõi: Giỏ hàng đồng bộ đa thiết bị (C1), Sổ địa chỉ nhận hàng D1 (C2), và Hệ thống đánh giá sản phẩm công khai (C4).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Backend CSDL D1 & Migration 0034*:
+     - Bổ sung Migration `0034_cart_and_user_addresses_v1` vào `functions/services/d1_service.ts` và `schema.sql`.
+     - Tạo bảng `cart_items` (quản lý giỏ hàng đa thiết bị, lưu `user_id, product_id, seller_id, quantity, variant_id, attributes_json`, kèm unique constraint và index).
+     - Tạo bảng `user_addresses` (quản lý sổ địa chỉ giao hàng, lưu họ tên, SĐT, tỉnh/quận/phường, địa chỉ chi tiết, loại địa chỉ, cờ mặc định `is_default`).
+  2. *Xây dựng Phân Hệ Cart Sync API (`/api/cart/*`)*:
+     - `functions/services/cart_service.ts`: Xây dựng đầy đủ các hàm xử lý dữ liệu giỏ hàng, tự động làm giàu thông tin gian hàng (Seller info) và gom nhóm theo Seller (`StoreCartGroup`).
+     - `GET /api/cart`: Lấy toàn bộ giỏ hàng của user đang đăng nhập.
+     - `POST /api/cart/sync`: Tự động gộp giỏ hàng từ `localStorage` của khách vãng lai vào tài khoản D1 ngay khi đăng nhập.
+     - `POST /api/cart/items`: Thêm sản phẩm vào giỏ hàng D1.
+     - `PUT /api/cart/items/[id]` & `DELETE /api/cart/items/[id]`: Cập nhật số lượng và xóa sản phẩm khỏi giỏ D1.
+     - `DELETE /api/cart`: Làm trống toàn bộ giỏ hàng sau khi đặt đơn thành công.
+  3. *Xây dựng Phân Hệ Address Book API (`/api/user/addresses/*`)*:
+     - `functions/services/address_service.ts`: Xây dựng CRUD sổ địa chỉ D1, chuẩn hóa địa chỉ đầy đủ `full_address`, xử lý thông minh cờ mặc định `is_default` (tự động đặt địa chỉ đầu tiên làm mặc định, tự động chuyển mặc định sang địa chỉ kế tiếp khi xóa).
+     - `GET /api/user/addresses`: Lấy danh sách địa chỉ đã lưu của user.
+     - `POST /api/user/addresses`: Thêm địa chỉ mới.
+     - `PUT /api/user/addresses/[id]`: Cập nhật địa chỉ.
+     - `DELETE /api/user/addresses/[id]`: Xóa địa chỉ.
+     - `POST /api/user/addresses/[id]/default`: Đặt làm địa chỉ mặc định.
+  4. *Xây dựng Phân Hệ Public & Admin Product Reviews API*:
+     - `GET /api/products/[id]/reviews`: Public route xem thống kê điểm sao trung bình, phân bổ 1-5★, danh sách đánh giá đã duyệt, kèm cờ `canReview`, `hasPurchased`, `hasReviewed`.
+     - `POST /api/products/[id]/reviews`: Gửi đánh giá sản phẩm (xác thực điều kiện chỉ tài khoản đã mua đơn hàng thành công `PAID / COMPLETED` mới được đánh giá, chặn đánh giá lặp lại).
+     - `GET /api/admin/reviews`: Quản trị viên tra cứu toàn bộ đánh giá (lọc theo `status`).
+     - `POST /api/admin/reviews/[id]/approve`: Admin duyệt đánh giá.
+     - `POST /api/admin/reviews/[id]/reject`: Admin từ chối đánh giá.
+     - `DELETE /api/admin/reviews/[id]`: Admin xóa vĩnh viễn đánh giá.
+  5. *Nâng cấp Frontend & Quản Lý State*:
+     - `cartService.ts`: Thêm hàm `syncWithServer()` đồng bộ 2 chiều với CSDL D1, nâng cấp các hàm `addToCart`, `updateQuantity`, `removeFromCart`, `clearCart` tự động bắn API nền khi đã đăng nhập.
+     - `CartDrawerModal.tsx`: Tự động gọi `cartService.syncWithServer()` khi mở giỏ hàng, bổ sung nút tăng/giảm số lượng (`-` / `+`) mượt mà cho từng món hàng.
+     - `ProductCheckoutModal.tsx`: Tích hợp sổ địa chỉ nhận hàng `Address Book Picker` chọn 1-chạm khi mua hàng vật lý.
+     - `ProductDetailModal.tsx`: Tích hợp component `ProductReviewsSection` kết nối trực tiếp với backend D1.
+     - `locales/vi.json` & `locales/en.json`: Khai báo đối xứng 100% các từ khóa song ngữ cho sổ địa chỉ (`addressBook`).
+- **Kiểm chứng thực tế & Kết quả**:
+  - `npm run check:i18n`: 19/19 files PASS (0 chuỗi tiếng Việt ghi cứng).
+  - `TypeScript Type-check (tsc)`: Pass 100%.
+  - `Lean Guard Pre & Post`: 9/9 checks PASS (Kích thước Edge Worker bundle 6.35 MB <= 10 MB).
+  - `Vite build`: Thành công 100% trong 11.34s.
+
 ### 459. Sửa Gộp 5 Bất Thường Admin Console v4.0 & Gia Cố Chốt Chặn An Toàn Nút Ví (25/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Dựa trên Báo Cáo Kiểm Tra Toàn Bộ Nút Bấm Trang Quản Trị (Admin Console v4.0) ngày 25/11/2026 và phê duyệt của người dùng kèm 3 sửa đổi bắt buộc (Sửa 1 Crawler, Sửa 2 SePay, Sửa 3 Tiện Ích).

@@ -32,6 +32,7 @@ import {
   ChevronRight,
   ExternalLink,
 } from 'lucide-react';
+import { addressService, type UserAddress } from '../services/addressService';
 import confetti from 'canvas-confetti';
 import QRCode from 'qrcode';
 import { CyberLoader } from './CyberLoader';
@@ -180,6 +181,24 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   });
 
   const [shippingNote, setShippingNote] = useState<string>('');
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
+  const [showAddressPicker, setShowAddressPicker] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (currentUser && isPhysical) {
+      addressService.getAddresses().then((addrs) => {
+        setSavedAddresses(addrs);
+        if (addrs.length > 0 && !shippingAddress) {
+          const def = addrs.find((a) => a.is_default === 1) || addrs[0];
+          if (def) {
+            setShippingName(def.recipient_name);
+            setShippingPhone(def.phone_number);
+            setShippingAddress(def.full_address || def.detail_address);
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [currentUser, isPhysical]);
 
   // --- TÍNH NĂNG VẬN CHUYỂN & VOUCHER SHOPEE ĐA TẦNG ---
   const [selectedCarrier, setSelectedCarrier] = useState<CarrierCode>(() => {
@@ -1775,10 +1794,73 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         {t.checkout?.shippingSectionTitle || 'Thông Tin Nhận Hàng Toàn Quốc'}
                       </span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                      {isEn ? '🚚 Courier Delivery' : '🚚 Giao Tận Nơi'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {currentUser && savedAddresses.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddressPicker(!showAddressPicker)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold border border-primary/20 transition-all cursor-pointer"
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>{isEn ? `Address Book (${savedAddresses.length})` : `Sổ Địa Chỉ (${savedAddresses.length})`}</span>
+                        </button>
+                      )}
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        {isEn ? '🚚 Courier Delivery' : '🚚 Giao Tận Nơi'}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Sổ Địa Chỉ Dropdown Picker */}
+                  {showAddressPicker && savedAddresses.length > 0 && (
+                    <div className="p-3 rounded-xl bg-muted/70 border border-border space-y-2 animate-in fade-in">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-primary" />
+                          {isEn ? 'Select a saved shipping address:' : 'Chọn địa chỉ nhận hàng đã lưu:'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddressPicker(false)}
+                          className="text-[10px] text-muted-foreground hover:text-foreground"
+                        >
+                          {isEn ? 'Close' : 'Đóng'}
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+                        {savedAddresses.map((addr) => (
+                          <div
+                            key={addr.id}
+                            onClick={() => {
+                              setShippingName(addr.recipient_name);
+                              setShippingPhone(addr.phone_number);
+                              setShippingAddress(addr.full_address || addr.detail_address);
+                              setShowAddressPicker(false);
+                            }}
+                            className="p-2 rounded-lg bg-card hover:bg-primary/5 border border-border/80 hover:border-primary/40 flex items-center justify-between gap-2 cursor-pointer transition-all"
+                          >
+                            <div className="min-w-0 truncate text-left">
+                              <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                <span>{addr.recipient_name}</span>
+                                <span className="font-mono text-[11px] text-muted-foreground font-normal">({addr.phone_number})</span>
+                                {addr.is_default === 1 && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
+                                    {isEn ? 'Default' : 'Mặc định'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground truncate" title={addr.full_address || addr.detail_address}>
+                                {addr.full_address || addr.detail_address}
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold text-primary shrink-0">
+                              {isEn ? 'Select' : 'Chọn'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>

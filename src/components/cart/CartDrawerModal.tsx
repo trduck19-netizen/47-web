@@ -75,10 +75,13 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
 
   useEffect(() => {
     syncCartState();
+    if (isOpen && currentUser) {
+      cartService.syncWithServer().then(() => syncCartState()).catch(() => {});
+    }
     const handleCartUpdated = () => syncCartState();
     window.addEventListener('pine_cart_updated', handleCartUpdated);
     return () => window.removeEventListener('pine_cart_updated', handleCartUpdated);
-  }, [isOpen]);
+  }, [isOpen, currentUser]);
 
   // Gợi ý mua kèm hàng số cùng gian hàng khi giỏ có hàng vật lý (§4)
   const [crossSellMap, setCrossSellMap] = useState<Record<string, any[]>>({});
@@ -861,14 +864,46 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                               </div>
                             </div>
 
-                            <button
-                              onClick={() => handleRemoveItem(item.productId, item.variantId)}
-                              className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
-                              title="Xóa sản phẩm này"
-                              aria-label="Xóa"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center bg-muted/60 rounded-lg p-0.5 border border-border">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newQty = (item.quantity || 1) - 1;
+                                    cartService.updateQuantity(item.productId, newQty, item.variantId);
+                                    syncCartState();
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-card text-muted-foreground hover:text-foreground text-xs font-bold"
+                                  title="Giảm số lượng"
+                                >
+                                  -
+                                </button>
+                                <span className="w-5 text-center text-xs font-bold text-foreground">
+                                  {item.quantity || 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newQty = (item.quantity || 1) + 1;
+                                    cartService.updateQuantity(item.productId, newQty, item.variantId);
+                                    syncCartState();
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-card text-muted-foreground hover:text-foreground text-xs font-bold"
+                                  title="Tăng số lượng"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              <button
+                                onClick={() => handleRemoveItem(item.productId, item.variantId)}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                                title="Xóa sản phẩm này"
+                                aria-label="Xóa"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

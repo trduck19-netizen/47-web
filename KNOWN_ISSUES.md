@@ -10,6 +10,20 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-321: Bẫy Giỏ Hàng & Sổ Địa Chỉ Chỉ Lưu Trình Duyệt Cục Bộ (LocalStorage Isolation) Khi Khách Đổi Thiết Bị & Khuyết Tuyến Route Public Cho Đánh Giá Sản Phẩm D1
+- **Triệu chứng & Rủi ro**:
+  - Khách hàng thêm sản phẩm vào giỏ hoặc nhập địa chỉ giao hàng trên điện thoại, khi chuyển sang máy tính hoặc đổi trình duyệt thì giỏ hàng trống trơn và phải nhập lại toàn bộ địa chỉ.
+  - Bảng D1 `product_reviews` và service `review_service.ts` đã viết sẵn từ trước nhưng thiếu các route API public `/api/products/[id]/reviews` và admin `/api/admin/reviews`, khiến giao diện Web Khách gọi API bị 404.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  1. `cartService.ts` và form thanh toán chỉ đọc/ghi trực tiếp vào `localStorage` (`pine_marketplace_cart_v1`, `pine_shipping_info`), chưa có cơ chế đồng bộ lên CSDL D1.
+  2. Chưa khai báo các Pages Function route file tương ứng trong `functions/api/` để đón nhận request từ client.
+- **Cạm bẫy đã thất bại (Failed Attempts)**:
+  - Chỉ lưu giỏ hàng trên D1 mà không lưu fallback ở localStorage: Làm gián đoạn trải nghiệm của khách vãng lai khi chưa đăng nhập.
+- **Giải pháp chuẩn đã kiểm chứng (25/11/2026 - Mục 460)**:
+  - Áp dụng kiến trúc Hybrid Offline-First / Cloud-Synced: Giỏ hàng lưu trữ đồng thời ở cả localStorage và CSDL D1 (`cart_items`). Khi khách đăng nhập, tự động kích hoạt `/api/cart/sync` gộp toàn bộ sản phẩm khách đã chọn vào tài khoản D1.
+  - Bổ sung bảng D1 `user_addresses` và phân hệ API CRUD sổ địa chỉ hoàn chỉnh. Tích hợp picker chọn địa chỉ 1-chạm vào modal thanh toán.
+  - Mở toàn bộ 5 route API cho Đánh Giá Sản Phẩm (`functions/api/products/[id]/reviews/` và `functions/api/admin/reviews/`), kết nối với `review_service.ts` và bảo vệ bằng điều kiện đã mua hàng thành công.
+
 ### ISSUE-320: Bẫy Ghi Cứng Số Liệu Catalog/Pending Codes Trong Kiểm Tra Toàn Vẹn Tầng Dữ Liệu & Nhầm Lẫn Substring Automation
 - **Triệu chứng & Rủi ro**:
   - Trang Crawler (`#/crawler`) liên tục báo động đỏ `🚨 LỆCH TẦNG DỮ LIỆU` dù hệ thống và kết nối hoàn toàn khỏe mạnh.
