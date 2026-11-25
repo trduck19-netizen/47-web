@@ -77,6 +77,7 @@ async function readSystemSettingJson(db: D1Database, key: string): Promise<any> 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const reqStart = Date.now();
   const { request, env } = context;
+  const colo = String((request as any).cf?.colo || 'unknown');
 
   try {
     if (!env.DB) {
@@ -86,20 +87,34 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
+    const authStart = Date.now();
     const authCheck = await verifyAdminAuth(request, env as any, 'AUTOMATION_CENTER_FULL');
+    const authMs = Date.now() - authStart;
     if (!authCheck.authorized) {
+      const totalMs = Date.now() - reqStart;
       return new Response(
         JSON.stringify({ success: false, message: authCheck.error || 'Yêu cầu quyền quản trị Automation Center.' }),
-        { status: 401, headers: CORS_HEADERS }
+        {
+          status: 401,
+          headers: {
+            ...CORS_HEADERS,
+            'X-Timing-D1-Ms': String(authMs),
+            'X-Timing-Total-Ms': String(totalMs),
+            'Server-Timing': `auth;dur=${authMs},d1_total;dur=${authMs},total;dur=${totalMs};desc="colo=${colo}"`,
+          },
+        }
       );
     }
 
+    const schemaStart = Date.now();
     await ensureSchemaUpgrades(env.DB);
+    const schemaMs = Date.now() - schemaStart;
 
     // 1. Kiểm tra D1 & KV Storage Engine
     let d1Latency = 0;
     let d1TablesCount = 0;
     let d1Healthy = false;
+    const probeStart = Date.now();
     try {
       const t0 = Date.now();
       await env.DB.prepare('SELECT 1').first();
@@ -110,7 +125,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     } catch {
       d1Healthy = false;
     }
+    const probeMs = Date.now() - probeStart;
 
+    const settingsStart = Date.now();
     // 2. Kiểm tra SePay Gateway (đọc đúng từ system_settings key 'wcg_admin_sepay_v4')
     const sepayConfig = await readSystemSettingJson(env.DB, 'wcg_admin_sepay_v4');
     const sepayKey = String(sepayConfig?.apiKey || sepayConfig?.api_key || env.SEPAY_API_KEY || '').trim();
@@ -155,6 +172,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         automationToggles = { ...automationToggles, ...JSON.parse(toggleRow.value_json) };
       }
     } catch {}
+    const settingsMs = Date.now() - settingsStart;
+    const d1TotalMs = authMs + schemaMs + probeMs + settingsMs;
 
     const services = [
       {
@@ -269,8 +288,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         status: 200,
         headers: {
           ...CORS_HEADERS,
-          'X-Timing-D1-Ms': String(d1Latency),
+          'X-Timing-D1-Ms': String(d1TotalMs),
           'X-Timing-Total-Ms': String(Date.now() - reqStart),
+          'Server-Timing': `auth;dur=${authMs},schema;dur=${schemaMs},probe;dur=${probeMs},settings;dur=${settingsMs},d1_total;dur=${d1TotalMs},total;dur=${Date.now() - reqStart};desc="colo=${colo}"`,
         },
       }
     );

@@ -33,6 +33,7 @@ export const onRequestOptions: PagesFunction = async () => {
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const reqStart = Date.now();
   const { env, request } = context;
+  const colo = String((request as any).cf?.colo || 'unknown');
   const url = new URL(request.url);
 
   const isNoCache = request.headers.get('Cache-Control')?.includes('no-cache') ||
@@ -48,6 +49,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   // 1. In-Memory Isolate Cache (< 5ms)
   if (!isNoCache && globalScope.__wcg_sync_lite_cache) {
     if (nowMs - globalScope.__wcg_sync_lite_cache.cachedAt < 60000) {
+      const totalMs = Date.now() - reqStart;
       return new Response(globalScope.__wcg_sync_lite_cache.bodyStr, {
         headers: {
           ...CORS_HEADERS,
@@ -55,6 +57,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           'X-Server-Time': new Date().toISOString(),
           'X-Cache-Status': 'HIT-ISOLATE',
           'cf-cache-status': 'HIT',
+          'X-Timing-D1-Ms': '0',
+          'X-Timing-Total-Ms': String(totalMs),
+          'Server-Timing': `d1_total;dur=0,total;dur=${totalMs};desc="colo=${colo}"`,
         },
       });
     }
@@ -75,39 +80,52 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     let tombstonesMap = new Map();
     let spList: any[] = [];
     let d1DurationMs = 0;
+    let tombstonesMs = 0;
+    let settingsMs = 0;
+    let productsMs = 0;
 
     if (env.DB) {
       const d1Start = Date.now();
+      const timed = async <T>(fn: () => Promise<T>): Promise<{ val: T; ms: number }> => {
+        const t0 = Date.now();
+        const val = await fn();
+        return { val, ms: Date.now() - t0 };
+      };
       const [tombstonesRes, settingsRes, storeProdsRes] = await Promise.all([
-        getActiveTombstonesMap(env.DB),
-        getMultipleSettingsD1(
-          env.DB,
-          [
-            'wcg_admin_games_v5',
-            'wcg_admin_games_v4',
-            'wcg_admin_upcoming_games_v1',
-            'wcg_game_events_v1',
-            'wcg_deleted_game_events_v1',
-            'wcg_admin_giveaways_v4',
-            'wcg_deleted_giveaways',
-            'wcg_news_articles_v1',
-            'wcg_deleted_news_articles_v1',
-            'wcg_admin_content_v4',
-            'wcg_marketing_config_v1',
-            'wcg_growth_config_v1',
-            'wcg_admin_store_products_v4',
-            'wcg_admin_store_categories_v4',
-            'wcg_admin_store_categories_v1',
-            'wcg_deleted_store_products',
-          ],
-          new Set(['wcg_news_articles_v1', 'wcg_admin_upcoming_games_v1', 'wcg_marketing_config_v1', 'wcg_game_events_v1'])
+        timed(() => getActiveTombstonesMap(env.DB)),
+        timed(() =>
+          getMultipleSettingsD1(
+            env.DB,
+            [
+              'wcg_admin_games_v5',
+              'wcg_admin_games_v4',
+              'wcg_admin_upcoming_games_v1',
+              'wcg_game_events_v1',
+              'wcg_deleted_game_events_v1',
+              'wcg_admin_giveaways_v4',
+              'wcg_deleted_giveaways',
+              'wcg_news_articles_v1',
+              'wcg_deleted_news_articles_v1',
+              'wcg_admin_content_v4',
+              'wcg_marketing_config_v1',
+              'wcg_growth_config_v1',
+              'wcg_admin_store_products_v4',
+              'wcg_admin_store_categories_v4',
+              'wcg_admin_store_categories_v1',
+              'wcg_deleted_store_products',
+            ],
+            new Set(['wcg_news_articles_v1', 'wcg_admin_upcoming_games_v1', 'wcg_marketing_config_v1', 'wcg_game_events_v1'])
+          )
         ),
-        loadAllStoreProductsD1(env.DB),
+        timed(() => loadAllStoreProductsD1(env.DB)),
       ]);
       d1DurationMs = Date.now() - d1Start;
-      tombstonesMap = tombstonesRes || new Map();
-      d1Settings = settingsRes || {};
-      spList = storeProdsRes || [];
+      tombstonesMs = tombstonesRes.ms;
+      settingsMs = settingsRes.ms;
+      productsMs = storeProdsRes.ms;
+      tombstonesMap = tombstonesRes.val || new Map();
+      d1Settings = settingsRes.val || {};
+      spList = storeProdsRes.val || [];
     }
 
     // 1. Games (Essential fields only: slug, name, icon, publisher, category, codes_count, rating, flags)
@@ -347,6 +365,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       };
     }
 
+    const totalMs = Date.now() - reqStart;
     const response = new Response(bodyStr, {
       headers: {
         ...CORS_HEADERS,
@@ -357,7 +376,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         'X-Server-Time': new Date().toISOString(),
         'X-Cache-Status': isNoCache ? 'BYPASS' : 'DYNAMIC',
         'X-Timing-D1-Ms': String(d1DurationMs),
-        'X-Timing-Total-Ms': String(Date.now() - reqStart),
+        'X-Timing-Total-Ms': String(totalMs),
+        'Server-Timing': `tombstones;dur=${tombstonesMs},settings;dur=${settingsMs},products;dur=${productsMs},d1_total;dur=${d1DurationMs},total;dur=${totalMs};desc="colo=${colo}"`,
       },
     });
 

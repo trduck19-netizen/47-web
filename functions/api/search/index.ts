@@ -20,7 +20,9 @@ export const onRequestOptions: PagesFunction = async () => {
  * GET /api/search: Tìm kiếm và lọc đa tầng trên CSDL D1 (Sản phẩm & Game)
  */
 export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const reqStart = Date.now();
   const { request, env } = context;
+  const colo = String((request as any).cf?.colo || 'unknown');
 
   try {
     if (!env.DB) {
@@ -30,7 +32,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       });
     }
 
+    const schemaStart = Date.now();
     await ensureSchemaUpgrades(env.DB);
+    const schemaMs = Date.now() - schemaStart;
 
     const url = new URL(request.url);
     const q = url.searchParams.get('q') || '';
@@ -60,11 +64,20 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       limit,
     };
 
+    const searchStart = Date.now();
     const searchData = await searchUnified(env.DB, params);
+    const searchMs = Date.now() - searchStart;
+    const d1TotalMs = schemaMs + searchMs;
+    const totalMs = Date.now() - reqStart;
 
     return new Response(JSON.stringify(searchData), {
       status: 200,
-      headers: CORS_HEADERS,
+      headers: {
+        ...CORS_HEADERS,
+        'X-Timing-D1-Ms': String(d1TotalMs),
+        'X-Timing-Total-Ms': String(totalMs),
+        'Server-Timing': `schema;dur=${schemaMs},search_queries;dur=${searchMs},d1_total;dur=${d1TotalMs},total;dur=${totalMs};desc="colo=${colo}"`,
+      },
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, message: err?.message || 'Lỗi xử lý tìm kiếm.' }), {
