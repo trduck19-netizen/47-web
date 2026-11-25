@@ -221,11 +221,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     };
   }, [selectedPackage?.id, product?.id]);
 
-  const realStock = liveStock !== null
-    ? liveStock
-    : (typeof selectedPackage?.stock_quantity === 'number'
-        ? selectedPackage.stock_quantity
-        : (product?.stock_quantity ?? 0));
+  const realStock = typeof selectedPackage?.stock_quantity === 'number'
+    ? selectedPackage.stock_quantity
+    : (liveStock !== null ? liveStock : (product?.stock_quantity ?? 0));
 
   useEffect(() => {
     if (realStock <= 0) {
