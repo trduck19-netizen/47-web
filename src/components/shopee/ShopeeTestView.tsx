@@ -9,10 +9,11 @@ import {
   ShoppingBag, Package, User, Tag, Plus, CheckCircle, CheckCircle2, ExternalLink,
   Layers, Clock, PhoneCall, Send, ShieldAlert, Sparkle, Rocket,
   Calendar, Newspaper, Store, List, FileText, Globe, Award, ArrowUpDown, SlidersHorizontal,
-  Filter, X, Bookmark, ChevronDown, Wallet, Settings, LogOut, Lock
+  Filter, X, Bookmark, ChevronDown, Wallet, Settings, LogOut, Lock, Heart
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { cartService } from '../../services/cartService';
+import { wishlistService } from '../../services/wishlistService';
 import { dataService } from '../../services/dataService';
 import { authService } from '../../services/authService';
 import { newsService } from '../../services/newsService';
@@ -71,6 +72,7 @@ interface ShopeeTestViewProps {
   onOpenAuth: () => void;
   onOpenWallet: () => void;
   onOpenCart?: () => void;
+  onOpenWishlist?: () => void;
   onOpenGrowth?: () => void;
   onOpenUpcoming?: () => void;
   onOpenDownloadApp?: () => void;
@@ -195,6 +197,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   onOpenAuth,
   onOpenWallet,
   onOpenCart,
+  onOpenWishlist,
   onOpenGrowth,
   onOpenUpcoming,
   onOpenDownloadApp,
@@ -451,6 +454,55 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     }
   });
 
+  // Wishlist badge count
+  const [wishlistCount, setWishlistCount] = useState<number>(() => {
+    try {
+      return wishlistService.getCount();
+    } catch {
+      return 0;
+    }
+  });
+
+  // Server-side live autocomplete search state
+  const [liveSearchResults, setLiveSearchResults] = useState<{ products: any[]; games: any[] }>({ products: [], games: [] });
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const q = (searchKeyword || '').trim();
+    if (!q || q.length < 2) {
+      setLiveSearchResults({ products: [], games: [] });
+      setIsSearchDropdownOpen(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&type=all&limit=6`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && data.results) {
+            setLiveSearchResults(data.results);
+            const total = (data.results.products?.length || 0) + (data.results.games?.length || 0);
+            setIsSearchDropdownOpen(total > 0);
+          }
+        }
+      } catch {}
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchDropdownRef.current && !searchDropdownRef.current.contains(e.target as Node)) {
+        setIsSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Dynamic counts for news, events, and upcoming (đồng bộ thời gian thực từ live API)
   const [newsCount, setNewsCount] = useState<number>(277);
 
@@ -519,7 +571,18 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       }
     };
     window.addEventListener('pine_cart_updated', handleCartUpdated);
-    return () => window.removeEventListener('pine_cart_updated', handleCartUpdated);
+    const handleWishlistUpdated = (e: any) => {
+      if (e?.detail?.count !== undefined) {
+        setWishlistCount(e.detail.count);
+      } else {
+        setWishlistCount(wishlistService.getCount());
+      }
+    };
+    window.addEventListener('pine_wishlist_updated', handleWishlistUpdated);
+    return () => {
+      window.removeEventListener('pine_cart_updated', handleCartUpdated);
+      window.removeEventListener('pine_wishlist_updated', handleWishlistUpdated);
+    };
   }, []);
 
   // Countdown timer for Flash Sale (Khung giờ kết thúc cố định: cuối ngày 23:59:59 của ngày hiện tại - đếm xuống đơn điệu)
@@ -2464,33 +2527,92 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           </div>
 
           {/* Khung Tìm Kiếm Phong Cách Shopee (Lọc Đồng Bộ Game + Flash Sale + Hàng Hóa) */}
-          <div className="flex-1 max-w-2xl">
+          <div ref={searchDropdownRef} className="flex-1 max-w-2xl relative">
             <div className="bg-white rounded-lg p-1 flex items-center shadow-md">
               <input 
                 type="text" 
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
+                onFocus={() => {
+                  const total = (liveSearchResults.products?.length || 0) + (liveSearchResults.games?.length || 0);
+                  if (total > 0) setIsSearchDropdownOpen(true);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
+                    setIsSearchDropdownOpen(false);
                     handleHeroSearchSubmit();
                   }
                 }}
                 placeholder={t.mall?.search?.placeholder || (language === 'en' ? 'Search games, giftcodes, accounts, VIP utilities...' : 'Tìm tựa game, thẻ nạp, gói code, tiện ích VIP...')} 
-                className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
+                className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white text-slate-900 placeholder:text-slate-400 font-medium focus:outline-none"
               />
               {searchKeyword && (
-                <button onClick={() => setSearchKeyword('')} className="px-2 text-slate-400 hover:text-slate-600 text-xs">
+                <button onClick={() => { setSearchKeyword(''); setIsSearchDropdownOpen(false); }} className="px-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
                   ✕
                 </button>
               )}
               <button 
-                onClick={() => handleHeroSearchSubmit()}
+                onClick={() => { setIsSearchDropdownOpen(false); handleHeroSearchSubmit(); }}
                 className={`${currentAccent.buttonBg} hover:opacity-90 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded transition flex items-center justify-center flex-shrink-0 cursor-pointer`}
               >
                 <Search className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Server-side Autocomplete Live Dropdown */}
+            {isSearchDropdownOpen && ((liveSearchResults.products?.length || 0) + (liveSearchResults.games?.length || 0)) > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 overflow-hidden divide-y divide-slate-100 max-h-80 overflow-y-auto">
+                {liveSearchResults.products.length > 0 && (
+                  <div className="p-2">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1">{language === 'en' ? 'Products' : 'Sản phẩm nổi bật'}</div>
+                    {liveSearchResults.products.map((prod) => (
+                      <div
+                        key={prod.id}
+                        onClick={() => {
+                          setIsSearchDropdownOpen(false);
+                          if (onSelectProduct) onSelectProduct(prod as any);
+                          else onShowToast(`Sản phẩm: ${prod.title}`, 'info');
+                        }}
+                        className="flex items-center gap-2.5 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
+                      >
+                        <div className="w-8 h-8 rounded bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                          {prod.coverUrl ? <img src={prod.coverUrl} alt={prod.title} className="w-full h-full object-cover" /> : <ShoppingBag className="w-4 h-4 text-slate-400" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-slate-900 truncate">{prod.title}</div>
+                          <div className="text-[11px] font-bold text-[#ee4d2d]">{formatCore(prod.priceCore)}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {liveSearchResults.games.length > 0 && (
+                  <div className="p-2">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1">{language === 'en' ? 'Games & Giftcodes' : 'Game & Giftcode'}</div>
+                    {liveSearchResults.games.map((g) => (
+                      <div
+                        key={g.id}
+                        onClick={() => {
+                          setIsSearchDropdownOpen(false);
+                          if (onSelectGameSlug) onSelectGameSlug(g.slug || g.gameSlug || g.id);
+                          else if (onSelectGame) onSelectGame({ id: g.id, name: g.title, slug: g.slug || g.gameSlug || g.id, icon_url: g.coverUrl || '', codes_count: 0, is_hot: false, categories: [] });
+                        }}
+                        className="flex items-center gap-2.5 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
+                      >
+                        <div className="w-8 h-8 rounded bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                          {g.coverUrl ? <img src={g.coverUrl} alt={g.title} className="w-full h-full object-cover" /> : <span>🎮</span>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-slate-900 truncate">{g.title}</div>
+                          <div className="text-[10px] text-slate-500">{language === 'en' ? 'Game / Codes' : 'Tra cứu mã quà'}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Từ khóa gợi ý song ngữ VI/EN */}
             <div className="hidden sm:flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-white/80 mt-1.5">
@@ -2542,6 +2664,24 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Danh Sách Yêu Thích (Wishlist Realtime Counter) */}
+          {onOpenWishlist && (
+            <div
+              onClick={onOpenWishlist}
+              className="relative cursor-pointer group flex-shrink-0 pr-1"
+              title={language === 'en' ? 'Saved Wishlist' : 'Danh sách yêu thích'}
+            >
+              <div className="relative p-1.5 sm:p-2">
+                <Heart className={`w-7 h-7 sm:w-8 sm:h-8 text-white group-hover:scale-105 transition ${wishlistCount > 0 ? 'fill-rose-300' : ''}`} />
+                {wishlistCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-rose-500 text-white font-bold text-[10px] sm:text-[11px] px-1.5 py-0.2 rounded-full border border-white shadow">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Giỏ Hàng Shopee (Realtime Live Counter) */}
           <div onClick={onOpenCart} className="relative cursor-pointer group flex-shrink-0 pr-1">

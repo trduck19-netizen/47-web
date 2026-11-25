@@ -2243,6 +2243,7 @@ export const App: React.FC = () => {
                 onOpenAuth={() => setIsAuthModalOpen(true)}
                 onOpenWallet={() => setIsWalletModalOpen(true)}
                 onOpenCart={() => setIsCartOpen(true)}
+                onOpenWishlist={() => setIsWishlistOpen(true)}
                 onOpenGrowth={() => {
                   setGrowthInitialTab('wheel');
                   setIsGrowthCenterOpen(true);
