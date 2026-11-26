@@ -7,6 +7,9 @@
     "dev": "vite",
     "check:i18n": "node scripts/check-hardcoded-i18n.cjs",
     "check:lean": "node scripts/check-lean-budgets.cjs",
+    "test:icons": "tsx scripts/tests/test_icon_and_products_fixes.ts",
+    "test:products": "tsx scripts/tests/test_products_primary_select.ts",
+    "test": "npm run test:icons && npm run test:products",
     "build": "node scripts/build.cjs",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=universal-mall-shop --branch=main",
@@ -42,6 +45,7 @@
     "postcss": "^8.4.47",
     "sharp": "^0.35.5",
     "tailwindcss": "^3.4.14",
+    "tsx": "^4.23.15",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "wrangler": "^4.141.0"

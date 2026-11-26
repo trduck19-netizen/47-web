@@ -137,9 +137,15 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, tác nh�
 - **2. Chốt Chặn 2: Cấm Copy Số Cũ & Trích Xuất Số Liệu Tự Động (Zero-Manual-Copy Numbers)**:
   - **TUYỆT ĐỐI CẤM** gõ tay hoặc sao chép con số đo lường (mili-giây, số test pass, số line diff, số khóa API, số lỗi i18n) từ báo cáo hoặc CHANGELOG của các đợt trước.
   - Mọi con số đưa vào CHANGELOG, KNOWN_ISSUES và Báo cáo **BẮT BUỘC** phải được trích xuất bằng lệnh/script trực tiếp từ tệp log hoặc dữ liệu thực tế vừa sinh ra ở đợt hiện tại.
-- **3. Chốt Chặn 3: Xuất Log Thô Trực Tiếp Bằng Redirect Pipe (Direct Raw Output Pipe Only)**:
+- **3. Chốt Chặn 3: Xuất Log Thô Trực Tiếp Bằng Redirect Pipe & Lưu Bằng Chứng Trong Repo (Direct Raw Output Pipe & Mandatory In-Repo Evidence)**:
   - **TUYỆT ĐỐI CẤM** tự viết script sinh nội dung tóm tắt để thay thế file log gốc.
-  - Mọi lệnh kiểm tra kiểu (tsc), kiểm thử (test suite) hay build **BẮT BUỘC** phải pipe trực tiếp luồng output thô của tool vào file log (ví dụ: `cmd /c npx tsc -p tsconfig.homepage.json --noEmit > docs/tsc_check_success.log 2>&1`). File `.log` thô này là bằng chứng bắt buộc phải tồn tại trong repo.
+  - Mọi lệnh kiểm tra kiểu (`tsc`), kiểm thử (`test suite`) hay build **BẮT BUỘC** phải pipe trực tiếp luồng output thô của tool vào file log ổn định trong repo:
+    - Kiểm tra kiểu TypeScript: dùng **một tên file duy nhất `docs/tsc_full_check.log`** cho mọi lượt, gồm 2 mục có ghi lệnh chạy, thời gian UTC và `exit=`: (1) `npx tsc -p tsconfig.homepage.json --noEmit --listFiles` (bắt buộc kèm `--listFiles` để tránh file 0 byte khi pass) và (2) `npx tsc -p tsconfig.json --noEmit` (giữ nguyên output lỗi thô + đối chiếu số lỗi per-file với baseline).
+    - Kiểm tra build: cập nhật `docs/build_success.log` bằng output thô của `npm run build` kèm `X-Build-Id` khớp môi trường live.
+  - **QUY TẮC BẮT BUỘC VỀ BẰNG CHỨNG (ZERO LOCAL-ONLY / SCRATCH EVIDENCE)**:
+    - Mọi file log `tsc`, file log build và file test được trích dẫn trong báo cáo **BẮT BUỘC phải nằm trong repo (đã commit lên Git)** tại đúng commit được trích dẫn; **TUYỆT ĐỐI KHÔNG** để trong `scratch/` hay bất kỳ đường dẫn local nào ngoài repo (`C:/...`, `/tmp`, thư mục chưa commit).
+    - Báo cáo phải trích dẫn rõ đường dẫn trong repo + commit SHA của từng file bằng chứng để bên kiểm chứng độc lập tải trực tiếp được qua `raw.githubusercontent.com` tại commit đó; mọi số liệu nêu trong báo cáo phải khớp nội dung file đã commit.
+    - Nếu một bằng chứng không thể đưa vào repo thì **BẮT BUỘC** bỏ tuyên bố tương ứng khỏi báo cáo và ghi rõ lý do trong mục `Blocked` — không được giữ số liệu không có bằng chứng đi kèm trong repo.
 - **4. Chốt Chặn 4: Kỷ Luật Ngôn Từ Chuẩn Xác & Giới Hạn Phạm Vi (Scoped Precision)**:
   - **TUYỆT ĐỐI CẤM** dùng các từ ngữ tuyệt đối hóa mang tính phóng đại ("100%", "sạch bóng", "0 chuỗi UI cứng", "hoàn tất hoàn toàn") nếu chỉ kiểm tra trên một tập con hoặc một nhóm toán tử nhất định.
   - Tác nhân **BẮT BUỘC** phải nêu rõ phạm vi khảo sát (Scoped Statement) và chỉ rõ các phần chưa khảo sát hoặc các vị trí literal còn tồn tại trong file.

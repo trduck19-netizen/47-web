@@ -10,6 +10,14 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-334: Bằng Chứng `tsc` / Test / Build Lưu Ở `scratch/` Ngoài Repo Hoặc File Log 0 Byte (26/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - `tsc --noEmit` khi pass xuất 0 byte (làm `docs/tsc_check_success.log` trống), còn file log full `tsc` và 2 file test được đặt trong thư mục `scratch/` ngoài Git (lặp 3 đợt `6b8c654`, `4f90677`, `4a6235b`), khiến bên kiểm chứng độc lập không thể tải qua `raw.githubusercontent.com` hoặc chạy lại test.
+- **Giải pháp chuẩn đã kiểm chứng (26/11/2026 - Mục 474)**:
+  - Đưa test thật vào `scripts/tests/` kèm `tsx` + `npm test` trong `package.json`.
+  - Dùng tên file duy nhất `docs/tsc_full_check.log` với `--listFiles` cho `tsconfig.homepage.json` và raw output đầy đủ cho `tsconfig.json` (kèm timestamp UTC + `exit=`).
+  - Cập nhật `docs/build_success.log` bằng output build khớp `X-Build-Id` live và khóa quy tắc bắt buộc trong `AGENTS.md` (Chốt Chặn 3).
+
 ### ISSUE-333: Bẫy Đầu Độc Cache 3 Tầng Cho `/game_icons/*` (SPA Fallback `200 text/html` + `_headers` `immutable` 1 Năm + `sw.js` Cache-First Không Kiểm `image/*`) (26/11/2026)
 - **Triệu chứng & Rủi ro**:
   - Khi một icon mới chưa tồn tại ở đợt deploy trước (như `/game_icons/physical-default.webp` trước `6b8c654`), `env.ASSETS.fetch` trong `functions/game_icons/[file].ts` trả SPA `index.html` với `HTTP 200` + `text/html`, lại bị `public/_headers` gắn `Cache-Control: public, max-age=31536000, immutable` và bị `public/sw.js` (`codegame-pwa-v8`) lưu vĩnh viễn vào Cache Storage vì chỉ check `status === 200`.
