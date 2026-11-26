@@ -1125,6 +1125,7 @@ export interface ReserveCreditParams {
 
 export interface ReserveCreditResult {
   ok: boolean;
+  alreadyReserved?: boolean;
   reason?: string;
   ledgerId?: string;
 }
@@ -1135,24 +1136,24 @@ export async function reserveSupplierCreditAtomic(
 ): Promise<ReserveCreditResult> {
   const cost = Number(params.costCore);
   const selling = Number(params.sellingCore);
+  const externalOrderRef = String(params.externalOrderRef || '').trim();
   if (!Number.isFinite(cost) || cost <= 0) {
     return { ok: false, reason: 'INVALID_COST' };
+  }
+  if (!externalOrderRef) {
+    return { ok: false, reason: 'MISSING_EXTERNAL_ORDER_REF' };
   }
   const profit = selling - cost;
   const nowIso = new Date().toISOString();
   const ledgerId = generateConnectorId('esl');
 
+  // Giao dịch nguyên tử 2 bước trong 1 db.batch:
+  // Bước 0: INSERT OR IGNORE dòng ORDER_DEBIT có khóa UNIQUE(supplier_id, external_order_ref, entry_type)
+  //         kèm điều kiện credit_used_core + cost <= credit_limit_core.
+  //         Nếu ref đã tồn tại HOẶC vượt hạn mức -> 0 dòng được chèn -> ledgerId này không tồn tại.
+  // Bước 1: Chỉ cộng credit_used_core khi EXISTS chính ledgerId vừa chèn ở Bước 0
+  //         -> đảm bảo gọi 2 lần cùng đơn tuyệt đối không trừ hạn mức 2 lần và không sinh dòng ma.
   const results = await db.batch([
-    db
-      .prepare(`
-        UPDATE external_suppliers
-        SET credit_used_core = credit_used_core + ?, updated_at = ?
-        WHERE id = ?
-          AND is_active = 1
-          AND mode = 'POSTPAID_CREDIT'
-          AND (credit_used_core + ? <= credit_limit_core)
-      `)
-      .bind(cost, nowIso, params.supplierId, cost),
     db
       .prepare(`
         INSERT OR IGNORE INTO external_supplier_ledger (
@@ -1162,13 +1163,13 @@ export async function reserveSupplierCreditAtomic(
         )
         SELECT
           ?, id, ?, ?, 'ORDER_DEBIT',
-          ?, ?, ?, credit_used_core,
+          ?, ?, ?, credit_used_core + ?,
           ?, 'RECORDED', ?, ?, ?
         FROM external_suppliers
         WHERE id = ?
           AND is_active = 1
           AND mode = 'POSTPAID_CREDIT'
-          AND credit_used_core <= credit_limit_core
+          AND (credit_used_core + ? <= credit_limit_core)
       `)
       .bind(
         ledgerId,
@@ -1177,20 +1178,54 @@ export async function reserveSupplierCreditAtomic(
         cost,
         selling,
         profit,
-        params.externalOrderRef,
+        cost,
+        externalOrderRef,
         params.actor || 'system',
         params.note || `Ghi nợ công nợ đơn ${params.orderCode}`,
         nowIso,
-        params.supplierId
+        params.supplierId,
+        cost
       ),
+    db
+      .prepare(`
+        UPDATE external_suppliers
+        SET credit_used_core = credit_used_core + ?, updated_at = ?
+        WHERE id = ?
+          AND EXISTS (
+            SELECT 1 FROM external_supplier_ledger
+            WHERE id = ? AND supplier_id = ? AND entry_type = 'ORDER_DEBIT'
+          )
+      `)
+      .bind(cost, nowIso, params.supplierId, ledgerId, params.supplierId),
   ]);
 
-  const creditUpdateChanges = Number((results[0] as any)?.meta?.changes ?? 0);
-  if (creditUpdateChanges === 0) {
-    return { ok: false, reason: 'CREDIT_LIMIT_EXCEEDED' };
+  const ledgerInsertChanges = Number((results[0] as any)?.meta?.changes ?? 0);
+  const creditUpdateChanges = Number((results[1] as any)?.meta?.changes ?? 0);
+
+  if (ledgerInsertChanges > 0 && creditUpdateChanges > 0) {
+    return { ok: true, alreadyReserved: false, ledgerId };
   }
 
-  return { ok: true, ledgerId };
+  // Phân biệt: đã giữ hạn mức trước đó (idempotent) hay thực sự vượt hạn mức
+  const existingDebit = await db
+    .prepare(`
+      SELECT id FROM external_supplier_ledger
+      WHERE supplier_id = ? AND external_order_ref = ? AND entry_type = 'ORDER_DEBIT'
+      LIMIT 1
+    `)
+    .bind(params.supplierId, externalOrderRef)
+    .first<{ id: string }>();
+
+  if (existingDebit?.id) {
+    return {
+      ok: true,
+      alreadyReserved: true,
+      reason: 'ALREADY_RESERVED',
+      ledgerId: existingDebit.id,
+    };
+  }
+
+  return { ok: false, reason: 'CREDIT_LIMIT_EXCEEDED' };
 }
 
 /**

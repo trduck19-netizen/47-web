@@ -1,5 +1,5 @@
 === homepage: npx tsc -p tsconfig.homepage.json --noEmit --listFiles ===
-2026-11-26T09:21:05Z
+2026-11-26T11:19:14Z
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -184,7 +184,7 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
 exit=0
 
 === full: npx tsc -p tsconfig.json --noEmit ===
-2026-11-26T09:21:07Z
+2026-11-26T11:19:16Z
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(431,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
@@ -733,8 +733,7 @@ src/admin/components/AdminSidebar.tsx(240,11): error TS2322: Type 'string' is no
 src/admin/components/AdminSidebar.tsx(247,11): error TS2322: Type 'string' is not assignable to type 'number'.
 src/admin/components/AdminSidebar.tsx(254,11): error TS2322: Type 'string' is not assignable to type 'number'.
 src/admin/components/AdminSidebar.tsx(301,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(308,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(315,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(313,11): error TS2322: Type 'string' is not assignable to type 'number'.
 src/admin/components/AdminTopbar.tsx(33,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; 'free-codes': { title: string; subtitle: string; }; ... 20 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, translations, vouchers, "first-purchase", and 2 more.
 src/admin/components/AdminTopbar.tsx(94,7): error TS2740: Type '{ dashboard: string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; utilities: string; ... 12 more ...; profile: string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, "platform-leads", translations, and 4 more.
 src/admin/components/LuckyWheelAdminManager.tsx(7,3): error TS6133: 'Copy' is declared but its value is never read.

@@ -305,8 +305,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           id: 'supplier-connectors',
           label: t('supplierConnectors.menuLabel'),
           icon: PlugZap,
-          badge: 'API',
-          badgeColor: 'bg-teal-500 text-white font-bold',
         },
         {
           id: 'api-keys',

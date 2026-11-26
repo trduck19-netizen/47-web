@@ -392,7 +392,7 @@ async function main() {
   };
 
   function createStatefulMockDb() {
-    const execOne = async (sql: string, binds: any[]) => {
+    const execOne = (sql: string, binds: any[]) => {
       const s = sql.replace(/\s+/g, ' ').trim();
 
       if (s.includes('SELECT id FROM schema_migrations')) {
@@ -468,18 +468,22 @@ async function main() {
         return { success: true, meta: { changes: 1 } };
       }
       if (s.includes('SET credit_used_core = credit_used_core + ?')) {
-        const [cost, nowIso, supId, cost2] = binds;
-        const sup = storeState.suppliers.find(
-          (x) =>
-            x.id === supId &&
-            x.is_active === 1 &&
-            x.mode === 'POSTPAID_CREDIT' &&
-            x.credit_used_core + cost2 <= x.credit_limit_core
+        const [cost, nowIso, supId, ledgerId, supId2] = binds;
+        const hasLedger = storeState.ledger.some(
+          (r) => r.id === ledgerId && r.supplier_id === supId2 && r.entry_type === 'ORDER_DEBIT'
         );
-        if (!sup) return { success: true, meta: { changes: 0 } };
+        const sup = storeState.suppliers.find((x) => x.id === supId);
+        if (!sup || !hasLedger) return { success: true, meta: { changes: 0 } };
         sup.credit_used_core += cost;
         sup.updated_at = nowIso;
         return { success: true, meta: { changes: 1 } };
+      }
+      if (s.startsWith('SELECT id FROM external_supplier_ledger WHERE supplier_id = ? AND external_order_ref = ?')) {
+        const hit =
+          storeState.ledger.find(
+            (r) => r.supplier_id === binds[0] && r.external_order_ref === binds[1] && r.entry_type === 'ORDER_DEBIT'
+          ) || null;
+        return { first: hit, results: hit ? [hit] : [] };
       }
       if (s.includes('SET credit_used_core = CASE WHEN credit_used_core >= ?')) {
         const [cost, , nowIso, supId, ordId] = binds;
@@ -545,8 +549,17 @@ async function main() {
           rowObj = { id: binds[0], supplier_id: supId, entry_type: entryType, external_order_ref: ref, cost_core: binds[3] };
         } else {
           entryType = 'ORDER_DEBIT';
-          supId = binds[10];
-          ref = binds[6];
+          supId = binds[11];
+          const costCheck = binds[12];
+          ref = binds[7];
+          const sup = storeState.suppliers.find(
+            (x) =>
+              x.id === supId &&
+              x.is_active === 1 &&
+              x.mode === 'POSTPAID_CREDIT' &&
+              x.credit_used_core + costCheck <= x.credit_limit_core
+          );
+          if (!sup) return { success: true, meta: { changes: 0 } };
           rowObj = { id: binds[0], supplier_id: supId, entry_type: entryType, external_order_ref: ref, cost_core: binds[3] };
         }
         // Enforce Sửa nhỏ 1: UNIQUE(supplier_id, external_order_ref, entry_type)
@@ -647,11 +660,8 @@ async function main() {
         };
       },
       async batch(stmts: any[]) {
-        const out: any[] = [];
-        for (const st of stmts) {
-          out.push(await execOne(st._sql, st._getBinds()));
-        }
-        return out;
+        // SQLite / Cloudflare D1 executes db.batch() as a single serialized transaction without interleaving
+        return stmts.map((st) => execOne(st._sql, st._getBinds()));
       },
     } as any;
   }
@@ -856,6 +866,43 @@ async function main() {
   check('pa1_credit_race_only_one_passes', racePassedCount, 1);
   check('pa1_credit_race_second_rejected', raceFailedExceeded, 1);
   check('pa1_credit_used_equals_70000', storeState.suppliers[0].credit_used_core, 70000);
+
+  // Idempotency guard test (Nhóm 2b): calling reserveSupplierCreditAtomic TWICE for the same (supplier_id, external_order_ref)
+  // even when remaining credit limit (30,000 >= 20,000) could fit another debit MUST NOT deduct credit twice!
+  const idemFirst = await reserveSupplierCreditAtomic(statefulDb, {
+    supplierId: supId,
+    orderId: 'ord_sup_idem',
+    orderCode: 'ORD-IDEM-1',
+    externalOrderRef: 'EXT-ORD-IDEM-1',
+    costCore: 10000,
+    sellingCore: 15000,
+  });
+  const idemSecond = await reserveSupplierCreditAtomic(statefulDb, {
+    supplierId: supId,
+    orderId: 'ord_sup_idem',
+    orderCode: 'ORD-IDEM-1',
+    externalOrderRef: 'EXT-ORD-IDEM-1',
+    costCore: 10000,
+    sellingCore: 15000,
+  });
+  check('pa1_credit_idempotency_first_reserves', idemFirst.ok === true && idemFirst.alreadyReserved === false, true);
+  check(
+    'pa1_credit_idempotency_second_already_reserved',
+    idemSecond.ok === true &&
+      idemSecond.alreadyReserved === true &&
+      idemSecond.reason === 'ALREADY_RESERVED' &&
+      idemSecond.ledgerId === idemFirst.ledgerId,
+    true
+  );
+  // 70,000 (from race) + 10,000 (deducted ONCE, NOT 20,000) = 80,000
+  check('pa1_credit_idempotency_deducted_only_once', storeState.suppliers[0].credit_used_core, 80000);
+  check(
+    'pa1_credit_idempotency_single_ledger_row',
+    storeState.ledger.filter((r) => r.external_order_ref === 'EXT-ORD-IDEM-1' && r.entry_type === 'ORDER_DEBIT').length,
+    1
+  );
+  // Reset back the extra 10,000 used by idempotency check so the refund check below still asserts clean restoration to 0
+  storeState.suppliers[0].credit_used_core -= 10000;
 
   // Atomic refundSupplierOrder + Sửa Nhỏ 1 test: ORDER_DEBIT + REFUND_CREDIT share external_order_ref 'EXT-ORD-999'
   const refund1 = await refundSupplierOrder(statefulDb, {
