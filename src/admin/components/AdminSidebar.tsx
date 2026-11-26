@@ -33,6 +33,7 @@ import {
   SlidersHorizontal,
   Cpu,
   PlugZap,
+  Link2,
 } from 'lucide-react';
 import { AdminUser } from '../types/adminTypes';
 import { normalizeVietnamese } from '../../utils/textUtils';
@@ -60,6 +61,7 @@ export type AdminModuleTab =
   | 'telegram'
   | 'orders'
   | 'marketplace'
+  | 'intershop-affiliate'
   | 'platform-leads'
   | 'translations'
   | 'vouchers'
@@ -246,6 +248,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: Store,
           badge: t('adminSidebarStrict.k27'),
           badgeColor: 'bg-emerald-500 text-neutral-950 font-bold',
+        },
+        {
+          id: 'intershop-affiliate',
+          label: t('intershopAffiliate.menuLabel'),
+          icon: Link2,
         },
         {
           id: 'platform-leads',

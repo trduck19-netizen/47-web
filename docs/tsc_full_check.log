@@ -1,4 +1,5 @@
-=== tsconfig.homepage.json --noEmit --listFiles (exit=0) ===
+=== UTC: 2026-11-26T17:42:10.036Z ===
+=== STEP 1: tsc -p tsconfig.homepage.json --noEmit --listFiles ===
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -181,7 +182,8 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/qrcode/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/react-dom/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
 
-=== tsconfig.json --noEmit (exit=2) ===
+homepage_exit=0
+=== STEP 2: tsc -p tsconfig.json --noEmit ===
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(440,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
@@ -710,28 +712,28 @@ functions/services/virtualLayerService.ts(423,33): error TS7053: Element implici
   No index signature with a parameter of type 'string' was found on type 'Record<string, number> | {}'.
 functions/services/virtualLayerService.ts(714,50): error TS6133: 'env' is declared but its value is never read.
 functions/services/virtualLayerService.ts(714,60): error TS6133: 'waitUntil' is declared but its value is never read.
-src/admin/AdminApp.tsx(547,126): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(547,171): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(547,216): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(547,261): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(549,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/admin/AdminApp.tsx(552,126): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(552,171): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(552,216): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(552,261): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(554,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
 src/admin/components/AdminLoginGuard.tsx(151,19): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminLoginGuard.tsx(152,61): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminLoginGuard.tsx(153,63): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminModuleSkeleton.tsx(61,43): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/admin/components/AdminSidebar.tsx(110,9): error TS6133: 'isEn' is declared but its value is never read.
-src/admin/components/AdminSidebar.tsx(163,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(185,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(192,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(219,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(233,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(240,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(247,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(254,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(301,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(313,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminTopbar.tsx(33,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; 'free-codes': { title: string; subtitle: string; }; ... 20 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, translations, vouchers, "first-purchase", and 2 more.
-src/admin/components/AdminTopbar.tsx(94,7): error TS2740: Type '{ dashboard: string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; utilities: string; ... 12 more ...; profile: string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, "platform-leads", translations, and 4 more.
+src/admin/components/AdminSidebar.tsx(112,9): error TS6133: 'isEn' is declared but its value is never read.
+src/admin/components/AdminSidebar.tsx(165,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(187,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(194,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(221,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(235,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(242,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(249,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(261,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(308,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(320,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminTopbar.tsx(33,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; 'free-codes': { title: string; subtitle: string; }; ... 21 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, translations, vouchers, "first-purchase", and 2 more.
+src/admin/components/AdminTopbar.tsx(96,7): error TS2740: Type '{ dashboard: string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; utilities: string; ... 13 more ...; 'intershop-affiliate': string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, "platform-leads", translations, and 4 more.
 src/admin/components/LuckyWheelAdminManager.tsx(7,3): error TS6133: 'Copy' is declared but its value is never read.
 src/admin/components/LuckyWheelAdminManager.tsx(9,3): error TS6133: 'RotateCw' is declared but its value is never read.
 src/admin/components/LuckyWheelAdminManager.tsx(10,3): error TS6133: 'Coins' is declared but its value is never read.
@@ -1456,7 +1458,7 @@ src/components/seller/SellerCenterView.tsx(2268,47): error TS2345: Argument of t
 src/components/seller/SellerCenterView.tsx(2272,94): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2289,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2299,62): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2320,11): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 38 more ...; supplierConnectors: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
+src/components/seller/SellerCenterView.tsx(2320,11): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 39 more ...; intershopAffiliate: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
   Types of parameters 'params' and 'fallback' are incompatible.
     Type 'string | undefined' is not assignable to type 'Record<string, any> | undefined'.
       Type 'string' is not assignable to type 'Record<string, any>'.
@@ -1477,7 +1479,7 @@ src/components/seller/SellerCenterView.tsx(2910,82): error TS2345: Argument of t
 src/components/seller/SellerCenterView.tsx(2930,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2935,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2948,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2966,9): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 38 more ...; supplierConnectors: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
+src/components/seller/SellerCenterView.tsx(2966,9): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 39 more ...; intershopAffiliate: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
   Types of parameters 'params' and 'fallback' are incompatible.
     Type 'string | undefined' is not assignable to type 'Record<string, any> | undefined'.
       Type 'string' is not assignable to type 'Record<string, any>'.
@@ -2177,3 +2179,6 @@ src/utils/productPackageUtils.ts(441,58): error TS2367: This comparison appears 
 src/utils/productPackageUtils.ts(441,82): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
 src/utils/productPackageUtils.ts(441,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
 src/utils/productPackageUtils.ts(450,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'GiveawayCampaign'.
+
+full_tsc_exit=2
+exit=0

@@ -5,6 +5,23 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-27]
+
+### 483. Liên Kết Gian Hàng Nội Bộ — Mảnh 3: Giao Diện Quản Trị Độc Lập `InterShopAffiliateModule` (Lazy-Loaded, Rule 9 Single-Screen, Rule 12 Song Ngữ VI/EN 22/22) (27/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Tiếp nối Mảnh 2 (`a43a34b` / `eb0752d`), xây dựng giao diện Quản trị độc lập cho hệ thống bán lại liên gian hàng nội bộ theo bản kế hoạch Mảnh 3 đã duyệt (`ke_hoach_lien_ket_noi_bo_manh3_27_11.md` cùng 2 sửa bắt buộc + 6 sửa nhỏ + 2 bổ sung), tách biệt khỏi `SellerModerationModule` (`marketplace`) và `SupplierConnectorsModule` (`supplier-connectors`), không sửa backend hay tạo bảng D1 mới, giữ Mảnh 4 ở backlog và Đợt 2 ở trạng thái `BLOCKED`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Module Quản Trị Mới (`src/admin/modules/InterShopAffiliateModule.tsx`)*:
+     - 5 KPI tổng quan + 3 banner cảnh báo hành động nhanh (`!affiliate_enabled`, `PENDING_ADMIN`, `ANTI_LOSS_PAUSED`) và 3 sub-tab:
+       - **Cặp Gian Hàng Liên Kết**: tìm kiếm, lọc trạng thái/shop (`ACTIVE` + `TRIAL`), bảng Rule 9 `table-fixed w-full` (`32%+20%+10%+14%+24%=100%`), nút hành động 1 chạm (`Duyệt`, `Từ chối`, `Tạm khóa`, `Mở lại`, `Thu hồi`, `Kích hoạt lại` kèm lưu ý khôi phục listing từ `REVOKED`), và modal `POST /api/admin/affiliate/partnerships` xử lý đúng cả `201` / `200` / `409`.
+       - **Sản Phẩm Bán Lại Liên Shop**: lọc `ANTI_LOSS_PAUSED` / trạng thái / shop, bảng Rule 9 (`26%+20%+18%+14%+12%+10%=100%`), modal `PATCH /api/admin/affiliate/listings/:id` chỉnh `price_mode`, `markup_type`, `markup_value`, `locked_price`, `status`, `show_supplier`, `clear_warning`.
+       - **Chính Sách Toàn Sàn**: biểu mẫu 7 tham số động nạp trực tiếp từ `GET /api/admin/affiliate` (fallback khớp chuẩn `true / 5% / 2% / true / true / 500% / 600 RPM`) và lưu đủ 7 trường qua `PUT /api/admin/seller-config`.
+  2. *Gắn Kết Điều Hướng & Lazy Loading (`src/admin/components/AdminSidebar.tsx`, `src/admin/components/AdminTopbar.tsx`, `src/admin/AdminApp.tsx`)*:
+     - Thêm tab độc lập `'intershop-affiliate'` với icon `Link2` ngay dưới `marketplace` trong nhóm `THƯƠNG MẠI & KHO` (`adminSidebarStrict.k17`), không gán badge string (giữ `AdminSidebar.tsx` đúng `11` lỗi TS cũ và `AdminTopbar.tsx` đúng `2` lỗi cũ).
+     - Đăng ký `React.lazy` và route `'intershop-affiliate'` tại đủ 5 vị trí trong `AdminApp.tsx`.
+  3. *Song Ngữ 100% VI/EN & I18N Guard (`src/locales/vi.json`, `src/locales/en.json`, `scripts/check-hardcoded-i18n.cjs`)*:
+     - Bổ sung 145 khóa đối xứng dưới nhóm `intershopAffiliate` ở cả `vi.json` và `en.json` và đưa `InterShopAffiliateModule.tsx` vào `IN_SCOPE_UI_FILES` (`22/22 PASS`, `0` vi phạm).
+
 ## [2026-11-26]
 
 ### 482. Liên Kết Gian Hàng Nội Bộ — Mảnh 2: Admin API Toàn Sàn (`/api/admin/affiliate*`), Seller Self-Service Webhook HMAC (`/api/seller/webhooks*`), Sổ Đơn 3 Bên (`/api/seller/affiliate/orders`), Scope `INTERSHOP_AFFILIATE_MANAGE` (Rule 8) & PA1 Catalog Epoch (26/11/2026)
