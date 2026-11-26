@@ -4,7 +4,7 @@
 
 🛡️ 0. Scanning UI code for hardcoded Vietnamese strings (i18n Guard)...
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-26T09:01:14.350Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   Timestamp: 2026-11-26T09:04:12.015Z — Batch: Dot 20 Trang Chu (24/11/2026)
    [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét 20 file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...
 ✅ [I18N SCANNER PASSED] Đã quét sạch 20 file giao diện.
    🎉 0 chuỗi tiếng Việt ghi cứng ngoài từ điển! Sẵn sàng cho quy trình build & deploy.
@@ -149,14 +149,14 @@ computing gzip size...
 [2mdist/[22m[36massets/games-catalog-fallback-DcEoXQue.js      [39m[1m[2m790.41 kB[22m[1m[22m[2m │ gzip: 123.00 kB[22m
 [2mdist/[22m[36massets/seed-news-fallback-CyezkEkv.js          [39m[1m[2m884.33 kB[22m[1m[22m[2m │ gzip: 185.96 kB[22m
 [2mdist/[22m[36massets/CrawlerModule-BB-qCGhx.js               [39m[1m[2m972.13 kB[22m[1m[22m[2m │ gzip: 180.03 kB[22m
-[32m✓ built in 8.85s[39m
+[32m✓ built in 8.34s[39m
 ⚡ 2. Compiling Cloudflare Pages Edge Worker bundle...
-⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is d68ae38. If this is a release build, commit first before deploying.
-   🏷️ Injected Build ID: d68ae38 (2026-11-26T09:01:28.200Z)
+⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is f981376. If this is a release build, commit first before deploying.
+   🏷️ Injected Build ID: f981376 (2026-11-26T09:04:25.502Z)
 
   dist\_worker.js  6.5mb
 
-Done in 122ms
+Done in 113ms
 📄 3. Ensuring _routes.json in dist/ ...
    _routes.json copied to dist/_routes.json
 🛡️ 4. Running Post-build Chunk & Worker Budget Check (Lean Guard)...
