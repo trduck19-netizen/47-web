@@ -21,6 +21,15 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Range',
 };
 
+const ICON_CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400';
+const NOT_FOUND_CACHE_CONTROL = 'no-store, no-cache, must-revalidate, max-age=0';
+
+function isValidImageResponse(res: Response | null | undefined): res is Response {
+  if (!res || res.status !== 200) return false;
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  return ct.startsWith('image/');
+}
+
 export const onRequestOptions = async () => {
   return new Response(null, {
     status: 204,
@@ -65,7 +74,7 @@ export const onRequestGet = async (context: {
   if (cache && cacheKey && !bypassCache) {
     try {
       const cached = await cache.match(cacheKey);
-      if (cached) {
+      if (isValidImageResponse(cached)) {
         return cached;
       }
     } catch {}
@@ -89,7 +98,7 @@ export const onRequestGet = async (context: {
           bytes[i] = binaryStr.charCodeAt(i);
         }
 
-        const cacheControl = 'public, max-age=31536000, immutable';
+        const cacheControl = ICON_CACHE_CONTROL;
 
         const contentType = filename.toLowerCase().endsWith('.webp') ? 'image/webp' : (row.content_type || 'image/webp');
         const headers = new Headers({
@@ -113,11 +122,11 @@ export const onRequestGet = async (context: {
     }
   }
 
-  // 3. Nếu chưa có trong D1, thử nạp từ static assets
+  // 3. Nếu chưa có trong D1, thử nạp từ static assets (BẮT BUỘC kiểm content-type image/* để chặn SPA fallback 200 text/html)
   if (env.ASSETS) {
     try {
       const assetRes = await env.ASSETS.fetch(request);
-      if (assetRes && assetRes.status === 200) {
+      if (isValidImageResponse(assetRes)) {
         return assetRes;
       }
 
@@ -126,7 +135,7 @@ export const onRequestGet = async (context: {
         const thumbUrl = new URL(request.url);
         thumbUrl.pathname = `/game_icons/${baseSlug}-thumb.webp`;
         const thumbRes = await env.ASSETS.fetch(new Request(thumbUrl, request));
-        if (thumbRes && thumbRes.status === 200) {
+        if (isValidImageResponse(thumbRes)) {
           return thumbRes;
         }
       }
@@ -136,7 +145,7 @@ export const onRequestGet = async (context: {
         const webpUrl = new URL(request.url);
         webpUrl.pathname = `/game_icons/${baseSlug}.webp`;
         const webpRes = await env.ASSETS.fetch(new Request(webpUrl, request));
-        if (webpRes && webpRes.status === 200) {
+        if (isValidImageResponse(webpRes)) {
           return webpRes;
         }
       }
@@ -145,5 +154,11 @@ export const onRequestGet = async (context: {
     }
   }
 
-  return new Response('Icon not found', { status: 404, headers: CORS_HEADERS });
+  return new Response('Icon not found', {
+    status: 404,
+    headers: {
+      ...CORS_HEADERS,
+      'Cache-Control': NOT_FOUND_CACHE_CONTROL,
+    },
+  });
 };

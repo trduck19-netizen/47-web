@@ -75,7 +75,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       SELECT id, title, slug, industry_id, category_id, product_type,
              original_price, current_price, discount_percent, stock_quantity,
              thumbnail_url, images_json, description, specifications_json,
-             brand_name, rating_avg, rating_count, sold_count, is_active,
+             brand_name, weight_grams, warehouse_address,
+             rating_avg, rating_count, sold_count, is_active,
              created_at, updated_at
       FROM products
       ${whereClause}
@@ -86,13 +87,45 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const { results } = await env.DB.prepare(query).bind(...params, limit, offset).all<any>();
 
     let items = (results || []).map((p: any) => {
-      let images = [];
-      let specs = {};
-      try { images = JSON.parse(p.images_json || '[]'); } catch {}
-      try { specs = JSON.parse(p.specifications_json || '{}'); } catch {}
+      let images: string[] = [];
+      let specs: Record<string, any> = {};
+      try {
+        const parsedImages = JSON.parse(p.images_json || '[]');
+        if (Array.isArray(parsedImages)) images = parsedImages.filter(Boolean);
+      } catch {}
+      try {
+        const parsedSpecs = JSON.parse(p.specifications_json || '{}');
+        if (parsedSpecs && typeof parsedSpecs === 'object') specs = parsedSpecs;
+      } catch {}
+      const resolvedCover =
+        p.thumbnail_url ||
+        images[0] ||
+        (p.product_type === 'physical' ? '/game_icons/physical-default.webp' : '');
+      const resolvedImages = images.length > 0 ? images : [resolvedCover].filter(Boolean);
+      const resolvedWeight =
+        p.weight_grams !== undefined && p.weight_grams !== null
+          ? Number(p.weight_grams)
+          : (specs.weight_grams !== undefined && specs.weight_grams !== null ? Number(specs.weight_grams) : null);
+      const resolvedWarehouse = p.warehouse_address || specs.warehouse_address || specs.origin || '';
+      const resolvedWarrantyHours =
+        specs.warranty_hours !== undefined && specs.warranty_hours !== null
+          ? Number(specs.warranty_hours)
+          : null;
+      const resolvedBrand = p.brand_name || specs.brand || specs.seller_name || '';
+
       return {
         ...p,
-        images,
+        game_slug: p.slug || p.category_id || p.industry_id || '',
+        cover_image_url: resolvedCover,
+        game_icon_url: resolvedCover,
+        images: resolvedImages,
+        product_images: resolvedImages,
+        weight_grams: resolvedWeight,
+        warehouse_address: resolvedWarehouse,
+        warranty_hours: resolvedWarrantyHours,
+        seller_name: resolvedBrand,
+        brand: resolvedBrand,
+        origin: resolvedWarehouse || specs.origin || '',
         specifications: specs,
       };
     });

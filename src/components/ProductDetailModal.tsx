@@ -1,7 +1,7 @@
 import confetti from 'canvas-confetti';
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { resolveProductCoverImage, safeGameIconUrl, sanitizeImageUrl } from '../utils/safeImageUrl';
+import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage, sanitizeImageUrl } from '../utils/safeImageUrl';
 import {
   X,
   ShieldCheck,
@@ -60,7 +60,7 @@ export interface ProductDetailModalProps {
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
-  product,
+  product: rawProduct,
   initialPackageId,
   onClose,
   onBuyNow,
@@ -71,6 +71,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const isEn = language === 'en';
+  const [storeSyncVersion, setStoreSyncVersion] = useState(0);
+  useEffect(() => {
+    const handleSync = () => setStoreSyncVersion((v) => v + 1);
+    window.addEventListener('pine_store_products_updated', handleSync);
+    return () => window.removeEventListener('pine_store_products_updated', handleSync);
+  }, []);
+  const product = useMemo(() => {
+    if (!rawProduct) return null;
+    if ('game_slug' in rawProduct && rawProduct.id) {
+      const fresh = dataService.getStoreProducts().find((p) => p.id === rawProduct.id);
+      if (fresh) {
+        return {
+          ...rawProduct,
+          ...fresh,
+          packages: (rawProduct as any).packages?.length ? (rawProduct as any).packages : (fresh as any).packages,
+        };
+      }
+    }
+    return rawProduct;
+  }, [rawProduct, storeSyncVersion]);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
@@ -251,7 +271,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   if (!product || !selectedPackage) return null;
 
   const isStoreProduct = 'game_slug' in product;
-  const gameSlug = isStoreProduct ? (product as StoreProduct).game_slug : '';
   const gameName = isStoreProduct
     ? (product as StoreProduct).game_name
     : (product as UtilityProduct).category_label || (product as UtilityProduct).category || t('productDetailModal.utility');
@@ -525,13 +544,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   referrerPolicy="no-referrer"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (isPhysicalProduct && !target.src.endsWith('/game_icons/physical-default.webp')) {
-                      target.src = '/game_icons/physical-default.webp';
-                      return;
-                    }
-                    const localFallback = safeGameIconUrl(gameSlug, '');
-                    if (localFallback && target.src !== localFallback && !target.src.endsWith(localFallback)) {
-                      target.src = localFallback;
+                    console.warn('[ProductImageError]', {
+                      location: 'modal_header',
+                      failedSrc: target.currentSrc || target.src,
+                      productId: product.id,
+                      cover_image_url: product.cover_image_url,
+                    });
+                    if (isPhysicalProduct && !target.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
+                      target.src = PHYSICAL_DEFAULT_IMAGE_URL;
                       return;
                     }
                     target.onerror = null;
@@ -615,13 +635,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      if (isPhysicalProduct && !target.src.endsWith('/game_icons/physical-default.webp')) {
-                        target.src = '/game_icons/physical-default.webp';
-                        return;
-                      }
-                      const localFallback = safeGameIconUrl(gameSlug, '');
-                      if (localFallback && target.src !== localFallback && !target.src.endsWith(localFallback)) {
-                        target.src = localFallback;
+                      console.warn('[ProductImageError]', {
+                        location: 'modal_gallery',
+                        failedSrc: target.currentSrc || target.src,
+                        productId: product.id,
+                        cover_image_url: product.cover_image_url,
+                      });
+                      if (isPhysicalProduct && !target.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
+                        target.src = PHYSICAL_DEFAULT_IMAGE_URL;
                         return;
                       }
                       target.onerror = null;

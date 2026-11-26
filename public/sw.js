@@ -1,4 +1,9 @@
-const CACHE_NAME = 'codegame-pwa-v8';
+const CACHE_NAME = 'codegame-pwa-v9';
+const isValidImageResponse = (res) => {
+  if (!res || res.status !== 200) return false;
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  return ct.startsWith('image/');
+};
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -51,23 +56,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-First for game icons (/game_icons/*.webp) for instant 0ms rendering
+  // Cache-First for game icons (/game_icons/*.webp) — BẮT BUỘC xác thực content-type: image/* (chống đầu độc cache bởi SPA HTML)
   if (url.pathname.startsWith('/game_icons/')) {
     event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match(event.request).then((cachedResponse) => {
+          if (isValidImageResponse(cachedResponse)) {
+            return cachedResponse;
           }
-          return networkResponse;
-        }).catch(() => caches.match('/logo.png'));
-      })
+          if (cachedResponse) {
+            cache.delete(event.request).catch(() => {});
+          }
+          return fetch(event.request).then((networkResponse) => {
+            if (isValidImageResponse(networkResponse)) {
+              cache.put(event.request, networkResponse.clone()).catch(() => {});
+            }
+            return networkResponse;
+          }).catch(() => Response.error());
+        })
+      )
     );
     return;
   }

@@ -41,7 +41,7 @@ import { BookmarkDrawer } from '../BookmarkDrawer';
 import { LanguageSelector } from '../LanguageSelector';
 import { useLanguage } from '../../context/LanguageContext';
 import { groupStoreProductsByGame } from '../../utils/productPackageUtils';
-import { resolveProductCoverImage } from '../../utils/safeImageUrl';
+import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage } from '../../utils/safeImageUrl';
 
 export type ShopeeSubView = 
   | 'home' 
@@ -1882,8 +1882,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                             alt={prod.title}
                             onError={(e) => {
                               const img = e.currentTarget;
-                              if (isFlashPhysical && !img.src.endsWith('/game_icons/physical-default.webp')) {
-                                img.src = '/game_icons/physical-default.webp';
+                              console.warn('[CardImageError]', {
+                                location: 'flash_sale',
+                                failedSrc: img.currentSrc || img.src,
+                                productId: prod.id,
+                                cover_image_url: prod.cover_image_url,
+                              });
+                              if (isFlashPhysical && !img.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
+                                img.src = PHYSICAL_DEFAULT_IMAGE_URL;
                                 return;
                               }
                               if (!img.dataset.fallbackApplied) {
@@ -2166,8 +2172,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                                   loading="lazy"
                                   onError={(e) => {
                                     const img = e.currentTarget;
-                                    if (isPhysicalProd && !img.src.endsWith('/game_icons/physical-default.webp')) {
-                                      img.src = '/game_icons/physical-default.webp';
+                                    console.warn('[CardImageError]', {
+                                      location: 'main_shelf',
+                                      failedSrc: img.currentSrc || img.src,
+                                      productId: prod.id,
+                                      cover_image_url: prod.cover_image_url,
+                                    });
+                                    if (isPhysicalProd && !img.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
+                                      img.src = PHYSICAL_DEFAULT_IMAGE_URL;
                                       return;
                                     }
                                     if (!img.dataset.fallbackApplied) {

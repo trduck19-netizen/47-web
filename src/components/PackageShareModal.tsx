@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { StoreProduct, ProductPackageVariant } from '../types/game';
 import { formatCore } from '../utils/textUtils';
-import { resolveProductCoverImage } from '../utils/safeImageUrl';
+import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage } from '../utils/safeImageUrl';
 import { useLanguage } from '../context/LanguageContext';
 
 export interface PackageShareModalProps {
@@ -63,7 +63,8 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
   const shareUrl = `${origin}/store?game=${encodeURIComponent(gameSlug)}&pkg=${encodeURIComponent(packageItem.id)}`;
 
   const gameName = product?.game_name || product?.title || 'Game';
-  const gameAvatar = resolveProductCoverImage(product, '/og-image.jpg');
+  const isPhysicalProduct = product?.product_type === 'physical';
+  const gameAvatar = resolveProductCoverImage(product, '/package-placeholder.svg');
 
   const isEscalating = packageItem?.sale_mode === 'escalating';
   const currentPrice = isEscalating
@@ -212,11 +213,23 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
         <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center gap-3">
           <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden shrink-0 bg-background border border-primary/30 shadow-md">
             <img
+              key={gameAvatar}
               src={gameAvatar}
               alt={gameName}
               className="w-full h-full object-cover"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/og-image.jpg';
+                const target = e.currentTarget as HTMLImageElement;
+                console.warn('[PackageShareImageError]', {
+                  failedSrc: target.currentSrc || target.src,
+                  productId: product?.id,
+                  cover_image_url: product?.cover_image_url,
+                });
+                if (isPhysicalProduct && !target.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
+                  target.src = PHYSICAL_DEFAULT_IMAGE_URL;
+                  return;
+                }
+                target.onerror = null;
+                target.src = '/package-placeholder.svg';
               }}
             />
           </div>

@@ -7,6 +7,23 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-26]
 
+### 473. Chặn Đầu Độc Cache 3 Tầng Cho `/game_icons/*` (`[file].ts` + `_headers` + `sw.js` v9 + `?v=2`), Bỏ Fallback Theo Slug Ở `onError` & Hoàn Thiện SELECT Nhánh Chính `/api/products` (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý dứt điểm việc trình duyệt từng truy cập trước commit `6b8c654` không hiện ảnh hộp bưu kiện `/game_icons/physical-default.webp` (rơi sang `physical_goods.webp` / `/og-image.jpg` / `/package-placeholder.svg`) và hoàn thiện các trường đồng nhất ở nhánh SELECT chính của `GET /api/products`.
+- **Nguyên nhân gốc rễ (Root Cause — Đã chứng minh bằng bảng đo Bước 1)**:
+  - `functions/game_icons/[file].ts:120` chỉ kiểm `assetRes.status === 200` (không kiểm `content-type: image/*`), nên khi icon chưa tồn tại (như `physical-default.webp` ở bản `29de768`, hay `physical_goods.webp`), Pages SPA fallback trả `200 text/html` kèm `Cache-Control: public, max-age=31536000, immutable` từ `public/_headers:23`.
+  - `public/sw.js` (`codegame-pwa-v8`, Cache-First) cũng chỉ kiểm `status === 200` nên lưu vĩnh viễn trang HTML lỗi vào Cache Storage; khi `<img>` giải mã lỗi → `onError` ở `ProductDetailModal` rơi sang `physical_goods.webp` (cũng trả `200 text/html`), còn `PackageShareModal` nhảy sang `/og-image.jpg`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Chặn SPA fallback `200 text/html` & đầu độc cache (`functions/game_icons/[file].ts`, `public/_headers`, `public/sw.js`)*:
+     - Thêm `isValidImageResponse` (`status === 200` VÀ `content-type` bắt đầu bằng `image/`) ở cả Edge Cache và `env.ASSETS.fetch`; trả `HTTP 404` kèm `Cache-Control: no-store` cho mọi icon không tồn tại.
+     - Đổi `/game_icons/*` trong `public/_headers` từ `max-age=31536000, immutable` sang `public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400`.
+     - Nâng `public/sw.js` lên `codegame-pwa-v9` (tự xóa toàn bộ cache `v8` cũ) và chỉ lưu/trả response có `content-type: image/*`.
+  2. *Cache-bust `?v=2`, xóa fallback theo slug ở `onError` & đồng nhất đối tượng sản phẩm (`safeImageUrl.ts`, `ProductDetailModal.tsx`, `ProductCheckoutModal.tsx`, `PackageShareModal.tsx`, `ShopeeTestView.tsx`)*:
+     - Chuẩn hóa ảnh mặc định vật lý sang `/game_icons/physical-default.webp?v=2` để tự vượt qua HTTP `immutable` disk cache cũ mà không đổi tên tệp gốc.
+     - Bỏ hẳn nhánh fallback `/game_icons/${gameSlug}.webp` trong `onError` của `ProductDetailModal` & `ProductCheckoutModal`, bỏ nhảy sang `/og-image.jpg` trong `PackageShareModal`, bổ sung `console.warn` chẩn đoán tạm và tự nâng cấp `product` trong `ProductDetailModal` khi `pine_store_products_updated` về.
+  3. *Nhánh SELECT chính `/api/products` (`functions/api/products/index.ts`)*:
+     - Bổ sung `weight_grams`, `warehouse_address` vào SELECT từ bảng `products` và dẫn xuất đầy đủ 10 trường đồng nhất (`game_slug`, `cover_image_url`, `game_icon_url`, `product_images`, `weight_grams`, `warehouse_address`, `warranty_hours`, `seller_name`, `brand`, `origin`).
+
 ### 472. Gỡ Fallback `: 2000` Ở `PackageShareModal`, Sửa 13 Lỗi `setErrorMessaget` Trong `AuthModal` & Triệt Tiêu Race Condition `/api/products` Gây Mất Ảnh/Thông Số Vật Lý + `/game_icons/undefined.webp` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Xử lý nốt 3 vấn đề xác minh sau commit `6b8c654`: (1) `PackageShareModal.tsx:232` còn sót fallback ternary `: 2000` trong badge *"Mua lần đầu"*; (2) `AuthModal.tsx` còn 13 chỗ gọi lỗi chính tả `setErrorMessaget('authStrict.kX')` sẽ gây lỗi runtime khi bật lại `GUEST_TURNSTILE_ENABLED=true`; (3) Trên live, ảnh bìa `/game_icons/physical-default.webp` không hiện ổn định ở 4 vị trí, xuất hiện `/game_icons/undefined.webp`, và modal khi chưa đăng nhập bị mất `500g`, `24 giờ`, kho gửi thật.

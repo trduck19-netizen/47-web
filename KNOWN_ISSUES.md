@@ -10,6 +10,14 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-333: Bẫy Đầu Độc Cache 3 Tầng Cho `/game_icons/*` (SPA Fallback `200 text/html` + `_headers` `immutable` 1 Năm + `sw.js` Cache-First Không Kiểm `image/*`) (26/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - Khi một icon mới chưa tồn tại ở đợt deploy trước (như `/game_icons/physical-default.webp` trước `6b8c654`), `env.ASSETS.fetch` trong `functions/game_icons/[file].ts` trả SPA `index.html` với `HTTP 200` + `text/html`, lại bị `public/_headers` gắn `Cache-Control: public, max-age=31536000, immutable` và bị `public/sw.js` (`codegame-pwa-v8`) lưu vĩnh viễn vào Cache Storage vì chỉ check `status === 200`.
+  - Sau khi thêm file ảnh thật, các trình duyệt cũ vẫn bị SW và HTTP `immutable` trả về HTML → `<img>` lỗi giải mã → `onError` rơi sang `/game_icons/physical_goods.webp` (cũng trả `200 text/html`) hoặc `/og-image.jpg` / `/package-placeholder.svg`.
+- **Giải pháp chuẩn đã kiểm chứng (26/11/2026 - Mục 473)**:
+  - Bắt buộc kiểm `content-type` bắt đầu bằng `image/` ở cả `functions/game_icons/[file].ts` (trả `404` + `no-store` nếu không phải ảnh) lẫn `public/sw.js` (nâng `codegame-pwa-v9` xóa sạch `v8`).
+  - Bỏ `immutable` 1 năm trên `/game_icons/*` trong `public/_headers`, gắn `?v=2` cho `/game_icons/physical-default.webp` trong `safeImageUrl.ts`, và bỏ hẳn fallback dựng từ `gameSlug` trong `onError` của modal.
+
 ### ISSUE-332: Race Condition `ShopeeTestView` Gọi `/api/products` Ghi Đè `/api/sync-lite` Gây `/game_icons/undefined.webp` & Mất Thông Số Vật Lý Khi Chưa Đăng Nhập + `setErrorMessaget` + Fallback `: 2000` Ở `PackageShareModal` (26/11/2026)
 - **Triệu chứng & Rủi ro**:
   - `ShopeeTestView.tsx:388–398` gọi `GET /api/products?limit=100&_t=...` (không cache, về sau `/api/sync-lite`) rồi ghi đè `currentStoreProducts` và `localStorage['pine_admin_store_products_v4']` bằng object thiếu `cover_image_url`, `game_slug`, `weight_grams`, `warehouse_address`, `warranty_hours`. Khi render tiếp, `dataService.ts:3083–3084` dựng `/game_icons/undefined.webp` (404), kệ chính rơi về `📦`, modal khi chưa đăng nhập mất `500g`/`24 giờ`/kho gửi thật.

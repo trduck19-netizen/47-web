@@ -38,7 +38,7 @@ import QRCode from 'qrcode';
 import { CyberLoader } from './CyberLoader';
 import type { StoreProduct, OrderRecord, UserProfile } from '../types/game';
 import { dataService } from '../services/dataService';
-import { resolveProductCoverImage, safeGameIconUrl } from '../utils/safeImageUrl';
+import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage } from '../utils/safeImageUrl';
 import { offerService } from '../services/offerService';
 import { generateVietQrEmvCo } from '../utils/vietQrUtils';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
@@ -1342,17 +1342,17 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        if (isPhysical && !target.src.endsWith('/game_icons/physical-default.webp')) {
-                          target.src = '/game_icons/physical-default.webp';
+                        console.warn('[CheckoutImageError]', {
+                          failedSrc: target.currentSrc || target.src,
+                          productId: product.id,
+                          cover_image_url: product.cover_image_url,
+                        });
+                        if (isPhysical && !target.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
+                          target.src = PHYSICAL_DEFAULT_IMAGE_URL;
                           return;
                         }
-                        const localFallback = safeGameIconUrl(product.game_slug, '');
-                        if (localFallback && target.src !== localFallback && !target.src.endsWith(localFallback)) {
-                          target.src = localFallback;
-                        } else {
-                          target.onerror = null;
-                          target.src = '/package-placeholder.svg';
-                        }
+                        target.onerror = null;
+                        target.src = '/package-placeholder.svg';
                       }}
                     />
                   </div>
@@ -1640,17 +1640,17 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        if (isPhysical && !target.src.endsWith('/game_icons/physical-default.webp')) {
-                          target.src = '/game_icons/physical-default.webp';
+                        console.warn('[CheckoutImageError]', {
+                          failedSrc: target.currentSrc || target.src,
+                          productId: product.id,
+                          cover_image_url: product.cover_image_url,
+                        });
+                        if (isPhysical && !target.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
+                          target.src = PHYSICAL_DEFAULT_IMAGE_URL;
                           return;
                         }
-                        const localFallback = safeGameIconUrl(product.game_slug, '');
-                        if (localFallback && target.src !== localFallback && !target.src.endsWith(localFallback)) {
-                          target.src = localFallback;
-                        } else {
-                          target.onerror = null;
-                          target.src = '/package-placeholder.svg';
-                        }
+                        target.onerror = null;
+                        target.src = '/package-placeholder.svg';
                       }}
                     />
                   </div>
