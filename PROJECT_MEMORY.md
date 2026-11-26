@@ -18,7 +18,7 @@
   - Tên Database: `47webdanganh`
   - UUID: `f1c32d22-9ad3-41a7-93a4-e9025240c6b2`
   - Binding Name trong Cloudflare Pages: `DB`
-  - Tổng số bảng: **62 bảng dữ liệu** (54 bảng ban đầu + 4 bảng Khóa AI Người Dùng `user_ai_api_*` + 4 bảng Liên Shop Bán Lại `seller_affiliate_*`)
+  - Tổng số bảng: **67 bảng dữ liệu** (54 bảng ban đầu + 4 bảng Khóa AI Người Dùng `user_ai_api_*` + 4 bảng Liên Shop Bán Lại `seller_affiliate_*` + 5 bảng Nguồn Hàng API Ngoài & Webhook `external_supplier*` / `supplier_fulfillment_*`)
 - **🛑 VÙNG CẤM TUYỆT ĐỐI (RESTRICTED ZONES)**:
   - **TUYỆT ĐỐI KHÔNG SỬA ĐỔI** mã nguồn dự án cũ `C:\4 Antigravity all\13 web code game`.
   - **TUYỆT ĐỐI CẤM ĐỘNG VÀO** thư mục `C:\4 Antigravity all\3 Codegame store` (`codegame.store`).

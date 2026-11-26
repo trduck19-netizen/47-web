@@ -7,6 +7,21 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-26]
 
+### 475. Đợt 1 — Mảnh 1: 5 Bảng D1 External Supplier & Webhook (`0050_supplier_connectors_v1`), Lõi Bảo Mật `supplier_connector_service.ts` & Bộ Unit Test `test_supplier_connectors.ts` (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai Đợt 1 — Mảnh 1 theo kế hoạch v2 đã duyệt (`ke_hoach_nguon_hang_api_va_fulfillment_v2_26_11.md`) cùng 2 hiệu đính trực tiếp từ người dùng: (1) `UNIQUE(supplier_id, external_order_ref, entry_type)` trên `external_supplier_ledger` để không chặn dòng hoàn tiền `REFUND_CREDIT` cùng mã đơn với `ORDER_DEBIT`; (2) Quét bảo mật Rule 10 & quét khóa cứng mới đạt `0`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Migration D1 `0050_supplier_connectors_v1` (`functions/services/d1_service.ts`)*:
+     - Chèn khối migration mới sau `0049_store_products_seller_column_and_index_v1` và trước `lastSchemaTiming` (không chèn vào vùng gated `baseline_unconditional_ddl_v1`).
+     - Tạo 5 bảng + 9 index: `external_suppliers`, `external_supplier_products`, `external_supplier_ledger` (với `UNIQUE(supplier_id, external_order_ref, entry_type)`), `supplier_fulfillment_webhooks`, và `supplier_fulfillment_deliveries`.
+  2. *Lõi bảo mật & định giá mới (`functions/services/supplier_connector_service.ts`)*:
+     - Viết mới hoàn toàn `encryptSupplierSecret` / `decryptSupplierSecret` (AES-256-GCM Fail-Closed, yêu cầu `MARKETPLACE_CODE_KEY` hoặc `JWT_SECRET` ≥ 16 ký tự, ném `SupplierConfigError` HTTP 500 khi thiếu/ngắn; không gọi `encryptCode`/`decryptCode` cũ, không có khóa fallback).
+     - Viết mới `validateOutboundHttpsUrl` (+ `validateOutboundHttpsUrlWithDns`) chặt hơn `isSafeExternalUrl`: bắt buộc `https:`, chỉ cho cổng `443`/`8443`, chặn userinfo, single-label host, `localhost`, cloud metadata, IPv4 mọi biến thể (decimal/octal/hex/dword/2-part/3-part), IPv6 nội bộ/mapped.
+     - Viết mới `signHmacPayload` / `verifyHmacSignature` (Web Crypto HMAC-SHA256, so sánh hằng thời gian `timingSafeEqualHex`, anti-replay `±300s`).
+     - Viết mới `calculateResellPrice` (tính giá `PERCENT`/`FIXED`, đệm phí, tự động tạm dừng `BELOW_COST` / `BELOW_MIN_MARGIN` / `OUT_OF_STOCK` / `INVALID_SUPPLIER_COST`).
+  3. *Bộ kiểm thử trong repo (`scripts/tests/test_supplier_connectors.ts`, `package.json`)*:
+     - Bổ sung lệnh `npm run test:suppliers` (73 assertions bao phủ 5 nhóm: Fail-Closed AES-GCM & kiểm tĩnh, SSRF HTTPS-only, HMAC & anti-replay, Anti-Loss calculator, vị trí & DDL migration `0050`) và nối vào `npm test`.
+
 ### 474. Chuẩn Hóa Bằng Chứng Kiểm Thử & Build Trong Repo (`scripts/tests/`, `docs/tsc_full_check.log`, `docs/build_success.log` & Quy Tắc `AGENTS.md`) (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục dứt điểm việc file log `tsc` (`docs/tsc_check_success.log` 0 byte / log full để ở `scratch/` ngoài repo), 2 file test (icon & `/api/products`) và `docs/build_success.log` (bản cũ 24/11) không tồn tại hoặc không khớp trong repo sau kiểm báo cáo `4a6235b`. Không chỉnh sửa code sản phẩm hay dữ liệu D1.

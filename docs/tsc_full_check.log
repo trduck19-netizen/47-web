@@ -1,5 +1,5 @@
-﻿=== homepage: npx tsc -p tsconfig.homepage.json --noEmit --listFiles ===
-2026-11-26T07:44:36Z
+=== homepage: npx tsc -p tsconfig.homepage.json --noEmit --listFiles ===
+2026-11-26T09:00:58Z
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -184,7 +184,7 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
 exit=0
 
 === full: npx tsc -p tsconfig.json --noEmit ===
-2026-11-26T07:44:38Z
+2026-11-26T09:00:59Z
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(426,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
@@ -598,21 +598,21 @@ functions/data/compact_seed_news.ts(219,5): error TS2353: Object literal may onl
 functions/data/compact_seed_news.ts(253,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
 functions/data/compact_seed_news.ts(286,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
 functions/data/compact_seed_news.ts(319,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
-functions/services/d1_service.ts(4629,7): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<any>'.
+functions/services/d1_service.ts(4770,7): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<any>'.
   Property 'success' is missing in type '{ results: any[]; }' but required in type 'D1Result<any>'.
-functions/services/d1_service.ts(5739,19): error TS2339: Property 'forEach' does not exist on type 'never'.
-functions/services/d1_service.ts(5817,23): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
-functions/services/d1_service.ts(5892,24): error TS2304: Cannot find name 'clm'.
-functions/services/d1_service.ts(5893,22): error TS2304: Cannot find name 'tot'.
-functions/services/d1_service.ts(5894,26): error TS2304: Cannot find name 'coverUrl'.
-functions/services/d1_service.ts(5895,24): error TS2304: Cannot find name 'iconUrl'.
-functions/services/d1_service.ts(5896,22): error TS2304: Cannot find name 'desc'.
-functions/services/d1_service.ts(5897,18): error TS2304: Cannot find name 'rew'.
-functions/services/d1_service.ts(5898,21): error TS2304: Cannot find name 'startTime'.
-functions/services/d1_service.ts(5899,19): error TS2304: Cannot find name 'endTime'.
-functions/services/d1_service.ts(6403,3): error TS6133: 'db' is declared but its value is never read.
-functions/services/d1_service.ts(6404,3): error TS6133: 'aggregates' is declared but its value is never read.
-functions/services/d1_service.ts(6405,3): error TS6133: 'events' is declared but its value is never read.
+functions/services/d1_service.ts(5880,19): error TS2339: Property 'forEach' does not exist on type 'never'.
+functions/services/d1_service.ts(5958,23): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
+functions/services/d1_service.ts(6033,24): error TS2304: Cannot find name 'clm'.
+functions/services/d1_service.ts(6034,22): error TS2304: Cannot find name 'tot'.
+functions/services/d1_service.ts(6035,26): error TS2304: Cannot find name 'coverUrl'.
+functions/services/d1_service.ts(6036,24): error TS2304: Cannot find name 'iconUrl'.
+functions/services/d1_service.ts(6037,22): error TS2304: Cannot find name 'desc'.
+functions/services/d1_service.ts(6038,18): error TS2304: Cannot find name 'rew'.
+functions/services/d1_service.ts(6039,21): error TS2304: Cannot find name 'startTime'.
+functions/services/d1_service.ts(6040,19): error TS2304: Cannot find name 'endTime'.
+functions/services/d1_service.ts(6544,3): error TS6133: 'db' is declared but its value is never read.
+functions/services/d1_service.ts(6545,3): error TS6133: 'aggregates' is declared but its value is never read.
+functions/services/d1_service.ts(6546,3): error TS6133: 'events' is declared but its value is never read.
 functions/services/giveaway_simulation_service.ts(1,28): error TS2307: Cannot find module '@cloudflare/workers-types' or its corresponding type declarations.
 functions/services/giveaway_simulation_service.ts(265,112): error TS7006: Parameter 'e' implicitly has an 'any' type.
 functions/services/google_auth_service.ts(6,29): error TS6133: 'getSigningSecret' is declared but its value is never read.

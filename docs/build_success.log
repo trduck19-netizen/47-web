@@ -1,11 +1,10 @@
-﻿=== build: npm run build (2026-11-26T07:44:57Z) ===
 
 > universal-commerce-platform@1.0.0 build
 > node scripts/build.cjs
 
 🛡️ 0. Scanning UI code for hardcoded Vietnamese strings (i18n Guard)...
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-26T07:44:58.292Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   Timestamp: 2026-11-26T09:01:14.350Z — Batch: Dot 20 Trang Chu (24/11/2026)
    [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét 20 file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...
 ✅ [I18N SCANNER PASSED] Đã quét sạch 20 file giao diện.
    🎉 0 chuỗi tiếng Việt ghi cứng ngoài từ điển! Sẵn sàng cho quy trình build & deploy.
@@ -38,21 +37,8 @@
 transforming...
 [32m✓[39m 2399 modules transformed.
 rendering chunks...
-cmd : [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-At line:36 char:1
-+ cmd /c "npm run build" 2>&1 | Out-String -Stream | Add-Content -Path  ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ([1m[33m[plugi...vite:reporter] :String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-(!) C:/4 Antigravity all/47 web da nganh/src/services/growthService.ts is dynamically imported by C:/4 Antigravity 
-all/47 web da nganh/src/services/dataService.ts but also statically imported by C:/4 Antigravity all/47 web da 
-nganh/src/App.tsx, C:/4 Antigravity all/47 web da nganh/src/admin/components/LuckyWheelAdminManager.tsx, C:/4 
-Antigravity all/47 web da nganh/src/admin/modules/GrowthModule.tsx, C:/4 Antigravity all/47 web da 
-nganh/src/components/GrowthCenterModal.tsx, C:/4 Antigravity all/47 web da nganh/src/components/Header.tsx, C:/4 
-Antigravity all/47 web da nganh/src/components/LuckyWheelSection.tsx, C:/4 Antigravity all/47 web da 
-nganh/src/components/UserWalletModal.tsx, C:/4 Antigravity all/47 web da nganh/src/services/authService.ts, dynamic 
-import will not move module into another chunk.
+[1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+(!) C:/4 Antigravity all/47 web da nganh/src/services/growthService.ts is dynamically imported by C:/4 Antigravity all/47 web da nganh/src/services/dataService.ts but also statically imported by C:/4 Antigravity all/47 web da nganh/src/App.tsx, C:/4 Antigravity all/47 web da nganh/src/admin/components/LuckyWheelAdminManager.tsx, C:/4 Antigravity all/47 web da nganh/src/admin/modules/GrowthModule.tsx, C:/4 Antigravity all/47 web da nganh/src/components/GrowthCenterModal.tsx, C:/4 Antigravity all/47 web da nganh/src/components/Header.tsx, C:/4 Antigravity all/47 web da nganh/src/components/LuckyWheelSection.tsx, C:/4 Antigravity all/47 web da nganh/src/components/UserWalletModal.tsx, C:/4 Antigravity all/47 web da nganh/src/services/authService.ts, dynamic import will not move module into another chunk.
 [39m
 computing gzip size...
 [2mdist/[22m[32mindex.html                                     [39m[1m[2m 14.08 kB[22m[1m[22m[2m │ gzip:   3.59 kB[22m
@@ -163,15 +149,14 @@ computing gzip size...
 [2mdist/[22m[36massets/games-catalog-fallback-DcEoXQue.js      [39m[1m[2m790.41 kB[22m[1m[22m[2m │ gzip: 123.00 kB[22m
 [2mdist/[22m[36massets/seed-news-fallback-CyezkEkv.js          [39m[1m[2m884.33 kB[22m[1m[22m[2m │ gzip: 185.96 kB[22m
 [2mdist/[22m[36massets/CrawlerModule-BB-qCGhx.js               [39m[1m[2m972.13 kB[22m[1m[22m[2m │ gzip: 180.03 kB[22m
-[32m✓ built in 8.24s[39m
+[32m✓ built in 8.85s[39m
 ⚡ 2. Compiling Cloudflare Pages Edge Worker bundle...
-⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is 4a6235b. If this is a release build, 
-commit first before deploying.
-   🏷️ Injected Build ID: 4a6235b (2026-11-26T07:45:11.600Z)
+⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is d68ae38. If this is a release build, commit first before deploying.
+   🏷️ Injected Build ID: d68ae38 (2026-11-26T09:01:28.200Z)
 
   dist\_worker.js  6.5mb
 
-Done in 104ms
+Done in 122ms
 📄 3. Ensuring _routes.json in dist/ ...
    _routes.json copied to dist/_routes.json
 🛡️ 4. Running Post-build Chunk & Worker Budget Check (Lean Guard)...
@@ -197,4 +182,3 @@ Done in 104ms
 🎉 [LEAN GUARD PASSED] Toàn bộ ngân sách kích thước hệ thống đạt chuẩn 100%!
 ================================================================================
 ✅ Build completed successfully with active Cloudflare Edge Worker bundle (dist/_worker.js)!
-exit=0

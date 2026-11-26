@@ -3755,6 +3755,147 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Migration 0049_store_products_seller_column_and_index_v1 error]', err?.message);
   }
 
+  // 18. Migration 0050: 5 bảng External Supplier Connector & Supplier Fulfillment Webhook
+  try {
+    const s50Check = appliedMigSet.has('0050_supplier_connectors_v1');
+    if (!s50Check) {
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS external_suppliers (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          code TEXT NOT NULL UNIQUE,
+          mode TEXT NOT NULL DEFAULT 'POSTPAID_CREDIT',
+          base_url TEXT NOT NULL,
+          auth_type TEXT NOT NULL DEFAULT 'BEARER',
+          auth_header_name TEXT NOT NULL DEFAULT 'Authorization',
+          encrypted_api_key TEXT,
+          api_key_prefix TEXT,
+          encrypted_webhook_secret TEXT,
+          webhook_secret_prefix TEXT,
+          catalog_path TEXT,
+          order_path TEXT,
+          balance_path TEXT,
+          field_mapping_json TEXT,
+          supports_idempotency INTEGER NOT NULL DEFAULT 0,
+          markup_type TEXT NOT NULL DEFAULT 'PERCENT',
+          markup_value REAL NOT NULL DEFAULT 15,
+          min_margin_core REAL NOT NULL DEFAULT 0,
+          credit_limit_core REAL NOT NULL DEFAULT 0,
+          credit_used_core REAL NOT NULL DEFAULT 0,
+          prepaid_balance_core REAL NOT NULL DEFAULT 0,
+          prepaid_min_balance REAL NOT NULL DEFAULT 0,
+          auto_pause_enabled INTEGER NOT NULL DEFAULT 1,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          last_sync_at TEXT,
+          last_health_status TEXT,
+          last_error TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `).run();
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_ext_suppliers_mode_active ON external_suppliers(mode, is_active);').run();
+
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS external_supplier_products (
+          id TEXT PRIMARY KEY,
+          supplier_id TEXT NOT NULL,
+          external_sku TEXT NOT NULL,
+          external_name TEXT NOT NULL,
+          local_product_id TEXT,
+          supplier_cost_core REAL NOT NULL DEFAULT 0,
+          selling_price_core REAL NOT NULL DEFAULT 0,
+          profit_core REAL NOT NULL DEFAULT 0,
+          external_stock INTEGER NOT NULL DEFAULT 0,
+          affiliate_target_url TEXT,
+          anti_loss_paused INTEGER NOT NULL DEFAULT 0,
+          anti_loss_reason TEXT,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          last_synced_at TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(supplier_id, external_sku)
+        );
+      `).run();
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_ext_sup_products_supplier ON external_supplier_products(supplier_id, is_active);').run();
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_ext_sup_products_local ON external_supplier_products(local_product_id);').run();
+
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS external_supplier_ledger (
+          id TEXT PRIMARY KEY,
+          supplier_id TEXT NOT NULL,
+          order_id TEXT,
+          order_code TEXT,
+          entry_type TEXT NOT NULL,
+          cost_core REAL NOT NULL DEFAULT 0,
+          selling_core REAL NOT NULL DEFAULT 0,
+          profit_core REAL NOT NULL DEFAULT 0,
+          balance_due_after REAL NOT NULL DEFAULT 0,
+          external_order_ref TEXT,
+          status TEXT NOT NULL DEFAULT 'RECORDED',
+          actor TEXT,
+          note TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(supplier_id, external_order_ref, entry_type)
+        );
+      `).run();
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_ext_sup_ledger_supplier ON external_supplier_ledger(supplier_id, created_at);').run();
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_ext_sup_ledger_order ON external_supplier_ledger(order_id);').run();
+
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS supplier_fulfillment_webhooks (
+          id TEXT PRIMARY KEY,
+          seller_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          webhook_url TEXT NOT NULL,
+          encrypted_hmac_secret TEXT NOT NULL,
+          secret_prefix TEXT NOT NULL,
+          events_json TEXT NOT NULL DEFAULT '["order.paid"]',
+          is_active INTEGER NOT NULL DEFAULT 1,
+          timeout_ms INTEGER NOT NULL DEFAULT 5000,
+          retry_max INTEGER NOT NULL DEFAULT 2,
+          last_status_code INTEGER,
+          last_error TEXT,
+          last_triggered_at TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `).run();
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_sup_webhooks_seller ON supplier_fulfillment_webhooks(seller_id, is_active);').run();
+
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS supplier_fulfillment_deliveries (
+          id TEXT PRIMARY KEY,
+          webhook_id TEXT NOT NULL,
+          seller_id TEXT NOT NULL,
+          order_id TEXT NOT NULL,
+          order_code TEXT,
+          event_type TEXT NOT NULL,
+          request_payload_json TEXT NOT NULL,
+          http_status INTEGER,
+          response_snippet TEXT,
+          attempts INTEGER NOT NULL DEFAULT 0,
+          delivery_status TEXT NOT NULL DEFAULT 'PENDING',
+          external_fulfillment_ref TEXT,
+          error_message TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          delivered_at TEXT
+        );
+      `).run();
+
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_sup_deliveries_webhook ON supplier_fulfillment_deliveries(webhook_id, created_at);').run();
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_sup_deliveries_status ON supplier_fulfillment_deliveries(delivery_status, created_at);').run();
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_sup_deliveries_order ON supplier_fulfillment_deliveries(order_id);').run();
+
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0050_supplier_connectors_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0050_supplier_connectors_v1 error]', err?.message);
+  }
+
   lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };
   schemaUpgradesDone = true;
   })();
