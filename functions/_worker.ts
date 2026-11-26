@@ -248,7 +248,13 @@ import * as shippingIdApi from './api/shipping/[id]';
 import * as platformLeadsIndexApi from './api/platform-leads/index';
 import * as platformLeadsIdApi from './api/platform-leads/[id]';
 import { getMultipleSettingsD1 } from './services/d1_service';
-import { invalidateCatalogEdgeCache } from './services/cache_service';
+import {
+  invalidateCatalogEdgeCache,
+  getCatalogEpoch,
+  matchesIfNoneMatch,
+  shouldBumpCatalogEpoch,
+  wasEpochBumpedForRequest,
+} from './services/cache_service';
 import fallbackGiveawaysData from '../src/data/giveaways.json';
 import fallbackGamesData from './data/compact_games_fallback.json';
 import fallbackCodesData from './data/compact_fallback_codes.json';
@@ -667,31 +673,66 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
                             url.searchParams.has('fresh');
           const isPublic = !authHeader && !syncKeyHeader && !isNoCache && !url.searchParams.has('key');
 
-          // Edge Cache API: caches.default cho khách truy cập công khai (TTL 60s, stale-while-revalidate 30s)
-          if (isPublic && typeof caches !== 'undefined' && (caches as any).default) {
-            const cache = (caches as any).default;
-            const cacheUrl = new URL(request.url);
-            cacheUrl.search = ''; // Chuẩn hóa URL cache cho catalog công khai
-            const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+          // Đồng bộ tức thì qua Catalog Epoch + ETag / 304 + Edge Cache theo khóa epoch cho public GET /api/sync
+          if (isPublic) {
+            const currentEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+            const etag = `W/"sync-${currentEpoch}"`;
 
-            const cached = await cache.match(cacheKey);
-            if (cached) {
-              const res = new Response(cached.body, cached);
-              res.headers.set('CF-Edge-Cache-Status', 'HIT');
-              return res;
+            if (matchesIfNoneMatch(request.headers.get('If-None-Match'), etag)) {
+              return new Response(null, {
+                status: 304,
+                headers: {
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Expose-Headers': 'ETag, X-Catalog-Epoch, X-Cache-Status, X-Build-Id',
+                  'Cache-Control': 'public, max-age=0, must-revalidate',
+                  'CDN-Cache-Control': 'no-store',
+                  'ETag': etag,
+                  'X-Catalog-Epoch': currentEpoch,
+                  'X-Cache-Status': 'NOT-MODIFIED',
+                },
+              });
             }
 
-            const response = await syncApi.onRequestGet(context);
+            const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
+            const cacheUrl = new URL(request.url);
+            const cacheKey = cache
+              ? new Request(`${cacheUrl.origin}${cacheUrl.pathname}?_epoch=${encodeURIComponent(currentEpoch)}`, {
+                  method: 'GET',
+                })
+              : null;
+
+            if (cache && cacheKey) {
+              const cached = await cache.match(cacheKey);
+              if (cached) {
+                const resHeaders = new Headers(cached.headers);
+                resHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate');
+                resHeaders.set('CDN-Cache-Control', 'no-store');
+                resHeaders.set('ETag', etag);
+                resHeaders.set('X-Catalog-Epoch', currentEpoch);
+                resHeaders.set('CF-Edge-Cache-Status', 'HIT');
+                return new Response(cached.body, { status: cached.status, headers: resHeaders });
+              }
+            }
+
+            const reqHeaders = new Headers(request.headers);
+            reqHeaders.set('X-Internal-Catalog-Epoch', currentEpoch);
+            const epochCtx = { ...context, request: new Request(request, { headers: reqHeaders }) };
+            const response = await syncApi.onRequestGet(epochCtx);
             if (response.status === 200) {
               const responseText = await response.text();
               const headers = new Headers(response.headers);
-              headers.set('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=30');
+              headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+              headers.set('CDN-Cache-Control', 'no-store');
+              headers.set('ETag', etag);
+              headers.set('X-Catalog-Epoch', currentEpoch);
+              headers.set('Access-Control-Expose-Headers', 'ETag, X-Catalog-Epoch, X-Cache-Status, X-Build-Id');
 
-              const cacheToPut = new Response(responseText, {
-                status: response.status,
-                headers,
-              });
-              ctx.waitUntil(cache.put(cacheKey, cacheToPut));
+              if (cache && cacheKey) {
+                const edgeHeaders = new Headers(headers);
+                edgeHeaders.set('Cache-Control', 'public, max-age=300');
+                edgeHeaders.delete('CDN-Cache-Control');
+                ctx.waitUntil(cache.put(cacheKey, new Response(responseText, { status: response.status, headers: edgeHeaders })));
+              }
 
               const resOut = new Response(responseText, {
                 status: response.status,
@@ -3020,9 +3061,26 @@ export default {};
     }
 }
 
+export { shouldBumpCatalogEpoch };
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const res = await handleWorkerRequest(request, env, ctx);
+    try {
+      const url = new URL(request.url);
+      const pathname = url.pathname.replace(/\/$/, '') || '/';
+      const method = request.method.toUpperCase();
+      if (
+        res.status >= 200 &&
+        res.status < 300 &&
+        shouldBumpCatalogEpoch(pathname, method) &&
+        !wasEpochBumpedForRequest(request)
+      ) {
+        await invalidateCatalogEdgeCache(ctx, request, env);
+      }
+    } catch (e: any) {
+      console.warn('[CatalogEpochHook] non-fatal warning:', e?.message);
+    }
     return attachBuildHeaders(res);
   },
 };

@@ -1,4 +1,5 @@
 import { getMultipleSettingsD1, loadAllStoreProductsD1 } from '../services/d1_service';
+import { getCatalogEpoch, matchesIfNoneMatch } from '../services/cache_service';
 import fallbackGamesData from '../data/compact_games_fallback.json';
 import fallbackGiveawaysData from '../../src/data/giveaways.json';
 import { DEFAULT_NEWS_ARTICLES as fallbackNewsArticles } from '../data/compact_seed_news';
@@ -44,7 +45,8 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Key, X-Requested-With, Cache-Control, cache-control, Pragma, pragma, Apikey, apikey, x-api-key, X-Api-Key',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Key, X-Requested-With, Cache-Control, cache-control, Pragma, pragma, If-None-Match, if-none-match, Apikey, apikey, x-api-key, X-Api-Key',
+  'Access-Control-Expose-Headers': 'ETag, X-Catalog-Epoch, X-Cache-Status, X-Server-Time, X-Build-Id',
 };
 
 export const onRequestOptions: PagesFunction = async () => {
@@ -70,33 +72,74 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const globalScope = globalThis as any;
   const nowMs = Date.now();
   const cfCache = typeof caches !== 'undefined' ? (caches as any).default : null;
-  const cacheKey = new Request(url.toString(), { method: 'GET' });
 
-  // 1. In-Memory Isolate Cache (< 5ms)
+  // 0. Đọc Catalog Epoch chung từ SQL D1 (1 row PK lookup duy nhất) để đồng bộ tức thì giữa Admin & Khách
+  const epochStart = Date.now();
+  const currentEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+  const epochMs = Date.now() - epochStart;
+  const etag = `W/"sync-lite-${currentEpoch}"`;
+  const epochCacheKey = new Request(`${url.origin}${url.pathname}?_epoch=${encodeURIComponent(currentEpoch)}`, {
+    method: 'GET',
+  });
+
+  // 0b. ETag / If-None-Match -> Trả 304 Not Modified tức thì (0 KB body, 0 query bảng sản phẩm)
+  if (!isNoCache && matchesIfNoneMatch(request.headers.get('If-None-Match'), etag)) {
+    const totalMs = Date.now() - reqStart;
+    return new Response(null, {
+      status: 304,
+      headers: {
+        ...CORS_HEADERS,
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+        'CDN-Cache-Control': 'no-store',
+        'ETag': etag,
+        'X-Catalog-Epoch': currentEpoch,
+        'X-Server-Time': new Date().toISOString(),
+        'X-Cache-Status': 'NOT-MODIFIED',
+        'X-Timing-D1-Ms': String(epochMs),
+        'X-Timing-Total-Ms': String(totalMs),
+        'Server-Timing': `epoch;dur=${epochMs},d1_total;dur=${epochMs},total;dur=${totalMs};desc="colo=${colo}"`,
+      },
+    });
+  }
+
+  // 1. In-Memory Isolate Cache (CHỈ HIT khi epoch khớp 100% và < 5 phút lưới an toàn)
   if (!isNoCache && globalScope.__wcg_sync_lite_cache) {
-    if (nowMs - globalScope.__wcg_sync_lite_cache.cachedAt < 60000) {
+    if (
+      globalScope.__wcg_sync_lite_cache.epoch === currentEpoch &&
+      nowMs - globalScope.__wcg_sync_lite_cache.cachedAt < 300000
+    ) {
       const totalMs = Date.now() - reqStart;
       return new Response(globalScope.__wcg_sync_lite_cache.bodyStr, {
         headers: {
           ...CORS_HEADERS,
-          'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
+          'Cache-Control': 'public, max-age=0, must-revalidate',
+          'CDN-Cache-Control': 'no-store',
+          'ETag': etag,
+          'X-Catalog-Epoch': currentEpoch,
           'X-Server-Time': new Date().toISOString(),
           'X-Cache-Status': 'HIT-ISOLATE',
           'cf-cache-status': 'HIT',
-          'X-Timing-D1-Ms': '0',
+          'X-Timing-D1-Ms': String(epochMs),
           'X-Timing-Total-Ms': String(totalMs),
-          'Server-Timing': `d1_total;dur=0,total;dur=${totalMs};desc="colo=${colo}"`,
+          'Server-Timing': `epoch;dur=${epochMs},d1_total;dur=${epochMs},total;dur=${totalMs};desc="colo=${colo}"`,
         },
       });
     }
   }
 
-  // 2. Cloudflare Edge Cache API (< 50ms)
+  // 2. Cloudflare Edge Cache API theo khóa bất biến ?_epoch=<currentEpoch> (< 15ms khi isolate lạnh)
   if (!isNoCache && cfCache) {
     try {
-      const cached = await cfCache.match(cacheKey);
+      const cached = await cfCache.match(epochCacheKey);
       if (cached) {
-        return cached;
+        const edgeHeaders = new Headers(cached.headers);
+        edgeHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate');
+        edgeHeaders.set('CDN-Cache-Control', 'no-store');
+        edgeHeaders.set('ETag', etag);
+        edgeHeaders.set('X-Catalog-Epoch', currentEpoch);
+        edgeHeaders.set('X-Cache-Status', 'HIT-EDGE');
+        edgeHeaders.set('X-Server-Time', new Date().toISOString());
+        return new Response(cached.body, { status: cached.status, headers: edgeHeaders });
       }
     } catch {}
   }
@@ -363,6 +406,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const payload = {
       success: true,
+      catalogEpoch: currentEpoch,
       timestamp: new Date().toISOString(),
       serverTime: new Date().toISOString(),
       games: liteGames,
@@ -384,30 +428,38 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     if (!isNoCache) {
       globalScope.__wcg_sync_lite_cache = {
+        epoch: currentEpoch,
         bodyStr,
         cachedAt: nowMs,
       };
     }
 
     const totalMs = Date.now() - reqStart;
+    const totalD1Ms = d1DurationMs + epochMs;
     const response = new Response(bodyStr, {
       headers: {
         ...CORS_HEADERS,
         'Cache-Control': isNoCache
           ? 'no-cache, no-store, must-revalidate'
-          : 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
-        'CDN-Cache-Control': isNoCache ? 'no-store' : 'public, max-age=300',
+          : 'public, max-age=0, must-revalidate',
+        'CDN-Cache-Control': 'no-store',
+        'ETag': etag,
+        'X-Catalog-Epoch': currentEpoch,
         'X-Server-Time': new Date().toISOString(),
         'X-Cache-Status': isNoCache ? 'BYPASS' : 'DYNAMIC',
-        'X-Timing-D1-Ms': String(d1DurationMs),
+        'X-Timing-D1-Ms': String(totalD1Ms),
         'X-Timing-Total-Ms': String(totalMs),
-        'Server-Timing': `tombstones;dur=${tombstonesMs},settings;dur=${settingsMs},products;dur=${productsMs},d1_total;dur=${d1DurationMs},total;dur=${totalMs};desc="colo=${colo}"`,
+        'Server-Timing': `epoch;dur=${epochMs},tombstones;dur=${tombstonesMs},settings;dur=${settingsMs},products;dur=${productsMs},d1_total;dur=${totalD1Ms},total;dur=${totalMs};desc="colo=${colo}"`,
       },
     });
 
     if (!isNoCache && cfCache && context.waitUntil) {
       try {
-        context.waitUntil(cfCache.put(cacheKey, response.clone()));
+        const edgeHeaders = new Headers(response.headers);
+        edgeHeaders.set('Cache-Control', 'public, max-age=300');
+        edgeHeaders.delete('CDN-Cache-Control');
+        const edgeClone = new Response(bodyStr, { status: 200, headers: edgeHeaders });
+        context.waitUntil(cfCache.put(epochCacheKey, edgeClone));
       } catch {}
     }
 

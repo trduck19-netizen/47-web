@@ -7,6 +7,22 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-26]
 
+### 478. Triển Khai PA1 — Đồng Bộ Tức Thì Admin → Trang Khách Qua `Catalog Epoch` (D1) & `ETag / 304 Not Modified` (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý triệt để độ trễ đồng bộ ~2–5 phút khi Admin đăng/sửa/duyệt sản phẩm trên `admin-universal-mall.pages.dev` rồi kiểm tra bên `universal-mall-shop.pages.dev` (do 2 project tách biệt RAM isolate & `caches.default`, TTL `max-age=60 / s-maxage=300`, và nhiều tuyến ghi sản phẩm/banner/đơn chưa gọi xóa cache).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Dịch vụ Catalog Epoch dùng chung trên SQL D1 (`functions/services/cache_service.ts`)*:
+     - Lưu khóa nhẹ `wcg_catalog_epoch_v1` trong bảng `system_settings` (không tạo bảng mới), cung cấp `getCatalogEpoch` (1 row PK lookup), `bumpCatalogEpoch`, `matchesIfNoneMatch` (RFC 7232), `shouldBumpCatalogEpoch`, và chống bump trùng trong cùng request bằng `WeakSet<Request>`.
+     - Gắn `await bumpCatalogEpoch(env?.DB)` trực tiếp vào `invalidateCatalogEdgeCache` và dọn sạch các URL trùng lặp.
+  2. *Nâng cấp `/api/sync-lite`, `/api/sync` (public) & `/api/homepage-sections` (`sync-lite.ts`, `homepage-sections.ts`, `sync.ts`, `_worker.ts`)*:
+     - Đổi `Cache-Control` thành `public, max-age=0, must-revalidate`, `CDN-Cache-Control: no-store`, kèm `ETag` & `X-Catalog-Epoch`.
+     - Khi `If-None-Match` khớp epoch hiện tại → trả `304 Not Modified` tức thì (`0 KB`, `0` query bảng sản phẩm/settings).
+     - Gắn khóa `?_epoch=<currentEpoch>` cho cả RAM isolate cache lẫn `caches.default` (với lưới an toàn 5 phút) để mọi thay đổi trên Admin lập tức làm mới toàn bộ 300+ PoP và cả 2 domain.
+  3. *Hook tự động tăng epoch cho toàn bộ tuyến ghi danh mục (`functions/_worker.ts`)*:
+     - Trong `export default.fetch`, mọi request `POST/PUT/PATCH/DELETE` trả `2xx` thuộc nhóm sản phẩm/kho/duyệt/banner/đơn/voucher/game/tin/sự kiện tự động gọi `await invalidateCatalogEdgeCache(ctx, request, env)` trước khi trả response.
+  4. *Kiểm thử tự động trong repo (`scripts/tests/test_catalog_epoch_sync.ts`, `package.json`)*:
+     - Thêm `npm run test:sync-epoch` (52 assertions) kiểm chứng trực tiếp `getCatalogEpoch`, `bumpCatalogEpoch`, `matchesIfNoneMatch`, luồng `sync-lite` (`200 → 304 → cross-domain bump → 200 mới`), `homepage-sections` (`200 → 304`) và `shouldBumpCatalogEpoch`.
+
 ### 477. Sửa Nốt Sau Kiểm Báo Cáo Đợt 1 (`6a28fd6`): Gỡ Lỗi TS2322 Mới Ở `AdminSidebar.tsx`, Guard Idempotency Nguyên Tử Cho `reserveSupplierCreditAtomic` & Bổ Sung Dòng `exit=0` Vào `docs/build_success.log` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Xử lý dứt điểm 3 điểm từ báo cáo kiểm chứng sau build `6a28fd6`: (1) lỗi TS2322 mới ở `AdminSidebar.tsx:308` (`badge: 'API'` kiểu `string` gán cho `badge?: number`, khiến tổng lỗi full `tsc` tăng 1.828 → 1.829); (2) `docs/build_success.log` thiếu dòng `exit=0` ở cuối log theo Chốt Chặn 3; (3) `reserveSupplierCreditAtomic` thiếu guard idempotency nội bộ theo `(supplier_id, external_order_ref)` nếu bị gọi 2 lần cùng đơn.

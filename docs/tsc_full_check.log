@@ -1,5 +1,5 @@
 === homepage: npx tsc -p tsconfig.homepage.json --noEmit --listFiles ===
-2026-11-26T11:19:14Z
+2026-11-26T11:35:42Z
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -184,142 +184,142 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
 exit=0
 
 === full: npx tsc -p tsconfig.json --noEmit ===
-2026-11-26T11:19:16Z
+2026-11-26T11:35:44Z
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
-functions/_worker.ts(431,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
+functions/_worker.ts(437,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
     Type 'D1Database | undefined' is not assignable to type 'D1Database'.
       Type 'undefined' is not assignable to type 'D1Database'.
-functions/_worker.ts(1203,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1228,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1234,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1270,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1278,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1401,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1408,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1417,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1455,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1464,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1468,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1473,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1482,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1487,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1494,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1500,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1504,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1512,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1517,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1525,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1532,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1540,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1546,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1551,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1559,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1564,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1572,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1582,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1587,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1597,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1605,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1614,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1623,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1629,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1636,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1644,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1650,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1657,81): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1663,79): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1668,78): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1676,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1684,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1692,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1700,79): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1707,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1714,83): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1721,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1726,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1731,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1782,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1796,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1838,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1845,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1853,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1860,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1865,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1870,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1876,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1883,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1888,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1893,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1901,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1907,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1915,58): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1923,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1931,60): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1939,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1953,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2011,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2017,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2025,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2034,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2043,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2050,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2058,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2066,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2073,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2084,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2094,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2103,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2120,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2132,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2140,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2147,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2155,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2163,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2171,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2180,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2188,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2243,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2252,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2260,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2268,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2342,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2351,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2361,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2369,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2376,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2384,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2391,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2398,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2406,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2414,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2422,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2430,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2438,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2444,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2452,78): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2460,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2466,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2476,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2484,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2492,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2501,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2507,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2513,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2522,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2528,81): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2537,87): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2543,84): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2553,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2561,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2569,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2577,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(3189,37): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3189,44): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3191,45): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3237,26): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
-functions/_worker.ts(3542,24): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
-functions/_worker.ts(3786,13): error TS6133: 'isWwm' is declared but its value is never read.
+functions/_worker.ts(1244,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1269,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1275,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1311,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1319,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1442,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1449,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1458,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1496,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1505,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1509,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1514,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1523,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1528,72): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1535,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1541,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1545,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1553,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1558,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1566,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1573,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1581,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1587,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1592,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1600,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1605,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1613,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1623,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1628,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1638,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1646,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1655,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1664,72): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1670,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1677,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1685,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1691,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1698,81): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1704,79): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1709,78): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1717,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1725,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1733,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1741,79): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1748,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1755,83): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1762,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1767,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1772,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1823,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1837,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1879,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1886,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1894,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1901,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1906,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1911,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1917,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1924,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1929,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1934,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1942,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1948,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1956,58): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1964,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1972,60): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1980,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1994,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2052,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2058,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2066,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2075,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2084,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2091,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2099,72): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2107,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2114,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2125,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2135,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2144,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2161,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2173,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2181,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2188,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2196,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2204,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2212,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2221,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2229,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2284,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2293,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2301,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2309,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2383,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2392,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2402,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2410,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2417,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2425,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2432,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2439,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2447,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2455,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2463,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2471,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2479,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2485,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2493,78): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2501,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2507,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2517,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2525,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2533,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2542,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2548,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2554,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2563,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2569,81): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2578,87): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2584,84): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2594,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2602,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2610,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2618,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(3247,37): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3247,44): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3249,45): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3295,26): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
+functions/_worker.ts(3600,24): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
+functions/_worker.ts(3844,13): error TS6133: 'isWwm' is declared but its value is never read.
 functions/api/admin/audit-log.ts(63,11): error TS6133: 'bindings' is declared but its value is never read.
 functions/api/admin/automation/status.ts(63,16): error TS6133: 'readSystemSettingJson' is declared but its value is never read.
 functions/api/admin/free-codes/index.ts(163,11): error TS6133: 'isHot' is declared but its value is never read.
@@ -416,8 +416,8 @@ functions/api/games/upload-icon.ts(177,36): error TS6133: 'context' is declared 
 functions/api/giveaways/claim.ts(2,10): error TS6133: 'verifyToken' is declared but its value is never read.
 functions/api/giveaways/simulate.ts(1,28): error TS2307: Cannot find module '@cloudflare/workers-types' or its corresponding type declarations.
 functions/api/giveaways/simulate.ts(3,23): error TS6133: 'verifyTemporaryAuditToken' is declared but its value is never read.
-functions/api/homepage-sections.ts(4,3): error TS6133: 'HOMEPAGE_SECTIONS_REGISTRY' is declared but its value is never read.
-functions/api/homepage-sections.ts(147,7): error TS2554: Expected 2 arguments, but got 8.
+functions/api/homepage-sections.ts(5,3): error TS6133: 'HOMEPAGE_SECTIONS_REGISTRY' is declared but its value is never read.
+functions/api/homepage-sections.ts(180,7): error TS2554: Expected 2 arguments, but got 8.
 functions/api/migrate.ts(202,20): error TS18048: 'results' is possibly 'undefined'.
 functions/api/missions/index.ts(316,13): error TS6133: 'nowIso' is declared but its value is never read.
 functions/api/my-seller-orders.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.

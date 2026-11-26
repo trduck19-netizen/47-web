@@ -1,5 +1,6 @@
 import { verifyAdminAuth } from '../services/mission_service';
 import { ensureSchemaUpgrades, logAdminAudit } from '../services/d1_service';
+import { getCatalogEpoch, matchesIfNoneMatch } from '../services/cache_service';
 import {
   HOMEPAGE_SECTIONS_REGISTRY,
   mergeHomepageSectionsConfig,
@@ -16,7 +17,8 @@ interface Env {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Key, X-Admin-Key',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sync-Key, X-Admin-Key, If-None-Match',
+  'Access-Control-Expose-Headers': 'ETag, X-Catalog-Epoch, X-Cache-Status, X-Build-Id',
   'Content-Type': 'application/json; charset=utf-8',
 };
 
@@ -28,19 +30,44 @@ export const onRequestOptions: PagesFunction = async () => {
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env, waitUntil } = context;
 
-  // 1. Kiểm tra Cloudflare Edge Cache (Tránh đọc D1 liên tục, phản hồi cực nhanh ~20-50ms)
+  // 1. Đồng bộ tức thì qua Catalog Epoch + ETag / 304 + Edge Cache theo khóa epoch
   const urlObj = new URL(request.url);
   const bypassCache = urlObj.searchParams.has('fresh') ||
                       urlObj.searchParams.has('nocache') ||
                       request.headers.get('Cache-Control')?.includes('no-cache');
+  const currentEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+  const etag = `W/"sections-${currentEpoch}"`;
+
+  if (!bypassCache && matchesIfNoneMatch(request.headers.get('If-None-Match'), etag)) {
+    return new Response(null, {
+      status: 304,
+      headers: {
+        ...CORS_HEADERS,
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+        'CDN-Cache-Control': 'no-store',
+        'ETag': etag,
+        'X-Catalog-Epoch': currentEpoch,
+        'X-Cache-Status': 'NOT-MODIFIED',
+      },
+    });
+  }
+
   const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
-  const cacheKey = cache ? new Request(request.url, { method: 'GET' }) : null;
+  const cacheKey = cache
+    ? new Request(`${urlObj.origin}${urlObj.pathname}?_epoch=${encodeURIComponent(currentEpoch)}`, { method: 'GET' })
+    : null;
 
   if (cache && cacheKey && !bypassCache) {
     try {
       const cached = await cache.match(cacheKey);
       if (cached) {
-        return cached;
+        const outHeaders = new Headers(cached.headers);
+        outHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate');
+        outHeaders.set('CDN-Cache-Control', 'no-store');
+        outHeaders.set('ETag', etag);
+        outHeaders.set('X-Catalog-Epoch', currentEpoch);
+        outHeaders.set('X-Cache-Status', 'HIT-EDGE');
+        return new Response(cached.body, { status: cached.status, headers: outHeaders });
       }
     } catch {}
   }
@@ -59,25 +86,31 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
 
     const sections = mergeHomepageSectionsConfig(rawSections);
+    const bodyStr = JSON.stringify({
+      success: true,
+      catalogEpoch: currentEpoch,
+      sections,
+      updated_at: row?.updated_at || null,
+    });
 
-    const response = new Response(
-      JSON.stringify({
-        success: true,
-        sections,
-        updated_at: row?.updated_at || null,
-      }),
-      {
-        status: 200,
-        headers: {
-          ...CORS_HEADERS,
-          'Cache-Control': 'public, max-age=15, stale-while-revalidate=30',
-        },
-      }
-    );
+    const response = new Response(bodyStr, {
+      status: 200,
+      headers: {
+        ...CORS_HEADERS,
+        'Cache-Control': bypassCache ? 'no-cache, no-store, must-revalidate' : 'public, max-age=0, must-revalidate',
+        'CDN-Cache-Control': 'no-store',
+        'ETag': etag,
+        'X-Catalog-Epoch': currentEpoch,
+        'X-Cache-Status': bypassCache ? 'BYPASS' : 'DYNAMIC',
+      },
+    });
 
     if (cache && cacheKey && !bypassCache && typeof waitUntil === 'function') {
       try {
-        waitUntil(cache.put(cacheKey, response.clone()));
+        const edgeHeaders = new Headers(response.headers);
+        edgeHeaders.set('Cache-Control', 'public, max-age=300');
+        edgeHeaders.delete('CDN-Cache-Control');
+        waitUntil(cache.put(cacheKey, new Response(bodyStr, { status: 200, headers: edgeHeaders })));
       } catch {}
     }
 

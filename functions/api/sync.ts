@@ -411,7 +411,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           data: val,
           timestamp: new Date().toISOString(),
         }),
-        { headers: { ...CORS_HEADERS, 'Cache-Control': (authorized || isNoCache) ? 'no-cache, no-store, must-revalidate' : 'public, max-age=60, s-maxage=60, stale-while-revalidate=120' } }
+        {
+          headers: {
+            ...CORS_HEADERS,
+            'Cache-Control': (authorized || isNoCache)
+              ? 'no-cache, no-store, must-revalidate'
+              : 'public, max-age=0, must-revalidate',
+            'CDN-Cache-Control': 'no-store',
+          },
+        }
       );
     }
 
@@ -419,33 +427,28 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const globalScope = globalThis as any;
     const nowMs = Date.now();
-    const PUBLIC_CACHE_TTL_MS = 60000; // 60s in-memory isolate cache for public GET /api/sync
     const isPublicCacheable = !authorized && !isNoCache;
-    const cfCache = typeof caches !== 'undefined' ? (caches as any).default : null;
-    const cacheKey = new Request(url.toString(), { method: 'GET' });
+    const reqEpoch = request.headers.get('X-Internal-Catalog-Epoch') || '';
+    const PUBLIC_CACHE_TTL_MS = 300000;
 
-    if (isPublicCacheable) {
-      // 1. Isolate in-memory cache (< 5ms)
-      if (globalScope.__wcg_public_sync_cache && (nowMs - globalScope.__wcg_public_sync_cache.cachedAt < PUBLIC_CACHE_TTL_MS)) {
+    if (isPublicCacheable && reqEpoch) {
+      // 1. Isolate in-memory cache (CHỈ HIT khi epoch khớp 100%)
+      if (
+        globalScope.__wcg_public_sync_cache &&
+        globalScope.__wcg_public_sync_cache.epoch === reqEpoch &&
+        nowMs - globalScope.__wcg_public_sync_cache.cachedAt < PUBLIC_CACHE_TTL_MS
+      ) {
         return new Response(globalScope.__wcg_public_sync_cache.bodyStr, {
           headers: {
             ...CORS_HEADERS,
-            'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
+            'Cache-Control': 'public, max-age=0, must-revalidate',
+            'CDN-Cache-Control': 'no-store',
+            'X-Catalog-Epoch': reqEpoch,
             'X-Server-Time': new Date().toISOString(),
             'X-Cache-Status': 'HIT-ISOLATE',
             'cf-cache-status': 'HIT',
           },
         });
-      }
-
-      // 2. Cloudflare Edge Cache API (< 50ms)
-      if (cfCache) {
-        try {
-          const cached = await cfCache.match(cacheKey);
-          if (cached) {
-            return cached;
-          }
-        } catch {}
       }
     }
 
@@ -1407,8 +1410,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
 
     const bodyStr = JSON.stringify(responsePayload);
-    if (!authorized && !isNoCache) {
+    if (!authorized && !isNoCache && reqEpoch) {
       globalScope.__wcg_public_sync_cache = {
+        epoch: reqEpoch,
         bodyStr,
         cachedAt: nowMs,
       };
@@ -1418,18 +1422,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       headers: {
         ...CORS_HEADERS,
         'Cache-Control': isPublicCacheable
-          ? 'public, max-age=60, s-maxage=60, stale-while-revalidate=300'
+          ? 'public, max-age=0, must-revalidate'
           : 'no-cache, no-store, must-revalidate',
+        'CDN-Cache-Control': 'no-store',
+        ...(reqEpoch ? { 'X-Catalog-Epoch': reqEpoch } : {}),
         'X-Server-Time': new Date().toISOString(),
         'X-Cache-Status': isPublicCacheable ? 'MISS' : 'BYPASS',
       },
     });
-
-    if (isPublicCacheable && cfCache && context.waitUntil) {
-      try {
-        context.waitUntil(cfCache.put(cacheKey, finalResponse.clone()));
-      } catch {}
-    }
 
     return finalResponse;
   } catch (err: any) {
