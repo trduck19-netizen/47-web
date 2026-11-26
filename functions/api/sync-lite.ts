@@ -336,6 +336,17 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           first_purchase_max_price: p.first_purchase_max_price !== undefined && p.first_purchase_max_price !== null
             ? Number(p.first_purchase_max_price)
             : (meta.first_purchase_max_price !== undefined && meta.first_purchase_max_price !== null ? Number(meta.first_purchase_max_price) : null),
+          product_type: p.product_type || meta.product_type || 'digital',
+          ...(p.weight_grams !== undefined && p.weight_grams !== null
+            ? { weight_grams: Number(p.weight_grams) }
+            : (meta.weight_grams !== undefined && meta.weight_grams !== null ? { weight_grams: Number(meta.weight_grams) } : {})),
+          ...(p.warehouse_address || meta.warehouse_address ? { warehouse_address: p.warehouse_address || meta.warehouse_address } : {}),
+          ...(p.warranty_hours !== undefined && p.warranty_hours !== null
+            ? { warranty_hours: Number(p.warranty_hours) }
+            : (meta.warranty_hours !== undefined && meta.warranty_hours !== null ? { warranty_hours: Number(meta.warranty_hours) } : {})),
+          ...(p.seller_name || meta.seller_name ? { seller_name: p.seller_name || meta.seller_name } : {}),
+          brand: p.brand || p.seller_name || meta.seller_name || '',
+          origin: p.origin || p.warehouse_address || meta.warehouse_address || '',
         };
       });
 

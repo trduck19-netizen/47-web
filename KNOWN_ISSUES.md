@@ -10,6 +10,14 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-330: `sync-lite.ts` Lược Bỏ `product_type` Khi `.map()` & `ProductCheckoutModal.tsx` Sót 5 Chỗ VietQR "Giao Mã" + Ngoài Phạm Vi I18N Guard (26/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - Kệ hàng live dùng nguồn `GET /api/sync-lite`, nhưng `.map()` tường minh trong `functions/api/sync-lite.ts` thiếu `product_type`, `weight_grams`, `warehouse_address`, `warranty_hours`, `seller_name`, khiến `isPhysical` luôn `false` trên kệ hàng, `ProductDetailModal` và `ProductCheckoutModal`.
+  - 5 vị trí trong luồng VietQR/ví của `ProductCheckoutModal.tsx` chưa gate theo `isPhysical`, và file chưa nằm trong `IN_SCOPE_UI_FILES` của `check-hardcoded-i18n.cjs` (64 violations tiếng Việt ghi cứng).
+- **Giải pháp chuẩn đã kiểm chứng (26/11/2026 - Mục 470)**:
+  - Bổ sung 5 field nguồn + 2 field dẫn xuất (`brand`, `origin`) vào `sync-lite.ts` (không thêm field thừa/`shipping_fee`).
+  - Gate đủ 5 chỗ VietQR/ví theo `isPhysical`, bổ sung 77 khóa `checkoutModal` song ngữ VI/EN, dọn sạch 64 violations và thêm `ProductCheckoutModal.tsx` vào `IN_SCOPE_UI_FILES` (20 file, 0 lỗi).
+
 ### ISSUE-329: ~110 Lệnh DDL Vô Điều Kiện Trong `ensureSchemaUpgrades` Chạy Lại Trên Mọi Isolate Lạnh (17–28s Ngoài HKG) (25/11/2026)
 - **Triệu chứng & Rủi ro**:
   - Dù `appliedMigSet` đã bỏ qua các migration cũ và 5 hàm `ensure*Schema`, `ensureSchemaUpgrades` vẫn chứa ~110 lệnh DDL/seed nằm trực tiếp trong executor (4 vị trí không có guard `appliedMigSet.has()`), khiến mọi isolate lạnh của `search`, `automation/status`, `automation/config`, `/api/auth/me` chạy lại ~110 round-trip tuần tự (17–28 giây ở các POP Mỹ, gây abort timeout 3,5 giây ở lần đăng nhập admin đầu tiên nếu rơi vào isolate lạnh).

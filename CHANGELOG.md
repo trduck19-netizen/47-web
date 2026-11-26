@@ -7,6 +7,17 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-26]
 
+### 470. Nối Dây `product_type` & Metadata Vật Lý Trong `sync-lite.ts`, Gate 5 Chỗ VietQR/Ví Theo `isPhysical` & Đưa `ProductCheckoutModal.tsx` Vào I18N Guard (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý 2 lỗi xác minh từ kiểm báo cáo `90f42f5`: (1) `functions/api/sync-lite.ts` lược bỏ `product_type` khi `.map()` danh sách `storeProducts`, làm nhánh vật lý không kích hoạt từ kệ hàng live; (2) 5 chỗ trong luồng VietQR/ví của `ProductCheckoutModal.tsx` vẫn hiển thị câu chữ "giao mã / mã quà tặng / mã kho" và file chưa nằm trong `IN_SCOPE_UI_FILES` của I18N Guard (64 violations tiếng Việt ghi cứng).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Nối dây `product_type` & field vật lý (`functions/api/sync-lite.ts`)*:
+     - Bổ sung 5 field có nguồn + component đọc (`product_type` fallback `'digital'`, `weight_grams`, `warehouse_address`, `warranty_hours`, `seller_name`) và 2 field dẫn xuất tường minh (`brand`, `origin`) vào `.map()` của `storeProducts`. Không thêm field thừa hoặc `shipping_fee`.
+  2. *Nhóm 2 — Gate 5 chỗ VietQR/ví + I18N Guard 20 file (`src/components/ProductCheckoutModal.tsx`, `scripts/check-hardcoded-i18n.cjs`, `src/locales/vi.json`, `src/locales/en.json`)*:
+     - Gate đủ 5 vị trí (`:779`, `:1256`, `:2173`, `:2193`, `:2447`, kèm `:2471` & `:2493`) theo `isPhysical`, thay câu chữ giao mã bằng xác nhận đơn / tạo mã vận đơn.
+     - Thêm 77 khóa dịch song ngữ `checkoutModal` vào `vi.json` & `en.json`, xử lý sạch 64 violations trong `ProductCheckoutModal.tsx`, đưa file vào `IN_SCOPE_UI_FILES` (lên 20 file) và xác nhận guard exit `0`.
+     - Sửa `ProductCard.tsx:18` thành `product.product_type === 'physical'` cho nhất quán.
+
 ### 469. Nâng Cấp Giao Diện Trưng Bày, Mua Hàng & Thanh Toán Hàng Vật Lý Chuẩn Shopee (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Tham khảo trải nghiệm sàn Shopee để nâng cấp toàn diện giao diện trưng bày sản phẩm, chi tiết mua hàng và thanh toán cho hàng vật lý, đồng bộ 100% song ngữ VI/EN qua từ điển tập trung (`shopeePhysical` trong `vi.json` & `en.json`).

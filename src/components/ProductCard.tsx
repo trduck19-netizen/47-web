@@ -15,7 +15,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onQuickBuy,
 }) => {
   const { formatCurrency, t } = useLanguage();
-  const isPhysical = product.product_type !== 'digital';
+  const isPhysical = product.product_type === 'physical';
   const shipOrigin = (product as any).warehouse_address || (product as any).origin || t('shopeePhysical.warehouseDefault');
 
   return (

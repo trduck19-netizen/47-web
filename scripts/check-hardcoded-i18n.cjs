@@ -29,6 +29,7 @@ const IN_SCOPE_UI_FILES = [
   'src/admin/modules/MembersModule.tsx',
   'src/admin/modules/HomepageSectionsModule.tsx',
   'src/components/ProductDetailModal.tsx',
+  'src/components/ProductCheckoutModal.tsx',
   'src/components/PackageShareModal.tsx',
   'src/components/ProductReviewsSection.tsx',
   'src/components/AuthModal.tsx',
