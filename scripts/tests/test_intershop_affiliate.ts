@@ -352,7 +352,7 @@ function createMockDb(seed?: Partial<MockState>) {
       p.status = 'PENDING_ADMIN';
       return { rows: [], changes: 1 };
     }
-    if (sql.startsWith("UPDATE seller_affiliate_partnerships SET status = 'APPROVED'")) {
+    if (sql.startsWith("UPDATE seller_affiliate_partnerships SET status = 'APPROVED', api_key_hash = ?")) {
       const [keyHash, keyPrefix, rawKey, id] = args;
       const p = state.partnerships.get(id);
       if (!p) return { rows: [], changes: 0 };
@@ -659,7 +659,7 @@ function createMockDb(seed?: Partial<MockState>) {
     // Admin PATCH partnership lookup & updates
     if (sql.startsWith('SELECT id, supplier_seller_id, reseller_seller_id, status, api_key_hash, api_key_prefix FROM seller_affiliate_partnerships WHERE id = ?')) {
       const p = state.partnerships.get(args[0]);
-      return { rows: p ? [p] : [], changes: 0 };
+      return { rows: p ? [{ ...p }] : [], changes: 0 };
     }
     if (sql.startsWith("UPDATE seller_affiliate_partnerships SET status = 'APPROVED', revoked_at = NULL")) {
       const [updatedAt, id] = args;
@@ -1856,6 +1856,8 @@ async function main() {
       ['partnerships', 'sap_live']
     );
     assert.equal(restoreRes.status, 200);
+    assert.equal(db.state.partnerships.get('sap_live').status, 'APPROVED');
+    assert.equal(db.state.partnerships.get('sap_live').revoked_at, null);
     assert.equal(db.state.listings.get('sal_live').status, 'ACTIVE');
     assert.equal(db.state.listings.get('sal_live').price_warning, null);
     assert.equal(db.state.products.get('prod_res_1').status, 'APPROVED');
@@ -1886,6 +1888,30 @@ async function main() {
     const adminEnv = { DB: db, ADMIN_API_KEY: 'admin_master_test_key_2026_secure' };
     db.state.sellers.set('sel_a', { id: 'sel_a', name: 'Shop A', slug: 'shop-a', status: 'ACTIVE' });
     db.state.sellers.set('sel_b', { id: 'sel_b', name: 'Shop B', slug: 'shop-b', status: 'ACTIVE' });
+
+    // Disabled global affiliate_enabled=false -> POST blocked 403 AFFILIATE_DISABLED
+    db.state.settings.set('wcg_marketplace_config_v1', JSON.stringify({
+      ...DEFAULT_MARKETPLACE_CONFIG,
+      affiliate_enabled: false,
+    }));
+    const disabledCreateRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ supplier_seller_id: 'sel_a', reseller_seller_id: 'sel_b' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships']
+    );
+    assert.equal(disabledCreateRes.status, 403);
+    assert.equal(((await disabledCreateRes.json()) as any).code, 'AFFILIATE_DISABLED');
+    // Restore affiliate_enabled=true for remaining cases in Test 15
+    db.state.settings.set('wcg_marketplace_config_v1', JSON.stringify({
+      ...DEFAULT_MARKETPLACE_CONFIG,
+      affiliate_enabled: true,
+    }));
 
     // Self-loop blocked 400
     const selfRes = await handleAdminAffiliateRequest(
