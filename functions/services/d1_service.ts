@@ -3896,6 +3896,26 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Migration 0050_supplier_connectors_v1 error]', err?.message);
   }
 
+  // 19. Migration 0051: Dọn mâu thuẫn revoked_at trên partnership APPROVED (không xóa partnership/khóa)
+  try {
+    const s51Check = appliedMigSet.has('0051_fix_approved_partnership_revoked_at_v1');
+    if (!s51Check) {
+      await db
+        .prepare(`
+          UPDATE seller_affiliate_partnerships
+          SET revoked_at = NULL, updated_at = datetime('now')
+          WHERE id = 'sap_mwug5g1i_7cixz'
+            AND status = 'APPROVED'
+            AND revoked_at IS NOT NULL
+        `)
+        .run()
+        .catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0051_fix_approved_partnership_revoked_at_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0051_fix_approved_partnership_revoked_at_v1 error]', err?.message);
+  }
+
   lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };
   schemaUpgradesDone = true;
   })();

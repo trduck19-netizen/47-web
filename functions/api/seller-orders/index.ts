@@ -2,6 +2,7 @@ import { verifyMemberAuth } from '../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../services/d1_service';
 import { decryptCode, getMarketplaceConfig } from '../../services/marketplace_service';
 import { calculate3WaySplit } from '../../services/seller_affiliate_service';
+import { dispatchSupplierFulfillmentWebhook } from '../../services/supplier_connector_service';
 
 interface Env {
   DB: D1Database;
@@ -277,20 +278,44 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Ghi audit log
-    await logAdminAudit(env.DB, {
-      actorName: buyer.username || buyer.email,
-      actorEmail: buyer.email,
-      action: 'SELLER_ORDER_PURCHASE',
-      targetId: orderId,
-      details: {
-        order_code: orderCode,
-        product_name: product.name,
-        price_core: priceCore,
-        seller_id: product.seller_id,
-        hold_until: holdUntil,
-      },
-    });
+    // Ghi audit log & gửi PA2 Supplier Fulfillment Webhook (Non-blocking theo mẫu orders/create.ts)
+    const backgroundPromises: Promise<any>[] = [
+      logAdminAudit(env.DB, {
+        actorName: buyer.username || buyer.email,
+        actorEmail: buyer.email,
+        action: 'SELLER_ORDER_PURCHASE',
+        targetId: orderId,
+        details: {
+          order_code: orderCode,
+          product_name: product.name,
+          price_core: priceCore,
+          seller_id: product.seller_id,
+          hold_until: holdUntil,
+        },
+      }).catch(() => {}),
+      dispatchSupplierFulfillmentWebhook(env.DB, env, {
+        sellerIds: [product.seller_id, ...(supplierSellerId ? [supplierSellerId] : [])],
+        orderId,
+        orderCode,
+        eventType: 'order.paid',
+        payloadData: {
+          product_id: product.id,
+          product_name: product.name,
+          game_slug: product.game_slug,
+          price_core: priceCore,
+          seller_id: product.seller_id,
+          supplier_seller_id: supplierSellerId,
+          is_affiliate_order: isAffiliate,
+          hold_until: holdUntil,
+        },
+      }).catch((err) => console.warn('[SellerOrders] PA2 webhook dispatch warning:', err?.message)),
+    ];
+
+    if (context.waitUntil) {
+      context.waitUntil(Promise.all(backgroundPromises));
+    } else {
+      Promise.all(backgroundPromises).catch(() => {});
+    }
 
     const newBalance = Math.max(0, userCore - priceCore);
 

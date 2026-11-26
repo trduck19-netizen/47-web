@@ -32,6 +32,7 @@ import {
   Ticket,
   SlidersHorizontal,
   Cpu,
+  PlugZap,
 } from 'lucide-react';
 import { AdminUser } from '../types/adminTypes';
 import { normalizeVietnamese } from '../../utils/textUtils';
@@ -67,6 +68,7 @@ export type AdminModuleTab =
   | 'content'
   | 'api-keys'
   | 'automation-center'
+  | 'supplier-connectors'
   | 'security-logs'
   | 'profile';
 
@@ -298,6 +300,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: Cpu,
           badge: 'LIVE',
           badgeColor: 'bg-purple-500 text-white font-bold',
+        },
+        {
+          id: 'supplier-connectors',
+          label: t('supplierConnectors.menuLabel'),
+          icon: PlugZap,
+          badge: 'API',
+          badgeColor: 'bg-teal-500 text-white font-bold',
         },
         {
           id: 'api-keys',

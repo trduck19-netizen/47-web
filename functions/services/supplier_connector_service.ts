@@ -575,3 +575,899 @@ export function calculateResellPrice(input: ResellPriceInput): ResellPriceResult
     antiLossReason: null,
   };
 }
+
+/**
+ * 5. SELECTIVE PROJECTION HELPERS (ZERO ENCRYPTED COLUMNS IN RESPONSES)
+ */
+export const EXTERNAL_SUPPLIER_SAFE_SELECT = `
+  id, name, code, mode, base_url, auth_type, auth_header_name,
+  api_key_prefix, webhook_secret_prefix,
+  CASE WHEN encrypted_api_key IS NOT NULL AND encrypted_api_key != '' THEN 1 ELSE 0 END AS has_api_key,
+  CASE WHEN encrypted_webhook_secret IS NOT NULL AND encrypted_webhook_secret != '' THEN 1 ELSE 0 END AS has_webhook_secret,
+  catalog_path, order_path, balance_path, field_mapping_json,
+  supports_idempotency, markup_type, markup_value, min_margin_core,
+  credit_limit_core, credit_used_core, prepaid_balance_core, prepaid_min_balance,
+  auto_pause_enabled, is_active, last_sync_at, last_health_status, last_error,
+  created_at, updated_at
+`;
+
+export const SUPPLIER_WEBHOOK_SAFE_SELECT = `
+  id, seller_id, name, webhook_url, secret_prefix, events_json,
+  is_active, timeout_ms, retry_max, last_status_code, last_error,
+  last_triggered_at, created_at, updated_at
+`;
+
+export function generateConnectorId(prefix: string): string {
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  const rand = bytesToHex(bytes);
+  return `${prefix}_${Date.now()}_${rand}`;
+}
+
+export function generateRandomHmacSecret(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return `whsec_${bytesToHex(bytes)}`;
+}
+
+/**
+ * 6. PA2: DISPATCH & RETRY SUPPLIER FULFILLMENT WEBHOOK (HMAC-SHA256, NON-BLOCKING)
+ */
+export interface DispatchWebhookParams {
+  sellerIds: string[];
+  orderId: string;
+  orderCode: string;
+  eventType: string;
+  payloadData: Record<string, unknown>;
+  fetchImpl?: typeof fetch;
+}
+
+export interface WebhookDispatchSummary {
+  totalMatched: number;
+  delivered: number;
+  failed: number;
+  deliveryIds: string[];
+}
+
+export async function dispatchSupplierFulfillmentWebhook(
+  db: D1Database,
+  env: SupplierCryptoEnv,
+  params: DispatchWebhookParams
+): Promise<WebhookDispatchSummary> {
+  const uniqueSellerIds = Array.from(new Set(params.sellerIds.map((s) => String(s || '').trim()).filter(Boolean)));
+  if (uniqueSellerIds.length === 0) {
+    return { totalMatched: 0, delivered: 0, failed: 0, deliveryIds: [] };
+  }
+
+  const placeholders = uniqueSellerIds.map(() => '?').join(', ');
+  const hooksRes = await db
+    .prepare(`
+      SELECT id, seller_id, name, webhook_url, encrypted_hmac_secret, events_json, timeout_ms, retry_max
+      FROM supplier_fulfillment_webhooks
+      WHERE seller_id IN (${placeholders}) AND is_active = 1
+    `)
+    .bind(...uniqueSellerIds)
+    .all<any>();
+
+  const hooks = hooksRes.results || [];
+  const fetchFn = params.fetchImpl || fetch;
+  let totalMatched = 0;
+  let delivered = 0;
+  let failed = 0;
+  const deliveryIds: string[] = [];
+
+  for (const hook of hooks) {
+    let events: string[] = ['order.paid'];
+    try {
+      const parsed = JSON.parse(hook.events_json || '["order.paid"]');
+      if (Array.isArray(parsed)) events = parsed.map(String);
+    } catch {}
+
+    if (params.eventType !== 'webhook.test' && !events.includes(params.eventType) && !events.includes('*')) {
+      continue;
+    }
+
+    totalMatched++;
+    const deliveryId = generateConnectorId('whd');
+    deliveryIds.push(deliveryId);
+    const nowIso = new Date().toISOString();
+    const payloadObj = {
+      event: params.eventType,
+      delivery_id: deliveryId,
+      order_id: params.orderId,
+      order_code: params.orderCode,
+      seller_id: hook.seller_id,
+      timestamp: nowIso,
+      data: params.payloadData,
+    };
+    const payloadJson = JSON.stringify(payloadObj);
+
+    const urlCheck = validateOutboundHttpsUrl(hook.webhook_url);
+    if (!urlCheck.ok) {
+      failed++;
+      await db
+        .prepare(`
+          INSERT INTO supplier_fulfillment_deliveries (
+            id, webhook_id, seller_id, order_id, order_code, event_type,
+            request_payload_json, http_status, response_snippet, attempts,
+            delivery_status, error_message, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, 1, 'FAILED', ?, ?)
+        `)
+        .bind(
+          deliveryId,
+          hook.id,
+          hook.seller_id,
+          params.orderId,
+          params.orderCode,
+          params.eventType,
+          payloadJson,
+          `SSRF_BLOCKED:${urlCheck.reason || 'INVALID_URL'}`,
+          nowIso
+        )
+        .run();
+      await db
+        .prepare(`
+          UPDATE supplier_fulfillment_webhooks
+          SET last_status_code = 0, last_error = ?, last_triggered_at = ?, updated_at = ?
+          WHERE id = ?
+        `)
+        .bind(`SSRF_BLOCKED:${urlCheck.reason || 'INVALID_URL'}`, nowIso, nowIso, hook.id)
+        .run();
+      continue;
+    }
+
+    let rawSecret: string;
+    try {
+      rawSecret = await decryptSupplierSecret(hook.encrypted_hmac_secret, env);
+    } catch (err: any) {
+      failed++;
+      const msg = err?.message || 'DECRYPT_FAILED';
+      await db
+        .prepare(`
+          INSERT INTO supplier_fulfillment_deliveries (
+            id, webhook_id, seller_id, order_id, order_code, event_type,
+            request_payload_json, http_status, response_snippet, attempts,
+            delivery_status, error_message, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, 1, 'FAILED', ?, ?)
+        `)
+        .bind(
+          deliveryId,
+          hook.id,
+          hook.seller_id,
+          params.orderId,
+          params.orderCode,
+          params.eventType,
+          payloadJson,
+          msg,
+          nowIso
+        )
+        .run();
+      continue;
+    }
+
+    const signed = await signHmacPayload(payloadJson, rawSecret);
+    const timeoutMs = Math.min(Math.max(Number(hook.timeout_ms) || 5000, 1000), 10000);
+
+    let httpStatus: number | null = null;
+    let snippet = '';
+    let errMsg: string | null = null;
+    let isOk = false;
+    let externalRef: string | null = null;
+
+    try {
+      const res = await fetchFn(urlCheck.normalizedUrl!, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WCG-Signature': signed.headerValue,
+          'X-WCG-Timestamp': String(signed.timestamp),
+          'X-WCG-Event': params.eventType,
+          'X-WCG-Delivery-Id': deliveryId,
+        },
+        body: payloadJson,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      httpStatus = res.status;
+      const text = await res.text().catch(() => '');
+      snippet = text.slice(0, 500);
+      isOk = res.ok;
+      if (isOk) {
+        try {
+          const parsedBody = JSON.parse(text);
+          if (parsedBody?.fulfillment_ref || parsedBody?.ref || parsedBody?.id) {
+            externalRef = String(parsedBody.fulfillment_ref || parsedBody.ref || parsedBody.id).slice(0, 128);
+          }
+        } catch {}
+      } else {
+        errMsg = `HTTP_${res.status}`;
+      }
+    } catch (err: any) {
+      errMsg = (err?.message || 'NETWORK_ERROR').slice(0, 300);
+    }
+
+    const doneIso = new Date().toISOString();
+    const status = isOk ? 'DELIVERED' : 'FAILED';
+    if (isOk) delivered++;
+    else failed++;
+
+    await db
+      .prepare(`
+        INSERT INTO supplier_fulfillment_deliveries (
+          id, webhook_id, seller_id, order_id, order_code, event_type,
+          request_payload_json, http_status, response_snippet, attempts,
+          delivery_status, external_fulfillment_ref, error_message, created_at, delivered_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+      `)
+      .bind(
+        deliveryId,
+        hook.id,
+        hook.seller_id,
+        params.orderId,
+        params.orderCode,
+        params.eventType,
+        payloadJson,
+        httpStatus,
+        snippet,
+        status,
+        externalRef,
+        errMsg,
+        nowIso,
+        isOk ? doneIso : null
+      )
+      .run();
+
+    await db
+      .prepare(`
+        UPDATE supplier_fulfillment_webhooks
+        SET last_status_code = ?, last_error = ?, last_triggered_at = ?, updated_at = ?
+        WHERE id = ?
+      `)
+      .bind(httpStatus, errMsg, doneIso, doneIso, hook.id)
+      .run();
+  }
+
+  return { totalMatched, delivered, failed, deliveryIds };
+}
+
+export async function retrySupplierWebhookDelivery(
+  db: D1Database,
+  env: SupplierCryptoEnv,
+  deliveryId: string,
+  fetchImpl?: typeof fetch
+): Promise<{ ok: boolean; status?: string; httpStatus?: number | null; error?: string }> {
+  const delivery = await db
+    .prepare('SELECT * FROM supplier_fulfillment_deliveries WHERE id = ? LIMIT 1')
+    .bind(deliveryId)
+    .first<any>();
+
+  if (!delivery) {
+    return { ok: false, error: 'DELIVERY_NOT_FOUND' };
+  }
+
+  const hook = await db
+    .prepare('SELECT * FROM supplier_fulfillment_webhooks WHERE id = ? LIMIT 1')
+    .bind(delivery.webhook_id)
+    .first<any>();
+
+  if (!hook) {
+    return { ok: false, error: 'WEBHOOK_NOT_FOUND' };
+  }
+
+  const urlCheck = validateOutboundHttpsUrl(hook.webhook_url);
+  if (!urlCheck.ok) {
+    return { ok: false, error: `SSRF_BLOCKED:${urlCheck.reason}` };
+  }
+
+  const rawSecret = await decryptSupplierSecret(hook.encrypted_hmac_secret, env);
+  const payloadJson = String(delivery.request_payload_json || '{}');
+  const signed = await signHmacPayload(payloadJson, rawSecret);
+  const fetchFn = fetchImpl || fetch;
+  const timeoutMs = Math.min(Math.max(Number(hook.timeout_ms) || 5000, 1000), 10000);
+
+  let httpStatus: number | null = null;
+  let snippet = '';
+  let errMsg: string | null = null;
+  let isOk = false;
+
+  try {
+    const res = await fetchFn(urlCheck.normalizedUrl!, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-WCG-Signature': signed.headerValue,
+        'X-WCG-Timestamp': String(signed.timestamp),
+        'X-WCG-Event': String(delivery.event_type || 'order.paid'),
+        'X-WCG-Delivery-Id': delivery.id,
+        'X-WCG-Retry': '1',
+      },
+      body: payloadJson,
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    httpStatus = res.status;
+    snippet = (await res.text().catch(() => '')).slice(0, 500);
+    isOk = res.ok;
+    if (!isOk) errMsg = `HTTP_${res.status}`;
+  } catch (err: any) {
+    errMsg = (err?.message || 'NETWORK_ERROR').slice(0, 300);
+  }
+
+  const nowIso = new Date().toISOString();
+  const nextStatus = isOk ? 'DELIVERED' : 'FAILED';
+  await db
+    .prepare(`
+      UPDATE supplier_fulfillment_deliveries
+      SET http_status = ?, response_snippet = ?, attempts = attempts + 1,
+          delivery_status = ?, error_message = ?, delivered_at = ?
+      WHERE id = ?
+    `)
+    .bind(httpStatus, snippet, nextStatus, errMsg, isOk ? nowIso : delivery.delivered_at, delivery.id)
+    .run();
+
+  await db
+    .prepare(`
+      UPDATE supplier_fulfillment_webhooks
+      SET last_status_code = ?, last_error = ?, last_triggered_at = ?, updated_at = ?
+      WHERE id = ?
+    `)
+    .bind(httpStatus, errMsg, nowIso, nowIso, hook.id)
+    .run();
+
+  return { ok: isOk, status: nextStatus, httpStatus, error: errMsg || undefined };
+}
+
+/**
+ * 7. PA1: ĐỒNG BỘ DANH MỤC NCC NGOÀI + ANTI-LOSS GUARD
+ */
+export interface CatalogSyncResult {
+  ok: boolean;
+  synced: number;
+  pausedByAntiLoss: number;
+  error?: string;
+}
+
+function buildSupplierAuthHeaders(
+  supplier: any,
+  decryptedApiKey: string | null
+): Record<string, string> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const authType = String(supplier.auth_type || 'BEARER').toUpperCase();
+  if (!decryptedApiKey || authType === 'NONE') return headers;
+
+  const headerName = String(supplier.auth_header_name || 'Authorization').trim() || 'Authorization';
+  if (authType === 'BEARER') {
+    headers[headerName] = `Bearer ${decryptedApiKey}`;
+  } else if (authType === 'BASIC') {
+    headers[headerName] = `Basic ${btoa(decryptedApiKey)}`;
+  } else {
+    headers[headerName] = decryptedApiKey;
+  }
+  return headers;
+}
+
+export async function syncExternalSupplierCatalog(
+  db: D1Database,
+  env: SupplierCryptoEnv,
+  supplierId: string,
+  options?: { fetchImpl?: typeof fetch; skipDnsCheck?: boolean }
+): Promise<CatalogSyncResult> {
+  const supplier = await db
+    .prepare('SELECT * FROM external_suppliers WHERE id = ? LIMIT 1')
+    .bind(supplierId)
+    .first<any>();
+
+  if (!supplier) {
+    return { ok: false, synced: 0, pausedByAntiLoss: 0, error: 'SUPPLIER_NOT_FOUND' };
+  }
+
+  const baseUrl = String(supplier.base_url || '').replace(/\/+$/, '');
+  const catalogPath = String(supplier.catalog_path || '/catalog').trim();
+  const targetUrl = catalogPath.startsWith('https://')
+    ? catalogPath
+    : `${baseUrl}${catalogPath.startsWith('/') ? '' : '/'}${catalogPath}`;
+
+  const urlCheck = options?.skipDnsCheck
+    ? validateOutboundHttpsUrl(targetUrl)
+    : await validateOutboundHttpsUrlWithDns(targetUrl);
+
+  const nowIso = new Date().toISOString();
+  if (!urlCheck.ok) {
+    const err = `SSRF_BLOCKED:${urlCheck.reason || 'INVALID_URL'}`;
+    await db
+      .prepare('UPDATE external_suppliers SET last_health_status = ?, last_error = ?, updated_at = ? WHERE id = ?')
+      .bind('ERROR', err, nowIso, supplierId)
+      .run();
+    return { ok: false, synced: 0, pausedByAntiLoss: 0, error: err };
+  }
+
+  let decryptedKey: string | null = null;
+  if (supplier.encrypted_api_key && String(supplier.auth_type || 'BEARER') !== 'NONE') {
+    decryptedKey = await decryptSupplierSecret(supplier.encrypted_api_key, env);
+  }
+
+  const fetchFn = options?.fetchImpl || fetch;
+  let items: any[] = [];
+  try {
+    const res = await fetchFn(urlCheck.normalizedUrl!, {
+      method: 'GET',
+      headers: buildSupplierAuthHeaders(supplier, decryptedKey),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      const err = `HTTP_${res.status}`;
+      await db
+        .prepare('UPDATE external_suppliers SET last_health_status = ?, last_error = ?, updated_at = ? WHERE id = ?')
+        .bind('ERROR', err, nowIso, supplierId)
+        .run();
+      return { ok: false, synced: 0, pausedByAntiLoss: 0, error: err };
+    }
+    const body: any = await res.json();
+    if (Array.isArray(body)) items = body;
+    else if (Array.isArray(body?.items)) items = body.items;
+    else if (Array.isArray(body?.products)) items = body.products;
+    else if (Array.isArray(body?.data)) items = body.data;
+    else items = [];
+  } catch (err: any) {
+    const msg = (err?.message || 'FETCH_ERROR').slice(0, 300);
+    await db
+      .prepare('UPDATE external_suppliers SET last_health_status = ?, last_error = ?, updated_at = ? WHERE id = ?')
+      .bind('ERROR', msg, nowIso, supplierId)
+      .run();
+    return { ok: false, synced: 0, pausedByAntiLoss: 0, error: msg };
+  }
+
+  let mapping: Record<string, string> = {};
+  try {
+    mapping = JSON.parse(supplier.field_mapping_json || '{}') || {};
+  } catch {}
+
+  const skuField = mapping.sku_field || 'sku';
+  const nameField = mapping.name_field || 'name';
+  const costField = mapping.cost_field || 'price';
+  const stockField = mapping.stock_field || 'stock';
+  const affUrlField = mapping.affiliate_url_field || 'affiliate_url';
+
+  let synced = 0;
+  let pausedByAntiLoss = 0;
+
+  for (const item of items.slice(0, 500)) {
+    const externalSku = String(item?.[skuField] ?? item?.id ?? '').trim();
+    const externalName = String(item?.[nameField] ?? item?.title ?? externalSku).trim();
+    if (!externalSku) continue;
+
+    const supplierCost = Number(item?.[costField] ?? item?.cost ?? 0);
+    const externalStock = Number(item?.[stockField] ?? item?.quantity ?? 0);
+    const affiliateTargetUrl = item?.[affUrlField] ? String(item[affUrlField]).trim() : null;
+
+    const existing = await db
+      .prepare('SELECT id, selling_price_core FROM external_supplier_products WHERE supplier_id = ? AND external_sku = ? LIMIT 1')
+      .bind(supplierId, externalSku)
+      .first<any>();
+
+    const calc = calculateResellPrice({
+      supplierCostCore: supplierCost,
+      markupType: String(supplier.markup_type || 'PERCENT').toUpperCase() === 'FIXED' ? 'FIXED' : 'PERCENT',
+      markupValue: Number(supplier.markup_value ?? 15),
+      minMarginCore: Number(supplier.min_margin_core ?? 0),
+      externalStock,
+    });
+
+    const shouldPause = supplier.auto_pause_enabled ? (calc.antiLossPaused ? 1 : 0) : 0;
+    if (shouldPause === 1) pausedByAntiLoss++;
+
+    const prodId = existing?.id || generateConnectorId('esp');
+    await db
+      .prepare(`
+        INSERT INTO external_supplier_products (
+          id, supplier_id, external_sku, external_name, supplier_cost_core,
+          selling_price_core, profit_core, external_stock, affiliate_target_url,
+          anti_loss_paused, anti_loss_reason, is_active, last_synced_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(supplier_id, external_sku) DO UPDATE SET
+          external_name = excluded.external_name,
+          supplier_cost_core = excluded.supplier_cost_core,
+          selling_price_core = excluded.selling_price_core,
+          profit_core = excluded.profit_core,
+          external_stock = excluded.external_stock,
+          affiliate_target_url = excluded.affiliate_target_url,
+          anti_loss_paused = excluded.anti_loss_paused,
+          anti_loss_reason = excluded.anti_loss_reason,
+          is_active = CASE WHEN excluded.anti_loss_paused = 1 THEN 0 ELSE is_active END,
+          last_synced_at = excluded.last_synced_at,
+          updated_at = excluded.updated_at
+      `)
+      .bind(
+        prodId,
+        supplierId,
+        externalSku,
+        externalName,
+        calc.supplierCostCore,
+        calc.sellingPriceCore,
+        calc.profitCore,
+        Number.isFinite(externalStock) ? Math.max(0, Math.floor(externalStock)) : 0,
+        affiliateTargetUrl,
+        shouldPause,
+        calc.antiLossReason,
+        shouldPause ? 0 : 1,
+        nowIso,
+        nowIso,
+        nowIso
+      )
+      .run();
+
+    synced++;
+  }
+
+  await db
+    .prepare(`
+      UPDATE external_suppliers
+      SET last_sync_at = ?, last_health_status = 'OK', last_error = NULL, updated_at = ?
+      WHERE id = ?
+    `)
+    .bind(nowIso, nowIso, supplierId)
+    .run();
+
+  return { ok: true, synced, pausedByAntiLoss };
+}
+
+/**
+ * 8. PA1: GIỮ HẠN MỨC CÔNG NỢ NGUYÊN TỬ (ATOMIC db.batch CHỐNG ĐUA HẠN MỨC)
+ */
+export interface ReserveCreditParams {
+  supplierId: string;
+  orderId: string;
+  orderCode: string;
+  externalOrderRef: string;
+  costCore: number;
+  sellingCore: number;
+  actor?: string;
+  note?: string;
+}
+
+export interface ReserveCreditResult {
+  ok: boolean;
+  reason?: string;
+  ledgerId?: string;
+}
+
+export async function reserveSupplierCreditAtomic(
+  db: D1Database,
+  params: ReserveCreditParams
+): Promise<ReserveCreditResult> {
+  const cost = Number(params.costCore);
+  const selling = Number(params.sellingCore);
+  if (!Number.isFinite(cost) || cost <= 0) {
+    return { ok: false, reason: 'INVALID_COST' };
+  }
+  const profit = selling - cost;
+  const nowIso = new Date().toISOString();
+  const ledgerId = generateConnectorId('esl');
+
+  const results = await db.batch([
+    db
+      .prepare(`
+        UPDATE external_suppliers
+        SET credit_used_core = credit_used_core + ?, updated_at = ?
+        WHERE id = ?
+          AND is_active = 1
+          AND mode = 'POSTPAID_CREDIT'
+          AND (credit_used_core + ? <= credit_limit_core)
+      `)
+      .bind(cost, nowIso, params.supplierId, cost),
+    db
+      .prepare(`
+        INSERT OR IGNORE INTO external_supplier_ledger (
+          id, supplier_id, order_id, order_code, entry_type,
+          cost_core, selling_core, profit_core, balance_due_after,
+          external_order_ref, status, actor, note, created_at
+        )
+        SELECT
+          ?, id, ?, ?, 'ORDER_DEBIT',
+          ?, ?, ?, credit_used_core,
+          ?, 'RECORDED', ?, ?, ?
+        FROM external_suppliers
+        WHERE id = ?
+          AND is_active = 1
+          AND mode = 'POSTPAID_CREDIT'
+          AND credit_used_core <= credit_limit_core
+      `)
+      .bind(
+        ledgerId,
+        params.orderId,
+        params.orderCode,
+        cost,
+        selling,
+        profit,
+        params.externalOrderRef,
+        params.actor || 'system',
+        params.note || `Ghi nợ công nợ đơn ${params.orderCode}`,
+        nowIso,
+        params.supplierId
+      ),
+  ]);
+
+  const creditUpdateChanges = Number((results[0] as any)?.meta?.changes ?? 0);
+  if (creditUpdateChanges === 0) {
+    return { ok: false, reason: 'CREDIT_LIMIT_EXCEEDED' };
+  }
+
+  return { ok: true, ledgerId };
+}
+
+/**
+ * 9. PA1: HOÀN TIỀN NGUYÊN TỬ VIẾT MỚI HOÀN TOÀN (db.batch + STATE-GUARD REFUNDED_SUPPLIER_ERROR)
+ * Tái dùng mẫu state-guard & sổ cái hoàn tiền của resolveAdminDispute nhưng bọc toàn bộ
+ * trong 1 db.batch duy nhất để chống hoàn trùng 2 lần và chống lệch ví/sổ cái.
+ */
+export interface RefundSupplierOrderParams {
+  orderTable: 'orders' | 'seller_orders';
+  orderId: string;
+  orderCode: string;
+  buyerMemberId: string;
+  refundAmountCore: number;
+  reason: string;
+  actor?: string;
+  supplierId?: string | null;
+  externalOrderRef?: string | null;
+  supplierCostCore?: number;
+}
+
+export interface RefundSupplierOrderResult {
+  ok: boolean;
+  alreadyRefunded?: boolean;
+  reason?: string;
+  refundStatus?: 'REFUNDED_SUPPLIER_ERROR';
+  walletTxId?: string;
+  supplierLedgerId?: string;
+}
+
+export async function refundSupplierOrder(
+  db: D1Database,
+  params: RefundSupplierOrderParams
+): Promise<RefundSupplierOrderResult> {
+  const amount = Number(params.refundAmountCore);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, reason: 'INVALID_REFUND_AMOUNT' };
+  }
+  const tableName = params.orderTable === 'seller_orders' ? 'seller_orders' : 'orders';
+  const nowIso = new Date().toISOString();
+  const txId = generateConnectorId('txref');
+  const supplierLedgerId = generateConnectorId('eslref');
+  const guardExistsSql = `EXISTS (SELECT 1 FROM ${tableName} WHERE id = ? AND status NOT IN ('REFUNDED_SUPPLIER_ERROR', 'REFUNDED', 'COMPLETED'))`;
+
+  const statements: D1PreparedStatement[] = [
+    // 0. Hoàn số dư vào ví Core người mua (chỉ chạy khi đơn chưa REFUNDED/COMPLETED)
+    db
+      .prepare(`
+        UPDATE members
+        SET balance = balance + ?, updated_at = ?
+        WHERE id = ? AND ${guardExistsSql}
+      `)
+      .bind(amount, nowIso, params.buyerMemberId, params.orderId),
+
+    // 1. Ghi nhật ký giao dịch ví REFUND
+    db
+      .prepare(`
+        INSERT INTO wallet_transactions (
+          id, member_id, member_email, type, amount, balance_before, balance_after,
+          description, status, order_id, created_at
+        )
+        SELECT ?, id, email, 'REFUND', ?, balance - ?, balance, ?, 'COMPLETED', ?, ?
+        FROM members
+        WHERE id = ? AND ${guardExistsSql}
+      `)
+      .bind(
+        txId,
+        amount,
+        amount,
+        `Hoàn tiền tự động do lỗi NCC (${params.orderCode}): ${params.reason}`,
+        params.orderId,
+        nowIso,
+        params.buyerMemberId,
+        params.orderId
+      ),
+  ];
+
+  const hasSupplierRollback = Boolean(params.supplierId && params.externalOrderRef);
+  const supplierCost = Math.max(0, Number(params.supplierCostCore || 0));
+
+  if (hasSupplierRollback) {
+    if (supplierCost > 0) {
+      statements.push(
+        db
+          .prepare(`
+            UPDATE external_suppliers
+            SET credit_used_core = CASE WHEN credit_used_core >= ? THEN credit_used_core - ? ELSE 0 END,
+                updated_at = ?
+            WHERE id = ? AND ${guardExistsSql}
+          `)
+          .bind(supplierCost, supplierCost, nowIso, params.supplierId, params.orderId)
+      );
+    }
+
+    // Dòng REFUND_CREDIT dùng cùng external_order_ref với ORDER_DEBIT gốc -> hợp lệ nhờ UNIQUE(supplier_id, external_order_ref, entry_type)
+    statements.push(
+      db
+        .prepare(`
+          INSERT OR IGNORE INTO external_supplier_ledger (
+            id, supplier_id, order_id, order_code, entry_type,
+            cost_core, selling_core, profit_core, balance_due_after,
+            external_order_ref, status, actor, note, created_at
+          )
+          SELECT
+            ?, id, ?, ?, 'REFUND_CREDIT',
+            ?, ?, 0, credit_used_core,
+            ?, 'REVERSED', ?, ?, ?
+          FROM external_suppliers
+          WHERE id = ? AND ${guardExistsSql}
+        `)
+        .bind(
+          supplierLedgerId,
+          params.orderId,
+          params.orderCode,
+          -supplierCost,
+          -amount,
+          params.externalOrderRef,
+          params.actor || 'system_auto_refund',
+          `Hoàn công nợ do lỗi NCC (${params.reason})`,
+          nowIso,
+          params.supplierId,
+          params.orderId
+        )
+    );
+  }
+
+  // Cuối batch: khóa trạng thái đơn sang REFUNDED_SUPPLIER_ERROR (chỉ khớp 1 lần duy nhất)
+  const orderUpdateIdx = statements.length;
+  if (tableName === 'orders') {
+    statements.push(
+      db
+        .prepare(`
+          UPDATE orders
+          SET status = 'REFUNDED_SUPPLIER_ERROR',
+              escrow_status = 'REFUNDED',
+              updated_at = ?
+          WHERE id = ?
+            AND status NOT IN ('REFUNDED_SUPPLIER_ERROR', 'REFUNDED', 'COMPLETED')
+        `)
+        .bind(nowIso, params.orderId)
+    );
+  } else {
+    statements.push(
+      db
+        .prepare(`
+          UPDATE seller_orders
+          SET status = 'REFUNDED_SUPPLIER_ERROR',
+              updated_at = ?
+          WHERE id = ?
+            AND status NOT IN ('REFUNDED_SUPPLIER_ERROR', 'REFUNDED', 'COMPLETED')
+        `)
+        .bind(nowIso, params.orderId)
+    );
+  }
+
+  const batchRes = await db.batch(statements);
+  const orderChanges = Number((batchRes[orderUpdateIdx] as any)?.meta?.changes ?? 0);
+
+  if (orderChanges === 0) {
+    return { ok: false, alreadyRefunded: true, reason: 'ORDER_ALREADY_REFUNDED_OR_COMPLETED' };
+  }
+
+  return {
+    ok: true,
+    refundStatus: 'REFUNDED_SUPPLIER_ERROR',
+    walletTxId: txId,
+    supplierLedgerId: hasSupplierRollback ? supplierLedgerId : undefined,
+  };
+}
+
+/**
+ * 10. PA1: XỬ LÝ AFFILIATE POSTBACK WEBHOOK (HMAC + ANTI-REPLAY + IDEMPOTENCY)
+ */
+export interface AffiliatePostbackInput {
+  supplierCode: string;
+  rawBody: string;
+  signatureHeader: string;
+  timestampHeader: string;
+  nowSec?: number;
+}
+
+export interface AffiliatePostbackResult {
+  ok: boolean;
+  status: number;
+  duplicate?: boolean;
+  ledgerId?: string;
+  error?: string;
+}
+
+export async function processAffiliatePostback(
+  db: D1Database,
+  env: SupplierCryptoEnv,
+  input: AffiliatePostbackInput
+): Promise<AffiliatePostbackResult> {
+  const code = String(input.supplierCode || '').trim();
+  if (!code) {
+    return { ok: false, status: 400, error: 'MISSING_SUPPLIER_CODE' };
+  }
+  if (!input.signatureHeader) {
+    return { ok: false, status: 400, error: 'MISSING_SIGNATURE' };
+  }
+
+  const supplier = await db
+    .prepare('SELECT * FROM external_suppliers WHERE code = ? AND is_active = 1 LIMIT 1')
+    .bind(code)
+    .first<any>();
+
+  if (!supplier) {
+    return { ok: false, status: 404, error: 'SUPPLIER_NOT_FOUND' };
+  }
+  if (supplier.mode !== 'AFFILIATE_POSTBACK') {
+    return { ok: false, status: 400, error: 'SUPPLIER_NOT_AFFILIATE_MODE' };
+  }
+  if (!supplier.encrypted_webhook_secret) {
+    return { ok: false, status: 500, error: 'WEBHOOK_SECRET_NOT_CONFIGURED' };
+  }
+
+  const secret = await decryptSupplierSecret(supplier.encrypted_webhook_secret, env);
+  const verify = await verifyHmacSignature({
+    payload: input.rawBody,
+    secret,
+    signature: input.signatureHeader,
+    timestamp: input.timestampHeader,
+    nowSec: input.nowSec,
+  });
+
+  if (!verify.ok) {
+    return { ok: false, status: 401, error: verify.reason || 'INVALID_SIGNATURE' };
+  }
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(input.rawBody || '{}');
+  } catch {
+    return { ok: false, status: 400, error: 'INVALID_JSON' };
+  }
+
+  const externalOrderRef = String(parsed.external_order_ref || parsed.order_ref || parsed.transaction_id || '').trim();
+  if (!externalOrderRef) {
+    return { ok: false, status: 400, error: 'MISSING_EXTERNAL_ORDER_REF' };
+  }
+
+  const commissionCore = Number(parsed.commission_core ?? parsed.commission ?? 0);
+  const orderAmountCore = Number(parsed.order_amount_core ?? parsed.amount ?? 0);
+  if (!Number.isFinite(commissionCore) || commissionCore < 0) {
+    return { ok: false, status: 400, error: 'INVALID_COMMISSION_AMOUNT' };
+  }
+
+  const ledgerId = generateConnectorId('esl_aff');
+  const nowIso = new Date().toISOString();
+  const subId = parsed.sub_id ? String(parsed.sub_id).slice(0, 128) : null;
+
+  const insertRes = await db
+    .prepare(`
+      INSERT OR IGNORE INTO external_supplier_ledger (
+        id, supplier_id, order_id, order_code, entry_type,
+        cost_core, selling_core, profit_core, balance_due_after,
+        external_order_ref, status, actor, note, created_at
+      ) VALUES (?, ?, ?, ?, 'AFFILIATE_COMMISSION', 0, ?, ?, 0, ?, 'RECORDED', 'affiliate_postback', ?, ?)
+    `)
+    .bind(
+      ledgerId,
+      supplier.id,
+      subId,
+      externalOrderRef,
+      Number.isFinite(orderAmountCore) ? orderAmountCore : 0,
+      commissionCore,
+      externalOrderRef,
+      `Affiliate Postback${subId ? ` (sub_id=${subId})` : ''}`,
+      nowIso
+    )
+    .run();
+
+  const changes = Number((insertRes as any)?.meta?.changes ?? 0);
+  if (changes === 0) {
+    return { ok: true, status: 200, duplicate: true };
+  }
+
+  return { ok: true, status: 200, duplicate: false, ledgerId };
+}
+

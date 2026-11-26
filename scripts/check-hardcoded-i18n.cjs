@@ -33,6 +33,7 @@ const IN_SCOPE_UI_FILES = [
   'src/components/PackageShareModal.tsx',
   'src/components/ProductReviewsSection.tsx',
   'src/components/AuthModal.tsx',
+  'src/admin/modules/SupplierConnectorsModule.tsx',
 ];
 
 // Danh mục toàn bộ các thư mục giao diện UI (khi chạy ở chế độ audit toàn sàn --all)

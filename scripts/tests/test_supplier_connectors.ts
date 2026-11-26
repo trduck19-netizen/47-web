@@ -10,8 +10,17 @@ import {
   signHmacPayload,
   verifyHmacSignature,
   calculateResellPrice,
+  dispatchSupplierFulfillmentWebhook,
+  retrySupplierWebhookDelivery,
+  syncExternalSupplierCatalog,
+  reserveSupplierCreditAtomic,
+  refundSupplierOrder,
+  processAffiliatePostback,
 } from '../../functions/services/supplier_connector_service';
 import { ensureSchemaUpgrades } from '../../functions/services/d1_service';
+import * as adminSuppliersIndexApi from '../../functions/api/admin/suppliers/index';
+import * as affiliatePostbackApi from '../../functions/api/webhooks/affiliate-postback';
+import * as inventoryPushApi from '../../functions/api/seller/affiliate/inventory-push';
 
 interface TestResult {
   name: string;
@@ -356,6 +365,607 @@ async function main() {
   check(
     'd1_mig_0050_records_migration_id',
     joinedSql.includes("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0050_supplier_connectors_v1')"),
+    true
+  );
+  check(
+    'd1_mig_0051_cleans_approved_partnership_revoked_at',
+    d1Source.includes('0051_fix_approved_partnership_revoked_at_v1') &&
+      d1Source.includes("WHERE id = 'sap_mwug5g1i_7cixz'") &&
+      d1Source.includes('SET revoked_at = NULL'),
+    true
+  );
+
+  // =========================================================================
+  // PART 6: Admin API Auth, Selective Projection & Scope Registration (Mảnh 2)
+  // =========================================================================
+  const storeState = {
+    suppliers: [] as any[],
+    products: [] as any[],
+    ledger: [] as any[],
+    webhooks: [] as any[],
+    deliveries: [] as any[],
+    orders: [
+      { id: 'ord_sup_01', status: 'PROCESSING', escrow_status: 'HELD', buyer_member_id: 'mem_01' },
+    ] as any[],
+    members: [{ id: 'mem_01', email: 'buyer@example.com', balance: 50000 }] as any[],
+    walletTx: [] as any[],
+  };
+
+  function createStatefulMockDb() {
+    const execOne = async (sql: string, binds: any[]) => {
+      const s = sql.replace(/\s+/g, ' ').trim();
+
+      if (s.includes('SELECT id FROM schema_migrations')) {
+        return {
+          results: [...Array.from(allMigIds), '0050_supplier_connectors_v1', '0051_fix_approved_partnership_revoked_at_v1'].map(
+            (id) => ({ id })
+          ),
+        };
+      }
+      if (s.startsWith('SELECT id FROM external_suppliers WHERE code = ?')) {
+        const hit = storeState.suppliers.find((x) => x.code === binds[0]) || null;
+        return { first: hit, results: hit ? [hit] : [] };
+      }
+      if (s.startsWith('SELECT * FROM external_suppliers WHERE code = ? AND is_active = 1')) {
+        const hit = storeState.suppliers.find((x) => x.code === binds[0] && x.is_active === 1) || null;
+        return { first: hit, results: hit ? [hit] : [] };
+      }
+      if (s.startsWith('SELECT * FROM external_suppliers WHERE id = ?')) {
+        const hit = storeState.suppliers.find((x) => x.id === binds[0]) || null;
+        return { first: hit, results: hit ? [hit] : [] };
+      }
+      if (s.includes('FROM external_suppliers WHERE id = ? LIMIT 1')) {
+        const raw = storeState.suppliers.find((x) => x.id === binds[0]);
+        if (!raw) return { first: null, results: [] };
+        const safe = { ...raw };
+        delete safe.encrypted_api_key;
+        delete safe.encrypted_webhook_secret;
+        safe.has_api_key = raw.encrypted_api_key ? 1 : 0;
+        safe.has_webhook_secret = raw.encrypted_webhook_secret ? 1 : 0;
+        return { first: safe, results: [safe] };
+      }
+      if (s.includes('FROM external_suppliers WHERE 1=1')) {
+        const safeList = storeState.suppliers.map((raw) => {
+          const safe = { ...raw };
+          delete safe.encrypted_api_key;
+          delete safe.encrypted_webhook_secret;
+          safe.has_api_key = raw.encrypted_api_key ? 1 : 0;
+          safe.has_webhook_secret = raw.encrypted_webhook_secret ? 1 : 0;
+          return safe;
+        });
+        return { results: safeList };
+      }
+      if (s.startsWith('INSERT INTO external_suppliers')) {
+        storeState.suppliers.push({
+          id: binds[0],
+          name: binds[1],
+          code: binds[2],
+          mode: binds[3],
+          base_url: binds[4],
+          auth_type: binds[5],
+          auth_header_name: binds[6],
+          encrypted_api_key: binds[7],
+          api_key_prefix: binds[8],
+          encrypted_webhook_secret: binds[9],
+          webhook_secret_prefix: binds[10],
+          catalog_path: binds[11],
+          order_path: binds[12],
+          balance_path: binds[13],
+          field_mapping_json: binds[14],
+          supports_idempotency: binds[15],
+          markup_type: binds[16],
+          markup_value: binds[17],
+          min_margin_core: binds[18],
+          credit_limit_core: binds[19],
+          credit_used_core: 0,
+          prepaid_balance_core: binds[20],
+          prepaid_min_balance: binds[21],
+          auto_pause_enabled: binds[22],
+          is_active: binds[23],
+          created_at: binds[24],
+          updated_at: binds[25],
+        });
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.includes('SET credit_used_core = credit_used_core + ?')) {
+        const [cost, nowIso, supId, cost2] = binds;
+        const sup = storeState.suppliers.find(
+          (x) =>
+            x.id === supId &&
+            x.is_active === 1 &&
+            x.mode === 'POSTPAID_CREDIT' &&
+            x.credit_used_core + cost2 <= x.credit_limit_core
+        );
+        if (!sup) return { success: true, meta: { changes: 0 } };
+        sup.credit_used_core += cost;
+        sup.updated_at = nowIso;
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.includes('SET credit_used_core = CASE WHEN credit_used_core >= ?')) {
+        const [cost, , nowIso, supId, ordId] = binds;
+        const ord = storeState.orders.find(
+          (o) => o.id === ordId && !['REFUNDED_SUPPLIER_ERROR', 'REFUNDED', 'COMPLETED'].includes(o.status)
+        );
+        const sup = storeState.suppliers.find((x) => x.id === supId);
+        if (!ord || !sup) return { success: true, meta: { changes: 0 } };
+        sup.credit_used_core = Math.max(0, sup.credit_used_core - cost);
+        sup.updated_at = nowIso;
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.includes('UPDATE members SET balance = balance + ?')) {
+        const [amt, nowIso, memId, ordId] = binds;
+        const ord = storeState.orders.find(
+          (o) => o.id === ordId && !['REFUNDED_SUPPLIER_ERROR', 'REFUNDED', 'COMPLETED'].includes(o.status)
+        );
+        const mem = storeState.members.find((x) => x.id === memId);
+        if (!ord || !mem) return { success: true, meta: { changes: 0 } };
+        mem.balance += amt;
+        mem.updated_at = nowIso;
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.includes('INSERT INTO wallet_transactions')) {
+        const [txId, amt, , desc, ordId, nowIso, memId, guardOrdId] = binds;
+        const ord = storeState.orders.find(
+          (o) => o.id === guardOrdId && !['REFUNDED_SUPPLIER_ERROR', 'REFUNDED', 'COMPLETED'].includes(o.status)
+        );
+        if (!ord) return { success: true, meta: { changes: 0 } };
+        storeState.walletTx.push({ id: txId, member_id: memId, amount: amt, order_id: ordId, description: desc, created_at: nowIso });
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.includes('UPDATE orders SET status = \'REFUNDED_SUPPLIER_ERROR\'')) {
+        const [nowIso, ordId] = binds;
+        const ord = storeState.orders.find(
+          (o) => o.id === ordId && !['REFUNDED_SUPPLIER_ERROR', 'REFUNDED', 'COMPLETED'].includes(o.status)
+        );
+        if (!ord) return { success: true, meta: { changes: 0 } };
+        ord.status = 'REFUNDED_SUPPLIER_ERROR';
+        ord.escrow_status = 'REFUNDED';
+        ord.updated_at = nowIso;
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.includes('INSERT OR IGNORE INTO external_supplier_ledger')) {
+        let entryType = 'ORDER_DEBIT';
+        let supId = '';
+        let ref = '';
+        let rowObj: any = null;
+        if (s.includes("'AFFILIATE_COMMISSION'")) {
+          entryType = 'AFFILIATE_COMMISSION';
+          supId = binds[1];
+          ref = binds[6];
+          rowObj = { id: binds[0], supplier_id: supId, entry_type: entryType, external_order_ref: ref, profit_core: binds[5] };
+        } else if (s.includes("'REFUND_CREDIT'")) {
+          entryType = 'REFUND_CREDIT';
+          supId = binds[9];
+          ref = binds[5];
+          const guardOrdId = binds[10];
+          const ord = storeState.orders.find(
+            (o) => o.id === guardOrdId && !['REFUNDED_SUPPLIER_ERROR', 'REFUNDED', 'COMPLETED'].includes(o.status)
+          );
+          if (!ord) return { success: true, meta: { changes: 0 } };
+          rowObj = { id: binds[0], supplier_id: supId, entry_type: entryType, external_order_ref: ref, cost_core: binds[3] };
+        } else {
+          entryType = 'ORDER_DEBIT';
+          supId = binds[10];
+          ref = binds[6];
+          rowObj = { id: binds[0], supplier_id: supId, entry_type: entryType, external_order_ref: ref, cost_core: binds[3] };
+        }
+        // Enforce Sửa nhỏ 1: UNIQUE(supplier_id, external_order_ref, entry_type)
+        const dup = storeState.ledger.some(
+          (r) => r.supplier_id === supId && r.external_order_ref === ref && r.entry_type === entryType
+        );
+        if (dup) return { success: true, meta: { changes: 0 } };
+        storeState.ledger.push(rowObj);
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.startsWith('SELECT id, selling_price_core FROM external_supplier_products')) {
+        const hit = storeState.products.find((p) => p.supplier_id === binds[0] && p.external_sku === binds[1]) || null;
+        return { first: hit, results: hit ? [hit] : [] };
+      }
+      if (s.startsWith('INSERT INTO external_supplier_products')) {
+        const idx = storeState.products.findIndex((p) => p.supplier_id === binds[1] && p.external_sku === binds[2]);
+        const row = {
+          id: binds[0],
+          supplier_id: binds[1],
+          external_sku: binds[2],
+          external_name: binds[3],
+          supplier_cost_core: binds[4],
+          selling_price_core: binds[5],
+          profit_core: binds[6],
+          external_stock: binds[7],
+          anti_loss_paused: binds[9],
+          anti_loss_reason: binds[10],
+        };
+        if (idx >= 0) storeState.products[idx] = row;
+        else storeState.products.push(row);
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.includes('FROM supplier_fulfillment_webhooks WHERE seller_id IN')) {
+        const hits = storeState.webhooks.filter((w) => binds.includes(w.seller_id) && w.is_active === 1);
+        return { results: hits };
+      }
+      if (s.startsWith('SELECT * FROM supplier_fulfillment_webhooks WHERE id = ?')) {
+        const hit = storeState.webhooks.find((w) => w.id === binds[0]) || null;
+        return { first: hit, results: hit ? [hit] : [] };
+      }
+      if (s.startsWith('SELECT * FROM supplier_fulfillment_deliveries WHERE id = ?')) {
+        const hit = storeState.deliveries.find((d) => d.id === binds[0]) || null;
+        return { first: hit, results: hit ? [hit] : [] };
+      }
+      if (s.startsWith('INSERT INTO supplier_fulfillment_deliveries')) {
+        storeState.deliveries.push({
+          id: binds[0],
+          webhook_id: binds[1],
+          seller_id: binds[2],
+          order_id: binds[3],
+          order_code: binds[4],
+          event_type: binds[5],
+          request_payload_json: binds[6],
+          http_status: binds[7],
+          response_snippet: binds[8],
+          attempts: 1,
+          delivery_status: binds[9],
+          external_fulfillment_ref: binds[10] ?? null,
+          error_message: binds[11] ?? null,
+        });
+        return { success: true, meta: { changes: 1 } };
+      }
+      if (s.startsWith('UPDATE supplier_fulfillment_deliveries SET http_status = ?')) {
+        const d = storeState.deliveries.find((x) => x.id === binds[5]);
+        if (d) {
+          d.http_status = binds[0];
+          d.response_snippet = binds[1];
+          d.attempts += 1;
+          d.delivery_status = binds[2];
+          d.error_message = binds[3];
+        }
+        return { success: true, meta: { changes: d ? 1 : 0 } };
+      }
+      return { first: null, results: [], success: true, meta: { changes: 1 } };
+    };
+
+    return {
+      prepare(sql: string) {
+        let bound: any[] = [];
+        return {
+          bind(...args: any[]) {
+            bound = args;
+            return this;
+          },
+          async all() {
+            const res = await execOne(sql, bound);
+            return { results: res.results || [] };
+          },
+          async first() {
+            const res = await execOne(sql, bound);
+            return res.first !== undefined ? res.first : (res.results?.[0] ?? null);
+          },
+          async run() {
+            return await execOne(sql, bound);
+          },
+          _sql: sql,
+          _getBinds: () => bound,
+        };
+      },
+      async batch(stmts: any[]) {
+        const out: any[] = [];
+        for (const st of stmts) {
+          out.push(await execOne(st._sql, st._getBinds()));
+        }
+        return out;
+      },
+    } as any;
+  }
+
+  const statefulDb = createStatefulMockDb();
+  const apiEnv = {
+    DB: statefulDb,
+    MARKETPLACE_CODE_KEY: 'unit_test_primary_key_32_chars_ok',
+    ADMIN_API_KEY: 'unit_test_admin_master_secret_32_ok',
+  };
+
+  // Unauthenticated GET / POST must return 401
+  const unauthGet = await adminSuppliersIndexApi.onRequestGet({
+    request: new Request('https://example.test/api/admin/suppliers'),
+    env: apiEnv,
+  } as any);
+  check('api_suppliers_unauth_get_401', unauthGet.status, 401);
+
+  const unauthPost = await adminSuppliersIndexApi.onRequestPost({
+    request: new Request('https://example.test/api/admin/suppliers', { method: 'POST', body: '{}' }),
+    env: apiEnv,
+  } as any);
+  check('api_suppliers_unauth_post_401', unauthPost.status, 401);
+
+  // Authenticated POST with http:// must be rejected 400 SSRF/HTTPS_REQUIRED
+  const httpPost = await adminSuppliersIndexApi.onRequestPost({
+    request: new Request('https://example.test/api/admin/suppliers', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiEnv.ADMIN_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Bad HTTP Partner',
+        code: 'bad_http',
+        mode: 'POSTPAID_CREDIT',
+        base_url: 'http://api.partner.example',
+      }),
+    }),
+    env: apiEnv,
+  } as any);
+  check('api_suppliers_reject_http_400', httpPost.status, 400);
+
+  // Authenticated POST with valid HTTPS + secret -> 201 and selective projection (no encrypted_* leaked)
+  const createRes = await adminSuppliersIndexApi.onRequestPost({
+    request: new Request('https://example.test/api/admin/suppliers', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiEnv.ADMIN_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Partner Credit 0d',
+        code: 'partner_credit',
+        mode: 'POSTPAID_CREDIT',
+        base_url: 'https://api.partner.example',
+        api_key: 'partner_live_key_9988776655',
+        markup_type: 'PERCENT',
+        markup_value: 15,
+        credit_limit_core: 100000,
+      }),
+    }),
+    env: apiEnv,
+  } as any);
+  const createJson: any = await createRes.json();
+  check('api_suppliers_create_201', createRes.status, 201);
+  check('api_suppliers_create_no_encrypted_key_leaked', 'encrypted_api_key' in (createJson.supplier || {}), false);
+  check('api_suppliers_create_has_prefix', Boolean(createJson.supplier?.api_key_prefix), true);
+
+  const listRes = await adminSuppliersIndexApi.onRequestGet({
+    request: new Request('https://example.test/api/admin/suppliers', {
+      headers: { Authorization: `Bearer ${apiEnv.ADMIN_API_KEY}` },
+    }),
+    env: apiEnv,
+  } as any);
+  const listJson: any = await listRes.json();
+  check('api_suppliers_list_200', listRes.status, 200);
+  check('api_suppliers_list_zero_encrypted_cols', !JSON.stringify(listJson).includes('encrypted_api_key'), true);
+
+  const apiKeysModSource = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/admin/modules/ApiKeysModule.tsx'),
+    'utf8'
+  );
+  check('scopes_registered_supplier_connectors_full', apiKeysModSource.includes("'SUPPLIER_CONNECTORS_FULL'"), true);
+  check('scopes_registered_supplier_fulfillment_manage', apiKeysModSource.includes("'SUPPLIER_FULFILLMENT_MANAGE'"), true);
+
+  // =========================================================================
+  // PART 7: PA2 Webhook Dispatch, Retry, Seller-Orders WaitUntil & Inventory Push (Mảnh 3)
+  // =========================================================================
+  const whRawSecret = 'whsec_test_partner_secret_123456';
+  const whEncSecret = await encryptSupplierSecret(whRawSecret, apiEnv);
+  storeState.webhooks.push({
+    id: 'whk_test_1',
+    seller_id: 'seller_alpha',
+    name: 'Alpha Bot Webhook',
+    webhook_url: 'https://bot.partner.example/orders',
+    encrypted_hmac_secret: whEncSecret,
+    events_json: '["order.paid"]',
+    is_active: 1,
+    timeout_ms: 5000,
+    retry_max: 2,
+  });
+
+  let capturedSig = '';
+  let capturedTs = '';
+  let capturedBody = '';
+  const dispatchOk = await dispatchSupplierFulfillmentWebhook(statefulDb, apiEnv, {
+    sellerIds: ['seller_alpha'],
+    orderId: 'sord_1',
+    orderCode: 'CGM-001',
+    eventType: 'order.paid',
+    payloadData: { price_core: 120000 },
+    fetchImpl: (async (_url: any, init: any) => {
+      capturedSig = init.headers['X-WCG-Signature'];
+      capturedTs = init.headers['X-WCG-Timestamp'];
+      capturedBody = init.body;
+      return new Response(JSON.stringify({ ok: true, fulfillment_ref: 'BOT-REF-1' }), { status: 200 });
+    }) as any,
+  });
+  check('pa2_webhook_delivered_count', dispatchOk.delivered, 1);
+  const sigCheck = await verifyHmacSignature({
+    payload: capturedBody,
+    secret: whRawSecret,
+    signature: capturedSig,
+    timestamp: capturedTs,
+  });
+  check('pa2_webhook_signature_verified', sigCheck.ok, true);
+
+  // Failed delivery then retry succeeds
+  const dispatchFail = await dispatchSupplierFulfillmentWebhook(statefulDb, apiEnv, {
+    sellerIds: ['seller_alpha'],
+    orderId: 'sord_2',
+    orderCode: 'CGM-002',
+    eventType: 'order.paid',
+    payloadData: { price_core: 50000 },
+    fetchImpl: (async () => new Response('upstream err', { status: 500 })) as any,
+  });
+  check('pa2_webhook_failed_recorded', dispatchFail.failed, 1);
+  const retryRes = await retrySupplierWebhookDelivery(
+    statefulDb,
+    apiEnv,
+    dispatchFail.deliveryIds[0],
+    (async () => new Response('ok', { status: 200 })) as any
+  );
+  check('pa2_webhook_retry_delivered', retryRes.ok && retryRes.status === 'DELIVERED', true);
+
+  const sellerOrdersSrc = fs.readFileSync(
+    path.resolve(process.cwd(), 'functions/api/seller-orders/index.ts'),
+    'utf8'
+  );
+  check(
+    'pa2_seller_orders_nonblocking_waitUntil',
+    sellerOrdersSrc.includes('dispatchSupplierFulfillmentWebhook') && sellerOrdersSrc.includes('context.waitUntil'),
+    true
+  );
+
+  const invPushUnauth = await inventoryPushApi.onRequestPost({
+    request: new Request('https://example.test/api/seller/affiliate/inventory-push', {
+      method: 'POST',
+      body: JSON.stringify({ items: [] }),
+    }),
+    env: apiEnv,
+  } as any);
+  check('pa2_inventory_push_unauth_401', invPushUnauth.status, 401);
+
+  // =========================================================================
+  // PART 8: PA1 Sync, Credit Race Guard, Atomic Refund + Sửa Nhỏ 1, Affiliate Postback (Mảnh 4)
+  // =========================================================================
+  const supId = createJson.supplier.id;
+  const syncRes = await syncExternalSupplierCatalog(statefulDb, apiEnv, supId, {
+    skipDnsCheck: true,
+    fetchImpl: (async () =>
+      new Response(
+        JSON.stringify({
+          items: [
+            { sku: 'SKU-OK', name: 'Valid Card 100k', price: 100000, stock: 5 },
+            { sku: 'SKU-OOS', name: 'Empty Stock Card', price: 50000, stock: 0 },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )) as any,
+  });
+  check('pa1_sync_ok', syncRes.ok, true);
+  check('pa1_sync_count_2', syncRes.synced, 2);
+  check('pa1_sync_antiloss_paused_1', syncRes.pausedByAntiLoss, 1);
+
+  // Concurrent credit limit guard: limit = 100,000; 2 parallel debits of 70,000 -> strictly 1 passes, 1 rejected
+  const [resA, resB] = await Promise.all([
+    reserveSupplierCreditAtomic(statefulDb, {
+      supplierId: supId,
+      orderId: 'ord_sup_01',
+      orderCode: 'ORD-RACE-1',
+      externalOrderRef: 'EXT-ORD-999',
+      costCore: 70000,
+      sellingCore: 120000,
+    }),
+    reserveSupplierCreditAtomic(statefulDb, {
+      supplierId: supId,
+      orderId: 'ord_sup_02',
+      orderCode: 'ORD-RACE-2',
+      externalOrderRef: 'EXT-ORD-1000',
+      costCore: 70000,
+      sellingCore: 120000,
+    }),
+  ]);
+  const racePassedCount = [resA, resB].filter((r) => r.ok).length;
+  const raceFailedExceeded = [resA, resB].filter((r) => !r.ok && r.reason === 'CREDIT_LIMIT_EXCEEDED').length;
+  check('pa1_credit_race_only_one_passes', racePassedCount, 1);
+  check('pa1_credit_race_second_rejected', raceFailedExceeded, 1);
+  check('pa1_credit_used_equals_70000', storeState.suppliers[0].credit_used_core, 70000);
+
+  // Atomic refundSupplierOrder + Sửa Nhỏ 1 test: ORDER_DEBIT + REFUND_CREDIT share external_order_ref 'EXT-ORD-999'
+  const refund1 = await refundSupplierOrder(statefulDb, {
+    orderTable: 'orders',
+    orderId: 'ord_sup_01',
+    orderCode: 'ORD-RACE-1',
+    buyerMemberId: 'mem_01',
+    refundAmountCore: 120000,
+    reason: 'SUPPLIER_TIMEOUT',
+    supplierId: supId,
+    externalOrderRef: 'EXT-ORD-999',
+    supplierCostCore: 70000,
+  });
+  check('pa1_refund_first_ok', refund1.ok && refund1.refundStatus === 'REFUNDED_SUPPLIER_ERROR', true);
+  check('pa1_refund_buyer_credited_once', storeState.members[0].balance, 170000);
+  check('pa1_refund_credit_restored_to_0', storeState.suppliers[0].credit_used_core, 0);
+
+  // Verify Sửa nhỏ 1: BOTH ORDER_DEBIT and REFUND_CREDIT rows exist for EXT-ORD-999!
+  const sameRefEntries = storeState.ledger.filter((r) => r.external_order_ref === 'EXT-ORD-999');
+  check(
+    'pa1_sua_nho_1_debit_and_refund_same_ref_both_saved',
+    sameRefEntries.length === 2 &&
+      sameRefEntries.some((r) => r.entry_type === 'ORDER_DEBIT') &&
+      sameRefEntries.some((r) => r.entry_type === 'REFUND_CREDIT'),
+    true
+  );
+
+  // Second refund attempt on same order MUST be blocked by state-guard (zero double refund!)
+  const refund2 = await refundSupplierOrder(statefulDb, {
+    orderTable: 'orders',
+    orderId: 'ord_sup_01',
+    orderCode: 'ORD-RACE-1',
+    buyerMemberId: 'mem_01',
+    refundAmountCore: 120000,
+    reason: 'DUPLICATE_RETRY',
+    supplierId: supId,
+    externalOrderRef: 'EXT-ORD-999',
+    supplierCostCore: 70000,
+  });
+  check('pa1_refund_second_blocked_already_refunded', refund2.ok === false && refund2.alreadyRefunded === true, true);
+  check('pa1_refund_no_double_credit', storeState.members[0].balance, 170000);
+
+  // Affiliate postback HTTP handler rejects missing signature (400)
+  const postbackNoSig = await affiliatePostbackApi.onRequestPost({
+    request: new Request('https://example.test/api/webhooks/affiliate-postback', {
+      method: 'POST',
+      body: JSON.stringify({ supplier_code: 'aff_partner', external_order_ref: 'AFF-1' }),
+    }),
+    env: apiEnv,
+  } as any);
+  check('pa1_postback_missing_sig_400', postbackNoSig.status, 400);
+
+  // Affiliate postback HMAC + idempotency
+  const affSecret = 'aff_postback_secret_key_654321';
+  storeState.suppliers.push({
+    id: 'esup_aff_1',
+    name: 'Official Affiliate Network',
+    code: 'aff_partner',
+    mode: 'AFFILIATE_POSTBACK',
+    base_url: 'https://aff.partner.example',
+    encrypted_webhook_secret: await encryptSupplierSecret(affSecret, apiEnv),
+    is_active: 1,
+  });
+  const affBody = JSON.stringify({
+    supplier_code: 'aff_partner',
+    external_order_ref: 'AFF-ORD-777',
+    order_amount_core: 250000,
+    commission_core: 25000,
+    sub_id: 'mem_01',
+  });
+  const affSigned = await signHmacPayload(affBody, affSecret, fixedNow);
+  const pb1 = await processAffiliatePostback(statefulDb, apiEnv, {
+    supplierCode: 'aff_partner',
+    rawBody: affBody,
+    signatureHeader: affSigned.headerValue,
+    timestampHeader: String(affSigned.timestamp),
+    nowSec: fixedNow + 5,
+  });
+  const pb2 = await processAffiliatePostback(statefulDb, apiEnv, {
+    supplierCode: 'aff_partner',
+    rawBody: affBody,
+    signatureHeader: affSigned.headerValue,
+    timestampHeader: String(affSigned.timestamp),
+    nowSec: fixedNow + 10,
+  });
+  check('pa1_postback_first_recorded', pb1.ok && pb1.duplicate === false, true);
+  check('pa1_postback_second_idempotent_duplicate', pb2.ok && pb2.duplicate === true, true);
+  check(
+    'pa1_postback_ledger_count_strictly_1',
+    storeState.ledger.filter((r) => r.external_order_ref === 'AFF-ORD-777').length,
+    1
+  );
+
+  // =========================================================================
+  // PART 9: Bilingual Symmetry & Rule 9 Single-Screen Check (Mảnh 5)
+  // =========================================================================
+  const viJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'src/locales/vi.json'), 'utf8'));
+  const enJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'src/locales/en.json'), 'utf8'));
+  const viKeys = Object.keys(viJson.supplierConnectors || {}).sort();
+  const enKeys = Object.keys(enJson.supplierConnectors || {}).sort();
+  check('i18n_supplierConnectors_symmetry', JSON.stringify(viKeys) === JSON.stringify(enKeys) && viKeys.length >= 100, true);
+
+  const uiSrc = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/admin/modules/SupplierConnectorsModule.tsx'),
+    'utf8'
+  );
+  const tableMatches = uiSrc.match(/<table\b[^>]*>/g) || [];
+  check(
+    'ui_rule9_all_tables_fixed_full',
+    tableMatches.length === 5 && tableMatches.every((tTag) => tTag.includes('table-fixed w-full')),
     true
   );
 

@@ -103,6 +103,8 @@ export type ApiKeyScope =
   | 'SYSTEM_SETTINGS_FULL'
   | 'HOMEPAGE_SECTIONS_MANAGE'
   | 'AUTOMATION_CENTER_FULL'
+  | 'SUPPLIER_CONNECTORS_FULL'
+  | 'SUPPLIER_FULFILLMENT_MANAGE'
   | 'SYNC_FULL' 
   | 'API_KEYS_FULL'
   | 'HISTORY_FULL'
@@ -132,6 +134,28 @@ export const ALL_API_SCOPES: ScopeOption[] = [
     badgeText: 'text-purple-500',
     badgeBorder: 'border-purple-500/20',
     icon: Boxes,
+  },
+  {
+    id: 'SUPPLIER_CONNECTORS_FULL',
+    name: 'Nguồn Hàng API Ngoài & Sổ Công Nợ (External Supplier Connector API)',
+    category: 'Hệ Thống',
+    description: 'Toàn quyền cấu hình nhà cung cấp API ngoài, đồng bộ danh mục chống lỗ, quản lý hạn mức công nợ & quyết toán (/api/admin/suppliers/*).',
+    color: 'indigo',
+    badgeBg: 'bg-indigo-500/10',
+    badgeText: 'text-indigo-500',
+    badgeBorder: 'border-indigo-500/20',
+    icon: Boxes,
+  },
+  {
+    id: 'SUPPLIER_FULFILLMENT_MANAGE',
+    name: 'Webhook Thông Báo NCC & Đối Soát (Supplier Fulfillment Webhook API)',
+    category: 'Kết Nối',
+    description: 'Quản lý webhook ký HMAC-SHA256 thông báo bán hàng, gửi ping test, xem nhật ký và retry gửi lại (/api/admin/suppliers/webhooks/*).',
+    color: 'teal',
+    badgeBg: 'bg-teal-500/10',
+    badgeText: 'text-teal-500',
+    badgeBorder: 'border-teal-500/20',
+    icon: Send,
   },
   {
     id: 'TELEGRAM_NOTIFY',

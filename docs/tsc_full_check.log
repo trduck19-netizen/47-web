@@ -1,5 +1,5 @@
 === homepage: npx tsc -p tsconfig.homepage.json --noEmit --listFiles ===
-2026-11-26T09:00:58Z
+2026-11-26T09:21:05Z
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -184,142 +184,142 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
 exit=0
 
 === full: npx tsc -p tsconfig.json --noEmit ===
-2026-11-26T09:00:59Z
+2026-11-26T09:21:07Z
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
-functions/_worker.ts(426,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
+functions/_worker.ts(431,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
     Type 'D1Database | undefined' is not assignable to type 'D1Database'.
       Type 'undefined' is not assignable to type 'D1Database'.
-functions/_worker.ts(1191,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1216,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1222,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1258,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1266,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1389,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1396,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1405,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1443,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1452,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1456,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1461,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1470,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1475,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1482,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1488,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1492,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1500,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1505,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1513,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1520,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1528,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1534,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1539,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1547,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1552,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1560,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1570,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1575,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1585,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1593,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1602,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1611,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1617,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1624,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1632,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1638,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1645,81): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1651,79): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1656,78): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1664,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1672,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1680,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1688,79): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1695,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1702,83): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1709,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1714,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1719,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1745,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1759,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1801,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1808,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1816,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1823,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1828,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1833,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1839,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1846,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1851,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1856,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1864,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1870,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1878,58): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1886,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1894,60): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1902,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1916,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1974,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1980,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1988,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1997,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2006,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2013,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2021,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2029,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2036,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2047,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2057,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1203,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1228,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1234,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1270,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1278,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1401,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1408,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1417,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1455,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1464,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1468,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1473,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1482,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1487,72): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1494,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1500,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1504,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1512,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1517,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1525,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1532,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1540,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1546,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1551,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1559,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1564,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1572,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1582,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1587,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1597,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1605,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1614,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1623,72): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1629,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1636,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1644,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1650,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1657,81): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1663,79): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1668,78): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1676,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1684,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1692,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1700,79): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1707,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1714,83): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1721,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1726,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1731,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1782,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1796,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1838,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1845,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1853,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1860,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1865,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1870,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1876,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1883,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1888,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1893,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1901,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1907,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1915,58): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1923,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1931,60): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1939,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1953,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2011,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2017,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2025,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2034,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2043,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2050,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2058,72): error TS2554: Expected 1 arguments, but got 0.
 functions/_worker.ts(2066,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2083,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2095,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2103,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2110,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2118,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2126,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2134,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2143,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2151,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2206,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2215,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2223,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2231,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2299,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2308,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2318,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2326,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2333,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2341,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2348,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2355,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2363,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2371,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2379,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2387,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2395,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2401,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2409,78): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2417,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2423,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2433,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2441,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2449,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2458,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2464,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2470,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2479,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2485,81): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2494,87): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2500,84): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2510,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2518,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2526,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2534,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(3146,37): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3146,44): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3148,45): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3194,26): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
-functions/_worker.ts(3499,24): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
-functions/_worker.ts(3743,13): error TS6133: 'isWwm' is declared but its value is never read.
+functions/_worker.ts(2073,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2084,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2094,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2103,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2120,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2132,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2140,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2147,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2155,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2163,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2171,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2180,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2188,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2243,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2252,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2260,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2268,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2342,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2351,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2361,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2369,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2376,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2384,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2391,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2398,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2406,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2414,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2422,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2430,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2438,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2444,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2452,78): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2460,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2466,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2476,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2484,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2492,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2501,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2507,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2513,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2522,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2528,81): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2537,87): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2543,84): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2553,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2561,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2569,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2577,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(3189,37): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3189,44): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3191,45): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3237,26): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
+functions/_worker.ts(3542,24): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
+functions/_worker.ts(3786,13): error TS6133: 'isWwm' is declared but its value is never read.
 functions/api/admin/audit-log.ts(63,11): error TS6133: 'bindings' is declared but its value is never read.
 functions/api/admin/automation/status.ts(63,16): error TS6133: 'readSystemSettingJson' is declared but its value is never read.
 functions/api/admin/free-codes/index.ts(163,11): error TS6133: 'isHot' is declared but its value is never read.
@@ -598,21 +598,21 @@ functions/data/compact_seed_news.ts(219,5): error TS2353: Object literal may onl
 functions/data/compact_seed_news.ts(253,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
 functions/data/compact_seed_news.ts(286,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
 functions/data/compact_seed_news.ts(319,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
-functions/services/d1_service.ts(4770,7): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<any>'.
+functions/services/d1_service.ts(4790,7): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<any>'.
   Property 'success' is missing in type '{ results: any[]; }' but required in type 'D1Result<any>'.
-functions/services/d1_service.ts(5880,19): error TS2339: Property 'forEach' does not exist on type 'never'.
-functions/services/d1_service.ts(5958,23): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
-functions/services/d1_service.ts(6033,24): error TS2304: Cannot find name 'clm'.
-functions/services/d1_service.ts(6034,22): error TS2304: Cannot find name 'tot'.
-functions/services/d1_service.ts(6035,26): error TS2304: Cannot find name 'coverUrl'.
-functions/services/d1_service.ts(6036,24): error TS2304: Cannot find name 'iconUrl'.
-functions/services/d1_service.ts(6037,22): error TS2304: Cannot find name 'desc'.
-functions/services/d1_service.ts(6038,18): error TS2304: Cannot find name 'rew'.
-functions/services/d1_service.ts(6039,21): error TS2304: Cannot find name 'startTime'.
-functions/services/d1_service.ts(6040,19): error TS2304: Cannot find name 'endTime'.
-functions/services/d1_service.ts(6544,3): error TS6133: 'db' is declared but its value is never read.
-functions/services/d1_service.ts(6545,3): error TS6133: 'aggregates' is declared but its value is never read.
-functions/services/d1_service.ts(6546,3): error TS6133: 'events' is declared but its value is never read.
+functions/services/d1_service.ts(5900,19): error TS2339: Property 'forEach' does not exist on type 'never'.
+functions/services/d1_service.ts(5978,23): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
+functions/services/d1_service.ts(6053,24): error TS2304: Cannot find name 'clm'.
+functions/services/d1_service.ts(6054,22): error TS2304: Cannot find name 'tot'.
+functions/services/d1_service.ts(6055,26): error TS2304: Cannot find name 'coverUrl'.
+functions/services/d1_service.ts(6056,24): error TS2304: Cannot find name 'iconUrl'.
+functions/services/d1_service.ts(6057,22): error TS2304: Cannot find name 'desc'.
+functions/services/d1_service.ts(6058,18): error TS2304: Cannot find name 'rew'.
+functions/services/d1_service.ts(6059,21): error TS2304: Cannot find name 'startTime'.
+functions/services/d1_service.ts(6060,19): error TS2304: Cannot find name 'endTime'.
+functions/services/d1_service.ts(6564,3): error TS6133: 'db' is declared but its value is never read.
+functions/services/d1_service.ts(6565,3): error TS6133: 'aggregates' is declared but its value is never read.
+functions/services/d1_service.ts(6566,3): error TS6133: 'events' is declared but its value is never read.
 functions/services/giveaway_simulation_service.ts(1,28): error TS2307: Cannot find module '@cloudflare/workers-types' or its corresponding type declarations.
 functions/services/giveaway_simulation_service.ts(265,112): error TS7006: Parameter 'e' implicitly has an 'any' type.
 functions/services/google_auth_service.ts(6,29): error TS6133: 'getSigningSecret' is declared but its value is never read.
@@ -714,28 +714,29 @@ functions/services/virtualLayerService.ts(423,33): error TS7053: Element implici
   No index signature with a parameter of type 'string' was found on type 'Record<string, number> | {}'.
 functions/services/virtualLayerService.ts(714,50): error TS6133: 'env' is declared but its value is never read.
 functions/services/virtualLayerService.ts(714,60): error TS6133: 'waitUntil' is declared but its value is never read.
-src/admin/AdminApp.tsx(540,126): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(540,171): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(540,216): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(540,261): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(542,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/admin/AdminApp.tsx(547,126): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(547,171): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(547,216): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(547,261): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(549,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
 src/admin/components/AdminLoginGuard.tsx(151,19): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminLoginGuard.tsx(152,61): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminLoginGuard.tsx(153,63): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminModuleSkeleton.tsx(61,43): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/admin/components/AdminSidebar.tsx(108,9): error TS6133: 'isEn' is declared but its value is never read.
-src/admin/components/AdminSidebar.tsx(161,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(183,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(190,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(217,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(231,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(238,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(245,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(252,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(299,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(306,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminTopbar.tsx(33,7): error TS2739: Type '{ dashboard: { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; 'free-codes': { title: string; subtitle: string; }; ... 20 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, translations, vouchers, "first-purchase", "automation-center"
-src/admin/components/AdminTopbar.tsx(94,7): error TS2740: Type '{ dashboard: string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; utilities: string; ... 12 more ...; profile: string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, "platform-leads", translations, and 3 more.
+src/admin/components/AdminSidebar.tsx(110,9): error TS6133: 'isEn' is declared but its value is never read.
+src/admin/components/AdminSidebar.tsx(163,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(185,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(192,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(219,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(233,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(240,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(247,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(254,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(301,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(308,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(315,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminTopbar.tsx(33,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; 'free-codes': { title: string; subtitle: string; }; ... 20 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, translations, vouchers, "first-purchase", and 2 more.
+src/admin/components/AdminTopbar.tsx(94,7): error TS2740: Type '{ dashboard: string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; utilities: string; ... 12 more ...; profile: string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, "platform-leads", translations, and 4 more.
 src/admin/components/LuckyWheelAdminManager.tsx(7,3): error TS6133: 'Copy' is declared but its value is never read.
 src/admin/components/LuckyWheelAdminManager.tsx(9,3): error TS6133: 'RotateCw' is declared but its value is never read.
 src/admin/components/LuckyWheelAdminManager.tsx(10,3): error TS6133: 'Coins' is declared but its value is never read.
@@ -793,11 +794,11 @@ src/admin/modules/ApiKeysModule.tsx(32,3): error TS6133: 'Timer' is declared but
 src/admin/modules/ApiKeysModule.tsx(33,3): error TS6133: 'ChevronRight' is declared but its value is never read.
 src/admin/modules/ApiKeysModule.tsx(34,3): error TS6133: 'ExternalLink' is declared but its value is never read.
 src/admin/modules/ApiKeysModule.tsx(40,3): error TS6133: 'Database' is declared but its value is never read.
-src/admin/modules/ApiKeysModule.tsx(768,9): error TS6133: 'toggleVisibility' is declared but its value is never read.
-src/admin/modules/ApiKeysModule.tsx(1605,27): error TS6133: 'keyToCopy' is declared but its value is never read.
-src/admin/modules/ApiKeysModule.tsx(1606,27): error TS6133: 'isRevealed' is declared but its value is never read.
-src/admin/modules/ApiKeysModule.tsx(1769,23): error TS6133: 'keyToCopy' is declared but its value is never read.
-src/admin/modules/ApiKeysModule.tsx(1770,23): error TS6133: 'isRevealed' is declared but its value is never read.
+src/admin/modules/ApiKeysModule.tsx(792,9): error TS6133: 'toggleVisibility' is declared but its value is never read.
+src/admin/modules/ApiKeysModule.tsx(1629,27): error TS6133: 'keyToCopy' is declared but its value is never read.
+src/admin/modules/ApiKeysModule.tsx(1630,27): error TS6133: 'isRevealed' is declared but its value is never read.
+src/admin/modules/ApiKeysModule.tsx(1793,23): error TS6133: 'keyToCopy' is declared but its value is never read.
+src/admin/modules/ApiKeysModule.tsx(1794,23): error TS6133: 'isRevealed' is declared but its value is never read.
 src/admin/modules/AutomationCenterModule.tsx(10,3): error TS6133: 'Power' is declared but its value is never read.
 src/admin/modules/AutomationCenterModule.tsx(13,3): error TS6133: 'AlertTriangle' is declared but its value is never read.
 src/admin/modules/AutomationCenterModule.tsx(15,3): error TS6133: 'ExternalLink' is declared but its value is never read.
@@ -1460,7 +1461,7 @@ src/components/seller/SellerCenterView.tsx(2268,47): error TS2345: Argument of t
 src/components/seller/SellerCenterView.tsx(2272,94): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2289,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2299,62): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2320,11): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 37 more ...; checkoutModal: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
+src/components/seller/SellerCenterView.tsx(2320,11): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 38 more ...; supplierConnectors: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
   Types of parameters 'params' and 'fallback' are incompatible.
     Type 'string | undefined' is not assignable to type 'Record<string, any> | undefined'.
       Type 'string' is not assignable to type 'Record<string, any>'.
@@ -1481,7 +1482,7 @@ src/components/seller/SellerCenterView.tsx(2910,82): error TS2345: Argument of t
 src/components/seller/SellerCenterView.tsx(2930,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2935,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2948,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2966,9): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 37 more ...; checkoutModal: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
+src/components/seller/SellerCenterView.tsx(2966,9): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 38 more ...; supplierConnectors: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
   Types of parameters 'params' and 'fallback' are incompatible.
     Type 'string | undefined' is not assignable to type 'Record<string, any> | undefined'.
       Type 'string' is not assignable to type 'Record<string, any>'.

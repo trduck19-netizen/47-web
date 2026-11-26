@@ -61,6 +61,11 @@ import * as wishlistIndexApi from './api/user/wishlist/index';
 import * as adminAutomationStatusApi from './api/admin/automation/status';
 import * as adminAutomationTestApi from './api/admin/automation/test';
 import * as adminAutomationConfigApi from './api/admin/automation/config';
+import * as adminSuppliersIndexApi from './api/admin/suppliers/index';
+import * as adminSuppliersIdApi from './api/admin/suppliers/[id]';
+import * as adminSupplierWebhooksApi from './api/admin/suppliers/webhooks';
+import * as sellerAffiliateInventoryPushApi from './api/seller/affiliate/inventory-push';
+import * as affiliatePostbackWebhookApi from './api/webhooks/affiliate-postback';
 import * as wishlistToggleApi from './api/user/wishlist/toggle';
 import * as wishlistSyncApi from './api/user/wishlist/sync';
 import * as missionsIdApi from './api/missions/[id]';
@@ -1158,6 +1163,13 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'GET' && sepayWebhookApi.onRequestGet) return await sepayWebhookApi.onRequestGet(context);
       }
 
+      // 6b. /api/webhooks/affiliate-postback (PA1 Affiliate Postback HMAC)
+      if (pathname === '/api/webhooks/affiliate-postback') {
+        if (method === 'OPTIONS') return await affiliatePostbackWebhookApi.onRequestOptions(context);
+        if (method === 'POST') return await affiliatePostbackWebhookApi.onRequestPost(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+
       // 7. /api/giveaways/claim
       if (pathname === '/api/giveaways/claim') {
         if (method === 'POST') {
@@ -1722,6 +1734,31 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
       }
 
+      // 8c-31. /api/admin/suppliers/* (External Supplier Connector PA1 & Supplier Fulfillment Webhook PA2)
+      if (pathname === '/api/admin/suppliers/webhooks' || pathname.startsWith('/api/admin/suppliers/webhooks/')) {
+        const subSegs = pathname
+          .slice('/api/admin/suppliers/webhooks'.length)
+          .split('/')
+          .filter(Boolean)
+          .map((s) => decodeURIComponent(s));
+        return await adminSupplierWebhooksApi.handleAdminSupplierWebhooksRequest(context as any, subSegs);
+      }
+      if (pathname === '/api/admin/suppliers') {
+        if (method === 'OPTIONS') return await adminSuppliersIndexApi.onRequestOptions(context);
+        if (method === 'GET') return await adminSuppliersIndexApi.onRequestGet(context);
+        if (method === 'POST') return await adminSuppliersIndexApi.onRequestPost(context);
+        return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (pathname.startsWith('/api/admin/suppliers/')) {
+        const subSegs = pathname
+          .slice('/api/admin/suppliers/'.length)
+          .split('/')
+          .filter(Boolean)
+          .map((s) => decodeURIComponent(s));
+        context.params = { ...(context.params || {}), id: subSegs[0] || '' };
+        return await adminSuppliersIdApi.handleAdminSupplierByIdRequest(context as any, subSegs);
+      }
+
       // 8d. /api/crawl-article (AI Article Crawler & Extractor)
       if (pathname === '/api/crawl-article') {
         return await crawlArticleApi.onRequest(context);
@@ -2275,6 +2312,12 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       if (pathname === '/api/seller/affiliate/catalog') {
         if (method === 'OPTIONS') return await sellerAffiliateCatalogApi.onRequestOptions();
         if (method === 'GET') return await sellerAffiliateCatalogApi.onRequestGet(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/affiliate/inventory-push') {
+        if (method === 'OPTIONS') return await sellerAffiliateInventoryPushApi.onRequestOptions(context);
+        if (method === 'POST') return await sellerAffiliateInventoryPushApi.onRequestPost(context);
         return new Response('Method Not Allowed', { status: 405 });
       }
 

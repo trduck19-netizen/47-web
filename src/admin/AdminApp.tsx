@@ -40,6 +40,7 @@ const TranslationsModule = React.lazy(() => import('./modules/TranslationsModule
 const VouchersModule = React.lazy(() => import('./modules/VouchersModule').then((m) => ({ default: m.VouchersModule })));
 const HomepageSectionsModule = React.lazy(() => import('./modules/HomepageSectionsModule').then((m) => ({ default: m.HomepageSectionsModule })));
 const AutomationCenterModule = React.lazy(() => import('./modules/AutomationCenterModule').then((m) => ({ default: m.AutomationCenterModule })));
+const SupplierConnectorsModule = React.lazy(() => import('./modules/SupplierConnectorsModule').then((m) => ({ default: m.SupplierConnectorsModule })));
 import { MarketingNotificationToast } from '../components/MarketingNotificationToast';
 import { LanguageProvider, useLanguage } from '../context/LanguageContext';
 
@@ -77,6 +78,7 @@ const tabTitlesVi: Record<AdminModuleTab, string> = {
   content: 'Quản Trị Nội Dung & CMS',
   'api-keys': 'Quản Lý Khóa API & Phân Quyền',
   'automation-center': 'Trung Tâm Tự Động Hóa & Tích Hợp API',
+  'supplier-connectors': 'Nguồn Hàng API Ngoài & Webhook NCC',
   'security-logs': 'Nhật Ký Bảo Mật & Audit Log',
   profile: 'Tài Khoản & Bảo Mật Admin',
 };
@@ -111,6 +113,7 @@ const tabTitlesEn: Record<AdminModuleTab, string> = {
   content: 'Website Content CMS',
   'api-keys': 'API Keys & Scopes',
   'automation-center': 'Automation Center & Integrations',
+  'supplier-connectors': 'External API Suppliers & Webhooks',
   'security-logs': 'Security Audit Logs',
   profile: 'Admin Account & Security',
 };
@@ -153,6 +156,8 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       'sepay',
       'content',
       'api-keys',
+      'automation-center',
+      'supplier-connectors',
       'security-logs',
       'profile',
     ];
@@ -433,6 +438,8 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
         'sepay',
         'content',
         'api-keys',
+      'automation-center',
+      'supplier-connectors',
       'security-logs',
         'profile',
       ];
@@ -747,6 +754,10 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
 
         {currentTab === 'automation-center' && (
           <AutomationCenterModule onShowToast={showToast} />
+        )}
+
+        {currentTab === 'supplier-connectors' && (
+          <SupplierConnectorsModule onShowToast={showToast} />
         )}
 
         {currentTab === 'security-logs' && (
