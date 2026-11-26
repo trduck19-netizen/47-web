@@ -64,10 +64,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const colo = String((request as any).cf?.colo || 'unknown');
   const url = new URL(request.url);
 
-  const isNoCache = request.headers.get('Cache-Control')?.includes('no-cache') ||
-                    request.headers.get('Pragma')?.includes('no-cache') ||
-                    url.searchParams.has('nocache') ||
-                    url.searchParams.has('fresh');
+  const hasIfNoneMatch = Boolean(request.headers.get('If-None-Match'));
+  const explicitBypass = url.searchParams.has('nocache') || url.searchParams.has('fresh');
+  const isNoCache = explicitBypass ||
+                    (!hasIfNoneMatch && (
+                      request.headers.get('Cache-Control')?.includes('no-cache') ||
+                      request.headers.get('Pragma')?.includes('no-cache')
+                    ));
 
   const globalScope = globalThis as any;
   const nowMs = Date.now();

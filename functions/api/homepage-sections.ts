@@ -32,9 +32,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   // 1. Đồng bộ tức thì qua Catalog Epoch + ETag / 304 + Edge Cache theo khóa epoch
   const urlObj = new URL(request.url);
-  const bypassCache = urlObj.searchParams.has('fresh') ||
-                      urlObj.searchParams.has('nocache') ||
-                      request.headers.get('Cache-Control')?.includes('no-cache');
+  const hasIfNoneMatch = Boolean(request.headers.get('If-None-Match'));
+  const explicitBypass = urlObj.searchParams.has('fresh') || urlObj.searchParams.has('nocache');
+  const bypassCache = explicitBypass ||
+                      (!hasIfNoneMatch && Boolean(request.headers.get('Cache-Control')?.includes('no-cache')));
   const currentEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
   const etag = `W/"sections-${currentEpoch}"`;
 

@@ -667,10 +667,13 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'GET') {
           const authHeader = request.headers.get('Authorization') || '';
           const syncKeyHeader = request.headers.get('X-Sync-Key') || '';
-          const isNoCache = request.headers.get('Cache-Control')?.includes('no-cache') ||
-                            request.headers.get('Pragma')?.includes('no-cache') ||
-                            url.searchParams.has('nocache') ||
-                            url.searchParams.has('fresh');
+          const hasIfNoneMatch = Boolean(request.headers.get('If-None-Match'));
+          const explicitBypass = url.searchParams.has('nocache') || url.searchParams.has('fresh');
+          const isNoCache = explicitBypass ||
+                            (!hasIfNoneMatch && (
+                              request.headers.get('Cache-Control')?.includes('no-cache') ||
+                              request.headers.get('Pragma')?.includes('no-cache')
+                            ));
           const isPublic = !authHeader && !syncKeyHeader && !isNoCache && !url.searchParams.has('key');
 
           // Đồng bộ tức thì qua Catalog Epoch + ETag / 304 + Edge Cache theo khóa epoch cho public GET /api/sync

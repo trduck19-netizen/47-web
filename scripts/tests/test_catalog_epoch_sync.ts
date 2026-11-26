@@ -150,6 +150,30 @@ async function main() {
   check('sync_lite_304_cache_status', res304.headers.get('X-Cache-Status'), 'NOT-MODIFIED');
   check('sync_lite_304_zero_heavy_queries', heavyQueryCount, queriesBefore304);
 
+  // Browser F5 / undici sends Cache-Control: no-cache WITH If-None-Match -> MUST still return 304!
+  const res304WithNoCacheHeader = await syncLiteGet({
+    request: new Request('https://universal-mall-shop.pages.dev/api/sync-lite', {
+      headers: { 'If-None-Match': etag1, 'Cache-Control': 'no-cache' },
+    }),
+    env: { DB: mockDb },
+    waitUntil: () => {},
+  } as any);
+  check('sync_lite_304_with_cc_no_cache_and_inm', res304WithNoCacheHeader.status, 304);
+
+  // Explicit ?nocache=1 with If-None-Match MUST still bypass and return 200 BYPASS
+  const resExplicitBypass = await syncLiteGet({
+    request: new Request('https://universal-mall-shop.pages.dev/api/sync-lite?nocache=1', {
+      headers: { 'If-None-Match': etag1 },
+    }),
+    env: { DB: mockDb },
+    waitUntil: () => {},
+  } as any);
+  check(
+    'sync_lite_explicit_nocache_param_bypasses_304',
+    resExplicitBypass.status === 200 && resExplicitBypass.headers.get('X-Cache-Status') === 'BYPASS',
+    true
+  );
+
   // Same epoch without If-None-Match hits isolate RAM cache (0 heavy queries)
   const queriesBeforeRamHit = heavyQueryCount;
   const resRamHit = await syncLiteGet({
