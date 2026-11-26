@@ -4534,10 +4534,16 @@ async function handleGameIconRequest(
   const cacheUrl = new URL(request.url);
   cacheUrl.searchParams.set('b', buildTag);
   const cacheKey = cache ? new Request(cacheUrl.toString(), { method: 'GET' }) : null;
+  const isValidImageResponse = (res: Response | null | undefined): res is Response => {
+    if (!res || res.status !== 200) return false;
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    return ct.startsWith('image/');
+  };
+
   if (cache && cacheKey && !bypassCache) {
     try {
       const cached = await cache.match(cacheKey);
-      if (cached) {
+      if (isValidImageResponse(cached)) {
         return cached;
       }
     } catch {}
@@ -4561,7 +4567,7 @@ async function handleGameIconRequest(
           bytes[i] = binaryStr.charCodeAt(i);
         }
 
-        const cacheControl = 'public, max-age=31536000, immutable';
+        const cacheControl = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400';
 
         const contentType = filename.toLowerCase().endsWith('.webp') ? 'image/webp' : (row.content_type || 'image/webp');
         const headers = new Headers({
@@ -4586,10 +4592,10 @@ async function handleGameIconRequest(
     }
   }
 
-  // 3. Fallback static assets (khi chưa có icon upload tùy chỉnh trong D1)
+  // 3. Fallback static assets (BẮT BUỘC kiểm content-type image/* để chặn SPA fallback 200 text/html)
   try {
     const assetRes = await env.ASSETS.fetch(request);
-    if (assetRes && assetRes.status === 200) {
+    if (isValidImageResponse(assetRes)) {
       return assetRes;
     }
     // Nếu yêu cầu -thumb-256.webp mà chưa có trong assets, thử -thumb.webp (128px nhẹ) thay vì file gốc
@@ -4597,7 +4603,7 @@ async function handleGameIconRequest(
       const origUrl = new URL(request.url);
       origUrl.pathname = `/game_icons/${baseSlug}-thumb.webp`;
       const origRes = await env.ASSETS.fetch(new Request(origUrl, request));
-      if (origRes && origRes.status === 200) {
+      if (isValidImageResponse(origRes)) {
         return origRes;
       }
     }
@@ -4606,11 +4612,17 @@ async function handleGameIconRequest(
       const webpUrl = new URL(request.url);
       webpUrl.pathname = `/game_icons/${baseSlug}.webp`;
       const webpRes = await env.ASSETS.fetch(new Request(webpUrl, request));
-      if (webpRes && webpRes.status === 200) {
+      if (isValidImageResponse(webpRes)) {
         return webpRes;
       }
     }
   } catch {}
 
-  return new Response('Icon not found', { status: 404 });
+  return new Response('Icon not found', {
+    status: 404,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+    },
+  });
 }
