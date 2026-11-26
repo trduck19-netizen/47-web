@@ -1878,7 +1878,7 @@
     "tabDocs": "Postback & HMAC Docs",
     "searchPlaceholder": "Search by name, code, or URL...",
     "filterAllModes": "All Modes",
-    "modePostpaid": "Postpaid Credit (0đ)",
+    "modePostpaid": "Postpaid Credit (0 VND)",
     "modeAffiliate": "Affiliate Postback",
     "modePrepaid": "Prepaid Guard",
     "colSupplierInfo": "Supplier & URL",
