@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-332: Race Condition `ShopeeTestView` Gọi `/api/products` Ghi Đè `/api/sync-lite` Gây `/game_icons/undefined.webp` & Mất Thông Số Vật Lý Khi Chưa Đăng Nhập + `setErrorMessaget` + Fallback `: 2000` Ở `PackageShareModal` (26/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - `ShopeeTestView.tsx:388–398` gọi `GET /api/products?limit=100&_t=...` (không cache, về sau `/api/sync-lite`) rồi ghi đè `currentStoreProducts` và `localStorage['pine_admin_store_products_v4']` bằng object thiếu `cover_image_url`, `game_slug`, `weight_grams`, `warehouse_address`, `warranty_hours`. Khi render tiếp, `dataService.ts:3083–3084` dựng `/game_icons/undefined.webp` (404), kệ chính rơi về `📦`, modal khi chưa đăng nhập mất `500g`/`24 giờ`/kho gửi thật.
+  - `PackageShareModal.tsx:232` dùng fallback ternary `: 2000` lọt qua regex chỉ quét `??`/`||`.
+  - `AuthModal.tsx` còn 13 lời gọi `setErrorMessaget('authStrict.kX')` gây `ReferenceError` tại runtime khi guard submit kích hoạt (đặc biệt khi bật lại `GUEST_TURNSTILE_ENABLED=true`).
+- **Giải pháp chuẩn đã kiểm chứng (26/11/2026 - Mục 472)**:
+  - Gỡ hẳn ghi đè `/api/products` khỏi `ShopeeTestView.tsx`, dùng chung 1 nguồn chuẩn `/api/sync-lite` cho cả Kệ chính & Flash Sale, đồng thời bổ sung đủ field vật lý vào `functions/api/products/index.ts`.
+  - Tạo `src/utils/safeImageUrl.ts` (`sanitizeImageUrl`, `safeGameIconUrl`, `resolveProductCoverImage`), tự chữa lành cache bẩn trong `dataService.getStoreProducts()` và thay toàn bộ đường dựng `/game_icons/${slug}.webp` không kiểm tra slug.
+  - Chặn badge `PackageShareModal` bằng `firstPurchaseOfferPrice > 0 && firstPurchaseOfferPrice < currentPrice` (xóa `: 2000`) và sửa 13 chỗ `setErrorMessaget(...)` thành `setErrorMessage(t(...))`.
+
 ### ISSUE-331: Ưu Đãi Mua Lần Đầu Đẩy Giá Thấp (`100đ`) Lên `2.000đ`, Ảnh `/game_icons/physical-default.webp` 404 & Cờ Tạm Tắt Turnstile Đăng Nhập Khách (26/11/2026)
 - **Triệu chứng & Rủi ro**:
   - `GET /api/store/my-offer` chỉ đọc `store_products` nên các sản phẩm từ `seller_products` có `selectedOffer === undefined`, rơi vào `defaultEligible = true` và lấy `offer_price: 2000` dù chiến dịch `wcg_first_purchase_config_v1` đang `enabled: false`, làm sản phẩm 100đ bị hiển thị thành `2.000đ` trong `ProductDetailModal`.

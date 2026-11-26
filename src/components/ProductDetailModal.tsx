@@ -1,6 +1,7 @@
 import confetti from 'canvas-confetti';
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { resolveProductCoverImage, safeGameIconUrl, sanitizeImageUrl } from '../utils/safeImageUrl';
 import {
   X,
   ShieldCheck,
@@ -255,15 +256,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? (product as StoreProduct).game_name
     : (product as UtilityProduct).category_label || (product as UtilityProduct).category || t('productDetailModal.utility');
 
-  const defaultImg =
-    product.cover_image_url ||
-    (isStoreProduct ? (product as StoreProduct).game_icon_url : (product as UtilityProduct).icon_url) ||
-    (gameSlug ? `/game_icons/${gameSlug}.webp` : '/package-placeholder.svg');
+  const defaultImg = resolveProductCoverImage(product, '/package-placeholder.svg');
 
-  const images =
-    product.product_images && product.product_images.length > 0
-      ? product.product_images
-      : [defaultImg].filter(Boolean) as string[];
+  const rawProductImages: unknown[] = Array.isArray(product.product_images) && product.product_images.length > 0
+    ? product.product_images
+    : (Array.isArray((product as any).images) && (product as any).images.length > 0 ? (product as any).images : []);
+  const cleanProductImages: string[] = rawProductImages
+    .map((u) => sanitizeImageUrl(typeof u === 'string' ? u : ''))
+    .filter((u): u is string => Boolean(u));
+  const images: string[] = cleanProductImages.length > 0 ? cleanProductImages : [defaultImg];
 
   // Tồn kho & Đã bán của gói được chọn (Khi còn tồn kho thật realStock > 0, đảm bảo displayStock >= 1)
   const displayStock = realStock <= 0 ? 0 : Math.max(1, marketingService.getDisplayStock(selectedPackage.id || product.id, realStock));
@@ -517,18 +518,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
                 <img
+                  key={defaultImg}
                   src={defaultImg}
                   alt={product.title}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (gameSlug) {
-                      const localFallback = `/game_icons/${gameSlug}.webp`;
-                      if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
-                        target.src = localFallback;
-                        return;
-                      }
+                    if (isPhysicalProduct && !target.src.endsWith('/game_icons/physical-default.webp')) {
+                      target.src = '/game_icons/physical-default.webp';
+                      return;
+                    }
+                    const localFallback = safeGameIconUrl(gameSlug, '');
+                    if (localFallback && target.src !== localFallback && !target.src.endsWith(localFallback)) {
+                      target.src = localFallback;
+                      return;
                     }
                     target.onerror = null;
                     target.src = '/package-placeholder.svg';
@@ -604,18 +608,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <div className="space-y-2.5">
                 <div className={`relative rounded-2xl bg-muted overflow-hidden border border-border group select-none shadow-inner ${isPhysicalProduct ? 'aspect-square max-h-[360px] sm:max-h-[420px] mx-auto w-full' : 'h-52 sm:h-80'}`}>
                   <img
+                    key={images[activeImageIdx]}
                     src={images[activeImageIdx]}
                     alt={product.title}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      if (gameSlug) {
-                        const localFallback = `/game_icons/${gameSlug}.webp`;
-                        if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
-                          target.src = localFallback;
-                          return;
-                        }
+                      if (isPhysicalProduct && !target.src.endsWith('/game_icons/physical-default.webp')) {
+                        target.src = '/game_icons/physical-default.webp';
+                        return;
+                      }
+                      const localFallback = safeGameIconUrl(gameSlug, '');
+                      if (localFallback && target.src !== localFallback && !target.src.endsWith(localFallback)) {
+                        target.src = localFallback;
+                        return;
                       }
                       target.onerror = null;
                       target.src = '/package-placeholder.svg';

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { StoreProduct, ProductPackageVariant } from '../types/game';
 import { formatCore } from '../utils/textUtils';
+import { resolveProductCoverImage } from '../utils/safeImageUrl';
 import { useLanguage } from '../context/LanguageContext';
 
 export interface PackageShareModalProps {
@@ -62,11 +63,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
   const shareUrl = `${origin}/store?game=${encodeURIComponent(gameSlug)}&pkg=${encodeURIComponent(packageItem.id)}`;
 
   const gameName = product?.game_name || product?.title || 'Game';
-  const gameAvatar =
-    product?.game_icon_url ||
-    product?.cover_image_url ||
-    (product?.game_slug ? `/game_icons/${product.game_slug}.webp` : '') ||
-    '/og-image.jpg';
+  const gameAvatar = resolveProductCoverImage(product, '/og-image.jpg');
 
   const isEscalating = packageItem?.sale_mode === 'escalating';
   const currentPrice = isEscalating
@@ -77,6 +74,15 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
     : (typeof packageItem.original_price === 'number' && packageItem.original_price > currentPrice
       ? packageItem.original_price
       : 0);
+
+  const firstPurchaseOfferPrice = packageItem.first_purchase_price
+    ? Number(packageItem.first_purchase_price)
+    : 0;
+  const isFirstPurchaseBadgeEligible =
+    !isEscalating &&
+    packageItem.first_purchase_enabled !== false &&
+    firstPurchaseOfferPrice > 0 &&
+    firstPurchaseOfferPrice < currentPrice;
 
   const discountPercent = isEscalating
     ? 0
@@ -226,10 +232,10 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
                   {t('packageShareModal.escalatingStep', { step: formatCore(packageItem.escalating_step || 0) })}
                 </span>
               )}
-              {!isEscalating && packageItem.first_purchase_enabled !== false && (
+              {isFirstPurchaseBadgeEligible && (
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0 flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5 text-rose-400" />
-                  {t('packageShareModal.firstPurchasePrice', { price: formatCore(packageItem.first_purchase_price ? Number(packageItem.first_purchase_price) : 2000) })}
+                  {t('packageShareModal.firstPurchasePrice', { price: formatCore(firstPurchaseOfferPrice) })}
                 </span>
               )}
               {packageItem.badge && (

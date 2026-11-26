@@ -38,6 +38,7 @@ import QRCode from 'qrcode';
 import { CyberLoader } from './CyberLoader';
 import type { StoreProduct, OrderRecord, UserProfile } from '../types/game';
 import { dataService } from '../services/dataService';
+import { resolveProductCoverImage, safeGameIconUrl } from '../utils/safeImageUrl';
 import { offerService } from '../services/offerService';
 import { generateVietQrEmvCo } from '../utils/vietQrUtils';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
@@ -1335,14 +1336,18 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
                     <img
-                      src={product.cover_image_url || product.game_icon_url || `/game_icons/${product.game_slug}.webp`}
-                      alt={product.game_name}
+                      src={resolveProductCoverImage(product, '/package-placeholder.svg')}
+                      alt={product.game_name || product.title}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        const localFallback = `/game_icons/${product.game_slug}.webp`;
-                        if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
+                        if (isPhysical && !target.src.endsWith('/game_icons/physical-default.webp')) {
+                          target.src = '/game_icons/physical-default.webp';
+                          return;
+                        }
+                        const localFallback = safeGameIconUrl(product.game_slug, '');
+                        if (localFallback && target.src !== localFallback && !target.src.endsWith(localFallback)) {
                           target.src = localFallback;
                         } else {
                           target.onerror = null;
@@ -1629,14 +1634,18 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
                     <img
-                      src={product.cover_image_url || product.game_icon_url || `/game_icons/${product.game_slug}.webp`}
-                      alt={product.game_name}
+                      src={resolveProductCoverImage(product, '/package-placeholder.svg')}
+                      alt={product.game_name || product.title}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        const localFallback = `/game_icons/${product.game_slug}.webp`;
-                        if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
+                        if (isPhysical && !target.src.endsWith('/game_icons/physical-default.webp')) {
+                          target.src = '/game_icons/physical-default.webp';
+                          return;
+                        }
+                        const localFallback = safeGameIconUrl(product.game_slug, '');
+                        if (localFallback && target.src !== localFallback && !target.src.endsWith(localFallback)) {
                           target.src = localFallback;
                         } else {
                           target.onerror = null;

@@ -118,7 +118,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       script.onload = () => setIsTurnstileLoaded(true);
       script.onerror = () => {
         console.error('[Turnstile] Failed to load SDK');
-        setErrorMessaget('authStrict.k1');
+        setErrorMessage(t('authStrict.k1'));
       };
       document.head.appendChild(script);
     } else {
@@ -219,7 +219,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           },
           'error-callback': () => {
             setLoginTurnstileToken('');
-            setErrorMessaget('authStrict.k7');
+            setErrorMessage(t('authStrict.k7'));
           },
         });
         loginWidgetIdRef.current = id;
@@ -268,7 +268,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           },
           'error-callback': () => {
             setRegTurnstileToken('');
-            setErrorMessaget('authStrict.k8');
+            setErrorMessage(t('authStrict.k8'));
           },
         });
         regWidgetIdRef.current = id;
@@ -300,12 +300,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!loginIdentifier.trim()) {
-      setErrorMessaget('authStrict.k9');
+      setErrorMessage(t('authStrict.k9'));
       return;
     }
 
     if (isLoginTurnstileEnabled && turnstileSiteKey && !loginTurnstileToken) {
-      setErrorMessaget('authStrict.k10');
+      setErrorMessage(t('authStrict.k10'));
       return;
     }
 
@@ -355,27 +355,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     if (!isValidEmail(regEmail)) {
-      setErrorMessaget('authStrict.k14');
+      setErrorMessage(t('authStrict.k14'));
       return;
     }
 
     if (regPassword.length < 6) {
-      setErrorMessaget('authStrict.k15');
+      setErrorMessage(t('authStrict.k15'));
       return;
     }
 
     if (regPassword !== regConfirmPassword) {
-      setErrorMessaget('authStrict.k16');
+      setErrorMessage(t('authStrict.k16'));
       return;
     }
 
     if (!agreeTerms) {
-      setErrorMessaget('authStrict.k17');
+      setErrorMessage(t('authStrict.k17'));
       return;
     }
 
     if (isRegisterTurnstileEnabled && turnstileSiteKey && !regTurnstileToken) {
-      setErrorMessaget('authStrict.k18');
+      setErrorMessage(t('authStrict.k18'));
       return;
     }
 
@@ -420,7 +420,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!forgotIdentifier.trim()) {
-      setErrorMessaget('authStrict.k21');
+      setErrorMessage(t('authStrict.k21'));
       return;
     }
 
@@ -442,12 +442,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!forgotOtp.trim()) {
-      setErrorMessaget('authStrict.k25');
+      setErrorMessage(t('authStrict.k25'));
       return;
     }
 
     if (forgotNewPassword.length < 6) {
-      setErrorMessaget('authStrict.k26');
+      setErrorMessage(t('authStrict.k26'));
       return;
     }
 

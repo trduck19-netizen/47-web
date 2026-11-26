@@ -22,6 +22,7 @@ import { getUpcomingGameIconUrl } from '../utils/upcomingGameIconUtils';
 import { calculateEffectiveOrder } from '../utils/upcomingGameGrowthUtils';
 import { smartVietnameseMatch, calculateGameSearchScore, matchGameSearch } from '../utils/textUtils';
 import { isCodeExpired, parseExpirationDate } from '../utils/codeUtils';
+import { resolveProductCoverImage, safeGameIconUrl, sanitizeImageUrl } from '../utils/safeImageUrl';
 
 import { DEFAULT_STORE_PRODUCTS, DEFAULT_UTILITY_PRODUCTS, DEFAULT_GIVEAWAYS } from '../data/seedData';
 import { marketingService } from './marketingService';
@@ -1315,9 +1316,9 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           const cat = g.category ? g.category.trim() : 'Game Hot';
           if (cat) categorySet.add(cat);
 
-          let iconUrl = g.icon_url || g.iconUrl || g.cover_image_url || '';
+          let iconUrl = sanitizeImageUrl(g.icon_url || g.iconUrl || g.cover_image_url);
           if (!iconUrl || iconUrl.includes('codemoi.net') || iconUrl.startsWith('/game-icons') || iconUrl.startsWith('game-icons')) {
-            iconUrl = `/game_icons/${slug}.webp`;
+            iconUrl = safeGameIconUrl(slug, '/package-placeholder.svg');
           }
 
           const relDate = g.release_date || g.gp_release_date || '2026-09-01';
@@ -1542,7 +1543,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               ...g,
               codes: Array.isArray(g.codes) ? g.codes : [],
               codes_count: authoritativeCount,
-              icon_url: g.icon_url || `/game_icons/${g.slug}.webp`,
+              icon_url: sanitizeImageUrl(g.icon_url) || safeGameIconUrl(g.slug, '/package-placeholder.svg'),
               is_partial_preview: true,
             };
             const existingCache = this.cachedServerGames.get(g.slug.toLowerCase());
@@ -1690,7 +1691,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         active_codes_count: typeof g.active_codes_count === 'number' ? g.active_codes_count : activeFullCodes.length,
         expired_codes_count: fullCodes.length - activeFullCodes.length,
         total_codes_count: fullCodes.length,
-        icon_url: g.icon_url || `/game_icons/${g.slug}.webp`,
+        icon_url: sanitizeImageUrl(g.icon_url) || safeGameIconUrl(g.slug, '/package-placeholder.svg'),
       };
     });
 
@@ -1739,7 +1740,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
               publisher: ug.publisher || 'Nhà Phát Hành',
               category: ug.category || 'Game Mới',
               rating: 5,
-              icon_url: ug.iconUrl || ug.icon_url || `/game_icons/${ug.slug}.webp`,
+              icon_url: sanitizeImageUrl(ug.iconUrl || ug.icon_url) || safeGameIconUrl(ug.slug, '/package-placeholder.svg'),
               codes_count: (ug.expectedCodes || []).length,
               is_hot: Boolean((ug as any).is_hot),
               is_new: true,
@@ -1974,7 +1975,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
             free_codes_count: typeof game.free_codes_count === 'number' ? game.free_codes_count : finalActiveCount,
             expired_codes_count: fullCodes.length - activeFullCodes.length,
             total_codes_count: fullCodes.length,
-            icon_url: game.icon_url || `/game_icons/${game.slug}.webp`,
+            icon_url: sanitizeImageUrl(game.icon_url) || safeGameIconUrl(game.slug, '/package-placeholder.svg'),
             is_full_detail: true,
             is_partial_preview: false,
           };
@@ -2052,7 +2053,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
       free_codes_count: typeof game.free_codes_count === 'number' ? game.free_codes_count : localActiveCount,
       expired_codes_count: finalCodes.length - usableFinalCodes.length,
       total_codes_count: finalCodes.length,
-      icon_url: game.icon_url || `/game_icons/${game.slug}.webp`,
+      icon_url: sanitizeImageUrl(game.icon_url) || safeGameIconUrl(game.slug, '/package-placeholder.svg'),
       is_full_detail: true,
       is_partial_preview: false,
     };
@@ -3077,11 +3078,12 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
           }
         }
       } catch {}
+      const resolvedCover = resolveProductCoverImage(p, '/package-placeholder.svg');
       return {
         ...p,
         stock_quantity: stock,
-        game_icon_url: p.game_icon_url || p.cover_image_url || `/game_icons/${p.game_slug}.webp`,
-        cover_image_url: p.cover_image_url || p.game_icon_url || `/game_icons/${p.game_slug}.webp`,
+        game_icon_url: sanitizeImageUrl(p.game_icon_url) || resolvedCover,
+        cover_image_url: sanitizeImageUrl(p.cover_image_url) || resolvedCover,
       };
     }).sort((a, b) => {
       const inStockA = (a.stock_quantity || 0) > 0 ? 1 : 0;

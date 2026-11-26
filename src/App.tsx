@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useTransition, useRef, Suspense } from 'react';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { resolveProductCoverImage, safeGameIconUrl } from './utils/safeImageUrl';
 import { Header } from './components/Header';
 import { AnnouncementBar } from './components/AnnouncementBar';
 import { TopEventBanner } from './components/countdown/TopEventBanner';
@@ -1675,7 +1676,7 @@ export const App: React.FC = () => {
       active_codes_count: typeof game.active_codes_count === 'number' ? game.active_codes_count : usableFullCodes.length,
       expired_codes_count: fullCodes.length - usableFullCodes.length,
       total_codes_count: fullCodes.length,
-      icon_url: game.icon_url || cachedGame?.icon_url || `/game_icons/${game.slug}.webp`,
+      icon_url: game.icon_url || cachedGame?.icon_url || safeGameIconUrl(game.slug, '/og-image.jpg'),
     };
     setSelectedGame(initialEnrichedGame);
 
@@ -1687,7 +1688,7 @@ export const App: React.FC = () => {
         return {
           ...prev,
           ...fullGame,
-          icon_url: fullGame.icon_url || prev.icon_url || `/game_icons/${game.slug}.webp`,
+          icon_url: fullGame.icon_url || prev.icon_url || safeGameIconUrl(game.slug, '/og-image.jpg'),
         };
       });
       // Synchronize back to games list state so homepage card badge immediately reflects authoritative codes_count!
@@ -1770,7 +1771,7 @@ export const App: React.FC = () => {
     if (!rawIcon && campaign.game_slug) {
       const g = allGames.find((x) => x && (x.slug?.toLowerCase() === campaign.game_slug?.toLowerCase() || x.id?.toLowerCase() === campaign.game_slug?.toLowerCase()));
       if (g?.icon_url) rawIcon = g.icon_url;
-      else rawIcon = `/game_icons/${campaign.game_slug}.webp`;
+      else rawIcon = safeGameIconUrl(campaign.game_slug, '/og-image.jpg');
     }
     const fullIcon = (rawIcon || '/og-image.jpg').startsWith('http') ? (rawIcon || '/og-image.jpg') : `${origin}${(rawIcon || '/og-image.jpg').startsWith('/') ? (rawIcon || '/og-image.jpg') : `/${rawIcon || '/og-image.jpg'}`}`;
 
@@ -1787,11 +1788,11 @@ export const App: React.FC = () => {
   const handleOpenShareProduct = (product: StoreProduct, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const origin = getShareOrigin();
-    let rawIcon = product.image_url || '';
+    let rawIcon = resolveProductCoverImage(product, '');
     if (!rawIcon && product.game_slug) {
       const g = allGames.find((x) => x && (x.slug?.toLowerCase() === product.game_slug?.toLowerCase() || x.id?.toLowerCase() === product.game_slug?.toLowerCase()));
       if (g?.icon_url) rawIcon = g.icon_url;
-      else rawIcon = `/game_icons/${product.game_slug}.webp`;
+      else rawIcon = safeGameIconUrl(product.game_slug, '/og-image.jpg');
     }
     const fullIcon = (rawIcon || '/og-image.jpg').startsWith('http') ? (rawIcon || '/og-image.jpg') : `${origin}${(rawIcon || '/og-image.jpg').startsWith('/') ? (rawIcon || '/og-image.jpg') : `/${rawIcon || '/og-image.jpg'}`}`;
 

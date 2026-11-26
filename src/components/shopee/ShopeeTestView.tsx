@@ -41,6 +41,7 @@ import { BookmarkDrawer } from '../BookmarkDrawer';
 import { LanguageSelector } from '../LanguageSelector';
 import { useLanguage } from '../../context/LanguageContext';
 import { groupStoreProductsByGame } from '../../utils/productPackageUtils';
+import { resolveProductCoverImage } from '../../utils/safeImageUrl';
 
 export type ShopeeSubView = 
   | 'home' 
@@ -384,18 +385,9 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     window.addEventListener('pine_store_products_updated', handleProductsSync);
     window.addEventListener('pine_store_settings_updated', handleProductsSync);
 
-    // Kích hoạt đồng bộ sản phẩm thật đang bán từ D1
-    fetch('/api/products?limit=100&_t=' + Date.now())
-      .then((r) => r.json())
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-          setCurrentStoreProducts(json.data);
-          try {
-            localStorage.setItem('pine_admin_store_products_v4', JSON.stringify(json.data));
-          } catch {}
-        }
-      })
-      .catch(() => {});
+    // Đồng bộ sản phẩm thật từ nguồn chuẩn duy nhất /api/sync-lite qua dataService
+    // (không gọi /api/products ghi đè currentStoreProducts/localStorage vì thiếu field vật lý & cover_image_url)
+    dataService.syncWithCloudflareKV().catch(() => {});
 
     return () => {
       window.removeEventListener('pine_admin_data_updated', handleBrandingSync);
@@ -1873,7 +1865,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-                  {storeProducts.slice(0, 6).map((prod) => (
+                  {(currentStoreProducts && currentStoreProducts.length > 0 ? currentStoreProducts : storeProducts).slice(0, 6).map((prod) => {
+                    const flashCardImg = resolveProductCoverImage(prod);
+                    const isFlashPhysical = prod.product_type === 'physical';
+                    return (
                     <div 
                       key={prod.id}
                       onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`Sản phẩm: ${prod.title}`, 'info')}
@@ -1881,22 +1876,23 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     >
                       <div>
                         <div className="relative w-full aspect-square rounded overflow-hidden bg-slate-100 dark:bg-slate-700 mb-2">
-                          {prod.cover_image_url || prod.product_images?.[0] ? (
-                            <img
-                              src={prod.cover_image_url || prod.product_images?.[0]}
-                              alt={prod.title}
-                              onError={(e) => {
-                                const img = e.currentTarget;
-                                if (!img.dataset.fallbackApplied) {
-                                  img.dataset.fallbackApplied = '1';
-                                  img.src = '/package-placeholder.svg';
-                                }
-                              }}
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
-                          )}
+                          <img
+                            key={flashCardImg}
+                            src={flashCardImg}
+                            alt={prod.title}
+                            onError={(e) => {
+                              const img = e.currentTarget;
+                              if (isFlashPhysical && !img.src.endsWith('/game_icons/physical-default.webp')) {
+                                img.src = '/game_icons/physical-default.webp';
+                                return;
+                              }
+                              if (!img.dataset.fallbackApplied) {
+                                img.dataset.fallbackApplied = '1';
+                                img.src = '/package-placeholder.svg';
+                              }
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                          />
                           <span className="absolute top-0 left-0 bg-[#ee4d2d] text-white font-extrabold text-[9px] px-1 py-0.2 rounded-br">
                             FLASH
                           </span>
@@ -1916,7 +1912,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
           </div>
@@ -2159,23 +2156,29 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                       >
                         <div>
                           <div className="w-full aspect-square bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
-                            {prod.cover_image_url || prod.product_images?.[0] ? (
-                              <img
-                                src={prod.cover_image_url || prod.product_images?.[0]}
-                                alt={prod.title}
-                                loading="lazy"
-                                onError={(e) => {
-                                  const img = e.currentTarget;
-                                  if (!img.dataset.fallbackApplied) {
-                                    img.dataset.fallbackApplied = '1';
-                                    img.src = '/package-placeholder.svg';
-                                  }
-                                }}
-                                className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                              />
-                            ) : (
-                              <span className="text-4xl">📦</span>
-                            )}
+                            {(() => {
+                              const shelfCardImg = resolveProductCoverImage(prod);
+                              return (
+                                <img
+                                  key={shelfCardImg}
+                                  src={shelfCardImg}
+                                  alt={prod.title}
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const img = e.currentTarget;
+                                    if (isPhysicalProd && !img.src.endsWith('/game_icons/physical-default.webp')) {
+                                      img.src = '/game_icons/physical-default.webp';
+                                      return;
+                                    }
+                                    if (!img.dataset.fallbackApplied) {
+                                      img.dataset.fallbackApplied = '1';
+                                      img.src = '/package-placeholder.svg';
+                                    }
+                                  }}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                />
+                              );
+                            })()}
                             {/* Top-left Mall / Preferred Shopee Ribbon */}
                             <span className={`absolute top-2 left-0 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-r shadow-xs ${isPhysicalProd ? 'bg-[#d0011b]' : 'bg-emerald-600'}`}>
                               {isPhysicalProd

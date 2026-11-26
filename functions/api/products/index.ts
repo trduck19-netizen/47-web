@@ -114,14 +114,22 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         if (sTotal > 0) {
           const { results: sResults } = await env.DB.prepare(`
             SELECT 
-              sp.id, sp.name AS title, sp.id AS slug, 'all' AS industry_id, 'all' AS category_id,
+              sp.id, sp.name AS title, sp.id AS slug, sp.game_slug, 'all' AS industry_id, 'all' AS category_id,
               COALESCE(sp.product_type, 'digital') AS product_type,
               sp.original_price_core AS original_price, sp.price_core AS current_price,
               0 AS discount_percent,
               CASE WHEN sp.product_type = 'physical' THEN 999 ELSE COALESCE(sc_agg.available_codes, 0) END AS stock_quantity,
               sp.cover_url AS thumbnail_url,
+              sp.cover_url AS cover_image_url,
+              sp.cover_url AS game_icon_url,
               sp.description,
+              sp.weight_grams,
+              sp.warehouse_address,
+              sp.warranty_hours,
+              s.name AS seller_name,
               s.name AS brand_name,
+              s.name AS brand,
+              sp.warehouse_address AS origin,
               5.0 AS rating_avg, 10 AS rating_count, COALESCE(sc_agg.sold_codes, 0) AS sold_count,
               1 AS is_active,
               sp.created_at, sp.updated_at
@@ -142,6 +150,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           items = (sResults || []).map((sp: any) => ({
             ...sp,
             images: [sp.thumbnail_url].filter(Boolean),
+            product_images: [sp.thumbnail_url].filter(Boolean),
             specifications: {},
           }));
           effectiveTotal = sTotal;
