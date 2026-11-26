@@ -1,5 +1,5 @@
 === homepage: npx tsc -p tsconfig.homepage.json --noEmit --listFiles ===
-2026-11-26T11:41:13Z
+2026-11-26T12:02:08Z
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -184,7 +184,7 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
 exit=0
 
 === full: npx tsc -p tsconfig.json --noEmit ===
-2026-11-26T11:41:14Z
+2026-11-26T12:02:10Z
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(437,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.

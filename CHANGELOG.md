@@ -7,6 +7,17 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-26]
 
+### 479. Sửa Nốt Sau Kiểm Báo Cáo PA1 (`dc0c297`): Bổ Sung 10+ Tuyến Ghi Công Khai Vào `shouldBumpCatalogEpoch`, Thêm 11 Unit Test (`69/69`) & Chuẩn Hóa Số Đo UTF-8 Byte Length (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý dứt điểm 2 nhóm từ kiểm chứng độc lập sau build `dc0c297`: (1) còn 10 tuyến ghi thay đổi dữ liệu trong 3 payload công khai nhưng chưa nằm trong `shouldBumpCatalogEpoch`; (2) bảng §3.2 báo cáo trước dùng `String.length` (số ký tự UTF-16) thay vì số byte UTF-8 thật (`Buffer.byteLength` / `curl size_download`), và CHANGELOG mục 478 ghi nhầm "52 assertions" thay vì 58.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Bổ sung 10+ prefix tuyến ghi vào `shouldBumpCatalogEpoch` (`functions/services/cache_service.ts`, `scripts/tests/test_catalog_epoch_sync.ts`)*:
+     - Thêm đủ 10 nhóm bắt buộc + `/api/admin/marketing/config`: `/api/admin/content`, `/api/admin/growth`, `/api/admin/marketing/config`, `/api/admin/utilities`, `/api/admin/store/products`, `/api/admin/escalating`, `/api/event-scheduler`, `/api/crawler/ingest-codes`, `/api/crawler/ingest-upcoming-games`, `/api/admin/crawler/sources`, `/api/admin/sellers`.
+     - Thêm 11 assertion kiểm chứng vào `test_catalog_epoch_sync.ts`, nâng tổng suite lên **69/69 PASS** (`npm test`: **203/203 PASS**).
+  2. *Nhóm 2 — Sửa số liệu bằng chứng & CHANGELOG 478*:
+     - Đính chính mục 478 từ "52 assertions" sang đúng số thực tế ("56 assertions tại `4404751`, 58 assertions tại `dc0c297`, và 69 assertions sau mục 479").
+     - Đo lại kích thước body live bằng `Buffer.byteLength(..., 'utf8')` và `curl.exe -w %{size_download}` (UTF-8 byte thật, khớp 100% kiểm chứng độc lập), ghi rõ colo và thời gian UTC.
+
 ### 478. Triển Khai PA1 — Đồng Bộ Tức Thì Admin → Trang Khách Qua `Catalog Epoch` (D1) & `ETag / 304 Not Modified` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Xử lý triệt để độ trễ đồng bộ ~2–5 phút khi Admin đăng/sửa/duyệt sản phẩm trên `admin-universal-mall.pages.dev` rồi kiểm tra bên `universal-mall-shop.pages.dev` (do 2 project tách biệt RAM isolate & `caches.default`, TTL `max-age=60 / s-maxage=300`, và nhiều tuyến ghi sản phẩm/banner/đơn chưa gọi xóa cache).
@@ -17,11 +28,11 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
   2. *Nâng cấp `/api/sync-lite`, `/api/sync` (public) & `/api/homepage-sections` (`sync-lite.ts`, `homepage-sections.ts`, `sync.ts`, `_worker.ts`)*:
      - Đổi `Cache-Control` thành `public, max-age=0, must-revalidate`, `CDN-Cache-Control: no-store`, kèm `ETag` & `X-Catalog-Epoch`.
      - Khi `If-None-Match` khớp epoch hiện tại → trả `304 Not Modified` tức thì (`0 KB`, `0` query bảng sản phẩm/settings).
-     - Gắn khóa `?_epoch=<currentEpoch>` cho cả RAM isolate cache lẫn `caches.default` (với lưới an toàn 5 phút) để mọi thay đổi trên Admin lập tức làm mới toàn bộ 300+ PoP và cả 2 domain.
+     - Gắn khóa `?_epoch=<currentEpoch>` cho cả RAM isolate cache (`sync-lite`, `/api/sync`) lẫn `caches.default` (với lưới an toàn 5 phút) để mọi thay đổi trên Admin lập tức làm mới toàn bộ 300+ PoP và cả 2 domain.
   3. *Hook tự động tăng epoch cho toàn bộ tuyến ghi danh mục (`functions/_worker.ts`)*:
-     - Trong `export default.fetch`, mọi request `POST/PUT/PATCH/DELETE` trả `2xx` thuộc nhóm sản phẩm/kho/duyệt/banner/đơn/voucher/game/tin/sự kiện tự động gọi `await invalidateCatalogEdgeCache(ctx, request, env)` trước khi trả response.
+     - Trong `export default.fetch`, mọi request `POST/PUT/PATCH/DELETE` trả `2xx` khớp `shouldBumpCatalogEpoch` tự động gọi `await invalidateCatalogEdgeCache(ctx, request, env)` trước khi trả response.
   4. *Kiểm thử tự động trong repo (`scripts/tests/test_catalog_epoch_sync.ts`, `package.json`)*:
-     - Thêm `npm run test:sync-epoch` (52 assertions) kiểm chứng trực tiếp `getCatalogEpoch`, `bumpCatalogEpoch`, `matchesIfNoneMatch`, luồng `sync-lite` (`200 → 304 → cross-domain bump → 200 mới`), `homepage-sections` (`200 → 304`) và `shouldBumpCatalogEpoch`.
+     - Thêm `npm run test:sync-epoch` (56 assertions tại `4404751`, 58 assertions tại `dc0c297`, 69 assertions sau mục 479) kiểm chứng trực tiếp `getCatalogEpoch`, `bumpCatalogEpoch`, `matchesIfNoneMatch`, luồng `sync-lite` (`200 → 304 → cross-domain bump → 200 mới`), `homepage-sections` (`200 → 304`) và `shouldBumpCatalogEpoch`.
 
 ### 477. Sửa Nốt Sau Kiểm Báo Cáo Đợt 1 (`6a28fd6`): Gỡ Lỗi TS2322 Mới Ở `AdminSidebar.tsx`, Guard Idempotency Nguyên Tử Cho `reserveSupplierCreditAtomic` & Bổ Sung Dòng `exit=0` Vào `docs/build_success.log` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:

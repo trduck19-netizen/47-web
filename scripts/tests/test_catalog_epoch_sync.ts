@@ -258,6 +258,18 @@ async function main() {
     ['/api/news', 'POST'],
     ['/api/events', 'POST'],
     ['/api/vouchers', 'POST'],
+    // 10+ tuyến ghi dữ liệu công khai bổ sung (Nhóm 1 sửa nốt PA1)
+    ['/api/admin/content/hero_title', 'PUT'],
+    ['/api/admin/growth', 'PUT'],
+    ['/api/admin/marketing/config', 'PUT'],
+    ['/api/admin/utilities', 'POST'],
+    ['/api/admin/store/products/sp_1/codes', 'POST'],
+    ['/api/admin/escalating/reset', 'POST'],
+    ['/api/event-scheduler', 'POST'],
+    ['/api/crawler/ingest-codes', 'POST'],
+    ['/api/crawler/ingest-upcoming-games', 'POST'],
+    ['/api/admin/crawler/sources', 'POST'],
+    ['/api/admin/sellers/sel_1/approve', 'POST'],
   ];
   for (const [p, m] of writeMustBump) {
     check(`bump_true_${m}_${p}`, shouldBumpCatalogEpoch(p, m), true);
