@@ -1,4 +1,9 @@
-import { isTurnstileCheckEnabled, isAdminTurnstileEnabled, TurnstileEnv } from '../../services/turnstile_service';
+import {
+  isTurnstileCheckEnabled,
+  isAdminTurnstileEnabled,
+  isGuestLoginTurnstileEnabled,
+  TurnstileEnv,
+} from '../../services/turnstile_service';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -17,12 +22,19 @@ export const onRequestGet: PagesFunction<TurnstileEnv> = async (context) => {
   const scope = url.searchParams.get('scope');
   const clientEnabled = isTurnstileCheckEnabled(context.env);
   const adminEnabled = isAdminTurnstileEnabled(context.env);
-  const enabled = scope === 'admin' ? adminEnabled : clientEnabled;
+  const guestLoginEnabled = isGuestLoginTurnstileEnabled(context.env);
+  const enabled =
+    scope === 'admin'
+      ? adminEnabled
+      : scope === 'guest_login'
+        ? guestLoginEnabled
+        : clientEnabled;
   return new Response(
     JSON.stringify({
       success: true,
       enabled,
       adminEnabled,
+      guestLoginEnabled,
     }),
     { status: 200, headers: CORS_HEADERS }
   );

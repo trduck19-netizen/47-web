@@ -62,7 +62,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Turnstile configuration & states
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
-  const [isTurnstileEnabled, setIsTurnstileEnabled] = useState<boolean>(Boolean(turnstileSiteKey));
+  const [isLoginTurnstileEnabled, setIsLoginTurnstileEnabled] = useState<boolean>(false);
+  const [isRegisterTurnstileEnabled, setIsRegisterTurnstileEnabled] = useState<boolean>(Boolean(turnstileSiteKey));
   const [loginTurnstileToken, setLoginTurnstileToken] = useState('');
   const [regTurnstileToken, setRegTurnstileToken] = useState('');
   const loginWidgetIdRef = useRef<string | null>(null);
@@ -75,11 +76,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     fetch('/api/auth/turnstile-config')
       .then((res) => res.json())
       .then((data: any) => {
-        if (active && data && typeof data.enabled === 'boolean') {
-          setIsTurnstileEnabled(data.enabled);
+        if (!active || !data) return;
+        if (typeof data.guestLoginEnabled === 'boolean') {
+          setIsLoginTurnstileEnabled(data.guestLoginEnabled);
+        }
+        if (typeof data.enabled === 'boolean') {
+          setIsRegisterTurnstileEnabled(data.enabled);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) {
+          setIsLoginTurnstileEnabled(true);
+        }
+      });
     return () => {
       active = false;
     };
@@ -93,7 +102,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Load Cloudflare Turnstile script dynamically
   useEffect(() => {
-    if (!isOpen || !isTurnstileEnabled || !turnstileSiteKey) return;
+    if (!isOpen || !(isLoginTurnstileEnabled || isRegisterTurnstileEnabled) || !turnstileSiteKey) return;
 
     if ((window as any).turnstile) {
       setIsTurnstileLoaded(true);
@@ -121,7 +130,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }, 200);
       return () => clearInterval(interval);
     }
-  }, [isOpen, turnstileSiteKey, isEn]);
+  }, [isOpen, isLoginTurnstileEnabled, isRegisterTurnstileEnabled, turnstileSiteKey, isEn]);
 
   // Load Google Identity Services SDK dynamically
   useEffect(() => {
@@ -183,7 +192,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Render Turnstile widget for Login Tab
   useEffect(() => {
-    if (!isOpen || !isTurnstileEnabled || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'login') return;
+    if (!isOpen || !isLoginTurnstileEnabled || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'login') return;
 
     const timer = setTimeout(() => {
       const container = document.getElementById('turnstile-login-container');
@@ -228,11 +237,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         loginWidgetIdRef.current = null;
       }
     };
-  }, [isOpen, isTurnstileLoaded, turnstileSiteKey, tab, isEn]);
+  }, [isOpen, isLoginTurnstileEnabled, isTurnstileLoaded, turnstileSiteKey, tab, isEn]);
 
   // Render Turnstile widget for Register Tab
   useEffect(() => {
-    if (!isOpen || !isTurnstileEnabled || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'register') return;
+    if (!isOpen || !isRegisterTurnstileEnabled || !isTurnstileLoaded || !turnstileSiteKey || tab !== 'register') return;
 
     const timer = setTimeout(() => {
       const container = document.getElementById('turnstile-register-container');
@@ -277,7 +286,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         regWidgetIdRef.current = null;
       }
     };
-  }, [isOpen, isTurnstileLoaded, turnstileSiteKey, tab, isEn]);
+  }, [isOpen, isRegisterTurnstileEnabled, isTurnstileLoaded, turnstileSiteKey, tab, isEn]);
 
   if (!isOpen) return null;
 
@@ -295,7 +304,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (isTurnstileEnabled && turnstileSiteKey && !loginTurnstileToken) {
+    if (isLoginTurnstileEnabled && turnstileSiteKey && !loginTurnstileToken) {
       setErrorMessaget('authStrict.k10');
       return;
     }
@@ -365,7 +374,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (isTurnstileEnabled && turnstileSiteKey && !regTurnstileToken) {
+    if (isRegisterTurnstileEnabled && turnstileSiteKey && !regTurnstileToken) {
       setErrorMessaget('authStrict.k18');
       return;
     }
@@ -614,7 +623,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Turnstile Security Widget */}
-              {isTurnstileEnabled && (turnstileSiteKey ? (
+              {isLoginTurnstileEnabled && (turnstileSiteKey ? (
                 <div className="flex justify-center my-2 min-h-[65px]">
                   <div id="turnstile-login-container"></div>
                 </div>
@@ -627,7 +636,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || (isTurnstileEnabled ? (turnstileSiteKey ? !loginTurnstileToken : true) : false)}
+                disabled={isLoading || (isLoginTurnstileEnabled ? (turnstileSiteKey ? !loginTurnstileToken : true) : false)}
                 className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary-hover text-white font-display font-bold text-xs sm:text-sm shadow-glow-primary transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
               >
                 {isLoading ? (
@@ -807,7 +816,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </label>
 
               {/* Turnstile Security Widget */}
-              {isTurnstileEnabled && (turnstileSiteKey ? (
+              {isRegisterTurnstileEnabled && (turnstileSiteKey ? (
                 <div className="flex justify-center my-2 min-h-[65px]">
                   <div id="turnstile-register-container"></div>
                 </div>
@@ -820,7 +829,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || !isConfirmPasswordMatch || !agreeTerms || (isTurnstileEnabled ? (turnstileSiteKey ? !regTurnstileToken : true) : false)}
+                disabled={isLoading || !isConfirmPasswordMatch || !agreeTerms || (isRegisterTurnstileEnabled ? (turnstileSiteKey ? !regTurnstileToken : true) : false)}
                 className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary-hover text-white font-display font-bold text-xs sm:text-sm shadow-glow-primary transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
               >
                 {isLoading ? (

@@ -330,14 +330,31 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? Number(selectedPackage.first_purchase_max_price)
     : (offerData?.campaign?.max_original_price ?? 30000);
 
-  const defaultEligible = isSelectedFpFlag && !isSelectedEscalating && (currentPrice <= selectedMaxPrice);
-  const isSelectedOfferEligible = !isSelectedEscalating && isSelectedFpFlag && (
-    selectedOffer !== undefined ? Boolean(selectedOffer.eligible) : defaultEligible
-  );
+  const selectedCampaignOfferPrice = offerData?.campaign?.enabled
+    ? Number(offerData.campaign.offer_price || 0)
+    : 0;
+  const selectedCustomOfferPrice = selectedPackage.first_purchase_price
+    ? Number(selectedPackage.first_purchase_price)
+    : 0;
+  const selectedCandidateOfferPrice =
+    selectedOffer?.offer_price !== undefined && selectedOffer?.offer_price !== null
+      ? Number(selectedOffer.offer_price)
+      : (selectedCustomOfferPrice > 0 ? selectedCustomOfferPrice : selectedCampaignOfferPrice);
 
-  const rawOfferPrice = selectedOffer?.offer_price ?? (
-    selectedPackage.first_purchase_price ? Number(selectedPackage.first_purchase_price) : (offerData?.campaign?.offer_price ?? 2000)
-  );
+  const defaultEligible =
+    isSelectedFpFlag &&
+    !isSelectedEscalating &&
+    (selectedCustomOfferPrice > 0 || Boolean(offerData?.campaign?.enabled)) &&
+    currentPrice <= selectedMaxPrice;
+
+  const isSelectedOfferEligible =
+    !isSelectedEscalating &&
+    isSelectedFpFlag &&
+    selectedCandidateOfferPrice > 0 &&
+    selectedCandidateOfferPrice < currentPrice &&
+    (selectedOffer !== undefined ? Boolean(selectedOffer.eligible) : defaultEligible);
+
+  const rawOfferPrice = isSelectedOfferEligible ? selectedCandidateOfferPrice : currentPrice;
 
   const displayCurrentPrice = isSelectedEscalating
     ? selectedEscData.current_price
@@ -1220,7 +1237,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
 
                 {/* Banner Gợi Ý Cho Khách Chưa Đăng Nhập */}
-                {!currentUser && offerData.campaign?.enabled && (
+                {!currentUser && offerData.campaign?.enabled && Number(offerData.campaign?.offer_price) > 0 && (
                   <div
                     role="button"
                     tabIndex={0}
@@ -1231,14 +1248,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <div className="flex items-center gap-1.5 text-rose-300 font-bold">
                       <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-pulse shrink-0" />
-                      <span>{t('productDetailModal.loginPromptOffer', { price: formatCore(offerData.campaign?.offer_price || 2000) })}</span>
+                      <span>{t('productDetailModal.loginPromptOffer', { price: formatCore(Number(offerData.campaign.offer_price)) })}</span>
                     </div>
                     <span className="text-[10px] text-amber-400 font-bold underline shrink-0">{t('productDetailModal.loginNow')}</span>
                   </div>
                 )}
 
                 {/* Banner Hướng Dẫn Xác Minh Email Cho Tài Khoản Đã Đăng Nhập */}
-                {currentUser && offerData.campaign?.enabled && offerData.campaign?.require_verified_email && !currentUser.email_verified && (
+                {currentUser && offerData.campaign?.enabled && Number(offerData.campaign?.offer_price) > 0 && offerData.campaign?.require_verified_email && !currentUser.email_verified && (
                   <div
                     role="button"
                     tabIndex={0}
@@ -1251,7 +1268,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <div className="flex items-center gap-1.5 text-amber-300 font-medium">
                       <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>{t('productDetailModal.verifyEmailNotice', { price: formatCore(offerData.campaign?.offer_price || 2000) })}</span>
+                      <span>{t('productDetailModal.verifyEmailNotice', { price: formatCore(Number(offerData.campaign.offer_price)) })}</span>
                     </div>
                     <span className="text-[10px] text-amber-400 font-bold underline shrink-0">{t('productDetailModal.verifyNow')}</span>
                   </div>
@@ -1365,16 +1382,33 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         ? Number(pkg.first_purchase_max_price)
                         : (offerData?.campaign?.max_original_price ?? 30000);
 
-                      const defaultPkgEligible = isPkgFpFlag && !isPkgEscalating && (pkg.price <= pkgMaxPrice);
-                      const isPkgOfferEligible = !isPkgEscalating && isPkgFpFlag && (
-                        pkgOffer !== undefined ? Boolean(pkgOffer.eligible) : defaultPkgEligible
-                      );
+                      const pkgCampaignOfferPrice = offerData?.campaign?.enabled
+                        ? Number(offerData.campaign.offer_price || 0)
+                        : 0;
+                      const pkgCustomOfferPrice = pkg.first_purchase_price
+                        ? Number(pkg.first_purchase_price)
+                        : 0;
+                      const pkgCandidateOfferPrice =
+                        pkgOffer?.offer_price !== undefined && pkgOffer?.offer_price !== null
+                          ? Number(pkgOffer.offer_price)
+                          : (pkgCustomOfferPrice > 0 ? pkgCustomOfferPrice : pkgCampaignOfferPrice);
+
+                      const defaultPkgEligible =
+                        isPkgFpFlag &&
+                        !isPkgEscalating &&
+                        (pkgCustomOfferPrice > 0 || Boolean(offerData?.campaign?.enabled)) &&
+                        pkg.price <= pkgMaxPrice;
+
+                      const isPkgOfferEligible =
+                        !isPkgEscalating &&
+                        isPkgFpFlag &&
+                        pkgCandidateOfferPrice > 0 &&
+                        pkgCandidateOfferPrice < pkg.price &&
+                        (pkgOffer !== undefined ? Boolean(pkgOffer.eligible) : defaultPkgEligible);
                       const isPkgOfferUnverified = !isPkgEscalating && isPkgFpFlag && !isPkgOfferEligible && pkgOffer?.reason === 'email_unverified';
                       const isPkgOfferLoginReq = !isPkgEscalating && isPkgFpFlag && !isPkgOfferEligible && pkgOffer?.reason === 'login_required';
 
-                      const pkgRawOfferPrice = pkgOffer?.offer_price ?? (
-                        pkg.first_purchase_price ? Number(pkg.first_purchase_price) : (offerData?.campaign?.offer_price ?? 2000)
-                      );
+                      const pkgRawOfferPrice = isPkgOfferEligible ? pkgCandidateOfferPrice : pkg.price;
 
                       const pkgDisplayPrice = isPkgEscalating
                         ? pkgEscData.current_price

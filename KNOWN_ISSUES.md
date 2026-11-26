@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-331: Ưu Đãi Mua Lần Đầu Đẩy Giá Thấp (`100đ`) Lên `2.000đ`, Ảnh `/game_icons/physical-default.webp` 404 & Cờ Tạm Tắt Turnstile Đăng Nhập Khách (26/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - `GET /api/store/my-offer` chỉ đọc `store_products` nên các sản phẩm từ `seller_products` có `selectedOffer === undefined`, rơi vào `defaultEligible = true` và lấy `offer_price: 2000` dù chiến dịch `wcg_first_purchase_config_v1` đang `enabled: false`, làm sản phẩm 100đ bị hiển thị thành `2.000đ` trong `ProductDetailModal`.
+  - `functions/api/seller/products/index.ts` dùng fallback `/game_icons/physical-default.webp` nhưng tệp chưa tồn tại trong `public/game_icons/`, gây HTTP 404.
+  - Bật/tắt Turnstile chung làm ảnh hưởng cả form đăng ký; khi cần tạm mở khóa đăng nhập khách để test nhưng vẫn bảo vệ đăng ký chống bot, bắt buộc tách cờ riêng.
+- **Giải pháp chuẩn đã kiểm chứng (26/11/2026 - Mục 471)**:
+  - Chặn bắt buộc `candidateOfferPrice > 0 && candidateOfferPrice < currentPrice` và gỡ fallback cứng `2000` khỏi `ProductDetailModal.tsx`, `ProductCheckoutModal.tsx` (giữ `minQrAmount || 2000`), `ShopeeTestView.tsx`.
+  - Bổ sung ảnh `public/game_icons/physical-default.webp` (`512×512`, `3.198 bytes`, chỉ có `.webp`).
+  - Tách cờ `GUEST_TURNSTILE_ENABLED` (mặc định `false`) riêng cho đăng nhập khách trong `turnstile_service.ts`, `turnstile-config.ts`, `login.ts`, `AuthModal.tsx`; giữ nguyên Turnstile bắt buộc trên `register.ts` và tab Đăng ký. **Bắt buộc bật `GUEST_TURNSTILE_ENABLED=true` trên Cloudflare Pages Environment Variables và kiểm chứng live trước khi mở bán chính thức.**
+
 ### ISSUE-330: `sync-lite.ts` Lược Bỏ `product_type` Khi `.map()` & `ProductCheckoutModal.tsx` Sót 5 Chỗ VietQR "Giao Mã" + Ngoài Phạm Vi I18N Guard (26/11/2026)
 - **Triệu chứng & Rủi ro**:
   - Kệ hàng live dùng nguồn `GET /api/sync-lite`, nhưng `.map()` tường minh trong `functions/api/sync-lite.ts` thiếu `product_type`, `weight_grams`, `warehouse_address`, `warranty_hours`, `seller_name`, khiến `isPhysical` luôn `false` trên kệ hàng, `ProductDetailModal` và `ProductCheckoutModal`.

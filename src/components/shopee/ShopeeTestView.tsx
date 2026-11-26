@@ -2138,8 +2138,9 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
                   {paginatedMallProducts.map((prod) => {
                     const isOutOfStock = (prod.stock_quantity ?? 0) <= 0;
-                    const hasFirstOffer = prod.first_purchase_price ? true : ((prod.original_price || prod.current_price || 0) <= 30000 && prod.current_price > 2000);
-                    const firstPrice = prod.first_purchase_price ? Number(prod.first_purchase_price) : 2000;
+                    const rawFirstPrice = prod.first_purchase_price ? Number(prod.first_purchase_price) : 0;
+                    const hasFirstOffer = rawFirstPrice > 0 && rawFirstPrice < Number(prod.current_price || 0);
+                    const firstPrice = hasFirstOffer ? rawFirstPrice : Number(prod.current_price || 0);
                     const displayCurrentPrice = hasFirstOffer ? firstPrice : prod.current_price;
                     const displayOriginalPrice = (prod.original_price && prod.original_price > 0) ? prod.original_price : prod.current_price;
                     const discountPercent = displayOriginalPrice > displayCurrentPrice

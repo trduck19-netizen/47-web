@@ -117,7 +117,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
       if (targetOffer) {
         return {
           eligible: Boolean(targetOffer.eligible),
-          offer_price: Number(targetOffer.offer_price) || 2000,
+          offer_price: Number(targetOffer.offer_price) || 0,
           discount_amount: Number(targetOffer.discount_amount) || 0,
           escalating: targetOffer.escalating || null,
         };
@@ -126,7 +126,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     if (selectedPackage?.isFirstPurchaseOffer) {
       return {
         eligible: true,
-        offer_price: Number(selectedPackage.price) || 2000,
+        offer_price: Number(selectedPackage.price) || 0,
         discount_amount: Number(selectedPackage.discountAmount) || 0,
       };
     }
@@ -495,7 +495,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
         if (targetOffer) {
           setCheckoutOffer({
             eligible: Boolean(targetOffer.eligible),
-            offer_price: Number(targetOffer.offer_price) || 2000,
+            offer_price: Number(targetOffer.offer_price) || 0,
             discount_amount: Number(targetOffer.discount_amount) || 0,
             escalating: targetOffer.escalating || null,
           });
@@ -666,19 +666,35 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     ? Number(selectedPackage.first_purchase_max_price)
     : (checkoutOffer?.max_original_price ?? 30000);
 
-  const defaultPkgEligible = isPkgFlagEnabled && !isEscalating && (effectiveRegularPrice <= pkgMaxPrice);
-  const isFirstPurchaseEligible = !isEscalating && isPkgFlagEnabled && Boolean(
-    checkoutOffer !== null && checkoutOffer !== undefined
-      ? checkoutOffer.eligible
-      : (selectedPackage?.isFirstPurchaseOffer ? true : defaultPkgEligible)
-  );
-
   const customPkgPrice = selectedPackage?.first_purchase_price
     ? Number(selectedPackage.first_purchase_price)
-    : null;
+    : 0;
+  const candidateOfferPrice =
+    checkoutOffer !== null && checkoutOffer !== undefined
+      ? Number(checkoutOffer.offer_price || 0)
+      : (selectedPackage?.isFirstPurchaseOffer
+          ? Number(selectedPackage.price || 0)
+          : customPkgPrice);
+
+  const defaultPkgEligible =
+    isPkgFlagEnabled &&
+    !isEscalating &&
+    customPkgPrice > 0 &&
+    effectiveRegularPrice <= pkgMaxPrice;
+
+  const isFirstPurchaseEligible =
+    !isEscalating &&
+    isPkgFlagEnabled &&
+    candidateOfferPrice > 0 &&
+    candidateOfferPrice < effectiveRegularPrice &&
+    Boolean(
+      checkoutOffer !== null && checkoutOffer !== undefined
+        ? checkoutOffer.eligible
+        : (selectedPackage?.isFirstPurchaseOffer ? true : defaultPkgEligible)
+    );
 
   const firstItemOfferPrice = isFirstPurchaseEligible
-    ? (checkoutOffer?.offer_price ?? customPkgPrice ?? 2000)
+    ? candidateOfferPrice
     : effectiveRegularPrice;
   const firstItemActualPrice = Math.min(effectiveRegularPrice, firstItemOfferPrice);
 

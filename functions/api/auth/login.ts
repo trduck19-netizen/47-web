@@ -1,5 +1,9 @@
 import { ensureSchemaUpgrades } from '../../services/d1_service';
-import { verifyTurnstileRequest, isAdminTurnstileEnabled } from '../../services/turnstile_service';
+import {
+  verifyTurnstileRequest,
+  isAdminTurnstileEnabled,
+  isGuestLoginTurnstileEnabled,
+} from '../../services/turnstile_service';
 import {
   computeHash,
   hashPasswordPBKDF2,
@@ -19,6 +23,7 @@ interface Env {
   CF_TURNSTILE_SECRET?: string;
   TURNSTILE_ENABLED?: string;
   ADMIN_TURNSTILE_ENABLED?: string;
+  GUEST_TURNSTILE_ENABLED?: string;
   ENVIRONMENT?: string;
 }
 
@@ -71,9 +76,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const country = request.headers.get('cf-ipcountry') || 'VN';
     const nowMs = Date.now();
 
-    // 1. Turnstile Anti-bot Verification (bắt buộc cho trang khách; admin dùng cờ ADMIN_TURNSTILE_ENABLED)
-    const skipAdminTurnstilePrecheck = Boolean(isAdminLogin) && !isAdminTurnstileEnabled(env);
-    if (!skipAdminTurnstilePrecheck) {
+    // 1. Turnstile Anti-bot Verification (admin dùng ADMIN_TURNSTILE_ENABLED, đăng nhập khách dùng GUEST_TURNSTILE_ENABLED)
+    const requireTurnstileForLogin = Boolean(isAdminLogin)
+      ? isAdminTurnstileEnabled(env)
+      : isGuestLoginTurnstileEnabled(env);
+    if (requireTurnstileForLogin) {
       const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
       if (!turnstileCheck.ok) {
         return turnstileCheck.response;
@@ -191,9 +198,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       return await recordFailedAttempt(undefined, cleanIdentifier);
     }
 
-    // Nếu tài khoản tìm thấy không phải ADMIN/SUPER_ADMIN mà gửi isAdminLogin: true -> vẫn bắt buộc Turnstile trang khách
+    // Nếu tài khoản tìm thấy không phải ADMIN/SUPER_ADMIN mà gửi isAdminLogin: true trong khi GUEST_TURNSTILE_ENABLED đang bật -> vẫn bắt buộc Turnstile trang khách
     const roleUpper = String(member.role || '').toUpperCase();
-    if (skipAdminTurnstilePrecheck && roleUpper !== 'ADMIN' && roleUpper !== 'SUPER_ADMIN') {
+    if (
+      Boolean(isAdminLogin) &&
+      !isAdminTurnstileEnabled(env) &&
+      roleUpper !== 'ADMIN' &&
+      roleUpper !== 'SUPER_ADMIN' &&
+      isGuestLoginTurnstileEnabled(env)
+    ) {
       const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
       if (!turnstileCheck.ok) {
         return turnstileCheck.response;
