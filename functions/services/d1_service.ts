@@ -3916,6 +3916,20 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
     console.warn('[Migration 0051_fix_approved_partnership_revoked_at_v1 error]', err?.message);
   }
 
+  // 20. Migration 0052: Đảm bảo seller_products có cột stock_quantity cho tồn kho hàng vật lý & bán lại liên shop
+  try {
+    const s52Check = appliedMigSet.has('0052_seller_products_stock_quantity_v1');
+    if (!s52Check) {
+      await db
+        .prepare("ALTER TABLE seller_products ADD COLUMN stock_quantity INTEGER NOT NULL DEFAULT 0;")
+        .run()
+        .catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0052_seller_products_stock_quantity_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0052_seller_products_stock_quantity_v1 error]', err?.message);
+  }
+
   lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };
   schemaUpgradesDone = true;
   })();

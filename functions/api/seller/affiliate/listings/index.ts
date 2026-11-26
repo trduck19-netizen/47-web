@@ -1,5 +1,6 @@
 import { verifyStoreApiAccess } from '../../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../../services/d1_service';
+import { getMarketplaceConfig } from '../../../../services/marketplace_service';
 import { calculate3WaySplit } from '../../../../services/seller_affiliate_service';
 
 const CORS_HEADERS = {
@@ -85,6 +86,11 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
 
     const reseller = auth.seller;
 
+    const mConfig = await getMarketplaceConfig(env.DB);
+    if (!mConfig.affiliate_enabled) {
+      return new Response(JSON.stringify({ success: false, error: 'Tính năng bán lại liên gian hàng hiện đang tạm tắt bởi Quản trị viên.', code: 'AFFILIATE_DISABLED' }), { status: 403, headers: CORS_HEADERS });
+    }
+
     const body: any = await request.json().catch(() => ({}));
     const partnershipId = (body.partnership_id || '').trim();
     const supplierProductId = (body.supplier_product_id || '').trim();
@@ -92,6 +98,14 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
     const markupValue = Math.max(0, Number(body.markup_value) || 0);
     const priceMode = body.price_mode === 'LOCKED' ? 'LOCKED' : 'FORMULA';
     const showSupplier = body.show_supplier === 0 ? 0 : 1; // Mặc định 1 (BẬT)
+
+    if (markupType === 'PERCENT' && markupValue > mConfig.affiliate_max_markup_pct) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Biên lợi nhuận phần trăm (${markupValue}%) vượt quá trần cho phép (${mConfig.affiliate_max_markup_pct}%).`,
+        code: 'MAX_MARKUP_EXCEEDED'
+      }), { status: 400, headers: CORS_HEADERS });
+    }
 
     if (!partnershipId || !supplierProductId) {
       return new Response(JSON.stringify({ success: false, error: 'Thiếu partnership_id hoặc supplier_product_id.' }), { status: 400, headers: CORS_HEADERS });
@@ -151,7 +165,7 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
     // 3. Tính toán giá bán & áp dụng MAP
     const basePrice = Number(origProduct.price_core) || 0;
     const mapPrice = Number(origProduct.resell_map_price) || 0;
-    const isPhysical = origProduct.product_type === 'physical';
+    const isPhysical = String(origProduct.product_type || '').toLowerCase() === 'physical';
 
     const split = calculate3WaySplit({
       basePrice,
@@ -163,6 +177,8 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
       mapPrice,
       priceMode,
       lockedPrice: priceMode === 'LOCKED' ? basePrice + Math.round(markupType === 'PERCENT' ? basePrice * (markupValue / 100) : markupValue) : null,
+      digitalFeePct: mConfig.affiliate_digital_fee_pct,
+      physicalFeePct: mConfig.affiliate_physical_fee_pct,
     });
 
     const finalSellingPrice = split.sellingPrice;

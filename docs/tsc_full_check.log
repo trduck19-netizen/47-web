@@ -1,5 +1,4 @@
-=== homepage: npx tsc -p tsconfig.homepage.json --noEmit --listFiles ===
-2026-11-26T12:02:08Z
+=== tsconfig.homepage.json --noEmit --listFiles (exit=0) ===
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -181,10 +180,8 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/fs-extra/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/qrcode/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/react-dom/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
-exit=0
 
-=== full: npx tsc -p tsconfig.json --noEmit ===
-2026-11-26T12:02:10Z
+=== tsconfig.json --noEmit (exit=2) ===
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(437,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
@@ -481,7 +478,6 @@ functions/api/seller/products/[id].ts(1,1): error TS6133: 'verifyMemberAuth' is 
 functions/api/seller/products/[id]/codes.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
 functions/api/seller/products/[id]/codes.ts(303,20): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
 functions/api/seller/products/[id]/codes.ts(304,34): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
-functions/api/seller/products/[id]/resell.ts(93,59): error TS2345: Argument of type '"RESELL_PARAM_CHANGE"' is not assignable to parameter of type '"PRICE_CHANGE" | "STOCK_CHANGE" | "STATUS_CHANGE"'.
 functions/api/seller/products/index.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
 functions/api/seller/products/index.ts(2,35): error TS6133: 'logAdminAudit' is declared but its value is never read.
 functions/api/seller/products/index.ts(3,10): error TS6133: 'verifySellerAccess' is declared but its value is never read.
@@ -598,21 +594,21 @@ functions/data/compact_seed_news.ts(219,5): error TS2353: Object literal may onl
 functions/data/compact_seed_news.ts(253,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
 functions/data/compact_seed_news.ts(286,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
 functions/data/compact_seed_news.ts(319,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
-functions/services/d1_service.ts(4790,7): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<any>'.
+functions/services/d1_service.ts(4804,7): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<any>'.
   Property 'success' is missing in type '{ results: any[]; }' but required in type 'D1Result<any>'.
-functions/services/d1_service.ts(5900,19): error TS2339: Property 'forEach' does not exist on type 'never'.
-functions/services/d1_service.ts(5978,23): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
-functions/services/d1_service.ts(6053,24): error TS2304: Cannot find name 'clm'.
-functions/services/d1_service.ts(6054,22): error TS2304: Cannot find name 'tot'.
-functions/services/d1_service.ts(6055,26): error TS2304: Cannot find name 'coverUrl'.
-functions/services/d1_service.ts(6056,24): error TS2304: Cannot find name 'iconUrl'.
-functions/services/d1_service.ts(6057,22): error TS2304: Cannot find name 'desc'.
-functions/services/d1_service.ts(6058,18): error TS2304: Cannot find name 'rew'.
-functions/services/d1_service.ts(6059,21): error TS2304: Cannot find name 'startTime'.
-functions/services/d1_service.ts(6060,19): error TS2304: Cannot find name 'endTime'.
-functions/services/d1_service.ts(6564,3): error TS6133: 'db' is declared but its value is never read.
-functions/services/d1_service.ts(6565,3): error TS6133: 'aggregates' is declared but its value is never read.
-functions/services/d1_service.ts(6566,3): error TS6133: 'events' is declared but its value is never read.
+functions/services/d1_service.ts(5914,19): error TS2339: Property 'forEach' does not exist on type 'never'.
+functions/services/d1_service.ts(5992,23): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
+functions/services/d1_service.ts(6067,24): error TS2304: Cannot find name 'clm'.
+functions/services/d1_service.ts(6068,22): error TS2304: Cannot find name 'tot'.
+functions/services/d1_service.ts(6069,26): error TS2304: Cannot find name 'coverUrl'.
+functions/services/d1_service.ts(6070,24): error TS2304: Cannot find name 'iconUrl'.
+functions/services/d1_service.ts(6071,22): error TS2304: Cannot find name 'desc'.
+functions/services/d1_service.ts(6072,18): error TS2304: Cannot find name 'rew'.
+functions/services/d1_service.ts(6073,21): error TS2304: Cannot find name 'startTime'.
+functions/services/d1_service.ts(6074,19): error TS2304: Cannot find name 'endTime'.
+functions/services/d1_service.ts(6578,3): error TS6133: 'db' is declared but its value is never read.
+functions/services/d1_service.ts(6579,3): error TS6133: 'aggregates' is declared but its value is never read.
+functions/services/d1_service.ts(6580,3): error TS6133: 'events' is declared but its value is never read.
 functions/services/giveaway_simulation_service.ts(1,28): error TS2307: Cannot find module '@cloudflare/workers-types' or its corresponding type declarations.
 functions/services/giveaway_simulation_service.ts(265,112): error TS7006: Parameter 'e' implicitly has an 'any' type.
 functions/services/google_auth_service.ts(6,29): error TS6133: 'getSigningSecret' is declared but its value is never read.
@@ -620,11 +616,11 @@ functions/services/image_converter_service.ts(1,18): error TS6133: 'Image' is de
 functions/services/marketingAuditService.ts(11,1): error TS6133: 'getOrRefreshSnapshot' is declared but its value is never read.
 functions/services/marketplace_service.ts(136,9): error TS6133: 'effectiveKey' is declared but its value is never read.
 functions/services/marketplace_service.ts(163,34): error TS18048: 'secretKeyStr' is possibly 'undefined'.
-functions/services/marketplace_service.ts(535,17): error TS2339: Property 'is_affiliate_order' does not exist on type 'SellerOrderRecord'.
-functions/services/marketplace_service.ts(535,51): error TS2339: Property 'affiliate_breakdown' does not exist on type 'SellerOrderRecord'.
-functions/services/marketplace_service.ts(538,40): error TS2339: Property 'affiliate_breakdown' does not exist on type 'SellerOrderRecord'.
-functions/services/marketplace_service.ts(541,34): error TS2339: Property 'supplier_seller_id' does not exist on type 'SellerOrderRecord'.
-functions/services/marketplace_service.ts(695,3): error TS6133: 'actor' is declared but its value is never read.
+functions/services/marketplace_service.ts(571,17): error TS2339: Property 'is_affiliate_order' does not exist on type 'SellerOrderRecord'.
+functions/services/marketplace_service.ts(571,51): error TS2339: Property 'affiliate_breakdown' does not exist on type 'SellerOrderRecord'.
+functions/services/marketplace_service.ts(574,40): error TS2339: Property 'affiliate_breakdown' does not exist on type 'SellerOrderRecord'.
+functions/services/marketplace_service.ts(577,34): error TS2339: Property 'supplier_seller_id' does not exist on type 'SellerOrderRecord'.
+functions/services/marketplace_service.ts(731,3): error TS6133: 'actor' is declared but its value is never read.
 functions/services/mission_service.ts(1,10): error TS6133: 'verifyToken' is declared but its value is never read.
 functions/services/realEventsHub.ts(229,21): error TS18048: 'hub.lowestProductStock' is possibly 'undefined'.
 functions/services/realEventsHub.ts(230,19): error TS18048: 'hub.lowestProductStock' is possibly 'undefined'.
@@ -2181,4 +2177,3 @@ src/utils/productPackageUtils.ts(441,58): error TS2367: This comparison appears 
 src/utils/productPackageUtils.ts(441,82): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
 src/utils/productPackageUtils.ts(441,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
 src/utils/productPackageUtils.ts(450,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'GiveawayCampaign'.
-exit=2

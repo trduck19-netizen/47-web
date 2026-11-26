@@ -1,5 +1,6 @@
 import { verifyStoreApiAccess } from '../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../services/d1_service';
+import { getMarketplaceConfig } from '../../../services/marketplace_service';
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -121,6 +122,11 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
 
     const reseller = auth.seller;
 
+    const mConfig = await getMarketplaceConfig(env.DB);
+    if (!mConfig.affiliate_enabled) {
+      return new Response(JSON.stringify({ success: false, error: 'Tính năng bán lại liên gian hàng hiện đang tạm tắt bởi Quản trị viên.', code: 'AFFILIATE_DISABLED' }), { status: 403, headers: CORS_HEADERS });
+    }
+
     const body: any = await request.json().catch(() => ({}));
     const targetSupplierId = (body.supplier_seller_id || body.supplier_id || '').trim();
 
@@ -156,9 +162,15 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
       if (existing.status === 'PENDING') {
         return new Response(JSON.stringify({ success: false, error: 'Yêu cầu liên kết đang chờ Nhà Cung Cấp phê duyệt.' }), { status: 400, headers: CORS_HEADERS });
       }
+      if (existing.status === 'PENDING_ADMIN') {
+        return new Response(JSON.stringify({ success: false, error: 'Nhà Cung Cấp đã đồng ý. Yêu cầu đang chờ Quản trị viên phê duyệt kích hoạt.' }), { status: 400, headers: CORS_HEADERS });
+      }
+      if (existing.status === 'SUSPENDED') {
+        return new Response(JSON.stringify({ success: false, error: 'Liên kết này hiện đang bị Quản trị viên tạm khóa. Vui lòng liên hệ Admin.' }), { status: 403, headers: CORS_HEADERS });
+      }
       // Nếu REJECTED hoặc REVOKED thì cho phép mở lại thành PENDING
       await env.DB
-        .prepare('UPDATE seller_affiliate_partnerships SET status = "PENDING", updated_at = datetime("now") WHERE id = ?')
+        .prepare('UPDATE seller_affiliate_partnerships SET status = "PENDING", revoked_at = NULL, updated_at = datetime("now") WHERE id = ?')
         .bind(existing.id)
         .run();
 

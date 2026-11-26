@@ -1,5 +1,6 @@
 import { verifyStoreApiAccess } from '../../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../../services/d1_service';
+import { getMarketplaceConfig } from '../../../../services/marketplace_service';
 import { calculate3WaySplit } from '../../../../services/seller_affiliate_service';
 
 const CORS_HEADERS = {
@@ -57,16 +58,34 @@ export async function onRequestPut(context: { request: Request; params: any; env
       return new Response(JSON.stringify({ success: false, error: 'Bạn không có quyền chỉnh sửa listing này.' }), { status: 403, headers: CORS_HEADERS });
     }
 
+    const mConfig = await getMarketplaceConfig(env.DB);
+    if (!mConfig.affiliate_enabled) {
+      return new Response(JSON.stringify({ success: false, error: 'Tính năng bán lại liên gian hàng hiện đang tạm tắt bởi Quản trị viên.', code: 'AFFILIATE_DISABLED' }), { status: 403, headers: CORS_HEADERS });
+    }
+
     const body: any = await request.json().catch(() => ({}));
     const markupType = body.markup_type === 'FIXED' ? 'FIXED' : 'PERCENT';
     const markupValue = Math.max(0, Number(body.markup_value) || 0);
     const priceMode = body.price_mode === 'LOCKED' ? 'LOCKED' : 'FORMULA';
     const showSupplier = body.show_supplier === 0 ? 0 : 1;
 
+    if (markupType === 'PERCENT' && markupValue > mConfig.affiliate_max_markup_pct) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Biên lợi nhuận phần trăm (${markupValue}%) vượt quá trần cho phép (${mConfig.affiliate_max_markup_pct}%).`,
+        code: 'MAX_MARKUP_EXCEEDED'
+      }), { status: 400, headers: CORS_HEADERS });
+    }
+
     // Tính lại giá bán
     const basePrice = Number(listing.origin_price) || 0;
     const mapPrice = Number(listing.resell_map_price) || 0;
-    const isPhysical = listing.product_type === 'physical';
+    const isPhysical = String(listing.product_type || '').toLowerCase() === 'physical';
+    const customLockedPrice = priceMode === 'LOCKED'
+      ? (Number(body.locked_price) > 0
+          ? Math.round(Number(body.locked_price))
+          : basePrice + Math.round(markupType === 'PERCENT' ? basePrice * (markupValue / 100) : markupValue))
+      : null;
 
     const split = calculate3WaySplit({
       basePrice,
@@ -77,7 +96,9 @@ export async function onRequestPut(context: { request: Request; params: any; env
       isPhysical,
       mapPrice,
       priceMode,
-      lockedPrice: priceMode === 'LOCKED' ? basePrice + Math.round(markupType === 'PERCENT' ? basePrice * (markupValue / 100) : markupValue) : null,
+      lockedPrice: customLockedPrice,
+      digitalFeePct: mConfig.affiliate_digital_fee_pct,
+      physicalFeePct: mConfig.affiliate_physical_fee_pct,
     });
 
     const newSellingPrice = split.sellingPrice;

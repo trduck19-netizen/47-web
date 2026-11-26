@@ -1,10 +1,11 @@
 import { computeSha256 } from './mission_service';
+import { getMarketplaceConfig } from './marketplace_service';
 
 export interface SellerAffiliatePartnershipRecord {
   id: string;
   supplier_seller_id: string;
   reseller_seller_id: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+  status: 'PENDING' | 'PENDING_ADMIN' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'REVOKED';
   api_key_hash: string;
   api_key_prefix: string;
   created_at: string;
@@ -47,6 +48,7 @@ export interface Financial3WaySplit {
   discountAmount: number;
   commissionAmount: number;
   platformFee: number;
+  feeRatePct: number;
   supplierPayout: number;
   resellerPayout: number;
   shippingFee: number;
@@ -129,12 +131,18 @@ export async function verifyPairShopAccess(
     return { authorized: false, status: 403, error: 'Liên kết giữa hai gian hàng chưa được phê duyệt.' };
   }
 
+  const mConfig = await getMarketplaceConfig(db);
+  if (!mConfig.affiliate_enabled) {
+    return { authorized: false, status: 403, error: 'Tính năng bán lại liên gian hàng đang tạm tắt bởi Quản trị viên.' };
+  }
+
   // Khóa chỉ có quyền đọc của đúng NCC phát hành khóa
   if (targetSupplierId && partnership.supplier_seller_id !== targetSupplierId) {
     return { authorized: false, status: 403, error: 'Khóa API này chỉ có quyền truy cập sản phẩm của Nhà Cung Cấp đã cấp khóa.' };
   }
 
-  // Giới hạn tốc độ: 600 yêu cầu / phút / khóa cặp (Nhóm 3)
+  // Giới hạn tốc độ động từ Admin Config (mặc định 600 yêu cầu / phút / khóa cặp)
+  const rateLimitRpm = Math.max(10, Number(mConfig.affiliate_rate_limit_rpm) || 600);
   const keyPrefix = partnership.api_key_prefix || (cleanKey.substring(0, 13) + '••••' + cleanKey.substring(cleanKey.length - 4));
   const recentCallsRes = await db
     .prepare(`
@@ -145,7 +153,7 @@ export async function verifyPairShopAccess(
     .bind(keyPrefix)
     .first<{ recent_calls: number }>();
 
-  if (recentCallsRes && Number(recentCallsRes.recent_calls) >= 600) {
+  if (recentCallsRes && Number(recentCallsRes.recent_calls) >= rateLimitRpm) {
     await logAffiliateCall(db, {
       partnershipId: partnership.id,
       callerSellerId: partnership.reseller_seller_id,
@@ -157,7 +165,7 @@ export async function verifyPairShopAccess(
     return {
       authorized: false,
       status: 429,
-      error: 'Quá giới hạn 600 yêu cầu / phút cho khóa liên shop này. Vui lòng thử lại sau giây lát.',
+      error: `Quá giới hạn ${rateLimitRpm} yêu cầu / phút cho khóa liên shop này. Vui lòng thử lại sau giây lát.`,
     };
   }
 
@@ -186,6 +194,8 @@ export function calculate3WaySplit(params: {
   mapPrice?: number;
   lockedPrice?: number | null;
   priceMode?: 'FORMULA' | 'LOCKED';
+  digitalFeePct?: number;
+  physicalFeePct?: number;
 }): Financial3WaySplit {
   const {
     basePrice,
@@ -198,6 +208,8 @@ export function calculate3WaySplit(params: {
     mapPrice = 0,
     lockedPrice,
     priceMode = 'FORMULA',
+    digitalFeePct,
+    physicalFeePct,
   } = params;
 
   // 1. Tính mức tăng (markup)
@@ -228,8 +240,11 @@ export function calculate3WaySplit(params: {
   const discountAmount = Math.round(basePrice * (Math.max(0, discountPct) / 100));
   const commissionAmount = Math.round(basePrice * (Math.max(0, commissionPct) / 100));
 
-  // 5. Phí sàn tính trên giá gốc: 5% (hàng số) / 2% (hàng vật lý)
-  const feeRate = isPhysical ? 0.02 : 0.05;
+  // 5. Phí sàn động theo cấu hình Admin (mặc định 5% hàng số / 2% hàng vật lý)
+  const appliedFeePct = isPhysical
+    ? (typeof physicalFeePct === 'number' && Number.isFinite(physicalFeePct) ? Math.min(50, Math.max(0, physicalFeePct)) : 2)
+    : (typeof digitalFeePct === 'number' && Number.isFinite(digitalFeePct) ? Math.min(50, Math.max(0, digitalFeePct)) : 5);
+  const feeRate = appliedFeePct / 100;
   const platformFee = Math.round(basePrice * feeRate);
 
   // 6. NCC nhận: base_price - discount - platformFee - commission
@@ -247,6 +262,7 @@ export function calculate3WaySplit(params: {
     discountAmount,
     commissionAmount,
     platformFee,
+    feeRatePct: appliedFeePct,
     supplierPayout,
     resellerPayout,
     shippingFee: Math.max(0, Number(shippingFee) || 0),
@@ -303,19 +319,28 @@ export async function logAffiliateCall(
 export async function syncAffiliatePriceAndStock(
   db: D1Database,
   supplierProductId: string,
-  changeType: 'PRICE_CHANGE' | 'STOCK_CHANGE' | 'STATUS_CHANGE',
+  changeType: 'PRICE_CHANGE' | 'STOCK_CHANGE' | 'STATUS_CHANGE' | 'RESELL_PARAM_CHANGE',
   details?: {
     newBasePrice?: number;
+    newMapPrice?: number;
     newStock?: number;
     isDeleted?: boolean;
     isDisabled?: boolean;
+    autoPauseOnLoss?: boolean;
+    digitalFeePct?: number;
+    physicalFeePct?: number;
   }
-): Promise<{ affectedCount: number }> {
+): Promise<{ affectedCount: number; antiLossPausedCount?: number }> {
   try {
     // 1. Tìm toàn bộ listing gán của sản phẩm NCC này
     const listings = await db
       .prepare(`
-        SELECT sal.*, sp_orig.price_core as origin_price, sp_orig.resell_map_price as origin_map
+        SELECT sal.*,
+               sp_orig.price_core as origin_price,
+               sp_orig.resell_map_price as origin_map,
+               sp_orig.resell_discount_pct as origin_discount_pct,
+               sp_orig.resell_commission_pct as origin_commission_pct,
+               sp_orig.product_type as origin_product_type
         FROM seller_affiliate_listings sal
         JOIN seller_products sp_orig ON sal.supplier_product_id = sp_orig.id
         WHERE sal.supplier_product_id = ?
@@ -324,9 +349,21 @@ export async function syncAffiliatePriceAndStock(
       .all<any>();
 
     const rows = listings.results || [];
-    if (rows.length === 0) return { affectedCount: 0 };
+    if (rows.length === 0) return { affectedCount: 0, antiLossPausedCount: 0 };
+
+    const mConfig = await getMarketplaceConfig(db);
+    const autoPauseOnLoss = typeof details?.autoPauseOnLoss === 'boolean'
+      ? details.autoPauseOnLoss
+      : mConfig.affiliate_auto_pause_on_loss;
+    const digitalFeePct = typeof details?.digitalFeePct === 'number'
+      ? details.digitalFeePct
+      : mConfig.affiliate_digital_fee_pct;
+    const physicalFeePct = typeof details?.physicalFeePct === 'number'
+      ? details.physicalFeePct
+      : mConfig.affiliate_physical_fee_pct;
 
     let affectedCount = 0;
+    let antiLossPausedCount = 0;
     const nowIso = new Date().toISOString();
 
     for (const item of rows) {
@@ -362,67 +399,103 @@ export async function syncAffiliatePriceAndStock(
           .prepare(`
             UPDATE seller_affiliate_listings
             SET status = ?, updated_at = ?
-            WHERE id = ? AND status != 'SUPPLIER_DISABLED'
+            WHERE id = ? AND status != 'SUPPLIER_DISABLED' AND COALESCE(price_warning, '') != 'ANTI_LOSS_PAUSED'
           `)
           .bind(newStatus, nowIso, item.id)
           .run()
           .catch(() => {});
 
         affectedCount++;
-      } else if (changeType === 'PRICE_CHANGE' && details?.newBasePrice) {
-        const basePrice = details.newBasePrice;
-        const mapPrice = Number(item.origin_map) || 0;
+      } else if (changeType === 'PRICE_CHANGE' || changeType === 'RESELL_PARAM_CHANGE') {
+        const basePrice = Number(details?.newBasePrice ?? item.origin_price) || 0;
+        if (basePrice <= 0) continue;
+
+        const mapPrice = Number(details?.newMapPrice ?? item.origin_map) || 0;
+        const isPhysical = String(item.origin_product_type || '').toLowerCase() === 'physical';
+        const split = calculate3WaySplit({
+          basePrice,
+          markupType: item.markup_type === 'FIXED' ? 'FIXED' : 'PERCENT',
+          markupValue: Number(item.markup_value) || 0,
+          discountPct: Number(item.origin_discount_pct) || 0,
+          commissionPct: Number(item.origin_commission_pct) || 0,
+          isPhysical,
+          mapPrice,
+          priceMode: item.price_mode === 'LOCKED' ? 'LOCKED' : 'FORMULA',
+          lockedPrice: item.locked_price !== null && item.locked_price !== undefined ? Number(item.locked_price) : null,
+          digitalFeePct,
+          physicalFeePct,
+        });
 
         if (item.price_mode === 'FORMULA') {
-          // Công thức tự cập nhật
-          let markup = 0;
-          if (item.markup_type === 'PERCENT') {
-            markup = Math.round(basePrice * (item.markup_value / 100));
-          } else {
-            markup = Math.round(item.markup_value);
-          }
-          let newSellingPrice = basePrice + markup;
-          if (mapPrice > 0 && newSellingPrice < mapPrice) {
-            newSellingPrice = mapPrice;
-          }
+          const isLoss = split.resellerPayout < 0 || split.sellingPrice < basePrice;
+          const nextWarning = isLoss ? (autoPauseOnLoss ? 'ANTI_LOSS_PAUSED' : `CẢNH BÁO: Giá bán (${split.sellingPrice.toLocaleString('vi-VN')} đ) thấp hơn giá vốn hoặc âm lợi nhuận.`) : null;
+          const nextListingStatus = isLoss && autoPauseOnLoss
+            ? 'HIDDEN'
+            : (item.price_warning === 'ANTI_LOSS_PAUSED' && item.status === 'HIDDEN' ? 'ACTIVE' : item.status);
 
-          // Cập nhật giá bán trên seller_products của shop gán
+          if (isLoss && autoPauseOnLoss) antiLossPausedCount++;
+
           await db
             .prepare(`
               UPDATE seller_products
               SET price_core = ?, updated_at = ?
               WHERE id = ?
             `)
-            .bind(newSellingPrice, nowIso, item.reseller_product_id)
+            .bind(split.sellingPrice, nowIso, item.reseller_product_id)
             .run()
             .catch(() => {});
 
           await db
             .prepare(`
               UPDATE seller_affiliate_listings
-              SET price_warning = NULL, updated_at = ?
+              SET status = ?, price_warning = ?, updated_at = ?
               WHERE id = ?
             `)
-            .bind(nowIso, item.id)
+            .bind(nextListingStatus, nextWarning, nowIso, item.id)
             .run()
             .catch(() => {});
 
           affectedCount++;
         } else if (item.price_mode === 'LOCKED') {
-          // Chế độ khóa giá: nếu giá gốc vượt giá bán khóa thì phát cảnh báo
+          // Chế độ khóa giá: kiểm tra giá gốc > giá bán khóa, âm lợi nhuận hoặc vi phạm MAP mới
           const lockedPrice = Number(item.locked_price) || 0;
+          const isLoss = basePrice > lockedPrice || split.resellerPayout < 0;
+          const isBelowMap = mapPrice > 0 && lockedPrice > 0 && lockedPrice < mapPrice;
+
           let warning: string | null = null;
-          if (basePrice > lockedPrice) {
-            warning = `CẢNH BÁO: Giá gốc nhà cung cấp (${basePrice.toLocaleString('vi-VN')} đ) đã vượt giá bán khóa (${lockedPrice.toLocaleString('vi-VN')} đ).`;
+          let nextListingStatus = item.status;
+
+          if (isLoss) {
+            if (autoPauseOnLoss) {
+              warning = 'ANTI_LOSS_PAUSED';
+              nextListingStatus = 'HIDDEN';
+              antiLossPausedCount++;
+            } else {
+              warning = `CẢNH BÁO: Giá gốc nhà cung cấp (${basePrice.toLocaleString('vi-VN')} đ) đã vượt giá bán khóa (${lockedPrice.toLocaleString('vi-VN')} đ).`;
+            }
+          } else if (isBelowMap) {
+            // Đẩy giá bán sản phẩm lên bằng MAP mới để tuân thủ giá sàn NCC
+            await db
+              .prepare(`
+                UPDATE seller_products
+                SET price_core = ?, updated_at = ?
+                WHERE id = ?
+              `)
+              .bind(mapPrice, nowIso, item.reseller_product_id)
+              .run()
+              .catch(() => {});
+            warning = `CẢNH BÁO MAP: Giá khóa (${lockedPrice.toLocaleString('vi-VN')} đ) thấp hơn giá sàn MAP mới (${mapPrice.toLocaleString('vi-VN')} đ); đã tự nâng giá bán bằng MAP.`;
+          } else if (item.price_warning === 'ANTI_LOSS_PAUSED' && item.status === 'HIDDEN') {
+            nextListingStatus = 'ACTIVE';
           }
 
           await db
             .prepare(`
               UPDATE seller_affiliate_listings
-              SET price_warning = ?, updated_at = ?
+              SET status = ?, price_warning = ?, updated_at = ?
               WHERE id = ?
             `)
-            .bind(warning, nowIso, item.id)
+            .bind(nextListingStatus, warning, nowIso, item.id)
             .run()
             .catch(() => {});
 
@@ -451,9 +524,9 @@ export async function syncAffiliatePriceAndStock(
       .run()
       .catch(() => {});
 
-    return { affectedCount };
+    return { affectedCount, antiLossPausedCount };
   } catch (e) {
     console.warn('[syncAffiliatePriceAndStock error]', e);
-    return { affectedCount: 0 };
+    return { affectedCount: 0, antiLossPausedCount: 0 };
   }
 }

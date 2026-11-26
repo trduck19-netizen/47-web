@@ -228,6 +228,14 @@ export interface MarketplaceConfig {
   withdraw_approval_threshold_core: number; // Mặc định 500 Core
   test_seller_ids: string[]; // Danh sách gian hàng thử nghiệm bán tiền thật
   max_rejected_disputes_30d: number; // Ngưỡng số khiếu nại bị từ chối trong 30 ngày để gắn cờ lạm dụng (mặc định 3)
+  // Bán lại liên gian hàng nội bộ (tự do điều chỉnh trong Admin)
+  affiliate_enabled: boolean; // Mặc định true
+  affiliate_digital_fee_pct: number; // Mặc định 5 (%)
+  affiliate_physical_fee_pct: number; // Mặc định 2 (%)
+  affiliate_auto_pause_on_loss: boolean; // Mặc định true
+  affiliate_require_admin_approval: boolean; // Mặc định true (bắt buộc Admin duyệt ngay từ đầu)
+  affiliate_max_markup_pct: number; // Mặc định 500 (%)
+  affiliate_rate_limit_rpm: number; // Mặc định 600 req/phút/khóa cặp
 }
 
 export const DEFAULT_MARKETPLACE_CONFIG: MarketplaceConfig = {
@@ -240,6 +248,13 @@ export const DEFAULT_MARKETPLACE_CONFIG: MarketplaceConfig = {
   withdraw_approval_threshold_core: 500,
   test_seller_ids: ['sel_1794399949383_052f1'], // Test Key Shop
   max_rejected_disputes_30d: 3,
+  affiliate_enabled: true,
+  affiliate_digital_fee_pct: 5,
+  affiliate_physical_fee_pct: 2,
+  affiliate_auto_pause_on_loss: true,
+  affiliate_require_admin_approval: true,
+  affiliate_max_markup_pct: 500,
+  affiliate_rate_limit_rpm: 600,
 };
 
 // Interface các thực thể Giai đoạn 2
@@ -341,6 +356,27 @@ export async function getMarketplaceConfig(db: D1Database): Promise<MarketplaceC
         withdraw_approval_threshold_core: Number(parsed.withdraw_approval_threshold_core) >= 0 ? Number(parsed.withdraw_approval_threshold_core) : DEFAULT_MARKETPLACE_CONFIG.withdraw_approval_threshold_core,
         test_seller_ids: testIds,
         max_rejected_disputes_30d: Number(parsed.max_rejected_disputes_30d) > 0 ? Number(parsed.max_rejected_disputes_30d) : DEFAULT_MARKETPLACE_CONFIG.max_rejected_disputes_30d,
+        affiliate_enabled: typeof parsed.affiliate_enabled === 'boolean'
+          ? parsed.affiliate_enabled
+          : DEFAULT_MARKETPLACE_CONFIG.affiliate_enabled,
+        affiliate_digital_fee_pct: parsed.affiliate_digital_fee_pct !== undefined && Number.isFinite(Number(parsed.affiliate_digital_fee_pct))
+          ? Math.min(50, Math.max(0, Number(parsed.affiliate_digital_fee_pct)))
+          : DEFAULT_MARKETPLACE_CONFIG.affiliate_digital_fee_pct,
+        affiliate_physical_fee_pct: parsed.affiliate_physical_fee_pct !== undefined && Number.isFinite(Number(parsed.affiliate_physical_fee_pct))
+          ? Math.min(50, Math.max(0, Number(parsed.affiliate_physical_fee_pct)))
+          : DEFAULT_MARKETPLACE_CONFIG.affiliate_physical_fee_pct,
+        affiliate_auto_pause_on_loss: typeof parsed.affiliate_auto_pause_on_loss === 'boolean'
+          ? parsed.affiliate_auto_pause_on_loss
+          : DEFAULT_MARKETPLACE_CONFIG.affiliate_auto_pause_on_loss,
+        affiliate_require_admin_approval: typeof parsed.affiliate_require_admin_approval === 'boolean'
+          ? parsed.affiliate_require_admin_approval
+          : DEFAULT_MARKETPLACE_CONFIG.affiliate_require_admin_approval,
+        affiliate_max_markup_pct: parsed.affiliate_max_markup_pct !== undefined && Number.isFinite(Number(parsed.affiliate_max_markup_pct))
+          ? Math.min(2000, Math.max(0, Number(parsed.affiliate_max_markup_pct)))
+          : DEFAULT_MARKETPLACE_CONFIG.affiliate_max_markup_pct,
+        affiliate_rate_limit_rpm: parsed.affiliate_rate_limit_rpm !== undefined && Number.isFinite(Number(parsed.affiliate_rate_limit_rpm))
+          ? Math.min(6000, Math.max(10, Math.round(Number(parsed.affiliate_rate_limit_rpm))))
+          : DEFAULT_MARKETPLACE_CONFIG.affiliate_rate_limit_rpm,
       };
     }
   } catch (err) {

@@ -1,5 +1,6 @@
 import { verifyStoreApiAccess } from '../../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../../services/d1_service';
+import { getMarketplaceConfig } from '../../../../services/marketplace_service';
 import { syncAffiliatePriceAndStock } from '../../../../services/seller_affiliate_service';
 
 const CORS_HEADERS = {
@@ -64,9 +65,18 @@ export async function onRequestPut(context: { request: Request; params: any; env
     const commissionPct = Math.max(0, Math.min(100, Number(body.resell_commission_pct) || 0));
     const mapPrice = Math.max(0, Math.round(Number(body.resell_map_price) || 0));
 
-    // Ràng buộc kiểm tra tổng tỷ lệ chiết khấu + hoa hồng + phí sàn <= 100% (Nhóm 5)
-    const isPhysical = existing.product_type === 'PHYSICAL';
-    const feeRatePct = isPhysical ? 2 : 5;
+    const mConfig = await getMarketplaceConfig(env.DB);
+    if (resellEnabled && !mConfig.affiliate_enabled) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Tính năng bán lại liên gian hàng hiện đang tạm tắt bởi Quản trị viên.',
+        code: 'AFFILIATE_DISABLED'
+      }), { status: 403, headers: CORS_HEADERS });
+    }
+
+    // Ràng buộc kiểm tra tổng tỷ lệ chiết khấu + hoa hồng + phí sàn động <= 100% (Nhóm 5)
+    const isPhysical = String(existing.product_type || '').toLowerCase() === 'physical';
+    const feeRatePct = isPhysical ? mConfig.affiliate_physical_fee_pct : mConfig.affiliate_digital_fee_pct;
     if (resellEnabled && (discountPct + commissionPct + feeRatePct > 100)) {
       return new Response(JSON.stringify({
         success: false,
@@ -90,7 +100,13 @@ export async function onRequestPut(context: { request: Request; params: any; env
 
     // Đồng bộ tức thời thông số resell mới sang các listing gán đang active
     if (resellEnabled) {
-      await syncAffiliatePriceAndStock(env.DB, productId, 'RESELL_PARAM_CHANGE', { newBasePrice: existing.price_core, newMapPrice: mapPrice });
+      await syncAffiliatePriceAndStock(env.DB, productId, 'RESELL_PARAM_CHANGE', {
+        newBasePrice: existing.price_core,
+        newMapPrice: mapPrice,
+        autoPauseOnLoss: mConfig.affiliate_auto_pause_on_loss,
+        digitalFeePct: mConfig.affiliate_digital_fee_pct,
+        physicalFeePct: mConfig.affiliate_physical_fee_pct,
+      });
     } else {
       await syncAffiliatePriceAndStock(env.DB, productId, 'STATUS_CHANGE', { isDisabled: true });
     }

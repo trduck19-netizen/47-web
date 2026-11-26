@@ -257,7 +257,7 @@ export async function confirmReceivedAndRelease(
           ) VALUES (?, ?, ?, 'FEE', ?, 0, 0, 0, 'platform_fee', ?, ?)
         `).bind(
           ledgFeeId, supplierId || resellerId, order.id, platformFee,
-          `Thu phí sàn ${isPhysical ? '2%' : '5%'} trên giá gốc cho đơn liên shop ${order.order_code || order.id}`, nowIso
+          `Thu phí sàn ${breakdown.feeRatePct ?? (isPhysical ? 2 : 5)}% trên giá gốc cho đơn liên shop ${order.order_code || order.id}`, nowIso
         ).run();
       }
 

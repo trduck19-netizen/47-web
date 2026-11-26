@@ -74,17 +74,52 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     }
 
     const newConfig = {
-      default_trial_product_limit: Math.max(1, parseInt(body.default_trial_product_limit || 5, 10)),
-      default_trial_order_max: Math.max(10, parseInt(body.default_trial_order_max || 200, 10)),
-      batch_freeze_error_rate: Math.min(1, Math.max(0.05, parseFloat(body.batch_freeze_error_rate || 0.25))),
-      min_batch_size_for_freeze: Math.max(2, parseInt(body.min_batch_size_for_freeze || 5, 10)),
-      hold_hours: typeof body.hold_hours !== 'undefined' ? Math.max(0, parseInt(body.hold_hours, 10)) : 168,
-      fee_rate: typeof body.fee_rate !== 'undefined' ? Math.min(1, Math.max(0, parseFloat(body.fee_rate))) : 0.05,
-      withdraw_approval_threshold_core: typeof body.withdraw_approval_threshold_core !== 'undefined' ? Math.max(0, parseInt(body.withdraw_approval_threshold_core, 10)) : 500,
+      default_trial_product_limit: typeof body.default_trial_product_limit !== 'undefined'
+        ? Math.max(1, parseInt(body.default_trial_product_limit, 10))
+        : currentConfig.default_trial_product_limit,
+      default_trial_order_max: typeof body.default_trial_order_max !== 'undefined'
+        ? Math.max(10, parseInt(body.default_trial_order_max, 10))
+        : currentConfig.default_trial_order_max,
+      batch_freeze_error_rate: typeof body.batch_freeze_error_rate !== 'undefined'
+        ? Math.min(1, Math.max(0.05, parseFloat(body.batch_freeze_error_rate)))
+        : currentConfig.batch_freeze_error_rate,
+      min_batch_size_for_freeze: typeof body.min_batch_size_for_freeze !== 'undefined'
+        ? Math.max(2, parseInt(body.min_batch_size_for_freeze, 10))
+        : currentConfig.min_batch_size_for_freeze,
+      hold_hours: typeof body.hold_hours !== 'undefined'
+        ? Math.max(0, parseInt(body.hold_hours, 10))
+        : currentConfig.hold_hours,
+      fee_rate: typeof body.fee_rate !== 'undefined'
+        ? Math.min(1, Math.max(0, parseFloat(body.fee_rate)))
+        : currentConfig.fee_rate,
+      withdraw_approval_threshold_core: typeof body.withdraw_approval_threshold_core !== 'undefined'
+        ? Math.max(0, parseInt(body.withdraw_approval_threshold_core, 10))
+        : currentConfig.withdraw_approval_threshold_core,
       test_seller_ids: testIds,
       max_rejected_disputes_30d: typeof body.max_rejected_disputes_30d !== 'undefined'
         ? Math.max(1, parseInt(body.max_rejected_disputes_30d, 10))
         : (currentConfig.max_rejected_disputes_30d || 3),
+      affiliate_enabled: typeof body.affiliate_enabled === 'boolean'
+        ? body.affiliate_enabled
+        : currentConfig.affiliate_enabled,
+      affiliate_digital_fee_pct: typeof body.affiliate_digital_fee_pct !== 'undefined' && Number.isFinite(Number(body.affiliate_digital_fee_pct))
+        ? Math.min(50, Math.max(0, Number(body.affiliate_digital_fee_pct)))
+        : currentConfig.affiliate_digital_fee_pct,
+      affiliate_physical_fee_pct: typeof body.affiliate_physical_fee_pct !== 'undefined' && Number.isFinite(Number(body.affiliate_physical_fee_pct))
+        ? Math.min(50, Math.max(0, Number(body.affiliate_physical_fee_pct)))
+        : currentConfig.affiliate_physical_fee_pct,
+      affiliate_auto_pause_on_loss: typeof body.affiliate_auto_pause_on_loss === 'boolean'
+        ? body.affiliate_auto_pause_on_loss
+        : currentConfig.affiliate_auto_pause_on_loss,
+      affiliate_require_admin_approval: typeof body.affiliate_require_admin_approval === 'boolean'
+        ? body.affiliate_require_admin_approval
+        : currentConfig.affiliate_require_admin_approval,
+      affiliate_max_markup_pct: typeof body.affiliate_max_markup_pct !== 'undefined' && Number.isFinite(Number(body.affiliate_max_markup_pct))
+        ? Math.min(2000, Math.max(0, Number(body.affiliate_max_markup_pct)))
+        : currentConfig.affiliate_max_markup_pct,
+      affiliate_rate_limit_rpm: typeof body.affiliate_rate_limit_rpm !== 'undefined' && Number.isFinite(Number(body.affiliate_rate_limit_rpm))
+        ? Math.min(6000, Math.max(10, Math.round(Number(body.affiliate_rate_limit_rpm))))
+        : currentConfig.affiliate_rate_limit_rpm,
     };
 
     const nowIso = new Date().toISOString();

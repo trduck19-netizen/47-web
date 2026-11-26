@@ -1,5 +1,6 @@
 import { verifyStoreApiAccess } from '../../../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../../../services/d1_service';
+import { getMarketplaceConfig } from '../../../../../services/marketplace_service';
 import { generatePairShopApiKey } from '../../../../../services/seller_affiliate_service';
 
 const CORS_HEADERS = {
@@ -53,7 +54,47 @@ export async function onRequestPost(context: { request: Request; params: any; en
       return new Response(JSON.stringify({ success: false, error: 'Bạn không có quyền duyệt yêu cầu liên kết của gian hàng khác.' }), { status: 403, headers: CORS_HEADERS });
     }
 
-    // Sinh cặp khóa API chuyên dụng
+    const mConfig = await getMarketplaceConfig(env.DB);
+    if (!mConfig.affiliate_enabled) {
+      return new Response(JSON.stringify({ success: false, error: 'Tính năng bán lại liên gian hàng hiện đang tạm tắt bởi Quản trị viên.', code: 'AFFILIATE_DISABLED' }), { status: 403, headers: CORS_HEADERS });
+    }
+
+    if (reqRecord.status === 'APPROVED') {
+      return new Response(JSON.stringify({
+        success: true,
+        status: 'APPROVED',
+        requires_admin_approval: false,
+        message: `Liên kết với gian hàng ${reqRecord.reseller_name} đã được kích hoạt trước đó.`,
+        partnership_id: requestId,
+        reseller_name: reqRecord.reseller_name,
+        key_prefix: reqRecord.api_key_prefix || '',
+      }), { status: 200, headers: CORS_HEADERS });
+    }
+
+    // Nếu Admin bật bắt buộc duyệt (mặc định true): chuyển sang PENDING_ADMIN, chưa sinh Pair Key cho tới khi Admin duyệt
+    if (mConfig.affiliate_require_admin_approval) {
+      await env.DB
+        .prepare(`
+          UPDATE seller_affiliate_partnerships
+          SET status = 'PENDING_ADMIN',
+              updated_at = datetime('now')
+          WHERE id = ?
+        `)
+        .bind(requestId)
+        .run();
+
+      return new Response(JSON.stringify({
+        success: true,
+        status: 'PENDING_ADMIN',
+        requires_admin_approval: true,
+        message: `Đã xác nhận đồng ý hợp tác với ${reqRecord.reseller_name}. Yêu cầu đã chuyển sang trạng thái chờ Quản trị viên phê duyệt kích hoạt.`,
+        partnership_id: requestId,
+        reseller_name: reqRecord.reseller_name,
+        key_prefix: '',
+      }), { status: 200, headers: CORS_HEADERS });
+    }
+
+    // Sinh cặp khóa API chuyên dụng (khi Admin tắt chế độ bắt buộc duyệt)
     const { rawKey, keyHash, keyPrefix } = await generatePairShopApiKey();
 
     await env.DB
@@ -63,6 +104,7 @@ export async function onRequestPost(context: { request: Request; params: any; en
             api_key_hash = ?,
             api_key_prefix = ?,
             one_time_raw_key = ?,
+            revoked_at = NULL,
             updated_at = datetime('now')
         WHERE id = ?
       `)
@@ -71,6 +113,8 @@ export async function onRequestPost(context: { request: Request; params: any; en
 
     return new Response(JSON.stringify({
       success: true,
+      status: 'APPROVED',
+      requires_admin_approval: false,
       message: `Đã phê duyệt liên kết cho gian hàng ${reqRecord.reseller_name}.`,
       partnership_id: requestId,
       reseller_name: reqRecord.reseller_name,

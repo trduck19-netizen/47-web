@@ -1,7 +1,7 @@
 import { verifyMemberAuth } from '../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../services/d1_service';
 import { decryptCode, getMarketplaceConfig } from '../../services/marketplace_service';
-import { calculate3WaySplit } from '../../services/seller_affiliate_service';
+import { calculate3WaySplit, syncAffiliatePriceAndStock } from '../../services/seller_affiliate_service';
 import { dispatchSupplierFulfillmentWebhook } from '../../services/supplier_connector_service';
 
 interface Env {
@@ -94,55 +94,140 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 2. Tìm 1 mã IN_STOCK sẵn sàng
-    // Nhóm 4: Nếu là sản phẩm gán liên shop (affiliate) thì lấy mã trực tiếp từ kho của NCC (Shop A)
+    // 2. Đọc cấu hình sàn động + kiểm tra trạng thái liên shop (chặn ANTI_LOSS_PAUSED / HIDDEN / tắt liên shop)
+    const mConfig = await getMarketplaceConfig(env.DB);
     const isAffiliate = product.is_affiliate === 1 && Boolean(product.origin_product_id);
     const sourceProductId = isAffiliate ? product.origin_product_id : product.id;
     const supplierSellerId = isAffiliate ? product.origin_seller_id : null;
     let affiliateBreakdownJson: string | null = null;
+    let origProd: any = null;
 
     if (isAffiliate) {
-      const origProd = await env.DB
-        .prepare('SELECT price_core, resell_discount_pct, resell_commission_pct, resell_map_price, product_type FROM seller_products WHERE id = ? LIMIT 1')
+      if (!mConfig.affiliate_enabled) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Tính năng mua sản phẩm bán lại liên gian hàng đang tạm dừng bởi Quản trị viên.',
+            code: 'AFFILIATE_DISABLED',
+          }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+
+      origProd = await env.DB
+        .prepare('SELECT id, seller_id, price_core, resell_enabled, resell_discount_pct, resell_commission_pct, resell_map_price, product_type, stock_quantity, status, deleted_at FROM seller_products WHERE id = ? LIMIT 1')
         .bind(product.origin_product_id)
         .first<any>();
 
       const listing = await env.DB
-        .prepare('SELECT markup_type, markup_value, price_mode, locked_price FROM seller_affiliate_listings WHERE reseller_product_id = ? LIMIT 1')
+        .prepare('SELECT id, partnership_id, markup_type, markup_value, price_mode, locked_price, status, price_warning FROM seller_affiliate_listings WHERE reseller_product_id = ? LIMIT 1')
         .bind(product.id)
         .first<any>();
 
-      if (origProd && listing) {
-        const split = calculate3WaySplit({
-          basePrice: Number(origProd.price_core) || 0,
-          markupType: listing.markup_type || 'PERCENT',
-          markupValue: Number(listing.markup_value) || 0,
-          discountPct: Number(origProd.resell_discount_pct) || 0,
-          commissionPct: Number(origProd.resell_commission_pct) || 0,
-          isPhysical: origProd.product_type === 'physical',
-          mapPrice: Number(origProd.resell_map_price) || 0,
-          priceMode: listing.price_mode,
-          lockedPrice: listing.locked_price,
-        });
-        affiliateBreakdownJson = JSON.stringify(split);
+      if (!origProd || origProd.deleted_at || origProd.resell_enabled !== 1) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Sản phẩm gốc từ Nhà Cung Cấp đã ngừng bán lại.',
+            code: 'SUPPLIER_DISABLED',
+          }),
+          { status: 400, headers: CORS_HEADERS }
+        );
       }
+
+      if (!listing || listing.status !== 'ACTIVE' || listing.price_warning === 'ANTI_LOSS_PAUSED') {
+        const isAntiLoss = listing?.price_warning === 'ANTI_LOSS_PAUSED';
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: isAntiLoss
+              ? 'Sản phẩm bán lại đang bị tạm khóa chống lỗ do giá gốc thay đổi. Vui lòng quay lại sau.'
+              : 'Sản phẩm bán lại hiện đang tạm ngừng kinh doanh.',
+            code: isAntiLoss ? 'ANTI_LOSS_PAUSED' : 'AFFILIATE_LISTING_PAUSED',
+          }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+
+      const partnership = await env.DB
+        .prepare('SELECT status FROM seller_affiliate_partnerships WHERE id = ? LIMIT 1')
+        .bind(listing.partnership_id)
+        .first<{ status: string }>();
+
+      if (!partnership || partnership.status !== 'APPROVED') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Liên kết giữa hai gian hàng chưa được phê duyệt hoặc đã bị tạm khóa.',
+            code: 'PARTNERSHIP_NOT_APPROVED',
+          }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+
+      const split = calculate3WaySplit({
+        basePrice: Number(origProd.price_core) || 0,
+        markupType: listing.markup_type || 'PERCENT',
+        markupValue: Number(listing.markup_value) || 0,
+        discountPct: Number(origProd.resell_discount_pct) || 0,
+        commissionPct: Number(origProd.resell_commission_pct) || 0,
+        isPhysical: String(origProd.product_type || '').toLowerCase() === 'physical',
+        mapPrice: Number(origProd.resell_map_price) || 0,
+        priceMode: listing.price_mode,
+        lockedPrice: listing.locked_price,
+        digitalFeePct: mConfig.affiliate_digital_fee_pct,
+        physicalFeePct: mConfig.affiliate_physical_fee_pct,
+      });
+
+      if (mConfig.affiliate_auto_pause_on_loss && (split.resellerPayout < 0 || Number(product.price_core) < Number(origProd.price_core))) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Sản phẩm bán lại bị tạm khóa chống lỗ vì giá bán thấp hơn giá gốc Nhà Cung Cấp.',
+            code: 'ANTI_LOSS_PAUSED',
+          }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+
+      affiliateBreakdownJson = JSON.stringify(split);
     }
 
-    const availableCode = await env.DB
-      .prepare(`
-        SELECT id, code_encrypted FROM seller_codes
-        WHERE product_id = ? AND status = 'IN_STOCK' AND deleted_at IS NULL
-        ORDER BY created_at ASC
-        LIMIT 1
-      `)
-      .bind(sourceProductId)
-      .first<any>();
+    const effectiveProductType = String((isAffiliate ? origProd?.product_type : product.product_type) || product.product_type || 'digital').toLowerCase();
+    const isPhysical = effectiveProductType === 'physical';
 
-    if (!availableCode) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Sản phẩm tạm thời hết mã trong kho. Vui lòng quay lại sau.' }),
-        { status: 400, headers: CORS_HEADERS }
-      );
+    let availableCode: any = null;
+    let plainDeliveredCode: string | null = null;
+    let currentPhysicalStock = 0;
+
+    if (isPhysical) {
+      const stockRow = isAffiliate
+        ? origProd
+        : product;
+      currentPhysicalStock = Number(stockRow?.stock_quantity || 0);
+      if (currentPhysicalStock < 1) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Sản phẩm vật lý tạm thời hết hàng trong kho. Vui lòng quay lại sau.', code: 'OUT_OF_STOCK' }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+    } else {
+      availableCode = await env.DB
+        .prepare(`
+          SELECT id, code_encrypted FROM seller_codes
+          WHERE product_id = ? AND status = 'IN_STOCK' AND deleted_at IS NULL
+          ORDER BY created_at ASC
+          LIMIT 1
+        `)
+        .bind(sourceProductId)
+        .first<any>();
+
+      if (!availableCode) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Sản phẩm tạm thời hết mã trong kho. Vui lòng quay lại sau.' }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
     }
 
     // 3. Kiểm tra số dư Core của người mua
@@ -166,17 +251,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (!env.MARKETPLACE_CODE_KEY || !env.MARKETPLACE_CODE_KEY.trim()) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Chưa cấu hình biến môi trường MARKETPLACE_CODE_KEY trên máy chủ.' }),
-        { status: 500, headers: CORS_HEADERS }
-      );
+    if (!isPhysical) {
+      if (!env.MARKETPLACE_CODE_KEY || !env.MARKETPLACE_CODE_KEY.trim()) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Chưa cấu hình biến môi trường MARKETPLACE_CODE_KEY trên máy chủ.' }),
+          { status: 500, headers: CORS_HEADERS }
+        );
+      }
+      // 4. Giải mã code trước để giao ngay
+      plainDeliveredCode = await decryptCode(availableCode.code_encrypted, env.MARKETPLACE_CODE_KEY);
     }
 
-    // 4. Giải mã code trước để giao ngay
-    const plainDeliveredCode = await decryptCode(availableCode.code_encrypted, env.MARKETPLACE_CODE_KEY);
-
-    const mConfig = await getMarketplaceConfig(env.DB);
     const holdHours = mConfig.hold_hours || 168;
     const holdUntil = new Date(Date.now() + holdHours * 3600 * 1000).toISOString();
 
@@ -192,10 +277,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // 5. Giao dịch nguyên tử qua D1 Batch (§4.3 & §6.1):
     // - Trừ Core người mua (có điều kiện balance >= priceCore chống race-condition)
-    // - Đổi mã kho sang SOLD gắn order_id
+    // - Đổi mã kho sang SOLD (hàng số) HOẶC trừ nguyên tử stock_quantity - 1 tại kho gốc (hàng vật lý)
     // - Cộng pending_balance_core cho gian hàng
     // - Ghi dòng HOLD vào sổ cái seller_ledger
     // - Thêm bản ghi đơn hàng seller_orders (trạng thái PAID trong 168h giữ tiền)
+    const stockDeductStatement = isPhysical
+      ? env.DB.prepare(`
+          UPDATE seller_products
+          SET stock_quantity = stock_quantity - 1, updated_at = ?
+          WHERE id = ? AND stock_quantity >= 1
+        `).bind(nowIso, sourceProductId)
+      : env.DB.prepare(`
+          UPDATE seller_codes
+          SET status = 'SOLD', order_id = ?, sold_at = ?, updated_at = ?
+          WHERE id = ? AND status = 'IN_STOCK'
+        `).bind(orderId, nowIso, nowIso, availableCode.id);
+
     const batchResults = await env.DB.batch([
       // Statement 0: Trừ Core người mua
       env.DB.prepare(`
@@ -204,12 +301,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         WHERE id = ? AND balance >= ?
       `).bind(priceCore, nowIso, buyer.id, priceCore),
 
-      // Statement 1: Đổi trạng thái mã kho sang SOLD
-      env.DB.prepare(`
-        UPDATE seller_codes
-        SET status = 'SOLD', order_id = ?, sold_at = ?, updated_at = ?
-        WHERE id = ? AND status = 'IN_STOCK'
-      `).bind(orderId, nowIso, nowIso, availableCode.id),
+      // Statement 1: Trừ tồn kho hàng vật lý hoặc khóa mã số SOLD
+      stockDeductStatement,
 
       // Statement 2: Cộng Core chờ rút cho gian hàng
       env.DB.prepare(`
@@ -243,10 +336,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         INSERT INTO seller_orders (
           id, order_code, buyer_member_id, buyer_name, buyer_email,
           seller_id, product_id, product_name, game_slug, code_id,
-          delivered_code, price_core, payment_method, hold_until,
+          delivered_code, price_core, payment_method, product_type, hold_until,
           status, supplier_seller_id, is_affiliate_order, affiliate_breakdown,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CORE', ?, 'PAID', ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CORE', ?, ?, 'PAID', ?, ?, ?, ?, ?)
       `).bind(
         orderId,
         orderCode,
@@ -257,9 +350,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         product.id,
         product.name,
         product.game_slug,
-        availableCode.id,
+        availableCode ? availableCode.id : null,
         plainDeliveredCode,
         priceCore,
+        isPhysical ? 'physical' : 'digital',
         holdUntil,
         supplierSellerId,
         isAffiliate ? 1 : 0,
@@ -269,11 +363,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       ),
     ]);
 
-    // Kiểm tra hàng bị tác động của statement 0 (trừ tiền)
+    // Kiểm tra hàng bị tác động của statement 0 (trừ tiền) & statement 1 (trừ kho/mã)
     const updateMemberMeta = (batchResults[0] as any)?.meta;
     if (updateMemberMeta && updateMemberMeta.changes === 0) {
       return new Response(
         JSON.stringify({ success: false, error: 'Số dư không đủ hoặc có giao dịch khác đang thực hiện cùng lúc.' }),
+        { status: 409, headers: CORS_HEADERS }
+      );
+    }
+
+    const deductStockMeta = (batchResults[1] as any)?.meta;
+    if (deductStockMeta && deductStockMeta.changes === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: isPhysical ? 'Sản phẩm vật lý vừa hết tồn kho. Vui lòng thử lại sau.' : 'Mã kho vừa được khách hàng khác mua. Vui lòng thử lại.' }),
         { status: 409, headers: CORS_HEADERS }
       );
     }
@@ -288,8 +390,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         details: {
           order_code: orderCode,
           product_name: product.name,
+          product_type: isPhysical ? 'physical' : 'digital',
           price_core: priceCore,
           seller_id: product.seller_id,
+          supplier_seller_id: supplierSellerId,
+          is_affiliate_order: isAffiliate,
           hold_until: holdUntil,
         },
       }).catch(() => {}),
@@ -301,6 +406,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         payloadData: {
           product_id: product.id,
           product_name: product.name,
+          product_type: isPhysical ? 'physical' : 'digital',
           game_slug: product.game_slug,
           price_core: priceCore,
           seller_id: product.seller_id,
@@ -310,6 +416,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         },
       }).catch((err) => console.warn('[SellerOrders] PA2 webhook dispatch warning:', err?.message)),
     ];
+
+    if (isPhysical && currentPhysicalStock - 1 <= 0) {
+      backgroundPromises.push(
+        syncAffiliatePriceAndStock(env.DB, sourceProductId, 'STOCK_CHANGE', { newStock: 0 }).catch(() => {})
+      );
+    }
 
     if (context.waitUntil) {
       context.waitUntil(Promise.all(backgroundPromises));
@@ -322,12 +434,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Thanh toán thành công! Mã của bạn đã được giao ngay lập tức.',
+        message: isPhysical
+          ? 'Thanh toán thành công! Đơn hàng vật lý đã được chuyển tới gian hàng để đóng gói và vận chuyển.'
+          : 'Thanh toán thành công! Mã của bạn đã được giao ngay lập tức.',
         new_balance: newBalance,
         order: {
           id: orderId,
           order_code: orderCode,
           product_name: product.name,
+          product_type: isPhysical ? 'physical' : 'digital',
           game_slug: product.game_slug,
           price_core: priceCore,
           delivered_code: plainDeliveredCode,

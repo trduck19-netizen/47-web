@@ -7,6 +7,26 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-26]
 
+### 480. Liên Kết Gian Hàng Nội Bộ — Mảnh 1: Lõi Cấu Hình Động, Bắt Buộc Admin Duyệt (`PENDING_ADMIN`), Sửa 3 Bug Liên Shop & Hỗ Trợ Hàng Vật Lý (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khởi động kế hoạch xây dựng hệ thống bán lại liên gian hàng nội bộ (`ke_hoach_lien_ket_gian_hang_noi_bo_26_11.md`) đã được chủ sở hữu phê duyệt, bảo đảm mọi tham số (phí sàn hàng số/vật lý, trần biên lợi nhuận, tự khóa chống lỗ, bắt buộc Admin duyệt, giới hạn RPM) đều lưu động trên SQL D1 và điều chỉnh tự do được sau này, đồng thời xử lý triệt để 3 lỗi gốc trong lõi liên shop và bổ sung tồn kho hàng vật lý.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Cấu hình động trên SQL D1 (`functions/services/marketplace_service.ts`, `functions/api/admin/seller-config.ts`)*:
+     - Mở rộng `MarketplaceConfig` (`wcg_marketplace_config_v1`) thêm 7 trường điều chỉnh tự do: `affiliate_enabled` (mặc định `true`), `affiliate_digital_fee_pct` (`5`), `affiliate_physical_fee_pct` (`2`), `affiliate_auto_pause_on_loss` (`true`), `affiliate_require_admin_approval` (`true` — bắt buộc Admin duyệt ngay từ đầu), `affiliate_max_markup_pct` (`500`), `affiliate_rate_limit_rpm` (`600`).
+     - Hỗ trợ cập nhật một phần trên `PUT /api/admin/seller-config`, bảo toàn giá trị `false` và `0`.
+  2. *Luồng bắt buộc Admin duyệt liên kết (`functions/api/seller/affiliate/requests.ts`, `functions/api/seller/affiliate/requests/[id]/approve.ts`)*:
+     - Khi `affiliate_require_admin_approval = true`, Shop A đồng ý hợp tác sẽ chuyển trạng thái sang **`PENDING_ADMIN`** (chưa sinh Pair Key `wcg_shop_*` cho tới khi Admin duyệt); khi Admin tắt công tắc này sau này, Shop A đồng ý sẽ lên thẳng `APPROVED`.
+  3. *Sửa 3 bug lõi liên shop (`functions/services/seller_affiliate_service.ts`, `functions/api/seller/products/[id]/resell.ts`, `functions/services/escrow_service.ts`, `listings/*`, `inventory-push.ts`)*:
+     - Gỡ phí sàn ghi cứng `5%`/`2%` trong `calculate3WaySplit`, nhận động `digitalFeePct`/`physicalFeePct` từ Admin config và trả về `feeRatePct` cho nhật ký giải ngân Escrow.
+     - Sửa so khớp chữ hoa/thường `String(product_type).toLowerCase() === 'physical'` trong `resell.ts` (và các tuyến liên quan).
+     - Bổ sung xử lý nhánh `'RESELL_PARAM_CHANGE'` trong `syncAffiliatePriceAndStock` (tự cập nhật MAP mới, tự khóa `ANTI_LOSS_PAUSED` khi `autoPauseOnLoss = true`, và tự phục hồi khi giá gốc hạ trở lại).
+  4. *Checkout Guard & Hàng Vật Lý Liên Shop (`functions/api/seller-orders/index.ts`, `functions/api/seller-orders/multi.ts`, `functions/services/d1_service.ts`)*:
+     - Bổ sung migration `0052_seller_products_stock_quantity_v1` thêm cột `stock_quantity INTEGER NOT NULL DEFAULT 0` cho `seller_products`.
+     - Chặn thanh toán khi listing liên shop đang `ANTI_LOSS_PAUSED` / `HIDDEN` / `SUPPLIER_DISABLED` hoặc partnership chưa `APPROVED`.
+     - Hỗ trợ thanh toán hàng vật lý bán lại liên shop (trừ nguyên tử `stock_quantity - 1` trên kho gốc của Shop A trong `db.batch`, không đòi `seller_codes` hay `MARKETPLACE_CODE_KEY`).
+  5. *Kiểm thử tự động (`scripts/tests/test_intershop_affiliate.ts`, `package.json`)*:
+     - Thêm suite `npm run test:intershop` (**7/7 PASS**), nâng tổng `npm test` lên **210/210 PASS** (`12` icons + `10` products + `112` suppliers + `69` sync-epoch + `7` intershop); `docs/tsc_full_check.log` giảm tổng lỗi toàn repo từ `1.828` → **`1.827`** (`0` lỗi mới).
+
 ### 479. Sửa Nốt Sau Kiểm Báo Cáo PA1 (`dc0c297`): Bổ Sung 10+ Tuyến Ghi Công Khai Vào `shouldBumpCatalogEpoch`, Thêm 11 Unit Test (`69/69`) & Chuẩn Hóa Số Đo UTF-8 Byte Length (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Xử lý dứt điểm 2 nhóm từ kiểm chứng độc lập sau build `dc0c297`: (1) còn 10 tuyến ghi thay đổi dữ liệu trong 3 payload công khai nhưng chưa nằm trong `shouldBumpCatalogEpoch`; (2) bảng §3.2 báo cáo trước dùng `String.length` (số ký tự UTF-16) thay vì số byte UTF-8 thật (`Buffer.byteLength` / `curl size_download`), và CHANGELOG mục 478 ghi nhầm "52 assertions" thay vì 58.

@@ -10,6 +10,13 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-335: 3 Lỗi Ẩn Trong Lõi Liên Shop Nội Bộ & Thiếu Cột `stock_quantity` Trên `seller_products` (26/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - `calculate3WaySplit` ghi cứng `isPhysical ? 0.02 : 0.05` bỏ qua cấu hình Admin; `resell.ts` so khớp `'PHYSICAL'` viết hoa trong khi D1 lưu `'physical'` viết thường; `resell.ts` gọi `syncAffiliatePriceAndStock(..., 'RESELL_PARAM_CHANGE', ...)` nhưng hàm đồng bộ không có nhánh xử lý `'RESELL_PARAM_CHANGE'` nên thay đổi MAP/hoa hồng bị bỏ qua âm thầm.
+  - `seller_products` thiếu cột `stock_quantity` và `seller-orders/index.ts` chỉ lấy mã trong `seller_codes` (chưa chặn `ANTI_LOSS_PAUSED` và chưa trừ tồn kho gốc cho hàng vật lý liên shop).
+- **Giải pháp chuẩn đã kiểm chứng (26/11/2026 - Mục 480)**:
+  - Mở rộng `wcg_marketplace_config_v1` thêm 7 tham số liên shop động (mặc định `affiliate_require_admin_approval: true`), nối phí sàn động vào `calculate3WaySplit` + `escrow_service.ts`, sửa lowercase `'physical'`, xử lý đầy đủ `'RESELL_PARAM_CHANGE'` (kèm tự khóa/phục hồi `ANTI_LOSS_PAUSED`), thêm migration `0052_seller_products_stock_quantity_v1` và bảo vệ checkout + trừ kho vật lý nguyên tử trong `seller-orders/index.ts` & `multi.ts`. Khóa hồi quy bằng `scripts/tests/test_intershop_affiliate.ts`.
+
 ### ISSUE-334: Bằng Chứng `tsc` / Test / Build Lưu Ở `scratch/` Ngoài Repo Hoặc File Log 0 Byte (26/11/2026)
 - **Triệu chứng & Rủi ro**:
   - `tsc --noEmit` khi pass xuất 0 byte (làm `docs/tsc_check_success.log` trống), còn file log full `tsc` và 2 file test được đặt trong thư mục `scratch/` ngoài Git (lặp 3 đợt `6b8c654`, `4f90677`, `4a6235b`), khiến bên kiểm chứng độc lập không thể tải qua `raw.githubusercontent.com` hoặc chạy lại test.

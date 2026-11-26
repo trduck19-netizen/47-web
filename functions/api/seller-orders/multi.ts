@@ -195,43 +195,113 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // Kiểm tra danh sách thử nghiệm tiền thật (§1.11)
       // Lưu ý: Các gian hàng ngoài danh sách này vẫn tiếp tục bán bằng ví Core bình thường; chỉ không sinh mã QR SePay tiền thật
       const isRealMoneyAllowed = isTestSellerAllowed(config, product.seller_id);
-      const isPhysical = product.product_type === 'physical';
 
       // Kiểm tra sản phẩm gán liên shop (Affiliate / Reseller)
       const isAffiliate = product.is_affiliate === 1 && Boolean(product.origin_product_id);
       const sourceProductId = isAffiliate ? product.origin_product_id : product.id;
       const supplierSellerId = isAffiliate ? product.origin_seller_id : null;
       let affiliateBreakdownJson: string | null = null;
+      let origProd: any = null;
 
       if (isAffiliate) {
-        const origProd = await env.DB
-          .prepare('SELECT price_core, resell_discount_pct, resell_commission_pct, resell_map_price, product_type FROM seller_products WHERE id = ? LIMIT 1')
+        if (!config.affiliate_enabled) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Sản phẩm "${product.name}" thuộc luồng bán lại liên shop hiện đang tạm dừng bởi Quản trị viên.`,
+              code: 'AFFILIATE_DISABLED',
+            }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+
+        origProd = await env.DB
+          .prepare('SELECT id, seller_id, price_core, resell_enabled, resell_discount_pct, resell_commission_pct, resell_map_price, product_type, stock_quantity, deleted_at FROM seller_products WHERE id = ? LIMIT 1')
           .bind(product.origin_product_id)
           .first<any>();
 
         const listing = await env.DB
-          .prepare('SELECT markup_type, markup_value, price_mode, locked_price FROM seller_affiliate_listings WHERE reseller_product_id = ? LIMIT 1')
+          .prepare('SELECT id, partnership_id, markup_type, markup_value, price_mode, locked_price, status, price_warning FROM seller_affiliate_listings WHERE reseller_product_id = ? LIMIT 1')
           .bind(product.id)
           .first<any>();
 
-        if (origProd && listing) {
-          const split = calculate3WaySplit({
-            basePrice: Number(origProd.price_core) || 0,
-            markupType: listing.markup_type || 'PERCENT',
-            markupValue: Number(listing.markup_value) || 0,
-            discountPct: Number(origProd.resell_discount_pct) || 0,
-            commissionPct: Number(origProd.resell_commission_pct) || 0,
-            isPhysical: origProd.product_type === 'physical',
-            mapPrice: Number(origProd.resell_map_price) || 0,
-            priceMode: listing.price_mode,
-            lockedPrice: listing.locked_price,
-          });
-          affiliateBreakdownJson = JSON.stringify(split);
+        if (!origProd || origProd.deleted_at || origProd.resell_enabled !== 1) {
+          return new Response(
+            JSON.stringify({ success: false, error: `Sản phẩm "${product.name}" đã ngừng bán lại từ Nhà Cung Cấp.`, code: 'SUPPLIER_DISABLED' }),
+            { status: 400, headers: CORS_HEADERS }
+          );
         }
+
+        if (!listing || listing.status !== 'ACTIVE' || listing.price_warning === 'ANTI_LOSS_PAUSED') {
+          const isAntiLoss = listing?.price_warning === 'ANTI_LOSS_PAUSED';
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: isAntiLoss
+                ? `Sản phẩm "${product.name}" đang tạm khóa chống lỗ do giá gốc thay đổi.`
+                : `Sản phẩm bán lại "${product.name}" hiện đang tạm ngừng kinh doanh.`,
+              code: isAntiLoss ? 'ANTI_LOSS_PAUSED' : 'AFFILIATE_LISTING_PAUSED',
+            }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+
+        const partnership = await env.DB
+          .prepare('SELECT status FROM seller_affiliate_partnerships WHERE id = ? LIMIT 1')
+          .bind(listing.partnership_id)
+          .first<{ status: string }>();
+
+        if (!partnership || partnership.status !== 'APPROVED') {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Liên kết bán lại cho sản phẩm "${product.name}" chưa được phê duyệt hoặc đã bị tạm khóa.`,
+              code: 'PARTNERSHIP_NOT_APPROVED',
+            }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+
+        const split = calculate3WaySplit({
+          basePrice: Number(origProd.price_core) || 0,
+          markupType: listing.markup_type || 'PERCENT',
+          markupValue: Number(listing.markup_value) || 0,
+          discountPct: Number(origProd.resell_discount_pct) || 0,
+          commissionPct: Number(origProd.resell_commission_pct) || 0,
+          isPhysical: String(origProd.product_type || '').toLowerCase() === 'physical',
+          mapPrice: Number(origProd.resell_map_price) || 0,
+          priceMode: listing.price_mode,
+          lockedPrice: listing.locked_price,
+          digitalFeePct: config.affiliate_digital_fee_pct,
+          physicalFeePct: config.affiliate_physical_fee_pct,
+        });
+
+        if (config.affiliate_auto_pause_on_loss && (split.resellerPayout < 0 || Number(product.price_core) < Number(origProd.price_core))) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Sản phẩm "${product.name}" bị tạm khóa chống lỗ do giá bán thấp hơn giá gốc NCC.`,
+              code: 'ANTI_LOSS_PAUSED',
+            }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+
+        affiliateBreakdownJson = JSON.stringify(split);
       }
 
+      const isPhysical = String((isAffiliate ? origProd?.product_type : product.product_type) || product.product_type || '').toLowerCase() === 'physical';
+
       let availableCode: any = null;
-      if (!isPhysical) {
+      if (isPhysical) {
+        const physicalStock = Number((isAffiliate ? origProd?.stock_quantity : product.stock_quantity) || 0);
+        if (physicalStock < 1) {
+          return new Response(
+            JSON.stringify({ success: false, error: `Sản phẩm vật lý "${product.name}" đã tạm hết tồn kho.`, code: 'OUT_OF_STOCK' }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+      } else {
         // Tìm 1 mã IN_STOCK để giữ mã nguyên tử (§4.1: IN_STOCK -> RESERVED)
         // Nếu là đơn liên shop thì giữ mã trực tiếp từ kho của NCC (sourceProductId)
         availableCode = await env.DB.prepare(`
@@ -290,8 +360,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         supplier_seller_id: supplierSellerId,
       });
 
-      // Statement giữ mã cho đơn con (chỉ áp dụng cho hàng số)
-      if (availableCode?.id) {
+      // Statement giữ mã (hàng số) hoặc trừ nguyên tử stock_quantity tại kho gốc (hàng vật lý)
+      if (isPhysical) {
+        reserveCodeStatements.push(
+          env.DB.prepare(`
+            UPDATE seller_products
+            SET stock_quantity = stock_quantity - 1, updated_at = ?
+            WHERE id = ? AND stock_quantity >= 1
+          `).bind(nowIso, sourceProductId)
+        );
+      } else if (availableCode?.id) {
         reserveCodeStatements.push(
           env.DB.prepare(`
             UPDATE seller_codes

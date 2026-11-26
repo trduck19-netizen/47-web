@@ -1,5 +1,6 @@
 import { ensureSchemaUpgrades } from '../../../services/d1_service';
 import { verifyStoreApiAccess } from '../../../services/store_api_service';
+import { getMarketplaceConfig } from '../../../services/marketplace_service';
 import {
   calculate3WaySplit,
   logAffiliateCall,
@@ -161,6 +162,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         .bind(productId)
         .all<any>();
 
+      const mConfig = await getMarketplaceConfig(env.DB);
       for (const listing of listingsRes.results || []) {
         const split = calculate3WaySplit({
           basePrice: nextPrice,
@@ -168,13 +170,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           markupValue: Number(listing.markup_value) || 0,
           discountPct: Number(prod.resell_discount_pct) || 0,
           commissionPct: Number(prod.resell_commission_pct) || 0,
-          isPhysical: prod.product_type === 'physical',
+          isPhysical: String(prod.product_type || '').toLowerCase() === 'physical',
           mapPrice: Number(prod.resell_map_price) || 0,
           priceMode: listing.price_mode === 'LOCKED' ? 'LOCKED' : 'FORMULA',
           lockedPrice: listing.locked_price !== null ? Number(listing.locked_price) : null,
+          digitalFeePct: mConfig.affiliate_digital_fee_pct,
+          physicalFeePct: mConfig.affiliate_physical_fee_pct,
         });
 
-        const isLossOrDisabled = nextResellEnabled === 0 || split.resellerPayout < 0 || split.sellingPrice < nextPrice;
+        const isLoss = split.resellerPayout < 0 || split.sellingPrice < nextPrice;
         const isOutOfStock = hasStockQty && nextStockQty !== null && nextStockQty <= 0;
         let nextStatus = String(listing.status || 'ACTIVE');
         let priceWarning: string | null = null;
@@ -185,10 +189,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         } else if (isOutOfStock) {
           nextStatus = 'OUT_OF_STOCK';
           priceWarning = 'OUT_OF_STOCK';
-        } else if (isLossOrDisabled) {
+        } else if (isLoss && mConfig.affiliate_auto_pause_on_loss) {
           nextStatus = 'HIDDEN';
           priceWarning = 'ANTI_LOSS_PAUSED';
           antiLossPausedListings++;
+        } else if (isLoss) {
+          nextStatus = 'ACTIVE';
+          priceWarning = `CẢNH BÁO: Giá bán (${split.sellingPrice.toLocaleString('vi-VN')} đ) thấp hơn giá vốn NCC (${nextPrice.toLocaleString('vi-VN')} đ).`;
         } else {
           nextStatus = 'ACTIVE';
           priceWarning = null;
