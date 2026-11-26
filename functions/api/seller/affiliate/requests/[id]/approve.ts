@@ -1,7 +1,7 @@
 import { verifyStoreApiAccess } from '../../../../../services/store_api_service';
 import { ensureSchemaUpgrades } from '../../../../../services/d1_service';
 import { getMarketplaceConfig } from '../../../../../services/marketplace_service';
-import { generatePairShopApiKey } from '../../../../../services/seller_affiliate_service';
+import { approvePartnershipAndIssueKey } from '../../../../../services/seller_affiliate_service';
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -110,22 +110,8 @@ export async function onRequestPost(context: { request: Request; params: any; en
       }), { status: 200, headers: CORS_HEADERS });
     }
 
-    // Sinh cặp khóa API chuyên dụng (khi Admin tắt chế độ bắt buộc duyệt)
-    const { rawKey, keyHash, keyPrefix } = await generatePairShopApiKey();
-
-    await env.DB
-      .prepare(`
-        UPDATE seller_affiliate_partnerships
-        SET status = 'APPROVED',
-            api_key_hash = ?,
-            api_key_prefix = ?,
-            one_time_raw_key = ?,
-            revoked_at = NULL,
-            updated_at = datetime('now')
-        WHERE id = ?
-      `)
-      .bind(keyHash, keyPrefix, rawKey, requestId)
-      .run();
+    // Sinh cặp khóa API chuyên dụng và kích hoạt APPROVED qua helper dùng chung
+    const { keyPrefix } = await approvePartnershipAndIssueKey(env.DB, requestId);
 
     return new Response(JSON.stringify({
       success: true,

@@ -105,6 +105,7 @@ export type ApiKeyScope =
   | 'AUTOMATION_CENTER_FULL'
   | 'SUPPLIER_CONNECTORS_FULL'
   | 'SUPPLIER_FULFILLMENT_MANAGE'
+  | 'INTERSHOP_AFFILIATE_MANAGE'
   | 'SYNC_FULL' 
   | 'API_KEYS_FULL'
   | 'HISTORY_FULL'
@@ -156,6 +157,17 @@ export const ALL_API_SCOPES: ScopeOption[] = [
     badgeText: 'text-teal-500',
     badgeBorder: 'border-teal-500/20',
     icon: Send,
+  },
+  {
+    id: 'INTERSHOP_AFFILIATE_MANAGE',
+    name: 'Liên Kết Gian Hàng Nội Bộ (Inter-Shop Affiliate API)',
+    category: 'Hệ Thống',
+    description: 'Quản lý toàn sàn các cặp liên kết gian hàng (duyệt PENDING_ADMIN, tạo cặp, tạm khóa/thu hồi) và sản phẩm bán lại liên shop (/api/admin/affiliate/*).',
+    color: 'indigo',
+    badgeBg: 'bg-indigo-500/10',
+    badgeText: 'text-indigo-500',
+    badgeBorder: 'border-indigo-500/20',
+    icon: Boxes,
   },
   {
     id: 'TELEGRAM_NOTIFY',

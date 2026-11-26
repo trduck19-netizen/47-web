@@ -270,6 +270,7 @@ async function main() {
     ['/api/crawler/ingest-upcoming-games', 'POST'],
     ['/api/admin/crawler/sources', 'POST'],
     ['/api/admin/sellers/sel_1/approve', 'POST'],
+    ['/api/admin/affiliate/partnerships/sap_1', 'PATCH'],
   ];
   for (const [p, m] of writeMustBump) {
     check(`bump_true_${m}_${p}`, shouldBumpCatalogEpoch(p, m), true);
@@ -281,6 +282,7 @@ async function main() {
     ['/api/auth/login', 'POST'],
     ['/api/user/wishlist/toggle', 'POST'],
     ['/api/admin/audit-log', 'POST'],
+    ['/api/seller/webhooks', 'POST'],
     ['/api/webhooks/affiliate-postback', 'POST'],
   ];
   for (const [p, m] of mustNotBump) {

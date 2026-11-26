@@ -615,6 +615,7 @@ export function generateRandomHmacSecret(): string {
  */
 export interface DispatchWebhookParams {
   sellerIds: string[];
+  webhookId?: string;
   orderId: string;
   orderCode: string;
   eventType: string;
@@ -640,14 +641,24 @@ export async function dispatchSupplierFulfillmentWebhook(
   }
 
   const placeholders = uniqueSellerIds.map(() => '?').join(', ');
-  const hooksRes = await db
-    .prepare(`
-      SELECT id, seller_id, name, webhook_url, encrypted_hmac_secret, events_json, timeout_ms, retry_max
-      FROM supplier_fulfillment_webhooks
-      WHERE seller_id IN (${placeholders}) AND is_active = 1
-    `)
-    .bind(...uniqueSellerIds)
-    .all<any>();
+  const targetWebhookId = (params.webhookId || '').trim();
+  const hooksRes = targetWebhookId
+    ? await db
+        .prepare(`
+          SELECT id, seller_id, name, webhook_url, encrypted_hmac_secret, events_json, timeout_ms, retry_max
+          FROM supplier_fulfillment_webhooks
+          WHERE seller_id IN (${placeholders}) AND id = ?
+        `)
+        .bind(...uniqueSellerIds, targetWebhookId)
+        .all<any>()
+    : await db
+        .prepare(`
+          SELECT id, seller_id, name, webhook_url, encrypted_hmac_secret, events_json, timeout_ms, retry_max
+          FROM supplier_fulfillment_webhooks
+          WHERE seller_id IN (${placeholders}) AND is_active = 1
+        `)
+        .bind(...uniqueSellerIds)
+        .all<any>();
 
   const hooks = hooksRes.results || [];
   const fetchFn = params.fetchImpl || fetch;

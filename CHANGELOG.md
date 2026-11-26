@@ -7,6 +7,23 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-26]
 
+### 482. Liên Kết Gian Hàng Nội Bộ — Mảnh 2: Admin API Toàn Sàn (`/api/admin/affiliate*`), Seller Self-Service Webhook HMAC (`/api/seller/webhooks*`), Sổ Đơn 3 Bên (`/api/seller/affiliate/orders`), Scope `INTERSHOP_AFFILIATE_MANAGE` (Rule 8) & PA1 Catalog Epoch (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Tiếp nối Mảnh 1 (`5dfe4ed` / `d46129c`), hoàn thiện toàn bộ tầng Backend API, phân quyền và cô lập dữ liệu cho hệ thống bán lại liên gian hàng nội bộ theo bản kế hoạch Mảnh 2 đã được chủ sở hữu duyệt (`ke_hoach_lien_ket_noi_bo_manh2_26_11.md`), giữ nguyên ranh giới (không tạo bảng D1 mới, chưa mở UI Mảnh 3/4, Đợt 2 vẫn `BLOCKED`).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Helper dùng chung & Admin API (`/api/admin/affiliate*`)* (`functions/services/seller_affiliate_service.ts`, `functions/api/seller/affiliate/requests/[id]/approve.ts`, `functions/api/admin/affiliate/index.ts`):
+     - Tách helper `approvePartnershipAndIssueKey(db, partnershipId)` dùng chung cho cả đường duyệt NCC (`approve.ts`) và đường duyệt Admin để đảm bảo đồng bộ sinh Pair Key `wcg_shop_*` và xóa `revoked_at`.
+     - Xây dựng `GET /api/admin/affiliate` (KPI tổng quan, `partnerships` selective projection tuyệt đối không trả `api_key_hash`/`one_time_raw_key`, `listings`, `sellers`, `config`), `POST /api/admin/affiliate/partnerships` (guard `affiliate_enabled`, chặn tự nối `A → A`, chặn trùng `APPROVED`), `PATCH /api/admin/affiliate/partnerships/:id` (duyệt `PENDING_ADMIN` → `APPROVED`, đình chỉ `SUSPENDED` / thu hồi `REVOKED` cascade ẩn listing với 2 mã cảnh báo `ADMIN_SUSPENDED`/`PARTNERSHIP_REVOKED` và tạm dừng `seller_products`, khôi phục `APPROVED` chỉ mở lại đúng sản phẩm thuộc partnership đó), và `PATCH /api/admin/affiliate/listings/:id` (chỉnh biên lợi nhuận, chế độ giá, gỡ cảnh báo lỗ, tự tính lại giá theo phí sàn động & MAP).
+  2. *Seller Self-Service Webhook HMAC (`/api/seller/webhooks*`)* (`functions/services/supplier_connector_service.ts`, `functions/api/seller/webhooks/index.ts`):
+     - Mở rộng `dispatchSupplierFulfillmentWebhook` nhận `webhookId?: string` (khi test đúng 1 webhook cụ thể sẽ lọc theo `id = ?` và bỏ `is_active = 1` để test được cả webhook đang tắt mà không bắn nhầm sang webhook cùng shop).
+     - Xây dựng đầy đủ CRUD + `/:id/test` + `/deliveries` + `/deliveries/:deliveryId/retry` cô lập tuyệt đối theo `seller_id === auth.seller.id` (bỏ qua `body.seller_id`, trả `403` cho mọi thao tác chéo shop, SSRF HTTPS-only qua `validateOutboundHttpsUrl`, mã hóa Fail-Closed AES-256-GCM qua `encryptSupplierSecret`, map `events_json` → `events`, 0 cột `encrypted_hmac_secret`).
+  3. *Seller 3-Way Payout Orders Ledger (`/api/seller/affiliate/orders`)* (`functions/api/seller/affiliate/orders.ts`):
+     - Cho phép shop tra cứu đơn liên shop theo `role=all|supplier|reseller`, selective projection trên cột thật của `seller_orders` (không lộ `delivered_code`/`buyer_email`/`code_id`), dẫn xuất đầy đủ `escrow_status` khớp `escrow_service.ts` cùng phân rã tiền 3 bên & `summary`.
+  4. *Worker Routing, PA1 Epoch & Rule 8* (`functions/_worker.ts`, `functions/services/cache_service.ts`, `functions/services/mission_service.ts`, `src/admin/modules/ApiKeysModule.tsx`):
+     - Đấu nối cả 3 nhóm tuyến mới vào `_worker.ts`, thêm `/api/admin/affiliate` vào `shouldBumpCatalogEpoch` (loại trừ `/api/seller/webhooks`), đăng ký scope `INTERSHOP_AFFILIATE_MANAGE` vào `hasScope` và `ALL_API_SCOPES`.
+  5. *Kiểm thử mở rộng (`scripts/tests/test_intershop_affiliate.ts`, `scripts/tests/test_catalog_epoch_sync.ts`)*:
+     - Thêm 6 test case mới (Test 13–18) nâng `test:intershop` lên **`18/18 PASS`** và 2 assertion mới nâng `test:sync-epoch` lên **`71/71 PASS`** → tổng `npm test` đạt **`223/223 PASS`** (`exit 0`).
+
 ### 481. Sửa Nốt Mảnh 1 (`84e5cc1` → Bản Hoàn Thiện): Reserve-First Có Hoàn Tác Khi Đua Tranh Kho/Ví, Đường Ghi `stock_quantity`, Hoàn Kho Đơn QR Hết Hạn Đúng Nguồn Gốc, Phí Động `escrow_service.ts`, Chặn Hồi Sinh Trạng Thái `approve.ts` & Log Thô `docs/rule10_scan.log` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Xử lý dứt điểm 3 nhóm từ kiểm chứng độc lập Mảnh 1 (`build 84e5cc1` / `HEAD 317b631`) theo đúng kế hoạch đã duyệt (`ke_hoach_sua_not_manh1_84e5cc1_26_11.md` — Bản Đã Sửa), giữ chặt phạm vi Mảnh 1 (chưa mở Mảnh 2/3/4, Đợt 2 vẫn `BLOCKED`, không tạo bảng D1 mới).

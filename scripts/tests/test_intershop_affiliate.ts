@@ -18,6 +18,15 @@ import { onRequestPost as createSellerProduct } from '../../functions/api/seller
 import { onRequestPut as updateSellerProduct } from '../../functions/api/seller/products/[id]';
 import { confirmReceivedAndRelease } from '../../functions/services/escrow_service';
 import { checkAndExpireSellerOrdersD1 } from '../../functions/services/d1_service';
+import {
+  ADMIN_SUSPENDED_WARNING,
+  PARTNERSHIP_REVOKED_WARNING,
+  handleAdminAffiliateRequest,
+} from '../../functions/api/admin/affiliate/index';
+import { handleSellerWebhooksRequest } from '../../functions/api/seller/webhooks/index';
+import { onRequestGet as getSellerAffiliateOrders } from '../../functions/api/seller/affiliate/orders';
+import { hasScope } from '../../functions/services/mission_service';
+import { shouldBumpCatalogEpoch } from '../../functions/services/cache_service';
 
 let passed = 0;
 let failed = 0;
@@ -47,6 +56,8 @@ interface MockState {
   parentOrders: Map<string, any>;
   syncLogs: any[];
   ledger: any[];
+  webhooks: Map<string, any>;
+  deliveries: Map<string, any>;
   onBeforeDebitMember?: (buyerId: string, price: number) => void;
   onBeforeStockReserve?: (productId: string) => void;
 }
@@ -65,6 +76,8 @@ function createMockDb(seed?: Partial<MockState>) {
     parentOrders: new Map(),
     syncLogs: [],
     ledger: [],
+    webhooks: new Map(),
+    deliveries: new Map(),
     ...seed,
   };
 
@@ -234,7 +247,7 @@ function createMockDb(seed?: Partial<MockState>) {
       p.updated_at = updatedAt;
       return { rows: [], changes: 1 };
     }
-    if (sql.startsWith("UPDATE seller_products SET status = 'PAUSED'")) {
+    if (sql.startsWith("UPDATE seller_products SET status = 'PAUSED'") && sql.includes('WHERE id = ?')) {
       const [updatedAt, id] = args;
       const p = state.products.get(id);
       if (!p) return { rows: [], changes: 0 };
@@ -352,7 +365,7 @@ function createMockDb(seed?: Partial<MockState>) {
     }
 
     // seller_affiliate_listings
-    if (sql.includes('FROM seller_affiliate_listings sal JOIN seller_products sp_orig')) {
+    if (sql.includes('FROM seller_affiliate_listings sal JOIN seller_products sp_orig') && sql.includes('WHERE sal.supplier_product_id = ?')) {
       const supplierProdId = args[0];
       const orig = state.products.get(supplierProdId);
       const rows = Array.from(state.listings.values())
@@ -388,7 +401,7 @@ function createMockDb(seed?: Partial<MockState>) {
       l.updated_at = updatedAt;
       return { rows: [], changes: 1 };
     }
-    if (sql.startsWith("UPDATE seller_affiliate_listings SET status = 'SUPPLIER_DISABLED'")) {
+    if (sql.startsWith("UPDATE seller_affiliate_listings SET status = 'SUPPLIER_DISABLED', updated_at = ? WHERE id = ?")) {
       const [updatedAt, id] = args;
       const l = state.listings.get(id);
       if (!l) return { rows: [], changes: 0 };
@@ -575,6 +588,382 @@ function createMockDb(seed?: Partial<MockState>) {
         state.ledger.push({ id: args[0], seller_id: args[1], order_id: args[2], type: args[3], amount_core: args[4], reason: args[9] });
       }
       return { rows: [], changes: 1 };
+    }
+
+    // --- Mảnh 2 Mock Handlers: Admin Affiliate, Seller Webhooks & Seller Affiliate Orders ---
+    // Active sellers list for Admin GET /api/admin/affiliate
+    if (sql.startsWith("SELECT id, name, slug, status FROM sellers WHERE deleted_at IS NULL AND status IN ('ACTIVE', 'TRIAL')")) {
+      const rows = Array.from(state.sellers.values())
+        .filter((s) => !s.deleted_at && (s.status === 'ACTIVE' || s.status === 'TRIAL'))
+        .map((s) => ({ id: s.id, name: s.name, slug: s.slug, status: s.status }));
+      return { rows, changes: 0 };
+    }
+    if (sql.startsWith('SELECT id, name, status FROM sellers WHERE id = ? AND deleted_at IS NULL')) {
+      const s = state.sellers.get(args[0]);
+      return { rows: s && !s.deleted_at ? [{ id: s.id, name: s.name, status: s.status }] : [], changes: 0 };
+    }
+
+    // Admin GET partnerships (selective projection)
+    if (sql.startsWith('SELECT sap.id, sap.supplier_seller_id, sap.reseller_seller_id, sap.status')) {
+      const rows = Array.from(state.partnerships.values()).map((p) => {
+        const sup = state.sellers.get(p.supplier_seller_id);
+        const res = state.sellers.get(p.reseller_seller_id);
+        const activeListings = Array.from(state.listings.values()).filter(
+          (l) => l.partnership_id === p.id && l.status === 'ACTIVE'
+        ).length;
+        return {
+          id: p.id,
+          supplier_seller_id: p.supplier_seller_id,
+          reseller_seller_id: p.reseller_seller_id,
+          status: p.status,
+          api_key_prefix: p.api_key_prefix || '',
+          created_at: p.created_at || '2026-11-26T00:00:00Z',
+          updated_at: p.updated_at || '2026-11-26T00:00:00Z',
+          revoked_at: p.revoked_at ?? null,
+          supplier_name: sup?.name || '',
+          supplier_slug: sup?.slug || '',
+          reseller_name: res?.name || '',
+          reseller_slug: res?.slug || '',
+          active_listings_count: activeListings,
+        };
+      });
+      return { rows, changes: 0 };
+    }
+
+    // Admin GET listings
+    if (sql.startsWith('SELECT sal.id, sal.partnership_id, sal.supplier_seller_id')) {
+      const rows = Array.from(state.listings.values()).map((l) => {
+        const orig = state.products.get(l.supplier_product_id);
+        const resProd = state.products.get(l.reseller_product_id);
+        const sup = state.sellers.get(l.supplier_seller_id);
+        const res = state.sellers.get(l.reseller_seller_id);
+        return {
+          ...l,
+          product_name: orig?.name || '',
+          cover_url: orig?.cover_url || '',
+          product_type: orig?.product_type || 'digital',
+          origin_price: orig?.price_core || 0,
+          origin_stock_quantity: orig?.stock_quantity || 0,
+          resell_map_price: orig?.resell_map_price || 0,
+          resell_discount_pct: orig?.resell_discount_pct || 0,
+          resell_commission_pct: orig?.resell_commission_pct || 0,
+          selling_price: resProd?.price_core || 0,
+          reseller_product_status: resProd?.status || 'APPROVED',
+          supplier_name: sup?.name || '',
+          reseller_name: res?.name || '',
+        };
+      });
+      return { rows, changes: 0 };
+    }
+
+    // Admin PATCH partnership lookup & updates
+    if (sql.startsWith('SELECT id, supplier_seller_id, reseller_seller_id, status, api_key_hash, api_key_prefix FROM seller_affiliate_partnerships WHERE id = ?')) {
+      const p = state.partnerships.get(args[0]);
+      return { rows: p ? [p] : [], changes: 0 };
+    }
+    if (sql.startsWith("UPDATE seller_affiliate_partnerships SET status = 'APPROVED', revoked_at = NULL")) {
+      const [updatedAt, id] = args;
+      const p = state.partnerships.get(id);
+      if (!p) return { rows: [], changes: 0 };
+      p.status = 'APPROVED';
+      p.revoked_at = null;
+      p.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith("UPDATE seller_affiliate_partnerships SET status = 'SUSPENDED'")) {
+      const [revokedAt, updatedAt, id] = args;
+      const p = state.partnerships.get(id);
+      if (!p) return { rows: [], changes: 0 };
+      p.status = 'SUSPENDED';
+      p.revoked_at = revokedAt;
+      p.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith("UPDATE seller_affiliate_partnerships SET status = 'REVOKED'")) {
+      const [revokedAt, updatedAt, id] = args;
+      const p = state.partnerships.get(id);
+      if (!p) return { rows: [], changes: 0 };
+      p.status = 'REVOKED';
+      p.api_key_hash = '';
+      p.one_time_raw_key = null;
+      p.revoked_at = revokedAt;
+      p.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith("UPDATE seller_affiliate_partnerships SET status = 'REJECTED'")) {
+      const [updatedAt, id] = args;
+      const p = state.partnerships.get(id);
+      if (!p) return { rows: [], changes: 0 };
+      p.status = 'REJECTED';
+      p.one_time_raw_key = null;
+      p.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
+    }
+
+    // Admin cascade listings & products on SUSPEND / REVOKE / RESTORE
+    if (sql.startsWith("SELECT id, reseller_product_id FROM seller_affiliate_listings WHERE partnership_id = ? AND status = 'SUPPLIER_DISABLED' AND price_warning = ?")) {
+      const [partnershipId, warning] = args;
+      const rows = Array.from(state.listings.values())
+        .filter((l) => l.partnership_id === partnershipId && l.status === 'SUPPLIER_DISABLED' && l.price_warning === warning)
+        .map((l) => ({ id: l.id, reseller_product_id: l.reseller_product_id }));
+      return { rows, changes: 0 };
+    }
+    if (sql.startsWith("UPDATE seller_affiliate_listings SET status = 'ACTIVE', price_warning = NULL")) {
+      const [updatedAt, id, partnershipId, warning] = args;
+      const l = state.listings.get(id);
+      if (!l || l.partnership_id !== partnershipId || l.price_warning !== warning) return { rows: [], changes: 0 };
+      l.status = 'ACTIVE';
+      l.price_warning = null;
+      l.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith("UPDATE seller_products SET status = 'APPROVED', updated_at = ? WHERE id = ? AND status = 'PAUSED'")) {
+      const [updatedAt, id] = args;
+      const p = state.products.get(id);
+      if (!p || p.status !== 'PAUSED') return { rows: [], changes: 0 };
+      p.status = 'APPROVED';
+      p.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith("UPDATE seller_affiliate_listings SET status = 'SUPPLIER_DISABLED', price_warning = ?")) {
+      const [warning, updatedAt, partnershipId] = args;
+      let changed = 0;
+      for (const l of state.listings.values()) {
+        if (l.partnership_id === partnershipId && l.status !== 'HIDDEN') {
+          l.status = 'SUPPLIER_DISABLED';
+          l.price_warning = warning;
+          l.updated_at = updatedAt;
+          changed++;
+        }
+      }
+      return { rows: [], changes: changed };
+    }
+    if (sql.startsWith("UPDATE seller_products SET status = 'PAUSED', updated_at = ? WHERE id IN ( SELECT reseller_product_id FROM seller_affiliate_listings WHERE partnership_id = ? )")) {
+      const [updatedAt, partnershipId] = args;
+      const targetIds = new Set(
+        Array.from(state.listings.values())
+          .filter((l) => l.partnership_id === partnershipId)
+          .map((l) => l.reseller_product_id)
+      );
+      let changed = 0;
+      for (const p of state.products.values()) {
+        if (targetIds.has(p.id) && p.status === 'APPROVED') {
+          p.status = 'PAUSED';
+          p.updated_at = updatedAt;
+          changed++;
+        }
+      }
+      return { rows: [], changes: changed };
+    }
+
+    // Admin PATCH listing lookup & updates
+    if (sql.startsWith('SELECT sal.*, sp_orig.price_core AS origin_price')) {
+      const l = state.listings.get(args[0]);
+      if (!l) return { rows: [], changes: 0 };
+      const orig = state.products.get(l.supplier_product_id);
+      if (!orig) return { rows: [], changes: 0 };
+      return {
+        rows: [
+          {
+            ...l,
+            origin_price: orig.price_core,
+            resell_discount_pct: orig.resell_discount_pct,
+            resell_commission_pct: orig.resell_commission_pct,
+            resell_map_price: orig.resell_map_price,
+            product_type: orig.product_type,
+          },
+        ],
+        changes: 0,
+      };
+    }
+    if (sql.startsWith('UPDATE seller_affiliate_listings SET markup_type = ?')) {
+      const [markupType, markupValue, priceMode, lockedPrice, showSupplier, status, priceWarning, updatedAt, id] = args;
+      const l = state.listings.get(id);
+      if (!l) return { rows: [], changes: 0 };
+      l.markup_type = markupType;
+      l.markup_value = markupValue;
+      l.price_mode = priceMode;
+      l.locked_price = lockedPrice;
+      l.show_supplier = showSupplier;
+      l.status = status;
+      l.price_warning = priceWarning;
+      l.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith('UPDATE seller_products SET price_core = ?, status = ?, updated_at = ? WHERE id = ?')) {
+      const [priceCore, status, updatedAt, id] = args;
+      const p = state.products.get(id);
+      if (!p) return { rows: [], changes: 0 };
+      p.price_core = priceCore;
+      p.status = status;
+      p.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
+    }
+
+    // Seller Webhooks (supplier_fulfillment_webhooks & supplier_fulfillment_deliveries)
+    if (sql.startsWith('INSERT INTO supplier_fulfillment_webhooks')) {
+      const [id, seller_id, name, webhook_url, encrypted_hmac_secret, secret_prefix, events_json, is_active, timeout_ms, retry_max, created_at, updated_at] = args;
+      state.webhooks.set(id, {
+        id, seller_id, name, webhook_url, encrypted_hmac_secret, secret_prefix,
+        events_json, is_active, timeout_ms, retry_max, created_at, updated_at,
+      });
+      return { rows: [], changes: 1 };
+    }
+    if (sql.includes('FROM supplier_fulfillment_webhooks WHERE id = ? AND seller_id = ?')) {
+      const w = state.webhooks.get(args[0]);
+      if (!w || w.seller_id !== args[1]) return { rows: [], changes: 0 };
+      const { encrypted_hmac_secret: _enc, ...safe } = w;
+      return { rows: [safe], changes: 0 };
+    }
+    if (sql.startsWith('SELECT id, seller_id, name FROM supplier_fulfillment_webhooks WHERE id = ?') || sql.startsWith('SELECT id, seller_id FROM supplier_fulfillment_webhooks WHERE id = ?')) {
+      const w = state.webhooks.get(args[0]);
+      return { rows: w ? [{ id: w.id, seller_id: w.seller_id, name: w.name }] : [], changes: 0 };
+    }
+    if (sql.startsWith('SELECT * FROM supplier_fulfillment_webhooks WHERE id = ?')) {
+      const w = state.webhooks.get(args[0]);
+      return { rows: w ? [w] : [], changes: 0 };
+    }
+    if (sql.includes('FROM supplier_fulfillment_webhooks WHERE seller_id = ?')) {
+      const rows = Array.from(state.webhooks.values())
+        .filter((w) => w.seller_id === args[0])
+        .map((w) => {
+          const { encrypted_hmac_secret: _enc, ...safe } = w;
+          return safe;
+        });
+      return { rows, changes: 0 };
+    }
+    if (sql.includes('FROM supplier_fulfillment_webhooks WHERE seller_id IN')) {
+      if (sql.includes('AND id = ?')) {
+        const targetWebhookId = args[args.length - 1];
+        const sellerSet = new Set(args.slice(0, -1));
+        const rows = Array.from(state.webhooks.values()).filter(
+          (w) => sellerSet.has(w.seller_id) && w.id === targetWebhookId
+        );
+        return { rows, changes: 0 };
+      }
+      const sellerSet = new Set(args);
+      const rows = Array.from(state.webhooks.values()).filter(
+        (w) => sellerSet.has(w.seller_id) && Number(w.is_active) === 1
+      );
+      return { rows, changes: 0 };
+    }
+    if (sql.startsWith('UPDATE supplier_fulfillment_webhooks SET')) {
+      const id = args[args.length - 2];
+      const sellerId = args[args.length - 1];
+      const w = state.webhooks.get(id);
+      if (!w || w.seller_id !== sellerId) return { rows: [], changes: 0 };
+      const setClause = sql.slice('UPDATE supplier_fulfillment_webhooks SET '.length, sql.indexOf(' WHERE '));
+      const cols = setClause.split(',').map((part) => part.trim().split('=')[0].trim());
+      cols.forEach((col, idx) => {
+        w[col] = args[idx];
+      });
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith('DELETE FROM supplier_fulfillment_webhooks WHERE id = ? AND seller_id = ?')) {
+      const w = state.webhooks.get(args[0]);
+      if (!w || w.seller_id !== args[1]) return { rows: [], changes: 0 };
+      state.webhooks.delete(args[0]);
+      return { rows: [], changes: 1 };
+    }
+
+    // supplier_fulfillment_deliveries
+    if (sql.startsWith('INSERT INTO supplier_fulfillment_deliveries')) {
+      const [id, webhook_id, seller_id, order_id, order_code, event_type, request_payload_json, http_status, response_snippet, attempts, delivery_status, external_fulfillment_ref, error_message, created_at, delivered_at] = args;
+      state.deliveries.set(id, {
+        id, webhook_id, seller_id, order_id, order_code, event_type, request_payload_json,
+        http_status, response_snippet, attempts, delivery_status, external_fulfillment_ref,
+        error_message, created_at, delivered_at,
+      });
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith('SELECT id, seller_id FROM supplier_fulfillment_deliveries WHERE id = ?')) {
+      const d = state.deliveries.get(args[0]);
+      return { rows: d ? [{ id: d.id, seller_id: d.seller_id }] : [], changes: 0 };
+    }
+    if (sql.startsWith('SELECT * FROM supplier_fulfillment_deliveries WHERE id = ?')) {
+      const d = state.deliveries.get(args[0]);
+      return { rows: d ? [d] : [], changes: 0 };
+    }
+    if (sql.includes('FROM supplier_fulfillment_deliveries d')) {
+      const sellerId = args[0];
+      const webhookIdFilter = sql.includes('AND d.webhook_id = ?') ? args[1] : null;
+      const rows = Array.from(state.deliveries.values())
+        .filter((d) => d.seller_id === sellerId && (!webhookIdFilter || d.webhook_id === webhookIdFilter))
+        .map((d) => {
+          const w = state.webhooks.get(d.webhook_id);
+          return { ...d, webhook_name: w?.name || '', webhook_url: w?.webhook_url || '' };
+        });
+      return { rows, changes: 0 };
+    }
+    if (sql.startsWith('UPDATE supplier_fulfillment_deliveries SET')) {
+      const deliveryId = args[args.length - 1];
+      const d = state.deliveries.get(deliveryId);
+      if (!d) return { rows: [], changes: 0 };
+      d.http_status = args[0];
+      d.response_snippet = args[1];
+      d.delivery_status = args[2];
+      d.error_message = args[3];
+      d.attempts = (Number(d.attempts) || 0) + 1;
+      return { rows: [], changes: 1 };
+    }
+    if (sql.startsWith('DELETE FROM supplier_fulfillment_deliveries WHERE webhook_id = ? AND seller_id = ?')) {
+      let deleted = 0;
+      for (const [k, d] of state.deliveries.entries()) {
+        if (d.webhook_id === args[0] && d.seller_id === args[1]) {
+          state.deliveries.delete(k);
+          deleted++;
+        }
+      }
+      return { rows: [], changes: deleted };
+    }
+
+    // Seller Affiliate Orders Ledger (GET /api/seller/affiliate/orders)
+    if (sql.startsWith('SELECT so.id, so.order_code, so.seller_id, so.supplier_seller_id')) {
+      let rows = Array.from(state.orders.values()).filter(
+        (o) => Number(o.is_affiliate_order) === 1 && !o.deleted_at
+      );
+      let argIdx = 0;
+      if (sql.includes('AND so.supplier_seller_id = ?')) {
+        const sid = args[argIdx++];
+        rows = rows.filter((o) => o.supplier_seller_id === sid);
+      } else if (sql.includes('AND so.seller_id = ?')) {
+        const sid = args[argIdx++];
+        rows = rows.filter((o) => o.seller_id === sid);
+      } else if (sql.includes('AND (so.supplier_seller_id = ? OR so.seller_id = ?)')) {
+        const s1 = args[argIdx++];
+        const s2 = args[argIdx++];
+        rows = rows.filter((o) => o.supplier_seller_id === s1 || o.seller_id === s2);
+      }
+      if (sql.includes('AND so.status = ?')) {
+        const st = args[argIdx++];
+        rows = rows.filter((o) => o.status === st);
+      }
+      const mapped = rows.map((o) => {
+        const sup = state.sellers.get(o.supplier_seller_id);
+        const res = state.sellers.get(o.seller_id);
+        return {
+          id: o.id,
+          order_code: o.order_code,
+          seller_id: o.seller_id,
+          supplier_seller_id: o.supplier_seller_id,
+          product_id: o.product_id,
+          product_name: o.product_name || 'Product',
+          product_type: o.product_type || 'digital',
+          price_core: o.price_core || 0,
+          payment_method: o.payment_method || 'CORE',
+          status: o.status,
+          hold_until: o.hold_until || null,
+          released_at: o.released_at || null,
+          fee_core: o.fee_core || 0,
+          refund_core: o.refund_core || 0,
+          affiliate_breakdown: o.affiliate_breakdown || null,
+          created_at: o.created_at || '2026-11-26T00:00:00Z',
+          updated_at: o.updated_at || '2026-11-26T00:00:00Z',
+          supplier_name: sup?.name || '',
+          reseller_name: res?.name || '',
+        };
+      });
+      return { rows: mapped, changes: 0 };
     }
     if (sql.includes('FROM supplier_webhooks') || sql.startsWith('INSERT INTO admin_audit_logs') || sql.startsWith('SELECT * FROM seller_orders WHERE status =')) {
       return { rows: [], changes: 0 };
@@ -1328,7 +1717,565 @@ async function main() {
     }
   });
 
-  console.log(`\n[Inter-Shop Affiliate Mảnh 1 Summary] Passed: ${passed}, Failed: ${failed}`);
+  await test('13. Admin GET /api/admin/affiliate (selective projection & KPI) & PATCH PENDING_ADMIN -> APPROVED (issues wcg_shop_ key + affiliate_enabled guard)', async () => {
+    const db = createMockDb();
+    const adminEnv = { DB: db, ADMIN_API_KEY: 'admin_master_test_key_2026_secure' };
+
+    db.state.sellers.set('sel_a', { id: 'sel_a', owner_member_id: 'mem_a', name: 'Shop A', slug: 'shop-a', status: 'ACTIVE' });
+    db.state.sellers.set('sel_b', { id: 'sel_b', owner_member_id: 'mem_b', name: 'Shop B', slug: 'shop-b', status: 'ACTIVE' });
+    db.state.partnerships.set('sap_wait', {
+      id: 'sap_wait',
+      supplier_seller_id: 'sel_a',
+      reseller_seller_id: 'sel_b',
+      status: 'PENDING_ADMIN',
+      api_key_hash: 'secret_hash_must_never_leak',
+      api_key_prefix: '',
+      one_time_raw_key: 'wcg_shop_must_never_leak_raw',
+      revoked_at: '2026-01-01T00:00:00Z',
+    });
+
+    // Unauthenticated must return 401
+    const unauthRes = await handleAdminAffiliateRequest({
+      request: new Request('https://admin.example.com/api/admin/affiliate', { method: 'GET' }),
+      env: adminEnv,
+    });
+    assert.equal(unauthRes.status, 401);
+
+    // Authenticated GET returns KPIs & strips api_key_hash / one_time_raw_key
+    const getRes = await handleAdminAffiliateRequest({
+      request: new Request('https://admin.example.com/api/admin/affiliate', {
+        method: 'GET',
+        headers: { 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+      }),
+      env: adminEnv,
+    });
+    assert.equal(getRes.status, 200);
+    const getData: any = await getRes.json();
+    assert.equal(getData.success, true);
+    assert.equal(getData.kpis.pending_admin_count, 1);
+    assert.equal(getData.partnerships.length, 1);
+    assert.equal('api_key_hash' in getData.partnerships[0], false);
+    assert.equal('one_time_raw_key' in getData.partnerships[0], false);
+
+    // If affiliate_enabled=false -> Admin PATCH APPROVED blocked with 403 AFFILIATE_DISABLED
+    db.state.settings.set('wcg_marketplace_config_v1', JSON.stringify({
+      ...DEFAULT_MARKETPLACE_CONFIG,
+      affiliate_enabled: false,
+    }));
+    const disabledRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships/sap_wait', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ status: 'APPROVED' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships', 'sap_wait']
+    );
+    assert.equal(disabledRes.status, 403);
+    assert.equal(((await disabledRes.json()) as any).code, 'AFFILIATE_DISABLED');
+
+    // Re-enable affiliate -> Admin approves PENDING_ADMIN -> APPROVED & rotates/issues Pair Key
+    db.state.settings.set('wcg_marketplace_config_v1', JSON.stringify({ ...DEFAULT_MARKETPLACE_CONFIG, affiliate_enabled: true }));
+    db.state.partnerships.get('sap_wait').api_key_hash = '';
+    const approveRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships/sap_wait', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ status: 'APPROVED' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships', 'sap_wait']
+    );
+    assert.equal(approveRes.status, 200);
+    const saved = db.state.partnerships.get('sap_wait');
+    assert.equal(saved.status, 'APPROVED');
+    assert.equal(saved.revoked_at, null);
+    assert.equal(saved.api_key_hash.length, 64);
+    assert.ok(String(saved.one_time_raw_key).startsWith('wcg_shop_'));
+  });
+
+  await test('14. Admin SUSPENDED/REVOKED cascades listings with ADMIN_SUSPENDED/PARTNERSHIP_REVOKED & APPROVED restores only matching partnership', async () => {
+    const db = createMockDb();
+    const adminEnv = { DB: db, ADMIN_API_KEY: 'admin_master_test_key_2026_secure' };
+
+    db.state.partnerships.set('sap_live', {
+      id: 'sap_live',
+      supplier_seller_id: 'sel_a',
+      reseller_seller_id: 'sel_b',
+      status: 'APPROVED',
+      api_key_hash: 'a'.repeat(64),
+      api_key_prefix: 'wcg_shop_aaaa••••bbbb',
+      one_time_raw_key: null,
+      revoked_at: null,
+    });
+    db.state.products.set('prod_res_1', { id: 'prod_res_1', seller_id: 'sel_b', status: 'APPROVED', price_core: 200 });
+    db.state.products.set('prod_unrelated_paused', { id: 'prod_unrelated_paused', seller_id: 'sel_b', status: 'PAUSED', price_core: 300 });
+    db.state.listings.set('sal_live', {
+      id: 'sal_live',
+      partnership_id: 'sap_live',
+      supplier_seller_id: 'sel_a',
+      reseller_seller_id: 'sel_b',
+      supplier_product_id: 'prod_orig_1',
+      reseller_product_id: 'prod_res_1',
+      status: 'ACTIVE',
+      price_warning: null,
+    });
+
+    // 14a. SUSPEND -> cascades ADMIN_SUSPENDED + PAUSED
+    const suspRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships/sap_live', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ status: 'SUSPENDED' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships', 'sap_live']
+    );
+    assert.equal(suspRes.status, 200);
+    assert.equal(db.state.partnerships.get('sap_live').status, 'SUSPENDED');
+    assert.equal(db.state.listings.get('sal_live').status, 'SUPPLIER_DISABLED');
+    assert.equal(db.state.listings.get('sal_live').price_warning, ADMIN_SUSPENDED_WARNING);
+    assert.equal(db.state.products.get('prod_res_1').status, 'PAUSED');
+
+    // 14b. Re-APPROVE -> restores sal_live & prod_res_1 ONLY, keeps unrelated PAUSED product untouched
+    const restoreRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships/sap_live', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ status: 'APPROVED' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships', 'sap_live']
+    );
+    assert.equal(restoreRes.status, 200);
+    assert.equal(db.state.listings.get('sal_live').status, 'ACTIVE');
+    assert.equal(db.state.listings.get('sal_live').price_warning, null);
+    assert.equal(db.state.products.get('prod_res_1').status, 'APPROVED');
+    assert.equal(db.state.products.get('prod_unrelated_paused').status, 'PAUSED');
+
+    // 14c. REVOKE -> wipes key hash & sets PARTNERSHIP_REVOKED
+    const revRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships/sap_live', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ status: 'REVOKED' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships', 'sap_live']
+    );
+    assert.equal(revRes.status, 200);
+    assert.equal(db.state.partnerships.get('sap_live').status, 'REVOKED');
+    assert.equal(db.state.partnerships.get('sap_live').api_key_hash, '');
+    assert.equal(db.state.listings.get('sal_live').status, 'SUPPLIER_DISABLED');
+    assert.equal(db.state.listings.get('sal_live').price_warning, PARTNERSHIP_REVOKED_WARNING);
+    assert.equal(db.state.products.get('prod_res_1').status, 'PAUSED');
+  });
+
+  await test('15. Admin POST /api/admin/affiliate/partnerships & PATCH /api/admin/affiliate/listings/:id', async () => {
+    const db = createMockDb();
+    const adminEnv = { DB: db, ADMIN_API_KEY: 'admin_master_test_key_2026_secure' };
+    db.state.sellers.set('sel_a', { id: 'sel_a', name: 'Shop A', slug: 'shop-a', status: 'ACTIVE' });
+    db.state.sellers.set('sel_b', { id: 'sel_b', name: 'Shop B', slug: 'shop-b', status: 'ACTIVE' });
+
+    // Self-loop blocked 400
+    const selfRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ supplier_seller_id: 'sel_a', reseller_seller_id: 'sel_a' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships']
+    );
+    assert.equal(selfRes.status, 400);
+
+    // Valid direct creation -> 201 APPROVED
+    const okCreate = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ supplier_seller_id: 'sel_a', reseller_seller_id: 'sel_b' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships']
+    );
+    assert.equal(okCreate.status, 201);
+
+    // Duplicate APPROVED blocked 409
+    const dupRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/partnerships', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ supplier_seller_id: 'sel_a', reseller_seller_id: 'sel_b' }),
+        }),
+        env: adminEnv,
+      },
+      ['partnerships']
+    );
+    assert.equal(dupRes.status, 409);
+
+    // PATCH listing updates markup, enforces MAP, clears ANTI_LOSS_PAUSED & restores seller_products
+    db.state.products.set('prod_sup', { id: 'prod_sup', seller_id: 'sel_a', price_core: 1000, resell_map_price: 1250, resell_discount_pct: 5, resell_commission_pct: 5, product_type: 'digital' });
+    db.state.products.set('prod_res', { id: 'prod_res', seller_id: 'sel_b', price_core: 900, status: 'PAUSED' });
+    db.state.listings.set('sal_edit', {
+      id: 'sal_edit',
+      partnership_id: 'sap_any',
+      supplier_seller_id: 'sel_a',
+      reseller_seller_id: 'sel_b',
+      supplier_product_id: 'prod_sup',
+      reseller_product_id: 'prod_res',
+      markup_type: 'PERCENT',
+      markup_value: 5,
+      price_mode: 'FORMULA',
+      locked_price: null,
+      show_supplier: 1,
+      status: 'HIDDEN',
+      price_warning: 'ANTI_LOSS_PAUSED',
+    });
+
+    const patchListRes = await handleAdminAffiliateRequest(
+      {
+        request: new Request('https://admin.example.com/api/admin/affiliate/listings/sal_edit', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminEnv.ADMIN_API_KEY },
+          body: JSON.stringify({ markup_type: 'PERCENT', markup_value: 10, status: 'ACTIVE', clear_warning: true }),
+        }),
+        env: adminEnv,
+      },
+      ['listings', 'sal_edit']
+    );
+    assert.equal(patchListRes.status, 200);
+    const patchListJson: any = await patchListRes.json();
+    // Base 1000 + 10% = 1100 < MAP 1250 -> MAP enforces 1250!
+    assert.equal(patchListJson.listing.selling_price, 1250);
+    assert.equal(patchListJson.listing.is_map_enforced, true);
+    assert.equal(db.state.products.get('prod_res').price_core, 1250);
+    assert.equal(db.state.products.get('prod_res').status, 'APPROVED');
+    assert.equal(db.state.listings.get('sal_edit').price_warning, null);
+  });
+
+  await test('16. Seller Self-Service Webhooks: tenant isolation (403 cross-shop), SSRF, fail-closed, events mapping & webhookId test', async () => {
+    const db = createMockDb();
+    const envWithKey = { DB: db, MARKETPLACE_CODE_KEY: 'seller_webhook_aes_key_32bytes_ok!' };
+    const envNoKey = { DB: db };
+
+    db.state.members.set('mem_a', { id: 'mem_a', username: 'shopa', email: 'a@example.com', status: 'ACTIVE' });
+    db.state.members.set('mem_b', { id: 'mem_b', username: 'shopb', email: 'b@example.com', status: 'ACTIVE' });
+    db.state.sessions.set('tok_a', { id: 'sa', member_id: 'mem_a' });
+    db.state.sessions.set('tok_b', { id: 'sb', member_id: 'mem_b' });
+    db.state.sellers.set('sel_a', { id: 'sel_a', owner_member_id: 'mem_a', name: 'Shop A', slug: 'shop-a', status: 'ACTIVE' });
+    db.state.sellers.set('sel_b', { id: 'sel_b', owner_member_id: 'mem_b', name: 'Shop B', slug: 'shop-b', status: 'ACTIVE' });
+
+    // SSRF blocked 400
+    for (const badUrl of ['http://hooks.example.com/cb', 'https://127.0.0.1/cb', 'https://169.254.169.254/latest']) {
+      const ssrfRes = await handleSellerWebhooksRequest({
+        request: new Request('https://shop.example.com/api/seller/webhooks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok_a' },
+          body: JSON.stringify({ name: 'Bad', webhook_url: badUrl }),
+        }),
+        env: envWithKey,
+      });
+      assert.equal(ssrfRes.status, 400);
+    }
+
+    // Fail-closed 500 when encryption key missing
+    const noKeyRes = await handleSellerWebhooksRequest({
+      request: new Request('https://shop.example.com/api/seller/webhooks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok_a' },
+        body: JSON.stringify({ name: 'NoKey', webhook_url: 'https://hooks.example.com/order' }),
+      }),
+      env: envNoKey,
+    });
+    assert.equal(noKeyRes.status, 500);
+
+    // Shop A creates disabled webhook (is_active: false) trying to spoof seller_id: 'sel_b' -> forced to 'sel_a'!
+    const createRes = await handleSellerWebhooksRequest({
+      request: new Request('https://shop.example.com/api/seller/webhooks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok_a' },
+        body: JSON.stringify({
+          seller_id: 'sel_b',
+          name: 'Shop A Inactive Hook',
+          webhook_url: 'https://hooks.example.com/shop-a',
+          events: ['order.paid', 'order.refunded'],
+          is_active: false,
+        }),
+      }),
+      env: envWithKey,
+    });
+    assert.equal(createRes.status, 201);
+    const createdJson: any = await createRes.json();
+    const hookId = createdJson.webhook.id;
+    assert.equal(createdJson.webhook.seller_id, 'sel_a');
+    assert.deepEqual(createdJson.webhook.events, ['order.paid', 'order.refunded']);
+    assert.equal('encrypted_hmac_secret' in createdJson.webhook, false);
+    assert.ok(String(createdJson.raw_hmac_secret).length >= 16);
+
+    // Shop A also creates a second active sibling hook -> testing hookId must ONLY call hookId (even though is_active=0!)
+    const createRes2 = await handleSellerWebhooksRequest({
+      request: new Request('https://shop.example.com/api/seller/webhooks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok_a' },
+        body: JSON.stringify({
+          name: 'Shop A Active Sibling',
+          webhook_url: 'https://hooks.example.com/sibling',
+          is_active: true,
+        }),
+      }),
+      env: envWithKey,
+    });
+    assert.equal(createRes2.status, 201);
+
+    const calledUrls: string[] = [];
+    const mockFetch: typeof fetch = async (input: any) => {
+      calledUrls.push(String(input));
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    };
+
+    const pingRes = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/${hookId}/test`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer tok_a' },
+        }),
+        env: envWithKey,
+        fetchImpl: mockFetch,
+      },
+      [hookId, 'test']
+    );
+    assert.equal(pingRes.status, 200);
+    const pingJson: any = await pingRes.json();
+    assert.equal(pingJson.totalMatched, 1);
+    assert.equal(pingJson.delivered, 1);
+    assert.deepEqual(calledUrls, ['https://hooks.example.com/shop-a']); // ONLY targeted inactive webhook fired, NOT sibling!
+
+    const deliveryId = pingJson.deliveryIds[0];
+
+    // Cross-tenant isolation: Shop B CANNOT list, patch, delete, test, or retry Shop A's webhook/delivery
+    const getB = await handleSellerWebhooksRequest({
+      request: new Request('https://shop.example.com/api/seller/webhooks', {
+        method: 'GET',
+        headers: { Authorization: 'Bearer tok_b' },
+      }),
+      env: envWithKey,
+    });
+    assert.equal(getB.status, 200);
+    const getBJson: any = await getB.json();
+    assert.equal(getBJson.webhooks.length, 0);
+    assert.equal(getBJson.deliveries.length, 0);
+
+    const patchB = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/${hookId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok_b' },
+          body: JSON.stringify({ name: 'Hijacked' }),
+        }),
+        env: envWithKey,
+      },
+      [hookId]
+    );
+    assert.equal(patchB.status, 403);
+
+    const testB = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/${hookId}/test`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer tok_b' },
+        }),
+        env: envWithKey,
+        fetchImpl: mockFetch,
+      },
+      [hookId, 'test']
+    );
+    assert.equal(testB.status, 403);
+
+    const retryB = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/deliveries/${deliveryId}/retry`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer tok_b' },
+        }),
+        env: envWithKey,
+        fetchImpl: mockFetch,
+      },
+      ['deliveries', deliveryId, 'retry']
+    );
+    assert.equal(retryB.status, 403);
+
+    const delB = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/${hookId}`, {
+          method: 'DELETE',
+          headers: { Authorization: 'Bearer tok_b' },
+        }),
+        env: envWithKey,
+      },
+      [hookId]
+    );
+    assert.equal(delB.status, 403);
+    assert.ok(db.state.webhooks.has(hookId));
+  });
+
+  await test('17. GET /api/seller/affiliate/orders: 3-way payout breakdown, full escrow_status mapping & zero code/email leakage', async () => {
+    const db = createMockDb();
+    db.state.members.set('mem_a', { id: 'mem_a', username: 'shopa', email: 'a@example.com', status: 'ACTIVE' });
+    db.state.members.set('mem_b', { id: 'mem_b', username: 'shopb', email: 'b@example.com', status: 'ACTIVE' });
+    db.state.members.set('mem_c', { id: 'mem_c', username: 'shopc', email: 'c@example.com', status: 'ACTIVE' });
+    db.state.sessions.set('tok_a', { id: 'sa', member_id: 'mem_a' });
+    db.state.sessions.set('tok_b', { id: 'sb', member_id: 'mem_b' });
+    db.state.sessions.set('tok_c', { id: 'sc', member_id: 'mem_c' });
+    db.state.sellers.set('sel_a', { id: 'sel_a', owner_member_id: 'mem_a', name: 'Shop A', slug: 'shop-a', status: 'ACTIVE' });
+    db.state.sellers.set('sel_b', { id: 'sel_b', owner_member_id: 'mem_b', name: 'Shop B', slug: 'shop-b', status: 'ACTIVE' });
+    db.state.sellers.set('sel_c', { id: 'sel_c', owner_member_id: 'mem_c', name: 'Shop C', slug: 'shop-c', status: 'ACTIVE' });
+
+    const splitJson = JSON.stringify({
+      basePrice: 1000,
+      sellingPrice: 1200,
+      markupAmount: 200,
+      discountAmount: 50,
+      commissionAmount: 50,
+      platformFee: 30,
+      feeRatePct: 3,
+      supplierPayout: 870,
+      resellerPayout: 300,
+      shippingFee: 0,
+    });
+
+    db.state.orders.set('sord_held', {
+      id: 'sord_held',
+      order_code: 'CGM-HELD',
+      seller_id: 'sel_b',
+      supplier_seller_id: 'sel_a',
+      product_id: 'p_res',
+      product_name: 'Pack Held',
+      product_type: 'digital',
+      price_core: 1200,
+      status: 'PAID',
+      released_at: null,
+      delivered_code: 'SECRET-CODE-DO-NOT-LEAK',
+      buyer_email: 'buyer@secret.com',
+      is_affiliate_order: 1,
+      affiliate_breakdown: splitJson,
+    });
+    db.state.orders.set('sord_rel', {
+      id: 'sord_rel',
+      order_code: 'CGM-REL',
+      seller_id: 'sel_b',
+      supplier_seller_id: 'sel_a',
+      product_id: 'p_res',
+      product_name: 'Pack Released',
+      product_type: 'digital',
+      price_core: 1200,
+      status: 'COMPLETED',
+      released_at: '2026-11-26T10:00:00Z',
+      delivered_code: 'SECRET-CODE-2',
+      buyer_email: 'buyer2@secret.com',
+      is_affiliate_order: 1,
+      affiliate_breakdown: splitJson,
+    });
+    db.state.orders.set('sord_disp', {
+      id: 'sord_disp',
+      order_code: 'CGM-DISP',
+      seller_id: 'sel_b',
+      supplier_seller_id: 'sel_a',
+      product_id: 'p_res',
+      product_name: 'Pack Disputed',
+      product_type: 'digital',
+      price_core: 1200,
+      status: 'REPORTED',
+      released_at: null,
+      is_affiliate_order: 1,
+      affiliate_breakdown: splitJson,
+    });
+    db.state.orders.set('sord_ref', {
+      id: 'sord_ref',
+      order_code: 'CGM-REF',
+      seller_id: 'sel_b',
+      supplier_seller_id: 'sel_a',
+      product_id: 'p_res',
+      product_name: 'Pack Refunded',
+      product_type: 'digital',
+      price_core: 1200,
+      status: 'RESOLVED_BUYER_REFUND',
+      released_at: null,
+      is_affiliate_order: 1,
+      affiliate_breakdown: splitJson,
+    });
+
+    // Shop A (supplier)
+    const resSup = await getSellerAffiliateOrders({
+      request: new Request('https://shop.example.com/api/seller/affiliate/orders?role=supplier', {
+        headers: { Authorization: 'Bearer tok_a' },
+      }),
+      env: { DB: db },
+    });
+    assert.equal(resSup.status, 200);
+    const dataSup: any = await resSup.json();
+    assert.equal(dataSup.orders.length, 4);
+    assert.equal(dataSup.orders.every((o: any) => o.my_role === 'SUPPLIER' && o.my_payout_core === 870), true);
+    assert.equal(dataSup.orders.every((o: any) => !('delivered_code' in o) && !('buyer_email' in o)), true);
+    const byCode = Object.fromEntries(dataSup.orders.map((o: any) => [o.order_code, o.escrow_status]));
+    assert.equal(byCode['CGM-HELD'], 'HELD');
+    assert.equal(byCode['CGM-REL'], 'RELEASED');
+    assert.equal(byCode['CGM-DISP'], 'DISPUTED');
+    assert.equal(byCode['CGM-REF'], 'REFUNDED');
+
+    // Shop B (reseller)
+    const resRes = await getSellerAffiliateOrders({
+      request: new Request('https://shop.example.com/api/seller/affiliate/orders?role=reseller', {
+        headers: { Authorization: 'Bearer tok_b' },
+      }),
+      env: { DB: db },
+    });
+    const dataRes: any = await resRes.json();
+    assert.equal(dataRes.orders.length, 4);
+    assert.equal(dataRes.orders.every((o: any) => o.my_role === 'RESELLER' && o.my_payout_core === 300), true);
+
+    // Shop C (unrelated) -> 0 orders
+    const resC = await getSellerAffiliateOrders({
+      request: new Request('https://shop.example.com/api/seller/affiliate/orders', {
+        headers: { Authorization: 'Bearer tok_c' },
+      }),
+      env: { DB: db },
+    });
+    const dataC: any = await resC.json();
+    assert.equal(dataC.orders.length, 0);
+  });
+
+  await test('18. Rule 8 hasScope(INTERSHOP_AFFILIATE_MANAGE) & PA1 shouldBumpCatalogEpoch for Mảnh 2 routes', () => {
+    assert.equal(hasScope('INTERSHOP_AFFILIATE_MANAGE', 'INTERSHOP_AFFILIATE_MANAGE'), true);
+    assert.equal(hasScope('MARKETPLACE_MANAGE', 'INTERSHOP_AFFILIATE_MANAGE'), true);
+    assert.equal(hasScope('STORE_FULL', 'INTERSHOP_AFFILIATE_MANAGE'), true);
+    assert.equal(hasScope('UNIVERSAL_MALL_FULL', 'INTERSHOP_AFFILIATE_MANAGE'), true);
+    assert.equal(hasScope('ADMIN_FULL', 'INTERSHOP_AFFILIATE_MANAGE'), true);
+    assert.equal(hasScope('NEWS_FULL', 'INTERSHOP_AFFILIATE_MANAGE'), false);
+
+    assert.equal(shouldBumpCatalogEpoch('/api/admin/affiliate/partnerships/sap_1', 'PATCH'), true);
+    assert.equal(shouldBumpCatalogEpoch('/api/admin/affiliate/listings/sal_1', 'PATCH'), true);
+    assert.equal(shouldBumpCatalogEpoch('/api/admin/affiliate', 'GET'), false);
+    assert.equal(shouldBumpCatalogEpoch('/api/seller/webhooks', 'POST'), false);
+    assert.equal(shouldBumpCatalogEpoch('/api/seller/webhooks/whk_1/test', 'POST'), false);
+  });
+
+  console.log(`\n[Inter-Shop Affiliate Mảnh 1+2 Summary] Passed: ${passed}, Failed: ${failed}`);
   if (failed > 0) process.exit(1);
 }
 

@@ -1,6 +1,6 @@
 # Rule 10 Pre-Push Security Scan (Raw Output)
-Timestamp-UTC: 2026-11-26T14:50:49Z
-Base-HEAD: 317b631735fed1eb0fe5496a484a9f26cea7a264
+Timestamp-UTC: 2026-11-26T16:09:30Z
+Base-HEAD: d46129c5351b934f19e843e9031baa9dac912037
 
 ## 1. git grep -nE "wcg_[a-z]+_[0-9a-f]{32}" -- functions/ src/
 grep_exit=1 matches=0

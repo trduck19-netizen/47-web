@@ -134,6 +134,7 @@ export function shouldBumpCatalogEpoch(pathname: string, method: string): boolea
     p.startsWith('/api/admin/security') ||
     p.startsWith('/api/admin/automation') ||
     p.startsWith('/api/admin/suppliers/webhooks') ||
+    p.startsWith('/api/seller/webhooks') ||
     p.startsWith('/api/webhooks/') ||
     p.startsWith('/api/telegram/')
   ) {
@@ -149,6 +150,7 @@ export function shouldBumpCatalogEpoch(pathname: string, method: string): boolea
     '/api/seller/products',
     '/api/admin/seller-products',
     '/api/admin/sellers',
+    '/api/admin/affiliate',
     '/api/seller/affiliate/inventory-push',
     '/api/seller/affiliate/listings',
     '/api/admin/homepage-sections',

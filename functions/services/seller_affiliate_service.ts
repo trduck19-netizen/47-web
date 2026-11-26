@@ -87,6 +87,32 @@ export async function generatePairShopApiKey(): Promise<{
 }
 
 /**
+ * Helper dùng chung cho cả đường duyệt NCC (approve.ts) và đường duyệt Admin (/api/admin/affiliate):
+ * Sinh cặp khóa wcg_shop_* mới và kích hoạt partnership sang APPROVED, xóa revoked_at.
+ */
+export async function approvePartnershipAndIssueKey(
+  db: D1Database,
+  partnershipId: string
+): Promise<{ rawKey: string; keyHash: string; keyPrefix: string }> {
+  const { rawKey, keyHash, keyPrefix } = await generatePairShopApiKey();
+  await db
+    .prepare(`
+      UPDATE seller_affiliate_partnerships
+      SET status = 'APPROVED',
+          api_key_hash = ?,
+          api_key_prefix = ?,
+          one_time_raw_key = ?,
+          revoked_at = NULL,
+          updated_at = datetime('now')
+      WHERE id = ?
+    `)
+    .bind(keyHash, keyPrefix, rawKey, partnershipId)
+    .run();
+
+  return { rawKey, keyHash, keyPrefix };
+}
+
+/**
  * Xác thực truy cập bằng khóa cặp (Nhóm 1 & Nhóm 5)
  * Khóa chỉ có quyền đọc sản phẩm đã mở của đúng NCC đó
  */

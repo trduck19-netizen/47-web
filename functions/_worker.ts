@@ -64,6 +64,9 @@ import * as adminAutomationConfigApi from './api/admin/automation/config';
 import * as adminSuppliersIndexApi from './api/admin/suppliers/index';
 import * as adminSuppliersIdApi from './api/admin/suppliers/[id]';
 import * as adminSupplierWebhooksApi from './api/admin/suppliers/webhooks';
+import * as adminAffiliateApi from './api/admin/affiliate/index';
+import * as sellerWebhooksApi from './api/seller/webhooks/index';
+import * as sellerAffiliateOrdersApi from './api/seller/affiliate/orders';
 import * as sellerAffiliateInventoryPushApi from './api/seller/affiliate/inventory-push';
 import * as affiliatePostbackWebhookApi from './api/webhooks/affiliate-postback';
 import * as wishlistToggleApi from './api/user/wishlist/toggle';
@@ -1803,6 +1806,16 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return await adminSuppliersIdApi.handleAdminSupplierByIdRequest(context as any, subSegs);
       }
 
+      // 8c-32. /api/admin/affiliate/* (Quản trị Liên Kết Gian Hàng Nội Bộ — Mảnh 2)
+      if (pathname === '/api/admin/affiliate' || pathname.startsWith('/api/admin/affiliate/')) {
+        const subSegs = pathname
+          .slice('/api/admin/affiliate'.length)
+          .split('/')
+          .filter(Boolean)
+          .map((s) => decodeURIComponent(s));
+        return await adminAffiliateApi.handleAdminAffiliateRequest(context as any, subSegs);
+      }
+
       // 8d. /api/crawl-article (AI Article Crawler & Extractor)
       if (pathname === '/api/crawl-article') {
         return await crawlArticleApi.onRequest(context);
@@ -2363,6 +2376,21 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS') return await sellerAffiliateInventoryPushApi.onRequestOptions(context);
         if (method === 'POST') return await sellerAffiliateInventoryPushApi.onRequestPost(context);
         return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/affiliate/orders') {
+        if (method === 'OPTIONS') return await sellerAffiliateOrdersApi.onRequestOptions();
+        if (method === 'GET') return await sellerAffiliateOrdersApi.onRequestGet(context as any);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/webhooks' || pathname.startsWith('/api/seller/webhooks/')) {
+        const subSegs = pathname
+          .slice('/api/seller/webhooks'.length)
+          .split('/')
+          .filter(Boolean)
+          .map((s) => decodeURIComponent(s));
+        return await sellerWebhooksApi.handleSellerWebhooksRequest(context as any, subSegs);
       }
 
       if (pathname === '/api/seller/affiliate/listings') {
