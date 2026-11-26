@@ -4,7 +4,7 @@
 
 🛡️ 0. Scanning UI code for hardcoded Vietnamese strings (i18n Guard)...
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-26T13:25:31.192Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   Timestamp: 2026-11-26T14:51:08.043Z — Batch: Dot 20 Trang Chu (24/11/2026)
    [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét 21 file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...
 ✅ [I18N SCANNER PASSED] Đã quét sạch 21 file giao diện.
    🎉 0 chuỗi tiếng Việt ghi cứng ngoài từ điển! Sẵn sàng cho quy trình build & deploy.
@@ -150,13 +150,13 @@ computing gzip size...
 [2mdist/[22m[36massets/games-catalog-fallback-DcEoXQue.js      [39m[1m[2m790.41 kB[22m[1m[22m[2m │ gzip: 123.00 kB[22m
 [2mdist/[22m[36massets/seed-news-fallback-CyezkEkv.js          [39m[1m[2m884.33 kB[22m[1m[22m[2m │ gzip: 185.96 kB[22m
 [2mdist/[22m[36massets/CrawlerModule-mXFAXApf.js               [39m[1m[2m972.13 kB[22m[1m[22m[2m │ gzip: 180.03 kB[22m
-[32m✓ built in 24.17s[39m
+[32m✓ built in 22.29s[39m
 ⚡ 2. Compiling Cloudflare Pages Edge Worker bundle...
-   🏷️ Injected Build ID: 84e5cc1 (2026-11-26T13:26:01.301Z)
+   🏷️ Injected Build ID: 5dfe4ed (2026-11-26T14:51:37.380Z)
 System.Management.Automation.RemoteException
   dist\_worker.js  6.6mb
 System.Management.Automation.RemoteException
-Done in 115ms
+Done in 173ms
 📄 3. Ensuring _routes.json in dist/ ...
    _routes.json copied to dist/_routes.json
 🛡️ 4. Running Post-build Chunk & Worker Budget Check (Lean Guard)...
@@ -168,10 +168,10 @@ Done in 115ms
 🔍 [STAGE: POST-BUILD] Đang quét đầu ra Vite & Cloudflare Edge Worker bundle...
    ✅ [Check 6.1 PASS] Chunk AdminApp (566.10 KB) duy trì mức tối ưu (< 600 KB).
    ✅ [Check 6.2 PASS] Tất cả các component chunks khác đều nằm trong ngân sách (< 650 KB).
-   ⚡ Edge Worker Bundle (dist/_worker.js): 6.62 MB
-   ✅ [Check 7 PASS] Edge Worker Bundle (6.62 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).
-   📦 Tổng dung lượng thư mục phân phối dist/: 68.70 MB
-   ✅ [Check 8 PASS] Thư mục dist/ (68.70 MB) đạt chuẩn phân phối tối ưu (<= 85.00 MB).
+   ⚡ Edge Worker Bundle (dist/_worker.js): 6.63 MB
+   ✅ [Check 7 PASS] Edge Worker Bundle (6.63 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).
+   📦 Tổng dung lượng thư mục phân phối dist/: 68.71 MB
+   ✅ [Check 8 PASS] Thư mục dist/ (68.71 MB) đạt chuẩn phân phối tối ưu (<= 85.00 MB).
 
 --------------------------------------------------------------------------------
 📊 BÁO CÁO KẾT QUẢ KIỂM TRA LEAN GUARD:
