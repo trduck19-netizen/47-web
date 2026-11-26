@@ -137,13 +137,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       if (!listing || listing.status !== 'ACTIVE' || listing.price_warning === 'ANTI_LOSS_PAUSED') {
         const isAntiLoss = listing?.price_warning === 'ANTI_LOSS_PAUSED';
+        const isListingOos = listing?.status === 'OUT_OF_STOCK';
         return new Response(
           JSON.stringify({
             success: false,
             error: isAntiLoss
               ? 'Sản phẩm bán lại đang bị tạm khóa chống lỗ do giá gốc thay đổi. Vui lòng quay lại sau.'
-              : 'Sản phẩm bán lại hiện đang tạm ngừng kinh doanh.',
-            code: isAntiLoss ? 'ANTI_LOSS_PAUSED' : 'AFFILIATE_LISTING_PAUSED',
+              : isListingOos
+                ? 'Sản phẩm tạm thời hết hàng trong kho Nhà Cung Cấp. Vui lòng quay lại sau.'
+                : 'Sản phẩm bán lại hiện đang tạm ngừng kinh doanh.',
+            code: isAntiLoss ? 'ANTI_LOSS_PAUSED' : (isListingOos ? 'OUT_OF_STOCK' : 'AFFILIATE_LISTING_PAUSED'),
           }),
           { status: 400, headers: CORS_HEADERS }
         );
@@ -275,43 +278,94 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const currentWithdrawn = Number(product.withdrawn_balance_core) || 0;
     const newHeld = currentHeld + priceCore;
 
-    // 5. Giao dịch nguyên tử qua D1 Batch (§4.3 & §6.1):
-    // - Trừ Core người mua (có điều kiện balance >= priceCore chống race-condition)
-    // - Đổi mã kho sang SOLD (hàng số) HOẶC trừ nguyên tử stock_quantity - 1 tại kho gốc (hàng vật lý)
-    // - Cộng pending_balance_core cho gian hàng
-    // - Ghi dòng HOLD vào sổ cái seller_ledger
-    // - Thêm bản ghi đơn hàng seller_orders (trạng thái PAID trong 168h giữ tiền)
-    const stockDeductStatement = isPhysical
-      ? env.DB.prepare(`
+    // 5. Giao dịch 3 pha Reserve-First có hoàn tác rõ ràng (chống đua tranh tồn kho & số dư):
+    // - Pha 1: Khóa kho vật lý (stock_quantity - 1) hoặc giữ mã số (IN_STOCK -> RESERVED) TRƯỚC khi chạm tiền/đơn
+    // - Pha 2: Trừ ví Core người mua (balance >= priceCore); nếu thất bại -> hoàn tác Pha 1 ngay lập tức
+    // - Pha 3: Batch chốt đơn (SOLD nếu hàng số + cộng pending + ghi HOLD ledger + INSERT seller_orders PAID); nếu lỗi -> hoàn tác cả Pha 2 & Pha 1
+    const rollbackStockOrCode = async () => {
+      if (isPhysical) {
+        await env.DB.prepare(`
+          UPDATE seller_products
+          SET stock_quantity = stock_quantity + 1, updated_at = ?
+          WHERE id = ?
+        `).bind(new Date().toISOString(), sourceProductId).run().catch(() => {});
+      } else if (availableCode?.id) {
+        await env.DB.prepare(`
+          UPDATE seller_codes
+          SET status = 'IN_STOCK', order_id = NULL, updated_at = ?
+          WHERE id = ? AND order_id = ? AND status = 'RESERVED'
+        `).bind(new Date().toISOString(), availableCode.id, orderId).run().catch(() => {});
+      }
+    };
+
+    // Pha 1: Giữ kho / mã trước
+    const reserveRes: any = isPhysical
+      ? await env.DB.prepare(`
           UPDATE seller_products
           SET stock_quantity = stock_quantity - 1, updated_at = ?
           WHERE id = ? AND stock_quantity >= 1
-        `).bind(nowIso, sourceProductId)
-      : env.DB.prepare(`
+        `).bind(nowIso, sourceProductId).run()
+      : await env.DB.prepare(`
+          UPDATE seller_codes
+          SET status = 'RESERVED', order_id = ?, updated_at = ?
+          WHERE id = ? AND status = 'IN_STOCK'
+        `).bind(orderId, nowIso, availableCode.id).run();
+
+    const reserveChanges = Number(reserveRes?.meta?.changes ?? reserveRes?.changes ?? 0);
+    if (reserveChanges !== 1) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: isPhysical
+            ? 'Sản phẩm vật lý vừa hết tồn kho. Vui lòng thử lại sau.'
+            : 'Mã kho vừa được khách hàng khác mua. Vui lòng thử lại.',
+          code: 'STOCK_RACE_CONFLICT',
+        }),
+        { status: 409, headers: CORS_HEADERS }
+      );
+    }
+
+    // Pha 2: Trừ ví Core người mua (có hoàn tác kho/mã nếu không trừ được tiền)
+    const debitRes: any = await env.DB.prepare(`
+      UPDATE members
+      SET balance = balance - ?, updated_at = ?
+      WHERE id = ? AND balance >= ?
+    `).bind(priceCore, nowIso, buyer.id, priceCore).run();
+
+    const debitChanges = Number(debitRes?.meta?.changes ?? debitRes?.changes ?? 0);
+    if (debitChanges !== 1) {
+      await rollbackStockOrCode();
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Số dư không đủ hoặc có giao dịch khác đang thực hiện cùng lúc.',
+          code: 'BALANCE_RACE_CONFLICT',
+        }),
+        { status: 409, headers: CORS_HEADERS }
+      );
+    }
+
+    // Pha 3: Batch chốt đơn nguyên tử (nếu lỗi bất ngờ -> hoàn tác cả tiền lẫn kho/mã)
+    const finalizeStatements: any[] = [];
+    if (!isPhysical && availableCode?.id) {
+      finalizeStatements.push(
+        env.DB.prepare(`
           UPDATE seller_codes
           SET status = 'SOLD', order_id = ?, sold_at = ?, updated_at = ?
-          WHERE id = ? AND status = 'IN_STOCK'
-        `).bind(orderId, nowIso, nowIso, availableCode.id);
+          WHERE id = ? AND status = 'RESERVED' AND order_id = ?
+        `).bind(orderId, nowIso, nowIso, availableCode.id, orderId)
+      );
+    }
 
-    const batchResults = await env.DB.batch([
-      // Statement 0: Trừ Core người mua
-      env.DB.prepare(`
-        UPDATE members
-        SET balance = balance - ?, updated_at = ?
-        WHERE id = ? AND balance >= ?
-      `).bind(priceCore, nowIso, buyer.id, priceCore),
-
-      // Statement 1: Trừ tồn kho hàng vật lý hoặc khóa mã số SOLD
-      stockDeductStatement,
-
-      // Statement 2: Cộng Core chờ rút cho gian hàng
+    finalizeStatements.push(
+      // Cộng Core chờ rút cho gian hàng
       env.DB.prepare(`
         UPDATE sellers
         SET pending_balance_core = pending_balance_core + ?, updated_at = ?
         WHERE id = ?
       `).bind(priceCore, nowIso, product.seller_id),
 
-      // Statement 3: Ghi dòng HOLD vào sổ cái seller_ledger
+      // Ghi dòng HOLD vào sổ cái seller_ledger
       env.DB.prepare(`
         INSERT INTO seller_ledger (
           id, seller_id, order_id, type, amount_core,
@@ -331,7 +385,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         nowIso
       ),
 
-      // Statement 4: Thêm đơn hàng trạng thái PAID trong 168h giữ tiền (lưu phân rã tài chính 3 bên nếu là liên shop)
+      // Thêm đơn hàng trạng thái PAID trong 168h giữ tiền (lưu phân rã tài chính 3 bên nếu là liên shop)
       env.DB.prepare(`
         INSERT INTO seller_orders (
           id, order_code, buyer_member_id, buyer_name, buyer_email,
@@ -360,24 +414,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         affiliateBreakdownJson,
         nowIso,
         nowIso
-      ),
-    ]);
+      )
+    );
 
-    // Kiểm tra hàng bị tác động của statement 0 (trừ tiền) & statement 1 (trừ kho/mã)
-    const updateMemberMeta = (batchResults[0] as any)?.meta;
-    if (updateMemberMeta && updateMemberMeta.changes === 0) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Số dư không đủ hoặc có giao dịch khác đang thực hiện cùng lúc.' }),
-        { status: 409, headers: CORS_HEADERS }
-      );
-    }
-
-    const deductStockMeta = (batchResults[1] as any)?.meta;
-    if (deductStockMeta && deductStockMeta.changes === 0) {
-      return new Response(
-        JSON.stringify({ success: false, error: isPhysical ? 'Sản phẩm vật lý vừa hết tồn kho. Vui lòng thử lại sau.' : 'Mã kho vừa được khách hàng khác mua. Vui lòng thử lại.' }),
-        { status: 409, headers: CORS_HEADERS }
-      );
+    try {
+      await env.DB.batch(finalizeStatements);
+    } catch (finalizeErr: any) {
+      await env.DB.prepare(`
+        UPDATE members
+        SET balance = balance + ?, updated_at = ?
+        WHERE id = ?
+      `).bind(priceCore, new Date().toISOString(), buyer.id).run().catch(() => {});
+      await rollbackStockOrCode();
+      throw finalizeErr;
     }
 
     // Ghi audit log & gửi PA2 Supplier Fulfillment Webhook (Non-blocking theo mẫu orders/create.ts)

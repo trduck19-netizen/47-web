@@ -1,0 +1,18 @@
+# Rule 10 Pre-Push Security Scan (Raw Output)
+Timestamp-UTC: 2026-11-26T14:50:49Z
+Base-HEAD: 317b631735fed1eb0fe5496a484a9f26cea7a264
+
+## 1. git grep -nE "wcg_[a-z]+_[0-9a-f]{32}" -- functions/ src/
+grep_exit=1 matches=0
+(no matches)
+
+## 2. git grep -nE "[0-9]{8,10}:[A-Za-z0-9_-]{35}" -- functions/ src/
+grep_exit=1 matches=0
+(no matches)
+
+## 3. git grep -nE "BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY"
+grep_exit=1 matches=0
+(no matches)
+
+RULE10_WCG=0 RULE10_TG=0 RULE10_PK=0
+exit=0

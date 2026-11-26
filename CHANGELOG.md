@@ -7,9 +7,27 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-26]
 
+### 481. Sửa Nốt Mảnh 1 (`84e5cc1` → Bản Hoàn Thiện): Reserve-First Có Hoàn Tác Khi Đua Tranh Kho/Ví, Đường Ghi `stock_quantity`, Hoàn Kho Đơn QR Hết Hạn Đúng Nguồn Gốc, Phí Động `escrow_service.ts`, Chặn Hồi Sinh Trạng Thái `approve.ts` & Log Thô `docs/rule10_scan.log` (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý dứt điểm 3 nhóm từ kiểm chứng độc lập Mảnh 1 (`build 84e5cc1` / `HEAD 317b631`) theo đúng kế hoạch đã duyệt (`ke_hoach_sua_not_manh1_84e5cc1_26_11.md` — Bản Đã Sửa), giữ chặt phạm vi Mảnh 1 (chưa mở Mảnh 2/3/4, Đợt 2 vẫn `BLOCKED`, không tạo bảng D1 mới).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Reserve-First Có Hoàn Tác + Đường Ghi Tồn Kho Chính Thức (`seller-orders/index.ts`, `seller-orders/multi.ts`, `d1_service.ts`, `seller/products/index.ts`, `seller/products/[id].ts`)*:
+     - Tách `seller-orders/index.ts` thành **3 pha có hoàn tác**: Pha 1 giữ kho vật lý (`stock_quantity - 1 WHERE stock_quantity >= 1`) hoặc giữ mã số (`IN_STOCK -> RESERVED`) trước khi chạm tiền/đơn → `changes !== 1` trả `409 Conflict` (`STOCK_RACE_CONFLICT`, 0 thay đổi số dư/pending/ledger/đơn); Pha 2 trừ ví buyer → `changes !== 1` lập tức hoàn tác Pha 1 và trả `409` (`BALANCE_RACE_CONFLICT`); Pha 3 chốt batch (`SOLD WHERE status = 'RESERVED' AND order_id = ?`, cộng pending, ghi HOLD, chèn `seller_orders`), lỗi bất ngờ hoàn tác cả tiền lẫn kho/mã.
+     - Tách `seller-orders/multi.ts` sang Reserve-First từng món, bắt buộc kiểm `meta.changes === 1`, hoàn tác toàn bộ `reservedItems` và trả `409 Conflict` khi bất kỳ món nào no-op (tuyệt đối không tạo đơn cha/con hay trả `success: true`).
+     - Nâng cấp `checkAndExpireSellerOrdersD1` (`d1_service.ts`): `LEFT JOIN seller_products` lấy `product_type`, `is_affiliate`, `origin_product_id`; giữ kết quả batch và chỉ hoàn kho `stock_quantity + 1` khi đơn vật lý thật sự chuyển `PENDING_PAYMENT -> EXPIRED` (`changes === 1`), cộng đúng vào `origin_product_id` (sản phẩm gốc NCC) nếu đơn liên shop (tuyệt đối không cộng vào listing).
+     - Bổ sung đường ghi `stock_quantity` chính thức (nguyên `>= 0`, mặc định `0`) trên `POST /api/seller/products` và `PUT /api/seller/products/:id` (tự động gọi `syncAffiliatePriceAndStock(..., 'STOCK_CHANGE', ...)` khi hàng vật lý đổi tồn kho).
+  2. *Nhóm 2 — Sửa `escrow_service.ts` & Guard Trạng Thái `approve.ts`*:
+     - `escrow_service.ts`: chuẩn hóa `String(...).toLowerCase() === 'physical'` tại cả `recordEscrowHold` lẫn `confirmReceivedAndRelease`, gỡ sạch phí cứng `0.02`/`0.05` và nhãn cứng `2%`/`5%`, đọc phí động từ `getMarketplaceConfig(db)` (`git grep` cả 2 mẫu đều = `0`).
+     - `approve.ts`: chỉ cho duyệt bản ghi `PENDING` (giữ idempotent cho `APPROVED`), từ chối `HTTP 400` với `REJECTED`/`REVOKED`/`SUSPENDED` (`INVALID_PARTNERSHIP_STATUS`) và `PENDING_ADMIN` (`AWAITING_ADMIN_APPROVAL`).
+  3. *Nhóm 3 — Đính chính bằng chứng D1 key & Commit `docs/rule10_scan.log`*:
+     - Đính chính rõ Mục 480: tại thời điểm deploy `84e5cc1`, key `wcg_marketplace_config_v1` chưa được tạo dòng trong D1 (hệ thống vận hành bằng fallback `DEFAULT_MARKETPLACE_CONFIG`), và key đã được vật chất hóa trong D1 trong phiên kiểm chứng live (`2026-11-26T13:37:29Z`) với đủ 7 trường đúng giá trị.
+     - Commit log thô `docs/rule10_scan.log` (`RULE10_WCG=0 RULE10_TG=0 RULE10_PK=0`, `exit=0`).
+  4. *Kiểm thử mở rộng (`scripts/tests/test_intershop_affiliate.ts`)*:
+     - Bổ sung 5 test case mới (Test 8–12), nâng `test:intershop` từ `7/7` lên **`12/12 PASS`**, tổng `npm test` lên **`215/215 PASS`**; `docs/tsc_full_check.log` giữ nguyên **`1.827` lỗi** (`0` lỗi mới).
+
 ### 480. Liên Kết Gian Hàng Nội Bộ — Mảnh 1: Lõi Cấu Hình Động, Bắt Buộc Admin Duyệt (`PENDING_ADMIN`), Sửa 3 Bug Liên Shop & Hỗ Trợ Hàng Vật Lý (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
-  - Khởi động kế hoạch xây dựng hệ thống bán lại liên gian hàng nội bộ (`ke_hoach_lien_ket_gian_hang_noi_bo_26_11.md`) đã được chủ sở hữu phê duyệt, bảo đảm mọi tham số (phí sàn hàng số/vật lý, trần biên lợi nhuận, tự khóa chống lỗ, bắt buộc Admin duyệt, giới hạn RPM) đều lưu động trên SQL D1 và điều chỉnh tự do được sau này, đồng thời xử lý triệt để 3 lỗi gốc trong lõi liên shop và bổ sung tồn kho hàng vật lý.
+  - Khởi động kế hoạch xây dựng hệ thống bán lại liên gian hàng nội bộ (`ke_hoach_lien_ket_gian_hang_noi_bo_26_11.md`) đã được chủ sở hữu phê duyệt, bảo đảm mọi tham số (phí sàn hàng số/vật lý, trần biên lợi nhuận, tự khóa chống lỗ, bắt buộc Admin duyệt, giới hạn RPM) đều lưu động trên SQL D1 và điều chỉnh tự do được sau này, đồng thời xử lý triệt để 3 lỗi gốc trong lõi liên shop và bổ sung tồn kho hàng vật lý. *(Đính chính Mục 481: tại thời điểm báo cáo `84e5cc1`, key `wcg_marketplace_config_v1` chưa có dòng trong D1 mà chạy theo `DEFAULT_MARKETPLACE_CONFIG`; key đã được ghi thật vào D1 lúc kiểm chứng live `2026-11-26T13:37:29Z` với đủ 7 trường đúng giá trị.)*
 - **Giải pháp áp dụng (Solution)**:
   1. *Cấu hình động trên SQL D1 (`functions/services/marketplace_service.ts`, `functions/api/admin/seller-config.ts`)*:
      - Mở rộng `MarketplaceConfig` (`wcg_marketplace_config_v1`) thêm 7 trường điều chỉnh tự do: `affiliate_enabled` (mặc định `true`), `affiliate_digital_fee_pct` (`5`), `affiliate_physical_fee_pct` (`2`), `affiliate_auto_pause_on_loss` (`true`), `affiliate_require_admin_approval` (`true` — bắt buộc Admin duyệt ngay từ đầu), `affiliate_max_markup_pct` (`500`), `affiliate_rate_limit_rpm` (`600`).

@@ -7184,15 +7184,19 @@ export async function checkAndExpireSellerOrdersD1(db: D1Database, targetOrderId
   const nowIso = new Date().toISOString();
 
   let query = `
-    SELECT id, order_code, product_id, seller_id, parent_order_id, code_id, expires_at 
-    FROM seller_orders 
-    WHERE status = 'PENDING_PAYMENT' 
-      AND (datetime(expires_at) <= datetime('now') OR expires_at <= ?)
+    SELECT so.id, so.order_code, so.product_id, so.seller_id, so.parent_order_id, so.code_id, so.expires_at,
+           COALESCE(so.product_type, 'digital') as product_type,
+           COALESCE(sp.is_affiliate, 0) as listing_is_affiliate,
+           sp.origin_product_id as listing_origin_product_id
+    FROM seller_orders so
+    LEFT JOIN seller_products sp ON sp.id = so.product_id
+    WHERE so.status = 'PENDING_PAYMENT'
+      AND (datetime(so.expires_at) <= datetime('now') OR so.expires_at <= ?)
   `;
   const binds: any[] = [nowIso];
 
   if (targetOrderId) {
-    query += ` AND (id = ? OR order_code = ? OR parent_order_id = ?)`;
+    query += ` AND (so.id = ? OR so.order_code = ? OR so.parent_order_id = ?)`;
     binds.push(targetOrderId, targetOrderId, targetOrderId);
   }
 
@@ -7229,8 +7233,26 @@ export async function checkAndExpireSellerOrdersD1(db: D1Database, targetOrderId
         WHERE order_id = ? AND status = 'RESERVED'
       `).bind(oId);
 
-      await db.batch([stmtOrder, stmtCodes]);
-      count++;
+      const expBatch: any[] = await db.batch([stmtOrder, stmtCodes]);
+      const orderExpiredChanges = Number(expBatch?.[0]?.meta?.changes ?? expBatch?.[0]?.changes ?? 0);
+
+      // 2b. Chỉ hoàn kho khi đơn vật lý thật sự chuyển PENDING_PAYMENT -> EXPIRED (changes === 1)
+      // Hoàn đúng về origin_product_id (sản phẩm gốc NCC) khi đơn liên shop, ngược lại hoàn về product_id
+      if (orderExpiredChanges === 1 && String(ord.product_type || '').toLowerCase() === 'physical') {
+        const isAffiliateListing = Number(ord.listing_is_affiliate || 0) === 1 && Boolean(ord.listing_origin_product_id);
+        const stockTargetProductId = isAffiliateListing ? String(ord.listing_origin_product_id) : String(ord.product_id || '');
+        if (stockTargetProductId) {
+          await db.prepare(`
+            UPDATE seller_products
+            SET stock_quantity = stock_quantity + 1, updated_at = datetime('now')
+            WHERE id = ?
+          `).bind(stockTargetProductId).run().catch(() => {});
+        }
+      }
+
+      if (orderExpiredChanges === 1) {
+        count++;
+      }
 
       // 3. Nếu thuộc đơn cha, kiểm tra nếu tất cả các đơn con của đơn cha đều đã đóng
       if (parentId) {

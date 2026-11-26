@@ -10,6 +10,13 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-336: Đua Tranh Trừ Kho/Mã Trong Batch Checkout Không Hoàn Tác, Thiếu Đường Ghi `stock_quantity` & Chữ Hoa/Thường `escrow_service.ts` (26/11/2026)
+- **Triệu chứng & Rủi ro**:
+  - Gộp `UPDATE members` + `UPDATE seller_products/seller_codes` + `INSERT seller_orders` vào chung 1 `db.batch` rồi kiểm `meta.changes === 0` sau khi commit khiến buyer thua đua tranh nhận `409` nhưng tiền/pending/HOLD/đơn `PAID` vẫn đã ghi; `multi.ts` bỏ qua kết quả `batch` nên có thể tạo đơn QR vượt kho.
+  - `seller_products` có cột `stock_quantity` nhưng `POST/PUT /api/seller/products` chưa nhận ghi cột này; `escrow_service.ts` còn so khớp strict `=== 'physical'` và phí cứng `0.02`/`0.05`; `approve.ts` chưa chặn trạng thái `REJECTED`/`REVOKED`/`SUSPENDED`.
+- **Giải pháp chuẩn đã kiểm chứng (26/11/2026 - Mục 481)**:
+  - Áp dụng mô hình Reserve-First có hoàn tác rõ ràng trên cả `seller-orders/index.ts` (3 pha) và `seller-orders/multi.ts` (giữ từng món + `rollbackReservedItems`), bổ sung hoàn kho đúng về `origin_product_id` qua `LEFT JOIN seller_products` trong `checkAndExpireSellerOrdersD1`, thêm đường ghi `stock_quantity` trên `POST/PUT /api/seller/products`, bỏ hẳn `=== 'physical'` strict & `0.02`/`0.05` trong `escrow_service.ts`, chặn `approve.ts` chỉ nhận `PENDING`, và khóa hồi quy bằng 5 test case mới (`test:intershop` `12/12`, `npm test` `215/215`).
+
 ### ISSUE-335: 3 Lỗi Ẩn Trong Lõi Liên Shop Nội Bộ & Thiếu Cột `stock_quantity` Trên `seller_products` (26/11/2026)
 - **Triệu chứng & Rủi ro**:
   - `calculate3WaySplit` ghi cứng `isPhysical ? 0.02 : 0.05` bỏ qua cấu hình Admin; `resell.ts` so khớp `'PHYSICAL'` viết hoa trong khi D1 lưu `'physical'` viết thường; `resell.ts` gọi `syncAffiliatePriceAndStock(..., 'RESELL_PARAM_CHANGE', ...)` nhưng hàm đồng bộ không có nhánh xử lý `'RESELL_PARAM_CHANGE'` nên thay đổi MAP/hoa hồng bị bỏ qua âm thầm.

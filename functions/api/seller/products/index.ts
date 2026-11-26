@@ -111,6 +111,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       warehouse_address,
       variants_json,
       cod_allowed,
+      stock_quantity,
     } = body;
 
     // 2. Kiểm tra trạng thái gian hàng
@@ -159,6 +160,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     let deliveryModeClean = 'INVENTORY';
     let webhookUrlClean: string | null = null;
     let warrantyHoursParsed = warranty_hours ? parseInt(warranty_hours, 10) : 24;
+    let stockQuantityParsed = 0;
+
+    if (stock_quantity !== undefined && stock_quantity !== null && stock_quantity !== '') {
+      const numStock = Number(stock_quantity);
+      if (!Number.isFinite(numStock) || !Number.isInteger(numStock) || numStock < 0) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Số lượng tồn kho (stock_quantity) phải là số nguyên lớn hơn hoặc bằng 0.' }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      stockQuantityParsed = numStock;
+    }
 
     if (productType === 'physical') {
       weightGramsParsed = parseInt(weight_grams, 10);
@@ -272,8 +285,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         INSERT INTO seller_products (
           id, seller_id, game_slug, game_name, name, cover_url, description,
           price_core, original_price_core, warranty_type, warranty_hours,
-          delivery_type, low_stock_threshold, product_type, weight_grams, warehouse_address, status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          delivery_type, low_stock_threshold, product_type, stock_quantity, weight_grams, warehouse_address, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         prodId,
@@ -290,6 +303,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         delivery_type === 'MANUAL' ? 'MANUAL' : 'AUTO',
         low_stock_threshold ? parseInt(low_stock_threshold, 10) : 2,
         productType,
+        stockQuantityParsed,
         weightGramsParsed,
         warehouseAddressClean,
         initialStatus,

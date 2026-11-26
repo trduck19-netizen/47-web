@@ -1,4 +1,4 @@
-import { recordLedgerTransaction } from './marketplace_service';
+import { getMarketplaceConfig, recordLedgerTransaction } from './marketplace_service';
 
 function generateSecureIdSuffix(length = 4): string {
   if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
@@ -59,10 +59,12 @@ export async function recordEscrowHold(
 ): Promise<{ success: boolean; holdUntil: string; ledgerId?: string; error?: string }> {
   try {
     const sellerId = params.sellerId || (await ensureOfficialSeller(db));
-    const isPhys = params.productType === 'physical';
+    const isPhys = String(params.productType || '').toLowerCase() === 'physical';
+    const mConfig = await getMarketplaceConfig(db);
+    const holdFeePct = isPhys ? mConfig.affiliate_physical_fee_pct : mConfig.affiliate_digital_fee_pct;
     const holdHours = isPhys ? 168 : (params.warrantyHours || 48);
     const holdUntil = new Date(Date.now() + holdHours * 3600 * 1000).toISOString();
-    const feeRateDesc = isPhys ? 'phí hoa hồng 2%' : 'phí hoa hồng 5%';
+    const feeRateDesc = `phí hoa hồng ${holdFeePct}%`;
 
     const ledgerRes = await recordLedgerTransaction(db, {
       sellerId,
@@ -134,8 +136,10 @@ export async function confirmReceivedAndRelease(
 
     const sellerId = order.seller_id || (await ensureOfficialSeller(db));
     const amount = Number(order.total_amount || order.price_core || 0);
-    const isPhysical = order.product_type === 'physical' || Boolean(order.shipping_address);
-    const feeRate = isPhysical ? 0.02 : 0.05; // Phí sàn đa tầng: Hàng vật lý 2%, Hàng số 5%
+    const isPhysical = String(order.product_type || '').toLowerCase() === 'physical' || Boolean(order.shipping_address);
+    const mConfig = await getMarketplaceConfig(db);
+    const feeRatePct = isPhysical ? mConfig.affiliate_physical_fee_pct : mConfig.affiliate_digital_fee_pct;
+    const feeRate = feeRatePct / 100;
     const feeCore = Math.round(amount * feeRate);
     const nowIso = new Date().toISOString();
 
@@ -257,7 +261,7 @@ export async function confirmReceivedAndRelease(
           ) VALUES (?, ?, ?, 'FEE', ?, 0, 0, 0, 'platform_fee', ?, ?)
         `).bind(
           ledgFeeId, supplierId || resellerId, order.id, platformFee,
-          `Thu phí sàn ${breakdown.feeRatePct ?? (isPhysical ? 2 : 5)}% trên giá gốc cho đơn liên shop ${order.order_code || order.id}`, nowIso
+          `Thu phí sàn ${breakdown.feeRatePct ?? feeRatePct}% trên giá gốc cho đơn liên shop ${order.order_code || order.id}`, nowIso
         ).run();
       }
 
@@ -305,7 +309,7 @@ export async function confirmReceivedAndRelease(
         type: 'FEE',
         amountCore: feeCore,
         actor: 'platform_fee',
-        reason: `Thu phí hoa hồng sàn ${isPhysical ? '2%' : '5%'} cho đơn ${order.id}`,
+        reason: `Thu phí hoa hồng sàn ${feeRatePct}% cho đơn ${order.id}`,
       });
 
       if (!feeRes.success) {

@@ -135,6 +135,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       height_cm,
       variants_json,
       cod_allowed,
+      stock_quantity,
     } = body;
 
     let newStatus = product.status;
@@ -173,6 +174,17 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     const resolvedProductType = product_type ? (String(product_type).toLowerCase() === 'physical' ? 'physical' : 'digital') : (product.product_type || 'digital');
     const parsedWeight = weight_grams !== undefined ? parseInt(weight_grams, 10) : undefined;
     const cleanWarehouse = warehouse_address !== undefined ? String(warehouse_address).trim() : undefined;
+    let parsedStockQty: number | undefined = undefined;
+    if (stock_quantity !== undefined && stock_quantity !== null && stock_quantity !== '') {
+      const numStock = Number(stock_quantity);
+      if (!Number.isFinite(numStock) || !Number.isInteger(numStock) || numStock < 0) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Số lượng tồn kho (stock_quantity) phải là số nguyên lớn hơn hoặc bằng 0.' }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      parsedStockQty = numStock;
+    }
 
     await env.DB
       .prepare(`
@@ -186,6 +198,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
             delivery_type = COALESCE(?, delivery_type),
             low_stock_threshold = COALESCE(?, low_stock_threshold),
             product_type = COALESCE(?, product_type),
+            stock_quantity = COALESCE(?, stock_quantity),
             weight_grams = COALESCE(?, weight_grams),
             warehouse_address = COALESCE(?, warehouse_address),
             status = ?,
@@ -202,6 +215,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
         delivery_type || null,
         low_stock_threshold !== undefined ? parseInt(low_stock_threshold, 10) : null,
         resolvedProductType,
+        parsedStockQty !== undefined ? parsedStockQty : null,
         parsedWeight !== undefined ? parsedWeight : null,
         cleanWarehouse !== undefined ? cleanWarehouse : null,
         newStatus,
@@ -257,9 +271,12 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
         .catch(() => {});
     }
 
-    // Nhóm 3: Tự động đồng bộ giá sang các shop gán nếu giá gốc thay đổi
+    // Nhóm 3: Tự động đồng bộ giá & tồn kho sang các shop gán nếu thay đổi
     if (newPrice !== product.price_core) {
       await syncAffiliatePriceAndStock(env.DB, productId, 'PRICE_CHANGE', { newBasePrice: newPrice });
+    }
+    if (resolvedProductType === 'physical' && parsedStockQty !== undefined && parsedStockQty !== Number(product.stock_quantity || 0)) {
+      await syncAffiliatePriceAndStock(env.DB, productId, 'STOCK_CHANGE', { newStock: parsedStockQty });
     }
 
     return new Response(
@@ -267,6 +284,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
         success: true,
         message: 'Đã cập nhật sản phẩm.',
         status: newStatus,
+        ...(parsedStockQty !== undefined ? { stock_quantity: parsedStockQty } : {}),
       }),
       { status: 200, headers: CORS_HEADERS }
     );

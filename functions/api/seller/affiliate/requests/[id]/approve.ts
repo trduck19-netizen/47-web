@@ -71,6 +71,22 @@ export async function onRequestPost(context: { request: Request; params: any; en
       }), { status: 200, headers: CORS_HEADERS });
     }
 
+    if (reqRecord.status === 'PENDING_ADMIN') {
+      return new Response(JSON.stringify({
+        success: false,
+        code: 'AWAITING_ADMIN_APPROVAL',
+        error: 'Yêu cầu này đã được NCC đồng ý và đang chờ Quản trị viên phê duyệt.',
+      }), { status: 400, headers: CORS_HEADERS });
+    }
+
+    if (reqRecord.status !== 'PENDING') {
+      return new Response(JSON.stringify({
+        success: false,
+        code: 'INVALID_PARTNERSHIP_STATUS',
+        error: `Không thể duyệt yêu cầu đang ở trạng thái ${reqRecord.status}. Gian hàng bán lại cần gửi yêu cầu liên kết mới.`,
+      }), { status: 400, headers: CORS_HEADERS });
+    }
+
     // Nếu Admin bật bắt buộc duyệt (mặc định true): chuyển sang PENDING_ADMIN, chưa sinh Pair Key cho tới khi Admin duyệt
     if (mConfig.affiliate_require_admin_approval) {
       await env.DB

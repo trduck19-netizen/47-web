@@ -140,7 +140,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     let totalAmount = 0;
     const childOrdersToInsert: any[] = [];
-    const reserveCodeStatements: any[] = [];
+    const itemsToReserve: Array<{
+      isPhysical: boolean;
+      sourceProductId: string;
+      codeId: string | null;
+      childOrderId: string;
+      productName: string;
+    }> = [];
 
     // 4. Kiểm tra từng sản phẩm và gian hàng (§4.1)
     for (const item of items) {
@@ -234,13 +240,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
         if (!listing || listing.status !== 'ACTIVE' || listing.price_warning === 'ANTI_LOSS_PAUSED') {
           const isAntiLoss = listing?.price_warning === 'ANTI_LOSS_PAUSED';
+          const isListingOos = listing?.status === 'OUT_OF_STOCK';
           return new Response(
             JSON.stringify({
               success: false,
               error: isAntiLoss
                 ? `Sản phẩm "${product.name}" đang tạm khóa chống lỗ do giá gốc thay đổi.`
-                : `Sản phẩm bán lại "${product.name}" hiện đang tạm ngừng kinh doanh.`,
-              code: isAntiLoss ? 'ANTI_LOSS_PAUSED' : 'AFFILIATE_LISTING_PAUSED',
+                : isListingOos
+                  ? `Sản phẩm "${product.name}" đã tạm hết tồn kho tại Nhà Cung Cấp.`
+                  : `Sản phẩm bán lại "${product.name}" hiện đang tạm ngừng kinh doanh.`,
+              code: isAntiLoss ? 'ANTI_LOSS_PAUSED' : (isListingOos ? 'OUT_OF_STOCK' : 'AFFILIATE_LISTING_PAUSED'),
             }),
             { status: 400, headers: CORS_HEADERS }
           );
@@ -360,24 +369,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         supplier_seller_id: supplierSellerId,
       });
 
-      // Statement giữ mã (hàng số) hoặc trừ nguyên tử stock_quantity tại kho gốc (hàng vật lý)
-      if (isPhysical) {
-        reserveCodeStatements.push(
-          env.DB.prepare(`
-            UPDATE seller_products
-            SET stock_quantity = stock_quantity - 1, updated_at = ?
-            WHERE id = ? AND stock_quantity >= 1
-          `).bind(nowIso, sourceProductId)
-        );
-      } else if (availableCode?.id) {
-        reserveCodeStatements.push(
-          env.DB.prepare(`
-            UPDATE seller_codes
-            SET status = 'RESERVED', order_id = ?, updated_at = ?
-            WHERE id = ? AND status = 'IN_STOCK'
-          `).bind(childOrderId, nowIso, availableCode.id)
-        );
-      }
+      // Ghi nhận danh sách cần giữ kho/mã trước khi tạo đơn cha/đơn con
+      itemsToReserve.push({
+        isPhysical,
+        sourceProductId,
+        codeId: availableCode ? availableCode.id : null,
+        childOrderId,
+        productName: product.name,
+      });
     }
 
     if (childOrdersToInsert.length === 0) {
@@ -387,7 +386,71 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 5. Thực thi Batch nguyên tử tạo đơn cha + các đơn con + giữ mã (§4.1)
+    // 5. Pha 1 (Reserve-First): Khóa tồn kho vật lý / giữ mã số từng món TRƯỚC khi tạo đơn cha/đơn con
+    // Kiểm tra meta.changes === 1 cho từng món; nếu bất kỳ món nào thất bại -> hoàn tác toàn bộ món đã giữ & trả 409
+    const reservedItems: typeof itemsToReserve = [];
+    const rollbackReservedItems = async () => {
+      const rbIso = new Date().toISOString();
+      for (const item of reservedItems) {
+        if (item.isPhysical) {
+          await env.DB.prepare(`
+            UPDATE seller_products
+            SET stock_quantity = stock_quantity + 1, updated_at = ?
+            WHERE id = ?
+          `).bind(rbIso, item.sourceProductId).run().catch(() => {});
+        } else if (item.codeId) {
+          await env.DB.prepare(`
+            UPDATE seller_codes
+            SET status = 'IN_STOCK', order_id = NULL, updated_at = ?
+            WHERE id = ? AND order_id = ? AND status = 'RESERVED'
+          `).bind(rbIso, item.codeId, item.childOrderId).run().catch(() => {});
+        }
+      }
+    };
+
+    for (const item of itemsToReserve) {
+      if (item.isPhysical) {
+        const res: any = await env.DB.prepare(`
+          UPDATE seller_products
+          SET stock_quantity = stock_quantity - 1, updated_at = ?
+          WHERE id = ? AND stock_quantity >= 1
+        `).bind(nowIso, item.sourceProductId).run();
+        const changes = Number(res?.meta?.changes ?? res?.changes ?? 0);
+        if (changes !== 1) {
+          await rollbackReservedItems();
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Sản phẩm vật lý "${item.productName}" vừa hết tồn kho. Đơn hàng chưa được tạo.`,
+              code: 'STOCK_RACE_CONFLICT',
+            }),
+            { status: 409, headers: CORS_HEADERS }
+          );
+        }
+        reservedItems.push(item);
+      } else if (item.codeId) {
+        const res: any = await env.DB.prepare(`
+          UPDATE seller_codes
+          SET status = 'RESERVED', order_id = ?, updated_at = ?
+          WHERE id = ? AND status = 'IN_STOCK'
+        `).bind(item.childOrderId, nowIso, item.codeId).run();
+        const changes = Number(res?.meta?.changes ?? res?.changes ?? 0);
+        if (changes !== 1) {
+          await rollbackReservedItems();
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Mã kho của sản phẩm "${item.productName}" vừa được khách khác giữ. Vui lòng thử lại.`,
+              code: 'STOCK_RACE_CONFLICT',
+            }),
+            { status: 409, headers: CORS_HEADERS }
+          );
+        }
+        reservedItems.push(item);
+      }
+    }
+
+    // 6. Pha 2: Tạo đơn cha + các đơn con sau khi toàn bộ kho/mã đã xác nhận giữ thành công
     const batchStatements: any[] = [
       // Đơn cha
       env.DB.prepare(`
@@ -405,8 +468,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         nowIso,
         nowIso
       ),
-      // Giữ các mã kho
-      ...reserveCodeStatements,
     ];
 
     // Chèn từng đơn con
@@ -443,7 +504,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    await env.DB.batch(batchStatements);
+    try {
+      await env.DB.batch(batchStatements);
+    } catch (batchErr: any) {
+      await rollbackReservedItems();
+      throw batchErr;
+    }
 
     // Ghi nhật ký kiểm toán
     await logAdminAudit(env.DB, {
