@@ -10,8 +10,18 @@ import {
 } from '../../functions/services/seller_affiliate_service';
 import { onRequestPut as updateSellerConfig } from '../../functions/api/admin/seller-config';
 import { onRequestPut as updateResellParams } from '../../functions/api/seller/products/[id]/resell';
-import { onRequestPost as createAffiliateRequest } from '../../functions/api/seller/affiliate/requests';
+import {
+  onRequestGet as getAffiliateRequests,
+  onRequestPost as createAffiliateRequest,
+} from '../../functions/api/seller/affiliate/requests';
 import { onRequestPost as approveAffiliateRequest } from '../../functions/api/seller/affiliate/requests/[id]/approve';
+import { onRequestGet as getAffiliatePartners } from '../../functions/api/seller/affiliate/partners/index';
+import { onRequestGet as getAffiliateCatalog } from '../../functions/api/seller/affiliate/catalog';
+import {
+  onRequestGet as getAffiliateListings,
+  onRequestPost as createAffiliateListing,
+} from '../../functions/api/seller/affiliate/listings/index';
+import { onRequestPut as updateAffiliateListing } from '../../functions/api/seller/affiliate/listings/[id]';
 import { onRequestPost as createSingleOrder } from '../../functions/api/seller-orders/index';
 import { onRequestPost as createMultiOrder } from '../../functions/api/seller-orders/multi';
 import { onRequestPost as createSellerProduct } from '../../functions/api/seller/products/index';
@@ -180,6 +190,10 @@ function createMockDb(seed?: Partial<MockState>) {
       );
       return { rows: found, changes: 0 };
     }
+    if (sql.startsWith('SELECT id, name, slug FROM sellers WHERE id = ? AND status = "ACTIVE"')) {
+      const s = state.sellers.get(args[0]);
+      return { rows: s && s.status === 'ACTIVE' && !s.deleted_at ? [{ id: s.id, name: s.name, slug: s.slug }] : [], changes: 0 };
+    }
     if (sql.startsWith('UPDATE sellers SET pending_balance_core = pending_balance_core + ?')) {
       const [amount, , sellerId] = args;
       const s = state.sellers.get(sellerId);
@@ -273,6 +287,24 @@ function createMockDb(seed?: Partial<MockState>) {
       p.stock_quantity = Number(p.stock_quantity || 0) + 1;
       return { rows: [], changes: 1 };
     }
+    if (sql.startsWith('INSERT INTO seller_products (') && sql.includes('origin_product_id')) {
+      const [
+        id, seller_id, game_slug, game_name, name, cover_url, description,
+        price_core, original_price_core, ceiling_price_core, warranty_type, warranty_hours,
+        delivery_type, low_stock_threshold, product_type, weight_grams, warehouse_address,
+        origin_seller_id, origin_product_id, created_at, updated_at,
+      ] = args;
+      state.products.set(id, {
+        id, seller_id, game_slug, game_name, name, cover_url, description,
+        price_core, original_price_core, ceiling_price_core, warranty_type, warranty_hours,
+        delivery_type, low_stock_threshold, product_type, stock_quantity: 0,
+        weight_grams, warehouse_address, status: 'APPROVED',
+        is_affiliate: 1, origin_seller_id, origin_product_id,
+        resell_enabled: 0, resell_discount_pct: 0, resell_commission_pct: 0, resell_map_price: 0,
+        created_at, updated_at, deleted_at: null,
+      });
+      return { rows: [], changes: 1 };
+    }
     if (sql.startsWith('INSERT INTO seller_products (')) {
       const [
         id, seller_id, game_slug, game_name, name, cover_url, description,
@@ -335,6 +367,164 @@ function createMockDb(seed?: Partial<MockState>) {
         revoked_at: null,
       });
       return { rows: [], changes: 1 };
+    }
+    if (sql.includes('FROM seller_affiliate_partnerships sap JOIN sellers s_res ON sap.reseller_seller_id = s_res.id WHERE sap.supplier_seller_id = ?')) {
+      const supId = args[0];
+      const rows = Array.from(state.partnerships.values())
+        .filter((p) => p.supplier_seller_id === supId)
+        .map((p) => {
+          const resSeller = state.sellers.get(p.reseller_seller_id);
+          const activeListingsCount = Array.from(state.listings.values()).filter(
+            (l) => l.partnership_id === p.id && l.status === 'ACTIVE'
+          ).length;
+          return {
+            ...p,
+            partnership_id: p.id,
+            partnership_status: p.status,
+            connected_at: p.created_at || '2026-11-27T00:00:00Z',
+            reseller_name: resSeller?.name || 'Reseller',
+            reseller_slug: resSeller?.slug || p.reseller_seller_id,
+            active_listings_count: activeListingsCount,
+            total_revenue_core: Array.from(state.orders.values())
+              .filter(
+                (o) =>
+                  o.supplier_seller_id === p.supplier_seller_id &&
+                  o.seller_id === p.reseller_seller_id &&
+                  Number(o.is_affiliate_order) === 1 &&
+                  !o.deleted_at &&
+                  o.status === 'COMPLETED'
+              )
+              .reduce((acc, o) => acc + Number(o.price_core || 0), 0),
+            total_orders_count: Array.from(state.orders.values()).filter(
+              (o) =>
+                o.supplier_seller_id === p.supplier_seller_id &&
+                o.seller_id === p.reseller_seller_id &&
+                Number(o.is_affiliate_order) === 1 &&
+                !o.deleted_at
+            ).length,
+          };
+        });
+      return { rows, changes: 0 };
+    }
+    if (sql.includes('FROM seller_affiliate_partnerships sap JOIN sellers s_sup ON sap.supplier_seller_id = s_sup.id WHERE sap.reseller_seller_id = ?')) {
+      const resId = args[0];
+      const rows = Array.from(state.partnerships.values())
+        .filter((p) => p.reseller_seller_id === resId)
+        .map((p) => {
+          const supSeller = state.sellers.get(p.supplier_seller_id);
+          const activeListingsCount = Array.from(state.listings.values()).filter(
+            (l) => l.partnership_id === p.id && l.status === 'ACTIVE'
+          ).length;
+          return {
+            ...p,
+            supplier_name: supSeller?.name || 'Supplier',
+            supplier_slug: supSeller?.slug || p.supplier_seller_id,
+            active_listings_count: activeListingsCount,
+          };
+        });
+      return { rows, changes: 0 };
+    }
+    if (sql.startsWith('UPDATE seller_affiliate_partnerships SET one_time_raw_key = NULL WHERE id = ?')) {
+      const p = state.partnerships.get(args[0]);
+      if (p) p.one_time_raw_key = null;
+      return { rows: [], changes: p ? 1 : 0 };
+    }
+    if (sql.startsWith('SELECT supplier_seller_id, status FROM seller_affiliate_partnerships WHERE id = ? AND reseller_seller_id = ?') || sql.startsWith('SELECT id, supplier_seller_id, reseller_seller_id, status FROM seller_affiliate_partnerships WHERE id = ? AND reseller_seller_id = ?')) {
+      const p = state.partnerships.get(args[0]);
+      return { rows: p && p.reseller_seller_id === args[1] ? [p] : [], changes: 0 };
+    }
+    if (sql.includes('FROM seller_products sp WHERE sp.seller_id = ? AND sp.resell_enabled = 1')) {
+      const [resellerSellerId, supplierSellerId] = args;
+      const rows = Array.from(state.products.values())
+        .filter(
+          (sp) =>
+            sp.seller_id === supplierSellerId &&
+            Number(sp.resell_enabled) === 1 &&
+            !sp.is_affiliate &&
+            !sp.origin_product_id &&
+            sp.status === 'APPROVED' &&
+            !sp.deleted_at
+        )
+        .map((sp) => {
+          const digitalCount = Array.from(state.codes.values()).filter(
+            (c) => c.product_id === sp.id && c.status === 'IN_STOCK' && !c.deleted_at
+          ).length;
+          const listed = Array.from(state.listings.values()).find(
+            (l) => l.supplier_product_id === sp.id && l.reseller_seller_id === resellerSellerId && l.status === 'ACTIVE'
+          );
+          return {
+            ...sp,
+            base_price: sp.price_core,
+            digital_stock_count: digitalCount,
+            already_listed_id: listed?.id || null,
+          };
+        });
+      return { rows, changes: 0 };
+    }
+    if (sql.startsWith('SELECT * FROM seller_products WHERE id = ? AND seller_id = ? AND resell_enabled = 1')) {
+      const p = state.products.get(args[0]);
+      return { rows: p && p.seller_id === args[1] && Number(p.resell_enabled) === 1 && !p.deleted_at ? [p] : [], changes: 0 };
+    }
+    if (sql.startsWith('SELECT id FROM seller_affiliate_listings WHERE partnership_id = ? AND supplier_product_id = ? AND reseller_seller_id = ?')) {
+      const found = Array.from(state.listings.values()).filter(
+        (l) => l.partnership_id === args[0] && l.supplier_product_id === args[1] && l.reseller_seller_id === args[2] && l.status !== 'HIDDEN'
+      );
+      return { rows: found, changes: 0 };
+    }
+    if (sql.startsWith('INSERT INTO seller_affiliate_listings (')) {
+      const [
+        id, partnership_id, supplier_seller_id, reseller_seller_id, supplier_product_id,
+        reseller_product_id, markup_type, markup_value, price_mode, locked_price,
+        show_supplier, created_at, updated_at,
+      ] = args;
+      state.listings.set(id, {
+        id, partnership_id, supplier_seller_id, reseller_seller_id, supplier_product_id,
+        reseller_product_id, markup_type, markup_value, price_mode, locked_price,
+        show_supplier, status: 'ACTIVE', price_warning: null, created_at, updated_at,
+      });
+      return { rows: [], changes: 1 };
+    }
+    if (sql.includes('FROM seller_affiliate_listings sal JOIN seller_products sp_orig ON sal.supplier_product_id = sp_orig.id JOIN seller_products sp_res ON sal.reseller_product_id = sp_res.id WHERE sal.reseller_seller_id = ?') || (sql.includes('FROM seller_affiliate_listings sal JOIN seller_products sp_orig') && sql.includes('WHERE sal.reseller_seller_id = ?'))) {
+      const resId = args[0];
+      const rows = Array.from(state.listings.values())
+        .filter((l) => l.reseller_seller_id === resId && !state.products.get(l.reseller_product_id)?.deleted_at)
+        .map((l) => {
+          const orig = state.products.get(l.supplier_product_id);
+          const resP = state.products.get(l.reseller_product_id);
+          const supS = state.sellers.get(l.supplier_seller_id);
+          return {
+            ...l,
+            product_name: orig?.name || '',
+            cover_url: orig?.cover_url || '',
+            origin_price: orig?.price_core || 0,
+            origin_map_price: orig?.resell_map_price || 0,
+            resell_discount_pct: orig?.resell_discount_pct || 0,
+            resell_commission_pct: orig?.resell_commission_pct || 0,
+            my_selling_price: resP?.price_core || 0,
+            product_status: resP?.status || 'APPROVED',
+            supplier_name: supS?.name || '',
+            supplier_slug: supS?.slug || '',
+          };
+        });
+      return { rows, changes: 0 };
+    }
+    if (sql.includes('FROM seller_affiliate_listings sal JOIN seller_products sp_orig ON sal.supplier_product_id = sp_orig.id WHERE sal.id = ?')) {
+      const l = state.listings.get(args[0]);
+      if (!l) return { rows: [], changes: 0 };
+      const orig = state.products.get(l.supplier_product_id);
+      return {
+        rows: [
+          {
+            ...l,
+            origin_price: orig?.price_core || 0,
+            resell_discount_pct: orig?.resell_discount_pct || 0,
+            resell_commission_pct: orig?.resell_commission_pct || 0,
+            resell_map_price: orig?.resell_map_price || 0,
+            product_type: orig?.product_type || 'digital',
+          },
+        ],
+        changes: 0,
+      };
     }
     if (sql.includes('FROM seller_affiliate_partnerships sap JOIN sellers s_res')) {
       const p = state.partnerships.get(args[0]);
@@ -775,6 +965,19 @@ function createMockDb(seed?: Partial<MockState>) {
         ],
         changes: 0,
       };
+    }
+    if (sql.startsWith('UPDATE seller_affiliate_listings SET markup_type = ?') && sql.includes('price_warning = NULL')) {
+      const [markupType, markupValue, priceMode, lockedPrice, showSupplier, updatedAt, id] = args;
+      const l = state.listings.get(id);
+      if (!l) return { rows: [], changes: 0 };
+      l.markup_type = markupType;
+      l.markup_value = markupValue;
+      l.price_mode = priceMode;
+      l.locked_price = lockedPrice;
+      l.show_supplier = showSupplier;
+      l.price_warning = null;
+      l.updated_at = updatedAt;
+      return { rows: [], changes: 1 };
     }
     if (sql.startsWith('UPDATE seller_affiliate_listings SET markup_type = ?')) {
       const [markupType, markupValue, priceMode, lockedPrice, showSupplier, status, priceWarning, updatedAt, id] = args;
@@ -2301,7 +2504,287 @@ async function main() {
     assert.equal(shouldBumpCatalogEpoch('/api/seller/webhooks/whk_1/test', 'POST'), false);
   });
 
-  console.log(`\n[Inter-Shop Affiliate Mảnh 1+2 Summary] Passed: ${passed}, Failed: ${failed}`);
+  await test('19. Mảnh 4 E2E 2-shop full lifecycle: request -> PENDING_ADMIN -> Admin APPROVED -> 1-time rawKey -> catalog -> assign -> PUT edit -> webhook -> checkout -> 3-way orders & partners seller_orders revenue', async () => {
+    const db = createMockDb();
+    db.state.members.set('m_sup', { id: 'm_sup', username: 'sup_u', email: 'sup@e2e.test', balance: 0, role: 'MEMBER', status: 'ACTIVE', session_token: 'tok_sup' });
+    db.state.members.set('m_res', { id: 'm_res', username: 'res_u', email: 'res@e2e.test', balance: 0, role: 'MEMBER', status: 'ACTIVE', session_token: 'tok_res' });
+    db.state.members.set('m_buyer', { id: 'm_buyer', username: 'buy_u', email: 'buy@e2e.test', balance: 5000, role: 'MEMBER', status: 'ACTIVE', session_token: 'tok_buyer' });
+    db.state.sessions.set('tok_sup', { id: 'ssup', member_id: 'm_sup' });
+    db.state.sessions.set('tok_res', { id: 'sres', member_id: 'm_res' });
+    db.state.sessions.set('tok_buyer', { id: 'sbuy', member_id: 'm_buyer' });
+    db.state.sellers.set('sel_sup', { id: 'sel_sup', name: 'E2E Supplier Shop', slug: 'e2e-supplier', owner_member_id: 'm_sup', status: 'ACTIVE', pending_balance_core: 0, available_balance_core: 0 });
+    db.state.sellers.set('sel_res', { id: 'sel_res', name: 'E2E Reseller Shop', slug: 'e2e-reseller', owner_member_id: 'm_res', status: 'ACTIVE', pending_balance_core: 0, available_balance_core: 0 });
+    db.state.products.set('prd_orig', {
+      id: 'prd_orig',
+      seller_id: 'sel_sup',
+      game_slug: 'test-game',
+      game_name: 'Test Game',
+      name: 'Origin Pack 100',
+      cover_url: '/game_icons/physical-default.webp',
+      description: 'Origin digital pack',
+      price_core: 100,
+      original_price_core: 100,
+      ceiling_price_core: 0,
+      warranty_type: '24H',
+      warranty_hours: 24,
+      delivery_type: 'AUTO_CODE',
+      low_stock_threshold: 1,
+      product_type: 'digital',
+      stock_quantity: 0,
+      resell_enabled: 1,
+      resell_discount_pct: 10,
+      resell_commission_pct: 5,
+      resell_map_price: 110,
+      status: 'APPROVED',
+      is_affiliate: 0,
+      origin_seller_id: null,
+      origin_product_id: null,
+      deleted_at: null,
+    });
+    const encCode = await encryptCode('E2E-M4-CODE-001', 'test-secret-key-min-16-chars');
+    db.state.codes.set('cd_1', { id: 'cd_1', product_id: 'prd_orig', code_encrypted: encCode, status: 'IN_STOCK', deleted_at: null });
+
+    // 1. Shop B sends partnership request using supplier_seller_id (slug)
+    const reqCreate = await createAffiliateRequest({
+      request: new Request('https://shop.example.com/api/seller/affiliate/requests', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer tok_res', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ supplier_seller_id: 'e2e-supplier' }),
+      }),
+      env: { DB: db },
+    });
+    assert.equal(reqCreate.status, 201);
+    const reqData: any = await reqCreate.json();
+    const partnershipId = reqData.request_id;
+    assert.ok(partnershipId);
+
+    // 2. Shop A reads ?role=supplier -> incoming_requests contains Shop B PENDING
+    const resSupIn = await getAffiliateRequests({
+      request: new Request('https://shop.example.com/api/seller/affiliate/requests?role=supplier', {
+        headers: { Authorization: 'Bearer tok_sup' },
+      }),
+      env: { DB: db },
+    });
+    const dataSupIn: any = await resSupIn.json();
+    assert.equal(dataSupIn.incoming_requests.length, 1);
+    assert.equal(dataSupIn.incoming_requests[0].status, 'PENDING');
+    assert.equal(dataSupIn.incoming_requests[0].reseller_name, 'E2E Reseller Shop');
+
+    // 3. Shop A approves -> PENDING_ADMIN (affiliate_require_admin_approval defaults true)
+    const resSupApp = await approveAffiliateRequest({
+      request: new Request(`https://shop.example.com/api/seller/affiliate/requests/${partnershipId}/approve`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer tok_sup' },
+      }),
+      params: { id: partnershipId },
+      env: { DB: db },
+    });
+    assert.equal(resSupApp.status, 200);
+    const dataSupApp: any = await resSupApp.json();
+    assert.equal(dataSupApp.status, 'PENDING_ADMIN');
+    assert.equal(dataSupApp.requires_admin_approval, true);
+
+    // 4. Admin approves -> APPROVED (no raw key returned to admin API, only api_key_prefix)
+    const resAdmApp = await handleAdminAffiliateRequest(
+      {
+        request: new Request(`https://shop.example.com/api/admin/affiliate/partnerships/${partnershipId}`, {
+          method: 'PATCH',
+          headers: { 'X-Admin-Key': 'adm_test_secret_1234', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'APPROVED' }),
+        }),
+        env: { DB: db, ADMIN_API_KEY: 'adm_test_secret_1234' },
+      },
+      ['partnerships', partnershipId]
+    );
+    assert.equal(resAdmApp.status, 200);
+    const dataAdmApp: any = await resAdmApp.json();
+    assert.equal(dataAdmApp.partnership.status, 'APPROVED');
+    assert.ok(String(dataAdmApp.partnership.api_key_prefix || '').startsWith('wcg_shop_'));
+    assert.equal('one_time_raw_key' in dataAdmApp.partnership, false);
+
+    // 5. Shop B reads ?role=reseller -> receives one_time_raw_key ONCE, second read has null
+    const resResOut1 = await getAffiliateRequests({
+      request: new Request('https://shop.example.com/api/seller/affiliate/requests?role=reseller', {
+        headers: { Authorization: 'Bearer tok_res' },
+      }),
+      env: { DB: db },
+    });
+    const dataResOut1: any = await resResOut1.json();
+    assert.equal(dataResOut1.outgoing_requests[0].status, 'APPROVED');
+    assert.ok(String(dataResOut1.outgoing_requests[0].one_time_raw_key || '').startsWith('wcg_shop_'));
+
+    const resResOut2 = await getAffiliateRequests({
+      request: new Request('https://shop.example.com/api/seller/affiliate/requests?role=reseller', {
+        headers: { Authorization: 'Bearer tok_res' },
+      }),
+      env: { DB: db },
+    });
+    const dataResOut2: any = await resResOut2.json();
+    assert.equal(dataResOut2.outgoing_requests[0].one_time_raw_key, null);
+
+    // 6. Shop B opens Supplier catalog (base_price returned) & assigns listing
+    const resCat = await getAffiliateCatalog({
+      request: new Request(`https://shop.example.com/api/seller/affiliate/catalog?partnership_id=${partnershipId}`, {
+        headers: { Authorization: 'Bearer tok_res' },
+      }),
+      env: { DB: db },
+    });
+    assert.equal(resCat.status, 200);
+    const dataCat: any = await resCat.json();
+    assert.equal(dataCat.products.length, 1);
+    assert.equal(dataCat.products[0].base_price, 100);
+
+    const resAssign = await createAffiliateListing({
+      request: new Request('https://shop.example.com/api/seller/affiliate/listings', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer tok_res', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          partnership_id: partnershipId,
+          supplier_product_id: 'prd_orig',
+          markup_type: 'PERCENT',
+          markup_value: 20,
+          price_mode: 'FORMULA',
+          show_supplier: 1,
+        }),
+      }),
+      env: { DB: db },
+    });
+    assert.equal(resAssign.status, 201);
+
+    const resList1 = await getAffiliateListings({
+      request: new Request('https://shop.example.com/api/seller/affiliate/listings', {
+        headers: { Authorization: 'Bearer tok_res' },
+      }),
+      env: { DB: db },
+    });
+    const dataList1: any = await resList1.json();
+    assert.equal(dataList1.listings.length, 1);
+    const listingId = dataList1.listings[0].id;
+    const resellerProductId = dataList1.listings[0].reseller_product_id;
+    assert.equal(dataList1.listings[0].my_selling_price, 120);
+
+    // 7. Shop B edits listing via PUT /listings/:id (unconditionally clears price_warning & updates price)
+    db.state.listings.get(listingId).price_warning = 'ANTI_LOSS_PAUSED';
+    const resEdit = await updateAffiliateListing({
+      request: new Request(`https://shop.example.com/api/seller/affiliate/listings/${listingId}`, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer tok_res', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          markup_type: 'FIXED',
+          markup_value: 30,
+          price_mode: 'LOCKED',
+          locked_price: 130,
+          show_supplier: 0,
+        }),
+      }),
+      params: { id: listingId },
+      env: { DB: db },
+    });
+    assert.equal(resEdit.status, 200);
+    const dataEdit: any = await resEdit.json();
+    assert.equal(dataEdit.new_selling_price, 130);
+    assert.equal(db.state.listings.get(listingId).price_warning, null);
+
+    // 8. Shop A creates + deletes Webhook cleanly
+    const whEnv = { DB: db, MARKETPLACE_CODE_KEY: 'test-secret-key-min-16-chars', JWT_SECRET: 'test-secret-key-min-16-chars' };
+    const resWhCreate = await handleSellerWebhooksRequest(
+      {
+        request: new Request('https://shop.example.com/api/seller/webhooks', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer tok_sup', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'M4 Hook', webhook_url: 'https://example.com/hook', events: ['order.paid'] }),
+        }),
+        env: whEnv,
+      },
+      []
+    );
+    assert.equal(resWhCreate.status, 201);
+    const whData: any = await resWhCreate.json();
+    assert.ok(String(whData.raw_hmac_secret || '').startsWith('whsec_'));
+
+    const resWhDel = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/${whData.webhook.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: 'Bearer tok_sup' },
+        }),
+        env: whEnv,
+      },
+      [whData.webhook.id]
+    );
+    assert.equal(resWhDel.status, 200);
+
+    // 9. Buyer purchases reseller product (130 Core) -> COMPLETED -> 3-way orders & partners seller_orders revenue
+    const resBuy = await createSingleOrder({
+      request: new Request('https://shop.example.com/api/seller-orders', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer tok_buyer', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: resellerProductId, payment_method: 'CORE' }),
+      }),
+      env: { DB: db, MARKETPLACE_CODE_KEY: 'test-secret-key-min-16-chars', JWT_SECRET: 'test-secret-key-min-16-chars' },
+    });
+    assert.equal(resBuy.status, 201);
+    const buyData: any = await resBuy.json();
+    const orderId = buyData.order.id;
+    db.state.orders.get(orderId).status = 'COMPLETED';
+    db.state.orders.get(orderId).released_at = new Date().toISOString();
+
+    // Check 3-way orders for Shop A and Shop B
+    const [ordSupRes, ordResRes, partnersRes] = await Promise.all([
+      getSellerAffiliateOrders({
+        request: new Request('https://shop.example.com/api/seller/affiliate/orders?role=supplier', {
+          headers: { Authorization: 'Bearer tok_sup' },
+        }),
+        env: { DB: db },
+      }),
+      getSellerAffiliateOrders({
+        request: new Request('https://shop.example.com/api/seller/affiliate/orders?role=reseller', {
+          headers: { Authorization: 'Bearer tok_res' },
+        }),
+        env: { DB: db },
+      }),
+      getAffiliatePartners({
+        request: new Request('https://shop.example.com/api/seller/affiliate/partners', {
+          headers: { Authorization: 'Bearer tok_sup' },
+        }),
+        env: { DB: db },
+      }),
+    ]);
+
+    const ordSupData: any = await ordSupRes.json();
+    const ordResData: any = await ordResRes.json();
+    const partnersData: any = await partnersRes.json();
+
+    assert.equal(ordSupData.orders.length, 1);
+    assert.equal(ordSupData.orders[0].escrow_status, 'RELEASED');
+    assert.equal(ordResData.orders.length, 1);
+    assert.equal(
+      ordSupData.orders[0].split.supplierPayout +
+        ordResData.orders[0].split.resellerPayout +
+        ordSupData.orders[0].split.platformFee,
+      130
+    );
+    assert.equal(partnersData.partners.length, 1);
+    assert.equal(partnersData.partners[0].partnership_status, 'APPROVED');
+    assert.equal(partnersData.partners[0].total_orders_count, 1);
+    assert.equal(partnersData.partners[0].total_revenue_core, 130);
+  });
+
+  await test('20. Rule 12 Dictionary Symmetry for sellerAffiliate & intershopAffiliate (vi.json == en.json)', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const vi = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/locales/vi.json'), 'utf8'));
+    const en = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/locales/en.json'), 'utf8'));
+
+    for (const section of ['sellerAffiliate', 'intershopAffiliate']) {
+      const viKeys = Object.keys(vi[section] || {}).sort();
+      const enKeys = Object.keys(en[section] || {}).sort();
+      assert.ok(viKeys.length > 0, `${section} missing in vi.json`);
+      assert.deepEqual(viKeys, enKeys, `Key mismatch in ${section}`);
+    }
+  });
+
+  console.log(`\n[Inter-Shop Affiliate Mảnh 1+2+4 Summary] Passed: ${passed}, Failed: ${failed}`);
   if (failed > 0) process.exit(1);
 }
 

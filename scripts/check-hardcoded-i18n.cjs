@@ -35,6 +35,7 @@ const IN_SCOPE_UI_FILES = [
   'src/components/AuthModal.tsx',
   'src/admin/modules/SupplierConnectorsModule.tsx',
   'src/admin/modules/InterShopAffiliateModule.tsx',
+  'src/components/seller/SellerAffiliateManager.tsx',
 ];
 
 // Danh mục toàn bộ các thư mục giao diện UI (khi chạy ở chế độ audit toàn sàn --all)

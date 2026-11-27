@@ -1,4 +1,4 @@
-=== UTC: 2026-11-26T17:42:10.036Z ===
+=== UTC: 2026-11-27T06:31:26.922Z ===
 === STEP 1: tsc -p tsconfig.homepage.json --noEmit --listFiles ===
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
@@ -1458,10 +1458,6 @@ src/components/seller/SellerCenterView.tsx(2268,47): error TS2345: Argument of t
 src/components/seller/SellerCenterView.tsx(2272,94): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2289,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2299,62): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2320,11): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 39 more ...; intershopAffiliate: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
-  Types of parameters 'params' and 'fallback' are incompatible.
-    Type 'string | undefined' is not assignable to type 'Record<string, any> | undefined'.
-      Type 'string' is not assignable to type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2835,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2845,52): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2852,70): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
@@ -1479,10 +1475,6 @@ src/components/seller/SellerCenterView.tsx(2910,82): error TS2345: Argument of t
 src/components/seller/SellerCenterView.tsx(2930,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2935,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2948,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2966,9): error TS2322: Type '((key: string, params?: Record<string, any> | undefined) => string) & { success: string; glossary: { save: string; cancel: string; refresh: string; exportCsv: string; importCsv: string; ... 35 more ...; error: string; }; ... 39 more ...; intershopAffiliate: { ...; }; }' is not assignable to type '(key: string, fallback?: string | undefined, params?: any) => string'.
-  Types of parameters 'params' and 'fallback' are incompatible.
-    Type 'string | undefined' is not assignable to type 'Record<string, any> | undefined'.
-      Type 'string' is not assignable to type 'Record<string, any>'.
 src/components/ShareModal.tsx(81,9): error TS6133: 'success' is declared but its value is never read.
 src/components/shipping/ShippingTrackingModal.tsx(11,3): error TS6133: 'CheckCircle2' is declared but its value is never read.
 src/components/shipping/ShippingTrackingModal.tsx(15,3): error TS6133: 'ExternalLink' is declared but its value is never read.

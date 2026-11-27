@@ -47,17 +47,21 @@ export async function onRequestGet(context: { request: Request; env: { DB: D1Dat
                WHERE sal.partnership_id = sap.id AND sal.status = 'ACTIVE'
              ) as active_listings_count,
              (
-               SELECT COALESCE(SUM(o.total_amount), 0)
-               FROM orders o
+               SELECT COALESCE(SUM(o.price_core), 0)
+               FROM seller_orders o
                WHERE o.supplier_seller_id = sap.supplier_seller_id
                  AND o.seller_id = sap.reseller_seller_id
+                 AND o.is_affiliate_order = 1
+                 AND o.deleted_at IS NULL
                  AND o.status = 'COMPLETED'
              ) as total_revenue_core,
              (
                SELECT COUNT(*)
-               FROM orders o
+               FROM seller_orders o
                WHERE o.supplier_seller_id = sap.supplier_seller_id
                  AND o.seller_id = sap.reseller_seller_id
+                 AND o.is_affiliate_order = 1
+                 AND o.deleted_at IS NULL
              ) as total_orders_count
       FROM seller_affiliate_partnerships sap
       JOIN sellers s_res ON sap.reseller_seller_id = s_res.id

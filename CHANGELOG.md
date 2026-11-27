@@ -7,6 +7,19 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-27]
 
+### 484. Liên Kết Gian Hàng Nội Bộ — Mảnh 4: Nâng Cấp Giao Diện Gian Hàng `SellerAffiliateManager.tsx` (4 Sub-Tab, Sửa 9 Lệch Hợp Đồng, Partners `seller_orders`, E2E 225/225, I18N 23/23) (27/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Tiếp nối Mảnh 3 (`28931f1`), sửa triệt để các lỗi lệch hợp đồng API có sẵn trong `SellerAffiliateManager.tsx` và hoàn thiện trọn bộ 4 sub-tab tự chủ cho chủ gian hàng theo kế hoạch Mảnh 4 đã duyệt (`ke_hoach_lien_ket_noi_bo_manh4_27_11.md` kèm 9 điểm sửa).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Sửa 9 Lệch Hợp Đồng & Nâng Cấp 4 Sub-Tab (`src/components/seller/SellerAffiliateManager.tsx`)*:
+     - Sửa `GET /api/seller/affiliate/requests?role=all` đọc `incoming_requests`/`outgoing_requests` + bắt `one_time_raw_key` 1 lần cho Shop B; `POST /requests` gửi đúng `supplier_seller_id`; `approve` xử lý đúng `PENDING_ADMIN` và `APPROVED`; `partners` đọc đúng `partnership_id`, `partnership_status`, `api_key_prefix`, `connected_at`, `total_revenue_core`; `catalog` luôn truyền `partnership_id`/`supplier_id` & đọc `base_price`; `POST /listings` gửi `partnership_id` + `supplier_product_id`; `myListings` đọc `my_selling_price`, `origin_price`, `price_warning` và mở modal chỉnh sửa `PUT /api/seller/affiliate/listings/:id` (hiển thị rõ lưu ý gỡ `price_warning` vô điều kiện).
+     - Bổ sung Sub-tab **Webhook Thông Báo Đơn (HMAC)** kết nối 7 route `/api/seller/webhooks*` (chỉ chọn `order.paid` hoặc `*`, hiển thị `raw_hmac_secret` 1 lần) và Sub-tab **Đơn Hàng & Chia Tiền 3 Bên** kết nối `GET /api/seller/affiliate/orders` (4 KPI + đủ 9 trạng thái `escrow_status`).
+     - Chuẩn hóa prop `t(key, params)`, 8 bảng `table-fixed w-full` tổng cột `100%`, xóa sạch 97 fallback & 4 chuỗi ghi cứng tiếng Việt.
+  2. *Sửa Truy Vấn Doanh Thu Đối Tác (`functions/api/seller/affiliate/partners/index.ts`)*:
+     - Đổi 2 subquery từ `orders` sang `seller_orders` (`is_affiliate_order = 1 AND deleted_at IS NULL`, doanh thu chỉ tính `COMPLETED` dùng `price_core`).
+  3. *Song Ngữ 100% VI/EN, I18N Guard 23/23 & Test E2E 225/225 (`src/locales/vi.json`, `en.json`, `scripts/check-hardcoded-i18n.cjs`, `scripts/tests/test_intershop_affiliate.ts`)*:
+     - Đưa `SellerAffiliateManager.tsx` vào `IN_SCOPE_UI_FILES` (`23/23 PASS`), grep tay `0` ký tự tiếng Việt có dấu, bổ sung Test 19 (E2E 2 shop full lifecycle) & Test 20 (đối xứng khóa VI/EN), tổng `npm test` đạt `225/225 PASS`, `tsc` giảm lỗi `1.827 -> 1.825` (`SellerAffiliateManager=0`, `SellerCenterView=89`, `partners=0`).
+
 ### 483. Liên Kết Gian Hàng Nội Bộ — Mảnh 3: Giao Diện Quản Trị Độc Lập `InterShopAffiliateModule` (Lazy-Loaded, Rule 9 Single-Screen, Rule 12 Song Ngữ VI/EN 22/22) (27/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Tiếp nối Mảnh 2 (`a43a34b` / `eb0752d`), xây dựng giao diện Quản trị độc lập cho hệ thống bán lại liên gian hàng nội bộ theo bản kế hoạch Mảnh 3 đã duyệt (`ke_hoach_lien_ket_noi_bo_manh3_27_11.md` cùng 2 sửa bắt buộc + 6 sửa nhỏ + 2 bổ sung), tách biệt khỏi `SellerModerationModule` (`marketplace`) và `SupplierConnectorsModule` (`supplier-connectors`), không sửa backend hay tạo bảng D1 mới, giữ Mảnh 4 ở backlog và Đợt 2 ở trạng thái `BLOCKED`.
