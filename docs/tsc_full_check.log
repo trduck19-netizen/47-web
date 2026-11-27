@@ -179,7 +179,7 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/fs-extra/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/qrcode/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/react-dom/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
-homepage_exit=0  
+homepage_exit=0
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(440,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
@@ -2167,4 +2167,4 @@ src/utils/productPackageUtils.ts(441,58): error TS2367: This comparison appears 
 src/utils/productPackageUtils.ts(441,82): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
 src/utils/productPackageUtils.ts(441,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
 src/utils/productPackageUtils.ts(450,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'GiveawayCampaign'.
-full_tsc_exit=0 
+full_tsc_exit=2

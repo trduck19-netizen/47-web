@@ -1,0 +1,187 @@
+
+> universal-commerce-platform@1.0.0 test
+> npm run test:icons && npm run test:products && npm run test:suppliers && npm run test:sync-epoch && npm run test:intershop
+
+
+> universal-commerce-platform@1.0.0 test:icons
+> tsx scripts/tests/test_icon_and_products_fixes.ts
+
+[
+  {
+    "name": "sanitize_physical_default_adds_v2",
+    "pass": true,
+    "actual": "/game_icons/physical-default.webp?v=2",
+    "expected": "/game_icons/physical-default.webp?v=2"
+  },
+  {
+    "name": "sanitize_physical_default_v2_preserved",
+    "pass": true,
+    "actual": "/game_icons/physical-default.webp?v=2",
+    "expected": "/game_icons/physical-default.webp?v=2"
+  },
+  {
+    "name": "resolve_physical_default_v2",
+    "pass": true,
+    "actual": "/game_icons/physical-default.webp?v=2",
+    "expected": "/game_icons/physical-default.webp?v=2"
+  },
+  {
+    "name": "resolve_physical_missing_cover_v2",
+    "pass": true,
+    "actual": "/game_icons/physical-default.webp?v=2",
+    "expected": "/game_icons/physical-default.webp?v=2"
+  },
+  {
+    "name": "file_handler_spa_html_returns_404",
+    "pass": true,
+    "actual": 404,
+    "expected": 404
+  },
+  {
+    "name": "file_handler_404_no_store",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "file_handler_valid_webp_returns_200",
+    "pass": true,
+    "actual": 200,
+    "expected": 200
+  },
+  {
+    "name": "file_handler_valid_webp_content_type",
+    "pass": true,
+    "actual": "image/webp",
+    "expected": "image/webp"
+  },
+  {
+    "name": "worker_spa_html_returns_404",
+    "pass": true,
+    "actual": 404,
+    "expected": 404
+  },
+  {
+    "name": "worker_404_no_store",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "worker_valid_webp_returns_200",
+    "pass": true,
+    "actual": 200,
+    "expected": 200
+  },
+  {
+    "name": "worker_valid_webp_content_type",
+    "pass": true,
+    "actual": "image/webp",
+    "expected": "image/webp"
+  }
+]
+ALL 12/12 ICON + WORKER + SAFEIMAGE TESTS PASSED
+
+> universal-commerce-platform@1.0.0 test:products
+> tsx scripts/tests/test_products_primary_select.ts
+
+[Migration 0044] Rebuild seller_disputes thành công: 1 -> 1 dòng.
+{
+  "status": 200,
+  "item": {
+    "id": "prd_mock_step5",
+    "title": "[MOCK] Step 5 Physical Product",
+    "slug": "mock-step5-physical",
+    "industry_id": "tech",
+    "category_id": "tech",
+    "product_type": "physical",
+    "original_price": 200,
+    "current_price": 100,
+    "discount_percent": 50,
+    "stock_quantity": 10,
+    "thumbnail_url": "/game_icons/physical-default.webp",
+    "images_json": "[\"/game_icons/physical-default.webp\"]",
+    "description": "Mock product in primary products table",
+    "specifications_json": "{\"warranty_hours\":12,\"origin\":\"Kho Mock Step5\"}",
+    "brand_name": "Brand Mock Step5",
+    "weight_grams": 350,
+    "warehouse_address": "Kho Mock Step5, HCM",
+    "rating_avg": 5,
+    "rating_count": 1,
+    "sold_count": 0,
+    "is_active": 1,
+    "created_at": "2026-11-26T07:00:00Z",
+    "updated_at": "2026-11-26T07:00:00Z",
+    "game_slug": "mock-step5-physical",
+    "cover_image_url": "/game_icons/physical-default.webp",
+    "game_icon_url": "/game_icons/physical-default.webp",
+    "images": [
+      "/game_icons/physical-default.webp"
+    ],
+    "product_images": [
+      "/game_icons/physical-default.webp"
+    ],
+    "warranty_hours": 12,
+    "seller_name": "Brand Mock Step5",
+    "brand": "Brand Mock Step5",
+    "origin": "Kho Mock Step5, HCM",
+    "specifications": {
+      "warranty_hours": 12,
+      "origin": "Kho Mock Step5"
+    }
+  },
+  "missing": []
+}
+ALL 10/10 PRIMARY /api/products FIELDS VERIFIED VIA REAL HANDLER
+
+> universal-commerce-platform@1.0.0 test:suppliers
+> tsx scripts/tests/test_supplier_connectors.ts
+
+{
+  "suite": "test_supplier_connectors",
+  "total": 112,
+  "passed": 112,
+  "failedCount": 0,
+  "failed": []
+}
+
+> universal-commerce-platform@1.0.0 test:sync-epoch
+> tsx scripts/tests/test_catalog_epoch_sync.ts
+
+{
+  "suite": "test_catalog_epoch_sync",
+  "total": 71,
+  "passed": 71,
+  "failedCount": 0,
+  "failed": []
+}
+
+> universal-commerce-platform@1.0.0 test:intershop
+> tsx scripts/tests/test_intershop_affiliate.ts
+
+
+[Inter-Shop Affiliate Mảnh 1 Test Suite]
+  PASS: 1. DEFAULT_MARKETPLACE_CONFIG enables inter-shop affiliate & requires Admin approval by default
+  PASS: 2. PUT /api/admin/seller-config updates affiliate params freely & preserves false/0 values
+  PASS: 3. calculate3WaySplit uses dynamic Admin digital/physical fee rates & sums 100% to sellingPrice
+  PASS: 4. syncAffiliatePriceAndStock handles RESELL_PARAM_CHANGE (MAP update + ANTI_LOSS_PAUSED + recovery)
+[Migration 0044] Rebuild seller_disputes thành công: 0 -> 0 dòng.
+  PASS: 5. PUT /api/seller/products/:id/resell recognizes lowercase "physical" & uses dynamic Admin fee
+  PASS: 6. Partnership approval enforces PENDING_ADMIN when affiliate_require_admin_approval=true (default)
+  PASS: 7. POST /api/seller-orders blocks ANTI_LOSS_PAUSED & fulfills both digital and physical inter-shop orders with dynamic fees
+  PASS: 8. Concurrent stock race (2 buyers, stock=1) & mid-flight wallet race rollback in seller-orders/index.ts
+  PASS: 9. multi.ts fails with 409 & rolls back prior item on stock no-op + checkAndExpireSellerOrdersD1 restores origin stock
+  PASS: 10. Official POST/PUT /api/seller/products writes stock_quantity -> fulfills physical inter-shop order (1 -> 0) & blocks 2nd buyer
+  PASS: 11. escrow_service handles uppercase PHYSICAL without shipping_address with 2% default & dynamic Admin fee
+  PASS: 12. approve.ts rejects REJECTED, REVOKED, SUSPENDED & PENDING_ADMIN (no resurrection)
+  PASS: 13. Admin GET /api/admin/affiliate (selective projection & KPI) & PATCH PENDING_ADMIN -> APPROVED (issues wcg_shop_ key + affiliate_enabled guard)
+  PASS: 14. Admin SUSPENDED/REVOKED cascades listings with ADMIN_SUSPENDED/PARTNERSHIP_REVOKED & APPROVED restores only matching partnership
+  PASS: 15. Admin POST /api/admin/affiliate/partnerships & PATCH /api/admin/affiliate/listings/:id
+  PASS: 16. Seller Self-Service Webhooks: tenant isolation (403 cross-shop), SSRF, fail-closed, events mapping & webhookId test
+  PASS: 17. GET /api/seller/affiliate/orders: 3-way payout breakdown, full escrow_status mapping & zero code/email leakage
+  PASS: 18. Rule 8 hasScope(INTERSHOP_AFFILIATE_MANAGE) & PA1 shouldBumpCatalogEpoch for Mảnh 2 routes
+  PASS: 19. Mảnh 4 E2E 2-shop full lifecycle: request -> PENDING_ADMIN -> Admin APPROVED -> 1-time rawKey -> catalog -> assign -> PUT edit -> webhook -> checkout -> 3-way orders & partners seller_orders revenue
+  PASS: 20. Rule 12 Dictionary Symmetry for sellerAffiliate & intershopAffiliate (vi.json == en.json)
+
+[Inter-Shop Affiliate Mảnh 1+2+4 Summary] Passed: 20, Failed: 0
+test_exit=0

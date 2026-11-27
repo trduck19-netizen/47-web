@@ -272,7 +272,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch(`/api/seller/affiliate/requests/${encodeURIComponent(id)}/approve`, {
         method: 'POST',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
@@ -299,7 +299,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch(`/api/seller/affiliate/requests/${encodeURIComponent(id)}/reject`, {
         method: 'POST',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
@@ -323,7 +323,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch(`/api/seller/affiliate/partners/${encodeURIComponent(partnershipId)}`, {
         method: 'DELETE',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
@@ -349,7 +349,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch('/api/seller/affiliate/requests', {
         method: 'POST',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
         body: JSON.stringify({
           supplier_seller_id: target,
           note: requestNoteInput.trim() || undefined,
@@ -414,7 +414,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
         }
         const res = await fetch('/api/seller/affiliate/listings', {
           method: 'POST',
-          headers: getHeaders(),
+          headers: getHeadersRef.current(),
           body: JSON.stringify({
             partnership_id: selectedSupplierCatalog.partnershipId,
             supplier_product_id: modalTargetItem.id,
@@ -444,7 +444,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
           `/api/seller/affiliate/listings/${encodeURIComponent(modalTargetItem.id)}`,
           {
             method: 'PUT',
-            headers: getHeaders(),
+            headers: getHeadersRef.current(),
             body: JSON.stringify({
               markup_type: formMarkupType,
               markup_value: markupNum,
@@ -476,7 +476,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch(`/api/seller/affiliate/listings/${encodeURIComponent(listingId)}`, {
         method: 'DELETE',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
@@ -500,7 +500,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch('/api/seller/webhooks', {
         method: 'POST',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
         body: JSON.stringify({
           name: whName.trim(),
           webhook_url: whUrl.trim(),
@@ -536,7 +536,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch(`/api/seller/webhooks/${encodeURIComponent(id)}/test`, {
         method: 'POST',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.success) {
@@ -557,7 +557,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch(`/api/seller/webhooks/${encodeURIComponent(hook.id)}`, {
         method: 'PATCH',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
         body: JSON.stringify({ is_active: Number(hook.is_active) !== 1 }),
       });
       const data = await res.json().catch(() => ({}));
@@ -579,7 +579,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch(`/api/seller/webhooks/${encodeURIComponent(hook.id)}`, {
         method: 'PATCH',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
         body: JSON.stringify({ rotate_secret: true }),
       });
       const data = await res.json().catch(() => ({}));
@@ -604,7 +604,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     try {
       const res = await fetch(`/api/seller/webhooks/${encodeURIComponent(hook.id)}`, {
         method: 'DELETE',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
@@ -626,7 +626,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
         `/api/seller/webhooks/deliveries/${encodeURIComponent(deliveryId)}/retry`,
         {
           method: 'POST',
-          headers: getHeaders(),
+          headers: getHeadersRef.current(),
         }
       );
       await res.json().catch(() => ({}));
@@ -1587,38 +1587,42 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
                           <div className="inline-flex flex-wrap items-center justify-end gap-1">
                             <button
                               type="button"
-                              disabled={Boolean(isBusy)}
+                              disabled={Boolean(isBusy || loadingWebhooks)}
                               onClick={() => handlePingWebhook(hook.id)}
                               title={t('sellerAffiliate.whPingBtn')}
-                              className="px-2 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-600 dark:text-sky-300 text-[10px] font-bold inline-flex items-center gap-0.5 cursor-pointer"
+                              aria-label={t('sellerAffiliate.whPingBtn')}
+                              className="px-2 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-600 dark:text-sky-300 text-[10px] font-bold inline-flex items-center gap-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Play className="w-3 h-3" />
                               <span>{t('sellerAffiliate.whPingBtn')}</span>
                             </button>
                             <button
                               type="button"
-                              disabled={Boolean(isBusy)}
+                              disabled={Boolean(isBusy || loadingWebhooks)}
                               onClick={() => handleToggleWebhook(hook)}
                               title={t('sellerAffiliate.whToggleBtn')}
-                              className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground cursor-pointer"
+                              aria-label={t('sellerAffiliate.whToggleBtn')}
+                              className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Power className="w-3 h-3" />
                             </button>
                             <button
                               type="button"
-                              disabled={Boolean(isBusy)}
+                              disabled={Boolean(isBusy || loadingWebhooks)}
                               onClick={() => handleRotateWebhookSecret(hook)}
                               title={t('sellerAffiliate.whRotateBtn')}
-                              className="p-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-300 cursor-pointer"
+                              aria-label={t('sellerAffiliate.whRotateBtn')}
+                              className="p-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <RotateCcw className="w-3 h-3" />
                             </button>
                             <button
                               type="button"
-                              disabled={Boolean(isBusy)}
+                              disabled={Boolean(isBusy || loadingWebhooks)}
                               onClick={() => handleDeleteWebhook(hook)}
                               title={t('sellerAffiliate.whDeleteBtn')}
-                              className="p-1.5 rounded-lg bg-destructive/15 hover:bg-destructive/25 text-destructive cursor-pointer"
+                              aria-label={t('sellerAffiliate.whDeleteBtn')}
+                              className="p-1.5 rounded-lg bg-destructive/15 hover:bg-destructive/25 text-destructive cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -1694,9 +1698,9 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
                           {!isOk ? (
                             <button
                               type="button"
-                              disabled={webhookBusyId === `retry:${d.id}`}
+                              disabled={Boolean(webhookBusyId === `retry:${d.id}` || loadingWebhooks)}
                               onClick={() => handleRetryDelivery(d.id)}
-                              className="px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold cursor-pointer"
+                              className="px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {t('sellerAffiliate.whRetryBtn')}
                             </button>
@@ -2273,6 +2277,8 @@ export const ResellSettingsModal: React.FC<{
   isEn: boolean;
   t: (key: string, params?: Record<string, any>) => string;
 }> = ({ product, isOpen, onClose, getHeaders, onSuccess, t }) => {
+  const getHeadersRef = useRef(getHeaders);
+  getHeadersRef.current = getHeaders;
   const [resellEnabled, setResellEnabled] = useState<boolean>(
     product?.resell_enabled === 1 || Boolean(product?.resell_enabled)
   );
@@ -2297,7 +2303,7 @@ export const ResellSettingsModal: React.FC<{
     try {
       const res = await fetch(`/api/seller/products/${encodeURIComponent(product.id)}/resell`, {
         method: 'PUT',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
         body: JSON.stringify({
           resell_enabled: resellEnabled,
           resell_discount_pct: parseFloat(resellDiscountPct) || 0,
