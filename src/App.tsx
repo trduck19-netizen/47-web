@@ -597,10 +597,11 @@ export const App: React.FC = () => {
 
   const handleSelectMallView = useCallback((
     sub: MallSubView,
-    extra?: { storeSlug?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
+    extra?: { storeSlug?: string; storeCategory?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
   ) => {
     setSelectedProduct(null);
     if (extra?.storeSlug !== undefined) setCurrentStoreSlug(extra.storeSlug);
+    if (extra?.storeCategory !== undefined) setStoreCategoryFilter(extra.storeCategory || 'all');
     if (extra?.newsSlug !== undefined) setInitialNewsSlug(extra.newsSlug);
     if (extra?.utilityId !== undefined) setSelectedUtilityId(extra.utilityId);
     else setSelectedUtilityId(null);
@@ -1221,6 +1222,7 @@ export const App: React.FC = () => {
               selectedUtilityId={selectedUtilityId}
               initialMissionId={initialMissionId}
               onSubViewChange={handleSelectMallView}
+              onStoreCategoryChange={(cat: string) => setStoreCategoryFilter(cat || 'all')}
               onClearInitialGiveawayId={() => setInitialGiveawayId(null)}
               onClearSelectedUtility={() => setSelectedUtilityId(null)}
               onSelectProduct={(prod) => {

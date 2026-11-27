@@ -10,6 +10,13 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-339: Stale `selectedCategory` Khi Đồng Bộ 1 Chiều Từ `App.tsx` Xuống `UniversalMallView` & `StoreView` (27/11/2026)
+- **Triệu chứng & Nguyên nhân**:
+  - `App.tsx` giữ `storeCategoryFilter` và đẩy xuống `UniversalMallView` qua `controlledStoreCategory`, nhưng khi người dùng thao tác nội bộ (`handleFilterGameToStore`, xóa chip `#game ✕` trong `StoreView`, reset/chọn category pill) thì `UniversalMallView` chỉ đổi state cục bộ `selectedCategory` mà không báo ngược về `App.tsx`. Hệ quả: chuỗi bấm `A (modal tầng App) → B (nội bộ sàn) → A (lại từ modal)` bị React bỏ qua `useEffect([controlledStoreCategory])` do `A === A`, giữ stale game B trên kệ.
+- **Giải pháp chuẩn đã kiểm chứng (Mục 487)**:
+  - Mở rộng `extra` của `onSubViewChange` (`UniversalMallView.tsx`) & `handleSelectMallView` (`App.tsx`) thêm `storeCategory?: string`; `handleFilterGameToStore` gọi `setSubView('store', { storeCategory: nextCategory })`, và đồng bộ các thao tác đổi/xóa category nội bộ + nút `✕` trong `StoreView.tsx` qua `onStoreCategoryChange` (khai báo rõ kiểu `(cat: string)` tránh `TS7006`).
+  - Gỡ import thừa `isCodeExpired` ở `functions/_worker.ts:264` (`0` `TS6133` mới so với `75fa59b`), xuất `docs/tsc_full_check.log` kèm đủ marker `homepage_exit=0` / `HOMEPAGE_TSC_OK` / `full_tsc_exit=2` ngay trong commit code.
+
 ### ISSUE-338: Hợp Nhất Sàn `UniversalMallView` — Chặn Hồi Sinh `Game Zone` Từ D1 Cũ & Bẫy Chuyển Đổi Component Legacy (27/11/2026)
 - **Triệu chứng & Bẫy cần tránh**:
   - Sau khi xóa nhánh `'game-zone'` khỏi code giao diện (`013718d`), dữ liệu bảng D1 `homepage_sections` cũ vẫn có thể chứa `nav_game_zone: true` / `shortcut_game_zone: true`, và `PUT /api/admin/homepage-sections` yêu cầu gửi trọn payload JSON `sections` mới cập nhật sạch.

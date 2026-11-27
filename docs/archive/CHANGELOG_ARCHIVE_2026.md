@@ -1,4 +1,17 @@
-# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 466)
+# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 467)
+
+### 467. Profiling Từng Chặng (`Server-Timing` + `colo`), Chuẩn Hóa `X-Timing-D1-Ms`, Song Song Hóa `loadAllStoreProductsD1` / `status` / `search` & Fail-Closed `AdminLoginGuard` (25/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Thực hiện kế hoạch đã duyệt có điều kiện sau kiểm chứng `2afd9f7`: Phần A (chuẩn hóa `X-Timing-D1-Ms` + `X-Timing-Total-Ms` + `Server-Timing` kèm `colo`), Phần C (fail-closed `AdminLoginGuard`), và Phần B dựa trên kết quả đo `Server-Timing` thực tế (phát hiện nhánh `products` `loadAllStoreProductsD1` tốn `1.540 ms` trong khi `tombstones` `43 ms` và `settings` `42 ms` trên isolate lạnh).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Phần A — Chuẩn hóa `X-Timing-D1-Ms` & `Server-Timing`*:
+     - `functions/api/sync-lite.ts`, `functions/api/search/index.ts`, `functions/api/admin/automation/status.ts`, `functions/api/admin/automation/config.ts`: Thống nhất `X-Timing-D1-Ms` là tổng thời gian D1 thực tế trong toàn handler, bổ sung `X-Timing-Total-Ms` cho `search` & `config`, và thêm `Server-Timing` từng chặng + mã POP `colo`.
+  2. *Phần B — Song song hóa & bỏ gọi lặp trên hot path*:
+     - `functions/services/d1_service.ts` (`loadAllStoreProductsD1`) & `functions/api/sync-lite.ts`: Thêm tùy chọn `skipSchemaCheck` / `preloadedMetaSetting`, gộp 3 nhánh (`metaPromise`, `store_products`, `seller_products`) chạy song song bằng `Promise.all` thay vì tuần tự. Giữ nguyên `?nocache=1` bypass mọi tầng cache.
+     - `functions/api/admin/automation/status.ts`: Gộp 5 bước đọc D1 độc lập sau auth (`SELECT 1`, `sqlite_master`, `wcg_admin_sepay_v4` + `telegram_settings_v1` qua `WHERE key IN (...)`, `automation_toggles`) thành 1 đợt `Promise.all`.
+     - `functions/services/search_service.ts`: Chạy song song tìm kiếm `products` và `games` bằng `Promise.all`.
+  3. *Phần C — Fail-closed `AdminLoginGuard`*:
+     - `src/admin/components/AdminLoginGuard.tsx`: Đổi `.catch(() => setIsTurnstileEnabled(false))` thành `true` (fail-closed khi endpoint config lỗi mạng).
 
 ### 466. Tắt Turnstile Riêng Cho Đăng Nhập Admin (`ADMIN_TURNSTILE_ENABLED`), Chốt Chặn Đăng Xuất `pine_explicit_logout`, Sửa Wishlist Metadata (`0 Core`) & Thêm RAM Cache + Timing Headers D1 (25/11/2026)
 - **Bối cảnh & Yêu cầu**:

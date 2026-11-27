@@ -29,6 +29,7 @@ interface StoreViewProps {
   onOpenAuth?: () => void;
   onOpenShare?: (product: StoreProduct) => void;
   initialGameSlug?: string;
+  onClearGameFilter?: () => void;
 }
 
 const STORE_VIEW_MODE_STORAGE_KEY = 'pine_store_view_mode';
@@ -41,6 +42,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
   onOpenAuth,
   onOpenShare,
   initialGameSlug,
+  onClearGameFilter,
 }) => {
   const { t, language } = useLanguage();
   const [products, setProducts] = useState<StoreProduct[]>(() => dataService.getStoreProducts().map((p) => templateService.resolveStoreProduct(p)));
@@ -296,7 +298,10 @@ export const StoreView: React.FC<StoreViewProps> = ({
             {gameFilter !== 'all' && (
               <button
                 type="button"
-                onClick={() => setGameFilter('all')}
+                onClick={() => {
+                  setGameFilter('all');
+                  onClearGameFilter?.();
+                }}
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer bg-[#ee4d2d] text-white shadow-sm active:scale-95"
                 title={t('store.allPackages')}
               >

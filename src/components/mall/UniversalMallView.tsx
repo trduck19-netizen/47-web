@@ -75,8 +75,9 @@ interface UniversalMallViewProps {
   initialMissionId?: string | null;
   onSubViewChange?: (
     sub: MallSubView,
-    extra?: { storeSlug?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
+    extra?: { storeSlug?: string; storeCategory?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
   ) => void;
+  onStoreCategoryChange?: (category: string) => void;
   onClearInitialGiveawayId?: () => void;
   onClearSelectedUtility?: () => void;
   onSelectProduct?: (product: StoreProduct) => void;
@@ -184,6 +185,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
   selectedUtilityId,
   initialMissionId,
   onSubViewChange,
+  onStoreCategoryChange,
   onClearInitialGiveawayId,
   onClearSelectedUtility,
   onSelectProduct,
@@ -219,7 +221,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
 
   const setSubView = (
     nextSub: MallSubView,
-    extra?: { storeSlug?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
+    extra?: { storeSlug?: string; storeCategory?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
   ) => {
     setSubViewState(nextSub);
     if (onSubViewChange) {
@@ -280,9 +282,16 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
     }
   }, [controlledStoreCategory]);
 
+  const syncSelectedCategory = (nextCategory: string) => {
+    const normalized = nextCategory || 'all';
+    setSelectedCategory(normalized);
+    onStoreCategoryChange?.(normalized);
+  };
+
   const handleFilterGameToStore = (slug: string) => {
-    setSelectedCategory(slug || 'all');
-    setSubView('store');
+    const nextCategory = slug || 'all';
+    setSelectedCategory(nextCategory);
+    setSubView('store', { storeCategory: nextCategory });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -303,7 +312,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
       setSearchKeyword(overrideKeyword);
     }
     setSelectedProductType('all');
-    setSelectedCategory('all');
+    syncSelectedCategory('all');
     setCurrentPage(1);
     setIsSearchDropdownOpen(false);
     if (subView !== 'home') {
@@ -457,7 +466,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
   // Tự động reset danh mục khi người dùng gõ từ khóa tìm kiếm mới
   useEffect(() => {
     if (searchKeyword.trim() !== '') {
-      setSelectedCategory('all');
+      syncSelectedCategory('all');
       setCurrentPage(1);
     }
   }, [searchKeyword]);
@@ -995,7 +1004,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           <button 
             key={shortcutId}
             onClick={() => handleShortcutClick(() => {
-              setSelectedCategory('all');
+              syncSelectedCategory('all');
               setSelectedProductType('all');
               const el = document.getElementById('shopee-products-grid');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -1591,7 +1600,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                     {visibleCategories.map((cat) => (
                       <button 
                         key={cat.id}
-                        onClick={() => setSelectedCategory(cat.id)}
+                        onClick={() => syncSelectedCategory(cat.id)}
                         className={`p-3 transition cursor-pointer flex flex-col items-center justify-center ${
                           selectedCategory === cat.id 
                             ? `bg-orange-500/10 ${currentAccent.textColor} font-bold border-b-2 border-current` 
@@ -2879,6 +2888,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               onOpenAuth={onOpenAuth}
               onOpenShare={onOpenShareProduct}
               initialGameSlug={selectedCategory !== 'all' ? selectedCategory : undefined}
+              onClearGameFilter={() => syncSelectedCategory('all')}
             />
           </div>
         )}
@@ -3372,7 +3382,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                   <li key={cat.id}>
                     <button
                       onClick={() => {
-                        setSelectedCategory(cat.id);
+                        syncSelectedCategory(cat.id);
                         setSubView('home');
                         const el = document.getElementById('shopee-products-grid');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });

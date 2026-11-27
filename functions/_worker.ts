@@ -261,7 +261,6 @@ import {
 import fallbackGiveawaysData from '../src/data/giveaways.json';
 import fallbackGamesData from './data/compact_games_fallback.json';
 import fallbackCodesData from './data/compact_fallback_codes.json';
-import { isCodeExpired } from '../src/utils/codeUtils';
 
 function attachBuildHeaders(res: Response): Response {
   try {

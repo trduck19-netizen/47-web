@@ -7,12 +7,25 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-27]
 
+### 487. Sửa Nốt Stale `selectedCategory` (Cách a), Gỡ `TS6133 isCodeExpired`, Chuẩn Hóa Log `tsc`/Build & Đính Chính Số Liệu `013718d` (27/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục 1 lỗi chức năng (`stale selectedCategory` ở chuỗi `A → B → A`) và 3 lỗi tầng bằng chứng/báo cáo từ kiểm chứng `013718d` theo kế hoạch [`ke_hoach_sua_not_universal_mall_013718d_27_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_sua_not_universal_mall_013718d_27_11.md).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Sửa 1 — Đồng bộ 2 chiều `storeCategoryFilter` ↔ `selectedCategory` (Cách a)*:
+     - [`UniversalMallView.tsx`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/src/components/mall/UniversalMallView.tsx) & [`App.tsx`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/src/App.tsx): thêm `storeCategory?: string` vào `onSubViewChange` / `setSubView` / `handleSelectMallView`, `handleFilterGameToStore` gọi `setSubView('store', { storeCategory: nextCategory })`, và truyền `onStoreCategoryChange={(cat: string) => setStoreCategoryFilter(cat || 'all')}` + [`StoreView.tsx`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/src/components/StoreView.tsx) (`onClearGameFilter`) cho cả chip `✕` lẫn các nút category nội bộ.
+  2. *Sửa 2 — Gỡ import thừa gây `TS6133` mới*: xóa `import { isCodeExpired } from '../src/utils/codeUtils';` ở [`functions/_worker.ts`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/functions/_worker.ts) (`L264`).
+  3. *Sửa 3 & 4 — Chuẩn hóa bằng chứng & đính chính số liệu*: ghi nhận đủ `homepage_exit=0` + `HOMEPAGE_TSC_OK` + `full_tsc_exit=2` + `total_tsc_errors=1726` trong [`docs/tsc_full_check.log`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/docs/tsc_full_check.log) ngay cùng commit code; đính chính số liệu `013718d` thành **15 tệp bị xóa + 3 tệp đổi tên + 16 tệp sửa**; sau đó build sạch + `deploy:all` và commit [`docs/build_success.log`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/docs/build_success.log) khớp 100% Build ID thực tế theo Phương án 1.
+- **Kiểm thử tự động trước commit code**:
+  - `npm test`: `225/225 PASS` (`12` icons + `10` products + `112` suppliers + `71` sync-epoch + `20` intershop — `docs/test_full_check.log`).
+  - `npm run check:i18n`: `22/22 PASSED` (`docs/i18n_full_check.log`). Rule 10 scan: `0` vi phạm (`docs/rule10_scan.log`).
+  - `tsc`: `homepage_exit=0` (`HOMEPAGE_TSC_OK`), `tsconfig.json` tổng `1.726` lỗi (`full_tsc_exit=2`, giảm `1` so với `013718d`), `0` lỗi mới và `0` `TS6133` mới so với baseline `75fa59b` (`529` → `485` — `docs/tsc_full_check.log`).
+
 ### 486. Loại Bỏ Hoàn Toàn Giao Diện Kho Giftcode Cũ & Game Zone, Hợp Nhất 100% Web Khách Trên `UniversalMallView` (`013718d`) (27/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Thực hiện kế hoạch đã duyệt (`ke_hoach_loai_bo_giao_dien_cu_chi_chay_san_moi_27_11.md`): gỡ bỏ triệt để giao diện kho giftcode cũ nền tối (`catalog` cùng 13 component cũ + `GameDetailModal`), nhánh `Game Zone`, và toàn bộ tên gọi/banner `test1` cũ; hợp nhất Web Khách tại `https://universal-mall-shop.pages.dev/` chạy duy nhất sàn cam đỏ [`UniversalMallView.tsx`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/src/components/mall/UniversalMallView.tsx).
 - **Giải pháp áp dụng (Solution)**:
   1. *Đổi tên & Gỡ bỏ tệp cũ (`34 files changed, 858 insertions(+), 11250 deletions(-)`)*:
-     - `git mv` `src/components/shopee/ShopeeTestView.tsx` → `src/components/mall/UniversalMallView.tsx`; thay `ShopeeGuaranteeModal.tsx` & `ShopeeSupportModal.tsx` thành `src/components/mall/MallGuaranteeModal.tsx` & `src/components/mall/MallSupportModal.tsx`; xóa 17 tệp cũ (`AnnouncementBar.tsx`, `CategoryFilter.tsx`, `Footer.tsx`, `GameCard.tsx`, `GameCardSkeleton.tsx`, `GameDetailModal.tsx`, `GameGrid.tsx`, `Header.tsx`, `HeroBanner.tsx`, `MobileBottomNav.tsx`, `PinnedGamesBar.tsx`, `SearchAutocomplete.tsx`, `UpcomingGamesBanner.tsx`, `countdown/TopEventBanner.tsx`, `src/i18n/translations.ts`, 2 modal Shopee cũ).
+     - Xóa **15 tệp** (`AnnouncementBar.tsx`, `CategoryFilter.tsx`, `Footer.tsx`, `GameCard.tsx`, `GameCardSkeleton.tsx`, `GameDetailModal.tsx`, `GameGrid.tsx`, `Header.tsx`, `HeroBanner.tsx`, `MobileBottomNav.tsx`, `PinnedGamesBar.tsx`, `SearchAutocomplete.tsx`, `UpcomingGamesBanner.tsx`, `countdown/TopEventBanner.tsx`, `src/i18n/translations.ts`) + **đổi tên 3 tệp** sang `src/components/mall/` (`ShopeeTestView.tsx` → `UniversalMallView.tsx`, `ShopeeGuaranteeModal.tsx` → `MallGuaranteeModal.tsx`, `ShopeeSupportModal.tsx` → `MallSupportModal.tsx`) + sửa 16 tệp.
   2. *Hợp nhất điều hướng & Route trong 1 shell duy nhất (`UniversalMallView.tsx` & `src/App.tsx`)*:
      - Gộp toàn bộ route độc lập (`/cua-hang/:slug`, `/san-ta`, `/tien-ich`, `/giai-phap-ban-hang`, `/tin-tuc`, `/cart`, `/wishlist`, `/orders`, `/ban-hang`, `/san-giao-dich-game`, `/huong-dan`, `/khieu-nai`, `/ho-tro`, `/tai-khoan`, `/bao-mat`, `/nang-cap-vi-doanh-nghiep`) chạy bên trong `UniversalMallView` (`MallSubView` 17 giá trị, bỏ `'game-zone'`); thêm lọc `?game=` / pill trong `StoreView.tsx`.
      - Thêm chốt lọc phòng thủ `sub.id !== 'nav_game_zone' && sub.id !== 'shortcut_game_zone'` tại cả 2 mảng và hàm render trong `UniversalMallView.tsx`; thay bằng 4 tab nội dung (`PublicStoreView`, `GiveawaysView`, `UtilitiesView`, `PlatformSolutionsView`), và đồng nhất `localStorage` theme key `wcg_shopee_theme`.
@@ -25,7 +38,7 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 - **Kiểm thử & Nghiệm thu (`013718d`)**:
   - `npm test`: `225/225 PASS` (`12/12` icons, `10/10` products, `112/112` suppliers, `71/71` sync-epoch, `20/20` intershop — `docs/test_full_check.log`).
   - `npm run check:i18n`: `22/22 PASSED`, `0` chuỗi tiếng Việt ghi cứng; `0` chuỗi `test1` trong `src/App.tsx` (`docs/i18n_full_check.log`). Scoped grep `test1|ShopeeTestView|game-zone` trên `src/ functions/` chỉ còn khối redirect `301` tại `functions/_worker.ts:2941,2944,2945` và tài khoản mẫu `playertest1`/`usr_playertest1` tại `functions/api/sync.ts:4845,4854`.
-  - `tsc`: `HOMEPAGE_TSC_OK` (`exit 0`), tổng `tsconfig.json` giảm từ `1.825` xuống `1.727` lỗi, `0` TS6133 mới (`docs/tsc_full_check.log`). Rule 10 scan: `0` vi phạm (`docs/rule10_scan.log`).
+  - `tsc`: tổng lỗi `tsconfig.json` giảm từ `1.825` xuống `1.727` (`docs/tsc_full_check.log`; đính chính kiểm chứng: log `013718d` chưa chứa dòng marker `homepage_exit=` và còn 1 `TS6133` mới là `isCodeExpired` ở `functions/_worker.ts:264`, được khắc phục cùng `stale selectedCategory` ở đợt sửa kế tiếp). Rule 10 scan: `0` vi phạm (`docs/rule10_scan.log`).
   - `npm run build` & `npm run deploy:all`: Lean Guard Pre `5/5` + Post `4/4 PASS`, `Injected Build ID: 013718d`, `AdminApp 566.94 KB`, `UniversalMallView 584.20 kB`, `_worker.js 6.68 MB`, `dist/ 68.59 MB` (`docs/build_success.log`). Live `https://universal-mall-shop.pages.dev/` & `https://admin-universal-mall.pages.dev/admin` trả `200` (`X-Build-Id: 013718d`), `10/10` GET/HEAD redirect `301`, `/sitemap.xml` `51` `<loc>` (`0` `/game/`), trình duyệt thật VI/EN (`1280×800` & `762×702`) `0` lỗi overflow ngang, A-Z `#afk-arena` lọc `/en/store`, Seller Webhook `[TEST-E2E] Verify Hook` tạo/Ping/xóa sạch Rule 7.
 
 ### 485. Sửa Nốt Mảnh 4 & 3 Lỗi Backlog UI/Routing: Memoize `getHeaders`, Khóa Nút Dòng Đang Tải `SellerAffiliateManager`, `/en/ban-hang` & `AdminLayout` Mobile Nav (`8e5f4b0` + `9360d21`) (27/11/2026)
@@ -293,16 +306,3 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
   2. *Phần 2 — Sửa nhỏ kèm theo*:
      - `functions/api/sync-lite.ts` & `functions/services/d1_service.ts`: Định nghĩa `SYNC_LITE_SETTING_KEYS` (16 key) và `DEFAULT_BYPASS_KEYS` (4 key), nối dây `preloadedMetaSettingPromise` theo cơ chế promise-passing (giữ song song 3 nhánh), và chỉ bypass memory cache đủ 16 key khi `isNoCache === true`.
      - `functions/api/admin/automation/status.ts`: Đo riêng từng nhánh trong `Promise.all` để nhãn `probe;dur` và `settings;dur` phản ánh đúng chặng tương ứng.
-
-### 467. Profiling Từng Chặng (`Server-Timing` + `colo`), Chuẩn Hóa `X-Timing-D1-Ms`, Song Song Hóa `loadAllStoreProductsD1` / `status` / `search` & Fail-Closed `AdminLoginGuard` (25/11/2026)
-- **Bối cảnh & Yêu cầu**:
-  - Thực hiện kế hoạch đã duyệt có điều kiện sau kiểm chứng `2afd9f7`: Phần A (chuẩn hóa `X-Timing-D1-Ms` + `X-Timing-Total-Ms` + `Server-Timing` kèm `colo`), Phần C (fail-closed `AdminLoginGuard`), và Phần B dựa trên kết quả đo `Server-Timing` thực tế (phát hiện nhánh `products` `loadAllStoreProductsD1` tốn `1.540 ms` trong khi `tombstones` `43 ms` và `settings` `42 ms` trên isolate lạnh).
-- **Giải pháp áp dụng (Solution)**:
-  1. *Phần A — Chuẩn hóa `X-Timing-D1-Ms` & `Server-Timing`*:
-     - `functions/api/sync-lite.ts`, `functions/api/search/index.ts`, `functions/api/admin/automation/status.ts`, `functions/api/admin/automation/config.ts`: Thống nhất `X-Timing-D1-Ms` là tổng thời gian D1 thực tế trong toàn handler, bổ sung `X-Timing-Total-Ms` cho `search` & `config`, và thêm `Server-Timing` từng chặng + mã POP `colo`.
-  2. *Phần B — Song song hóa & bỏ gọi lặp trên hot path*:
-     - `functions/services/d1_service.ts` (`loadAllStoreProductsD1`) & `functions/api/sync-lite.ts`: Thêm tùy chọn `skipSchemaCheck` / `preloadedMetaSetting`, gộp 3 nhánh (`metaPromise`, `store_products`, `seller_products`) chạy song song bằng `Promise.all` thay vì tuần tự. Giữ nguyên `?nocache=1` bypass mọi tầng cache.
-     - `functions/api/admin/automation/status.ts`: Gộp 5 bước đọc D1 độc lập sau auth (`SELECT 1`, `sqlite_master`, `wcg_admin_sepay_v4` + `telegram_settings_v1` qua `WHERE key IN (...)`, `automation_toggles`) thành 1 đợt `Promise.all`.
-     - `functions/services/search_service.ts`: Chạy song song tìm kiếm `products` và `games` bằng `Promise.all`.
-  3. *Phần C — Fail-closed `AdminLoginGuard`*:
-     - `src/admin/components/AdminLoginGuard.tsx`: Đổi `.catch(() => setIsTurnstileEnabled(false))` thành `true` (fail-closed khi endpoint config lỗi mạng).
