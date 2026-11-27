@@ -1418,7 +1418,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
           ) : completedOrder ? (
             /* Order Success View */
             <div className="text-center py-3 space-y-4 animate-scale-in">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-glow-emerald">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/40 flex items-center justify-center mx-auto shadow-glow-emerald">
                 {completedOrder.order_type === 'physical' ? (
                   <Truck className="w-8 h-8" />
                 ) : (
@@ -1434,9 +1434,9 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
                   {isEn ? 'Order ID:' : 'Mã đơn:'} <strong className="text-foreground font-mono">{completedOrder.id}</strong> • {completedOrder.order_type === 'physical' ? (
-                    <span className="text-emerald-400 font-semibold">{isEn ? 'Packing & Courier Preparation in Progress' : 'Đang chuẩn bị hàng & đóng gói bưu phẩm'}</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{isEn ? 'Packing & Courier Preparation in Progress' : 'Đang chuẩn bị hàng & đóng gói bưu phẩm'}</span>
                   ) : (
-                    <>{isEn ? 'Quantity:' : 'Số lượng:'} <strong className="text-emerald-400">{deliveredLines.length} {isEn ? 'codes' : 'mã'}</strong></>
+                    <>{isEn ? 'Quantity:' : 'Số lượng:'} <strong className="text-emerald-700 dark:text-emerald-400">{deliveredLines.length} {isEn ? 'codes' : 'mã'}</strong></>
                   )}
                 </p>
               </div>
@@ -1445,7 +1445,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 /* Physical Shipping Summary Box */
                 <div className="p-4 rounded-2xl bg-muted/70 border border-border space-y-3 text-left text-xs">
                   <div className="flex items-center gap-2 pb-2 border-b border-border/80">
-                    <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <Truck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
                     <span className="font-bold text-foreground">{isEn ? 'Nationwide Shipping Summary' : 'Thông Tin Giao Nhận Toàn Quốc'}</span>
                   </div>
 
@@ -1462,7 +1462,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     </div>
 
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                      <MapPin className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                       <div>
                         <span className="text-muted-foreground">{isEn ? 'Shipping Address: ' : 'Địa chỉ nhận hàng: '}</span>
                         <span className="text-foreground font-medium">{completedOrder.shipping_address || (isEn ? 'Standard Address' : 'Địa chỉ tiêu chuẩn')}</span>
@@ -1510,7 +1510,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                               {completedOrder.carrier_name || completedOrder.carrier || 'GHTK Express'}
                             </span>
                           </div>
-                          <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
                             {completedOrder.estimated_delivery || '1 - 2 ngày'}
                           </span>
                         </div>
@@ -1829,7 +1829,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   <div>
                     <span className="text-xs font-bold text-foreground block">{t('checkoutModal.buyQuantityLabel')}</span>
                     {maxStock <= 0 && (
-                      <span className="text-[10px] font-medium block text-rose-400 font-bold">
+                      <span className="text-[10px] font-medium block text-rose-700 dark:text-rose-400 font-bold">
                         {t('shopeePhysical.outOfStock')}
                       </span>
                     )}
@@ -1972,7 +1972,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div>
                         <label htmlFor="checkout-shipping-name" className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                          {t.checkout?.fullName || 'Họ và tên người nhận'} <span className="text-rose-400" aria-hidden="true">*</span>
+                          {t.checkout?.fullName || 'Họ và tên người nhận'} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
                         </label>
                         <div className="relative">
                           <input
@@ -1993,7 +1993,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                       <div>
                         <label htmlFor="checkout-shipping-phone" className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                          {t.checkout?.phone || 'Số điện thoại nhận hàng'} <span className="text-rose-400" aria-hidden="true">*</span>
+                          {t.checkout?.phone || 'Số điện thoại nhận hàng'} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
                         </label>
                         <div className="relative">
                           <input
@@ -2016,7 +2016,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                     <div>
                       <label htmlFor="checkout-shipping-address" className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                        {t.checkout?.address || 'Địa chỉ nhận hàng chi tiết'} <span className="text-rose-400" aria-hidden="true">*</span>
+                        {t.checkout?.address || 'Địa chỉ nhận hàng chi tiết'} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
                       </label>
                       <div className="relative">
                         <textarea
@@ -2189,7 +2189,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400">
+                        <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                           <QrCode className="w-5 h-5" />
                         </div>
                         <div>
@@ -2199,7 +2199,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">{t('checkoutModal.exchangeRateLabel')}</span>
-                        <span className="text-xs font-bold font-mono text-emerald-400">1 VND = 1 Core</span>
+                        <span className="text-xs font-bold font-mono text-emerald-700 dark:text-emerald-400">1 VND = 1 Core</span>
                       </div>
                     </div>
 
@@ -2208,9 +2208,9 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <span className="text-muted-foreground">{t('checkoutModal.buyQtyRow')}</span>
                         <span className="font-mono font-bold text-foreground">{safeQty}</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-between text-xs">
                         <span className="font-bold text-foreground">{t('checkoutModal.paymentAmountRow')}</span>
-                        <span className="font-display font-black text-base text-emerald-400">
+                        <span className="font-display font-black text-base text-emerald-700 dark:text-emerald-400">
                           {formatCurrency(isPhysical ? finalGrandTotal : totalPrice)}
                         </span>
                       </div>
@@ -2219,9 +2219,9 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                   {/* QR States Container */}
                   {(qrStatus === 'idle' || qrStatus === 'error') && (
-                    <div className="p-4 rounded-2xl bg-card border border-emerald-500/30 space-y-3 text-xs">
+                    <div className="p-4 rounded-2xl bg-card border border-emerald-200 dark:border-emerald-500/30 space-y-3 text-xs">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-500/30">
                           <QrCode className="w-5 h-5" />
                         </div>
                         <div className="space-y-1">
@@ -2236,7 +2236,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                       <div className="p-2.5 rounded-xl bg-muted/40 border border-border/80 flex items-center justify-between font-mono text-[11px]">
                         <span className="text-muted-foreground">{isPhysical ? t('checkoutModal.qrHoldPhysicalLabel') : t('checkoutModal.qrHoldDigitalLabel')}</span>
-                        <span className="font-bold text-emerald-400 flex items-center gap-1">
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" /> {t('checkoutModal.minutes15')}
                         </span>
                       </div>
@@ -2312,7 +2312,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                                   href={currentQrImageSrc}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold underline pt-1"
+                                  className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-semibold underline pt-1"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5" />
                                   <span>{t('checkoutModal.openQrNewTab')}</span>
@@ -2320,40 +2320,40 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                               )}
 
                               {/* Toggle Chi tiết chẩn đoán dành cho kỹ thuật / debug (§3) */}
-                              <div className="w-full pt-1.5 border-t border-slate-800 text-left">
+                              <div className="w-full pt-1.5 border-t border-slate-300 dark:border-slate-800 text-left">
                                 <button
                                   type="button"
                                   onClick={() => setShowQrDiagnostics(!showQrDiagnostics)}
-                                  className="text-[10px] text-slate-400 hover:text-slate-300 underline cursor-pointer"
+                                  className="text-[10px] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300 underline cursor-pointer"
                                 >
                                   {showQrDiagnostics ? '▲ Debug' : '▼ Debug'}
                                 </button>
                                 {showQrDiagnostics && (
-                                  <div className="mt-1.5 p-2 rounded-lg bg-black/60 border border-slate-800 text-[10px] font-mono space-y-1 text-slate-300 overflow-x-auto">
-                                    <div className="text-amber-400 font-bold">Tier: {qrAttemptStep + 1}/4 ({QR_TIER_CONFIG[qrAttemptStep]?.short})</div>
+                                  <div className="mt-1.5 p-2 rounded-lg bg-slate-100 dark:bg-black/60 border border-slate-300 dark:border-slate-800 text-[10px] font-mono space-y-1 text-slate-700 dark:text-slate-300 overflow-x-auto">
+                                    <div className="text-amber-700 dark:text-amber-400 font-bold">Tier: {qrAttemptStep + 1}/4 ({QR_TIER_CONFIG[qrAttemptStep]?.short})</div>
                                     <div><strong>{t('checkoutModal.localTierLabel')}</strong> {qrAttemptStep === 0 ? '✅ Local Data URL' : '🌐 CDN'}</div>
                                     <div><strong>qrPayload:</strong> {qrOrder.qrPayload ? `✅ (${qrOrder.qrPayload.length})` : '❌ Empty'}</div>
                                     <div><strong>{t('checkoutModal.localGenStatusLabel')}</strong> {localQrGenStatus}</div>
                                     <div className="break-all"><strong>URL/Data preview:</strong> {currentQrImageSrc.substring(0, 100)}...</div>
                                     {domErrorSnapshot && (
-                                      <div className="text-amber-300 border-t border-slate-700/60 pt-1 mt-1">
+                                      <div className="text-amber-700 dark:text-amber-300 border-t border-slate-300 dark:border-slate-700/60 pt-1 mt-1">
                                         <div><strong>{t('checkoutModal.domErrorSnapshotLabel')}</strong></div>
                                         <div>- Size: {domErrorSnapshot.naturalWidth}x{domErrorSnapshot.naturalHeight}</div>
                                         <div>- complete: {String(domErrorSnapshot.complete)} | isConnected: {String(domErrorSnapshot.isConnected)}</div>
                                         <div>- Event: {domErrorSnapshot.errorMessage}</div>
                                       </div>
                                     )}
-                                    {qrLastErrorMsg && <div className="text-rose-300"><strong>{t('checkoutModal.errorDetailsLabel')}</strong> {qrLastErrorMsg}</div>}
+                                    {qrLastErrorMsg && <div className="text-rose-700 dark:text-rose-300"><strong>{t('checkoutModal.errorDetailsLabel')}</strong> {qrLastErrorMsg}</div>}
 
                                     {/* Ảnh trần thử nghiệm adblocker (§3 mục 4) */}
-                                    <div className="pt-2 border-t border-slate-700/60">
-                                      <div className="text-amber-200 font-bold mb-1">{t('checkoutModal.testPlainImgLabel')}</div>
+                                    <div className="pt-2 border-t border-slate-300 dark:border-slate-700/60">
+                                      <div className="text-amber-700 dark:text-amber-200 font-bold mb-1">{t('checkoutModal.testPlainImgLabel')}</div>
                                       <img
                                         src={getClientQrFallbackUrl(qrOrder, 'compact2')}
                                         alt="Test Plain Img"
                                         style={{ width: '64px', height: '64px', display: 'inline-block', border: '1px dashed #f59e0b', background: '#fff' }}
                                       />
-                                      <div className="text-[9px] text-slate-400 mt-0.5">VietQR SVG</div>
+                                      <div className="text-[9px] text-slate-600 dark:text-slate-400 mt-0.5">VietQR SVG</div>
                                     </div>
                                   </div>
                                 )}
@@ -2411,7 +2411,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                                 href={currentQrImageSrc}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[11px] font-medium text-slate-400 hover:text-foreground underline inline-flex items-center gap-1"
+                                className="text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-foreground underline inline-flex items-center gap-1"
                                 title={t('checkoutModal.openQrDirectTitle')}
                               >
                                 <ExternalLink className="w-3 h-3" />
@@ -2422,7 +2422,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setShowQrDiagnostics(!showQrDiagnostics)}
-                              className="text-[11px] font-medium text-slate-400 hover:text-slate-300 underline cursor-pointer"
+                              className="text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300 underline cursor-pointer"
                               title={t('checkoutModal.toggleQrDebugTitle')}
                             >
                               {showQrDiagnostics ? 'Hide debug' : 'Debug QR'}
@@ -2430,20 +2430,20 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           </div>
 
                           {showQrDiagnostics && !qrImageLoadFailed && (
-                            <div className="mt-2 p-2 rounded-lg bg-black/80 border border-slate-800 text-[10px] font-mono space-y-1 text-slate-300 text-left max-w-sm mx-auto">
-                              <div className="text-emerald-400 font-bold">QR Status: OK ({qrAttemptStep + 1}/4 - {QR_TIER_CONFIG[qrAttemptStep]?.short})</div>
+                            <div className="mt-2 p-2 rounded-lg bg-slate-100 dark:bg-black/80 border border-slate-300 dark:border-slate-800 text-[10px] font-mono space-y-1 text-slate-700 dark:text-slate-300 text-left max-w-sm mx-auto">
+                              <div className="text-emerald-700 dark:text-emerald-400 font-bold">QR Status: OK ({qrAttemptStep + 1}/4 - {QR_TIER_CONFIG[qrAttemptStep]?.short})</div>
                               <div><strong>{t('checkoutModal.localTierLabel')}</strong> {qrAttemptStep === 0 ? '✅ Local Data URL' : '🌐 CDN'}</div>
                               <div><strong>qrPayload:</strong> {qrOrder.qrPayload ? `✅ (${qrOrder.qrPayload.length})` : '❌ Empty'}</div>
                               <div><strong>{t('checkoutModal.localGenStatusLabel')}</strong> {localQrGenStatus}</div>
                               <div className="break-all"><strong>URL/Data:</strong> {currentQrImageSrc.substring(0, 80)}...</div>
                               {/* Ảnh trần thử nghiệm adblocker (§3 mục 4) */}
-                              <div className="pt-1.5 border-t border-slate-700/60 flex items-center gap-2">
+                              <div className="pt-1.5 border-t border-slate-300 dark:border-slate-700/60 flex items-center gap-2">
                                 <img
                                   src={getClientQrFallbackUrl(qrOrder, 'compact2')}
                                   alt="Test Plain Img"
                                   style={{ width: '40px', height: '40px', display: 'inline-block', border: '1px dashed #f59e0b', background: '#fff' }}
                                 />
-                                <span className="text-[9px] text-slate-400">VietQR SVG</span>
+                                <span className="text-[9px] text-slate-600 dark:text-slate-400">VietQR SVG</span>
                               </div>
                             </div>
                           )}
@@ -2467,7 +2467,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                               className="p-1 rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
                               title={t('checkoutModal.copyAccountTitle')}
                             >
-                              {qrCopiedField === 'acc' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              {qrCopiedField === 'acc' ? <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         </div>
@@ -2480,7 +2480,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
                           <span className="text-muted-foreground">{t('checkoutModal.amountLabel')}</span>
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-black text-emerald-400 text-sm">
+                            <span className="font-mono font-black text-emerald-700 dark:text-emerald-400 text-sm">
                               {formatCurrency(Number(qrOrder.bankInfo?.amount))}
                             </span>
                             <button
@@ -2489,7 +2489,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                               className="p-1 rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
                               title={t('checkoutModal.copyAmountTitle')}
                             >
-                              {qrCopiedField === 'amt' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              {qrCopiedField === 'amt' ? <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         </div>
@@ -2506,14 +2506,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                               className="p-1 rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
                               title={t('checkoutModal.copyMemoTitle')}
                             >
-                              {qrCopiedField === 'memo' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              {qrCopiedField === 'memo' ? <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         </div>
                       </div>
 
                       {/* Listening Indicator */}
-                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center gap-2 text-emerald-400 font-semibold text-xs animate-pulse">
+                      <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 flex items-center justify-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-xs animate-pulse">
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         <span>{isPhysical ? t('checkoutModal.qrWaitingPhysical') : t('checkoutModal.qrWaitingDigital')}</span>
                       </div>
@@ -2532,8 +2532,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   )}
 
                   {qrStatus === 'expired' && (
-                    <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center space-y-3 text-xs animate-scale-in">
-                      <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
+                    <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-center space-y-3 text-xs animate-scale-in">
+                      <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-200 dark:border-rose-500/30">
                         <AlertCircle className="w-5 h-5" />
                       </div>
                       <div className="space-y-1">
@@ -2556,7 +2556,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   {/* Guarantees */}
                   <div className="grid grid-cols-2 gap-2.5 text-[11px] text-muted-foreground">
                     <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
                       <span>{t('checkoutModal.warranty100')}</span>
                     </div>
                     <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center gap-1.5">

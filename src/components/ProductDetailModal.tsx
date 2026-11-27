@@ -855,7 +855,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {(isPhysicalProduct || (product as any).brand || (product as any).origin || (product as any).warranty_period || (product as any).shipping_fee !== undefined) && (
                 <div className="p-3.5 rounded-2xl bg-card border border-border space-y-2 text-xs">
                   <div className="font-bold text-foreground flex items-center gap-1.5 pb-1.5 border-b border-border/60">
-                    <BadgeCheck className="w-4 h-4 text-emerald-500" />
+                    <BadgeCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                     <span>{t('productDetailModal.productSpecs')}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -900,13 +900,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {isPhysicalProduct && physicalWarrantyHours > 0 && (
                       <div>
                         <span className="text-muted-foreground">{t('shopeePhysical.warrantyLabel')}: </span>
-                        <span className="font-bold text-emerald-500">{physicalWarrantyHours} {t('shopeePhysical.warrantyHoursUnit')}</span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-500">{physicalWarrantyHours} {t('shopeePhysical.warrantyHoursUnit')}</span>
                       </div>
                     )}
                     {(product as any).shipping_fee !== undefined && (
                       <div>
                         <span className="text-muted-foreground">{t('productDetailModal.shipping')} </span>
-                        <span className="font-bold text-emerald-500">
+                        <span className="font-bold text-emerald-700 dark:text-emerald-500">
                           {(product as any).shipping_fee === 0 ? (t('productDetailModal.freeShipping')) : formatPriceVal((product as any).shipping_fee)}
                         </span>
                       </div>
@@ -914,7 +914,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                   {((product as any).warranty_period || (product as any).warranty_text) && (
                     <div className="pt-1.5 border-t border-border/60 text-[11px] text-muted-foreground flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-500 shrink-0" />
                       <span>{(product as any).warranty_period || (product as any).warranty_text}</span>
                     </div>
                   )}
@@ -924,7 +924,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {/* Warranty text */}
               {(product as any).show_warranty && (
                 <div className="p-3 rounded-xl bg-muted/30 border border-border flex items-center gap-2 text-xs text-muted-foreground">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
                   <span>{(product as any).warranty_text || (t('productDetailModal.warrantyDefault'))}</span>
                 </div>
               )}
@@ -1056,7 +1056,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                   <div className="mt-2 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                     <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 dark:text-amber-400" aria-hidden="true" />
                       <span>{t('productDetailModal.ratingTrusted')}</span>
                     </span>
                     {isSoldVisible && (
@@ -1097,7 +1097,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             <span>{t('shopeePhysical.shippingEta')}</span>
                           </div>
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <MapPin className="w-3 h-3 shrink-0 text-slate-400" />
+                            <MapPin className="w-3 h-3 shrink-0 text-slate-500 dark:text-slate-400" />
                             <span>{t('shopeePhysical.shippingFrom')}: <strong className="text-foreground">{physicalShipFrom}</strong> • {t('shopeePhysical.shippingCarrierList')}</span>
                           </div>
                           <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">

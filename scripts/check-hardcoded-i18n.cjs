@@ -35,6 +35,7 @@ const IN_SCOPE_UI_FILES = [
   'src/admin/modules/SupplierConnectorsModule.tsx',
   'src/admin/modules/InterShopAffiliateModule.tsx',
   'src/components/seller/SellerAffiliateManager.tsx',
+  'src/components/cart/CartDrawerModal.tsx',
 ];
 
 // Danh mục toàn bộ các thư mục giao diện UI (khi chạy ở chế độ audit toàn sàn --all)
@@ -151,14 +152,12 @@ function scanUiFile(filePath) {
       continue;
     }
 
-    // Kiểm tra thêm xem dòng này có nằm trong nhánh ternary isEn gần đó (trong phạm vi 4 dòng trước)
+    // Kiểm tra thêm xem dòng này có nằm trong nhánh ternary isEn gần đó (trong phạm vi 4 dòng trước, kể cả khi isEn và dấu ? tách dòng)
     let isInsideBilingualTernary = false;
-    for (let back = 1; back <= 4 && idx - back >= 0; back++) {
-      const prevLine = lines[idx - back].trim();
-      if (/\b(isEn|language\s*===)\s*\?/.test(prevLine)) {
-        isInsideBilingualTernary = true;
-        break;
-      }
+    const lookbackStart = Math.max(0, idx - 4);
+    const lookbackWindow = lines.slice(lookbackStart, idx).map((l) => l.trim()).join(' ');
+    if (/\b(isEn|language\s*===)\s*(?:['"][^'"]+['"]\s*)?\?/.test(lookbackWindow)) {
+      isInsideBilingualTernary = true;
     }
     if (isInsideBilingualTernary) {
       continue;
@@ -232,6 +231,7 @@ function runScanner() {
   } else {
     filesToScan = IN_SCOPE_UI_FILES.map((rel) => path.join(__dirname, '..', rel));
     console.log(`   [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét ${filesToScan.length} file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...`);
+    console.log(`   [DANH SÁCH FILE QUÉT]: ${IN_SCOPE_UI_FILES.join(', ')}`);
   }
 
   let totalViolations = 0;

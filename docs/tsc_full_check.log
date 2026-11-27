@@ -1879,8 +1879,8 @@ src/utils/productPackageUtils.ts(441,113): error TS2339: Property 'status' does 
 src/utils/productPackageUtils.ts(450,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'GiveawayCampaign'.
 full_tsc_exit=2
 total_tsc_errors=1717
-baseline_1515b7e_total_errors=1726
-new_errors_vs_1515b7e=0
+prev_a779653_tsc_errors=1717
+new_errors_vs_a779653=0
 baseline_75fa59b_ts6133_count=529
 current_ts6133_count=483
 new_ts6133_vs_75fa59b=0

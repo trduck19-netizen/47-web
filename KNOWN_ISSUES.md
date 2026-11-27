@@ -10,6 +10,12 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-341: Chi Tiết Cơ Chế `createRecursiveProxy` (`LanguageContext.tsx`), Đính Chính Dương Tính Giả `sellerApiKeys.noKeys`, Lookback Ternary Tách Dòng & Giới Hạn Guard I18N (27/11/2026)
+- **Bài học kỹ thuật & Đính chính**:
+  - Tại `src/context/LanguageContext.tsx:305-321`, `createRecursiveProxy` dùng `const finalVal = val !== undefined ? val : prop;` — khi khóa vắng mặt trong từ điển, Proxy trả về chính tên thuộc tính (chuỗi khác rỗng / truthy) nên mọi biểu thức fallback kiểu `t.nav.notifications || 'Thông Báo'` đều không bao giờ chạy tới vế phải. Bắt buộc luôn khai báo khóa thật đối xứng trong `vi.json` & `en.json` (lưu ý đính chính: khóa `sellerApiKeys.noKeys` từng nghi ngờ ở vòng trước thực tế ĐÃ CÓ đủ trong cả 2 từ điển, là dương tính giả).
+  - Trong `scripts/check-hardcoded-i18n.cjs`, lookback 4 dòng kiểu từng dòng riêng lẻ sẽ bỏ sót ternary `isEn` tách dòng (`isEn` ở dòng trên, `?` ở dòng dưới, `:` ở dòng thứ 3 như `CartDrawerModal.tsx:616-618`); cần nối cửa sổ 4 dòng trước (`lines.slice(Math.max(0, idx - 4), idx).join(' ')`) trước khi kiểm regex. Đồng thời lưu ý giới hạn đã biết: guard chỉ quét 3 mẫu JSX (text, attr, template literal), không quét chuỗi thuần truyền vào hàm JS (`throw new Error(...)`, `setCheckoutError(...)`), và `data.error` trả về từ `/api/seller-orders/multi` hiện vẫn là tiếng Việt phía server.
+  - Để kích thước file log trên đĩa (`ls -l` / `fs.statSync`) trùng khớp tuyệt đối với Git blob (`git cat-file -s`), cấu hình `docs/*.log text eol=lf` trong `.gitattributes` và ghi log chuẩn LF.
+
 ### ISSUE-340: Bẫy Proxy `LanguageContext` Trả Key Thô (`||` Fallback Vô Hiệu), CSS Mobile Ghi Đè `.scrollbar-none`, Cắt Header 390px, Tương Phản Nền Sáng & 404 `/game_icons/test-game.webp` (27/11/2026)
 - **Triệu chứng & Nguyên nhân**:
   - `LanguageContext` dùng `Proxy` trả về chính tên thuộc tính (truthy string) khi thiếu khóa trong `vi.json`/`en.json`, khiến biểu thức `t.nav.notifications || 'Thông Báo'` hiển thị nguyên chữ `"notifications"`, `"support"`, `"login"` trên topbar live.

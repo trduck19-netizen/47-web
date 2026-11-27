@@ -247,7 +247,17 @@
     "quantity": "Số lượng:",
     "digitalItemBadge": "Hàng Số (Giao 0s)",
     "physicalItemBadge": "Hàng Vật Lý",
-    "addToCart": "Thêm Giỏ Hàng"
+    "addToCart": "Thêm Giỏ Hàng",
+    "errors": {
+      "invalidServerResponse": "Máy chủ phản hồi không đúng định dạng. Vui lòng thử lại sau.",
+      "createMultiOrderFailed": "Tạo đơn hàng đa gian hàng thất bại.",
+      "createOrderTimeout": "Thời gian phản hồi từ máy chủ quá lâu (hơn 15 giây). Đơn hàng chưa được tạo, vui lòng bấm thử lại.",
+      "createOrderConnection": "Lỗi kết nối máy chủ khi tạo đơn hàng. Vui lòng thử lại.",
+      "invalidCorePayResponse": "Máy chủ phản hồi không đúng định dạng khi trừ ví.",
+      "corePayFailed": "Thanh toán bằng ví Core thất bại.",
+      "corePayTimeout": "Hết thời gian chờ phản hồi thanh toán (hơn 15 giây). Vui lòng thử lại hoặc kiểm tra lịch sử đơn hàng.",
+      "corePayConnection": "Lỗi kết nối khi thanh toán bằng ví Core."
+    }
   },
   "checkout": {
     "title": "Xác Nhận Đặt Hàng & Thanh Toán",

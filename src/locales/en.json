@@ -247,7 +247,17 @@
     "quantity": "Quantity:",
     "digitalItemBadge": "Digital Item (0s Delivery)",
     "physicalItemBadge": "Physical Delivery",
-    "addToCart": "Add to Cart"
+    "addToCart": "Add to Cart",
+    "errors": {
+      "invalidServerResponse": "Invalid server response format. Please try again later.",
+      "createMultiOrderFailed": "Failed to create multi-store order.",
+      "createOrderTimeout": "Server response timed out (over 15 seconds). Your order was not created, please try again.",
+      "createOrderConnection": "Server connection error while creating order. Please try again.",
+      "invalidCorePayResponse": "Invalid server response format when deducting Core wallet.",
+      "corePayFailed": "Core wallet payment failed.",
+      "corePayTimeout": "Payment response timed out (over 15 seconds). Please try again or check your order history.",
+      "corePayConnection": "Connection error during Core wallet payment."
+    }
   },
   "checkout": {
     "title": "Confirm Order & Checkout",

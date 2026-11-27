@@ -267,11 +267,11 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
       try {
         data = await res.json();
       } catch {
-        throw new Error('Máy chủ phản hồi không đúng định dạng. Vui lòng thử lại sau.');
+        throw new Error(t('cart.errors.invalidServerResponse'));
       }
 
       if (!res.ok || !data.success) {
-        setCheckoutError(data.error || 'Tạo đơn hàng đa gian hàng thất bại.');
+        setCheckoutError(data.error || t('cart.errors.createMultiOrderFailed'));
         return;
       }
 
@@ -283,9 +283,9 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
       cartService.clearCart();
     } catch (err: any) {
       if (err?.name === 'AbortError') {
-        setCheckoutError('Thời gian phản hồi từ máy chủ quá lâu (hơn 15 giây). Đơn hàng chưa được tạo, vui lòng bấm thử lại.');
+        setCheckoutError(t('cart.errors.createOrderTimeout'));
       } else {
-        setCheckoutError(err?.message || 'Lỗi kết nối máy chủ khi tạo đơn hàng. Vui lòng thử lại.');
+        setCheckoutError(err?.message || t('cart.errors.createOrderConnection'));
       }
     } finally {
       clearTimeout(timeoutId);
@@ -320,11 +320,11 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
       try {
         data = await res.json();
       } catch {
-        throw new Error('Máy chủ phản hồi không đúng định dạng khi trừ ví.');
+        throw new Error(t('cart.errors.invalidCorePayResponse'));
       }
 
       if (!res.ok || !data.success) {
-        setCorePayError(data.error || 'Thanh toán bằng ví Core thất bại.');
+        setCorePayError(data.error || t('cart.errors.corePayFailed'));
         return;
       }
 
@@ -345,9 +345,9 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
       dataService.refreshCurrentUserBalance().catch(() => {});
     } catch (err: any) {
       if (err?.name === 'AbortError') {
-        setCorePayError('Hết thời gian chờ phản hồi thanh toán (hơn 15 giây). Vui lòng thử lại hoặc kiểm tra lịch sử đơn hàng.');
+        setCorePayError(t('cart.errors.corePayTimeout'));
       } else {
-        setCorePayError(err?.message || 'Lỗi kết nối khi thanh toán bằng ví Core.');
+        setCorePayError(err?.message || t('cart.errors.corePayConnection'));
       }
     } finally {
       clearTimeout(timeoutId);
