@@ -10,6 +10,14 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-338: Hợp Nhất Sàn `UniversalMallView` — Chặn Hồi Sinh `Game Zone` Từ D1 Cũ & Bẫy Chuyển Đổi Component Legacy (27/11/2026)
+- **Triệu chứng & Bẫy cần tránh**:
+  - Sau khi xóa nhánh `'game-zone'` khỏi code giao diện (`013718d`), dữ liệu bảng D1 `homepage_sections` cũ vẫn có thể chứa `nav_game_zone: true` / `shortcut_game_zone: true`, và `PUT /api/admin/homepage-sections` yêu cầu gửi trọn payload JSON `sections` mới cập nhật sạch.
+  - Khi gộp toàn bộ trang độc lập vào `UniversalMallView` và xóa `src/components/*` cũ (`GameDetailModal.tsx`, `Header.tsx`, `Footer.tsx`, `src/i18n/translations.ts`), `WishlistDrawerModal` vẫn còn callback `handleOpenStoreProduct` dễ dính `TS2304` nếu không nối về `handleSelectProductById` + `handleFilterStoreByGame`.
+- **Giải pháp chuẩn đã kiểm chứng (`013718d`)**:
+  - Đặt bộ lọc phòng thủ `sub.id !== 'nav_game_zone' && sub.id !== 'shortcut_game_zone'` tại cả 2 mảng cấu hình, `renderShortcutItem` và `renderNavButton` trong `src/components/mall/UniversalMallView.tsx`, đồng thời tắt cả 2 mục trong Admin `#/homepage-sections` (`PUT` `200`).
+  - Xử lý HTTP `301` (cả `GET` và `HEAD`) ở `functions/_worker.ts` trước SEO gate cho `/test1*`, `/game/*`, `/g/*`, `/?game=`, `/?g=` → `${url.origin}/`, và giữ thống nhất khóa `localStorage` `wcg_shopee_theme`.
+
 ### ISSUE-337: Truyền Hàm `getHeaders()` Không Memoize Vào `SellerAffiliateManager` Gây Vòng Lặp Refetch, Tải Chậm & Chết Nút Xóa Webhook Qua UI (27/11/2026)
 - **Triệu chứng & Nguyên nhân**:
   - `SellerCenterView.tsx:165` tạo hàm `getHeaders` mới mỗi lần render; `SellerAffiliateManager.tsx` đưa `[getHeaders]` vào `useCallback` của 4 hàm fetch và `useEffect` mount, khiến mỗi lần component cha re-render đều tái kích hoạt 4 request + đặt `loadingWebhooks = true`, tháo bỏ bảng `<table>` thay bằng `"Đang tải dữ liệu..."` → bấm Xóa webhook rơi vào DOM stale (`0` `window.confirm` trong 10 lần bấm) và kẹt tải `13,4s–19,5s`.
