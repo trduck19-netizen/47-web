@@ -135,7 +135,7 @@ export const App: React.FC = () => {
       }
 
       if (hash.includes('test1') || path === '/test1' || path.startsWith('/test1/')) return 'shopee-test';
-      if (hash.includes('ban-hang') || path === '/ban-hang' || path.startsWith('/ban-hang/')) return 'seller-center';
+      if (hash.includes('ban-hang') || path === '/ban-hang' || path.startsWith('/ban-hang/') || path === '/en/ban-hang' || path.startsWith('/en/ban-hang/')) return 'seller-center';
       if (hash.includes('gian-hang') || path.startsWith('/gian-hang/')) return 'store-detail';
       if (hash.includes('news') || hash.includes('tintuc') || path === '/news' || path.startsWith('/news/') || hash.includes('su-kien') || hash.includes('events') || path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/')) return 'news';
       if (hash.includes('giveaways') || hash.includes('gw=') || path === '/giveaways' || path.startsWith('/giveaways/')) return 'giveaways';
@@ -764,7 +764,7 @@ export const App: React.FC = () => {
           setCurrentTab('news');
           setInitialNewsSubTab('today-codes');
           return;
-        } else if (pathname === '/ban-hang' || pathname.startsWith('/ban-hang/') || hash.includes('ban-hang')) {
+        } else if (pathname === '/ban-hang' || pathname.startsWith('/ban-hang/') || pathname === '/en/ban-hang' || pathname.startsWith('/en/ban-hang/') || hash.includes('ban-hang')) {
           setCurrentTab('seller-center');
           return;
         } else if (pathname.startsWith('/gian-hang/')) {
@@ -890,12 +890,13 @@ export const App: React.FC = () => {
 
     setCurrentTab(tab);
 
+    const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
     const targetPath = tab === 'catalog'
       ? '/'
       : tab === 'missions'
       ? '/nhiem-vu'
       : tab === 'seller-center'
-      ? '/ban-hang'
+      ? (isEnMode ? '/en/ban-hang' : '/ban-hang')
       : tab === 'store-detail'
       ? `/gian-hang/${currentStoreSlug}`
       : tab === 'shopee-test'
@@ -904,7 +905,7 @@ export const App: React.FC = () => {
     if (window.location.pathname !== targetPath || window.location.hash) {
       window.history.pushState(null, '', targetPath);
     }
-  }, [currentStoreSlug]);
+  }, [currentStoreSlug, language]);
 
   // Sync Dynamic Document Title & Clean URL bar
   useEffect(() => {
@@ -1022,9 +1023,13 @@ export const App: React.FC = () => {
           window.history.replaceState(null, '', '/ma-hom-nay');
         }
       } else if (currentTab === 'seller-center') {
-        document.title = 'Kênh Người Bán & Quản Lý Gian Hàng | Pine Universal Mall';
-        if (window.location.pathname !== '/ban-hang' || window.location.hash) {
-          window.history.replaceState(null, '', '/ban-hang');
+        const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
+        document.title = isEnMode
+          ? 'Seller Center & Store Management | Pine Universal Mall'
+          : 'Kênh Người Bán & Quản Lý Gian Hàng | Pine Universal Mall';
+        const expectedSellerPath = isEnMode ? '/en/ban-hang' : '/ban-hang';
+        if (window.location.pathname !== expectedSellerPath || window.location.hash) {
+          window.history.replaceState(null, '', expectedSellerPath);
         }
       } else if (currentTab === 'store-detail') {
         document.title = 'Gian Hàng Số | Pine Universal Mall';
@@ -1245,7 +1250,7 @@ export const App: React.FC = () => {
         setSelectedGame(null);
         setCurrentTab('news');
         setInitialNewsSubTab('today-codes');
-      } else if (path === '/ban-hang' || path.startsWith('/ban-hang/')) {
+      } else if (path === '/ban-hang' || path.startsWith('/ban-hang/') || path === '/en/ban-hang' || path.startsWith('/en/ban-hang/')) {
         setSelectedGame(null);
         setCurrentTab('seller-center');
       } else if (path.startsWith('/gian-hang/')) {

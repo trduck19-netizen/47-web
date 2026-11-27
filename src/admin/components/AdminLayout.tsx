@@ -108,13 +108,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         />
 
         {/* Module Content */}
-        <main className="flex-1 p-3 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto pb-24 lg:pb-8">
+        <main className="flex-1 p-3 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto pb-28 sm:pb-8 scroll-pb-24 sm:scroll-pb-8">
           {children}
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Thumb-friendly & Easy Navigation) */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 flex h-16 items-center justify-around border-t border-slate-200/90 bg-white/95 px-1 backdrop-blur-lg dark:border-slate-800/90 dark:bg-slate-900/95 lg:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.35)]">
+      {/* Mobile Bottom Navigation Bar (Phones < 640px only; tablet/narrow desktop >= 640px uses topbar drawer so tables are never covered) */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 flex h-16 items-center justify-around border-t border-slate-200/90 bg-white/95 px-1 backdrop-blur-lg dark:border-slate-800/90 dark:bg-slate-900/95 sm:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.35)]">
         {/* 1. Dashboard */}
         <button
           onClick={() => onSelectTab('dashboard')}

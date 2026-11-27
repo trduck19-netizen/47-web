@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Share2,
   Link2,
@@ -40,6 +40,8 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
   fetchProducts,
 }) => {
   const locale = isEn ? 'en-US' : 'vi-VN';
+  const getHeadersRef = useRef(getHeaders);
+  getHeadersRef.current = getHeaders;
 
   // Navigation
   const [affiliateSubTab, setAffiliateSubTab] = useState<AffiliateSubTab>('supplier');
@@ -140,7 +142,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     setLoadingOutgoing(true);
     try {
       const res = await fetch('/api/seller/affiliate/requests?role=all', {
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.success) {
@@ -159,31 +161,31 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     } catch {}
     setLoadingIncoming(false);
     setLoadingOutgoing(false);
-  }, [getHeaders]);
+  }, []);
 
   const fetchPartners = useCallback(async () => {
     setLoadingPartners(true);
     try {
-      const res = await fetch('/api/seller/affiliate/partners', { headers: getHeaders() });
+      const res = await fetch('/api/seller/affiliate/partners', { headers: getHeadersRef.current() });
       const data = await res.json().catch(() => ({}));
       if (data?.success) {
         setPartners(Array.isArray(data.partners) ? data.partners : []);
       }
     } catch {}
     setLoadingPartners(false);
-  }, [getHeaders]);
+  }, []);
 
   const fetchListings = useCallback(async () => {
     setLoadingListings(true);
     try {
-      const res = await fetch('/api/seller/affiliate/listings', { headers: getHeaders() });
+      const res = await fetch('/api/seller/affiliate/listings', { headers: getHeadersRef.current() });
       const data = await res.json().catch(() => ({}));
       if (data?.success) {
         setMyListings(Array.isArray(data.listings) ? data.listings : []);
       }
     } catch {}
     setLoadingListings(false);
-  }, [getHeaders]);
+  }, []);
 
   const fetchSupplierCatalog = async (
     supplierId: string,
@@ -203,7 +205,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
         : `supplier_id=${encodeURIComponent(supplierId)}`;
       const res = await fetch(`/api/seller/affiliate/catalog?${qs}`, {
         credentials: 'include',
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.success) {
@@ -220,7 +222,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
   const fetchWebhooks = useCallback(async () => {
     setLoadingWebhooks(true);
     try {
-      const res = await fetch('/api/seller/webhooks', { headers: getHeaders() });
+      const res = await fetch('/api/seller/webhooks', { headers: getHeadersRef.current() });
       const data = await res.json().catch(() => ({}));
       if (data?.success) {
         setWebhooks(Array.isArray(data.webhooks) ? data.webhooks : []);
@@ -228,7 +230,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
       }
     } catch {}
     setLoadingWebhooks(false);
-  }, [getHeaders]);
+  }, []);
 
   const fetchAffiliateOrders = useCallback(async () => {
     setLoadingOrders(true);
@@ -237,7 +239,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
       params.set('role', ordersRoleFilter);
       if (ordersStatusFilter) params.set('status', ordersStatusFilter);
       const res = await fetch(`/api/seller/affiliate/orders?${params.toString()}`, {
-        headers: getHeaders(),
+        headers: getHeadersRef.current(),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.success) {
@@ -246,7 +248,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
       }
     } catch {}
     setLoadingOrders(false);
-  }, [getHeaders, ordersRoleFilter, ordersStatusFilter]);
+  }, [ordersRoleFilter, ordersStatusFilter]);
 
   useEffect(() => {
     fetchRequestsAll();
@@ -883,7 +885,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
               </button>
             </div>
 
-            {loadingIncoming ? (
+            {loadingIncoming && incomingRequests.length === 0 ? (
               <div className="py-8 text-center text-xs text-muted-foreground animate-pulse">
                 {t('sellerAffiliate.loadingText')}
               </div>
@@ -977,7 +979,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
               </button>
             </div>
 
-            {loadingPartners ? (
+            {loadingPartners && partners.length === 0 ? (
               <div className="py-8 text-center text-xs text-muted-foreground animate-pulse">
                 {t('sellerAffiliate.loadingText')}
               </div>
@@ -1120,7 +1122,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
               </button>
             </div>
 
-            {loadingOutgoing ? (
+            {loadingOutgoing && outgoingRequests.length === 0 ? (
               <div className="py-8 text-center text-xs text-muted-foreground animate-pulse">
                 {t('sellerAffiliate.loadingText')}
               </div>
@@ -1319,7 +1321,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
               </button>
             </div>
 
-            {loadingListings ? (
+            {loadingListings && myListings.length === 0 ? (
               <div className="py-8 text-center text-xs text-muted-foreground animate-pulse">
                 {t('sellerAffiliate.loadingText')}
               </div>
@@ -1519,7 +1521,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
               </div>
             </div>
 
-            {loadingWebhooks ? (
+            {loadingWebhooks && webhooks.length === 0 ? (
               <div className="py-8 text-center text-xs text-muted-foreground animate-pulse">
                 {t('sellerAffiliate.loadingText')}
               </div>

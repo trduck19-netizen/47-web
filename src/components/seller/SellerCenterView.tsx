@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Store,
   Package,
@@ -162,13 +162,13 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
     return localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
   };
 
-  const getHeaders = () => {
+  const getHeaders = useCallback(() => {
     const token = getAuthToken();
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     };
-  };
+  }, []);
 
   // Fetch Seller Info
   const fetchSellerInfo = async () => {
@@ -186,7 +186,14 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           setSellerData(null);
         }
       } else {
-        setErrorMsg(data.error || (isEn ? 'Cannot load store information.' : 'Không thể tải thông tin gian hàng.'));
+        const isNoStore = res.status === 404 || String(data?.error || '').includes('chưa có gian hàng');
+        setErrorMsg(
+          isEn
+            ? (isNoStore
+                ? 'You do not have a store or have not been assigned permissions in any store yet.'
+                : 'Cannot load store information.')
+            : (data.error || 'Không thể tải thông tin gian hàng.')
+        );
       }
     } catch {
       setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
