@@ -413,11 +413,11 @@ export async function handleAdminAffiliateRequest(
               .prepare(`
                 UPDATE seller_affiliate_partnerships
                 SET status = 'SUSPENDED',
-                    revoked_at = ?,
+                    revoked_at = COALESCE(revoked_at, ?),
                     updated_at = ?
                 WHERE id = ?
               `)
-              .bind(nowIso, nowIso, partnershipId);
+              .bind(null, nowIso, partnershipId);
 
         await env.DB.batch([
           updatePartnershipStmt,

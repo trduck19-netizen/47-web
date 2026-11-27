@@ -100,12 +100,18 @@ export const onRequestGet = async (context: {
 
         const cacheControl = ICON_CACHE_CONTROL;
 
-        const contentType = filename.toLowerCase().endsWith('.webp') ? 'image/webp' : (row.content_type || 'image/webp');
+        const rawRowContentType =
+          typeof row.content_type === 'string' ? row.content_type.split(';')[0].trim().toLowerCase() : '';
+        const safeRowContentType = /^image\/[a-z0-9.+-]+$/.test(rawRowContentType)
+          ? rawRowContentType
+          : 'image/webp';
+        const contentType = filename.toLowerCase().endsWith('.webp') ? 'image/webp' : safeRowContentType;
         const headers = new Headers({
           ...CORS_HEADERS,
           'Content-Type': contentType,
           'Content-Length': len.toString(),
           'Cache-Control': cacheControl,
+          'X-Content-Type-Options': 'nosniff',
           'X-Icon-Source': 'd1-uploaded',
         });
 

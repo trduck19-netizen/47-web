@@ -1,3 +1,5 @@
+import viLocale from '../locales/vi.json';
+import enLocale from '../locales/en.json';
 import type {
   StoreProduct,
   UtilityProduct,
@@ -5,6 +7,57 @@ import type {
   GiveawayCampaign,
   GiveawayRewardPackage,
 } from '../types/game';
+
+type ProductPackageLocaleKey = keyof typeof viLocale.productPackage;
+
+function isEnglishActive(): boolean {
+  if (typeof window !== 'undefined') {
+    try {
+      const path = window.location.pathname.toLowerCase();
+      if (path === '/en' || path.startsWith('/en/')) return true;
+      const params = new URLSearchParams(window.location.search);
+      const qLang = params.get('lang')?.toLowerCase();
+      if (qLang === 'en') return true;
+      if (qLang === 'vi') return false;
+      if (path === '/vi' || path.startsWith('/vi/')) return false;
+      if (localStorage.getItem('pine_language') === 'en') return true;
+    } catch {}
+  }
+  if (typeof document !== 'undefined' && document.documentElement?.lang === 'en') {
+    return true;
+  }
+  return false;
+}
+
+function pkgText(key: ProductPackageLocaleKey, params?: Record<string, string | number>): string {
+  const dict = isEnglishActive() ? enLocale.productPackage : viLocale.productPackage;
+  const raw = dict[key] || viLocale.productPackage[key] || key;
+  if (!params) return raw;
+  return raw.replace(/\{(\w+)\}/g, (match, k) => (params[k] !== undefined ? String(params[k]) : match));
+}
+
+const KNOWN_DEFAULT_NOTE_KEYS: Array<{
+  key: ProductPackageLocaleKey;
+  aliases: string[];
+}> = [
+  { key: 'standardProcessing', aliases: ['xử lý tiêu chuẩn', 'standard processing'] },
+  { key: 'official', aliases: ['chính hãng', 'official'] },
+  { key: 'forAllMembers', aliases: ['dành cho tất cả thành viên', 'for all members'] },
+  { key: 'gameTopupPack', aliases: ['gói nạp game', 'game top-up pack', 'pack'] },
+  { key: 'instantAccountDelivery', aliases: ['giao tài khoản tự động trong 0 giây', 'instant 0s account delivery'] },
+  { key: 'forMembers', aliases: ['dành cho thành viên', 'for members'] },
+];
+
+export function localizePackageNote(note?: string): string | undefined {
+  if (!note) return note;
+  const norm = note.trim().toLowerCase();
+  for (const entry of KNOWN_DEFAULT_NOTE_KEYS) {
+    if (entry.aliases.includes(norm)) {
+      return pkgText(entry.key);
+    }
+  }
+  return note;
+}
 
 /**
  * Lấy danh sách các gói con của một sản phẩm (StoreProduct hoặc UtilityProduct).
@@ -16,6 +69,7 @@ export function getProductPackages(product: StoreProduct | UtilityProduct): Prod
   if (Array.isArray(product.packages) && product.packages.length > 0) {
     return product.packages.map((pkg) => ({
       ...pkg,
+      note: localizePackageNote(pkg.note),
       first_purchase_enabled: pkg.first_purchase_enabled !== undefined ? pkg.first_purchase_enabled : (product as any).first_purchase_enabled,
       first_purchase_price: pkg.first_purchase_price !== undefined ? pkg.first_purchase_price : (product as any).first_purchase_price,
       first_purchase_max_price: pkg.first_purchase_max_price !== undefined ? pkg.first_purchase_max_price : (product as any).first_purchase_max_price,
@@ -32,7 +86,7 @@ export function getProductPackages(product: StoreProduct | UtilityProduct): Prod
       stock_quantity: v.stock_quantity ?? 0,
       sold_count: v.sold_count || 0,
       badge: v.attributes ? Object.values(v.attributes).join(' / ') : undefined,
-      note: v.sku ? `SKU: ${v.sku}` : 'Chính hãng',
+      note: v.sku ? `SKU: ${v.sku}` : pkgText('official'),
       description: product.description,
       is_active: v.is_active !== false,
       sale_mode: 'normal',
@@ -52,7 +106,7 @@ export function getProductPackages(product: StoreProduct | UtilityProduct): Prod
       stock_quantity: typeof product.stock_quantity === 'number' ? product.stock_quantity : 0,
       sold_count: product.sold_count || 0,
       badge: (product as any).badge || undefined,
-      note: 'Xử lý tiêu chuẩn',
+      note: pkgText('standardProcessing'),
       description: product.description,
       is_active: product.is_active !== false,
       sale_mode: (product as any).sale_mode || 'normal',
@@ -127,7 +181,10 @@ export function getGiveawayPackages(campaign: GiveawayCampaign): GiveawayRewardP
   if (!campaign) return [];
 
   if (Array.isArray(campaign.packages) && campaign.packages.length > 0) {
-    return campaign.packages;
+    return campaign.packages.map((pkg) => ({
+      ...pkg,
+      note: localizePackageNote(pkg.note),
+    }));
   }
 
   // Fallback gói mặc định
@@ -139,14 +196,14 @@ export function getGiveawayPackages(campaign: GiveawayCampaign): GiveawayRewardP
   return [
     {
       id: campaign.id,
-      name: campaign.title || 'Mã Quà Tặng Mặc Định',
-      rewards: campaign.rewards || 'Giftcode độc quyền',
+      name: campaign.title || pkgText('defaultGiftcode'),
+      rewards: campaign.rewards || pkgText('exclusiveGiftcode'),
       total_codes: campaign.total_codes || 0,
       claimed_codes: campaign.claimed_codes || 0,
       remaining_codes: poolCount,
       codes_pool: campaign.codes_pool || [],
       is_active: !(campaign.is_active === false || campaign.is_active === 0 || campaign.is_active === '0' || campaign.status === 'PAUSED'),
-      note: 'Dành cho tất cả thành viên',
+      note: pkgText('forAllMembers'),
     },
   ];
 }
@@ -191,7 +248,7 @@ export function groupStoreProductsByGame(products: StoreProduct[]): StoreProduct
         sold_count: item.sold_count || 0,
         virtual_sold_count: item.virtual_sold_count || 0,
         badge: item.badge,
-        note: item.package_type || 'Gói nạp game',
+        note: localizePackageNote(item.package_type) || pkgText('gameTopupPack'),
         description: item.description,
         is_active: item.is_active !== false,
         sale_mode: item.sale_mode || 'normal',
@@ -220,7 +277,7 @@ export function groupStoreProductsByGame(products: StoreProduct[]): StoreProduct
       const parentProduct: StoreProduct = {
         ...lead,
         id: lead.id,
-        title: `${lead.game_name} - Nạp Game & Gói Quà Tặng`,
+        title: pkgText('parentStoreTitle', { name: lead.game_name }),
         current_price: minPrice,
         stock_quantity: totalStock,
         sold_count: totalSold,
@@ -270,34 +327,34 @@ export function groupUtilitiesByTheme(utilities: UtilityProduct[]): UtilityProdu
     { title: string; badge: string; description: string }
   > = {
     vs_basic: {
-      title: 'Cloud Phone VS Phone Basic - Treo Game Android Đám Mây',
-      badge: 'GIÁ RẺ NHẤT',
-      description: 'Máy ảo đám mây VS Phone dòng Basic. Thích hợp treo game nhẹ, auto 24/7 không hao pin, không nóng máy.',
+      title: pkgText('vsBasicTitle'),
+      badge: pkgText('vsBasicBadge'),
+      description: pkgText('vsBasicDesc'),
     },
     vs_vip: {
-      title: 'Cloud Phone VS Phone VIP - Cấu Hình Cao Treo Game 24/7',
-      badge: 'HOT BÁN CHẠY',
-      description: 'Máy ảo đám mây VS Phone dòng VIP. Cấu hình mượt mà, RAM lớn, treo game 3D không lo văng app.',
+      title: pkgText('vsVipTitle'),
+      badge: pkgText('vsVipBadge'),
+      description: pkgText('vsVipDesc'),
     },
     vs_kvip: {
-      title: 'Cloud Phone VS Phone KVIP - Tối Ưu Mạng & Tốc Độ',
-      badge: 'HIỆU NĂNG CAO',
-      description: 'Máy ảo đám mây VS Phone dòng KVIP. Đường truyền riêng biệt, chống nghẽn mạng giờ cao điểm.',
+      title: pkgText('vsKvipTitle'),
+      badge: pkgText('vsKvipBadge'),
+      description: pkgText('vsKvipDesc'),
     },
     vs_svip: {
-      title: 'Cloud Phone VS Phone SVIP - Đồ Họa Siêu Cấp',
-      badge: 'CHUYÊN GAME NẶNG',
-      description: 'Máy ảo đám mây VS Phone dòng SVIP. GPU chuyên dụng, xử lý đồ họa mượt mà các tựa game AAA.',
+      title: pkgText('vsSvipTitle'),
+      badge: pkgText('vsSvipBadge'),
+      description: pkgText('vsSvipDesc'),
     },
     vs_xvip: {
-      title: 'Cloud Phone VS Phone XVIP - Đỉnh Cao Đám Mây',
-      badge: 'CẤU HÌNH KHỦNG',
-      description: 'Dòng máy ảo XVIP cao cấp nhất. Hỗ trợ đa nhiệm không giới hạn, bảo vệ tài khoản tối đa.',
+      title: pkgText('vsXvipTitle'),
+      badge: pkgText('vsXvipBadge'),
+      description: pkgText('vsXvipDesc'),
     },
     vs_mvip: {
-      title: 'Cloud Phone VS Phone MVIP - Dành Riêng Bang Hội & Cày Thuê',
-      badge: 'PRO GAMER',
-      description: 'Dòng máy ảo MVIP chuyên nghiệp. Cụm máy chủ chuyên dụng, uptime 99.99%.',
+      title: pkgText('vsMvipTitle'),
+      badge: pkgText('vsMvipBadge'),
+      description: pkgText('vsMvipDesc'),
     },
   };
 
@@ -344,9 +401,9 @@ export function groupUtilitiesByTheme(utilities: UtilityProduct[]): UtilityProdu
     const packages: ProductPackageVariant[] = list.map((subItem) => {
       // Trích xuất tên gói thời hạn (1 Ngày, 7 Ngày, 30 Ngày)
       let durationName = subItem.title;
-      if (subItem.title.includes('1 Day')) durationName = 'Gói 1 Ngày (24 Giờ)';
-      else if (subItem.title.includes('7 Days')) durationName = 'Gói 7 Ngày (1 Tuần)';
-      else if (subItem.title.includes('30 Days')) durationName = 'Gói 30 Ngày (1 Tháng)';
+      if (subItem.title.includes('1 Day')) durationName = pkgText('plan1Day');
+      else if (subItem.title.includes('7 Days')) durationName = pkgText('plan7Days');
+      else if (subItem.title.includes('30 Days')) durationName = pkgText('plan30Days');
 
       return {
         id: subItem.id,
@@ -357,7 +414,7 @@ export function groupUtilitiesByTheme(utilities: UtilityProduct[]): UtilityProdu
         sold_count: subItem.sold_count || 0,
         virtual_sold_count: subItem.virtual_sold_count || 0,
         badge: subItem.badge,
-        note: 'Giao tài khoản tự động trong 0 giây',
+        note: pkgText('instantAccountDelivery'),
         description: subItem.description,
         is_active: subItem.is_active !== false,
         sale_mode: subItem.sale_mode || 'normal',
@@ -422,7 +479,7 @@ export function groupGiveawaysByGame(campaigns: GiveawayCampaign[]): GiveawayCam
       const lead = list[0];
       const packages: GiveawayRewardPackage[] = list.map((item, idx) => ({
         id: item.id,
-        name: item.title || `Gói Quà Tặng #${idx + 1}`,
+        name: item.title || pkgText('giftPackageIndexed', { index: idx + 1 }),
         rewards: item.rewards,
         total_codes: item.total_codes || 0,
         claimed_codes: item.claimed_codes || 0,
@@ -432,7 +489,7 @@ export function groupGiveawaysByGame(campaigns: GiveawayCampaign[]): GiveawayCam
             : (typeof item.remaining_codes === 'number' ? item.remaining_codes : 0),
         codes_pool: item.codes_pool || [],
         is_active: !(item.is_active === false || item.is_active === 0 || item.is_active === '0' || item.status === 'PAUSED'),
-        note: 'Dành cho thành viên',
+        note: pkgText('forMembers'),
       }));
 
       const totalPool = packages.reduce((sum, p) => sum + (Number(p.remaining_codes) || 0), 0);
@@ -445,7 +502,7 @@ export function groupGiveawaysByGame(campaigns: GiveawayCampaign[]): GiveawayCam
       const parentCampaign: GiveawayCampaign = {
         ...lead,
         id: lead.id,
-        title: `Code riêng ${lead.game_name}`,
+        title: pkgText('exclusiveCodeTitle', { name: lead.game_name }),
         is_active: isGroupActive,
         status: isGroupActive ? 'ACTIVE' : 'PAUSED',
         remaining_codes: isGroupActive ? totalPool : 0,

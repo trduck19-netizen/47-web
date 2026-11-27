@@ -36,7 +36,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { StoreProduct, UtilityProduct, UserProfile, ProductPackageVariant } from '../types/game';
-import { formatCore, formatCurrencyVND } from '../utils/textUtils';
+import { formatCore } from '../utils/textUtils';
 import { marketingService } from '../services/marketingService';
 import { dataService } from '../services/dataService';
 import { cartService } from '../services/cartService';
@@ -70,8 +70,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onOpenShare,
   onShowToast,
 }) => {
-  const { t, language } = useLanguage();
-  const isEn = language === 'en';
+  const { t, formatCurrency } = useLanguage();
   const [storeSyncVersion, setStoreSyncVersion] = useState(0);
   useEffect(() => {
     const handleSync = () => setStoreSyncVersion((v) => v + 1);
@@ -317,8 +316,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     : (typeof window !== 'undefined' ? (localStorage.getItem('pine_utilities_global_show_sold') !== 'false' && localStorage.getItem('pine_admin_show_sold_util') !== 'false') : true);
   const isSoldVisible = isGlobalSoldEnabled && (product as any).show_sold_count !== false;
 
-  const isVnd = dataService.getWebsiteBranding()?.currencyMode === 'VND' || (product as any)?.industry !== 'gaming';
-  const formatPriceVal = (amount: number) => isVnd ? formatCurrencyVND(amount) : formatCore(amount);
+  const isPhysicalProduct = (product as any).product_type === 'physical';
+  const isVnd = isPhysicalProduct || dataService.getWebsiteBranding()?.currencyMode === 'VND' || (product as any)?.industry !== 'gaming';
+  const formatPriceVal = (amount: number) => (isVnd ? formatCurrency(amount) : formatCore(amount));
 
   const currentPrice = selectedPackage.price;
   const originalPrice = (typeof selectedPackage.original_price === 'number' && selectedPackage.original_price > 0)
@@ -485,13 +485,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       return;
     }
     const finalSafeQty = isSelectedEscalating ? 1 : (realStock > 0 ? Math.min(Math.max(1, quantity), realStock) : 1);
+    const sellerDisplayName = (product as any).store_name || (product as any).seller_name || (product as any).brand || 'Codegame Mall';
     const result = cartService.addToCart({
       productId: product.id,
       productName: product.title,
       priceCore: displayCurrentPrice,
-      sellerId: 'admin_store',
-      sellerName: (product as any).brand || 'Codegame Mall',
-      sellerSlug: (product as any).brand ? (product as any).brand.toLowerCase().replace(/\s+/g, '-') : 'codegame-mall',
+      sellerId: (product as any).seller_id || 'admin_store',
+      sellerName: sellerDisplayName,
+      sellerSlug: (product as any).seller_slug || (sellerDisplayName ? sellerDisplayName.toLowerCase().replace(/\s+/g, '-') : 'codegame-mall'),
       gameSlug: (product as any).game_slug,
       gameName: (product as any).brand || (product as any).game_name,
       coverUrl: product.cover_image_url || product.product_images?.[0],
@@ -499,6 +500,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       variantName: selectedPackage.name,
       attributes: (selectedPackage as any).attributes,
       quantity: finalSafeQty,
+      productType: isPhysicalProduct ? 'physical' : 'digital',
+      weightGrams: Number((product as any).weight_grams || 0) || undefined,
+      warehouseAddress: isPhysicalProduct ? ((product as any).warehouse_address || (product as any).origin || undefined) : undefined,
     });
     if (result.success) {
       if (onShowToast) onShowToast(t('productDetailModal.success'), result.message, 'success');
@@ -537,7 +541,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   if (typeof document === 'undefined') return null;
 
-  const isPhysicalProduct = (product as any).product_type === 'physical';
   const physicalShipFrom = (product as any).warehouse_address || (product as any).origin || t('shopeePhysical.warehouseDefault');
   const physicalWeightGrams = Number((product as any).weight_grams || 0);
   const physicalWarrantyHours = Number((product as any).warranty_hours || 0);
@@ -650,7 +653,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="lg:col-span-7 space-y-4 sm:space-y-5">
               {/* Main Image Gallery */}
               <div className="space-y-2.5">
-                <div className="relative rounded-xl bg-slate-50 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-800 group select-none shadow-xs aspect-square max-h-[340px] sm:max-h-[420px] mx-auto w-full">
+                <div className="relative rounded-xl bg-slate-50 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-800 group select-none shadow-xs aspect-square max-w-[360px] max-h-[360px] sm:max-w-[420px] sm:max-h-[420px] mx-auto w-full">
                   <img
                     key={images[activeImageIdx]}
                     src={images[activeImageIdx]}
@@ -785,10 +788,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
 
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
-                  <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
+                  {isPhysicalProduct ? (
+                    <Truck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
+                  )}
                   <div>
-                    <h4 className="font-bold text-xs text-amber-800 dark:text-amber-300">{t('productDetailModal.trustFast')}</h4>
-                    <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">{t('productDetailModal.trustFastDesc')}</p>
+                    <h4 className="font-bold text-xs text-amber-800 dark:text-amber-300">
+                      {isPhysicalProduct ? t('productDetailModal.trustFastPhysical') : t('productDetailModal.trustFast')}
+                    </h4>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">
+                      {isPhysicalProduct ? t('productDetailModal.trustFastPhysicalDesc') : t('productDetailModal.trustFastDesc')}
+                    </p>
                   </div>
                 </div>
 
@@ -796,7 +807,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <Sparkles className="w-5 h-5 text-[#ee4d2d] shrink-0" aria-hidden="true" />
                   <div>
                     <h4 className="font-bold text-xs text-[#d0011b] dark:text-orange-300">{t('productDetailModal.trustAuthentic')}</h4>
-                    <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">{t('productDetailModal.trustAuthenticDesc')}</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">
+                      {isPhysicalProduct ? t('productDetailModal.trustAuthenticPhysicalDesc') : t('productDetailModal.trustAuthenticDesc')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -967,7 +980,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {isSelectedEscalating && (
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 flex items-center gap-1">
                           <Zap className="w-3 h-3 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                          <span>{t('productDetailModal.escalatingPrice', { step: formatCore(selectedEscData.step) })}</span>
+                          <span>{t('productDetailModal.escalatingPrice', { step: formatPriceVal(selectedEscData.step) })}</span>
                         </span>
                       )}
                     </div>
@@ -995,7 +1008,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           <span>{t('productDetailModal.purchaseLadderTurn', { count: Number(selectedEscData.completed_count) + 1 })}</span>
                         </span>
                         <span className="text-[11px] font-mono text-amber-800 dark:text-amber-300 font-bold">
-                          +{formatCore(selectedEscData.step)}
+                          +{formatPriceVal(selectedEscData.step)}
                         </span>
                       </div>
 
@@ -1013,7 +1026,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             {t('productDetailModal.escalatingTurn', { turn: Number(selectedEscData.completed_count) + 2 })}
                           </span>
                           <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground block mt-0.5">
-                            {formatCore(
+                            {formatPriceVal(
                               selectedEscData.max_price && (displayCurrentPrice + selectedEscData.step) > selectedEscData.max_price
                                 ? selectedEscData.max_price
                                 : displayCurrentPrice + selectedEscData.step
@@ -1026,7 +1039,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             {t('productDetailModal.escalatingTurn', { turn: Number(selectedEscData.completed_count) + 3 })}
                           </span>
                           <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground block mt-0.5">
-                            {formatCore(
+                            {formatPriceVal(
                               selectedEscData.max_price && (displayCurrentPrice + (selectedEscData.step * 2)) > selectedEscData.max_price
                                 ? selectedEscData.max_price
                                 : displayCurrentPrice + (selectedEscData.step * 2)
@@ -1039,7 +1052,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-muted-foreground pt-1 border-t border-amber-200/70 dark:border-slate-800/60">
                         <span>{t('productDetailModal.escalatingBoughtCount', { count: selectedEscData.completed_count })}</span>
                         {selectedEscData.max_price ? (
-                          <span>{t('productDetailModal.escalatingPriceCap', { cap: formatCore(selectedEscData.max_price) })}</span>
+                          <span>{t('productDetailModal.escalatingPriceCap', { cap: formatPriceVal(selectedEscData.max_price) })}</span>
                         ) : (
                           <span>{t('productDetailModal.escalatingNoCap')}</span>
                         )}
@@ -1317,7 +1330,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-300 font-bold">
                       <Sparkles className="w-3.5 h-3.5 text-[#ee4d2d] animate-pulse shrink-0" aria-hidden="true" />
-                      <span>{t('productDetailModal.loginPromptOffer', { price: formatCore(Number(offerData.campaign.offer_price)) })}</span>
+                      <span>{t('productDetailModal.loginPromptOffer', { price: formatPriceVal(Number(offerData.campaign.offer_price)) })}</span>
                     </div>
                     <span className="text-[10px] text-[#ee4d2d] dark:text-amber-400 font-bold underline shrink-0">{t('productDetailModal.loginNow')}</span>
                   </button>
@@ -1336,7 +1349,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-medium">
                       <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
-                      <span>{t('productDetailModal.verifyEmailNotice', { price: formatCore(Number(offerData.campaign.offer_price)) })}</span>
+                      <span>{t('productDetailModal.verifyEmailNotice', { price: formatPriceVal(Number(offerData.campaign.offer_price)) })}</span>
                     </div>
                     <span className="text-[10px] text-amber-800 dark:text-amber-400 font-bold underline shrink-0">{t('productDetailModal.verifyNow')}</span>
                   </button>
@@ -1525,25 +1538,25 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               {isPkgEscalating && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 shrink-0 flex items-center gap-1">
                                   <Zap className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                                  {t('productDetailModal.escalatingPrice', { step: formatCore(pkgEscData.step) })}
+                                  {t('productDetailModal.escalatingPrice', { step: formatPriceVal(pkgEscData.step) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferEligible && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 shrink-0 flex items-center gap-1">
                                   <Sparkles className="w-2.5 h-2.5 text-rose-500" aria-hidden="true" />
-                                  {t('productDetailModal.firstPurchaseOfferPrice', { price: formatCore(pkgRawOfferPrice) })}
+                                  {t('productDetailModal.firstPurchaseOfferPrice', { price: formatPriceVal(pkgRawOfferPrice) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferUnverified && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 shrink-0 flex items-center gap-1" title={t('productDetailModal.needEmailVerification')}>
                                   <Sparkles className="w-2.5 h-2.5 text-amber-500" aria-hidden="true" />
-                                  {t('productDetailModal.firstPurchaseOfferPriceEmail', { price: formatCore(pkgRawOfferPrice) })}
+                                  {t('productDetailModal.firstPurchaseOfferPriceEmail', { price: formatPriceVal(pkgRawOfferPrice) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferLoginReq && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 shrink-0 flex items-center gap-1">
                                   <Sparkles className="w-2.5 h-2.5 text-rose-500" aria-hidden="true" />
-                                  {t('productDetailModal.firstPurchaseOfferPrice', { price: formatCore(pkgRawOfferPrice) })}
+                                  {t('productDetailModal.firstPurchaseOfferPrice', { price: formatPriceVal(pkgRawOfferPrice) })}
                                 </span>
                               )}
                               {pkg.badge && (

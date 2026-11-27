@@ -9,6 +9,11 @@ import {
 } from '../../functions/services/cache_service';
 import { onRequestGet as syncLiteGet } from '../../functions/api/sync-lite';
 import { onRequestGet as homepageSectionsGet } from '../../functions/api/homepage-sections';
+import { onRequestGet as gameIconFileGet } from '../../functions/game_icons/[file]';
+import { onRequestGet as productsGet } from '../../functions/api/products/index';
+import { onRequestGet as orderStatusGet } from '../../functions/api/orders/status';
+import { handleAdminAffiliateRequest } from '../../functions/api/admin/affiliate/index';
+import worker from '../../functions/_worker';
 
 interface TestResult {
   name: string;
@@ -298,6 +303,396 @@ async function main() {
   );
   check('dedup_marked_after_invalidate', wasEpochBumpedForRequest(mockWriteReq), true);
   check('invalidate_persists_new_epoch', (await getCatalogEpoch(mockDb)) === epAfterInvalidate && epAfterInvalidate !== ep3, true);
+
+  // =========================================================================
+  // PART 6: Regression Checks for #16, #33-d1, #35, #45, #46, #47, #48, #50
+  // =========================================================================
+  // #16: Server-Timing on sync-lite reports settings;dur=
+  check(
+    'reg16_sync_lite_server_timing_settings',
+    (resExplicitBypass.headers.get('Server-Timing') || '').includes('settings;dur='),
+    true
+  );
+
+  // #33-d1: D1 game icon with non-image content_type falls back to image/webp + nosniff in both [file].ts & _worker.ts
+  const d1IconMockDb = {
+    prepare() {
+      return {
+        bind() {
+          return this;
+        },
+        async first() {
+          return {
+            content_type: 'text/html; charset=utf-8',
+            image_base64: Buffer.from([82, 73, 70, 70]).toString('base64'),
+            size_bytes: 4,
+          };
+        },
+      };
+    },
+  } as any;
+  const d1IconFileRes = await gameIconFileGet({
+    request: new Request('https://example.test/game_icons/custom-icon.png?nocache=1'),
+    env: { DB: d1IconMockDb },
+    params: { file: 'custom-icon.png' },
+    waitUntil: () => {},
+  });
+  check('reg33d1_file_sanitizes_content_type', d1IconFileRes.headers.get('Content-Type'), 'image/webp');
+  check('reg33d1_file_sets_nosniff', d1IconFileRes.headers.get('X-Content-Type-Options'), 'nosniff');
+
+  const d1IconWorkerRes = await worker.fetch(
+    new Request('https://example.test/game_icons/custom-icon.png?nocache=1'),
+    { DB: d1IconMockDb, ASSETS: { fetch: async () => new Response('not found', { status: 404 }) } } as any,
+    { waitUntil: () => {}, passThroughOnException: () => {} } as any
+  );
+  check('reg33d1_worker_sanitizes_content_type', d1IconWorkerRes.headers.get('Content-Type'), 'image/webp');
+  check('reg33d1_worker_sets_nosniff', d1IconWorkerRes.headers.get('X-Content-Type-Options'), 'nosniff');
+
+  // #35: /api/products physical fallback cover uses /game_icons/physical-default.webp?v=2
+  const phyProdRes = await productsGet({
+    request: new Request('https://example.test/api/products?limit=5'),
+    env: {
+      DB: {
+        prepare(sql: string) {
+          const u = sql.toUpperCase();
+          return {
+            bind() {
+              return this;
+            },
+            async first() {
+              if (u.includes('SELECT COUNT(*)')) return { total: 1 };
+              return null;
+            },
+            async all() {
+              if (u.includes('FROM PRODUCTS')) {
+                return {
+                  results: [
+                    {
+                      id: 'prd_phy_no_thumb',
+                      title: 'Physical Box',
+                      slug: 'physical-box',
+                      industry_id: 'tech',
+                      category_id: 'tech',
+                      product_type: 'physical',
+                      thumbnail_url: null,
+                      images_json: '[]',
+                      specifications_json: '{}',
+                      is_active: 1,
+                    },
+                  ],
+                };
+              }
+              return { results: [] };
+            },
+            async run() {
+              return { success: true };
+            },
+          };
+        },
+        async batch() {
+          return [];
+        },
+      } as any,
+    },
+  } as any);
+  const phyProdJson: any = await phyProdRes.json();
+  check(
+    'reg35_products_physical_cover_v2',
+    phyProdJson.data?.[0]?.cover_image_url,
+    '/game_icons/physical-default.webp?v=2'
+  );
+
+  // #45 & #48: /api/sync vs /api/sync?nocache=1 headers (ETag + X-Catalog-Epoch + no-store) & consistent upcomingGames icon metadata
+  settingsMap.set(
+    'wcg_admin_upcoming_games_v1',
+    JSON.stringify([
+      { id: 'ug_1', slug: 'azur-promilia', name: 'Azur Promilia', status: 'UPCOMING', icon_verified: true, icon_source: 'store chính thức' },
+      { id: 'ug_2', slug: 'monster-hunter-outlanders', name: 'MH Outlanders', status: 'UPCOMING' },
+    ])
+  );
+  const syncMockDb = {
+    prepare(sql: string) {
+      let bound: any[] = [];
+      const s = sql.replace(/\s+/g, ' ').trim();
+      return {
+        bind(...args: any[]) {
+          bound = args;
+          return this;
+        },
+        async first() {
+          if (s.includes('FROM system_settings WHERE key = ?')) {
+            const val = settingsMap.get(String(bound[0]));
+            return val !== undefined ? { value: val } : null;
+          }
+          return null;
+        },
+        async all() {
+          if (s.includes('FROM system_settings WHERE key IN')) {
+            const out: any[] = [];
+            for (const k of bound) {
+              const val = settingsMap.get(String(k));
+              if (val !== undefined) out.push({ key: String(k), value: val });
+            }
+            return { results: out };
+          }
+          return { results: [] };
+        },
+        async run() {
+          if (s.includes('INSERT INTO system_settings') && bound[0] === CATALOG_EPOCH_SETTING_KEY) {
+            settingsMap.set(CATALOG_EPOCH_SETTING_KEY, String(bound[1]));
+          }
+          return { success: true, meta: { changes: 1 } };
+        },
+      };
+    },
+    async batch() {
+      return [];
+    },
+  } as any;
+
+  const noopCtx = { waitUntil: () => {}, passThroughOnException: () => {} } as any;
+  const syncNormalRes = await worker.fetch(
+    new Request('https://universal-mall-shop.pages.dev/api/sync'),
+    { DB: syncMockDb, ASSETS: { fetch: async () => new Response('', { status: 404 }) } } as any,
+    noopCtx
+  );
+  const syncNoCacheRes = await worker.fetch(
+    new Request('https://universal-mall-shop.pages.dev/api/sync?nocache=1'),
+    { DB: syncMockDb, ASSETS: { fetch: async () => new Response('', { status: 404 }) } } as any,
+    noopCtx
+  );
+  check(
+    'reg45_sync_nocache_has_etag_and_epoch',
+    syncNoCacheRes.headers.get('ETag') === `W/"sync-${epAfterInvalidate}"` &&
+      syncNoCacheRes.headers.get('X-Catalog-Epoch') === epAfterInvalidate &&
+      (syncNoCacheRes.headers.get('Cache-Control') || '').includes('no-store'),
+    true
+  );
+  const syncNormalJson: any = await syncNormalRes.json();
+  const syncNoCacheJson: any = await syncNoCacheRes.json();
+  check(
+    'reg48_sync_upcoming_icon_metadata_consistent',
+    JSON.stringify(syncNormalJson.upcomingGames) === JSON.stringify(syncNoCacheJson.upcomingGames) &&
+      syncNoCacheJson.upcomingGames?.[0]?.icon_verified === false &&
+      syncNoCacheJson.upcomingGames?.[0]?.icon_source === 'icon mẫu (chờ xác minh)' &&
+      syncNoCacheJson.upcomingGames?.[1]?.icon_verified === false &&
+      syncNoCacheJson.upcomingGames?.[1]?.icon_source === 'chưa xác minh',
+    true
+  );
+
+  // #46: POST /api/giveaways/simulate 4xx/5xx & 0-simulated must NOT bump epoch; >0 simulated bumps strictly once
+  let epochWriteCount = 0;
+  const simGiveawayState = [
+    {
+      id: 'gw_sim_1',
+      title: 'Test Giveaway Sim',
+      is_active: true,
+      status: 'ACTIVE',
+      codes_pool: ['CODE1', 'CODE2'],
+      remaining_codes: 2,
+      global_cooldown_seconds: 60,
+      enable_auto_simulation: true,
+      last_real_claim_at: '2026-01-01T00:00:00Z',
+    },
+  ];
+  const simMockDb = {
+    prepare(sql: string) {
+      let bound: any[] = [];
+      const s = sql.replace(/\s+/g, ' ').trim();
+      return {
+        bind(...args: any[]) {
+          bound = args;
+          return this;
+        },
+        async first() {
+          if (s.includes('FROM system_settings WHERE key = ?')) {
+            if (bound[0] === 'wcg_admin_giveaways_v4') {
+              return { value: JSON.stringify(simGiveawayState) };
+            }
+            const val = settingsMap.get(String(bound[0]));
+            return val !== undefined ? { value: val } : null;
+          }
+          return null;
+        },
+        async all() {
+          return { results: [] };
+        },
+        async run() {
+          if (s.includes('INSERT INTO system_settings') && bound[0] === CATALOG_EPOCH_SETTING_KEY) {
+            epochWriteCount++;
+            settingsMap.set(CATALOG_EPOCH_SETTING_KEY, String(bound[1]));
+          }
+          return { success: true, meta: { changes: 1 } };
+        },
+      };
+    },
+  } as any;
+
+  const sim400Res = await worker.fetch(
+    new Request('https://universal-mall-shop.pages.dev/api/giveaways/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{invalid_json',
+    }),
+    { DB: simMockDb, ASSETS: { fetch: async () => new Response('', { status: 404 }) } } as any,
+    noopCtx
+  );
+  check('reg46_simulate_400_zero_epoch_bumps', sim400Res.status === 400 && epochWriteCount === 0, true);
+
+  const sim401Res = await worker.fetch(
+    new Request('https://universal-mall-shop.pages.dev/api/giveaways/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bypassCooldown: true }),
+    }),
+    { DB: simMockDb, ADMIN_API_KEY: 'admin_secret_key_for_sim_test_32ch', ASSETS: { fetch: async () => new Response('', { status: 404 }) } } as any,
+    noopCtx
+  );
+  check('reg46_simulate_401_zero_epoch_bumps', sim401Res.status === 401 && epochWriteCount === 0, true);
+
+  const sim200Res = await worker.fetch(
+    new Request('https://universal-mall-shop.pages.dev/api/giveaways/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    { DB: simMockDb, ASSETS: { fetch: async () => new Response('', { status: 404 }) } } as any,
+    noopCtx
+  );
+  check('reg46_simulate_200_single_epoch_bump_no_double', sim200Res.status === 200 && epochWriteCount === 1, true);
+
+  // #47: GET /api/orders/status bumps epoch when overdue VietQR order expires and restores stock
+  let expiredOrderStatus = 'PENDING';
+  let statusEpochBumps = 0;
+  const expMockDb = {
+    prepare(sql: string) {
+      let bound: any[] = [];
+      const s = sql.replace(/\s+/g, ' ').trim();
+      return {
+        bind(...args: any[]) {
+          bound = args;
+          return this;
+        },
+        async first() {
+          if (s.startsWith('SELECT * FROM orders WHERE id = ?')) {
+            return {
+              id: 'ord_qr_exp_1',
+              member_id: 'mem_1',
+              status: expiredOrderStatus === 'PENDING' ? 'PENDING' : 'CANCELLED',
+              payment_status: expiredOrderStatus === 'PENDING' ? 'PENDING_PAYMENT' : 'EXPIRED',
+              expires_at: '2026-01-01T00:00:00Z',
+            };
+          }
+          return null;
+        },
+        async all() {
+          if (s.includes("FROM orders WHERE payment_method = 'vietqr'")) {
+            return {
+              results:
+                expiredOrderStatus === 'PENDING'
+                  ? [{ id: 'ord_qr_exp_1', product_id: 'prd_1', quantity: 1, expires_at: '2026-01-01T00:00:00Z' }]
+                  : [],
+            };
+          }
+          return { results: [] };
+        },
+        async run() {
+          if (s.includes('INSERT INTO system_settings') && bound[0] === CATALOG_EPOCH_SETTING_KEY) {
+            statusEpochBumps++;
+          }
+          return { success: true, meta: { changes: 1 } };
+        },
+        _sql: s,
+      };
+    },
+    async batch(stmts: any[]) {
+      if (stmts[0]?._sql?.includes("SET status = 'CANCELLED'")) {
+        expiredOrderStatus = 'CANCELLED';
+        return stmts.map(() => ({ success: true, meta: { changes: 1 } }));
+      }
+      return [];
+    },
+  } as any;
+
+  await orderStatusGet({
+    request: new Request('https://universal-mall-shop.pages.dev/api/orders/status?order_id=ord_qr_exp_1'),
+    env: { DB: expMockDb, ADMIN_SYNC_SECRET: '' },
+    waitUntil: () => {},
+  } as any);
+  check('reg47_order_expiry_bumps_catalog_epoch_once', statusEpochBumps, 1);
+
+  // #50: Admin affiliate SUSPEND keeps revoked_at NULL, REVOKE sets revoked_at
+  const pRow: any = {
+    id: 'sap_reg50',
+    supplier_seller_id: 'sel_a',
+    reseller_seller_id: 'sel_b',
+    status: 'APPROVED',
+    api_key_hash: 'f'.repeat(64),
+    api_key_prefix: 'wcg_shop_ffff••••1111',
+    revoked_at: null,
+  };
+  const affMockDb = {
+    prepare(sql: string) {
+      let bound: any[] = [];
+      const s = sql.replace(/\s+/g, ' ').trim();
+      return {
+        bind(...args: any[]) {
+          bound = args;
+          return this;
+        },
+        async first() {
+          if (s.includes('FROM seller_affiliate_partnerships WHERE id = ?')) return { ...pRow };
+          return null;
+        },
+        async all() {
+          return { results: [] };
+        },
+        async run() {
+          return { success: true, meta: { changes: 1 } };
+        },
+        _s: s,
+        _b: () => bound,
+      };
+    },
+    async batch(stmts: any[]) {
+      for (const st of stmts) {
+        const b = st._b();
+        if (st._s.includes("SET status = 'SUSPENDED'")) {
+          pRow.status = 'SUSPENDED';
+          pRow.revoked_at = pRow.revoked_at ?? b[0];
+        } else if (st._s.includes("SET status = 'REVOKED'")) {
+          pRow.status = 'REVOKED';
+          pRow.revoked_at = b[0];
+        }
+      }
+      return stmts.map(() => ({ success: true, meta: { changes: 1 } }));
+    },
+  } as any;
+  const affAdminKey = 'admin_master_key_reg50_test_32chars';
+  await handleAdminAffiliateRequest(
+    {
+      request: new Request('https://admin.example.test/api/admin/affiliate/partnerships/sap_reg50', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': affAdminKey },
+        body: JSON.stringify({ status: 'SUSPENDED' }),
+      }),
+      env: { DB: affMockDb, ADMIN_API_KEY: affAdminKey },
+    },
+    ['partnerships', 'sap_reg50']
+  );
+  check('reg50_suspend_keeps_revoked_at_null', pRow.status === 'SUSPENDED' && pRow.revoked_at === null, true);
+
+  await handleAdminAffiliateRequest(
+    {
+      request: new Request('https://admin.example.test/api/admin/affiliate/partnerships/sap_reg50', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': affAdminKey },
+        body: JSON.stringify({ status: 'REVOKED' }),
+      }),
+      env: { DB: affMockDb, ADMIN_API_KEY: affAdminKey },
+    },
+    ['partnerships', 'sap_reg50']
+  );
+  check('reg50_revoke_sets_revoked_at_timestamp', pRow.status === 'REVOKED' && typeof pRow.revoked_at === 'string' && pRow.revoked_at.length > 10, true);
 
   // Summary
   const passed = results.filter((r) => r.pass).length;

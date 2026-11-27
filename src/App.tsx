@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { lazyWithRetry } from './utils/lazyWithRetry';
-import { resolveProductCoverImage, safeGameIconUrl } from './utils/safeImageUrl';
+import { resolveProductCoverImage, safeGameIconUrl, sanitizeImageUrl } from './utils/safeImageUrl';
 import { CyberLoader } from './components/CyberLoader';
 import { ToastContainer, type ToastMessage } from './components/Toast';
 import { LanguageSeoHead } from './components/seo/LanguageSeoHead';
@@ -66,8 +66,19 @@ const ADMIN_HASH_PREFIXES = [
   '#/profile',
 ];
 
+const stripLangPrefix = (pathnameInput: string): string => {
+  const cleaned = (pathnameInput || '/').replace(/^\/(en|vi)(?=\/|$)/i, '');
+  return cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+};
+
+const withLangPrefix = (cleanPathInput: string, isEnMode: boolean): string => {
+  const cleanPath = stripLangPrefix(cleanPathInput);
+  if (!isEnMode) return cleanPath;
+  return cleanPath === '/' ? '/en/' : `/en${cleanPath}`;
+};
+
 const resolveRouteToMallSubView = (pathnameInput: string, hashInput: string): MallSubView => {
-  const path = pathnameInput.toLowerCase();
+  const path = stripLangPrefix(pathnameInput).toLowerCase();
   const hash = hashInput.toLowerCase();
 
   if (
@@ -77,23 +88,28 @@ const resolveRouteToMallSubView = (pathnameInput: string, hashInput: string): Ma
     path === '/cho-thue-web' || path.startsWith('/cho-thue-web/')
   ) return 'platform-solutions';
 
-  if (hash.includes('ban-hang') || path === '/ban-hang' || path.startsWith('/ban-hang/') || path === '/en/ban-hang' || path.startsWith('/en/ban-hang/')) return 'seller';
+  if (hash.includes('ban-hang') || path === '/ban-hang' || path.startsWith('/ban-hang/') || path === '/seller-center' || path.startsWith('/seller-center/')) return 'seller';
   if (hash.includes('gian-hang') || path.startsWith('/gian-hang/')) return 'store-detail';
   if (hash.includes('ma-hom-nay') || hash.includes('today') || path === '/ma-hom-nay' || path.startsWith('/ma-hom-nay/')) return 'today-codes';
   if (hash.includes('su-kien') || hash.includes('events') || path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/')) return 'events';
   if (hash.includes('news') || hash.includes('tintuc') || path === '/news' || path.startsWith('/news/')) return 'news';
   if (hash.includes('giveaways') || hash.includes('gw=') || hash.includes('giveaway=') || path === '/giveaways' || path.startsWith('/giveaways/') || path === '/giveaway' || path.startsWith('/giveaway/')) return 'giveaways';
-  if (hash.includes('store') || hash.includes('product=') || hash.includes('prod=') || path === '/store' || path.startsWith('/store/') || path === '/en/store' || path.startsWith('/en/store/')) return 'store';
+  if (hash.includes('store') || hash.includes('product=') || hash.includes('prod=') || path === '/store' || path.startsWith('/store/')) return 'store';
   if (hash.includes('utilities') || hash.includes('utility=') || hash.includes('ut=') || path === '/utilities' || path.startsWith('/utilities/')) return 'utilities';
   if (hash.includes('missions') || hash.includes('nhiem-vu') || path === '/missions' || path.startsWith('/missions/') || path === '/nhiem-vu' || path.startsWith('/nhiem-vu/')) return 'missions';
   if (hash.includes('telegram') || path === '/telegram' || path.startsWith('/telegram/')) return 'telegram';
+  if (path === '/tai-khoan' || path.startsWith('/tai-khoan/') || path === '/account' || path.startsWith('/account/')) return 'account';
+  if (path === '/a-z' || path.startsWith('/a-z/') || path === '/muc-luc-a-z' || path.startsWith('/muc-luc-a-z/')) return 'a-z';
+  if (path === '/sap-ra-mat' || path.startsWith('/sap-ra-mat/') || path === '/upcoming' || path.startsWith('/upcoming/')) return 'upcoming';
+  if (path === '/dieu-khoan' || path.startsWith('/dieu-khoan/') || path === '/terms' || path.startsWith('/terms/')) return 'terms';
+  if (path === '/bao-mat' || path.startsWith('/bao-mat/') || path === '/privacy' || path.startsWith('/privacy/')) return 'privacy';
 
   return 'home';
 };
 
 export const App: React.FC = () => {
   const { language, t } = useLanguage();
-  const isEn = language === 'en' || (typeof window !== 'undefined' && (window.location.pathname.startsWith('/en') || localStorage.getItem('pine_language') === 'en'));
+  const isEn = language === 'en';
 
   // Navigation Tab State (Unified Admin vs Single Universal Mall Client Shell)
   const [currentTab, setCurrentTab] = useState<'admin' | 'mall'>(() => {
@@ -124,9 +140,9 @@ export const App: React.FC = () => {
 
   const [currentStoreSlug, setCurrentStoreSlug] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      const path = window.location.pathname.toLowerCase();
-      if (path.startsWith('/gian-hang/')) {
-        return path.replace(/^\/gian-hang\//i, '').replace(/\/$/, '').trim();
+      const cleanPath = stripLangPrefix(window.location.pathname);
+      if (cleanPath.toLowerCase().startsWith('/gian-hang/')) {
+        return cleanPath.replace(/^\/gian-hang\//i, '').replace(/\/$/, '').trim();
       }
     }
     return '';
@@ -134,9 +150,9 @@ export const App: React.FC = () => {
 
   const [initialNewsSlug, setInitialNewsSlug] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
+      const cleanPath = stripLangPrefix(window.location.pathname);
       const hash = window.location.hash;
-      const matchPath = path.match(/^\/news\/([^/?#]+)/i);
+      const matchPath = cleanPath.match(/^\/news\/([^/?#]+)/i);
       if (matchPath) return decodeURIComponent(matchPath[1]);
       const matchHash = hash.match(/(?:#\/news\/|#news\/|news=)([^/?#&]+)/i);
       if (matchHash) return decodeURIComponent(matchHash[1]);
@@ -145,12 +161,12 @@ export const App: React.FC = () => {
   });
   const [initialGiveawayId, setInitialGiveawayId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
+      const cleanPath = stripLangPrefix(window.location.pathname);
       const hash = window.location.hash;
       const urlParams = new URLSearchParams(window.location.search);
       const gwParam = urlParams.get('gw') || urlParams.get('giveaway');
       if (gwParam) return decodeURIComponent(gwParam);
-      const matchPath = path.match(/^\/(?:giveaways|giveaway)\/([^/?#]+)/i);
+      const matchPath = cleanPath.match(/^\/(?:giveaways|giveaway)\/([^/?#]+)/i);
       if (matchPath) return decodeURIComponent(matchPath[1]);
       const matchHash = hash.match(/(?:#\/giveaways\/|#giveaways\/|gw=)([^/?#&]+)/i);
       if (matchHash) return decodeURIComponent(matchHash[1]);
@@ -159,11 +175,11 @@ export const App: React.FC = () => {
   });
   const [initialMissionId, setInitialMissionId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
+      const cleanPath = stripLangPrefix(window.location.pathname);
       const hash = window.location.hash;
-      const matchPath = path.match(/\/(?:nhiem-vu|missions)\/([^/?#]+)/);
+      const matchPath = cleanPath.match(/\/(?:nhiem-vu|missions)\/([^/?#]+)/i);
       if (matchPath) return decodeURIComponent(matchPath[1]);
-      const matchHash = hash.match(/(?:#\/nhiem-vu\/|#\/missions\/|ms=)([^/?#&]+)/);
+      const matchHash = hash.match(/(?:#\/nhiem-vu\/|#\/missions\/|ms=)([^/?#&]+)/i);
       if (matchHash) return decodeURIComponent(matchHash[1]);
     }
     return null;
@@ -217,7 +233,7 @@ export const App: React.FC = () => {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const path = window.location.pathname.toLowerCase();
+      const path = stripLangPrefix(window.location.pathname).toLowerCase();
       const hash = window.location.hash.toLowerCase();
       return path === '/gio-hang' || path === '/cart' || hash === '#cart' || hash === '#gio-hang';
     }
@@ -471,15 +487,17 @@ export const App: React.FC = () => {
         }
 
         // 4. Pathname & Hash Routes unified via resolveRouteToMallSubView
-        const pathname = window.location.pathname.toLowerCase();
-        const resolvedSub = resolveRouteToMallSubView(pathname, hashLower);
-        const isRootOrLang = pathname === '/' || pathname === '' || pathname === '/en' || pathname === '/en/' || pathname === '/vi' || pathname === '/vi/' || pathname === '/gio-hang' || pathname === '/cart';
+        const rawPathname = window.location.pathname;
+        const cleanPathname = stripLangPrefix(rawPathname);
+        const cleanPathLower = cleanPathname.toLowerCase();
+        const resolvedSub = resolveRouteToMallSubView(rawPathname, hashLower);
+        const isRootOrCart = cleanPathLower === '/' || cleanPathLower === '' || cleanPathLower === '/gio-hang' || cleanPathLower === '/cart';
         if (
-          pathname.startsWith('/game/') ||
-          pathname.startsWith('/g/') ||
+          cleanPathLower.startsWith('/game/') ||
+          cleanPathLower.startsWith('/g/') ||
           hashLower === '#catalog' ||
           hashLower.startsWith('#catalog') ||
-          (resolvedSub === 'home' && !isRootOrLang)
+          (resolvedSub === 'home' && !isRootOrCart)
         ) {
           window.history.replaceState(null, '', isEn ? '/en/' : '/');
           setCurrentTab('mall');
@@ -491,24 +509,24 @@ export const App: React.FC = () => {
         setMallSubView(resolvedSub);
 
         if (resolvedSub === 'news') {
-          const nSlug = pathname.startsWith('/news/')
-            ? window.location.pathname.replace(/^\/news\//i, '').replace(/\/$/, '').trim()
+          const nSlug = cleanPathLower.startsWith('/news/')
+            ? cleanPathname.replace(/^\/news\//i, '').replace(/\/$/, '').trim()
             : hash.includes('news/')
             ? hash.split(/news\//i)[1]?.split('&')[0]
             : null;
           if (nSlug) setInitialNewsSlug(nSlug);
         } else if (resolvedSub === 'giveaways') {
-          const pGwId = pathname.startsWith('/giveaway')
-            ? window.location.pathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim()
+          const pGwId = cleanPathLower.startsWith('/giveaway')
+            ? cleanPathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim()
             : hash.includes('gw=')
             ? hash.split(/gw=/i)[1]?.split('&')[0]
             : null;
           if (pGwId) setInitialGiveawayId(pGwId);
         } else if (resolvedSub === 'missions') {
-          const mId = window.location.pathname.replace(/^\/(?:nhiem-vu|missions)\/?/i, '').split('/')[0].trim();
+          const mId = cleanPathname.replace(/^\/(?:nhiem-vu|missions)\/?/i, '').split('/')[0].trim();
           if (mId) setInitialMissionId(mId);
-        } else if (resolvedSub === 'store-detail' && pathname.startsWith('/gian-hang/')) {
-          const sSlug = window.location.pathname.replace(/^\/gian-hang\//i, '').replace(/\/$/, '').trim();
+        } else if (resolvedSub === 'store-detail' && cleanPathLower.startsWith('/gian-hang/')) {
+          const sSlug = cleanPathname.replace(/^\/gian-hang\//i, '').replace(/\/$/, '').trim();
           setCurrentStoreSlug(sSlug);
         }
       };
@@ -567,31 +585,41 @@ export const App: React.FC = () => {
 
   // Unified Single-Click Mall SubView Switcher (History pushState routing)
   const getPathForMallSubView = useCallback((sub: MallSubView, storeSlugOverride?: string): string => {
-    const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
+    const isEnMode = language === 'en';
     switch (sub) {
       case 'home':
-        return isEnMode ? '/en/' : '/';
+        return withLangPrefix('/', isEnMode);
       case 'store':
-        return isEnMode ? '/en/store' : '/store';
+        return withLangPrefix('/store', isEnMode);
       case 'seller':
-        return isEnMode ? '/en/ban-hang' : '/ban-hang';
+        return withLangPrefix('/ban-hang', isEnMode);
       case 'store-detail':
-        return `/gian-hang/${storeSlugOverride || currentStoreSlug}`;
+        return withLangPrefix(`/gian-hang/${storeSlugOverride || currentStoreSlug}`, isEnMode);
       case 'missions':
-        return '/nhiem-vu';
+        return withLangPrefix('/nhiem-vu', isEnMode);
       case 'today-codes':
-        return '/ma-hom-nay';
+        return withLangPrefix('/ma-hom-nay', isEnMode);
       case 'events':
-        return '/su-kien';
+        return withLangPrefix('/su-kien', isEnMode);
       case 'platform-solutions':
-        return '/giai-phap-san';
+        return withLangPrefix('/giai-phap-san', isEnMode);
+      case 'account':
+        return withLangPrefix('/tai-khoan', isEnMode);
+      case 'a-z':
+        return withLangPrefix('/a-z', isEnMode);
+      case 'upcoming':
+        return withLangPrefix('/sap-ra-mat', isEnMode);
+      case 'terms':
+        return withLangPrefix('/dieu-khoan', isEnMode);
+      case 'privacy':
+        return withLangPrefix('/bao-mat', isEnMode);
       case 'news':
       case 'giveaways':
       case 'utilities':
       case 'telegram':
-        return `/${sub}`;
+        return withLangPrefix(`/${sub}`, isEnMode);
       default:
-        return isEnMode ? '/en/' : '/';
+        return withLangPrefix('/', isEnMode);
     }
   }, [currentStoreSlug, language]);
 
@@ -621,8 +649,7 @@ export const App: React.FC = () => {
     setStoreCategoryFilter(slug || 'all');
     setCurrentTab('mall');
     setMallSubView('store');
-    const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
-    const targetPath = isEnMode ? '/en/store' : '/store';
+    const targetPath = withLangPrefix('/store', language === 'en');
     if (window.location.pathname !== targetPath || window.location.hash) {
       window.history.pushState(null, '', targetPath);
     }
@@ -652,107 +679,128 @@ export const App: React.FC = () => {
     }
   };
 
-  // Sync Dynamic Document Title & Clean URL bar
+  // Sync Dynamic Document Title & Clean URL bar (Preserves equivalent VI <-> EN route on language switch)
   useEffect(() => {
     if (currentTab === 'admin') return;
     if (!isInitialLoadDone) return;
 
-    const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
+    const isEnMode = language === 'en';
+    const cleanCurPath = stripLangPrefix(window.location.pathname);
+    const cleanCurPathLower = cleanCurPath.toLowerCase();
 
     if (mallSubView === 'news' || mallSubView === 'events' || mallSubView === 'today-codes') {
-      const path = window.location.pathname.toLowerCase();
-      if (window.location.pathname.startsWith('/news/') && window.location.pathname.length > 6) {
-        // Preserve /news/<slug> in address bar
+      if (cleanCurPathLower.startsWith('/news/') && cleanCurPath.length > 6) {
+        const expectedArticlePath = withLangPrefix(cleanCurPath, isEnMode);
+        if (window.location.pathname !== expectedArticlePath) {
+          window.history.replaceState(null, '', expectedArticlePath);
+        }
       } else if (mallSubView === 'today-codes') {
-        document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
-        if (path !== '/ma-hom-nay') {
-          window.history.replaceState(null, '', '/ma-hom-nay');
+        document.title = t('mall.pageTitles.todayCodes');
+        const expectedPath = withLangPrefix('/ma-hom-nay', isEnMode);
+        if (window.location.pathname !== expectedPath) {
+          window.history.replaceState(null, '', expectedPath);
         }
       } else if (mallSubView === 'events') {
-        document.title = 'Sự Kiện Game & Lịch Khởi Tranh Mới Nhất 2026 | Pine Universal Mall';
-        if (path !== '/su-kien' && path !== '/events') {
-          window.history.replaceState(null, '', '/su-kien');
+        document.title = t('mall.pageTitles.events');
+        const baseEventsPath = cleanCurPathLower === '/events' ? '/events' : '/su-kien';
+        const expectedPath = withLangPrefix(baseEventsPath, isEnMode);
+        if (window.location.pathname !== expectedPath) {
+          window.history.replaceState(null, '', expectedPath);
         }
       } else {
-        document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
-        if (window.location.pathname !== '/news' || window.location.hash) {
-          window.history.replaceState(null, '', '/news');
+        document.title = t('mall.pageTitles.news');
+        const expectedPath = withLangPrefix('/news', isEnMode);
+        if (window.location.pathname !== expectedPath || window.location.hash) {
+          window.history.replaceState(null, '', expectedPath);
         }
       }
     } else if (mallSubView === 'giveaways') {
-      document.title = 'Sự Kiện Giveaway Game Miễn Phí 2026 | Pine Universal Mall';
-      if (!window.location.pathname.startsWith('/giveaways') || window.location.hash) {
-        window.history.replaceState(null, '', '/giveaways');
+      document.title = t('mall.pageTitles.giveaways');
+      const baseGwPath = cleanCurPathLower.startsWith('/giveaways/') ? cleanCurPath : '/giveaways';
+      const expectedPath = withLangPrefix(baseGwPath, isEnMode);
+      if (window.location.pathname !== expectedPath || window.location.hash) {
+        window.history.replaceState(null, '', expectedPath);
       }
     } else if (mallSubView === 'store') {
-      document.title = isEnMode
-        ? 'Multi-Industry Store & Digital Deals | Universal Mall'
-        : 'Cửa Hàng Đa Ngành & Tiện Ích Số | Universal Mall';
-      const expectedStorePath = isEnMode ? '/en/store' : '/store';
+      document.title = t('mall.pageTitles.store');
+      const expectedStorePath = withLangPrefix('/store', isEnMode);
       if (window.location.pathname !== expectedStorePath || window.location.hash) {
         window.history.replaceState(null, '', expectedStorePath);
       }
     } else if (mallSubView === 'utilities') {
-      document.title = 'Tiện Ích Nạp Game & Key Bản Quyền | Pine Universal Mall';
-      if (window.location.pathname !== '/utilities' || window.location.hash) {
-        window.history.replaceState(null, '', '/utilities');
+      document.title = t('mall.pageTitles.utilities');
+      const expectedPath = withLangPrefix('/utilities', isEnMode);
+      if (window.location.pathname !== expectedPath || window.location.hash) {
+        window.history.replaceState(null, '', expectedPath);
       }
     } else if (mallSubView === 'missions') {
-      document.title = 'Nhiệm Vụ Nhận Quà & Tiền Ví Miễn Phí | Pine Universal Mall';
-      const normPath = window.location.pathname.replace(/\/$/, '');
-      if (normPath !== '/nhiem-vu' || window.location.hash || window.location.pathname.endsWith('/')) {
-        window.history.replaceState(null, '', '/nhiem-vu');
+      document.title = t('mall.pageTitles.missions');
+      const baseMissionPath =
+        cleanCurPathLower.startsWith('/nhiem-vu/') || cleanCurPathLower.startsWith('/missions/')
+          ? cleanCurPath.replace(/\/$/, '')
+          : cleanCurPathLower === '/missions'
+          ? '/missions'
+          : '/nhiem-vu';
+      const expectedPath = withLangPrefix(baseMissionPath, isEnMode);
+      if (window.location.pathname !== expectedPath || window.location.hash) {
+        window.history.replaceState(null, '', expectedPath);
       }
     } else if (mallSubView === 'telegram') {
-      document.title = 'Cộng Đồng Telegram & Nhận Thông Báo Tự Động | Pine Universal Mall';
-      if (window.location.pathname !== '/telegram' || window.location.hash) {
-        window.history.replaceState(null, '', '/telegram');
+      document.title = t('mall.pageTitles.telegram');
+      const expectedPath = withLangPrefix('/telegram', isEnMode);
+      if (window.location.pathname !== expectedPath || window.location.hash) {
+        window.history.replaceState(null, '', expectedPath);
       }
     } else if (mallSubView === 'seller') {
-      document.title = isEnMode
-        ? 'Seller Center & Store Management | Pine Universal Mall'
-        : 'Kênh Người Bán & Quản Lý Gian Hàng | Pine Universal Mall';
-      const expectedSellerPath = isEnMode ? '/en/ban-hang' : '/ban-hang';
+      document.title = t('mall.pageTitles.seller');
+      const expectedSellerPath = withLangPrefix('/ban-hang', isEnMode);
       if (window.location.pathname !== expectedSellerPath || window.location.hash) {
         window.history.replaceState(null, '', expectedSellerPath);
       }
     } else if (mallSubView === 'store-detail') {
-      document.title = 'Gian Hàng Chính Hãng | Pine Universal Mall';
-      if (currentStoreSlug && (window.location.pathname !== `/gian-hang/${currentStoreSlug}` || window.location.hash)) {
-        window.history.replaceState(null, '', `/gian-hang/${currentStoreSlug}`);
+      document.title = t('mall.pageTitles.storeDetail');
+      if (currentStoreSlug) {
+        const expectedStoreDetailPath = withLangPrefix(`/gian-hang/${currentStoreSlug}`, isEnMode);
+        if (window.location.pathname !== expectedStoreDetailPath || window.location.hash) {
+          window.history.replaceState(null, '', expectedStoreDetailPath);
+        }
       }
     } else if (mallSubView === 'platform-solutions') {
-      document.title = isEnMode
-        ? 'E-Commerce Platform & Turnkey Solutions | Universal Mall'
-        : 'Giải Pháp Sàn Thương Mại & Mở Gian Hàng | Universal Mall';
+      document.title = t('mall.pageTitles.platformSolutions');
+      const expectedSolutionsPath = withLangPrefix('/giai-phap-san', isEnMode);
+      if (window.location.pathname !== expectedSolutionsPath || window.location.hash) {
+        window.history.replaceState(null, '', expectedSolutionsPath);
+      }
+    } else if (mallSubView === 'account' || mallSubView === 'a-z' || mallSubView === 'upcoming' || mallSubView === 'terms' || mallSubView === 'privacy') {
+      document.title = t('mall.pageTitles.home');
+      const expectedSubPath = getPathForMallSubView(mallSubView);
+      if (window.location.pathname !== expectedSubPath) {
+        window.history.replaceState(null, '', expectedSubPath);
+      }
     } else {
-      document.title = isEnMode
-        ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace'
-        : 'Universal Mall - Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng';
+      document.title = t('mall.pageTitles.home');
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) {
-        metaDesc.setAttribute(
-          'content',
-          isEnMode
-            ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace: Fashion, Beauty, Digital Tech, Services & Gaming. Nationwide courier and 0s instant code delivery.'
-            : 'Sàn thương mại điện tử đa ngành chính hãng Universal Mall: Thời trang, Làm đẹp, Thiết bị số, Dịch vụ số & Gaming. Giao hàng toàn quốc và mã 0s.'
-        );
+        metaDesc.setAttribute('content', t('mall.pageTitles.homeMetaDesc'));
       }
-      const expectedHome = isEnMode ? '/en/' : '/';
-      const pathLower = window.location.pathname.toLowerCase();
-      const isLangPath = pathLower === '/en' || pathLower === '/en/' || pathLower === '/vi' || pathLower === '/vi/' || pathLower === '/';
-      if (mallSubView === 'home' && ((isLangPath && window.location.pathname !== expectedHome) || (!isLangPath && window.location.pathname !== '/') || window.location.hash)) {
+      const expectedHome = withLangPrefix('/', isEnMode);
+      const isCartPath = cleanCurPathLower === '/gio-hang' || cleanCurPathLower === '/cart';
+      if (mallSubView === 'home' && !isCartPath && (window.location.pathname !== expectedHome || window.location.hash)) {
         window.history.replaceState(null, '', expectedHome);
       }
     }
-  }, [currentTab, mallSubView, currentStoreSlug, isInitialLoadDone, language]);
+  }, [currentTab, mallSubView, currentStoreSlug, isInitialLoadDone, language, getPathForMallSubView, t]);
 
   // Handle browser popstate and hashchange navigation (Back / Forward buttons & anchors)
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname.toLowerCase();
+      const rawPath = window.location.pathname;
+      const path = rawPath.toLowerCase();
+      const cleanPath = stripLangPrefix(rawPath);
+      const cleanPathLower = cleanPath.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       const host = window.location.hostname.toLowerCase();
+      const popIsEn = path === '/en' || path.startsWith('/en/') || localStorage.getItem('pine_language') === 'en';
 
       // 0. Dedicated Admin domain or Admin route/hash -> Always stay in Admin!
       const isAdminDomain = host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.includes('admin-test-code-game-shop') || host.startsWith('admin.');
@@ -764,22 +812,22 @@ export const App: React.FC = () => {
       }
 
       // Redirect legacy /game/, /g/, #catalog, and unknown legacy paths to Universal Mall home
-      const resolvedSub = resolveRouteToMallSubView(path, hash);
-      const isRootOrLang = path === '/' || path === '' || path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/' || path === '/gio-hang' || path === '/cart';
+      const resolvedSub = resolveRouteToMallSubView(rawPath, hash);
+      const isRootOrCart = cleanPathLower === '/' || cleanPathLower === '' || cleanPathLower === '/gio-hang' || cleanPathLower === '/cart';
       if (
-        path.startsWith('/game/') ||
-        path.startsWith('/g/') ||
+        cleanPathLower.startsWith('/game/') ||
+        cleanPathLower.startsWith('/g/') ||
         hash === '#catalog' ||
         hash.startsWith('#catalog') ||
-        (resolvedSub === 'home' && !isRootOrLang)
+        (resolvedSub === 'home' && !isRootOrCart)
       ) {
-        window.history.replaceState(null, '', isEn ? '/en/' : '/');
+        window.history.replaceState(null, '', popIsEn ? '/en/' : '/');
         setCurrentTab('mall');
         setMallSubView('home');
         return;
       }
 
-      if (hash === '#cart' || hash === '#gio-hang' || path === '/gio-hang' || path === '/cart') {
+      if (hash === '#cart' || hash === '#gio-hang' || cleanPathLower === '/gio-hang' || cleanPathLower === '/cart') {
         setIsCartOpen(true);
       }
 
@@ -787,15 +835,15 @@ export const App: React.FC = () => {
       setMallSubView(resolvedSub);
 
       if (resolvedSub === 'news') {
-        const nSlug = path.startsWith('/news/') ? path.replace(/^\/news\//i, '').replace(/\/$/, '').trim() : null;
+        const nSlug = cleanPathLower.startsWith('/news/') ? cleanPath.replace(/^\/news\//i, '').replace(/\/$/, '').trim() : null;
         setInitialNewsSlug(nSlug || null);
       } else if (resolvedSub === 'giveaways') {
         const popGwId = hash.includes('gw=')
           ? hash.split(/gw=/i)[1]?.split('&')[0]
           : hash.includes('giveaway=')
           ? hash.split(/giveaway=/i)[1]?.split('&')[0]
-          : path.startsWith('/giveaway')
-          ? window.location.pathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim()
+          : cleanPathLower.startsWith('/giveaway')
+          ? cleanPath.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim()
           : null;
         if (popGwId) setInitialGiveawayId(popGwId);
       } else if (resolvedSub === 'store') {
@@ -839,8 +887,8 @@ export const App: React.FC = () => {
             }
           }
         }
-      } else if (resolvedSub === 'store-detail' && path.startsWith('/gian-hang/')) {
-        const sSlug = window.location.pathname.replace(/^\/gian-hang\//i, '').replace(/\/$/, '').trim();
+      } else if (resolvedSub === 'store-detail' && cleanPathLower.startsWith('/gian-hang/')) {
+        const sSlug = cleanPath.replace(/^\/gian-hang\//i, '').replace(/\/$/, '').trim();
         setCurrentStoreSlug(sSlug);
       }
     };
@@ -959,7 +1007,7 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Dynamically update favicon & browser tab title from branding
+  // Dynamically update favicon & home browser tab title from branding (without overwriting sub-route titles)
   useEffect(() => {
     if (branding.avatarUrl) {
       let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
@@ -970,15 +1018,15 @@ export const App: React.FC = () => {
       }
       link.href = branding.avatarUrl;
     }
-    const rawTitle = branding.siteTitle?.trim();
-    const cleanTitle =
-      rawTitle && rawTitle.toUpperCase() !== 'WEB CODE GAME' && rawTitle.toUpperCase() !== 'WEB CODE'
-        ? rawTitle
-        : 'Universal Mall';
-    document.title = language === 'en'
-      ? `${cleanTitle} - Official Multi-Industry E-Commerce Marketplace`
-      : `${cleanTitle} - Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng`;
-  }, [branding.avatarUrl, branding.siteTitle, language, currentTab]);
+    if (currentTab === 'mall' && mallSubView === 'home') {
+      const rawTitle = branding.siteTitle?.trim();
+      const cleanTitle =
+        rawTitle && rawTitle.toUpperCase() !== 'WEB CODE GAME' && rawTitle.toUpperCase() !== 'WEB CODE'
+          ? rawTitle
+          : 'Universal Mall';
+      document.title = t('mall.pageTitles.brandSuffix', { brand: cleanTitle });
+    }
+  }, [branding.avatarUrl, branding.siteTitle, language, currentTab, mallSubView, t]);
 
   // Real-time listener for CMS content changes (Events, Storage & BroadcastChannel)
   useEffect(() => {
@@ -1058,11 +1106,10 @@ export const App: React.FC = () => {
   const handleOpenShareGiveaway = (campaign: GiveawayCampaign, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const origin = getShareOrigin();
-    let rawIcon = campaign.cover_image_url || campaign.game_icon_url || '';
+    let rawIcon = sanitizeImageUrl(campaign.cover_image_url || campaign.game_icon_url || '');
     if (!rawIcon && campaign.game_slug) {
       const g = allGamesList.find((x) => x && (x.slug?.toLowerCase() === campaign.game_slug?.toLowerCase() || x.id?.toLowerCase() === campaign.game_slug?.toLowerCase()));
-      if (g?.icon_url) rawIcon = g.icon_url;
-      else rawIcon = safeGameIconUrl(campaign.game_slug, '/og-image.jpg');
+      rawIcon = sanitizeImageUrl(g?.icon_url) || safeGameIconUrl(campaign.game_slug, '/og-image.jpg');
     }
     const fullIcon = (rawIcon || '/og-image.jpg').startsWith('http') ? (rawIcon || '/og-image.jpg') : `${origin}${(rawIcon || '/og-image.jpg').startsWith('/') ? (rawIcon || '/og-image.jpg') : `/${rawIcon || '/og-image.jpg'}`}`;
 
@@ -1082,8 +1129,7 @@ export const App: React.FC = () => {
     let rawIcon = resolveProductCoverImage(product, '');
     if (!rawIcon && product.game_slug) {
       const g = allGamesList.find((x) => x && (x.slug?.toLowerCase() === product.game_slug?.toLowerCase() || x.id?.toLowerCase() === product.game_slug?.toLowerCase()));
-      if (g?.icon_url) rawIcon = g.icon_url;
-      else rawIcon = safeGameIconUrl(product.game_slug, '/og-image.jpg');
+      rawIcon = sanitizeImageUrl(g?.icon_url) || safeGameIconUrl(product.game_slug, '/og-image.jpg');
     }
     const fullIcon = (rawIcon || '/og-image.jpg').startsWith('http') ? (rawIcon || '/og-image.jpg') : `${origin}${(rawIcon || '/og-image.jpg').startsWith('/') ? (rawIcon || '/og-image.jpg') : `/${rawIcon || '/og-image.jpg'}`}`;
 
@@ -1170,6 +1216,36 @@ export const App: React.FC = () => {
     );
   }
 
+  const activeSeoTitle =
+    mallSubView === 'seller'
+      ? t('mall.pageTitles.seller')
+      : mallSubView === 'store'
+      ? t('mall.pageTitles.store')
+      : mallSubView === 'store-detail'
+      ? t('mall.pageTitles.storeDetail')
+      : mallSubView === 'platform-solutions'
+      ? t('mall.pageTitles.platformSolutions')
+      : mallSubView === 'news'
+      ? t('mall.pageTitles.news')
+      : mallSubView === 'events'
+      ? t('mall.pageTitles.events')
+      : mallSubView === 'today-codes'
+      ? t('mall.pageTitles.todayCodes')
+      : mallSubView === 'giveaways'
+      ? t('mall.pageTitles.giveaways')
+      : mallSubView === 'utilities'
+      ? t('mall.pageTitles.utilities')
+      : mallSubView === 'missions'
+      ? t('mall.pageTitles.missions')
+      : mallSubView === 'telegram'
+      ? t('mall.pageTitles.telegram')
+      : t('mall.pageTitles.home');
+
+  const floatingAnnouncementCfg = dataService.getFloatingNotificationConfig();
+  const isLegacyCodeGamePopup = /codegame\.shop|#game-catalog|giftcode vip/i.test(
+    `${floatingAnnouncementCfg?.title || ''} ${floatingAnnouncementCfg?.ctaLink || ''} ${floatingAnnouncementCfg?.message || ''}`
+  );
+
   return (
     <div className="min-h-screen flex flex-col relative text-foreground selection:bg-primary selection:text-white overflow-x-clip w-full max-w-full box-border">
       {/* Dynamic Background Wallpaper Container (Layered between base and content) */}
@@ -1205,7 +1281,7 @@ export const App: React.FC = () => {
       {/* Main App Content (relative z-10) */}
       <div className="relative z-10 flex-1 flex flex-col w-full max-w-full">
         {/* Dynamic SEO hreflang, canonical & Meta Title / Description */}
-        <LanguageSeoHead />
+        <LanguageSeoHead title={activeSeoTitle} description={t('mall.pageTitles.homeMetaDesc')} />
 
         {/* Unified Universal Mall Client Shell */}
         <main className="flex-1">
@@ -1437,9 +1513,9 @@ export const App: React.FC = () => {
             isOpen={isCartOpen}
             onClose={() => {
               setIsCartOpen(false);
-              const path = window.location.pathname.toLowerCase();
-              if (path === '/gio-hang' || path === '/cart') {
-                window.history.pushState(null, '', '/');
+              const cleanPath = stripLangPrefix(window.location.pathname).toLowerCase();
+              if (cleanPath === '/gio-hang' || cleanPath === '/cart') {
+                window.history.pushState(null, '', withLangPrefix('/', isEn));
               }
             }}
             currentUser={currentUser}
@@ -1529,8 +1605,8 @@ export const App: React.FC = () => {
             onExploreClick={handleExploreOrSubmitSearch}
           />
 
-          {/* Floating Announcement (Configured via Admin) */}
-          {currentTab === 'mall' && mallSubView !== 'home' && (
+          {/* Floating Announcement: restricted strictly to home / (never blocking /store or sub-routes) and suppresses legacy CodeGame.Shop modal */}
+          {currentTab === 'mall' && mallSubView === 'home' && !isLegacyCodeGamePopup && (
             <FloatingAnnouncement onNavigateTab={(tab) => handleSelectMallView(mapLegacyTabToMallSubView(tab))} />
           )}
         </Suspense>

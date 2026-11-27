@@ -17,7 +17,7 @@ import {
   refundSupplierOrder,
   processAffiliatePostback,
 } from '../../functions/services/supplier_connector_service';
-import { ensureSchemaUpgrades } from '../../functions/services/d1_service';
+import { ensureSchemaUpgrades, lastSchemaTiming } from '../../functions/services/d1_service';
 import * as adminSuppliersIndexApi from '../../functions/api/admin/suppliers/index';
 import * as affiliatePostbackApi from '../../functions/api/webhooks/affiliate-postback';
 import * as inventoryPushApi from '../../functions/api/seller/affiliate/inventory-push';
@@ -345,7 +345,19 @@ async function main() {
     },
   } as any;
 
-  await ensureSchemaUpgrades(mockDb);
+  const [schemaTimingCallerA, schemaTimingCallerB] = await Promise.all([
+    ensureSchemaUpgrades(mockDb),
+    ensureSchemaUpgrades(mockDb),
+  ]);
+  check(
+    'd1_concurrent_schema_timing_shared_run',
+    schemaTimingCallerA.cacheHit === false &&
+      schemaTimingCallerB.cacheHit === false &&
+      schemaTimingCallerA.migSelectMs === schemaTimingCallerB.migSelectMs &&
+      schemaTimingCallerA.ddlMs === schemaTimingCallerB.ddlMs &&
+      lastSchemaTiming.cacheHit === false,
+    true
+  );
   const joinedSql = executedSqls.join('\n');
   const expectedTables = [
     'external_suppliers',
@@ -615,10 +627,12 @@ async function main() {
           request_payload_json: binds[6],
           http_status: binds[7],
           response_snippet: binds[8],
-          attempts: 1,
-          delivery_status: binds[9],
-          external_fulfillment_ref: binds[10] ?? null,
-          error_message: binds[11] ?? null,
+          attempts: Number(binds[9] ?? 1),
+          delivery_status: binds[10],
+          external_fulfillment_ref: binds[11] ?? null,
+          error_message: binds[12] ?? null,
+          created_at: binds[13] ?? null,
+          delivered_at: binds[14] ?? null,
         });
         return { success: true, meta: { changes: 1 } };
       }
@@ -1015,6 +1029,84 @@ async function main() {
     tableMatches.length === 5 && tableMatches.every((tTag) => tTag.includes('table-fixed w-full')),
     true
   );
+
+  // =========================================================================
+  // PART 10: Regression Checks for #44 (Credit Reason Codes) & #66 (Webhook retry_max)
+  // =========================================================================
+  const notFoundCredit = await reserveSupplierCreditAtomic(statefulDb, {
+    supplierId: 'esup_missing_id',
+    orderId: 'ord_missing',
+    orderCode: 'ORD-MISS-1',
+    externalOrderRef: 'EXT-MISS-1',
+    costCore: 5000,
+    sellingCore: 8000,
+  });
+  check('reg44_credit_supplier_not_found', notFoundCredit.reason, 'SUPPLIER_NOT_FOUND');
+
+  const wrongModeCredit = await reserveSupplierCreditAtomic(statefulDb, {
+    supplierId: 'esup_aff_1', // mode === 'AFFILIATE_POSTBACK'
+    orderId: 'ord_wrong_mode',
+    orderCode: 'ORD-MODE-1',
+    externalOrderRef: 'EXT-MODE-1',
+    costCore: 5000,
+    sellingCore: 8000,
+  });
+  check('reg44_credit_wrong_billing_mode', wrongModeCredit.reason, 'SUPPLIER_NOT_POSTPAID_MODE');
+
+  storeState.suppliers.push({
+    id: 'esup_inactive_1',
+    name: 'Paused Credit Supplier',
+    code: 'paused_credit',
+    mode: 'POSTPAID_CREDIT',
+    credit_limit_core: 100000,
+    credit_used_core: 0,
+    is_active: 0,
+  });
+  const inactiveCredit = await reserveSupplierCreditAtomic(statefulDb, {
+    supplierId: 'esup_inactive_1',
+    orderId: 'ord_inactive',
+    orderCode: 'ORD-INACT-1',
+    externalOrderRef: 'EXT-INACT-1',
+    costCore: 5000,
+    sellingCore: 8000,
+  });
+  check('reg44_credit_inactive_supplier', inactiveCredit.reason, 'SUPPLIER_INACTIVE');
+
+  // #66a: Transient 503 + network throw succeeds on 3rd attempt (retry_max = 2 -> maxAttempts = 3)
+  let transientCalls = 0;
+  const dispatchTransientOk = await dispatchSupplierFulfillmentWebhook(statefulDb, apiEnv, {
+    sellerIds: ['seller_alpha'],
+    webhookId: 'whk_test_1',
+    orderId: 'sord_reg66_ok',
+    orderCode: 'CGM-R66-OK',
+    eventType: 'order.paid',
+    payloadData: { price_core: 45000 },
+    fetchImpl: (async () => {
+      transientCalls++;
+      if (transientCalls === 1) return new Response('gateway unavailable', { status: 503 });
+      if (transientCalls === 2) throw new Error('ECONNRESET');
+      return new Response(JSON.stringify({ ok: true, ref: 'REF-TRY3' }), { status: 200 });
+    }) as any,
+  });
+  const transientDeliv = storeState.deliveries.find((d) => d.id === dispatchTransientOk.deliveryIds[0]);
+  check('reg66_transient_retries_succeed_attempt_3', dispatchTransientOk.delivered === 1 && transientDeliv?.attempts === 3, true);
+
+  // #66b: 405 Method Not Allowed (4xx client error) stops immediately at 1 attempt (zero hang)
+  let client405Calls = 0;
+  const dispatch405 = await dispatchSupplierFulfillmentWebhook(statefulDb, apiEnv, {
+    sellerIds: ['seller_alpha'],
+    webhookId: 'whk_test_1',
+    orderId: 'sord_reg66_405',
+    orderCode: 'CGM-R66-405',
+    eventType: 'webhook.test',
+    payloadData: { ping: true },
+    fetchImpl: (async () => {
+      client405Calls++;
+      return new Response('Method Not Allowed', { status: 405 });
+    }) as any,
+  });
+  const deliv405 = storeState.deliveries.find((d) => d.id === dispatch405.deliveryIds[0]);
+  check('reg66_405_no_retry_stops_at_1', client405Calls === 1 && deliv405?.attempts === 1 && deliv405?.http_status === 405, true);
 
   // Summary
   const passed = results.filter((r) => r.pass).length;

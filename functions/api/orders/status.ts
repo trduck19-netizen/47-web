@@ -1,5 +1,6 @@
 import { checkAndExpireOrdersD1, checkAndExpireSellerOrdersD1, ensureMarketplaceSchema, ensureSchemaUpgrades } from '../../services/d1_service';
 import { authenticateCaller, authenticateAdmin } from '../../services/auth_service';
+import { invalidateCatalogEdgeCache, wasEpochBumpedForRequest } from '../../services/cache_service';
 
 interface Env {
   DB: D1Database;
@@ -44,9 +45,16 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Tự động kiểm tra và hết hạn nếu quá 15 phút
-    await checkAndExpireOrdersD1(env.DB, orderId);
-    await checkAndExpireSellerOrdersD1(env.DB, orderId);
+    // Tự động kiểm tra và hết hạn nếu quá 15 phút; nếu có đơn hết hạn hoàn kho thì tăng Catalog Epoch ngay
+    const expiredDirectCount = await checkAndExpireOrdersD1(env.DB, orderId, { skipEpochBump: true });
+    const expiredSellerCount = await checkAndExpireSellerOrdersD1(env.DB, orderId, { skipEpochBump: true });
+    if ((expiredDirectCount > 0 || expiredSellerCount > 0) && !wasEpochBumpedForRequest(request)) {
+      try {
+        await invalidateCatalogEdgeCache(context as any, request, env);
+      } catch (e: any) {
+        console.warn('[Order Status] Catalog epoch invalidation warning:', e?.message);
+      }
+    }
 
     // Xác thực danh tính người gọi để chống lộ mã code và thông tin thanh toán cho người lạ
     const authHeader = request.headers.get('Authorization') || '';

@@ -41,7 +41,7 @@ import { BookmarkDrawer } from '../BookmarkDrawer';
 import { LanguageSelector } from '../LanguageSelector';
 import { useLanguage } from '../../context/LanguageContext';
 import { groupStoreProductsByGame } from '../../utils/productPackageUtils';
-import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage } from '../../utils/safeImageUrl';
+import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage, safeGameIconUrl, sanitizeImageUrl } from '../../utils/safeImageUrl';
 
 export type MallSubView =
   | 'home'
@@ -725,10 +725,20 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
     return list;
   }, [currentStoreProducts, storeProducts, searchKeyword, selectedCategory, categoriesConfig]);
 
-  // Đếm chính xác số thẻ game hiển thị trong Cửa hàng đa ngành (đã gom nhóm theo game)
+  // Đếm chính xác số thẻ game hiển thị trong Cửa hàng đa ngành (đã gom nhóm theo game & đồng bộ động theo bộ lọc StoreView)
   const groupedStoreProductsCount = useMemo(() => {
     return groupStoreProductsByGame(currentStoreProducts && currentStoreProducts.length > 0 ? currentStoreProducts : (storeProducts || [])).length;
   }, [currentStoreProducts, storeProducts]);
+
+  const [storeFilteredCount, setStoreFilteredCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (subView !== 'store') {
+      setStoreFilteredCount(null);
+    }
+  }, [subView]);
+
+  const effectiveStoreBreadcrumbCount = storeFilteredCount !== null ? storeFilteredCount : groupedStoreProductsCount;
 
   // Bộ phân loại, sắp xếp Shopee và phân trang riêng cho Sàn Đa Ngành Universal Mall
   const currentMallProducts = useMemo(() => {
@@ -1796,13 +1806,13 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                             <div className="text-[10px] text-slate-400 line-through font-mono">{formatPrice(prod.original_price)}</div>
                           )}
                         </div>
-                        {/* Shopee Signature Flash Sale Progress Pill */}
-                        <div className="relative h-4 rounded-full bg-[#ffbfa8]/70 dark:bg-orange-950/70 overflow-hidden flex items-center justify-center">
+                        {/* Shopee Signature Flash Sale Progress Pill (High-contrast dark orange-red track across 100% width) */}
+                        <div className="relative h-4 rounded-full bg-[#b33012]/90 dark:bg-orange-950/90 shadow-inner overflow-hidden flex items-center justify-center">
                           <div
-                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#ee4d2d] to-[#ff7337] rounded-full"
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#ee4d2d] via-[#f5532d] to-[#ff7337] rounded-full"
                             style={{ width: `${flashProgressPct}%` }}
                           />
-                          <span className="relative z-10 text-[9px] font-extrabold uppercase tracking-tight text-white drop-shadow-xs px-1 truncate">
+                          <span className="relative z-10 text-[9px] font-extrabold uppercase tracking-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)] px-1.5 truncate">
                             {flashSold > 0
                               ? t('mall.flashSale.soldCount', { count: flashSold })
                               : `🔥 ${t('mall.flashSale.sellingFast')}`}
@@ -2542,10 +2552,12 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 <span className="truncate">{shopBrand.name}</span>
                 <span className={`bg-white ${currentAccent.badgeBg} font-bold text-[9px] px-1.5 py-0.5 rounded uppercase shrink-0`}>{t('mall.topNav.mallBadge')}</span>
               </div>
-              <div className="text-[10px] text-white/90 font-medium leading-none mt-1 hidden sm:block truncate max-w-[240px]">
+              <div className="text-[10px] text-white/95 font-medium leading-none mt-1 hidden md:block whitespace-nowrap">
                 {language === 'en'
                   ? t('mall.slogan')
-                  : (shopBrand.slogan && !shopBrand.slogan.toLowerCase().includes('cổng tra cứu')
+                  : (shopBrand.slogan &&
+                      !shopBrand.slogan.toLowerCase().includes('cổng tra cứu') &&
+                      shopBrand.slogan !== 'Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số'
                       ? shopBrand.slogan
                       : t('mall.slogan'))}
               </div>
@@ -2605,7 +2617,11 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                         className="flex items-center gap-2.5 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
                       >
                         <div className="w-8 h-8 rounded bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-                          {prod.coverUrl ? <img src={prod.coverUrl} alt={prod.title} className="w-full h-full object-cover" /> : <ShoppingBag className="w-4 h-4 text-slate-400" />}
+                          {sanitizeImageUrl(prod.coverUrl) && !String(prod.coverUrl).includes('test-game.webp') ? (
+                            <img src={sanitizeImageUrl(prod.coverUrl)} alt={prod.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <ShoppingBag className="w-4 h-4 text-slate-400" />
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-xs font-semibold text-slate-900 truncate">{prod.title}</div>
@@ -2776,9 +2792,9 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 {subView === 'today-codes' && (t.mall?.breadcrumb?.todayCodes || (language === 'en' ? "Today's Codes (Closes at 22:30)" : 'Mã Hôm Nay (Tự Đóng 22:30)'))}
                 {subView === 'upcoming' && t('mall.breadcrumb.upcoming', { count: upcomingTotal })}
                 {subView === 'store' && (
-                  (groupedStoreProductsCount || storeProducts?.length || 1) === 1
+                  effectiveStoreBreadcrumbCount === 1
                     ? t('mall.breadcrumb.store_singular')
-                    : t('mall.breadcrumb.store_plural', { count: groupedStoreProductsCount || storeProducts?.length || 1 })
+                    : t('mall.breadcrumb.store_plural', { count: effectiveStoreBreadcrumbCount })
                 )}
                 {subView === 'store-detail' && (t.mall?.breadcrumb?.store || (language === 'en' ? 'Official Store' : 'Gian Hàng Chính Hãng'))}
                 {subView === 'giveaways' && (language === 'en' ? 'Giveaways & Free Gifts' : 'Săn Quà Giveaway')}
@@ -2965,6 +2981,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               onOpenShare={onOpenShareProduct}
               initialGameSlug={selectedCategory !== 'all' ? selectedCategory : undefined}
               onClearGameFilter={() => syncSelectedCategory('all')}
+              onFilteredCountChange={setStoreFilteredCount}
             />
           </div>
         )}
@@ -3304,7 +3321,11 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                             className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-orange-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-left transition flex items-center gap-2 cursor-pointer group"
                           >
                             <div className="w-7 h-7 rounded bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center text-xs">
-                              {g.icon_url ? <img src={g.icon_url} alt={g.name} className="w-full h-full object-cover" /> : '🎮'}
+                              {sanitizeImageUrl(g.icon_url) || safeGameIconUrl(g.slug, '') ? (
+                                <img src={sanitizeImageUrl(g.icon_url) || safeGameIconUrl(g.slug)} alt={g.name} className="w-full h-full object-cover" />
+                              ) : (
+                                '🎮'
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-[#ee4d2d]" title={getGameDisplayName(g)}>

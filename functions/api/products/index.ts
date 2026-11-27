@@ -97,10 +97,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         const parsedSpecs = JSON.parse(p.specifications_json || '{}');
         if (parsedSpecs && typeof parsedSpecs === 'object') specs = parsedSpecs;
       } catch {}
-      const resolvedCover =
+      const normalizePhysicalCover = (u: string): string =>
+        u === '/game_icons/physical-default.webp' ? '/game_icons/physical-default.webp?v=2' : u;
+      images = images.map(normalizePhysicalCover);
+      const rawCover =
         p.thumbnail_url ||
         images[0] ||
-        (p.product_type === 'physical' ? '/game_icons/physical-default.webp' : '');
+        (String(p.product_type || '').toLowerCase() === 'physical' ? '/game_icons/physical-default.webp?v=2' : '');
+      const resolvedCover = normalizePhysicalCover(rawCover);
       const resolvedImages = images.length > 0 ? images : [resolvedCover].filter(Boolean);
       const resolvedWeight =
         p.weight_grams !== undefined && p.weight_grams !== null
@@ -180,12 +184,24 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
             LIMIT ? OFFSET ?
           `).bind(limit, offset).all<any>();
 
-          items = (sResults || []).map((sp: any) => ({
-            ...sp,
-            images: [sp.thumbnail_url].filter(Boolean),
-            product_images: [sp.thumbnail_url].filter(Boolean),
-            specifications: {},
-          }));
+          items = (sResults || []).map((sp: any) => {
+            const rawSpCover =
+              sp.thumbnail_url ||
+              (String(sp.product_type || '').toLowerCase() === 'physical' ? '/game_icons/physical-default.webp?v=2' : '');
+            const spCover =
+              rawSpCover === '/game_icons/physical-default.webp'
+                ? '/game_icons/physical-default.webp?v=2'
+                : rawSpCover;
+            return {
+              ...sp,
+              thumbnail_url: spCover,
+              cover_image_url: spCover,
+              game_icon_url: spCover,
+              images: [spCover].filter(Boolean),
+              product_images: [spCover].filter(Boolean),
+              specifications: {},
+            };
+          });
           effectiveTotal = sTotal;
           effectiveRawTotal = sTotal;
         }

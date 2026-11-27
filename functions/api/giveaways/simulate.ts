@@ -1,6 +1,7 @@
 import { D1Database } from '@cloudflare/workers-types';
 import { runGiveawaySimulation } from '../../services/giveaway_simulation_service';
 import { verifyToken, verifyTemporaryAuditToken } from '../../services/auth_service';
+import { invalidateCatalogEdgeCache, wasEpochBumpedForRequest } from '../../services/cache_service';
 
 interface Env {
   DB: D1Database;
@@ -80,14 +81,38 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 
   let body: any = {};
-  try {
-    body = await request.json();
-  } catch {}
+  const rawBodyText = await request.text().catch(() => '');
+  if (rawBodyText.trim().length > 0) {
+    try {
+      body = JSON.parse(rawBodyText);
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        return new Response(JSON.stringify({ success: false, error: 'Invalid JSON object payload' }), {
+          status: 400,
+          headers: CORS_HEADERS,
+        });
+      }
+    } catch {
+      return new Response(JSON.stringify({ success: false, error: 'Malformed JSON payload' }), {
+        status: 400,
+        headers: CORS_HEADERS,
+      });
+    }
+  }
 
   const url = new URL(request.url);
   const forceEventId = body.eventId || url.searchParams.get('eventId') || undefined;
   const bypassCooldown = Boolean(body.bypassCooldown || url.searchParams.get('bypassCooldown') === '1');
   const bypassIdleThreshold = Boolean(body.bypassIdleThreshold || url.searchParams.get('bypassIdleThreshold') === '1');
+
+  if (bypassCooldown || bypassIdleThreshold) {
+    const authorized = await isAuthorized(request, env);
+    if (!authorized) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized: bypass flags require admin credentials' }),
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+  }
 
   // Chạy mô phỏng
   const report = await runGiveawaySimulation(env.DB, {
@@ -96,7 +121,21 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     bypassIdleThreshold,
   });
 
+  if (!report.success) {
+    return new Response(JSON.stringify(report), {
+      status: 500,
+      headers: CORS_HEADERS,
+    });
+  }
+
+  if (report.simulatedCount > 0 && !wasEpochBumpedForRequest(request)) {
+    try {
+      await invalidateCatalogEdgeCache(context as any, request, env);
+    } catch {}
+  }
+
   return new Response(JSON.stringify(report), {
+    status: 200,
     headers: CORS_HEADERS,
   });
 };

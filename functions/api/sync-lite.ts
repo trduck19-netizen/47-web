@@ -163,18 +163,20 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         const val = await fn();
         return { val, ms: Date.now() - t0 };
       };
-      const settingsPromise = getMultipleSettingsD1(
-        env.DB,
-        SYNC_LITE_SETTING_KEYS,
-        isNoCache ? new Set(SYNC_LITE_SETTING_KEYS) : new Set(DEFAULT_BYPASS_KEYS)
+      const settingsTimedPromise = timed(() =>
+        getMultipleSettingsD1(
+          env.DB,
+          SYNC_LITE_SETTING_KEYS,
+          isNoCache ? new Set(SYNC_LITE_SETTING_KEYS) : new Set(DEFAULT_BYPASS_KEYS)
+        )
       );
       const [tombstonesRes, settingsRes, storeProdsRes] = await Promise.all([
         timed(() => getActiveTombstonesMap(env.DB)),
-        timed(() => settingsPromise),
+        settingsTimedPromise,
         timed(() =>
           loadAllStoreProductsD1(env.DB, {
             skipSchemaCheck: true,
-            preloadedMetaSettingPromise: settingsPromise.then((s) => s['wcg_admin_store_products_v4']),
+            preloadedMetaSettingPromise: settingsTimedPromise.then((r) => r.val?.['wcg_admin_store_products_v4']),
           })
         ),
       ]);

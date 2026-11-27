@@ -756,44 +756,73 @@ export async function dispatchSupplierFulfillmentWebhook(
       continue;
     }
 
-    const signed = await signHmacPayload(payloadJson, rawSecret);
     const timeoutMs = Math.min(Math.max(Number(hook.timeout_ms) || 5000, 1000), 10000);
+    const configuredRetries = Number.isFinite(Number(hook.retry_max))
+      ? Math.max(0, Math.floor(Number(hook.retry_max)))
+      : 0;
+    // Bound total attempts to 1..3; only retry transient network errors or 5xx/429 (never hang on 4xx like 404/405).
+    const maxAttempts = Math.min(Math.max(1, 1 + configuredRetries), 3);
 
     let httpStatus: number | null = null;
     let snippet = '';
     let errMsg: string | null = null;
     let isOk = false;
     let externalRef: string | null = null;
+    let attemptsUsed = 0;
 
-    try {
-      const res = await fetchFn(urlCheck.normalizedUrl!, {
-        method: 'POST',
-        headers: {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      attemptsUsed = attempt;
+      httpStatus = null;
+      snippet = '';
+      errMsg = null;
+      isOk = false;
+
+      const signed = await signHmacPayload(payloadJson, rawSecret);
+      try {
+        const reqHeaders: Record<string, string> = {
           'Content-Type': 'application/json',
           'X-WCG-Signature': signed.headerValue,
           'X-WCG-Timestamp': String(signed.timestamp),
           'X-WCG-Event': params.eventType,
           'X-WCG-Delivery-Id': deliveryId,
-        },
-        body: payloadJson,
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-      httpStatus = res.status;
-      const text = await res.text().catch(() => '');
-      snippet = text.slice(0, 500);
-      isOk = res.ok;
-      if (isOk) {
-        try {
-          const parsedBody = JSON.parse(text);
-          if (parsedBody?.fulfillment_ref || parsedBody?.ref || parsedBody?.id) {
-            externalRef = String(parsedBody.fulfillment_ref || parsedBody.ref || parsedBody.id).slice(0, 128);
+        };
+        if (attempt > 1) {
+          reqHeaders['X-WCG-Attempt'] = String(attempt);
+        }
+
+        const res = await fetchFn(urlCheck.normalizedUrl!, {
+          method: 'POST',
+          headers: reqHeaders,
+          body: payloadJson,
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+        httpStatus = res.status;
+        const text = await res.text().catch(() => '');
+        snippet = text.slice(0, 500);
+        isOk = res.ok;
+        if (isOk) {
+          try {
+            const parsedBody = JSON.parse(text);
+            if (parsedBody?.fulfillment_ref || parsedBody?.ref || parsedBody?.id) {
+              externalRef = String(parsedBody.fulfillment_ref || parsedBody.ref || parsedBody.id).slice(0, 128);
+            }
+          } catch {}
+          break;
+        } else {
+          errMsg = `HTTP_${res.status}`;
+          const isRetryableHttp = res.status >= 500 || res.status === 429;
+          if (!isRetryableHttp || attempt >= maxAttempts) {
+            break;
           }
-        } catch {}
-      } else {
-        errMsg = `HTTP_${res.status}`;
+        }
+      } catch (err: any) {
+        errMsg = (err?.message || 'NETWORK_ERROR').slice(0, 300);
+        if (attempt >= maxAttempts) {
+          break;
+        }
       }
-    } catch (err: any) {
-      errMsg = (err?.message || 'NETWORK_ERROR').slice(0, 300);
+
+      await new Promise((resolve) => setTimeout(resolve, 40 * attempt));
     }
 
     const doneIso = new Date().toISOString();
@@ -807,7 +836,7 @@ export async function dispatchSupplierFulfillmentWebhook(
           id, webhook_id, seller_id, order_id, order_code, event_type,
           request_payload_json, http_status, response_snippet, attempts,
           delivery_status, external_fulfillment_ref, error_message, created_at, delivered_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         deliveryId,
@@ -819,6 +848,7 @@ export async function dispatchSupplierFulfillmentWebhook(
         payloadJson,
         httpStatus,
         snippet,
+        attemptsUsed,
         status,
         externalRef,
         errMsg,
@@ -1234,6 +1264,30 @@ export async function reserveSupplierCreditAtomic(
       reason: 'ALREADY_RESERVED',
       ledgerId: existingDebit.id,
     };
+  }
+
+  // Phân biệt rõ NCC không tồn tại / đang tắt / sai chế độ thanh toán với vượt hạn mức tín dụng thật
+  const supplierRow = await db
+    .prepare(
+      'SELECT id, is_active, mode, credit_limit_core, credit_used_core FROM external_suppliers WHERE id = ? LIMIT 1'
+    )
+    .bind(params.supplierId)
+    .first<{
+      id: string;
+      is_active: number | boolean;
+      mode: string;
+      credit_limit_core: number;
+      credit_used_core: number;
+    }>();
+
+  if (!supplierRow) {
+    return { ok: false, reason: 'SUPPLIER_NOT_FOUND' };
+  }
+  if (!supplierRow.is_active || Number(supplierRow.is_active) === 0) {
+    return { ok: false, reason: 'SUPPLIER_INACTIVE' };
+  }
+  if (supplierRow.mode !== 'POSTPAID_CREDIT') {
+    return { ok: false, reason: 'SUPPLIER_NOT_POSTPAID_MODE' };
   }
 
   return { ok: false, reason: 'CREDIT_LIMIT_EXCEEDED' };

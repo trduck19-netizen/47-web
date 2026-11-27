@@ -23,6 +23,8 @@ import { newsService } from '../services/newsService';
 import { marketingService } from '../services/marketingService';
 import { dataService } from '../services/dataService';
 import { optimizeImageUrl } from '../utils/imageCompressor';
+import { safeGameIconUrl, sanitizeImageUrl } from '../utils/safeImageUrl';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface NewsDetailModalProps {
   article: NewsArticle | null;
@@ -59,6 +61,8 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
   onSelectArticle,
   allArticles = [],
 }) => {
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
   const [readingProgress, setReadingProgress] = useState(0);
@@ -80,7 +84,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
     navigator.clipboard.writeText(code);
     marketingService.recordRealCopy(article?.title || 'Giftcode Tin Tức', article?.slug || '', 1);
     setCopiedCode(code);
-    onShowToast(`Đã sao chép mã code!`, code, 'success');
+    onShowToast(t('news.copiedCodeToast'), code, 'success');
     setTimeout(() => {
       setCopiedCode((prev) => (prev === code ? null : prev));
     }, 2000);
@@ -94,7 +98,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? window.location.origin
         : 'https://universal-mall-shop.pages.dev';
-    const url = `${origin}/news/${article.slug}`;
+    const url = `${origin}${isEn ? '/en' : ''}/news/${article.slug}`;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
@@ -111,7 +115,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url);
-      onShowToast('Đã sao chép liên kết bài viết!', url, 'success');
+      onShowToast(t('news.copiedLinkToast'), url, 'success');
     }
   };
 
@@ -354,10 +358,11 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
   // Determine effective cover URL (article cover -> game icon -> none)
   const effectiveCoverUrl = useMemo(() => {
     if (!article) return '';
-    if (article.cover_url && article.cover_url.trim()) return article.cover_url.trim();
-    if (matchedGame?.icon_url && matchedGame.icon_url.trim()) return matchedGame.icon_url.trim();
-    if ((matchedGame as any)?.iconUrl && (matchedGame as any).iconUrl.trim()) return (matchedGame as any).iconUrl.trim();
-    if (article.game_slug) return `/game_icons/${article.game_slug}.webp`;
+    const cleanArticleCover = sanitizeImageUrl(article.cover_url);
+    if (cleanArticleCover) return cleanArticleCover;
+    const cleanMatchedIcon = sanitizeImageUrl(matchedGame?.icon_url || (matchedGame as any)?.iconUrl);
+    if (cleanMatchedIcon) return cleanMatchedIcon;
+    if (article.game_slug) return safeGameIconUrl(article.game_slug, '/news_covers/thi-truong-game-viet-nam.webp');
     return '/news_covers/thi-truong-game-viet-nam.webp';
   }, [article, matchedGame]);
 
@@ -406,7 +411,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
   if (!article) return null;
 
   const formattedDate = new Date(article.published_at || (article as any).created_at || Date.now()).toLocaleDateString(
-    'vi-VN',
+    isEn ? 'en-US' : 'vi-VN',
     {
       day: '2-digit',
       month: '2-digit',
@@ -415,13 +420,13 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
   );
 
   return (
-    <div className="w-full min-h-screen bg-slate-950 text-foreground animate-fade-in select-text pb-24">
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 animate-fade-in select-text pb-24">
       {/* ========================================================= */}
       {/* 1. TOP STICKY BAR: BREADCRUMBS, PROGRESS, SHARE, GIFTCODE */}
       {/* ========================================================= */}
-      <div className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-border/80 shadow-md">
+      <div className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
         {/* 2.5px Reading Progress Bar */}
-        <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-border/40 overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-slate-200 dark:bg-border/40 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-primary via-indigo-400 to-emerald-400 transition-all duration-150 ease-out"
             style={{ width: `${readingProgress}%` }}
@@ -435,16 +440,16 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card hover:bg-muted text-foreground border border-border/80 transition-all text-xs sm:text-sm font-bold shrink-0 cursor-pointer shadow-xs active:scale-95 group"
-              title="Quay lại danh sách tin tức"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 transition-all text-xs sm:text-sm font-bold shrink-0 cursor-pointer shadow-xs active:scale-95 group"
+              title={t('news.backToList')}
             >
               <ArrowLeft className="w-4 h-4 text-primary group-hover:-translate-x-0.5 transition-transform" />
-              <span>Quay lại danh sách tin tức</span>
+              <span>{t('news.backToList')}</span>
             </button>
 
-            <nav className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+            <nav className="hidden md:flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 truncate">
               <span>/</span>
-              <span className="text-foreground/90 font-medium truncate max-w-sm lg:max-w-md">
+              <span className="text-slate-800 dark:text-slate-100 font-medium truncate max-w-sm lg:max-w-md">
                 {article.title}
               </span>
             </nav>
@@ -463,9 +468,9 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                     window.scrollTo({ top: y, behavior: 'smooth' });
                   }
                 }}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs transition-all cursor-pointer shadow-xs"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 hover:bg-amber-100 dark:hover:bg-amber-500/25 border border-amber-300 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 font-bold text-xs transition-all cursor-pointer shadow-xs"
               >
-                <Gift className="w-3.5 h-3.5 text-amber-400" />
+                <Gift className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span>Giftcode ({allExtractedCodes.length})</span>
               </button>
             )}
@@ -473,22 +478,22 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
             <button
               type="button"
               onClick={handleShare}
-              className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border/80 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0 active:scale-95 shadow-xs"
-              title="Chia sẻ liên kết bài viết"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0 active:scale-95 shadow-xs"
+              title={t('news.shareTitle')}
             >
               <Share2 className="w-3.5 h-3.5 text-primary" />
-              <span className="hidden sm:inline">Chia sẻ</span>
+              <span className="hidden sm:inline">{t('news.share')}</span>
             </button>
 
             {/* Nút Chia Sẻ Qua Telegram (Mục 3.1) */}
             <a
-              href={`https://t.me/share/url?url=${encodeURIComponent(`https://universal-mall-shop.pages.dev/news/${article.slug}`)}&text=${encodeURIComponent(article.title)}`}
+              href={`https://t.me/share/url?url=${encodeURIComponent(`https://universal-mall-shop.pages.dev${isEn ? '/en' : ''}/news/${article.slug}`)}&text=${encodeURIComponent(article.title)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 hover:text-sky-300 border border-sky-500/30 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0 active:scale-95 shadow-xs"
-              title="Chia sẻ bài viết này qua Telegram"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sky-700 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 border border-sky-200 dark:border-sky-500/30 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0 active:scale-95 shadow-xs"
+              title={t('news.shareTelegramTitle')}
             >
-              <Send className="w-3.5 h-3.5 text-sky-400" />
+              <Send className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               <span className="hidden sm:inline">Telegram</span>
             </a>
           </div>
@@ -496,7 +501,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
 
         {/* 2. STICKY SECTION NAVBAR (AUTO-GENERATED FROM ## HEADINGS) */}
         {sections.length > 0 && (
-          <div className="border-t border-border/60 bg-slate-900/60 backdrop-blur-xs">
+          <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-slate-900/70 backdrop-blur-xs">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-none touch-pan-x -mx-1 px-1">
                 {sections.map((sec, sIdx) => {
@@ -510,12 +515,12 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                         isActive
                           ? 'bg-primary text-white shadow-glow-primary scale-102'
-                          : 'bg-card/80 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60'
+                          : 'bg-white dark:bg-slate-900 hover:bg-slate-200/70 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700'
                       }`}
                     >
                       <span
                         className={`text-[10px] font-mono px-1 py-0.2 rounded font-bold ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
+                          isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         {secNum}
@@ -537,16 +542,16 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         {/* ========================================================= */}
         {/* 3. HERO HEADER (2 COLUMNS DESKTOP, STACKED MOBILE)        */}
         {/* ========================================================= */}
-        <div className="p-6 sm:p-8 lg:p-10 rounded-3xl bg-card/70 border border-border/80 shadow-md space-y-6">
+        <div className="p-6 sm:p-8 lg:p-10 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-md space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
             {/* Cột trái 1 (Desktop) / Phần 1 (Mobile): Title & Date Badge */}
             <div className="lg:col-span-7 order-1 space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary-light text-xs font-semibold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary dark:text-primary-light text-xs font-semibold">
                 <Calendar className="w-3.5 h-3.5 text-primary" />
-                <span>Nghiên cứu & Cập nhật: {formattedDate}</span>
+                <span>{t('news.updatedBadge', { date: formattedDate })}</span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black font-display tracking-tight text-foreground leading-[1.18]">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black font-display tracking-tight text-slate-900 dark:text-white leading-[1.18]">
                 {article.title}
               </h1>
             </div>
@@ -554,7 +559,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
             {/* Cột phải (Desktop) / Phần 2 (Mobile): Cover Image Banner */}
             {coverSrc && (
               <div className="lg:col-span-5 lg:row-span-2 order-2">
-                <div className="relative w-full aspect-video lg:aspect-[4/3] rounded-3xl overflow-hidden border border-border/80 shadow-xl bg-slate-900 group">
+                <div className="relative w-full aspect-video lg:aspect-[4/3] rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-slate-900 group">
                   <img
                     ref={(imgEl) => {
                       if (imgEl) {
@@ -572,7 +577,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                   {/* Official Watermark Badge */}
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-white/20 shadow-lg text-[11px] font-bold text-white select-none">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Pine Universal Mall • Tổng Hợp</span>
+                    <span>{t('news.watermarkCurated')}</span>
                   </div>
                 </div>
               </div>
@@ -581,19 +586,19 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
             {/* Cột trái 2 (Desktop) / Phần 3 (Mobile): Excerpt & Điểm cần đọc trước */}
             <div className={`order-3 space-y-4 ${coverSrc ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
               {article.excerpt && (
-                <p className="text-sm sm:text-base font-medium text-muted-foreground leading-relaxed italic border-l-2 border-primary/60 pl-3">
+                <p className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-300 leading-relaxed italic border-l-2 border-primary/60 pl-3">
                   {article.excerpt}
                 </p>
               )}
 
               {/* Hộp "Điểm cần đọc trước" (Key Takeaways) nổi bật */}
               {keyTakeaways && keyTakeaways !== article.excerpt && (
-                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 shadow-xs space-y-2">
-                  <div className="flex items-center gap-2 text-amber-300 font-bold text-xs sm:text-sm uppercase tracking-wider">
-                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>Điểm cần đọc trước</span>
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-50 via-amber-50/50 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-300 dark:border-amber-500/30 shadow-xs space-y-2">
+                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-xs sm:text-sm uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>{t('news.keyTakeaways')}</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed font-normal">
+                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed font-normal">
                     {renderInlineMarkdown(keyTakeaways)}
                   </p>
                 </div>
@@ -601,25 +606,25 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
             </div>
 
             {/* Hàng thông tin Meta Row (Full Width dưới 2 cột, Order 4 Mobile) */}
-            <div className="col-span-1 lg:col-span-12 order-4 pt-4 border-t border-border/60">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5 font-semibold text-foreground">
+            <div className="col-span-1 lg:col-span-12 order-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-600 dark:text-slate-400">
+                <span className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
                   <Calendar className="w-3.5 h-3.5 text-primary" />
                   {formattedDate}
                 </span>
 
                 <span>•</span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  {article.read_time_minutes || 3} phút đọc
+                  <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  {t('news.minRead', { count: article.read_time_minutes || 3 })}
                 </span>
 
                 {article.views !== undefined && (
                   <>
                     <span>•</span>
                     <span className="flex items-center gap-1.5">
-                      <Eye className="w-3.5 h-3.5 text-teal-400" />
-                      {article.views.toLocaleString()} lượt xem
+                      <Eye className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                      {t('news.viewsCount', { count: article.views.toLocaleString(isEn ? 'en-US' : 'vi-VN') })}
                     </span>
                   </>
                 )}
@@ -634,7 +639,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                           onSelectGameSlug(matchedGame.slug);
                         }
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary-light border border-primary/30 font-bold text-[11px] hover:bg-primary/20 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary dark:text-primary-light border border-primary/30 font-bold text-[11px] hover:bg-primary/20 transition-colors cursor-pointer"
                     >
                       {article.game_name}
                     </button>
@@ -642,19 +647,19 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                 )}
 
                 {article.is_hot && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/40">
-                    <Flame className="w-3 h-3 text-rose-400" />
-                    Tin Hot
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-500/40">
+                    <Flame className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                    {t('news.hotBadge')}
                   </span>
                 )}
 
                 {article.tags && article.tags.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5 ml-auto pt-1 sm:pt-0">
-                    <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Tag className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                     {article.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:text-foreground transition-colors"
+                        className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors"
                       >
                         #{tag}
                       </span>
@@ -682,22 +687,22 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         {allExtractedCodes.length > 0 && (
           <div
             id="giftcodes-widget"
-            className="scroll-mt-36 p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-950/60 via-card to-amber-950/30 border border-primary/40 shadow-lg space-y-4"
+            className="scroll-mt-36 p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-50/90 via-white to-amber-50/80 dark:from-indigo-950/60 dark:via-slate-900 dark:to-amber-950/30 border border-primary/30 dark:border-primary/40 shadow-lg space-y-4"
           >
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary/20 text-primary-light flex items-center justify-center font-bold">
-                  <Gift className="w-5 h-5 text-amber-300" />
+                <div className="w-9 h-9 rounded-xl bg-primary/15 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center font-bold">
+                  <Gift className="w-5 h-5 text-amber-600 dark:text-amber-300" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
-                    Danh Sách Mã Giftcode Quà Tặng ({allExtractedCodes.length})
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    {t('news.giftcodesHeading', { count: allExtractedCodes.length })}
                     <span className="px-2 py-0.2 rounded-full text-[10px] font-mono bg-accent text-white font-bold">
                       HOT
                     </span>
                   </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Bấm sao chép để nhận ngay quà tặng khởi đầu thuận lợi trong game
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    {t('news.giftcodesSub')}
                   </p>
                 </div>
               </div>
@@ -708,7 +713,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                   onClick={() => onSelectGameSlug(matchedGame.slug)}
                   className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer"
                 >
-                  Xem kho code {matchedGame.name} <ArrowRight className="w-3.5 h-3.5" />
+                  {t('news.viewGameCodes', { name: matchedGame.name })} <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -720,19 +725,19 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                 return (
                   <div
                     key={code}
-                    className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 hover:bg-muted/70 border border-border/80 hover:border-primary/60 transition-all group"
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800/70 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/60 transition-all group"
                   >
                     <div className="min-w-0 pr-2">
-                      <span className="font-mono font-black text-amber-300 text-sm sm:text-base tracking-wider select-all block truncate">
+                      <span className="font-mono font-black text-amber-700 dark:text-amber-300 text-sm sm:text-base tracking-wider select-all block truncate">
                         {code}
                       </span>
                       {reward ? (
-                        <span className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5" title={reward}>
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-1 mt-0.5" title={reward}>
                           {reward}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-emerald-400 font-medium block mt-0.5">
-                          ✓ Mã quà tặng khả dụng
+                        <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium block mt-0.5">
+                          {t('news.availableReward')}
                         </span>
                       )}
                     </div>
@@ -745,17 +750,17 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                           ? 'bg-emerald-500 text-white shadow-glow-emerald'
                           : 'bg-primary hover:bg-primary-hover text-white'
                       }`}
-                      title="Sao chép mã"
+                      title={t('news.copyBtn')}
                     >
                       {isCopied ? (
                         <>
                           <Check className="w-3.5 h-3.5" />
-                          <span>Đã chép</span>
+                          <span>{t('news.copiedBtn')}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          <span>Sao chép</span>
+                          <span>{t('news.copyBtn')}</span>
                         </>
                       )}
                     </button>
@@ -772,7 +777,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         <div className="space-y-8">
           {/* Intro paragraph if present before section 1 and distinct */}
           {introContent && !introContent.startsWith('**Tóm tắt:**') && (
-            <div className="p-6 sm:p-8 rounded-3xl bg-card/70 border border-border/80 text-foreground/90 leading-relaxed text-sm sm:text-base space-y-4">
+            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 leading-relaxed text-sm sm:text-base space-y-4">
               <RenderMarkdownContent
                 rawText={introContent}
                 onCopyCode={handleCopyCode}
@@ -788,20 +793,20 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               <section
                 key={sec.id}
                 id={sec.id}
-                className="scroll-mt-36 p-6 sm:p-8 lg:p-10 rounded-3xl bg-card/70 border border-border/80 shadow-sm space-y-6 hover:border-border transition-colors"
+                className="scroll-mt-36 p-6 sm:p-8 lg:p-10 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
               >
                 {/* Section Header */}
-                <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+                <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
                   <span className="px-2.5 py-1 rounded-xl bg-primary/15 text-primary font-mono text-xs sm:text-sm font-black shrink-0">
                     {secNum}
                   </span>
-                  <h2 className="text-xl sm:text-2xl font-display font-extrabold text-foreground leading-snug">
+                  <h2 className="text-xl sm:text-2xl font-display font-extrabold text-slate-900 dark:text-white leading-snug">
                     {sec.cleanTitle}
                   </h2>
                 </div>
 
                 {/* Section Body */}
-                <div className="text-foreground/90 text-sm sm:text-base leading-relaxed sm:leading-loose space-y-4">
+                <div className="text-slate-800 dark:text-slate-100 text-sm sm:text-base leading-relaxed sm:leading-loose space-y-4">
                   <RenderMarkdownContent
                     rawText={sec.content}
                     onCopyCode={handleCopyCode}
@@ -817,13 +822,12 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         {/* 7. THẺ GAME LIÊN QUAN (NẾU KHỚP GAME TRONG DANH MỤC)      */}
         {/* ========================================================= */}
         {matchedGame && (
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-card via-card to-primary/10 border border-primary/30 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-white via-slate-50 to-primary/10 dark:from-slate-900 dark:via-slate-900 dark:to-primary/15 border border-primary/30 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div className="flex items-center gap-4 min-w-0">
               <img
                 src={
-                  matchedGame.icon_url ||
-                  (matchedGame as any).iconUrl ||
-                  `/game_icons/${matchedGame.slug}.webp`
+                  sanitizeImageUrl(matchedGame.icon_url || (matchedGame as any).iconUrl) ||
+                  safeGameIconUrl(matchedGame.slug, '/package-placeholder.svg')
                 }
                 alt={matchedGame.name}
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-primary/40 shadow-sm shrink-0"
@@ -834,23 +838,23 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               />
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="font-extrabold text-base sm:text-lg text-foreground truncate">
+                  <h4 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white truncate">
                     {matchedGame.name}
                   </h4>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary-light border border-primary/30 shrink-0">
-                    {matchedGame.category || (matchedGame as any).genre || 'Game Bản Quyền'}
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary dark:text-primary-light border border-primary/30 shrink-0">
+                    {matchedGame.category || (matchedGame as any).genre || t('news.licensedGame')}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 truncate">
-                  Nhà phát hành: <strong className="text-foreground">{matchedGame.publisher || 'Chính thức'}</strong>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 truncate">
+                  {t('news.publisherLabel')} <strong className="text-slate-900 dark:text-white">{matchedGame.publisher || t('news.officialPublisher')}</strong>
                 </p>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">
-                  <span className="flex items-center gap-1 text-amber-400 font-bold">
+                <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 mt-1.5">
+                  <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
                     ★ {matchedGame.rating || 5.0}
                   </span>
                   <span>•</span>
-                  <span className="text-emerald-400 font-bold">
-                    {matchedGame.codes_count || (matchedGame as any).free_codes_count || 10}+ mã quà tặng
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                    {t('news.codesPlus', { count: matchedGame.codes_count || (matchedGame as any).free_codes_count || 10 })}
                   </span>
                 </div>
               </div>
@@ -862,12 +866,12 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                 if (onSelectGameSlug) {
                   onSelectGameSlug(matchedGame.slug);
                 } else if (typeof window !== 'undefined') {
-                  window.location.href = `/game/${matchedGame.slug}`;
+                  window.location.href = `${isEn ? '/en' : ''}/store`;
                 }
               }}
               className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
-              <span>Xem Chi Tiết Game & Giftcode</span>
+              <span>{t('news.viewGameDetails')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -878,13 +882,13 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         {/* ========================================================= */}
         {relatedArticles.length > 0 && (
           <div className="space-y-4 pt-4">
-            <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
-              <span>Bài Viết Liên Quan Cùng Chủ Đề ({relatedArticles.length})</span>
+              <span>{t('news.relatedHeading', { count: relatedArticles.length })}</span>
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {relatedArticles.map((rel) => {
-                const relCover = rel.cover_url || (rel.game_slug ? `/game_icons/${rel.game_slug}.webp` : '');
+                const relCover = sanitizeImageUrl(rel.cover_url) || (rel.game_slug ? safeGameIconUrl(rel.game_slug, '') : '');
                 return (
                   <div
                     key={rel.id}
@@ -892,13 +896,13 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                       if (onSelectArticle) {
                         onSelectArticle(rel);
                       } else if (typeof window !== 'undefined') {
-                        window.location.href = `/news/${rel.slug}`;
+                        window.location.href = `${isEn ? '/en' : ''}/news/${rel.slug}`;
                       }
                     }}
-                    className="group p-3.5 rounded-2xl bg-card/70 hover:bg-card border border-border/70 hover:border-primary/50 transition-all cursor-pointer flex flex-col justify-between shadow-xs hover:shadow-md"
+                    className="group p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-all cursor-pointer flex flex-col justify-between shadow-xs hover:shadow-md"
                   >
                     <div className="space-y-2.5">
-                      <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-border/60">
+                      <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800">
                         <img
                           src={optimizeImageUrl(relCover || '/news_covers/thi-truong-game-viet-nam.webp', 400)}
                           alt={rel.title}
@@ -912,16 +916,16 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                           }}
                         />
                       </div>
-                      <h4 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-2 group-hover:text-primary transition-colors leading-snug">
                         {rel.title}
                       </h4>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-3 pt-2.5 border-t border-border/40">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800">
                       <span>
-                        {new Date(rel.published_at || (rel as any).created_at || Date.now()).toLocaleDateString('vi-VN')}
+                        {new Date(rel.published_at || (rel as any).created_at || Date.now()).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')}
                       </span>
                       <span className="text-primary font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
-                        Đọc tiếp →
+                        {t('news.readMore')}
                       </span>
                     </div>
                   </div>
@@ -934,15 +938,15 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         {/* ========================================================= */}
         {/* 9. DÒNG NGUỒN Ở CUỐI BÀI: Nguồn: Pine Universal Mall             */}
         {/* ========================================================= */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-card/70 border border-border/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-muted-foreground">
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="font-bold text-foreground">Nguồn: Pine Universal Mall</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="font-bold text-slate-900 dark:text-white">{t('news.sourceLabel')}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span>Bản quyền nội dung: Pine Universal Mall</span>
+            <span>{t('news.copyrightLabel')}</span>
             <span>•</span>
-            <span>Cập nhật: {formattedDate}</span>
+            <span>{t('news.updatedShort', { date: formattedDate })}</span>
           </div>
         </div>
 
@@ -953,19 +957,19 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-card hover:bg-muted text-foreground border border-border/80 transition-all font-bold text-xs sm:text-sm cursor-pointer shadow-xs active:scale-95 group"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 transition-all font-bold text-xs sm:text-sm cursor-pointer shadow-xs active:scale-95 group"
           >
             <ArrowLeft className="w-4 h-4 text-primary group-hover:-translate-x-0.5 transition-transform" />
-            <span>Quay lại danh sách tin tức</span>
+            <span>{t('news.backToList')}</span>
           </button>
 
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary-light border border-primary/25 transition-all font-bold text-xs sm:text-sm cursor-pointer active:scale-95"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light border border-primary/25 transition-all font-bold text-xs sm:text-sm cursor-pointer active:scale-95"
           >
             <ChevronUp className="w-4 h-4" />
-            <span>Lên đầu trang</span>
+            <span>{t('news.backToTop')}</span>
           </button>
         </div>
       </div>
@@ -982,6 +986,8 @@ interface CountdownWidgetProps {
 }
 
 const CountdownWidget: React.FC<CountdownWidgetProps> = ({ releaseDate, gameName }) => {
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -1029,62 +1035,64 @@ const CountdownWidget: React.FC<CountdownWidgetProps> = ({ releaseDate, gameName
   const targetDateDisplay = useMemo(() => {
     const d = new Date(releaseDate);
     if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('vi-VN', {
+      return d.toLocaleDateString(isEn ? 'en-US' : 'vi-VN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
       });
     }
     return releaseDate;
-  }, [releaseDate]);
+  }, [releaseDate, isEn]);
 
   return (
-    <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-primary/15 via-card to-indigo-950/40 border border-primary/30 shadow-md space-y-4">
+    <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-primary/10 via-white to-indigo-50/80 dark:from-primary/15 dark:via-slate-900 dark:to-indigo-950/40 border border-primary/30 shadow-md space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-primary/20 text-primary-light flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded-xl bg-primary/15 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center font-bold">
             <Clock className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-light block">
-              Lịch Ra Mắt Chính Thức
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary dark:text-primary-light block">
+              {t('news.releaseSchedule')}
             </span>
-            <h4 className="text-sm sm:text-base font-extrabold text-foreground">
-              {timeLeft.isPassed ? `${gameName || 'Game'} Đã Ra Mắt Chính Thức!` : `Đếm Ngược Ra Mắt ${gameName || ''}`}
+            <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+              {timeLeft.isPassed
+                ? t('news.launchedTitle', { name: gameName || 'Game' })
+                : t('news.countdownTitle', { name: gameName || '' })}
             </h4>
           </div>
         </div>
 
-        <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary-light">
-          Ngày mở cửa: <strong className="text-foreground">{targetDateDisplay}</strong>
+        <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary dark:text-primary-light">
+          {t('news.openDate')} <strong className="text-slate-900 dark:text-white">{targetDateDisplay}</strong>
         </div>
       </div>
 
       {!timeLeft.isPassed && (
         <div className="grid grid-cols-4 gap-2.5 text-center pt-1">
-          <div className="p-2.5 sm:p-3 rounded-2xl bg-background/80 border border-border/80">
-            <span className="block font-mono font-black text-xl sm:text-3xl text-primary-light">
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800">
+            <span className="block font-mono font-black text-xl sm:text-3xl text-primary dark:text-primary-light">
               {timeLeft.days}
             </span>
-            <span className="text-[10px] sm:text-xs uppercase font-bold text-muted-foreground">Ngày</span>
+            <span className="text-[10px] sm:text-xs uppercase font-bold text-slate-600 dark:text-slate-400">{t('news.days')}</span>
           </div>
-          <div className="p-2.5 sm:p-3 rounded-2xl bg-background/80 border border-border/80">
-            <span className="block font-mono font-black text-xl sm:text-3xl text-primary-light">
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800">
+            <span className="block font-mono font-black text-xl sm:text-3xl text-primary dark:text-primary-light">
               {String(timeLeft.hours).padStart(2, '0')}
             </span>
-            <span className="text-[10px] sm:text-xs uppercase font-bold text-muted-foreground">Giờ</span>
+            <span className="text-[10px] sm:text-xs uppercase font-bold text-slate-600 dark:text-slate-400">{t('news.hours')}</span>
           </div>
-          <div className="p-2.5 sm:p-3 rounded-2xl bg-background/80 border border-border/80">
-            <span className="block font-mono font-black text-xl sm:text-3xl text-primary-light">
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800">
+            <span className="block font-mono font-black text-xl sm:text-3xl text-primary dark:text-primary-light">
               {String(timeLeft.minutes).padStart(2, '0')}
             </span>
-            <span className="text-[10px] sm:text-xs uppercase font-bold text-muted-foreground">Phút</span>
+            <span className="text-[10px] sm:text-xs uppercase font-bold text-slate-600 dark:text-slate-400">{t('news.minutes')}</span>
           </div>
-          <div className="p-2.5 sm:p-3 rounded-2xl bg-background/80 border border-border/80">
-            <span className="block font-mono font-black text-xl sm:text-3xl text-amber-400">
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800">
+            <span className="block font-mono font-black text-xl sm:text-3xl text-amber-600 dark:text-amber-400">
               {String(timeLeft.seconds).padStart(2, '0')}
             </span>
-            <span className="text-[10px] sm:text-xs uppercase font-bold text-muted-foreground">Giây</span>
+            <span className="text-[10px] sm:text-xs uppercase font-bold text-slate-600 dark:text-slate-400">{t('news.seconds')}</span>
           </div>
         </div>
       )}
@@ -1112,7 +1120,7 @@ const renderInlineMarkdown = (text: string): React.ReactNode => {
     if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
       const inner = part.slice(2, -2).replace(/\*\*/g, '').trim();
       return (
-        <strong key={i} className="font-extrabold text-foreground">
+        <strong key={i} className="font-extrabold text-slate-900 dark:text-white">
           {inner}
         </strong>
       );
@@ -1121,7 +1129,7 @@ const renderInlineMarkdown = (text: string): React.ReactNode => {
     if (part.startsWith('*') && part.endsWith('*') && part.length >= 2) {
       const inner = part.slice(1, -1).trim();
       return (
-        <em key={i} className="italic text-foreground/90">
+        <em key={i} className="italic text-slate-800 dark:text-slate-200">
           {inner}
         </em>
       );
@@ -1129,7 +1137,7 @@ const renderInlineMarkdown = (text: string): React.ReactNode => {
     // 3. Inline Code `...`
     if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
       return (
-        <code key={i} className="font-mono px-1 py-0.5 rounded bg-muted/70 text-amber-300 text-[0.9em]">
+        <code key={i} className="font-mono px-1.5 py-0.5 rounded bg-amber-50 dark:bg-slate-800 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-slate-700 text-[0.9em]">
           {part.slice(1, -1)}
         </code>
       );
@@ -1311,30 +1319,30 @@ const RenderMarkdownContent: React.FC<RenderMarkdownContentProps> = ({ rawText, 
           return (
             <div key={idx} className="my-5 space-y-3">
               {/* Desktop Table View */}
-              <div className="hidden sm:block overflow-x-auto rounded-2xl border border-border/80 bg-muted/20">
+              <div className="hidden sm:block overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50">
                 <table className="w-full text-left text-xs sm:text-sm border-collapse">
-                  <thead className="bg-muted/60 text-foreground font-bold border-b border-border/80">
+                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold border-b border-slate-200 dark:border-slate-700">
                     <tr>
                       {table.headers.map((h, i) => (
-                        <th key={i} className="py-3.5 px-4 font-bold text-foreground">
+                        <th key={i} className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/60">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                     {table.rows.map((row, rIdx) => (
-                      <tr key={rIdx} className="hover:bg-muted/30 transition-colors">
+                      <tr key={rIdx} className="hover:bg-slate-100/70 dark:hover:bg-slate-800/40 transition-colors">
                         {row.map((cell, cIdx) => {
                           const colHeader = table.headers[cIdx] || '';
                           const isCodeCol = /mã|giftcode|code/i.test(colHeader);
                           const isCopied = copiedCode === cell;
 
                           return (
-                            <td key={cIdx} className="py-3 px-4 text-foreground/90 align-middle">
+                            <td key={cIdx} className="py-3 px-4 text-slate-800 dark:text-slate-100 align-middle">
                               {isCodeCol && cell.length >= 3 && !cell.includes(' ') ? (
                                 <div className="flex items-center gap-2">
-                                  <span className="font-mono font-black text-amber-300 text-sm select-all">
+                                  <span className="font-mono font-black text-amber-700 dark:text-amber-300 text-sm select-all">
                                     {cell}
                                   </span>
                                   <button
@@ -1367,7 +1375,7 @@ const RenderMarkdownContent: React.FC<RenderMarkdownContentProps> = ({ rawText, 
                 {table.rows.map((row, rIdx) => (
                   <div
                     key={rIdx}
-                    className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-xs space-y-2"
+                    className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2"
                   >
                     {row.map((cell, cIdx) => {
                       const colHeader = table.headers[cIdx] || `Cột ${cIdx + 1}`;
@@ -1376,12 +1384,12 @@ const RenderMarkdownContent: React.FC<RenderMarkdownContentProps> = ({ rawText, 
 
                       return (
                         <div key={cIdx} className="space-y-0.5">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                             {colHeader}
                           </span>
                           {isCodeCol && cell.length >= 3 && !cell.includes(' ') ? (
-                            <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-muted/40 border border-border/80 mt-1">
-                              <span className="font-mono font-black text-amber-300 text-sm select-all">
+                            <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mt-1">
+                              <span className="font-mono font-black text-amber-700 dark:text-amber-300 text-sm select-all">
                                 {cell}
                               </span>
                               <button
@@ -1398,7 +1406,7 @@ const RenderMarkdownContent: React.FC<RenderMarkdownContentProps> = ({ rawText, 
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs font-medium text-foreground leading-relaxed block">
+                            <span className="text-xs font-medium text-slate-900 dark:text-white leading-relaxed block">
                               {cell}
                             </span>
                           )}
@@ -1426,12 +1434,12 @@ const RenderMarkdownContent: React.FC<RenderMarkdownContentProps> = ({ rawText, 
           return (
             <div
               key={idx}
-              className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs sm:text-sm leading-relaxed flex items-start gap-3 my-4 shadow-xs"
+              className="p-4 sm:p-5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 text-xs sm:text-sm leading-relaxed flex items-start gap-3 my-4 shadow-xs"
             >
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1">
-                <span className="font-bold text-amber-300 block">{block.data.prefix}</span>
-                <p className="text-foreground/90 whitespace-pre-line">{renderInlineMarkdown(block.data.body)}</p>
+                <span className="font-bold text-amber-800 dark:text-amber-300 block">{block.data.prefix}</span>
+                <p className="text-slate-800 dark:text-slate-100 whitespace-pre-line">{renderInlineMarkdown(block.data.body)}</p>
               </div>
             </div>
           );
@@ -1452,19 +1460,19 @@ const RenderMarkdownContent: React.FC<RenderMarkdownContentProps> = ({ rawText, 
                 {parsedCards.map((card, cIdx) => (
                   <div
                     key={cIdx}
-                    className="p-4 sm:p-5 rounded-2xl bg-card/85 hover:bg-card border border-border/75 hover:border-primary/50 transition-all shadow-xs flex flex-col justify-between group"
+                    className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-all shadow-xs flex flex-col justify-between group"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary-light border border-primary/25">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary dark:text-primary-light border border-primary/25">
                           {card.tag}
                         </span>
                       </div>
-                      <h4 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors leading-snug">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-primary transition-colors leading-snug">
                         {renderInlineMarkdown(card.title)}
                       </h4>
                       {card.desc && (
-                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-4">
                           {renderInlineMarkdown(card.desc)}
                         </p>
                       )}
@@ -1479,7 +1487,7 @@ const RenderMarkdownContent: React.FC<RenderMarkdownContentProps> = ({ rawText, 
             return (
               <ol key={idx} className="list-decimal pl-5 space-y-2 my-3">
                 {items.map((item: string, i: number) => (
-                  <li key={i} className="text-foreground/90 leading-relaxed pl-1">
+                  <li key={i} className="text-slate-800 dark:text-slate-100 leading-relaxed pl-1">
                     {renderInlineMarkdown(item)}
                   </li>
                 ))}
@@ -1490,7 +1498,7 @@ const RenderMarkdownContent: React.FC<RenderMarkdownContentProps> = ({ rawText, 
           return (
             <ul key={idx} className="list-disc pl-5 space-y-2 my-3">
               {items.map((item: string, i: number) => (
-                <li key={i} className="text-foreground/90 leading-relaxed pl-1">
+                <li key={i} className="text-slate-800 dark:text-slate-100 leading-relaxed pl-1">
                   {renderInlineMarkdown(item)}
                 </li>
               ))}

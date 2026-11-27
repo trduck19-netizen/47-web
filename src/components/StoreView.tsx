@@ -33,6 +33,7 @@ interface StoreViewProps {
   onOpenShare?: (product: StoreProduct) => void;
   initialGameSlug?: string;
   onClearGameFilter?: () => void;
+  onFilteredCountChange?: (count: number) => void;
 }
 
 const STORE_VIEW_MODE_STORAGE_KEY = 'pine_store_view_mode';
@@ -46,6 +47,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
   onOpenShare,
   initialGameSlug,
   onClearGameFilter,
+  onFilteredCountChange,
 }) => {
   const { t, language, formatCurrency } = useLanguage();
   const isVndMode = dataService.getWebsiteBranding()?.currencyMode === 'VND';
@@ -265,6 +267,10 @@ export const StoreView: React.FC<StoreViewProps> = ({
       return timeB - timeA;
     });
 
+  useEffect(() => {
+    onFilteredCountChange?.(filtered.length);
+  }, [filtered.length, onFilteredCountChange]);
+
   return (
     <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5 animate-fade-in">
       {/* Shopee-Style Store Header Banner (High Contrast Light & Dark) */}
@@ -278,7 +284,9 @@ export const StoreView: React.FC<StoreViewProps> = ({
                 <span>{language === 'en' ? t('store.badge') : (cmsIntro?.extraData?.badge || t('store.badge'))}</span>
               </div>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#ffe97a] text-[#d0011b] text-[11px] font-extrabold shadow-xs">
-                {t('mall.search.allProductsCount', { count: filtered.length })}
+                {filtered.length === 1
+                  ? t('mall.search.allProductsCount_singular')
+                  : t('mall.search.allProductsCount_plural', { count: filtered.length })}
               </span>
             </div>
             <h1 className="font-display font-extrabold text-lg sm:text-2xl md:text-3xl text-white tracking-tight">
@@ -344,7 +352,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
 
         {/* Search & View Mode Switcher */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="relative min-w-[180px] flex-1 sm:flex-initial">
+          <div className="relative min-w-[180px] sm:w-64 md:w-72 flex-1 sm:flex-initial">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" aria-hidden="true" />
             <input
               type="search"
@@ -433,7 +441,9 @@ export const StoreView: React.FC<StoreViewProps> = ({
             const hasMultiplePackages = Array.isArray(packages) && packages.length > 1;
             const displayPrice = hasMultiplePackages ? getProductMinPrice(product) : effectivePrice;
             const rawCoverSrc = resolveProductCoverImage(product, '/package-placeholder.svg');
-            const coverSrc = rawCoverSrc.includes('test-game.webp') ? '/package-placeholder.svg' : rawCoverSrc;
+            const coverSrc = rawCoverSrc.includes('test-game.webp')
+              ? (isPhysical ? PHYSICAL_DEFAULT_IMAGE_URL : '/package-placeholder.svg')
+              : rawCoverSrc;
             const isPlaceholder = coverSrc.includes('package-placeholder.svg');
 
             const displayStock =
@@ -607,7 +617,9 @@ export const StoreView: React.FC<StoreViewProps> = ({
             const hasMultiplePackages = Array.isArray(packages) && packages.length > 1;
             const displayPrice = hasMultiplePackages ? getProductMinPrice(product) : effectivePrice;
             const rawCoverSrc = resolveProductCoverImage(product, '/package-placeholder.svg');
-            const coverSrc = rawCoverSrc.includes('test-game.webp') ? '/package-placeholder.svg' : rawCoverSrc;
+            const coverSrc = rawCoverSrc.includes('test-game.webp')
+              ? (isPhysical ? PHYSICAL_DEFAULT_IMAGE_URL : '/package-placeholder.svg')
+              : rawCoverSrc;
             const isPlaceholder = coverSrc.includes('package-placeholder.svg');
             const localizedTitle = language === 'en' && (product as any).title_en ? (product as any).title_en : product.title;
             const displayStock =
@@ -785,7 +797,7 @@ export const StoreView: React.FC<StoreViewProps> = ({
                   aria-hidden="true"
                   className="hidden sm:flex items-center justify-center bg-[#ee4d2d] text-white text-[11px] font-semibold py-1.5 px-2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none"
                 >
-                  {language === 'en' ? 'Find Similar' : 'Tìm sản phẩm tương tự'}
+                  {t('mall.products.findSimilar')}
                 </div>
               </article>
             );

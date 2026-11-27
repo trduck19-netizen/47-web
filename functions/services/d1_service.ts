@@ -1,5 +1,6 @@
 import fallbackGiveawaysData from '../../src/data/giveaways.json';
 import { recordEscrowHold } from './escrow_service';
+import { bumpCatalogEpoch } from './cache_service';
 /**
  * D1 Database Service for web-code-game
  * Implements atomic batch operations, strict constraint validations, and schema management.
@@ -506,7 +507,7 @@ function splitSqlStatements(sql: string): string[] {
 }
 
 let schemaUpgradesDone = false;
-let schemaUpgradesPromise: Promise<void> | null = null;
+let schemaUpgradesPromise: Promise<SchemaTiming> | null = null;
 let giveawaySchemaChecked = false;
 let missionSchemaChecked = false;
 
@@ -1252,16 +1253,27 @@ export async function logAdminAudit(
 /**
  * Safe runtime schema upgrades / migrations
  */
-export let lastSchemaTiming = { migSelectMs: 0, ddlMs: 0, cacheHit: false };
+export interface SchemaTiming {
+  migSelectMs: number;
+  ddlMs: number;
+  cacheHit: boolean;
+}
 
-export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
+export let lastSchemaTiming: SchemaTiming = { migSelectMs: 0, ddlMs: 0, cacheHit: false };
+
+export async function ensureSchemaUpgrades(db: D1Database): Promise<SchemaTiming> {
   if (schemaUpgradesDone) {
-    lastSchemaTiming = { migSelectMs: 0, ddlMs: 0, cacheHit: true };
-    return;
+    const hitTiming: SchemaTiming = { migSelectMs: 0, ddlMs: 0, cacheHit: true };
+    lastSchemaTiming = hitTiming;
+    return hitTiming;
   }
-  if (schemaUpgradesPromise) return schemaUpgradesPromise;
+  if (schemaUpgradesPromise) {
+    const sharedTiming = await schemaUpgradesPromise;
+    lastSchemaTiming = sharedTiming;
+    return sharedTiming;
+  }
 
-  schemaUpgradesPromise = (async () => {
+  const runPromise: Promise<SchemaTiming> = (async () => {
     const _schemaFnStart = Date.now();
     let _migSelectMs = 0;
     // 0. Nạp toàn bộ danh sách migration đã chạy chỉ với 1 câu SELECT duy nhất trước khi chạy các ensure*Schema
@@ -3931,10 +3943,19 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<void> {
   }
 
   lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };
+  const finishedTiming: SchemaTiming = { ...lastSchemaTiming };
   schemaUpgradesDone = true;
+  return finishedTiming;
   })();
 
-  return schemaUpgradesPromise;
+  schemaUpgradesPromise = runPromise.catch((err) => {
+    schemaUpgradesPromise = null;
+    throw err;
+  });
+
+  const completedTiming = await schemaUpgradesPromise;
+  lastSchemaTiming = completedTiming;
+  return completedTiming;
 }
 
 /**
@@ -4628,24 +4649,35 @@ export async function claimGiveawayD1(db: D1Database, params: D1ClaimGiveawayPar
   }
 }
 
+function cloneSettingValue<T>(val: T): T {
+  if (val === null || val === undefined || typeof val !== 'object') {
+    return val;
+  }
+  try {
+    return structuredClone(val);
+  } catch {
+    return JSON.parse(JSON.stringify(val));
+  }
+}
+
 export function getCanonicalSettingFallback<T = any>(key: string): T | null {
-  if (key === 'wcg_crawler_api_config_v1') return (canonicalBackupState.crawlerApiConfig || null) as unknown as T;
-  if (key === 'wcg_crawler_pending_games_v1') return (canonicalBackupState.crawlerPendingGames || []) as unknown as T;
-  if (key === 'wcg_crawler_pending_codes_v1') return (canonicalBackupState.crawlerPendingCodes || []) as unknown as T;
+  if (key === 'wcg_crawler_api_config_v1') return cloneSettingValue((canonicalBackupState.crawlerApiConfig || null) as unknown as T);
+  if (key === 'wcg_crawler_pending_games_v1') return cloneSettingValue((canonicalBackupState.crawlerPendingGames || []) as unknown as T);
+  if (key === 'wcg_crawler_pending_codes_v1') return cloneSettingValue((canonicalBackupState.crawlerPendingCodes || []) as unknown as T);
   if (key === 'wcg_admin_upcoming_games_v1') {
     const up = (canonicalBackupState.upcomingGames || []) as any[];
-    return up as unknown as T;
+    return cloneSettingValue(up as unknown as T);
   }
   if (key === 'wcg_admin_content_v4') {
-    return ((canonicalBackupState as any).content || []) as unknown as T;
+    return cloneSettingValue(((canonicalBackupState as any).content || []) as unknown as T);
   }
   if (key === 'wcg_growth_config_v1') {
-    return ((canonicalBackupState as any).growthConfig || null) as unknown as T;
+    return cloneSettingValue(((canonicalBackupState as any).growthConfig || null) as unknown as T);
   }
   if (key === 'wcg_news_articles_v1') {
-    return ((canonicalBackupState as any).newsArticles || null) as unknown as T;
+    return cloneSettingValue(((canonicalBackupState as any).newsArticles || null) as unknown as T);
   }
-  if (key === 'wcg_crawler_stats_v1') return (canonicalBackupState.crawlerStats || null) as unknown as T;
+  if (key === 'wcg_crawler_stats_v1') return cloneSettingValue((canonicalBackupState.crawlerStats || null) as unknown as T);
   return null;
 }
 
@@ -4701,7 +4733,7 @@ export async function getSettingD1<T = any>(
   if (!bypassCache) {
     const mem = settingMemoryCache.get(key);
     if (mem && Date.now() - mem.cachedAt < SETTING_MEMORY_CACHE_TTL) {
-      return mem.val as T;
+      return cloneSettingValue(mem.val as T);
     }
   }
 
@@ -4716,10 +4748,10 @@ export async function getSettingD1<T = any>(
       try {
         const parsed = JSON.parse(row.value) as T;
         if (Array.isArray(parsed) && parsed.length === 0 && fallback && Array.isArray(fallback) && fallback.length > 0) {
-          settingMemoryCache.set(key, { val: fallback, cachedAt: Date.now() });
+          settingMemoryCache.set(key, { val: cloneSettingValue(fallback), cachedAt: Date.now() });
           return fallback;
         }
-        settingMemoryCache.set(key, { val: parsed, cachedAt: Date.now() });
+        settingMemoryCache.set(key, { val: cloneSettingValue(parsed), cachedAt: Date.now() });
         return parsed;
       } catch {
         settingMemoryCache.set(key, { val: row.value, cachedAt: Date.now() });
@@ -4739,16 +4771,16 @@ export async function getSettingD1<T = any>(
 
   const finalVal = fallback !== null ? fallback : defaultValue;
   if (finalVal !== null) {
-    settingMemoryCache.set(key, { val: finalVal, cachedAt: Date.now() });
+    settingMemoryCache.set(key, { val: cloneSettingValue(finalVal), cachedAt: Date.now() });
   }
-  return finalVal;
+  return cloneSettingValue(finalVal);
 }
 
 /**
  * Write / Upsert system setting into D1 (Zero KV write)
  */
 export async function setSettingD1(db: D1Database, key: string, value: any): Promise<void> {
-  settingMemoryCache.set(key, { val: value, cachedAt: Date.now() });
+  settingMemoryCache.set(key, { val: cloneSettingValue(value), cachedAt: Date.now() });
   try {
     await ensureSchemaUpgrades(db);
     const strVal = typeof value === 'string' ? value : JSON.stringify(value);
@@ -4782,7 +4814,7 @@ export async function getMultipleSettingsD1(
     const shouldBypass = bypassCacheKeys.has(k);
     const mem = settingMemoryCache.get(k);
     if (!shouldBypass && mem && now - mem.cachedAt < SETTING_MEMORY_CACHE_TTL) {
-      result[k] = mem.val;
+      result[k] = cloneSettingValue(mem.val);
     } else {
       missingKeys.push(k);
       const fb = getCanonicalSettingFallback(k);
@@ -4810,10 +4842,10 @@ export async function getMultipleSettingsD1(
             const parsed = JSON.parse(r.value);
             if (Array.isArray(parsed) && parsed.length === 0 && result[r.key] && Array.isArray(result[r.key]) && result[r.key].length > 0) {
               // Retain durable fallback
-              settingMemoryCache.set(r.key, { val: result[r.key], cachedAt: now });
+              settingMemoryCache.set(r.key, { val: cloneSettingValue(result[r.key]), cachedAt: now });
             } else {
               result[r.key] = parsed;
-              settingMemoryCache.set(r.key, { val: parsed, cachedAt: now });
+              settingMemoryCache.set(r.key, { val: cloneSettingValue(parsed), cachedAt: now });
             }
           } catch {
             result[r.key] = r.value;
@@ -7094,7 +7126,11 @@ export async function createQrOrderD1(db: D1Database, params: CreateQrOrderParam
  * Tự động kiểm tra và hủy các đơn QR đã hết hạn (> 15 phút chưa thanh toán).
  * Hoàn trả lại mã quà về trạng thái AVAILABLE và bù lại stock_quantity cho store_products.
  */
-export async function checkAndExpireOrdersD1(db: D1Database, targetOrderId?: string): Promise<number> {
+export async function checkAndExpireOrdersD1(
+  db: D1Database,
+  targetOrderId?: string,
+  options?: { skipEpochBump?: boolean }
+): Promise<number> {
   await ensureSchemaUpgrades(db);
   const nowIso = new Date().toISOString();
 
@@ -7149,8 +7185,11 @@ export async function checkAndExpireOrdersD1(db: D1Database, targetOrderId?: str
       `).bind(qty, pId);
 
       // 1. Thực thi batch hoàn trả mã kho và hủy đơn quá hạn
-      await db.batch([stmtOrder, stmtCodes, stmtStock, stmtStockMulti]);
-      count++;
+      const expBatch: any[] = await db.batch([stmtOrder, stmtCodes, stmtStock, stmtStockMulti]);
+      const rawOrderChanges = expBatch?.[0]?.meta?.changes ?? expBatch?.[0]?.changes;
+      if (rawOrderChanges === undefined || Number(rawOrderChanges) > 0) {
+        count++;
+      }
 
       // 2. Ghi nhật ký kiểm toán bất đồng bộ
       const logId = 'sec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
@@ -7172,6 +7211,10 @@ export async function checkAndExpireOrdersD1(db: D1Database, targetOrderId?: str
     }
   }
 
+  if (count > 0 && !options?.skipEpochBump) {
+    await bumpCatalogEpoch(db, 'expire_orders');
+  }
+
   return count;
 }
 
@@ -7179,7 +7222,11 @@ export async function checkAndExpireOrdersD1(db: D1Database, targetOrderId?: str
  * Tự động kiểm tra và hủy các đơn hàng sàn TMĐT đã hết hạn (> 15 phút chưa thanh toán).
  * Hoàn trả lại mã kho về trạng thái IN_STOCK.
  */
-export async function checkAndExpireSellerOrdersD1(db: D1Database, targetOrderId?: string): Promise<number> {
+export async function checkAndExpireSellerOrdersD1(
+  db: D1Database,
+  targetOrderId?: string,
+  options?: { skipEpochBump?: boolean }
+): Promise<number> {
   await ensureMarketplaceSchema(db);
   const nowIso = new Date().toISOString();
 
@@ -7273,6 +7320,10 @@ export async function checkAndExpireSellerOrdersD1(db: D1Database, targetOrderId
     } catch (err) {
       console.warn(`[ExpireSellerOrder] Error expiring seller order ${oId}:`, err);
     }
+  }
+
+  if (count > 0 && !options?.skipEpochBump) {
+    await bumpCatalogEpoch(db, 'expire_seller_orders');
   }
 
   return count;

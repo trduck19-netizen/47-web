@@ -88,6 +88,9 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
   const [showAddProductModal, setShowAddProductModal] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [catalogGames, setCatalogGames] = useState<Game[]>([]);
+  const [gameSearchQuery, setGameSearchQuery] = useState<string>('');
 
   // Codes State
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -145,6 +148,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [prodDeliveryType, setProdDeliveryType] = useState<'AUTO' | 'MANUAL'>('AUTO');
   const [prodDeliveryMode, setProdDeliveryMode] = useState<'INVENTORY' | 'WEBHOOK'>('INVENTORY');
   const [prodWebhookUrl, setProdWebhookUrl] = useState<string>('');
+  const [prodStockQuantity, setProdStockQuantity] = useState<string>('10');
   const [prodWeightGrams, setProdWeightGrams] = useState<string>('500');
   const [prodLengthCm, setProdLengthCm] = useState<string>('10');
   const [prodWidthCm, setProdWidthCm] = useState<string>('10');
@@ -188,11 +192,9 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       } else {
         const isNoStore = res.status === 404 || String(data?.error || '').includes('chưa có gian hàng');
         setErrorMsg(
-          isEn
-            ? (isNoStore
-                ? 'You do not have a store or have not been assigned permissions in any store yet.'
-                : 'Cannot load store information.')
-            : (data.error || 'Không thể tải thông tin gian hàng.')
+          isNoStore
+            ? t('sellerCenter.noStoreAccessError')
+            : (isEn ? t('sellerCenter.loadStoreError') : (data.error || t('sellerCenter.loadStoreError')))
         );
       }
     } catch {
@@ -209,6 +211,75 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       setLoading(false);
     }
   }, [currentUser]);
+
+  // Fetch Full Games Catalog across paginated /api/games (limit capped at 100 per page, sort=name_asc)
+  const catalogFetchedRef = React.useRef<boolean>(false);
+  const fetchFullCatalogGames = useCallback(async () => {
+    if (catalogFetchedRef.current) return;
+    catalogFetchedRef.current = true;
+    try {
+      const res = await fetch('/api/games?page=1&limit=100&sort=name_asc');
+      const data = await res.json();
+      if (!data?.success || !Array.isArray(data.games)) {
+        catalogFetchedRef.current = false;
+        return;
+      }
+      const combined: Game[] = [...data.games];
+      const totalPages = Math.min(Math.max(Number(data?.totalPages) || 1, 1), 15);
+      if (totalPages > 1) {
+        const pagePromises: Promise<any>[] = [];
+        for (let p = 2; p <= totalPages; p++) {
+          pagePromises.push(
+            fetch(`/api/games?page=${p}&limit=100&sort=name_asc`)
+              .then((r) => r.json())
+              .catch(() => null)
+          );
+        }
+        const extraPages = await Promise.all(pagePromises);
+        for (const pageData of extraPages) {
+          if (pageData?.success && Array.isArray(pageData.games)) {
+            combined.push(...pageData.games);
+          }
+        }
+      }
+      if (combined.length > 0) {
+        setCatalogGames(combined);
+      }
+    } catch {
+      catalogFetchedRef.current = false;
+      // Fallback to `games` prop silently if offline
+    }
+  }, []);
+
+  const availableGames = useMemo(() => {
+    const bySlug = new Map<string, Game>();
+    for (const g of catalogGames) {
+      if (g?.slug) bySlug.set(g.slug, g);
+    }
+    for (const g of games || []) {
+      if (g?.slug && !bySlug.has(g.slug)) bySlug.set(g.slug, g);
+    }
+    return Array.from(bySlug.values()).sort((a, b) =>
+      String(a.name || '').localeCompare(String(b.name || ''), isEn ? 'en' : 'vi')
+    );
+  }, [catalogGames, games, isEn]);
+
+  const filteredCatalogGames = useMemo(() => {
+    const q = gameSearchQuery.trim().toLowerCase();
+    if (!q) return availableGames;
+    return availableGames.filter(
+      (g) =>
+        g.slug === prodGameSlug ||
+        String(g.name || '').toLowerCase().includes(q) ||
+        String(g.slug || '').toLowerCase().includes(q)
+    );
+  }, [availableGames, gameSearchQuery, prodGameSlug]);
+
+  useEffect(() => {
+    if (showAddProductModal && catalogGames.length === 0) {
+      fetchFullCatalogGames();
+    }
+  }, [showAddProductModal, catalogGames.length, fetchFullCatalogGames]);
 
   // Fetch Products
   const fetchProducts = async () => {
@@ -424,11 +495,80 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
     }
   };
 
-  // Handle Create Product
+  const resetProductForm = () => {
+    setEditingProduct(null);
+    setProdType('digital');
+    setProdGameSlug('');
+    setGameSearchQuery('');
+    setProdName('');
+    setProdPriceCore('');
+    setProdOriginalPriceCore('');
+    setProdWarrantyType('24H');
+    setProdWarrantyHours(24);
+    setProdDeliveryType('AUTO');
+    setProdDeliveryMode('INVENTORY');
+    setProdWebhookUrl('');
+    setProdStockQuantity('10');
+    setProdWeightGrams('500');
+    setProdLengthCm('10');
+    setProdWidthCm('10');
+    setProdHeightCm('10');
+    setProdWarehouseAddress(
+      isEn
+        ? 'Universal Mall Central Hub, Cau Giay, Hanoi'
+        : 'Kho Tổng Universal Mall, 188 Cầu Giấy, Hà Nội'
+    );
+    setProdVariantsJson('');
+    setProdCodAllowed(false);
+    setProdDescription('');
+    setProdLowStock(2);
+  };
+
+  const handleOpenCreateProductModal = () => {
+    setErrorMsg('');
+    resetProductForm();
+    setShowAddProductModal(true);
+  };
+
+  const handleOpenEditProductModal = (p: any) => {
+    setErrorMsg('');
+    setEditingProduct(p);
+    setProdType(p.product_type === 'physical' ? 'physical' : 'digital');
+    setProdGameSlug(p.game_slug || '');
+    setGameSearchQuery('');
+    setProdName(p.name || '');
+    setProdPriceCore(String(p.price_core ?? ''));
+    setProdOriginalPriceCore(p.original_price_core ? String(p.original_price_core) : '');
+    const wHours = Number(p.digital_warranty_hours || p.warranty_hours || 24);
+    setProdWarrantyHours(wHours);
+    setProdWarrantyType(p.warranty_type || `${wHours}H`);
+    setProdDeliveryType(p.delivery_type === 'MANUAL' ? 'MANUAL' : 'AUTO');
+    setProdDeliveryMode(p.delivery_mode === 'WEBHOOK' ? 'WEBHOOK' : 'INVENTORY');
+    setProdWebhookUrl(p.webhook_url || '');
+    setProdStockQuantity(String(Math.max(0, Number(p.stock_quantity ?? 0))));
+    setProdWeightGrams(String(p.weight_grams || 500));
+    setProdLengthCm(String(p.length_cm || 10));
+    setProdWidthCm(String(p.width_cm || 10));
+    setProdHeightCm(String(p.height_cm || 10));
+    setProdWarehouseAddress(
+      p.warehouse_address ||
+        (isEn
+          ? 'Universal Mall Central Hub, Cau Giay, Hanoi'
+          : 'Kho Tổng Universal Mall, 188 Cầu Giấy, Hà Nội')
+    );
+    setProdVariantsJson(p.variants_json || '');
+    setProdCodAllowed(Boolean(p.cod_allowed));
+    setProdDescription(p.description || '');
+    setProdLowStock(Number(p.low_stock_threshold ?? 2));
+    setShowAddProductModal(true);
+  };
+
+  // Handle Create or Update Product
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     try {
+      const parsedStock = Math.max(0, parseInt(prodStockQuantity || '0', 10) || 0);
       const payload: any = {
         product_type: prodType,
         game_slug: prodType === 'digital' ? prodGameSlug : (prodGameSlug || 'physical_goods'),
@@ -448,6 +588,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           payload.webhook_url = prodWebhookUrl;
         }
       } else {
+        payload.stock_quantity = parsedStock;
         payload.weight_grams = parseInt(prodWeightGrams, 10);
         payload.length_cm = parseInt(prodLengthCm, 10);
         payload.width_cm = parseInt(prodWidthCm, 10);
@@ -457,29 +598,70 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         payload.cod_allowed = prodCodAllowed;
       }
 
-      const res = await fetch('/api/seller/products', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      });
+      const isEditing = Boolean(editingProduct?.id);
+      const res = await fetch(
+        isEditing ? `/api/seller/products/${editingProduct.id}` : '/api/seller/products',
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await res.json();
       if (data.success) {
         setShowAddProductModal(false);
-        setSuccessMsg(data.message);
+        resetProductForm();
+        setSuccessMsg(
+          isEditing
+            ? t('sellerCenter.updateProductSuccess')
+            : (isEn ? 'Product created successfully!' : (data.message || 'Tạo sản phẩm thành công!'))
+        );
         fetchProducts();
-        // Reset form
-        setProdName('');
-        setProdPriceCore('');
-        setProdOriginalPriceCore('');
-        setProdDescription('');
-        setProdGameSlug('');
-        setProdWebhookUrl('');
-        setProdVariantsJson('');
+        fetchSellerInfo();
       } else {
-        setErrorMsg(data.error || (isEn ? 'Failed to create product.' : 'Tạo sản phẩm thất bại.'));
+        setErrorMsg(
+          isEditing
+            ? (isEn ? t('sellerCenter.updateProductFailed') : (data.error || t('sellerCenter.updateProductFailed')))
+            : (data.error || (isEn ? 'Failed to create product.' : 'Tạo sản phẩm thất bại.'))
+        );
       }
     } catch {
       setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
+    }
+  };
+
+  // Handle Soft-Delete Product (#71c: DELETE /api/seller/products/:id)
+  const handleDeleteProduct = async (product: any) => {
+    if (!product?.id) return;
+    if (!window.confirm(t('sellerCenter.confirmDeleteProduct', { name: product.name }))) {
+      return;
+    }
+    setDeletingProductId(product.id);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`/api/seller/products/${product.id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setSuccessMsg(t('sellerCenter.deleteProductSuccess'));
+        if (selectedProductId === product.id) {
+          setSelectedProductId('');
+        }
+        fetchProducts();
+        fetchSellerInfo();
+      } else {
+        setErrorMsg(
+          isEn
+            ? t('sellerCenter.deleteProductFailed')
+            : (data.error || t('sellerCenter.deleteProductFailed'))
+        );
+      }
+    } catch {
+      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
+    } finally {
+      setDeletingProductId(null);
     }
   };
 
@@ -1271,7 +1453,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold">{isEn ? 'Store Product Catalog' : 'Danh Sách Sản Phẩm Của Gian Hàng'}</h2>
             <button
-              onClick={() => { setErrorMsg(''); setShowAddProductModal(true); }}
+              onClick={handleOpenCreateProductModal}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
               <Plus className="w-4 h-4" /> {isEn ? 'Add New Product' : 'Thêm Sản Phẩm Mới'}
@@ -1286,7 +1468,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               <div className="text-sm font-semibold">{isEn ? 'No products available' : 'Chưa có sản phẩm nào'}</div>
               <p className="text-xs text-muted-foreground mt-1 mb-4">{isEn ? 'Click the button below to create your first product.' : 'Nhấn nút bên dưới để tạo sản phẩm đầu tiên.'}</p>
               <button
-                onClick={() => { setErrorMsg(''); setShowAddProductModal(true); }}
+                onClick={handleOpenCreateProductModal}
                 className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold"
               >
                 {isEn ? 'Create Product' : 'Tạo Sản Phẩm'}
@@ -1294,118 +1476,150 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             </div>
           ) : (
             <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              {/* Rule 9 Single-Screen Table: 34 + 14 + 13 + 13 + 26 = 100% */}
               <table className="table-fixed w-full text-xs text-left">
                 <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                   <tr>
-                    <th className="p-3 w-[36%]">{isEn ? 'Product & Game' : 'Sản Phẩm & Game'}</th>
-                    <th className="p-3 w-[15%] text-right">{isEn ? 'Price' : 'Giá Bán'}</th>
-                    <th className="p-3 w-[14%] text-center">{isEn ? 'Stock' : 'Tồn Kho'}</th>
-                    <th className="p-3 w-[15%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
-                    <th className="p-3 w-[20%] text-center">{isEn ? 'Actions' : 'Thao Tác'}</th>
+                    <th className="p-3 w-[34%]">{isEn ? 'Product & Game' : 'Sản Phẩm & Game'}</th>
+                    <th className="p-3 w-[14%] text-right">{isEn ? 'Price' : 'Giá Bán'}</th>
+                    <th className="p-3 w-[13%] text-center">{isEn ? 'Stock' : 'Tồn Kho'}</th>
+                    <th className="p-3 w-[13%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
+                    <th className="p-3 w-[26%] text-center">{isEn ? 'Actions' : 'Thao Tác'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
-                  {products.map((p) => (
-                    <tr key={p.id} className="hover:bg-muted/30">
-                      <td className="p-3">
-                        <div className="flex items-center gap-2.5">
-                          <img src={p.cover_url} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0 border border-border" />
-                          <div className="truncate">
-                            <div className="flex items-center gap-1.5 truncate">
-                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 ${
-                                p.product_type === 'physical'
-                                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                  : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                              }`}>
-                                {p.product_type === 'physical' ? (isEn ? 'Physical' : 'Hàng Vật Lý') : (isEn ? 'Digital' : 'Hàng Số')}
-                              </span>
-                              {p.is_affiliate === 1 && (
-                                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30" title={p.supplier_name ? `NCC: ${p.supplier_name}` : ''}>
-                                  {isEn ? 'Reseller' : 'Gán Shop'}
+                  {products.map((p) => {
+                    const physStock = Math.max(0, Number(p.stock_quantity ?? 0));
+                    return (
+                      <tr key={p.id} className="hover:bg-muted/30">
+                        <td className="p-3">
+                          <div className="flex items-center gap-2.5">
+                            <img src={p.cover_url} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0 border border-border" />
+                            <div className="truncate">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 ${
+                                  p.product_type === 'physical'
+                                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                    : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                }`}>
+                                  {p.product_type === 'physical' ? (isEn ? 'Physical' : 'Hàng Vật Lý') : (isEn ? 'Digital' : 'Hàng Số')}
                                 </span>
-                              )}
-                              {p.resell_enabled === 1 && (
-                                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                  {isEn ? 'Resell' : 'Mở Bán Lại'}
-                                </span>
-                              )}
-                              <span className="font-bold truncate" title={p.name}>{p.name}</span>
-                            </div>
-                            <div className="text-[11px] text-muted-foreground truncate">
-                              {p.product_type === 'physical' 
-                                ? `${p.weight_grams ? `${p.weight_grams}g` : ''} • ${p.warehouse_address ? p.warehouse_address.split(',')[0] : (isEn ? 'Warehouse' : 'Kho hàng')}`
-                                : `${p.game_name || p.game_slug} • BH: ${p.warranty_type}`}
+                                {p.is_affiliate === 1 && (
+                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30" title={p.supplier_name ? `NCC: ${p.supplier_name}` : ''}>
+                                    {isEn ? 'Reseller' : 'Gán Shop'}
+                                  </span>
+                                )}
+                                {p.resell_enabled === 1 && (
+                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                    {isEn ? 'Resell' : 'Mở Bán Lại'}
+                                  </span>
+                                )}
+                                <span className="font-bold truncate" title={p.name}>{p.name}</span>
+                              </div>
+                              <div className="text-[11px] text-muted-foreground truncate">
+                                {p.product_type === 'physical'
+                                  ? `${p.weight_grams ? `${p.weight_grams}g` : ''} • ${p.warehouse_address ? p.warehouse_address.split(',')[0] : (isEn ? 'Warehouse' : 'Kho hàng')}`
+                                  : `${p.game_name || p.game_slug} • BH: ${p.warranty_type}`}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-3 text-right font-bold text-foreground">
-                        {p.price_core.toLocaleString()} Core
-                        {p.original_price_core && (
-                          <div className="text-[10px] text-muted-foreground line-through">
-                            {p.original_price_core.toLocaleString()} Core
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-3 text-center">
-                        {p.product_type === 'physical' ? (
-                          <span className="px-2 py-0.5 rounded-full font-bold text-[11px] bg-emerald-500/10 text-emerald-500">
-                            {isEn ? 'Ready to Ship' : 'Sẵn Sàng Giao'}
-                          </span>
-                        ) : (
-                          <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
-                            p.in_stock_count > (p.low_stock_threshold || 2)
-                              ? 'bg-emerald-500/10 text-emerald-500'
-                              : p.in_stock_count > 0
-                              ? 'bg-amber-500/10 text-amber-500'
-                              : 'bg-destructive/10 text-destructive'
-                          }`}>
-                            {isEn ? `Stock: ${p.in_stock_count}` : `Còn ${p.in_stock_count}`}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          p.status === 'APPROVED'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : p.status === 'PENDING_REVIEW'
-                            ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                            : 'bg-destructive/10 text-destructive border border-destructive/20'
-                        }`}>
-                          {p.status === 'APPROVED' ? (isEn ? 'Approved' : 'Đã Duyệt') : p.status === 'PENDING_REVIEW' ? (isEn ? 'Pending' : 'Chờ Duyệt') : (isEn ? 'Rejected' : 'Từ Chối')}
-                        </span>
-                      </td>
-                      <td className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                        </td>
+                        <td className="p-3 text-right font-bold text-foreground">
+                          {p.price_core.toLocaleString()} Core
+                          {p.original_price_core && (
+                            <div className="text-[10px] text-muted-foreground line-through">
+                              {p.original_price_core.toLocaleString()} Core
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-3 text-center">
                           {p.product_type === 'physical' ? (
-                            <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-semibold">
-                              {isEn ? 'Parcel' : 'Bưu phẩm'}
+                            <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                              physStock > (p.low_stock_threshold || 2)
+                                ? 'bg-emerald-500/10 text-emerald-500'
+                                : physStock > 0
+                                ? 'bg-amber-500/10 text-amber-500'
+                                : 'bg-destructive/10 text-destructive'
+                            }`}>
+                              {physStock > 0
+                                ? t('sellerCenter.physicalStockBadge', { count: physStock })
+                                : t('sellerCenter.physicalOutOfStockBadge')}
                             </span>
                           ) : (
-                            <button
-                              onClick={() => {
-                                setSelectedProductId(p.id);
-                                setActiveTab('codes');
-                              }}
-                              className="px-2 py-0.5 rounded-lg bg-muted hover:bg-muted/80 text-[10px] font-semibold"
-                            >
-                              {isEn ? 'Vault' : 'Kho Mã'}
-                            </button>
+                            <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                              p.in_stock_count > (p.low_stock_threshold || 2)
+                                ? 'bg-emerald-500/10 text-emerald-500'
+                                : p.in_stock_count > 0
+                                ? 'bg-amber-500/10 text-amber-500'
+                                : 'bg-destructive/10 text-destructive'
+                            }`}>
+                              {isEn ? `Stock: ${p.in_stock_count}` : `Còn ${p.in_stock_count}`}
+                            </span>
                           )}
-                          {p.is_affiliate !== 1 && (
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            p.status === 'APPROVED'
+                              ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                              : p.status === 'PENDING_REVIEW'
+                              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                              : 'bg-destructive/10 text-destructive border border-destructive/20'
+                          }`}>
+                            {p.status === 'APPROVED' ? (isEn ? 'Approved' : 'Đã Duyệt') : p.status === 'PENDING_REVIEW' ? (isEn ? 'Pending' : 'Chờ Duyệt') : (isEn ? 'Rejected' : 'Từ Chối')}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1 flex-wrap">
+                            {p.product_type === 'physical' ? (
+                              <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-semibold whitespace-nowrap">
+                                {isEn ? 'Parcel' : 'Bưu phẩm'}
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setSelectedProductId(p.id);
+                                  setActiveTab('codes');
+                                }}
+                                className="px-2 py-0.5 rounded-lg bg-muted hover:bg-muted/80 text-[10px] font-semibold whitespace-nowrap"
+                              >
+                                {isEn ? 'Vault' : 'Kho Mã'}
+                              </button>
+                            )}
+                            {p.is_affiliate !== 1 && (
+                              <>
+                                <button
+                                  onClick={() => setResellModalProduct(p)}
+                                  className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1 whitespace-nowrap"
+                                  title={t('sellerAffiliate.resellSettingsTitle', 'Cài đặt bán lại')}
+                                >
+                                  <Share2 className="w-2.5 h-2.5 shrink-0" />
+                                  <span>{isEn ? 'Resell' : 'Bán Lại'}</span>
+                                </button>
+                                <button
+                                  onClick={() => handleOpenEditProductModal(p)}
+                                  className="px-2 py-0.5 rounded-lg border border-border hover:bg-muted text-foreground text-[10px] font-semibold flex items-center gap-1 whitespace-nowrap"
+                                  title={t('sellerCenter.editProductTitle')}
+                                >
+                                  <Edit2 className="w-2.5 h-2.5 shrink-0" />
+                                  <span>{t('sellerCenter.editProductBtn')}</span>
+                                </button>
+                              </>
+                            )}
                             <button
-                              onClick={() => setResellModalProduct(p)}
-                              className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1"
-                              title={t('sellerAffiliate.resellSettingsTitle', 'Cài đặt bán lại')}
+                              onClick={() => handleDeleteProduct(p)}
+                              disabled={deletingProductId === p.id}
+                              className="px-2 py-0.5 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 text-[10px] font-semibold flex items-center gap-1 whitespace-nowrap disabled:opacity-50"
+                              title={t('sellerCenter.deleteProductBtn')}
+                              aria-label={t('sellerCenter.deleteProductBtn')}
                             >
-                              <Share2 className="w-2.5 h-2.5" />
-                              {isEn ? 'Resell' : 'Bán Lại'}
+                              <Trash2 className="w-2.5 h-2.5 shrink-0" />
+                              <span>{t('sellerCenter.deleteProductBtn')}</span>
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2330,13 +2544,25 @@ const data = await res.json();`}
         />
       )}
 
-      {/* Modal: Thêm Sản Phẩm Mới */}
+      {/* Modal: Thêm / Chỉnh Sửa Sản Phẩm */}
       {showAddProductModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold">{isEn ? 'Add New Product' : 'Thêm Sản Phẩm Bán Mới'}</h3>
-              <button onClick={() => { setErrorMsg(''); setShowAddProductModal(false); }}><X className="w-5 h-5" /></button>
+              <h3 className="text-base font-bold">
+                {editingProduct
+                  ? t('sellerCenter.editProductTitle')
+                  : (isEn ? 'Add New Product' : 'Thêm Sản Phẩm Bán Mới')}
+              </h3>
+              <button
+                onClick={() => {
+                  setErrorMsg('');
+                  resetProductForm();
+                  setShowAddProductModal(false);
+                }}
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {errorMsg && (
@@ -2353,8 +2579,9 @@ const data = await res.json();`}
                 <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-xl">
                   <button
                     type="button"
+                    disabled={Boolean(editingProduct)}
                     onClick={() => setProdType('digital')}
-                    className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                    className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-60 ${
                       prodType === 'digital'
                         ? 'bg-background text-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
@@ -2365,8 +2592,9 @@ const data = await res.json();`}
                   </button>
                   <button
                     type="button"
+                    disabled={Boolean(editingProduct)}
                     onClick={() => setProdType('physical')}
-                    className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                    className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-60 ${
                       prodType === 'physical'
                         ? 'bg-background text-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
@@ -2381,22 +2609,36 @@ const data = await res.json();`}
               {/* Nhánh Hàng Số (Digital) */}
               {prodType === 'digital' ? (
                 <>
-                  <div>
-                    <label className="block font-semibold mb-1">{isEn ? 'Select Game *' : 'Chọn Tựa Game *'}</label>
+                  <div className="space-y-1.5">
+                    <label className="block font-semibold">{isEn ? 'Select Game *' : 'Chọn Tựa Game *'}</label>
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        disabled={Boolean(editingProduct)}
+                        value={gameSearchQuery}
+                        onChange={(e) => setGameSearchQuery(e.target.value)}
+                        placeholder={t('sellerCenter.searchGamePlaceholder', { count: availableGames.length })}
+                        className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-border bg-background focus:outline-none focus:border-primary disabled:opacity-60"
+                      />
+                    </div>
                     <select
                       required
+                      disabled={Boolean(editingProduct)}
                       value={prodGameSlug}
                       onChange={(e) => {
                         setProdGameSlug(e.target.value);
-                        const selectedGame = games.find((g) => g.slug === e.target.value);
+                        const selectedGame = availableGames.find((g) => g.slug === e.target.value);
                         if (selectedGame && !prodName) {
                           setProdName(isEn ? `VIP Giftcode Pack ${selectedGame.name}` : `Bộ Giftcode ${selectedGame.name} VIP`);
                         }
                       }}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary disabled:opacity-60"
                     >
-                      <option value="">{isEn ? '-- Select game in catalog --' : '-- Chọn game trong catalog --'}</option>
-                      {games.map((g) => (
+                      <option value="">
+                        {t('sellerCenter.selectGamePlaceholder', { count: filteredCatalogGames.length })}
+                      </option>
+                      {filteredCatalogGames.map((g) => (
                         <option key={g.slug} value={g.slug}>{g.name}</option>
                       ))}
                     </select>
@@ -2476,7 +2718,21 @@ const data = await res.json();`}
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-semibold mb-1">{t('sellerCenter.stockQuantityLabel')}</label>
+                      <input
+                        type="number"
+                        required
+                        min={0}
+                        step={1}
+                        value={prodStockQuantity}
+                        onChange={(e) => setProdStockQuantity(e.target.value)}
+                        placeholder="10"
+                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                      />
+                      <span className="text-[10px] text-muted-foreground">{t('sellerCenter.stockQuantityHint')}</span>
+                    </div>
                     <div>
                       <label className="block font-semibold mb-1">{isEn ? 'Weight (grams) *' : 'Cân Nặng (gram) *'}</label>
                       <input
@@ -2606,7 +2862,11 @@ const data = await res.json();`}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setErrorMsg(''); setShowAddProductModal(false); }}
+                  onClick={() => {
+                    setErrorMsg('');
+                    resetProductForm();
+                    setShowAddProductModal(false);
+                  }}
                   className="px-4 py-2 rounded-xl border border-border hover:bg-muted font-semibold"
                 >
                   {isEn ? 'Cancel' : 'Hủy'}
@@ -2615,7 +2875,9 @@ const data = await res.json();`}
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold shadow-sm"
                 >
-                  {isEn ? 'Confirm Create' : 'Xác Nhận Tạo'}
+                  {editingProduct
+                    ? t('sellerCenter.saveProductBtn')
+                    : (isEn ? 'Confirm Create' : 'Xác Nhận Tạo')}
                 </button>
               </div>
             </form>

@@ -67,8 +67,8 @@ Trước mỗi lần chỉnh sửa bất kỳ file nào trong dự án, tác nh�
 - **5. Tách biệt hoàn toàn Pepper máy chủ và Client Bundle (Zero Server Pepper in Frontend)**:
   - Biến băm mật khẩu `PASSWORD_PEPPER` chỉ tồn tại trên Cloudflare Serverless Environment.
   - **TUYỆT ĐỐI CẤM** gán pepper máy chủ vào các biến frontend `VITE_*` (như `VITE_PASSWORD_PEPPER`) vì Vite sẽ nhúng chuỗi thô vào file JS bundle công khai phía client. Mật khẩu phải được băm 100% phía Edge Worker.
-- **6. Linh hoạt hóa Turnstile chống khóa nhầm toàn sàn (Resilient Bot Verification)**:
-  - Khi cấu hình Cloudflare Turnstile, backend chỉ gửi yêu cầu xác thực sang `challenges.cloudflare.com/turnstile/v0/siteverify` đối với token thực tế do widget Turnstile sinh ra (khác token placeholder `'cf_turnstile_verified'`). Điều này đảm bảo khi bật `TURNSTILE_SECRET_KEY` trên Cloudflare Dashboard thì sàn không bị nghẽn hay khóa nhầm toàn bộ người dùng đăng ký/đăng nhập.
+- **6. Xác thực Cloudflare Turnstile chuẩn Fail-Closed & Phân tách theo Scope (Strict Siteverify & Scoped Bot Verification)**:
+  - Khi bật Cloudflare Turnstile (`TURNSTILE_SECRET_KEY` / `CF_TURNSTILE_SECRET`), backend **bắt buộc yêu cầu token thực tế** từ widget Turnstile và xác minh trực tiếp qua `challenges.cloudflare.com/turnstile/v0/siteverify` (đã gỡ bỏ hoàn toàn token placeholder `'cf_turnstile_verified'`; thiếu secret hoặc thiếu token sẽ từ chối fail-closed, ngoại trừ `ENVIRONMENT === 'development'`). Phạm vi yêu cầu Turnstile khi đăng nhập được điều khiển tường minh qua biến môi trường (`ADMIN_TURNSTILE_ENABLED` cho đăng nhập Quản trị viên kèm kiểm tra role `ADMIN`/`SUPER_ADMIN` trên server, và `GUEST_TURNSTILE_ENABLED` cho đăng nhập thành viên; luồng đăng ký luôn bắt buộc Turnstile).
 - **7. Lệnh kiểm tra bắt buộc trước khi push (Pre-push Security Scan)**:
   1. `git grep -nE "wcg_[a-z]+_[0-9a-f]{32}" -- functions/ src/` (Kết quả = 0).
   2. `git grep -nE "[0-9]{8,10}:[A-Za-z0-9_-]{35}" -- functions/ src/` (Kết quả = 0).

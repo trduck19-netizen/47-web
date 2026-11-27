@@ -138,7 +138,7 @@ function createMockDb(seed?: Partial<MockState>) {
       const sess = state.sessions.get(token);
       if (!sess) return { rows: [], changes: 0 };
       const member = state.members.get(sess.member_id);
-      return { rows: member ? [member] : [], changes: 0 };
+      return { rows: member ? [{ ...member }] : [], changes: 0 };
     }
     if (sql.includes('FROM member_sessions') && sql.includes('JOIN members')) {
       const token = args[0];
@@ -150,11 +150,11 @@ function createMockDb(seed?: Partial<MockState>) {
     }
     if (sql.startsWith('SELECT id, balance, email, username FROM members WHERE id = ?')) {
       const m = state.members.get(args[0]);
-      return { rows: m ? [m] : [], changes: 0 };
+      return { rows: m ? [{ ...m }] : [], changes: 0 };
     }
     if (sql.startsWith('SELECT * FROM members WHERE id = ?')) {
       const m = state.members.get(args[0]);
-      return { rows: m ? [m] : [], changes: 0 };
+      return { rows: m ? [{ ...m }] : [], changes: 0 };
     }
     if (sql.startsWith('UPDATE members SET balance = balance - ?')) {
       const [price, , buyerId, minBalance] = args;
@@ -177,17 +177,19 @@ function createMockDb(seed?: Partial<MockState>) {
     // Sellers
     if (sql.startsWith('SELECT * FROM sellers WHERE id = ?') || sql.startsWith('SELECT id, pending_balance_core, available_balance_core, withdrawn_balance_core FROM sellers WHERE id = ?')) {
       const s = state.sellers.get(args[0]);
-      return { rows: s && !s.deleted_at ? [s] : [], changes: 0 };
+      return { rows: s && !s.deleted_at ? [{ ...s }] : [], changes: 0 };
     }
     if (sql.includes('FROM sellers WHERE owner_member_id = ?')) {
       const ownerId = args[0];
-      const found = Array.from(state.sellers.values()).filter((s) => s.owner_member_id === ownerId && !s.deleted_at);
+      const found = Array.from(state.sellers.values())
+        .filter((s) => s.owner_member_id === ownerId && !s.deleted_at)
+        .map((s) => ({ ...s }));
       return { rows: found, changes: 0 };
     }
     if (sql.startsWith('SELECT id, name FROM sellers WHERE (id = ? OR slug = ?)')) {
-      const found = Array.from(state.sellers.values()).filter(
-        (s) => (s.id === args[0] || s.slug === args[1]) && s.status === 'ACTIVE'
-      );
+      const found = Array.from(state.sellers.values())
+        .filter((s) => (s.id === args[0] || s.slug === args[1]) && s.status === 'ACTIVE')
+        .map((s) => ({ ...s }));
       return { rows: found, changes: 0 };
     }
     if (sql.startsWith('SELECT id, name, slug FROM sellers WHERE id = ? AND status = "ACTIVE"')) {
@@ -237,11 +239,11 @@ function createMockDb(seed?: Partial<MockState>) {
     }
     if (sql.startsWith('SELECT id, seller_id, is_affiliate, origin_product_id, price_core, product_type FROM seller_products WHERE id = ?')) {
       const p = state.products.get(args[0]);
-      return { rows: p && !p.deleted_at ? [p] : [], changes: 0 };
+      return { rows: p && !p.deleted_at ? [{ ...p }] : [], changes: 0 };
     }
     if (sql.startsWith('SELECT id, seller_id, price_core, resell_enabled')) {
       const p = state.products.get(args[0]);
-      return { rows: p ? [p] : [], changes: 0 };
+      return { rows: p ? [{ ...p }] : [], changes: 0 };
     }
     if (sql.startsWith('UPDATE seller_products SET resell_enabled = ?')) {
       const [resellEnabled, discountPct, commissionPct, mapPrice, productId] = args;
@@ -349,9 +351,9 @@ function createMockDb(seed?: Partial<MockState>) {
 
     // seller_affiliate_partnerships
     if (sql.startsWith('SELECT id, status FROM seller_affiliate_partnerships WHERE supplier_seller_id = ? AND reseller_seller_id = ?')) {
-      const found = Array.from(state.partnerships.values()).filter(
-        (p) => p.supplier_seller_id === args[0] && p.reseller_seller_id === args[1]
-      );
+      const found = Array.from(state.partnerships.values())
+        .filter((p) => p.supplier_seller_id === args[0] && p.reseller_seller_id === args[1])
+        .map((p) => ({ ...p }));
       return { rows: found, changes: 0 };
     }
     if (sql.startsWith('INSERT INTO seller_affiliate_partnerships')) {
@@ -431,7 +433,7 @@ function createMockDb(seed?: Partial<MockState>) {
     }
     if (sql.startsWith('SELECT supplier_seller_id, status FROM seller_affiliate_partnerships WHERE id = ? AND reseller_seller_id = ?') || sql.startsWith('SELECT id, supplier_seller_id, reseller_seller_id, status FROM seller_affiliate_partnerships WHERE id = ? AND reseller_seller_id = ?')) {
       const p = state.partnerships.get(args[0]);
-      return { rows: p && p.reseller_seller_id === args[1] ? [p] : [], changes: 0 };
+      return { rows: p && p.reseller_seller_id === args[1] ? [{ ...p }] : [], changes: 0 };
     }
     if (sql.includes('FROM seller_products sp WHERE sp.seller_id = ? AND sp.resell_enabled = 1')) {
       const [resellerSellerId, supplierSellerId] = args;
@@ -463,12 +465,12 @@ function createMockDb(seed?: Partial<MockState>) {
     }
     if (sql.startsWith('SELECT * FROM seller_products WHERE id = ? AND seller_id = ? AND resell_enabled = 1')) {
       const p = state.products.get(args[0]);
-      return { rows: p && p.seller_id === args[1] && Number(p.resell_enabled) === 1 && !p.deleted_at ? [p] : [], changes: 0 };
+      return { rows: p && p.seller_id === args[1] && Number(p.resell_enabled) === 1 && !p.deleted_at ? [{ ...p }] : [], changes: 0 };
     }
     if (sql.startsWith('SELECT id FROM seller_affiliate_listings WHERE partnership_id = ? AND supplier_product_id = ? AND reseller_seller_id = ?')) {
-      const found = Array.from(state.listings.values()).filter(
-        (l) => l.partnership_id === args[0] && l.supplier_product_id === args[1] && l.reseller_seller_id === args[2] && l.status !== 'HIDDEN'
-      );
+      const found = Array.from(state.listings.values())
+        .filter((l) => l.partnership_id === args[0] && l.supplier_product_id === args[1] && l.reseller_seller_id === args[2] && l.status !== 'HIDDEN')
+        .map((l) => ({ ...l }));
       return { rows: found, changes: 0 };
     }
     if (sql.startsWith('INSERT INTO seller_affiliate_listings (')) {
@@ -571,7 +573,9 @@ function createMockDb(seed?: Partial<MockState>) {
       return { rows, changes: 0 };
     }
     if (sql.startsWith('SELECT id, partnership_id, markup_type, markup_value, price_mode, locked_price, status, price_warning FROM seller_affiliate_listings WHERE reseller_product_id = ?')) {
-      const found = Array.from(state.listings.values()).filter((l) => l.reseller_product_id === args[0]);
+      const found = Array.from(state.listings.values())
+        .filter((l) => l.reseller_product_id === args[0])
+        .map((l) => ({ ...l }));
       return { rows: found, changes: 0 };
     }
     if (sql.startsWith('UPDATE seller_affiliate_listings SET status = ?, price_warning = ?, updated_at = ? WHERE id = ?')) {
@@ -618,7 +622,7 @@ function createMockDb(seed?: Partial<MockState>) {
       const found = Array.from(state.codes.values()).filter(
         (c) => c.product_id === prodId && c.status === 'IN_STOCK' && !c.deleted_at
       );
-      return { rows: found.slice(0, 1), changes: 0 };
+      return { rows: found.slice(0, 1).map((c) => ({ ...c })), changes: 0 };
     }
     if (sql.startsWith("UPDATE seller_codes SET status = 'SOLD'")) {
       const [orderId, soldAt, updatedAt, codeId, expectedOrderId] = args;
@@ -706,7 +710,7 @@ function createMockDb(seed?: Partial<MockState>) {
     }
     if (sql.startsWith('SELECT * FROM seller_orders WHERE (id = ? OR order_code = ?)') || sql.startsWith('SELECT * FROM seller_orders WHERE id = ?')) {
       const o = state.orders.get(args[0]) || Array.from(state.orders.values()).find((x) => x.order_code === args[1]);
-      return { rows: o ? [o] : [], changes: 0 };
+      return { rows: o ? [{ ...o }] : [], changes: 0 };
     }
     if (sql.startsWith("UPDATE seller_orders SET status = 'COMPLETED'")) {
       const [releasedAt, updatedAt, orderId] = args;
@@ -861,11 +865,13 @@ function createMockDb(seed?: Partial<MockState>) {
       return { rows: [], changes: 1 };
     }
     if (sql.startsWith("UPDATE seller_affiliate_partnerships SET status = 'SUSPENDED'")) {
-      const [revokedAt, updatedAt, id] = args;
+      const id = args[args.length - 1];
+      const updatedAt = args[args.length - 2];
+      const revokedAt = args.length >= 3 ? args[0] : null;
       const p = state.partnerships.get(id);
       if (!p) return { rows: [], changes: 0 };
       p.status = 'SUSPENDED';
-      p.revoked_at = revokedAt;
+      p.revoked_at = sql.includes('COALESCE') ? (p.revoked_at ?? revokedAt ?? null) : revokedAt;
       p.updated_at = updatedAt;
       return { rows: [], changes: 1 };
     }
@@ -1024,7 +1030,7 @@ function createMockDb(seed?: Partial<MockState>) {
     }
     if (sql.startsWith('SELECT * FROM supplier_fulfillment_webhooks WHERE id = ?')) {
       const w = state.webhooks.get(args[0]);
-      return { rows: w ? [w] : [], changes: 0 };
+      return { rows: w ? [{ ...w }] : [], changes: 0 };
     }
     if (sql.includes('FROM supplier_fulfillment_webhooks WHERE seller_id = ?')) {
       const rows = Array.from(state.webhooks.values())
@@ -1039,15 +1045,15 @@ function createMockDb(seed?: Partial<MockState>) {
       if (sql.includes('AND id = ?')) {
         const targetWebhookId = args[args.length - 1];
         const sellerSet = new Set(args.slice(0, -1));
-        const rows = Array.from(state.webhooks.values()).filter(
-          (w) => sellerSet.has(w.seller_id) && w.id === targetWebhookId
-        );
+        const rows = Array.from(state.webhooks.values())
+          .filter((w) => sellerSet.has(w.seller_id) && w.id === targetWebhookId)
+          .map((w) => ({ ...w }));
         return { rows, changes: 0 };
       }
       const sellerSet = new Set(args);
-      const rows = Array.from(state.webhooks.values()).filter(
-        (w) => sellerSet.has(w.seller_id) && Number(w.is_active) === 1
-      );
+      const rows = Array.from(state.webhooks.values())
+        .filter((w) => sellerSet.has(w.seller_id) && Number(w.is_active) === 1)
+        .map((w) => ({ ...w }));
       return { rows, changes: 0 };
     }
     if (sql.startsWith('UPDATE supplier_fulfillment_webhooks SET')) {
@@ -1071,7 +1077,15 @@ function createMockDb(seed?: Partial<MockState>) {
 
     // supplier_fulfillment_deliveries
     if (sql.startsWith('INSERT INTO supplier_fulfillment_deliveries')) {
-      const [id, webhook_id, seller_id, order_id, order_code, event_type, request_payload_json, http_status, response_snippet, attempts, delivery_status, external_fulfillment_ref, error_message, created_at, delivered_at] = args;
+      let id: any, webhook_id: any, seller_id: any, order_id: any, order_code: any, event_type: any,
+        request_payload_json: any, http_status: any, response_snippet: any, attempts: any,
+        delivery_status: any, external_fulfillment_ref: any, error_message: any, created_at: any, delivered_at: any;
+      if (args.length >= 15) {
+        [id, webhook_id, seller_id, order_id, order_code, event_type, request_payload_json, http_status, response_snippet, attempts, delivery_status, external_fulfillment_ref, error_message, created_at, delivered_at] = args;
+      } else {
+        [id, webhook_id, seller_id, order_id, order_code, event_type, request_payload_json, http_status, response_snippet, delivery_status, external_fulfillment_ref, error_message, created_at, delivered_at] = args;
+        attempts = 1;
+      }
       state.deliveries.set(id, {
         id, webhook_id, seller_id, order_id, order_code, event_type, request_payload_json,
         http_status, response_snippet, attempts, delivery_status, external_fulfillment_ref,
@@ -1085,7 +1099,7 @@ function createMockDb(seed?: Partial<MockState>) {
     }
     if (sql.startsWith('SELECT * FROM supplier_fulfillment_deliveries WHERE id = ?')) {
       const d = state.deliveries.get(args[0]);
-      return { rows: d ? [d] : [], changes: 0 };
+      return { rows: d ? [{ ...d }] : [], changes: 0 };
     }
     if (sql.includes('FROM supplier_fulfillment_deliveries d')) {
       const sellerId = args[0];
@@ -1106,6 +1120,7 @@ function createMockDb(seed?: Partial<MockState>) {
       d.response_snippet = args[1];
       d.delivery_status = args[2];
       d.error_message = args[3];
+      if (args.length >= 6) d.delivered_at = args[4];
       d.attempts = (Number(d.attempts) || 0) + 1;
       return { rows: [], changes: 1 };
     }
@@ -1175,6 +1190,9 @@ function createMockDb(seed?: Partial<MockState>) {
     return { rows: [], changes: 0 };
   }
 
+  const cloneRows = (rows: any[]) =>
+    rows.map((r) => (r && typeof r === 'object' ? { ...r } : r));
+
   const db = {
     state,
     prepare(sql: string) {
@@ -1190,11 +1208,12 @@ function createMockDb(seed?: Partial<MockState>) {
         },
         async first<T = any>() {
           const res = runStatement(sql, boundArgs);
-          return (res.rows[0] ?? null) as T | null;
+          const cloned = cloneRows(res.rows);
+          return (cloned[0] ?? null) as T | null;
         },
         async all<T = any>() {
           const res = runStatement(sql, boundArgs);
-          return { results: res.rows as T[], success: true, meta: { changes: res.changes } };
+          return { results: cloneRows(res.rows) as T[], success: true, meta: { changes: res.changes } };
         },
         async run() {
           const res = runStatement(sql, boundArgs);
@@ -1207,7 +1226,7 @@ function createMockDb(seed?: Partial<MockState>) {
       const results: any[] = [];
       for (const s of stmts) {
         const res = runStatement(s.sql, s.args || []);
-        results.push({ success: true, results: res.rows, meta: { changes: res.changes } });
+        results.push({ success: true, results: cloneRows(res.rows), meta: { changes: res.changes } });
       }
       return results;
     },
@@ -2663,7 +2682,35 @@ async function main() {
     const resellerProductId = dataList1.listings[0].reseller_product_id;
     assert.equal(dataList1.listings[0].my_selling_price, 120);
 
-    // 7. Shop B edits listing via PUT /listings/:id (unconditionally clears price_warning & updates price)
+    // Verify mock SELECT shallow-clone isolation (#54): mutating returned row never mutates MockState
+    const mClone = await db.prepare('SELECT * FROM members WHERE id = ?').bind('m_buyer').first();
+    mClone.balance = 999999;
+    assert.equal(db.state.members.get('m_buyer').balance, 5000);
+
+    // 7a. Test locked_price < MAP floor enforcement (#60: locked_price 95 < resell_map_price 110 -> clamped to 110)
+    const resMapFloor = await updateAffiliateListing({
+      request: new Request(`https://shop.example.com/api/seller/affiliate/listings/${listingId}`, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer tok_res', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          markup_type: 'FIXED',
+          markup_value: 0,
+          price_mode: 'LOCKED',
+          locked_price: 95,
+          show_supplier: 0,
+        }),
+      }),
+      params: { id: listingId },
+      env: { DB: db },
+    });
+    assert.equal(resMapFloor.status, 200);
+    const dataMapFloor: any = await resMapFloor.json();
+    assert.equal(dataMapFloor.is_map_enforced, true);
+    assert.equal(dataMapFloor.new_selling_price, 110);
+    assert.equal(db.state.listings.get(listingId).locked_price, 110);
+    assert.equal(db.state.listings.get(listingId).show_supplier, 0);
+
+    // 7b. Shop B edits listing via PUT /listings/:id (unconditionally clears price_warning, persists show_supplier === 0 & updates price)
     db.state.listings.get(listingId).price_warning = 'ANTI_LOSS_PAUSED';
     const resEdit = await updateAffiliateListing({
       request: new Request(`https://shop.example.com/api/seller/affiliate/listings/${listingId}`, {
@@ -2683,16 +2730,28 @@ async function main() {
     assert.equal(resEdit.status, 200);
     const dataEdit: any = await resEdit.json();
     assert.equal(dataEdit.new_selling_price, 130);
+    assert.equal(dataEdit.is_map_enforced, false);
     assert.equal(db.state.listings.get(listingId).price_warning, null);
+    assert.equal(db.state.listings.get(listingId).show_supplier, 0);
 
-    // 8. Shop A creates + deletes Webhook cleanly
+    const resListAfterPut = await getAffiliateListings({
+      request: new Request('https://shop.example.com/api/seller/affiliate/listings', {
+        headers: { Authorization: 'Bearer tok_res' },
+      }),
+      env: { DB: db },
+    });
+    const dataListAfterPut: any = await resListAfterPut.json();
+    assert.equal(dataListAfterPut.listings[0].show_supplier, 0);
+    assert.equal(dataListAfterPut.listings[0].my_selling_price, 130);
+
+    // 8. Shop A creates, lists (GET), pings (POST /:id/test), retries failed delivery (POST .../retry) & deletes Webhook cleanly (#60)
     const whEnv = { DB: db, MARKETPLACE_CODE_KEY: 'test-secret-key-min-16-chars', JWT_SECRET: 'test-secret-key-min-16-chars' };
     const resWhCreate = await handleSellerWebhooksRequest(
       {
         request: new Request('https://shop.example.com/api/seller/webhooks', {
           method: 'POST',
           headers: { Authorization: 'Bearer tok_sup', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'M4 Hook', webhook_url: 'https://example.com/hook', events: ['order.paid'] }),
+          body: JSON.stringify({ name: 'M4 Hook', webhook_url: 'https://example.com/hook', events: ['order.paid'], retry_max: 0 }),
         }),
         env: whEnv,
       },
@@ -2700,17 +2759,92 @@ async function main() {
     );
     assert.equal(resWhCreate.status, 201);
     const whData: any = await resWhCreate.json();
+    const whId = whData.webhook.id;
     assert.ok(String(whData.raw_hmac_secret || '').startsWith('whsec_'));
 
+    // 8a. GET /api/seller/webhooks list
+    const resWhGet = await handleSellerWebhooksRequest(
+      {
+        request: new Request('https://shop.example.com/api/seller/webhooks', {
+          method: 'GET',
+          headers: { Authorization: 'Bearer tok_sup' },
+        }),
+        env: whEnv,
+      },
+      []
+    );
+    assert.equal(resWhGet.status, 200);
+    const whGetData: any = await resWhGet.json();
+    assert.equal(whGetData.webhooks.length, 1);
+    assert.equal(whGetData.webhooks[0].id, whId);
+    assert.equal('encrypted_hmac_secret' in whGetData.webhooks[0], false);
+
+    // 8b. POST /api/seller/webhooks/:id/test (first fails with 502, then retry succeeds with 200)
+    const resWhFailPing = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/${whId}/test`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer tok_sup' },
+        }),
+        env: whEnv,
+        fetchImpl: async () => new Response('upstream bad gateway', { status: 502 }),
+      },
+      [whId, 'test']
+    );
+    assert.equal(resWhFailPing.status, 200);
+    const whFailPingData: any = await resWhFailPing.json();
+    assert.equal(whFailPingData.success, false);
+    assert.equal(whFailPingData.failed, 1);
+    assert.equal(whFailPingData.deliveryIds.length, 1);
+    const failedDelId = whFailPingData.deliveryIds[0];
+    assert.equal(db.state.deliveries.get(failedDelId).delivery_status, 'FAILED');
+
+    // 8c. POST /api/seller/webhooks/deliveries/:deliveryId/retry
+    const resWhRetry = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/deliveries/${failedDelId}/retry`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer tok_sup' },
+        }),
+        env: whEnv,
+        fetchImpl: async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      },
+      ['deliveries', failedDelId, 'retry']
+    );
+    assert.equal(resWhRetry.status, 200);
+    const whRetryData: any = await resWhRetry.json();
+    assert.equal(whRetryData.success, true);
+    assert.equal(whRetryData.ok, true);
+    assert.equal(whRetryData.httpStatus, 200);
+    assert.equal(db.state.deliveries.get(failedDelId).delivery_status, 'DELIVERED');
+
+    // 8d. POST /api/seller/webhooks/:id/test direct 200 OK ping
+    const resWhOkPing = await handleSellerWebhooksRequest(
+      {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/${whId}/test`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer tok_sup' },
+        }),
+        env: whEnv,
+        fetchImpl: async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      },
+      [whId, 'test']
+    );
+    assert.equal(resWhOkPing.status, 200);
+    const whOkPingData: any = await resWhOkPing.json();
+    assert.equal(whOkPingData.success, true);
+    assert.equal(whOkPingData.delivered, 1);
+
+    // 8e. DELETE /api/seller/webhooks/:id
     const resWhDel = await handleSellerWebhooksRequest(
       {
-        request: new Request(`https://shop.example.com/api/seller/webhooks/${whData.webhook.id}`, {
+        request: new Request(`https://shop.example.com/api/seller/webhooks/${whId}`, {
           method: 'DELETE',
           headers: { Authorization: 'Bearer tok_sup' },
         }),
         env: whEnv,
       },
-      [whData.webhook.id]
+      [whId]
     );
     assert.equal(resWhDel.status, 200);
 
@@ -2770,18 +2904,40 @@ async function main() {
     assert.equal(partnersData.partners[0].total_revenue_core, 130);
   });
 
-  await test('20. Rule 12 Dictionary Symmetry for sellerAffiliate & intershopAffiliate (vi.json == en.json)', async () => {
+  await test('20. Rule 12 Dictionary Symmetry for sellerAffiliate, intershopAffiliate, sellerCenter & apiKeys (vi.json == en.json)', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const vi = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/locales/vi.json'), 'utf8'));
     const en = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/locales/en.json'), 'utf8'));
 
-    for (const section of ['sellerAffiliate', 'intershopAffiliate']) {
+    for (const section of ['sellerAffiliate', 'intershopAffiliate', 'sellerCenter', 'apiKeys']) {
       const viKeys = Object.keys(vi[section] || {}).sort();
       const enKeys = Object.keys(en[section] || {}).sort();
       assert.ok(viKeys.length > 0, `${section} missing in vi.json`);
       assert.deepEqual(viKeys, enKeys, `Key mismatch in ${section}`);
     }
+    assert.equal(vi.sellerAffiliate.whPingBtn, 'Kiểm tra Ping');
+    assert.equal(en.sellerAffiliate.whPingBtn, 'Ping Test');
+  });
+
+  await test('21. Regression guard (#61): functions/api/seller/affiliate/partners/index.ts queries FROM seller_orders (never FROM orders)', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const src = fs.readFileSync(
+      path.join(process.cwd(), 'functions/api/seller/affiliate/partners/index.ts'),
+      'utf8'
+    );
+    const sellerOrdersMatches = src.match(/\bFROM\s+seller_orders\b/gi) || [];
+    const legacyOrdersMatches = src.match(/\bFROM\s+orders\b/gi) || [];
+    assert.ok(
+      sellerOrdersMatches.length >= 2,
+      `Expected >= 2 FROM seller_orders subqueries in partners/index.ts, got ${sellerOrdersMatches.length}`
+    );
+    assert.equal(
+      legacyOrdersMatches.length,
+      0,
+      'partners/index.ts must NEVER regress back to querying FROM orders'
+    );
   });
 
   console.log(`\n[Inter-Shop Affiliate Mảnh 1+2+4 Summary] Passed: ${passed}, Failed: ${failed}`);

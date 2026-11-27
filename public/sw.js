@@ -1,8 +1,23 @@
-const CACHE_NAME = 'codegame-pwa-v9';
+const CACHE_NAME = 'codegame-pwa-v10';
 const isValidImageResponse = (res) => {
   if (!res || res.status !== 200) return false;
   const ct = (res.headers.get('content-type') || '').toLowerCase();
   return ct.startsWith('image/');
+};
+const isValidStaticAssetResponse = (pathname, res) => {
+  if (!res || res.status !== 200) return false;
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  if (!ct || ct.includes('text/html')) return false;
+  if (/\.(png|jpg|jpeg|svg|webp|ico)$/i.test(pathname)) {
+    return ct.startsWith('image/');
+  }
+  if (/\.css$/i.test(pathname)) {
+    return ct.includes('text/css');
+  }
+  if (/\.js$/i.test(pathname)) {
+    return ct.includes('javascript') || ct.includes('ecmascript');
+  }
+  return true;
 };
 const STATIC_ASSETS = [
   '/',
@@ -79,22 +94,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate for static assets (images, icons, fonts, css, js)
+  // Stale-while-revalidate for static assets (images, icons, fonts, css, js) — verify content-type is never SPA text/html
   if (url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|woff2?|css|js)$/i)) {
     event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match(event.request).then((cachedResponse) => {
+          const validCached = isValidStaticAssetResponse(url.pathname, cachedResponse) ? cachedResponse : null;
+          if (cachedResponse && !validCached) {
+            cache.delete(event.request).catch(() => {});
           }
-          return networkResponse;
-        }).catch(() => null);
 
-        return cachedResponse || fetchPromise;
-      })
+          const fetchPromise = fetch(event.request)
+            .then((networkResponse) => {
+              if (isValidStaticAssetResponse(url.pathname, networkResponse)) {
+                cache.put(event.request, networkResponse.clone()).catch(() => {});
+              }
+              return networkResponse;
+            })
+            .catch(() => null);
+
+          return validCached || fetchPromise;
+        })
+      )
     );
     return;
   }

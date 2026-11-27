@@ -292,6 +292,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Real-time password evaluation
   const passwordStrength = calculatePasswordStrength(tab === 'register' ? regPassword : forgotNewPassword);
+  const localizedStrengthLabel =
+    passwordStrength.score <= 0
+      ? t('auth.strengthVeryWeak')
+      : passwordStrength.score === 1
+      ? t('auth.strengthWeak')
+      : passwordStrength.score === 2
+      ? t('auth.strengthMedium')
+      : passwordStrength.score === 3
+      ? t('auth.strengthStrong')
+      : t('auth.strengthMax');
   const isConfirmPasswordMatch = regPassword.length > 0 && regPassword === regConfirmPassword;
 
   // Handle Login Submit
@@ -350,7 +360,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const userCheck = isValidUsername(regUsername);
     if (!userCheck.valid) {
-      setErrorMessage(userCheck.message || t('authStrict.k13'));
+      const cleanUser = regUsername.trim();
+      if (cleanUser.length < 3) {
+        setErrorMessage(t('auth.usernameTooShort'));
+      } else if (cleanUser.length > 25) {
+        setErrorMessage(t('auth.usernameTooLong'));
+      } else {
+        setErrorMessage(t('auth.usernameInvalidChars'));
+      }
       return;
     }
 
@@ -628,8 +645,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div id="turnstile-login-container"></div>
                 </div>
               ) : (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-center">
-                  {t('authModal.turnstileNotConfigured')}
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs text-center">
+                  {t('auth.turnstileLoginNotConfigured')}
                 </div>
               ))}
 
@@ -713,7 +730,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Email */}
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-foreground">
-                  Email <span className="text-accent">*</span>
+                  {t('auth.emailLabel')} <span className="text-accent">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -721,7 +738,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="email"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="name@example.com"
+                    placeholder={t('auth.emailPlaceholder')}
                     required
                     className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm placeholder-gray-400 font-medium shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition-all"
                   />
@@ -759,7 +776,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <div className="flex items-center justify-between text-[10px] font-mono">
                       <span className="text-muted-foreground">{t('authStrict.k53')}</span>
                       <span className={`font-bold ${passwordStrength.color.split(' ')[1] || 'text-foreground'}`}>
-                        {passwordStrength.label}
+                        {localizedStrengthLabel}
                       </span>
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
@@ -821,8 +838,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div id="turnstile-register-container"></div>
                 </div>
               ) : (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs text-center">
-                  {t('authModal.turnstileNotConfigured')}
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs text-center">
+                  {t('auth.turnstileRegisterNotConfigured')}
                 </div>
               ))}
 

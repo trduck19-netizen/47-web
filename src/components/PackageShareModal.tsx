@@ -46,7 +46,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
   onBuyNow,
   onShowToast,
 }) => {
-  const { t } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   if (!isOpen || !packageItem || typeof document === 'undefined') return null;
@@ -97,9 +97,19 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
       : (typeof product?.stock_quantity === 'number' ? product.stock_quantity : 1);
 
   const isOutOfStock = pkgStock <= 0;
+  const formatSharePrice = (amount: number) =>
+    isPhysicalProduct ? formatCurrency(amount) : formatCore(amount);
 
-  const shareTitle = `${packageItem.name} — ${formatCore(currentPrice)} | ${gameName}`;
-  const shareText = `Mua ngay ${packageItem.name} (${gameName}) giá chỉ ${formatCore(currentPrice)} tại Pine Universal Mall`;
+  const shareTitle = t('packageShareModal.shareTitleFormat', {
+    name: packageItem.name,
+    price: formatSharePrice(currentPrice),
+    game: gameName,
+  });
+  const shareText = t('packageShareModal.shareTextFormat', {
+    name: packageItem.name,
+    game: gameName,
+    price: formatSharePrice(currentPrice),
+  });
 
   const fallbackCopyText = (text: string): boolean => {
     try {
@@ -190,7 +200,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-heading font-bold text-sm sm:text-base text-foreground truncate">
-                {t('packageShareModal.shareTitle')}
+                {isPhysicalProduct ? t('packageShareModal.shareTitlePhysical') : t('packageShareModal.shareTitle')}
               </h3>
               <p className="text-[11px] text-muted-foreground truncate font-medium">
                 {gameName}
@@ -201,7 +211,7 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 shadow-sm cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0 min-h-[44px] min-w-[44px]"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0 min-h-[44px] min-w-[44px]"
             aria-label={t('packageShareModal.close')}
             title={t('packageShareModal.close')}
           >
@@ -237,22 +247,22 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
               <span className="text-[10px] font-bold uppercase tracking-wider text-secondary bg-secondary/10 px-1.5 py-0.5 rounded border border-secondary/20">
-                {t('packageShareModal.packageType')}
+                {isPhysicalProduct ? t('packageShareModal.physicalItemType') : t('packageShareModal.packageType')}
               </span>
               {isEscalating && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 flex items-center gap-1">
-                  <Zap className="w-2.5 h-2.5 text-amber-400" />
-                  {t('packageShareModal.escalatingStep', { step: formatCore(packageItem.escalating_step || 0) })}
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 shrink-0 flex items-center gap-1">
+                  <Zap className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                  {t('packageShareModal.escalatingStep', { step: formatSharePrice(packageItem.escalating_step || 0) })}
                 </span>
               )}
               {isFirstPurchaseBadgeEligible && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0 flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5 text-rose-400" />
-                  {t('packageShareModal.firstPurchasePrice', { price: formatCore(firstPurchaseOfferPrice) })}
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 shrink-0 flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
+                  {t('packageShareModal.firstPurchasePrice', { price: formatSharePrice(firstPurchaseOfferPrice) })}
                 </span>
               )}
               {packageItem.badge && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30">
                   {packageItem.badge}
                 </span>
               )}
@@ -264,25 +274,25 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
 
             {/* Giá to rõ + % giảm + Trạng thái kho */}
             <div className="flex items-baseline gap-2 mt-1 flex-wrap">
-              <span className="font-mono font-extrabold text-base sm:text-lg text-emerald-400">
-                {formatCore(currentPrice)}
+              <span className="font-mono font-extrabold text-base sm:text-lg text-emerald-700 dark:text-emerald-400">
+                {formatSharePrice(currentPrice)}
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-xs text-muted-foreground line-through font-mono">
-                  {formatCore(originalPrice)}
+                  {formatSharePrice(originalPrice)}
                 </span>
               )}
               {discountPercent > 0 && (
-                <span className="text-[9px] font-mono font-bold px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                <span className="text-[9px] font-mono font-bold px-1 py-0.2 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30">
                   -{discountPercent}%
                 </span>
               )}
               {isOutOfStock ? (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 inline-flex items-center gap-1">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 inline-flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" /> {t('packageShareModal.outOfStockShort')}
                 </span>
               ) : (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 inline-flex items-center gap-1">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> {t('packageShareModal.inStockShort')}
                 </span>
               )}
@@ -295,10 +305,10 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-secondary" />
-              <span>{t('packageShareModal.deepLink')}</span>
+              <span>{isPhysicalProduct ? t('packageShareModal.deepLinkPhysical') : t('packageShareModal.deepLink')}</span>
             </label>
             {copied && (
-              <span className="text-[11px] font-bold text-emerald-400 animate-fade-in flex items-center gap-1">
+              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 animate-fade-in flex items-center gap-1">
                 <Check className="w-3 h-3" /> {t('packageShareModal.copiedNotice')}
               </span>
             )}
@@ -368,7 +378,11 @@ export const PackageShareModal: React.FC<PackageShareModalProps> = ({
               }`}
             >
               <Zap className="w-4 h-4" />
-              <span>{isOutOfStock ? t('packageShareModal.outOfStock') : t('packageShareModal.buyNow', { price: formatCore(currentPrice) })}</span>
+              <span>
+                {isOutOfStock
+                  ? (isPhysicalProduct ? t('packageShareModal.outOfStockPhysical') : t('packageShareModal.outOfStock'))
+                  : t('packageShareModal.buyNow', { price: formatSharePrice(currentPrice) })}
+              </span>
             </button>
           )}
         </div>

@@ -59,6 +59,7 @@ import {
   Truck,
   Ticket,
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export type ApiKeyScope =
   | 'TELEGRAM_NOTIFY'
@@ -685,6 +686,10 @@ interface ApiKeysModuleProps {
 }
 
 export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => {
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
+  const locale = isEn ? 'en-US' : 'vi-VN';
+
   const [keys, setKeys] = useState<ManagedApiKey[]>([]);
   const [masterKey, setMasterKey] = useState<ManagedApiKey | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -693,7 +698,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   // Show/Hide state for keys (id -> boolean)
-  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+  const [, setVisibleKeys] = useState<Record<string, boolean>>({});
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
 
   // Modal Create state
@@ -1134,14 +1139,14 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-sm">
           <Shield className="w-3.5 h-3.5" />
-          Toàn Quyền Quản Trị (ADMIN_FULL)
+          {t('apiKeys.scopeAdminFullBadge')}
         </span>
       );
     }
 
     if (scopes.length === 0) {
       return (
-        <span className="text-xs text-muted-foreground font-mono">Chưa gán quyền</span>
+        <span className="text-xs text-muted-foreground font-mono">{t('apiKeys.scopeUnassigned')}</span>
       );
     }
 
@@ -1151,10 +1156,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
         <div className="flex items-center gap-1 flex-wrap">
           <span
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-sm cursor-help"
-            title={`Các quyền sở hữu (${scopes.length}):\n${scopeNames}`}
+            title={`${isEn ? 'Granted scopes' : 'Các quyền sở hữu'} (${scopes.length}):\n${scopeNames}`}
           >
             <Sparkles className="w-3 h-3" />
-            <span>Đa Năng ({scopes.length} quyền)</span>
+            <span>{t('apiKeys.scopeMultiCount', { count: scopes.length })}</span>
           </span>
         </div>
       );
@@ -1175,6 +1180,9 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
             );
           }
           const Icon = found.icon;
+          const shortLabel = isEn
+            ? (found.name.match(/\(([^)]+)\)/)?.[1] || found.id)
+            : found.name.split(' (')[0];
           return (
             <span
               key={s}
@@ -1182,7 +1190,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
               title={found.description}
             >
               <Icon className="w-3 h-3" />
-              {found.name.split(' (')[0]}
+              {shortLabel}
             </span>
           );
         })}
@@ -1197,10 +1205,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
         badge: (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
             <Sparkles className="w-3 h-3" />
-            Vĩnh Viễn
+            {t('apiKeys.expPermanent')}
           </span>
         ),
-        text: 'Không giới hạn thời gian',
+        text: t('apiKeys.expNoLimit'),
         isExpired: false,
       };
     }
@@ -1208,7 +1216,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
     const expTime = new Date(expiresAt).getTime();
     if (isNaN(expTime)) {
       return {
-        badge: <span className="text-muted-foreground text-xs font-mono">Không xác định</span>,
+        badge: <span className="text-muted-foreground text-xs font-mono">{t('apiKeys.expUnknown')}</span>,
         text: '',
         isExpired: false,
       };
@@ -1216,16 +1224,17 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
 
     const diffMs = expTime - Date.now();
     const isExpired = diffMs <= 0;
+    const formattedDate = new Date(expTime).toLocaleDateString(locale);
 
     if (isExpired) {
       return {
         badge: (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-500 border border-rose-500/30">
             <AlertTriangle className="w-3 h-3" />
-            ĐÃ HẾT HẠN
+            {t('apiKeys.expExpired')}
           </span>
         ),
-        text: `Hết hạn: ${new Date(expTime).toLocaleDateString('vi-VN')}`,
+        text: `${isEn ? 'Expired:' : 'Hết hạn:'} ${formattedDate}`,
         isExpired: true,
       };
     }
@@ -1238,10 +1247,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
         badge: (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
             <Clock className="w-3 h-3" />
-            Còn {hoursLeft} giờ
+            {t('apiKeys.expHoursLeft', { count: hoursLeft })}
           </span>
         ),
-        text: `Hết hạn: ${new Date(expTime).toLocaleDateString('vi-VN')}`,
+        text: `${isEn ? 'Expires:' : 'Hết hạn:'} ${formattedDate}`,
         isExpired: false,
       };
     }
@@ -1250,10 +1259,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
       badge: (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
           <Clock className="w-3 h-3" />
-          Còn {daysLeft} ngày
+          {t('apiKeys.expDaysLeft', { count: daysLeft })}
         </span>
       ),
-      text: `Hạn: ${new Date(expTime).toLocaleDateString('vi-VN')}`,
+      text: `${isEn ? 'Until:' : 'Hạn:'} ${formattedDate}`,
       isExpired: false,
     };
   };
@@ -1310,13 +1319,13 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground flex items-center gap-2">
-                Quản Lý Khóa API & Phân Quyền Đa Năng
+                {t('apiKeys.pageTitle')}
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono font-medium">
                   v3.0 UNIVERSAL
                 </span>
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Tạo khóa API đa năng, dùng 1 mã duy nhất để cấu hình và set bất kỳ tổ hợp quyền nào trên website
+                {t('apiKeys.pageSubtitle')}
               </p>
             </div>
           </div>
@@ -1327,7 +1336,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
             onClick={loadApiKeys}
             disabled={isLoading}
             className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
-            title="Tải lại danh sách"
+            title={t('apiKeys.refreshTooltip')}
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -1337,7 +1346,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all duration-200"
           >
             <Sparkles className="w-4 h-4" />
-            + Tạo Khóa API Đa Năng
+            {t('apiKeys.createVersatileBtn')}
           </button>
 
           <button
@@ -1348,7 +1357,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-border hover:bg-muted text-foreground font-medium text-xs sm:text-sm shadow-sm transition-all duration-200"
           >
             <Plus className="w-4 h-4" />
-            Tạo Khóa Đơn Quyền
+            {t('apiKeys.createSingleBtn')}
           </button>
         </div>
       </div>
@@ -1357,7 +1366,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
       <div className="p-4 rounded-2xl border border-border/80 bg-muted/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
           <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
-          <span>Khởi tạo nhanh theo nhóm quyền:</span>
+          <span>{t('apiKeys.quickPresetsLabel')}</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -1365,28 +1374,28 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/15 text-purple-400 hover:bg-purple-500/25 border border-purple-500/30 transition-all shadow-sm"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            ⚡ Khóa API Đa Năng (Tuỳ biến mọi quyền)
+            {t('apiKeys.presetVersatile')}
           </button>
           <button
-            onClick={() => handleQuickCreate('NEWS_FULL', 'Bot Tin Tức 24/7')}
+            onClick={() => handleQuickCreate('NEWS_FULL', isEn ? 'News Bot 24/7' : 'Bot Tin Tức 24/7')}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all"
           >
             <Plus className="w-3 h-3" />
-            Tin Tức (90 ngày)
+            {t('apiKeys.presetNews')}
           </button>
           <button
-            onClick={() => handleQuickCreate('MISSIONS_FULL', 'Admin Nhiệm Vụ')}
+            onClick={() => handleQuickCreate('MISSIONS_FULL', isEn ? 'Missions Admin' : 'Admin Nhiệm Vụ')}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border border-indigo-500/30 transition-all"
           >
             <Plus className="w-3 h-3" />
-            Nhiệm Vụ (90 ngày)
+            {t('apiKeys.presetMissions')}
           </button>
           <button
-            onClick={() => handleQuickCreate('MISSIONS_REVIEW', 'Pine AI Thẩm Định')}
+            onClick={() => handleQuickCreate('MISSIONS_REVIEW', isEn ? 'Pine AI Reviewer' : 'Pine AI Thẩm Định')}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 transition-all"
           >
             <Plus className="w-3 h-3" />
-            AI Pine (30 ngày)
+            {t('apiKeys.presetAi')}
           </button>
         </div>
       </div>
@@ -1402,7 +1411,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
           }`}
         >
           <Key className="w-4 h-4" />
-          Danh Sách Khóa API ({keys.length + (masterKey ? 1 : 0)})
+          {t('apiKeys.tabKeys', { count: keys.length + (masterKey ? 1 : 0) })}
         </button>
         <button
           onClick={() => setActiveTab('permissions')}
@@ -1413,7 +1422,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
-          Bảng 10 Cấp Quyền & Mục Áp Dụng
+          {t('apiKeys.tabPermissions')}
         </button>
         <button
           onClick={() => setActiveTab('docs')}
@@ -1424,7 +1433,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          Tài Liệu API Đa Năng & Code Mẫu (cURL / JS)
+          {t('apiKeys.tabDocs')}
         </button>
       </div>
 
@@ -1439,17 +1448,17 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                   <div className="flex items-center gap-2 flex-wrap justify-between">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/30">
                       <Lock className="w-3.5 h-3.5" />
-                      Khóa Master Hệ Thống
+                      {t('apiKeys.masterBadge')}
                     </span>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                      VĨNH VIỄN
+                      {t('apiKeys.permanentBadge')}
                     </span>
                   </div>
                   <h3 className="text-base font-bold text-foreground">
-                    ADMIN_API_KEY (Toàn Quyền Quản Trị Tối Cao)
+                    {t('apiKeys.masterTitle')}
                   </h3>
                   <p className="text-xs text-muted-foreground line-clamp-2">
-                    Cấp quyền tối cao: Đồng bộ dữ liệu hai chiều KV/D1, can thiệp mọi module, bảo vệ bằng biến môi trường Cloudflare Pages.
+                    {t('apiKeys.masterDesc')}
                   </p>
                 </div>
 
@@ -1457,7 +1466,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                   <div className="flex items-center gap-2 bg-background/80 border border-border px-3 py-2 rounded-xl text-xs text-muted-foreground shadow-inner">
                     <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span className="truncate flex-1 font-mono text-[11px]">
-                      Cloudflare Pages Secret (Ẩn vì lý do bảo mật)
+                      {t('apiKeys.masterHiddenSecret')}
                     </span>
                   </div>
                 </div>
@@ -1471,14 +1480,14 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                   <div className="flex items-center gap-2 flex-wrap justify-between">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30">
                       <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                      Khóa API Đa Năng Tùy Biến
+                      {t('apiKeys.versatileBadge')}
                     </span>
                     <button
                       onClick={() => handleOpenPermissionModal(versatileKey)}
                       className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition-all"
                     >
                       <SlidersHorizontal className="w-3.5 h-3.5" />
-                      Set Quyền Cho Khóa Này
+                      {t('apiKeys.setPermissionsForKeyBtn')}
                     </button>
                   </div>
                   <h3 className="text-base font-bold text-foreground">
@@ -1499,25 +1508,25 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                       onClick={() => handleRotateKey(versatileKey)}
                       disabled={rotatingKeyId === versatileKey.id}
                       className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 border border-amber-500/30"
-                      title="Đổi mã khóa API mới (Khóa cũ lập tức hết hạn)"
+                      title={t('apiKeys.rotateBtn')}
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${rotatingKeyId === versatileKey.id ? 'animate-spin' : ''}`} />
-                      <span>{rotatingKeyId === versatileKey.id ? 'Đang đổi...' : 'Đổi Khóa'}</span>
+                      <span>{rotatingKeyId === versatileKey.id ? t('apiKeys.rotatingBtn') : t('apiKeys.rotateBtn')}</span>
                     </button>
                     <button
                       onClick={() => handleCopy(versatileKey.key_prefix, versatileKey.id)}
                       className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 border border-purple-500/30"
-                      title="Sao chép nhanh khóa này"
+                      title={t('apiKeys.copyBtn')}
                     >
                       {copiedKeyId === versatileKey.id ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-emerald-500">Đã Copy!</span>
+                          <span className="text-emerald-500">{t('apiKeys.copiedBtn')}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          <span>Copy</span>
+                          <span>{t('apiKeys.copyBtn')}</span>
                         </>
                       )}
                     </button>
@@ -1533,7 +1542,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
               <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Tìm theo tên khóa, mô tả, quyền hoặc prefix..."
+                placeholder={t('apiKeys.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 rounded-xl bg-card border border-border text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
@@ -1542,14 +1551,14 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
 
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">Quyền:</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{t('apiKeys.filterScopeLabel')}</span>
                 {[
-                  { id: 'ALL', label: 'Tất Cả' },
-                  { id: 'MULTI', label: '⚡ Đa Năng' },
-                  { id: 'NEWS_FULL', label: 'Tin Tức' },
-                  { id: 'MISSIONS_FULL', label: 'Nhiệm Vụ' },
-                  { id: 'MISSIONS_REVIEW', label: 'AI Pine' },
-                  { id: 'ADMIN_FULL', label: 'Toàn Quyền' },
+                  { id: 'ALL', label: t('apiKeys.filterAll') },
+                  { id: 'MULTI', label: t('apiKeys.filterMulti') },
+                  { id: 'NEWS_FULL', label: t('apiKeys.filterNews') },
+                  { id: 'MISSIONS_FULL', label: t('apiKeys.filterMissions') },
+                  { id: 'MISSIONS_REVIEW', label: t('apiKeys.filterAi') },
+                  { id: 'ADMIN_FULL', label: t('apiKeys.filterAdminFull') },
                 ].map((filter) => (
                   <button
                     key={filter.id}
@@ -1566,12 +1575,12 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
               </div>
 
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none border-l border-border pl-3">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">Thời hạn:</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{t('apiKeys.filterValidityLabel')}</span>
                 {[
-                  { id: 'ALL', label: 'Tất Cả' },
-                  { id: 'ACTIVE', label: 'Hoạt Động' },
-                  { id: 'INACTIVE', label: 'Đã Tắt' },
-                  { id: 'EXPIRED', label: 'Hết Hạn' },
+                  { id: 'ALL', label: t('apiKeys.filterAll') },
+                  { id: 'ACTIVE', label: t('apiKeys.filterActive') },
+                  { id: 'INACTIVE', label: t('apiKeys.filterInactive') },
+                  { id: 'EXPIRED', label: t('apiKeys.filterExpired') },
                 ].map((filter) => (
                   <button
                     key={filter.id}
@@ -1596,10 +1605,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                       ? 'bg-foreground text-background shadow-sm'
                       : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                   }`}
-                  title="Chế độ Bảng Tinh Gọn (Toàn bộ 100% hiển thị trên 1 màn hình)"
+                  title={t('apiKeys.viewTableBtn')}
                 >
                   <Table className="w-3.5 h-3.5" />
-                  <span>Bảng 1 Màn Hình</span>
+                  <span>{t('apiKeys.viewTableBtn')}</span>
                 </button>
                 <button
                   onClick={() => setViewMode('cards')}
@@ -1608,10 +1617,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                       ? 'bg-foreground text-background shadow-sm'
                       : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                   }`}
-                  title="Chế độ Thẻ Lưới Hiện Đại (Card Grid View)"
+                  title={t('apiKeys.viewCardsBtn')}
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
-                  <span>Dạng Thẻ</span>
+                  <span>{t('apiKeys.viewCardsBtn')}</span>
                 </button>
               </div>
             </div>
@@ -1621,25 +1630,23 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
           {filteredKeys.length === 0 ? (
             <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground shadow-sm">
               <Key className="w-8 h-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm font-medium">Chưa có khóa API nào phù hợp với bộ lọc.</p>
+              <p className="text-sm font-medium">{t('apiKeys.emptyFiltered')}</p>
             </div>
           ) : viewMode === 'table' ? (
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
               <table className="w-full table-fixed text-left text-xs">
                 <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
                   <tr>
-                    <th className="py-2.5 px-3 w-[24%]">TÊN KHÓA & TRẠNG THÁI</th>
-                    <th className="py-2.5 px-2.5 w-[16%]">PHÂN QUYỀN</th>
-                    <th className="py-2.5 px-2.5 w-[25%]">KHÓA API (COPY / ĐỔI)</th>
-                    <th className="py-2.5 px-2.5 w-[12%]">HIỆU LỰC</th>
-                    <th className="py-2.5 px-3 w-[23%] text-right">THAO TÁC</th>
+                    <th className="py-2.5 px-3 w-[24%]">{t('apiKeys.colNameStatus')}</th>
+                    <th className="py-2.5 px-2.5 w-[16%]">{t('apiKeys.colScopes')}</th>
+                    <th className="py-2.5 px-2.5 w-[25%]">{t('apiKeys.colKeyCopyRotate')}</th>
+                    <th className="py-2.5 px-2.5 w-[12%]">{t('apiKeys.colValidity')}</th>
+                    <th className="py-2.5 px-3 w-[23%] text-right">{t('apiKeys.colActions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredKeys.map((item) => {
                     const expInfo = formatExpirationInfo(item.expires_at);
-                    const keyToCopy = item.raw_key || item.key_prefix.replace('••••••••••••••••••••', '');
-                    const isRevealed = visibleKeys[item.id] && item.raw_key;
 
                     return (
                       <tr
@@ -1662,10 +1669,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                                   ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
                                   : 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30'
                               }`}
-                              title={item.is_active === 1 ? 'Khóa đang BẬT. Bấm để vô hiệu hóa ngay' : 'Khóa đang TẮT. Bấm để kích hoạt lại'}
+                              title={item.is_active === 1 ? t('apiKeys.disableLongBtn') : t('apiKeys.enableBtn')}
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${item.is_active === 1 && !expInfo.isExpired ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-                              <span>{item.is_active === 1 && !expInfo.isExpired ? 'Bật' : 'Tắt'}</span>
+                              <span>{item.is_active === 1 && !expInfo.isExpired ? t('apiKeys.stateOn') : t('apiKeys.stateOff')}</span>
                             </button>
 
                             <span className="font-semibold text-foreground text-xs truncate" title={item.key_name}>
@@ -1680,8 +1687,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                               <span className="font-mono text-[10px] opacity-60">ID: {item.id}</span>
                             )}
                             <span className="opacity-30">•</span>
-                            <span className="text-[10px] font-mono text-muted-foreground/80 shrink-0" title={item.last_used_at ? `Lần dùng cuối: ${item.last_used_at}` : 'Chưa sử dụng'}>
-                              {item.last_used_at ? `Dùng: ${new Date(item.last_used_at).toLocaleDateString('vi-VN')}` : 'Chưa dùng'}
+                            <span className="text-[10px] font-mono text-muted-foreground/80 shrink-0" title={item.last_used_at ? item.last_used_at : t('apiKeys.neverUsed')}>
+                              {item.last_used_at
+                                ? t('apiKeys.usedPrefix', { date: new Date(item.last_used_at).toLocaleDateString(locale) })
+                                : t('apiKeys.neverUsed')}
                             </span>
                           </div>
                         </td>
@@ -1691,7 +1700,7 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                           {renderScopeBadges(item.scope)}
                         </td>
 
-                        {/* Col 3: Key Display, Eye, Quick Copy & Instant Rotate */}
+                        {/* Col 3: Key Display, Quick Copy & Instant Rotate */}
                         <td className="py-2.5 px-2.5 align-middle">
                           <div className="inline-flex items-center gap-1 bg-background/80 border border-border/80 px-2 py-1 rounded-xl font-mono text-xs shadow-inner max-w-full">
                             <span className="text-foreground select-all font-semibold max-w-[120px] truncate text-[11px]" title={item.key_prefix}>
@@ -1701,17 +1710,17 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                             <button
                               onClick={() => handleCopy(item.key_prefix, item.id)}
                               className="px-1.5 py-0.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[11px] flex items-center gap-1 transition-all shrink-0 border border-primary/20 cursor-pointer"
-                              title="Sao chép mã API này"
+                              title={t('apiKeys.copyBtn')}
                             >
                               {copiedKeyId === item.id ? (
                                 <>
                                   <Check className="w-3 h-3 text-emerald-500" />
-                                  <span className="text-emerald-500">Đã Copy</span>
+                                  <span className="text-emerald-500">{t('apiKeys.copiedBtn')}</span>
                                 </>
                               ) : (
                                 <>
                                   <Copy className="w-3 h-3" />
-                                  <span>Copy</span>
+                                  <span>{t('apiKeys.copyBtn')}</span>
                                 </>
                               )}
                             </button>
@@ -1721,10 +1730,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                                 onClick={() => handleRotateKey(item)}
                                 disabled={rotatingKeyId === item.id}
                                 className="px-1.5 py-0.5 rounded-md bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 font-bold text-[11px] flex items-center gap-1 transition-all shrink-0 border border-amber-500/30 cursor-pointer"
-                                title="Đổi khóa API mới (Khóa cũ lập tức hết hạn)"
+                                title={t('apiKeys.rotateBtn')}
                               >
                                 <RefreshCw className={`w-3 h-3 ${rotatingKeyId === item.id ? 'animate-spin' : ''}`} />
-                                <span>{rotatingKeyId === item.id ? 'Đổi...' : 'Đổi Khóa'}</span>
+                                <span>{rotatingKeyId === item.id ? t('apiKeys.rotatingBtn') : t('apiKeys.rotateBtn')}</span>
                               </button>
                             )}
                           </div>
@@ -1745,27 +1754,24 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                         {/* Col 5: Actions (Set Quyền, Gia Hạn, Vô Hiệu/Kích Hoạt, Xóa) */}
                         <td className="py-2.5 px-3 align-middle text-right">
                           <div className="flex items-center justify-end gap-1 flex-nowrap">
-                            {/* Set Quyền */}
                             <button
                               onClick={() => handleOpenPermissionModal(item)}
                               className="px-2 py-1 rounded-lg border border-purple-500/40 text-purple-400 hover:bg-purple-500/15 text-[11px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap shadow-sm cursor-pointer"
-                              title="Cấu hình & Tùy biến phân quyền cho mã API này"
+                              title={t('apiKeys.setPermissionsForKeyBtn')}
                             >
                               <SlidersHorizontal className="w-3 h-3" />
-                              <span>Set Quyền</span>
+                              <span>{t('apiKeys.setPermissionsShortBtn')}</span>
                             </button>
 
-                            {/* Gia Hạn */}
                             <button
                               onClick={() => setExtendingKey(item)}
                               className="px-2 py-1 rounded-lg border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/15 text-[11px] font-medium flex items-center gap-1 transition-colors whitespace-nowrap shadow-sm cursor-pointer"
-                              title="Gia hạn hoặc điều chỉnh thời hạn hiệu lực của khóa"
+                              title={t('apiKeys.extendBtn')}
                             >
                               <Hourglass className="w-3 h-3" />
-                              <span>Gia Hạn</span>
+                              <span>{t('apiKeys.extendBtn')}</span>
                             </button>
 
-                            {/* Vô Hiệu Hóa / Kích Hoạt */}
                             <button
                               onClick={() => handleToggleActive(item)}
                               className={`px-2 py-1 rounded-lg border text-[11px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap shadow-sm cursor-pointer ${
@@ -1773,18 +1779,17 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                                   ? 'border-amber-500/40 text-amber-400 hover:bg-amber-500/15'
                                   : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/15'
                               }`}
-                              title={item.is_active === 1 ? 'Bấm để vô hiệu hóa khóa này' : 'Bấm để kích hoạt lại khóa này'}
+                              title={item.is_active === 1 ? t('apiKeys.disableLongBtn') : t('apiKeys.enableBtn')}
                             >
                               <Power className="w-3 h-3" />
-                              <span>{item.is_active === 1 ? 'Vô Hiệu' : 'Kích Hoạt'}</span>
+                              <span>{item.is_active === 1 ? t('apiKeys.disableShortBtn') : t('apiKeys.enableBtn')}</span>
                             </button>
 
-                            {/* Xóa vĩnh viễn */}
                             {!item.is_master && (
                               <button
                                 onClick={() => handleDeleteKey(item)}
                                 className="p-1 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-colors shrink-0 shadow-sm cursor-pointer"
-                                title="Thu hồi & Xóa vĩnh viễn khóa API này"
+                                title={isEn ? 'Revoke & Delete Key' : 'Thu hồi & Xóa vĩnh viễn khóa API này'}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -1802,8 +1807,6 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredKeys.map((item) => {
                 const expInfo = formatExpirationInfo(item.expires_at);
-                const keyToCopy = item.raw_key || item.key_prefix.replace('••••••••••••••••••••', '');
-                const isRevealed = visibleKeys[item.id] && item.raw_key;
 
                 return (
                   <div
@@ -1817,7 +1820,6 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                     }`}
                   >
                     <div>
-                      {/* Header: Name + Status + Expiration Badge */}
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <div className="flex items-center gap-2">
@@ -1829,10 +1831,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                                   : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                               }`}
-                              title={item.is_active === 1 ? 'Khóa đang BẬT. Bấm để vô hiệu hóa' : 'Khóa đang TẮT. Bấm để kích hoạt lại'}
+                              title={item.is_active === 1 ? t('apiKeys.disableLongBtn') : t('apiKeys.enableBtn')}
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${item.is_active === 1 && !expInfo.isExpired ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-                              <span>{item.is_active === 1 && !expInfo.isExpired ? 'Hoạt Động' : 'Đã Tắt'}</span>
+                              <span>{item.is_active === 1 && !expInfo.isExpired ? t('apiKeys.stateActive') : t('apiKeys.stateDisabled')}</span>
                             </button>
                           </div>
                           {item.description ? (
@@ -1844,12 +1846,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                         <div className="shrink-0">{expInfo.badge}</div>
                       </div>
 
-                      {/* Scope Badges */}
                       <div className="my-2.5">
                         {renderScopeBadges(item.scope)}
                       </div>
 
-                      {/* Key Display Pill with Eye, Copy, Rotate */}
                       <div className="my-3 flex items-center justify-between gap-2 bg-background border border-border/80 px-2.5 py-1.5 rounded-xl font-mono text-xs shadow-inner">
                         <span className="text-foreground select-all font-semibold truncate text-xs" title={item.key_prefix}>
                           {item.key_prefix}
@@ -1859,17 +1859,17 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                           <button
                             onClick={() => handleCopy(item.key_prefix, item.id)}
                             className="px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs flex items-center gap-1 transition-all cursor-pointer border border-primary/20"
-                            title="Sao chép mã API này"
+                            title={t('apiKeys.copyBtn')}
                           >
                             {copiedKeyId === item.id ? (
                               <>
                                 <Check className="w-3 h-3 text-emerald-500" />
-                                <span className="text-emerald-500">Đã Copy</span>
+                                <span className="text-emerald-500">{t('apiKeys.copiedBtn')}</span>
                               </>
                             ) : (
                               <>
                                 <Copy className="w-3 h-3" />
-                                <span>Copy</span>
+                                <span>{t('apiKeys.copyBtn')}</span>
                               </>
                             )}
                           </button>
@@ -1879,41 +1879,43 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                               onClick={() => handleRotateKey(item)}
                               disabled={rotatingKeyId === item.id}
                               className="px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 font-bold text-xs flex items-center gap-1 transition-all border border-amber-500/30 cursor-pointer"
-                              title="Đổi khóa API mới (Khóa cũ lập tức hết hạn)"
+                              title={t('apiKeys.rotateBtn')}
                             >
                               <RefreshCw className={`w-3 h-3 ${rotatingKeyId === item.id ? 'animate-spin' : ''}`} />
-                              <span>{rotatingKeyId === item.id ? 'Đang đổi...' : 'Đổi Khóa'}</span>
+                              <span>{rotatingKeyId === item.id ? t('apiKeys.rotatingBtn') : t('apiKeys.rotateBtn')}</span>
                             </button>
                           )}
                         </div>
                       </div>
 
-                      {/* Timing Info */}
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground px-0.5 mb-2 font-mono">
-                        <span>Hiệu lực: {expInfo.text || 'Vĩnh viễn'}</span>
-                        <span>{item.last_used_at ? `Dùng: ${new Date(item.last_used_at).toLocaleDateString('vi-VN')}` : 'Chưa dùng'}</span>
+                        <span>{expInfo.text || t('apiKeys.expPermanent')}</span>
+                        <span>
+                          {item.last_used_at
+                            ? t('apiKeys.usedPrefix', { date: new Date(item.last_used_at).toLocaleDateString(locale) })
+                            : t('apiKeys.neverUsed')}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Card Actions Footer: 4 Buttons */}
                     <div className="pt-3 border-t border-border flex items-center justify-between gap-1.5 flex-wrap">
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => handleOpenPermissionModal(item)}
                           className="px-2.5 py-1.5 rounded-xl border border-purple-500/40 text-purple-400 hover:bg-purple-500/15 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                          title="Cấu hình & Tùy biến phân quyền cho mã API này"
+                          title={t('apiKeys.setPermissionsForKeyBtn')}
                         >
                           <SlidersHorizontal className="w-3.5 h-3.5" />
-                          <span>Set Quyền</span>
+                          <span>{t('apiKeys.setPermissionsShortBtn')}</span>
                         </button>
 
                         <button
                           onClick={() => setExtendingKey(item)}
                           className="px-2.5 py-1.5 rounded-xl border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/15 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                          title="Gia hạn hoặc điều chỉnh thời hạn hiệu lực"
+                          title={t('apiKeys.extendBtn')}
                         >
                           <Hourglass className="w-3.5 h-3.5" />
-                          <span>Gia Hạn</span>
+                          <span>{t('apiKeys.extendBtn')}</span>
                         </button>
                       </div>
 
@@ -1925,17 +1927,17 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
                               ? 'border-amber-500/40 text-amber-400 hover:bg-amber-500/15'
                               : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/15'
                           }`}
-                          title={item.is_active === 1 ? 'Bấm để vô hiệu hóa khóa này' : 'Bấm để kích hoạt lại khóa này'}
+                          title={item.is_active === 1 ? t('apiKeys.disableLongBtn') : t('apiKeys.enableBtn')}
                         >
                           <Power className="w-3.5 h-3.5" />
-                          <span>{item.is_active === 1 ? 'Vô Hiệu Hóa' : 'Kích Hoạt'}</span>
+                          <span>{item.is_active === 1 ? t('apiKeys.disableLongBtn') : t('apiKeys.enableBtn')}</span>
                         </button>
 
                         {!item.is_master && (
                           <button
                             onClick={() => handleDeleteKey(item)}
                             className="p-1.5 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-colors cursor-pointer"
-                            title="Thu hồi & Xóa vĩnh viễn khóa này"
+                            title={isEn ? 'Revoke & Delete Key' : 'Thu hồi & Xóa vĩnh viễn khóa này'}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1950,16 +1952,16 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
         </>
       )}
 
-      {/* Permissions Breakdown Tab (Bảng 10 Cấp Quyền) */}
+      {/* Permissions Breakdown Tab */}
       {activeTab === 'permissions' && (
         <div className="space-y-4">
           <div className="p-4 rounded-2xl border border-purple-500/30 bg-purple-500/5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Sparkles className="w-6 h-6 text-purple-400 shrink-0" />
               <div>
-                <h3 className="text-sm font-bold text-foreground">Cơ Chế Phân Quyền Đa Năng Linh Hoạt</h3>
+                <h3 className="text-sm font-bold text-foreground">{t('apiKeys.permissionsBannerTitle')}</h3>
                 <p className="text-xs text-muted-foreground">
-                  Một mã API có thể sở hữu 1 quyền riêng biệt hoặc sở hữu đồng thời nhiều quyền cùng lúc. Quản trị viên có thể bấm nút <strong>"Set Quyền"</strong> trên danh sách để điều chỉnh bất kỳ lúc nào.
+                  {t('apiKeys.permissionsBannerDesc')}
                 </p>
               </div>
             </div>

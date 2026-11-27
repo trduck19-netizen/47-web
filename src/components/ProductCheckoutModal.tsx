@@ -94,8 +94,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   onOpenAuth,
   onOpenWallet,
 }) => {
-  const { language, t, formatCurrency, formatDateTime } = useLanguage();
-  const isEn = language === 'en';
+  const { t, formatCurrency } = useLanguage();
 
   const liveProduct = product ? (dataService.getStoreProducts().find((p) => p.id === product.id) || product) : null;
   const [quantity, setQuantity] = useState<number>(initialQuantity || 1);
@@ -140,6 +139,13 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   // --- TRƯỜNG ĐA NGÀNH: HÀNG VẬT LÝ & GIAO HÀNG TOÀN QUỐC ---
   const isPhysical = Boolean(product?.product_type === 'physical' || liveProduct?.product_type === 'physical');
   const shippingFee = isPhysical ? Number(product?.shipping_fee ?? liveProduct?.shipping_fee ?? 0) : 0;
+  const formatOrderMoney = (amount: number) => (isPhysical ? formatCurrency(amount) : formatCore(amount));
+  const getLocalizedCarrierEta = (code?: string, fallback?: string) => {
+    if (code === 'GHTK') return t('shopeePhysical.carrierEtaGhtk');
+    if (code === 'GHN') return t('shopeePhysical.carrierEtaGhn');
+    if (code === 'VTP') return t('shopeePhysical.carrierEtaVtp');
+    return fallback || t('shopeePhysical.carrierEtaGhtk');
+  };
 
   const [shippingAddressType, setShippingAddressType] = useState<'home' | 'office'>('home');
   const [shippingName, setShippingName] = useState<string>(() => {
@@ -247,10 +253,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
   // 4 tầng QR: Tầng 0 sinh tại chỗ (Data URL) -> SePay -> VietQR Chuẩn -> VietQR Rút Gọn (§4.2)
   const QR_TIER_CONFIG = [
-    { id: 0, label: 'QR Tại Chỗ (Data URL - Không cần mạng)', short: 'QR Tại Chỗ' },
-    { id: 1, label: 'SePay VietQR (Chính)', short: 'SePay' },
-    { id: 2, label: 'VietQR.io Chuẩn (SVG)', short: 'VietQR Chuẩn' },
-    { id: 3, label: 'VietQR.io Rút Gọn (Compact2)', short: 'VietQR Rút Gọn' },
+    { id: 0, label: t('checkoutModal.qrTier0Label'), short: t('checkoutModal.qrTier0Short') },
+    { id: 1, label: t('checkoutModal.qrTier1Label'), short: t('checkoutModal.qrTier1Short') },
+    { id: 2, label: t('checkoutModal.qrTier2Label'), short: t('checkoutModal.qrTier2Short') },
+    { id: 3, label: t('checkoutModal.qrTier3Label'), short: t('checkoutModal.qrTier3Short') },
   ];
 
   // Helper sinh mã QR tại chỗ bằng chuỗi EMVCo (§4.2)
@@ -266,7 +272,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
         });
       }
       if (!payload) {
-        throw new Error('Không có chuỗi qrPayload để sinh mã QR.');
+        throw new Error(t('checkoutModal.qrPayloadMissingError'));
       }
       const dataUrl = await QRCode.toDataURL(payload, {
         width: 512,
@@ -275,12 +281,12 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
         errorCorrectionLevel: 'M',
       });
       setLocalQrDataUrl(dataUrl);
-      setLocalQrGenStatus(`Thành công (Data URL ${dataUrl.length} bytes)`);
+      setLocalQrGenStatus(t('checkoutModal.qrLocalGenOk', { bytes: dataUrl.length }));
       return dataUrl;
     } catch (err: any) {
       const msg = err?.message || String(err);
       console.warn('[ProductCheckoutModal] Lỗi sinh QR tại chỗ:', err);
-      setLocalQrGenStatus(`Lỗi sinh QR: ${msg}`);
+      setLocalQrGenStatus(t('checkoutModal.qrLocalGenErr', { msg }));
       return '';
     }
   };
@@ -367,7 +373,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     const currentStep = qrStepRef.current;
     const isData = currentQrImageSrc.startsWith('data:');
     const previewSrc = isData ? `data:image/png;base64... (${currentQrImageSrc.length} bytes)` : currentQrImageSrc;
-    const errMsg = `Lỗi tải ảnh tầng ${currentStep + 1}/4 (${QR_TIER_CONFIG[currentStep]?.short}): ${previewSrc}`;
+    const tierShort = QR_TIER_CONFIG[currentStep]?.short || t('checkoutModal.unknownTier');
+    const errMsg = t('checkoutModal.qrTierLoadError', { step: currentStep + 1, tier: tierShort, src: previewSrc });
     console.warn('[VietQR Diagnostic]:', errMsg, e);
     setQrLastErrorMsg(errMsg);
 
@@ -376,7 +383,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     setDomErrorSnapshot({
       timestamp: new Date().toLocaleTimeString(),
       step: currentStep,
-      tierName: QR_TIER_CONFIG[currentStep]?.short || 'Không xác định',
+      tierName: tierShort,
       srcPreview: previewSrc,
       naturalWidth: imgEl?.naturalWidth || 0,
       naturalHeight: imgEl?.naturalHeight || 0,
@@ -717,6 +724,17 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   const userBalance = user?.wallet_balance || 0;
   const maxStock = realStock;
   const safeQty = isEscalating ? 1 : (realStock > 0 ? Math.min(Math.max(1, quantity), maxStock) : 0);
+  const physicalShipFrom =
+    product?.warehouse_address ||
+    liveProduct?.warehouse_address ||
+    product?.origin ||
+    liveProduct?.origin ||
+    t('shopeePhysical.warehouseDefault');
+  const unitWeightGrams = Math.max(
+    0,
+    Number(selectedPackage?.weight_grams ?? product?.weight_grams ?? liveProduct?.weight_grams ?? 0) || 0
+  );
+  const totalWeightGrams = unitWeightGrams * Math.max(1, safeQty);
   const totalPrice = isEscalating
     ? Number(escalatingData.current_price)
     : (safeQty > 0
@@ -765,7 +783,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     navigator.clipboard.writeText(text);
     setQrCopiedField(fieldName);
     setTimeout(() => setQrCopiedField(null), 1500);
-    onShowToast('Đã sao chép!', text, 'info');
+    onShowToast(t('checkoutModal.copiedToastTitle'), text, 'info');
   };
 
   const formatCountdown = (totalSec: number) => {
@@ -845,27 +863,27 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   const handleCreateQrOrder = async () => {
     if (!user) {
       if (onOpenAuth) onOpenAuth();
-      onShowToast('Cần đăng nhập', 'Vui lòng đăng nhập tài khoản để thanh toán.', 'info');
+      onShowToast(t('checkoutModal.toastLoginRequiredTitle'), t('checkoutModal.toastLoginRequiredDesc'), 'info');
       return;
     }
     if (maxStock <= 0) {
-      onShowToast('Hết hàng', 'Sản phẩm tạm thời hết hàng trong kho.', 'error');
+      onShowToast(t('checkoutModal.toastOutOfStockTitle'), t('checkoutModal.toastOutOfStockDesc'), 'error');
       return;
     }
 
     // Luồng xử lý đặt hàng vật lý giao nhận toàn quốc
     if (isPhysical) {
       if (!shippingName.trim()) {
-        onShowToast('Thiếu thông tin người nhận', 'Vui lòng nhập Họ tên người nhận hàng.', 'warning');
+        onShowToast(t('checkoutModal.toastMissingNameTitle'), t('checkoutModal.toastMissingNameDesc'), 'error');
         return;
       }
       const cleanPhone = shippingPhone.trim().replace(/\s+/g, '');
       if (!cleanPhone || !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(cleanPhone)) {
-        onShowToast('Số điện thoại không hợp lệ', 'Vui lòng nhập số điện thoại người nhận hợp lệ (10 số).', 'warning');
+        onShowToast(t('checkoutModal.toastInvalidPhoneTitle'), t('checkoutModal.toastInvalidPhoneDesc'), 'error');
         return;
       }
       if (!shippingAddress.trim() || shippingAddress.trim().length < 6) {
-        onShowToast('Thiếu địa chỉ nhận hàng', 'Vui lòng nhập địa chỉ giao hàng chi tiết (Số nhà, đường, phường, quận, tỉnh).', 'warning');
+        onShowToast(t('checkoutModal.toastMissingAddressTitle'), t('checkoutModal.toastMissingAddressDesc'), 'error');
         return;
       }
       saveShippingCache(shippingName.trim(), shippingPhone.trim(), shippingAddress.trim());
@@ -936,19 +954,19 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
             colors: ['#6366F1', '#10B981', '#F59E0B'],
           });
           onShowToast(
-            'Đặt Hàng Thành Công!',
-            `Đơn hàng vật lý ${res.order.id} đã được khởi tạo với mã vận đơn ${shipOrder.trackingCode}.`,
+            t('checkoutModal.toastPhysicalOrderSuccessTitle'),
+            t('checkoutModal.toastPhysicalOrderSuccessWithTracking', { orderId: res.order.id, trackingCode: shipOrder.trackingCode }),
             'success'
           );
           return;
         } else {
           setQrStatus('idle');
-          onShowToast('Lỗi đặt hàng', res.message || 'Không thể tạo đơn hàng vật lý.', 'error');
+          onShowToast(t('checkoutModal.toastOrderErrorTitle'), res.message || t('checkoutModal.toastOrderPhysicalFailed'), 'error');
           return;
         }
       } catch (err: any) {
         setQrStatus('idle');
-        onShowToast('Lỗi xử lý', err?.message || 'Có lỗi xảy ra khi tạo đơn hàng.', 'error');
+        onShowToast(t('checkoutModal.toastProcessErrorTitle'), err?.message || t('checkoutModal.toastOrderGenericFailed'), 'error');
         return;
       }
     }
@@ -974,7 +992,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         setQrStatus('idle');
-        onShowToast('Lỗi tạo mã QR', data.message || 'Không thể khởi tạo mã QR thanh toán.', 'error');
+        onShowToast(t('checkoutModal.toastQrCreateErrorTitle'), data.message || t('checkoutModal.toastQrCreateErrorDesc'), 'error');
         return;
       }
       const orderData = data.order || {};
@@ -995,7 +1013,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
       startQrPolling(data.order.id, expiresAtMs);
     } catch (err: any) {
       setQrStatus('idle');
-      onShowToast('Lỗi kết nối', err?.message || 'Không thể kết nối đến máy chủ.', 'error');
+      onShowToast(t('checkoutModal.toastConnectionErrorTitle'), err?.message || t('checkoutModal.toastConnectionErrorDesc'), 'error');
     }
   };
 
@@ -1026,7 +1044,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   const handlePayWithWallet = async () => {
     if (!user) {
       if (onOpenAuth) onOpenAuth();
-      onShowToast('Cần đăng nhập', 'Vui lòng đăng nhập tài khoản để thanh toán.', 'info');
+      onShowToast(t('checkoutModal.toastLoginRequiredTitle'), t('checkoutModal.toastLoginRequiredDesc'), 'info');
       return;
     }
 
@@ -1036,40 +1054,43 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
     if (!isPriceValid) {
       onShowToast(
-        'Đang Cập Nhật Giá',
-        'Dữ liệu giá đang được đồng bộ, vui lòng thử lại sau giây lát hoặc tải lại trang.',
-        'warning'
+        t('checkoutModal.updatingPriceTitle'),
+        t('checkoutModal.toastUpdatingPriceDesc'),
+        'info'
       );
       return;
     }
 
     if (!isBalanceEnough) {
       onShowToast(
-        'Số Dư Ví Không Đủ',
-        `Bạn cần ${formatCore(finalGrandTotal)} nhưng ví hiện chỉ có ${formatCore(userBalance)}. Vui lòng nạp thêm tiền để thanh toán.`,
+        t('checkoutModal.insufficientBalanceTitle'),
+        t('checkoutModal.toastInsufficientDesc', {
+          needed: formatOrderMoney(finalGrandTotal),
+          balance: formatOrderMoney(userBalance),
+        }),
         'error'
       );
       return;
     }
 
     if (realStock <= 0) {
-      onShowToast('Hết hàng', 'Sản phẩm tạm thời hết hàng trong kho.', 'error');
+      onShowToast(t('checkoutModal.toastOutOfStockTitle'), t('checkoutModal.toastOutOfStockDesc'), 'error');
       return;
     }
 
     // Kiểm tra thông tin giao nhận nếu là hàng vật lý
     if (isPhysical) {
       if (!shippingName.trim()) {
-        onShowToast('Thiếu thông tin người nhận', 'Vui lòng nhập Họ tên người nhận hàng.', 'warning');
+        onShowToast(t('checkoutModal.toastMissingNameTitle'), t('checkoutModal.toastMissingNameDesc'), 'error');
         return;
       }
       const cleanPhone = shippingPhone.trim().replace(/\s+/g, '');
       if (!cleanPhone || !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(cleanPhone)) {
-        onShowToast('Số điện thoại không hợp lệ', 'Vui lòng nhập số điện thoại người nhận hợp lệ (10 số).', 'warning');
+        onShowToast(t('checkoutModal.toastInvalidPhoneTitle'), t('checkoutModal.toastInvalidPhoneDesc'), 'error');
         return;
       }
       if (!shippingAddress.trim() || shippingAddress.trim().length < 6) {
-        onShowToast('Thiếu địa chỉ nhận hàng', 'Vui lòng nhập địa chỉ giao hàng chi tiết (Số nhà, đường, phường, quận, tỉnh).', 'warning');
+        onShowToast(t('checkoutModal.toastMissingAddressTitle'), t('checkoutModal.toastMissingAddressDesc'), 'error');
         return;
       }
       saveShippingCache(shippingName.trim(), shippingPhone.trim(), shippingAddress.trim());
@@ -1110,7 +1131,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
         freeshipDiscount: voucherStacking.freeshipDiscount,
       });
       const timeoutPromise = new Promise<{ success: boolean; message: string }>((_, reject) =>
-        setTimeout(() => reject(new Error('Thời gian phản hồi máy chủ vượt quá 15 giây. Vui lòng kiểm tra lại danh sách mã đã nhận hoặc thử lại.')), 15000)
+        setTimeout(() => reject(new Error(t('checkoutModal.serverTimeoutError'))), 15000)
       );
 
       const res: any = await Promise.race([orderPromise, timeoutPromise]);
@@ -1121,7 +1142,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
           isOpen: true,
           oldPrice: res.old_price || totalPrice,
           newPrice: res.new_price,
-          message: res.message || `Giá gói vừa tăng lên ${formatCore(res.new_price)} (đã có khách hàng mua trước bạn). Bạn có muốn mua với giá mới không?`,
+          message: res.message || t('checkoutModal.priceEscalatedFallbackMsg', { price: formatOrderMoney(res.new_price) }),
         });
         return;
       }
@@ -1185,19 +1206,19 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
           colors: ['#6366F1', '#10B981', '#F59E0B'],
         });
         onShowToast(
-          isPhysical ? 'Đặt hàng thành công!' : 'Thanh toán thành công!',
-          isPhysical ? 'Đơn hàng đã được lưu và đang chuẩn bị giao đến bạn.' : `Đã giao ${safeQty} mã quà tặng tức thì.`,
+          isPhysical ? t('checkoutModal.toastPhysicalOrderSuccessTitle') : t('checkoutModal.toastDigitalOrderSuccessTitle'),
+          isPhysical ? t('checkoutModal.toastPhysicalOrderSuccessDesc') : t('checkoutModal.toastDigitalOrderSuccessDesc', { qty: safeQty }),
           'success'
         );
       } else {
-        if (res.message && res.message.includes('Phiên đăng nhập') && onOpenAuth) {
+        if (res.message && (res.message.includes('Phiên đăng nhập') || /session|unauthorized/i.test(res.message)) && onOpenAuth) { // @i18n-ignore
           onOpenAuth();
         }
-        onShowToast('Thất bại', res.message || 'Không thể hoàn tất đơn hàng.', 'error');
+        onShowToast(t('checkoutModal.toastFailedTitle'), res.message || t('checkoutModal.toastOrderGenericFailed'), 'error');
       }
     } catch (err: any) {
       setIsProcessing(false);
-      onShowToast('Lỗi', err?.message || 'Không thể hoàn tất đơn hàng.', 'error');
+      onShowToast(t('checkoutModal.toastErrorTitle'), err?.message || t('checkoutModal.toastOrderGenericFailed'), 'error');
     }
   };
 
@@ -1231,7 +1252,11 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
         }
         setCompletedOrder(res.order);
         confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 }, colors: ['#6366F1', '#10B981', '#F59E0B'] });
-        onShowToast('Thanh toán thành công!', 'Đã giao 1 mã quà tặng tức thì.', 'success');
+        onShowToast(
+          t('checkoutModal.toastDigitalOrderSuccessTitle'),
+          t('checkoutModal.toastDigitalOrderSuccessDesc', { qty: 1 }),
+          'success'
+        );
       } else if (res.code === 'PRICE_ESCALATED') {
         setPriceEscalatedDialog({
           isOpen: true,
@@ -1240,28 +1265,28 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
           message: res.message,
         });
       } else {
-        onShowToast('Thất bại', res.message || 'Không thể hoàn tất đơn hàng.', 'error');
+        onShowToast(t('checkoutModal.toastFailedTitle'), res.message || t('checkoutModal.toastOrderGenericFailed'), 'error');
       }
     } catch (err: any) {
       setIsProcessing(false);
-      onShowToast('Lỗi', err?.message || 'Không thể hoàn tất đơn hàng.', 'error');
+      onShowToast(t('checkoutModal.toastErrorTitle'), err?.message || t('checkoutModal.toastOrderGenericFailed'), 'error');
     }
   };
 
   const handleCopySingleCode = (code: string, idx: number) => {
     navigator.clipboard.writeText(code);
-    marketingService.recordRealCopy(effectiveTitle || 'Mã sản phẩm', '', 1, activeUser);
+    marketingService.recordRealCopy(effectiveTitle || t('checkoutModal.defaultProductLabel'), '', 1, user);
     setCopiedCodeIdx(idx);
-    onShowToast('Đã sao chép mã!', code, 'success');
+    onShowToast(t('checkoutModal.toastCopiedSingleCode'), code, 'success');
     setTimeout(() => setCopiedCodeIdx(null), 2000);
   };
 
   const handleCopyAllCodes = () => {
     if (!completedOrder) return;
     navigator.clipboard.writeText(completedOrder.code_content);
-    marketingService.recordRealCopy(effectiveTitle || 'Mã sản phẩm', '', safeQty, activeUser);
+    marketingService.recordRealCopy(effectiveTitle || t('checkoutModal.defaultProductLabel'), '', safeQty, user);
     setCopiedAll(true);
-    onShowToast('Đã sao chép tất cả mã!', completedOrder.code_content, 'success');
+    onShowToast(t('checkoutModal.toastCopiedAllCodes'), completedOrder.code_content, 'success');
     setTimeout(() => setCopiedAll(false), 2000);
   };
 
@@ -1345,15 +1370,25 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
               <div className="space-y-1.5">
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 max-w-sm mx-auto">
-                  <Sparkles className="w-4 h-4 text-[#ee4d2d] shrink-0 animate-pulse" aria-hidden="true" />
-                  <span>{t.authModal?.firstPurchaseDiscount || (isEn ? 'Log in to enjoy first-purchase discount at only 2,000 Core' : 'Đăng nhập để nhận ưu đãi mua lần đầu chỉ 2.000 Core')}</span>
+                  {isPhysical ? (
+                    <Truck className="w-4 h-4 text-[#00bfa5] shrink-0" aria-hidden="true" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-[#ee4d2d] shrink-0 animate-pulse" aria-hidden="true" />
+                  )}
+                  <span>
+                    {isPhysical
+                      ? t('checkoutModal.loginPromoPhysical')
+                      : t('checkoutModal.loginPromoDigital')}
+                  </span>
                 </div>
 
                 <h3 className="font-heading font-extrabold text-xl text-slate-900 dark:text-slate-100">
-                  {t.authModal?.loginRequiredTitle || (isEn ? 'Login Required' : 'Yêu Cầu Đăng Nhập')}
+                  {t('checkoutModal.loginRequiredTitle')}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                  {t.authModal?.checkoutLoginRequiredDesc || (isEn ? 'Please log in to receive instant giftcode delivery and activate escrow warranty for your order.' : 'Bạn cần đăng nhập tài khoản để nhận mã quà tặng tự động và kích hoạt bảo hành cho đơn hàng.')}
+                  {isPhysical
+                    ? t('checkoutModal.loginRequiredPhysicalDesc')
+                    : t('checkoutModal.loginRequiredDigitalDesc')}
                 </p>
               </div>
 
@@ -1390,7 +1425,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   </div>
                 </div>
                 <span className="font-display font-extrabold text-sm text-[#ee4d2d] shrink-0">
-                  {isPhysical ? formatCurrency(effectiveRegularPrice) : formatCore(effectiveRegularPrice)}
+                  {formatOrderMoney(effectiveRegularPrice)}
                 </span>
               </div>
 
@@ -1404,14 +1439,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   className="w-full sm:w-auto px-6 py-3 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs shadow-sm cursor-pointer flex items-center justify-center gap-2 transition-colors"
                 >
                   <LogIn className="w-4 h-4" aria-hidden="true" />
-                  <span>{t.authModal?.loginOrRegisterNow || (isEn ? 'Log In / Register Now' : 'Đăng Nhập / Đăng Ký Ngay')}</span>
+                  <span>{t('checkoutModal.loginOrRegisterNow')}</span>
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   className="w-full sm:w-auto px-4 py-3 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold cursor-pointer transition-colors"
                 >
-                  {t.authModal?.later || (isEn ? 'Later' : 'Để sau')}
+                  {t('checkoutModal.laterBtn')}
                 </button>
               </div>
             </div>
@@ -1429,14 +1464,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
               <div>
                 <h3 className="font-heading font-extrabold text-xl text-foreground">
                   {completedOrder.order_type === 'physical'
-                    ? (isEn ? 'Order Placed Successfully!' : 'Đặt Hàng Thành Công!')
-                    : (isEn ? 'Payment Successful!' : 'Giao Hàng Thành Công!')}
+                    ? t('checkoutModal.successPhysicalHeading')
+                    : t('checkoutModal.successDigitalHeading')}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {isEn ? 'Order ID:' : 'Mã đơn:'} <strong className="text-foreground font-mono">{completedOrder.id}</strong> • {completedOrder.order_type === 'physical' ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{isEn ? 'Packing & Courier Preparation in Progress' : 'Đang chuẩn bị hàng & đóng gói bưu phẩm'}</span>
+                  {t('checkoutModal.orderCodeLabel')} <strong className="text-foreground font-mono">{completedOrder.id}</strong> • {completedOrder.order_type === 'physical' ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{t('checkoutModal.successPackingStatus')}</span>
                   ) : (
-                    <>{isEn ? 'Quantity:' : 'Số lượng:'} <strong className="text-emerald-700 dark:text-emerald-400">{deliveredLines.length} {isEn ? 'codes' : 'mã'}</strong></>
+                    <>{t('checkoutModal.successDeliveredQtyLabel')} <strong className="text-emerald-700 dark:text-emerald-400">{t('checkoutModal.successCodeUnit', { count: deliveredLines.length })}</strong></>
                   )}
                 </p>
               </div>
@@ -1446,14 +1481,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 <div className="p-4 rounded-2xl bg-muted/70 border border-border space-y-3 text-left text-xs">
                   <div className="flex items-center gap-2 pb-2 border-b border-border/80">
                     <Truck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
-                    <span className="font-bold text-foreground">{isEn ? 'Nationwide Shipping Summary' : 'Thông Tin Giao Nhận Toàn Quốc'}</span>
+                    <span className="font-bold text-foreground">{t('checkoutModal.shippingSummaryTitle')}</span>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
                       <User className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
                       <div>
-                        <span className="text-muted-foreground">{isEn ? 'Recipient: ' : 'Người nhận: '}</span>
+                        <span className="text-muted-foreground">{t('checkoutModal.recipientLabel')}</span>
                         <strong className="text-foreground font-semibold">{completedOrder.shipping_name || user?.displayName || user?.username}</strong>
                         {completedOrder.shipping_phone && (
                           <span className="text-muted-foreground ml-2 font-mono">({completedOrder.shipping_phone})</span>
@@ -1464,8 +1499,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     <div className="flex items-start gap-2">
                       <MapPin className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="text-muted-foreground">{isEn ? 'Shipping Address: ' : 'Địa chỉ nhận hàng: '}</span>
-                        <span className="text-foreground font-medium">{completedOrder.shipping_address || (isEn ? 'Standard Address' : 'Địa chỉ tiêu chuẩn')}</span>
+                        <span className="text-muted-foreground">{t('checkoutModal.shippingAddressLabel')}</span>
+                        <span className="text-foreground font-medium">{completedOrder.shipping_address || t('checkoutModal.standardAddressFallback')}</span>
                       </div>
                     </div>
 
@@ -1473,7 +1508,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       <div className="flex items-start gap-2">
                         <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-muted-foreground">{isEn ? 'Delivery Note: ' : 'Ghi chú bưu tá: '}</span>
+                          <span className="text-muted-foreground">{t('checkoutModal.deliveryNoteLabel')}</span>
                           <span className="text-amber-800 dark:text-amber-300 italic">{completedOrder.shipping_note}</span>
                         </div>
                       </div>
@@ -1511,7 +1546,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             </span>
                           </div>
                           <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
-                            {completedOrder.estimated_delivery || '1 - 2 ngày'}
+                            {getLocalizedCarrierEta(completedOrder.carrier, completedOrder.estimated_delivery)}
                           </span>
                         </div>
 
@@ -1559,20 +1594,20 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           <Ticket className="w-3.5 h-3.5" /> Voucher: {completedOrder.voucher_code}
                         </span>
                         <span className="text-[#ee4d2d] font-bold">
-                          {isEn ? 'Saved' : 'Tiết kiệm'} -{formatCurrency((completedOrder.voucher_discount || 0) + (completedOrder.freeship_discount || 0))}
+                          {t('checkoutModal.savedAmountPrefix')} -{formatCurrency((completedOrder.voucher_discount || 0) + (completedOrder.freeship_discount || 0))}
                         </span>
                       </div>
                     )}
 
                     <div className="flex items-center justify-between pt-2 border-t border-border/80 text-[11px]">
-                      <span className="text-muted-foreground">{isEn ? 'Courier Fee:' : 'Cước phí vận chuyển:'}</span>
+                      <span className="text-muted-foreground">{t('checkoutModal.courierFeeLabel')}</span>
                       <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                        {completedOrder.shipping_fee === 0 ? (isEn ? 'Free Nationwide' : 'Miễn phí toàn quốc (0đ)') : formatCurrency(completedOrder.shipping_fee)}
+                        {completedOrder.shipping_fee === 0 ? t('checkoutModal.freeNationwideLabel') : formatCurrency(completedOrder.shipping_fee)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">{isEn ? 'Total Paid:' : 'Tổng tiền thanh toán:'}</span>
+                      <span className="text-muted-foreground">{t('checkoutModal.totalPaidLabel')}</span>
                       <span className="font-bold font-mono text-[#ee4d2d] text-sm">
                         {formatCurrency(completedOrder.amount)}
                       </span>
@@ -1584,7 +1619,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-muted/70 border border-slate-200 dark:border-border space-y-2.5 text-left">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-600 dark:text-muted-foreground font-semibold">
-                      {isEn ? 'Delivered Code List:' : 'Danh Sách Mã Code Đã Giao:'}
+                      {t('checkoutModal.deliveredCodeListTitle')}
                     </span>
                     {deliveredLines.length > 1 && (
                       <button
@@ -1593,7 +1628,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         className="px-2.5 py-1 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
                       >
                         {copiedAll ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedAll ? (isEn ? 'Copied all' : 'Đã sao chép tất cả') : (isEn ? 'Copy all' : 'Sao chép tất cả')}</span>
+                        <span>{copiedAll ? t('checkoutModal.copiedAllBtn') : t('checkoutModal.copyAllBtn')}</span>
                       </button>
                     )}
                   </div>
@@ -1697,22 +1732,20 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   <div className="flex items-center gap-1.5 justify-end">
                     {!isEscalating && isFirstPurchaseEligible && totalDiscountAmount > 0 && (
                       <span className="text-xs text-slate-500 dark:text-slate-400 line-through font-mono">
-                        {formatCore(effectiveRegularPrice)}
+                        {formatOrderMoney(effectiveRegularPrice)}
                       </span>
                     )}
                     <span className="font-display font-extrabold text-base text-[#ee4d2d]">
-                      {isPhysical
-                        ? formatCurrency(isEscalating ? totalPrice : (isFirstPurchaseEligible ? firstItemActualPrice : effectiveRegularPrice))
-                        : formatCore(isEscalating ? totalPrice : (isFirstPurchaseEligible ? firstItemActualPrice : effectiveRegularPrice))}
+                      {formatOrderMoney(isEscalating ? totalPrice : (isFirstPurchaseEligible ? firstItemActualPrice : effectiveRegularPrice))}
                     </span>
                   </div>
                   {isEscalating ? (
                     <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 uppercase tracking-wider">
-                      ⚡ {t('productDetailModal.escalatingPrice', { step: formatCore(escalatingData.step) })}
+                      ⚡ {t('productDetailModal.escalatingPrice', { step: formatOrderMoney(escalatingData.step) })}
                     </span>
                   ) : isFirstPurchaseEligible ? (
                     <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#ffe97a] text-[#ee4d2d] uppercase tracking-wider">
-                      {isEn ? 'First-order deal' : 'Ưu đãi lần đầu'}
+                      {t('checkoutModal.firstOrderDealBadge')}
                     </span>
                   ) : null}
                   <span className={`text-[10px] font-semibold flex items-center gap-1 justify-end font-sans mt-0.5 ${checkoutDisplayStock > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
@@ -1738,7 +1771,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <span>{t('checkoutModal.escalatingModeTitle')}</span>
                       </div>
                       <p className="text-[11px] text-slate-600 dark:text-muted-foreground mt-0.5">
-                        {isEn ? 'Fixed at 1 item/order to guarantee tier pricing.' : 'Cố định 1 gói/đơn để bảo đảm giá theo lượt mua.'}
+                        {t('checkoutModal.fixedOneItemHint')}
                       </p>
                     </div>
                     <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground px-3 py-1 bg-white dark:bg-muted rounded-lg border border-amber-200 dark:border-border shrink-0">
@@ -1765,10 +1798,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1">
                           <TrendingUp className="w-3.5 h-3.5" />
-                          {isEn ? 'Price Ladder (Earlier turns pay less):' : 'Thang đo giá (Lượt mua càng sớm càng rẻ):'}
+                          {t('checkoutModal.priceLadderHeading')}
                         </span>
                         <span className="text-[#ee4d2d] font-mono font-bold text-[10px]">
-                          +{formatCore(escalatingData.step)}
+                          +{formatOrderMoney(escalatingData.step)}
                         </span>
                       </div>
                       <div className="grid grid-cols-3 gap-1.5 text-center">
@@ -1777,7 +1810,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             {t('productDetailModal.escalatingTurn', { turn: Number(escalatingData.completed_count) + 1 })}
                           </span>
                           <span className="font-mono font-black text-xs text-[#ee4d2d] dark:text-amber-400 block mt-0.5">
-                            {formatCore(totalPrice)}
+                            {formatOrderMoney(totalPrice)}
                           </span>
                           <span className="text-[8px] text-emerald-700 dark:text-emerald-400 font-semibold block">{t('checkoutModal.thisUnitPrice')}</span>
                         </div>
@@ -1786,7 +1819,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             #{Number(escalatingData.completed_count) + 2}
                           </span>
                           <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground block mt-0.5">
-                            {formatCore(
+                            {formatOrderMoney(
                               escalatingData.max_price && (totalPrice + escalatingData.step) > escalatingData.max_price
                                 ? escalatingData.max_price
                                 : totalPrice + escalatingData.step
@@ -1799,7 +1832,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             #{Number(escalatingData.completed_count) + 3}
                           </span>
                           <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground block mt-0.5">
-                            {formatCore(
+                            {formatOrderMoney(
                               escalatingData.max_price && (totalPrice + (escalatingData.step * 2)) > escalatingData.max_price
                                 ? escalatingData.max_price
                                 : totalPrice + (escalatingData.step * 2)
@@ -1813,13 +1846,13 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
                       <span className="text-slate-600 dark:text-muted-foreground">{t('checkoutModal.priceIncreaseAfter')}</span>
                       <span className="font-mono font-bold text-[#ee4d2d]">
-                        +{formatCore(escalatingData.step)}
+                        +{formatOrderMoney(escalatingData.step)}
                       </span>
                     </div>
                     {escalatingData.max_price ? (
                       <div className="flex items-center justify-between pt-1 border-t border-slate-200/70 dark:border-slate-800/60 text-[11px] text-slate-600 dark:text-muted-foreground">
                         <span>{t('checkoutModal.maxPriceCap')}</span>
-                        <span className="font-mono text-slate-800 dark:text-slate-300">{formatCore(escalatingData.max_price)}</span>
+                        <span className="font-mono text-slate-800 dark:text-slate-300">{formatOrderMoney(escalatingData.max_price)}</span>
                       </div>
                     ) : null}
                   </div>
@@ -1972,7 +2005,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div>
                         <label htmlFor="checkout-shipping-name" className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                          {t.checkout?.fullName || 'Họ và tên người nhận'} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
+                          {t('checkout.fullName')} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
                         </label>
                         <div className="relative">
                           <input
@@ -1984,7 +2017,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             required
                             value={shippingName}
                             onChange={(e) => setShippingName(e.target.value)}
-                            placeholder={t.checkout?.fullNamePlaceholder || 'Ví dụ: Nguyễn Văn A'}
+                            placeholder={t('checkout.fullNamePlaceholder')}
                             className="w-full min-h-[42px] px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-base sm:text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-[#ee4d2d]"
                           />
                           <User className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1993,7 +2026,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                       <div>
                         <label htmlFor="checkout-shipping-phone" className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                          {t.checkout?.phone || 'Số điện thoại nhận hàng'} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
+                          {t('checkout.phone')} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
                         </label>
                         <div className="relative">
                           <input
@@ -2006,7 +2039,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             required
                             value={shippingPhone}
                             onChange={(e) => setShippingPhone(e.target.value)}
-                            placeholder={t.checkout?.phonePlaceholder || 'Ví dụ: 0987654321'}
+                            placeholder={t('checkout.phonePlaceholder')}
                             className="w-full min-h-[42px] px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-base sm:text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-[#ee4d2d]"
                           />
                           <Phone className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2016,7 +2049,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                     <div>
                       <label htmlFor="checkout-shipping-address" className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                        {t.checkout?.address || 'Địa chỉ nhận hàng chi tiết'} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
+                        {t('checkout.address')} <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>
                       </label>
                       <div className="relative">
                         <textarea
@@ -2028,7 +2061,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           required
                           value={shippingAddress}
                           onChange={(e) => setShippingAddress(e.target.value)}
-                          placeholder={t.checkout?.addressPlaceholder || 'Số nhà, ngõ/đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành phố'}
+                          placeholder={t('checkout.addressPlaceholder')}
                           className="w-full px-3 py-2 pl-8 rounded-xl bg-muted/40 border border-border text-base sm:text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-[#ee4d2d] resize-y"
                         />
                         <MapPin className="w-3.5 h-3.5 text-[#ee4d2d] absolute left-2.5 top-3 pointer-events-none" />
@@ -2065,6 +2098,35 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           ⚡ {t('shopeePhysical.shippingAutoApi')}
                         </span>
                       </legend>
+
+                      {/* Thông số cơ sở tính cước vận chuyển: Kho gửi hàng & Trọng lượng (#28) */}
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                          <MapPin className="w-3.5 h-3.5 text-[#ee4d2d] shrink-0" aria-hidden="true" />
+                          <span>
+                            {t('shopeePhysical.shippingBasisOrigin')}:{' '}
+                            <strong className="text-slate-900 dark:text-slate-100 font-semibold">{physicalShipFrom}</strong>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                          <Package className="w-3.5 h-3.5 text-[#00bfa5] shrink-0" aria-hidden="true" />
+                          <span>
+                            {t('shopeePhysical.shippingBasisWeight')}:{' '}
+                            <strong className="text-slate-900 dark:text-slate-100 font-mono font-semibold">
+                              {unitWeightGrams > 0
+                                ? (safeQty > 1
+                                    ? t('shopeePhysical.shippingWeightMulti', {
+                                        unit: `${unitWeightGrams}g`,
+                                        qty: safeQty,
+                                        total: `${totalWeightGrams}g`,
+                                      })
+                                    : `${unitWeightGrams}g`)
+                                : t('shopeePhysical.shippingWeightStandard')}
+                            </strong>
+                          </span>
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         {(['GHTK', 'GHN', 'VTP'] as CarrierCode[]).map((cCode) => {
                           const c = CARRIERS[cCode];
@@ -2093,7 +2155,9 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                                   {c.shortName}
                                   {isSelected && <Check className="w-3 h-3 text-[#00bfa5] stroke-[3]" />}
                                 </div>
-                                <div className="text-[10px] text-muted-foreground truncate">{c.estimatedDelivery}</div>
+                                <div className="text-[10px] text-muted-foreground truncate">
+                                  {getLocalizedCarrierEta(cCode, c.estimatedDelivery)}
+                                </div>
                               </div>
                             </button>
                           );
@@ -2164,7 +2228,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       }`}
                     >
                       <Wallet className="w-4 h-4 text-[#ee4d2d] shrink-0" />
-                      <span className="truncate">{t('shopeePhysical.paymentWalletLabel')} ({formatCore(userBalance)})</span>
+                      <span className="truncate">{t('shopeePhysical.paymentWalletLabel')} ({formatOrderMoney(userBalance)})</span>
                     </button>
                     <button
                       type="button"
@@ -2283,9 +2347,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             <div className="w-52 sm:w-60 mx-auto flex flex-col items-center justify-center p-3.5 rounded-xl bg-slate-900 border border-amber-500/30 text-center space-y-2.5">
                               <AlertCircle className="w-8 h-8 text-amber-400 shrink-0" />
                               <p className="text-[11px] text-amber-200 font-medium leading-tight">
-                                {isEn
-                                  ? 'Unable to load QR image after 4 fallback tiers (may be blocked by an ad-blocker or browser policy).'
-                                  : 'Không thể tải ảnh mã QR sau 4 tầng thử nghiệm (có thể do trình chặn quảng cáo hoặc trình duyệt chặn ảnh).'}
+                                {t('checkoutModal.qrAllTiersFailedDesc')}
                               </p>
                               <div className="flex flex-col sm:flex-row items-center gap-2 w-full pt-1">
                                 <button
@@ -2391,8 +2453,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <div className="space-y-1 text-center">
                           <p className="text-[11px] text-slate-600 dark:text-muted-foreground italic">
                             {qrImageLoadFailed
-                              ? (isEn ? 'You can still complete payment using the bank account & memo details below' : 'Quý khách vẫn có thể thanh toán bằng thông tin STK và nội dung bên dưới')
-                              : (isEn ? 'Open any Banking App or E-Wallet to scan the QR code above' : 'Mở App Ngân Hàng hoặc Ví Điện Tử quét mã QR ở trên')}
+                              ? t('checkoutModal.qrManualTransferHint')
+                              : t('checkoutModal.qrScanAppHint')}
                           </p>
 
                           <div className="flex items-center justify-center gap-3 pt-0.5 flex-wrap">
@@ -2585,7 +2647,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] text-slate-500 dark:text-muted-foreground uppercase font-bold tracking-wider block">{t('checkoutModal.currentBalance')}</span>
-                    <span className="text-sm font-black font-display text-[#ee4d2d]">{formatCore(userBalance)}</span>
+                    <span className="text-sm font-black font-display text-[#ee4d2d]">{formatOrderMoney(userBalance)}</span>
                   </div>
                 </div>
 
@@ -2594,19 +2656,21 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   {isEscalating ? (
                     <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-muted/40 border border-slate-200 dark:border-border flex items-center justify-between text-xs">
                       <span className="text-slate-600 dark:text-muted-foreground">
-                        {isEn ? `Turn #${Number(escalatingData.completed_count) + 1} price:` : `Giá theo lượt mua thứ ${Number(escalatingData.completed_count) + 1}:`}
+                        {t('checkoutModal.turnPriceRow', { turn: Number(escalatingData.completed_count) + 1 })}
                       </span>
                       <span className="font-mono font-bold text-amber-700 dark:text-amber-300">
-                        {formatCore(totalPrice)}
+                        {formatOrderMoney(totalPrice)}
                       </span>
                     </div>
                   ) : (
                     <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-muted/40 border border-slate-200 dark:border-border flex items-center justify-between text-xs">
                       <span className="text-slate-600 dark:text-muted-foreground">
-                        {isEn ? `Listed price (${safeQty} x ${formatCore(effectiveRegularPrice)}):` : `Đơn giá niêm yết (${safeQty} gói x ${formatCore(effectiveRegularPrice)}):`}
+                        {isPhysical
+                          ? t('checkoutModal.listedPricePhysical', { qty: safeQty, unitPrice: formatCurrency(effectiveRegularPrice) })
+                          : t('checkoutModal.listedPriceDigital', { qty: safeQty, unitPrice: formatCore(effectiveRegularPrice) })}
                       </span>
                       <span className="font-mono font-bold text-slate-900 dark:text-foreground">
-                        {formatCore(effectiveRegularPrice * safeQty)}
+                        {formatOrderMoney(effectiveRegularPrice * safeQty)}
                       </span>
                     </div>
                   )}
@@ -2618,10 +2682,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           <Sparkles className="w-3.5 h-3.5 text-[#ee4d2d] animate-pulse" aria-hidden="true" />
                           <span>{t('checkoutModal.firstPurchaseOfferLabel')}</span>
                         </div>
-                        <span>−{formatCore(totalDiscountAmount)}</span>
+                        <span>−{formatOrderMoney(totalDiscountAmount)}</span>
                       </div>
                       <p className="text-[10px] text-slate-600 dark:text-muted-foreground italic">
-                        {isEn ? 'Applies once per account for the first purchase of this package' : 'Chỉ áp dụng 1 lần cho lần mua đầu tiên của gói này'}
+                        {t('checkoutModal.firstPurchaseOnceNote')}
                       </p>
                     </div>
                   )}
@@ -2665,7 +2729,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <Ticket className="w-3.5 h-3.5" aria-hidden="true" /> {t('shopeePhysical.voucherSectionTitle')}:
                       </span>
                       <span className="font-mono font-bold text-[#ee4d2d]">
-                        -{formatCurrency(voucherStacking.totalSavings)}
+                        -{formatCore(voucherStacking.totalSavings)}
                       </span>
                     </div>
                   )}
@@ -2673,7 +2737,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   <div className="p-3 rounded-xl border flex items-center justify-between text-xs bg-[#ee4d2d]/8 border-[#ee4d2d]/30">
                     <span className="font-bold text-slate-900 dark:text-foreground">{t('shopeePhysical.grandTotalLabel')}:</span>
                     <span className="font-display font-black text-lg text-[#ee4d2d]">
-                      {isPhysical ? formatCurrency(finalGrandTotal) : formatCore(finalGrandTotal)}
+                      {formatOrderMoney(finalGrandTotal)}
                     </span>
                   </div>
                 </div>
@@ -2685,7 +2749,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       <div>
                         <p className="font-bold">{t('checkoutModal.updatingPriceTitle')}</p>
                         <p className="text-[11px] text-slate-600 dark:text-muted-foreground mt-0.5 leading-relaxed">
-                          {isEn ? 'Please wait a moment or refresh the page to sync the latest price.' : 'Vui lòng đợi giây lát hoặc tải lại trang để kiểm tra giá mới nhất.'}
+                          {t('checkoutModal.updatingPriceHint')}
                         </p>
                       </div>
                     </div>
@@ -2697,11 +2761,12 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       <div>
                         <p className="font-bold">{t('checkoutModal.insufficientBalanceTitle')}</p>
                         <p className="text-[11px] text-slate-600 dark:text-muted-foreground mt-0.5 leading-relaxed">
-                          {isEn ? (
-                            <>Need <strong className="text-slate-900 dark:text-foreground font-bold">{formatCore(finalGrandTotal)}</strong>, current balance <strong className="text-slate-900 dark:text-foreground font-bold">{formatCore(userBalance)}</strong>. Short by <strong className="text-[#ee4d2d] font-bold">{formatCore(finalGrandTotal - userBalance)}</strong>.</>
-                          ) : (
-                            <>Cần <strong className="text-slate-900 dark:text-foreground font-bold">{formatCore(finalGrandTotal)}</strong>, ví hiện có <strong className="text-slate-900 dark:text-foreground font-bold">{formatCore(userBalance)}</strong>. Còn thiếu <strong className="text-[#ee4d2d] font-bold">{formatCore(finalGrandTotal - userBalance)}</strong>.</>
-                          )}
+                          {t('checkoutModal.insufficientNeedLabel')}{' '}
+                          <strong className="text-slate-900 dark:text-foreground font-bold">{formatOrderMoney(finalGrandTotal)}</strong>,{' '}
+                          {t('checkoutModal.insufficientCurrentLabel')}{' '}
+                          <strong className="text-slate-900 dark:text-foreground font-bold">{formatOrderMoney(userBalance)}</strong>.{' '}
+                          {t('checkoutModal.insufficientShortLabel')}{' '}
+                          <strong className="text-[#ee4d2d] font-bold">{formatOrderMoney(finalGrandTotal - userBalance)}</strong>.
                         </p>
                       </div>
                     </div>
@@ -2721,7 +2786,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                       <span className="font-semibold">{t('checkoutModal.balanceSufficient')}</span>
                     </div>
                     <span className="text-[11px] text-slate-600 dark:text-muted-foreground font-mono shrink-0">
-                      {isEn ? `After order: ${formatCore(userBalance - finalGrandTotal)}` : `Sau mua còn: ${formatCore(userBalance - finalGrandTotal)}`}
+                      {t('checkoutModal.afterOrderBalance', { amount: formatOrderMoney(userBalance - finalGrandTotal) })}
                     </span>
                   </div>
                 )}
@@ -2767,18 +2832,20 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 )}
                 <span>
                   {isProcessing
-                    ? (isEn ? 'Processing order...' : 'Đang xử lý thanh toán...')
+                    ? t('checkoutModal.btnProcessingOrder')
                     : maxStock <= 0
                     ? t('shopeePhysical.outOfStock')
                     : !isPriceValid
-                    ? (isEn ? 'Updating price...' : 'Đang cập nhật giá...')
+                    ? t('checkoutModal.btnUpdatingPrice')
                     : !isBalanceEnough
-                    ? (isEn ? `Insufficient ${formatCurrency(finalGrandTotal - userBalance)} • Top-up Now` : `Thiếu ${formatCurrency(finalGrandTotal - userBalance)} • Nạp Tiền Ngay`)
+                    ? t('checkoutModal.btnInsufficientTopup', { shortage: formatOrderMoney(finalGrandTotal - userBalance) })
                     : isEscalating
-                    ? (isEn ? `Confirm Tier Price • ${formatCurrency(finalGrandTotal)}` : `Xác Nhận Mua Gói Nâng Giá • ${formatCurrency(finalGrandTotal)}`)
+                    ? t('checkoutModal.btnConfirmTierPrice', { amount: formatOrderMoney(finalGrandTotal) })
                     : isPhysical
                     ? t('shopeePhysical.placeOrderPhysical', { amount: formatCurrency(finalGrandTotal) })
-                    : (isEn ? `Confirm Payment ${safeQty > 1 ? `(${safeQty} Items)` : ''} • ${formatCurrency(finalGrandTotal)}` : `Xác Nhận Mua ${safeQty > 1 ? `(${safeQty} Gói)` : ''} • ${formatCurrency(finalGrandTotal)}`)}
+                    : (safeQty > 1
+                        ? t('checkoutModal.btnConfirmDigitalMulti', { qty: safeQty, amount: formatCore(finalGrandTotal) })
+                        : t('checkoutModal.btnConfirmDigitalSingle', { amount: formatCore(finalGrandTotal) }))}
                 </span>
               </button>
               {isPhysical && (
@@ -2802,8 +2869,8 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         window.dispatchEvent(new CustomEvent('pine_wallet_updated', { detail: { newBalance: updated.wallet_balance } }));
                       }
                       onShowToast(
-                        isEn ? 'Sandbox Top-up' : 'Nạp Thử Nghiệm Sandbox',
-                        isEn ? 'Added 1,000,000₫ to your test wallet.' : 'Đã cộng 1.000.000₫ vào ví test để trải nghiệm mua sắm.',
+                        t('checkoutModal.sandboxTopupToastTitle'),
+                        t('checkoutModal.sandboxTopupToastDesc'),
                         'success'
                       );
                     }
@@ -2835,20 +2902,19 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
           </div>
           <div className="text-center space-y-1">
             <h4 className="font-heading font-extrabold text-base sm:text-lg text-slate-900 dark:text-foreground">
-              {isEn ? 'Tier Price Just Increased!' : 'Giá Gói Vừa Tăng Theo Lượt!'}
+              {t('checkoutModal.escalatedDialogTitle')}
             </h4>
             <p className="text-xs text-slate-600 dark:text-muted-foreground leading-relaxed">
-              {isEn ? (
-                <>Another customer completed a purchase right before you. The current tier price changed from <strong className="text-slate-900 dark:text-foreground font-mono">{formatCore(priceEscalatedDialog.oldPrice)}</strong> to <strong className="text-[#ee4d2d] font-mono font-bold">{formatCore(priceEscalatedDialog.newPrice)}</strong>.</>
-              ) : (
-                <>Đã có khách hàng hoàn tất thanh toán trước bạn một tích tắc. Theo quy tắc Nâng Giá, giá lượt hiện tại đã tăng từ <strong className="text-slate-900 dark:text-foreground font-mono">{formatCore(priceEscalatedDialog.oldPrice)}</strong> lên <strong className="text-[#ee4d2d] font-mono font-bold">{formatCore(priceEscalatedDialog.newPrice)}</strong>.</>
-              )}
+              {t('checkoutModal.escalatedDialogBody', {
+                oldPrice: formatOrderMoney(priceEscalatedDialog.oldPrice),
+                newPrice: formatOrderMoney(priceEscalatedDialog.newPrice),
+              })}
             </p>
           </div>
           <div className="p-3 rounded-xl bg-orange-50 dark:bg-muted/50 border border-orange-200 dark:border-border text-center space-y-1">
             <span className="text-[11px] text-slate-600 dark:text-muted-foreground uppercase font-bold tracking-wider">{t('checkoutModal.newTurnPriceLabel')}</span>
             <p className="font-display font-black text-2xl text-[#ee4d2d]">
-              {formatCore(priceEscalatedDialog.newPrice)}
+              {formatOrderMoney(priceEscalatedDialog.newPrice)}
             </p>
           </div>
           <div className="flex items-center gap-2.5 pt-1">
@@ -2864,7 +2930,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
               onClick={() => handleAcceptNewEscalatedPrice(priceEscalatedDialog.newPrice)}
               className="flex-1 py-3 px-3 rounded-xl bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs shadow-sm cursor-pointer transition-all"
             >
-              {isEn ? 'Accept New Price' : 'Đồng ý mua giá mới'}
+              {t('checkoutModal.acceptNewPriceBtn')}
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ShoppingCart,
@@ -22,9 +22,7 @@ import {
 import { cartService, type CartItem, type StoreCartGroup } from '../../services/cartService';
 import { dataService } from '../../services/dataService';
 import type { UserProfile } from '../../types/game';
-import { formatCore } from '../../utils/textUtils';
 import { useLanguage } from '../../context/LanguageContext';
-import { formatCurrency } from '../../utils/formatUtils';
 import { PHYSICAL_DEFAULT_IMAGE_URL, sanitizeImageUrl } from '../../utils/safeImageUrl';
 import QRCode from 'qrcode';
 
@@ -47,10 +45,44 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
   onOpenReceivedCodes,
   onNavigateStore,
 }) => {
-  const { t, language } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const [cartItems, setCartItems] = useState<CartItem[]>(() => cartService.getCart());
-  const [groupedStores, setGroupedStores] = useState<StoreCartGroup[]>(() => cartService.getGroupedBySeller());
-  const [totalCore, setTotalCore] = useState<number>(() => cartService.getCartTotal());
+  const [isSyncingCart, setIsSyncingCart] = useState(false);
+
+  const totalItemCount = useMemo(
+    () => cartItems.reduce((sum, item) => sum + Math.max(1, Number(item.quantity) || 1), 0),
+    [cartItems]
+  );
+
+  const totalCore = useMemo(
+    () =>
+      cartItems.reduce(
+        (sum, item) => sum + (Number(item.priceCore) || 0) * Math.max(1, Number(item.quantity) || 1),
+        0
+      ),
+    [cartItems]
+  );
+
+  const groupedStores = useMemo<StoreCartGroup[]>(() => {
+    const map = new Map<string, StoreCartGroup>();
+    for (const item of cartItems) {
+      const sId = item.sellerId || 'unknown';
+      if (!map.has(sId)) {
+        map.set(sId, {
+          sellerId: sId,
+          sellerName: item.sellerName || t('cart.defaultStoreName'),
+          sellerSlug: item.sellerSlug,
+          sellerAvatar: item.sellerAvatar,
+          items: [],
+          subtotal: 0,
+        });
+      }
+      const group = map.get(sId)!;
+      group.items.push(item);
+      group.subtotal += (Number(item.priceCore) || 0) * Math.max(1, Number(item.quantity) || 1);
+    }
+    return Array.from(map.values());
+  }, [cartItems, t]);
 
   // Checkout states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,23 +98,36 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
 
   const pollingTimerRef = useRef<any>(null);
 
-  // Sync cart from service & events
-  const syncCartState = () => {
-    const items = cartService.getCart();
-    setCartItems(items);
-    setGroupedStores(cartService.getGroupedBySeller());
-    setTotalCore(cartService.getCartTotal());
-  };
+  // Sync cart from service & events (single snapshot so count, groups & totalCore never diverge)
+  const syncCartState = useCallback(() => {
+    setCartItems(cartService.getCart());
+  }, []);
 
   useEffect(() => {
     syncCartState();
-    if (isOpen && currentUser) {
-      cartService.syncWithServer().then(() => syncCartState()).catch(() => {});
+    let cancelled = false;
+    // Only hydrate from server when local cart is empty so POST /api/cart/sync never re-adds already-synced local quantities
+    if (isOpen && currentUser && cartService.getCart().length === 0) {
+      setIsSyncingCart(true);
+      cartService
+        .syncWithServer()
+        .then(() => {
+          if (!cancelled) syncCartState();
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setIsSyncingCart(false);
+        });
+    } else {
+      setIsSyncingCart(false);
     }
     const handleCartUpdated = () => syncCartState();
     window.addEventListener('pine_cart_updated', handleCartUpdated);
-    return () => window.removeEventListener('pine_cart_updated', handleCartUpdated);
-  }, [isOpen, currentUser]);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('pine_cart_updated', handleCartUpdated);
+    };
+  }, [isOpen, currentUser?.id, syncCartState]);
 
   // Gợi ý mua kèm hàng số cùng gian hàng khi giỏ có hàng vật lý (§4)
   const [crossSellMap, setCrossSellMap] = useState<Record<string, any[]>>({});
@@ -204,15 +249,15 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const isEn = language === 'en';
-
   const handleRemoveItem = (prodId: string, variantId?: string) => {
     cartService.removeFromCart(prodId, variantId);
+    syncCartState();
   };
 
   const handleClearCart = () => {
-    if (window.confirm(isEn ? 'Are you sure you want to remove all items from your cart?' : 'Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?')) {
+    if (window.confirm(t('cart.clearAllConfirm'))) {
       cartService.clearCart();
+      syncCartState();
     }
   };
 
@@ -357,6 +402,8 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
 
   const userBalance = Number(currentUser?.wallet_balance || 0);
   const isPaid = activeParentOrder?.status === 'PAID' || activeParentOrder?.status === 'COMPLETED';
+  const isAllPhysicalOrder =
+    activeChildOrders.length > 0 && activeChildOrders.every((co) => co.product_type === 'physical');
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -386,16 +433,18 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                 <h2 id="cart-drawer-title" className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
                   {t('cart.multiStoreTitle')}
                 </h2>
-                {cartItems.length > 0 && !activeParentOrder && (
+                {totalItemCount > 0 && !activeParentOrder && (
                   <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#ee4d2d] text-white shrink-0">
-                    {cartItems.length} {isEn ? 'items' : 'món'}
+                    {totalItemCount === 1
+                      ? t('cart.itemCountSingular', { count: 1 })
+                      : t('cart.itemCountPlural', { count: totalItemCount })}
                   </span>
                 )}
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                 {!activeParentOrder
-                  ? (isEn ? 'Combined checkout from multiple stores in 1 click' : 'Gom đơn từ nhiều gian hàng, thanh toán tự động 1 chạm')
-                  : `${isEn ? 'Master Order Code: ' : 'Mã đơn tổng: '}${activeParentOrder.parent_order_code || activeParentOrder.id}`}
+                  ? t('cart.subtitleCombine')
+                  : t('cart.masterOrderPrefix', { code: activeParentOrder.parent_order_code || activeParentOrder.id })}
               </p>
             </div>
           </div>
@@ -406,7 +455,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                 type="button"
                 onClick={handleClearCart}
                 className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-[#d0011b] px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
-                title={isEn ? 'Clear whole cart' : 'Xóa toàn bộ giỏ hàng'}
+                title={t('cart.clearAllTitle')}
               >
                 {t('cart.clearAll')}
               </button>
@@ -435,10 +484,10 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-sm text-slate-900 dark:text-foreground flex items-center gap-1.5">
-                      {isEn ? 'Payment Successful! Instant 0s Delivery' : 'Thanh Toán Thành Công! Đã Giao Mã 0 Giây'}
+                      {isAllPhysicalOrder ? t('cart.paidSuccessPhysicalTitle') : t('cart.paidSuccessTitle')}
                     </div>
                     <div className="text-xs text-slate-600 dark:text-muted-foreground mt-0.5">
-                      {isEn ? 'All of your order items & gift codes have been unlocked below.' : 'Tất cả các mã quà tặng của bạn đã được giải mã và bàn giao bên dưới.'}
+                      {isAllPhysicalOrder ? t('cart.paidSuccessPhysicalDesc') : t('cart.paidSuccessDesc')}
                     </div>
                   </div>
                 </div>
@@ -450,17 +499,17 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                     </div>
                     <div>
                       <div className="font-bold text-sm text-slate-900 dark:text-foreground">
-                        {isEn ? 'Awaiting Order Payment' : 'Chờ Thanh Toán Đơn Hàng'}
+                        {t('cart.awaitingPaymentTitle')}
                       </div>
                       <div className="text-xs text-slate-600 dark:text-muted-foreground">
-                        {isEn ? 'Master Order:' : 'Mã đơn tổng:'} <span className="font-mono font-semibold text-slate-900 dark:text-foreground">{activeParentOrder.parent_order_code}</span>
+                        {t('cart.masterOrderLabel')} <span className="font-mono font-semibold text-slate-900 dark:text-foreground">{activeParentOrder.parent_order_code}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
                     <div className="text-[10px] text-slate-600 dark:text-muted-foreground font-semibold uppercase">
-                      {isEn ? 'Expires in' : 'Hết hạn sau'}
+                      {t('cart.expiresIn')}
                     </div>
                     <div className="font-mono text-base font-black text-[#ee4d2d]">
                       {formatTime(secondsLeft)}
@@ -484,7 +533,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                       }`}
                     >
                       <Wallet className="w-4 h-4 text-[#ee4d2d] shrink-0" aria-hidden="true" />
-                      <span className="truncate">{isEn ? `Core Wallet (${userBalance.toLocaleString()})` : `Ví Core (${userBalance.toLocaleString()})`}</span>
+                      <span className="truncate">{t('cart.coreWalletTab', { balance: userBalance.toLocaleString() })}</span>
                     </button>
                     <button
                       type="button"
@@ -496,7 +545,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                       }`}
                     >
                       <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{isEn ? 'VietQR Transfer (SePay)' : 'Chuyển Khoản VietQR'}</span>
+                      <span className="truncate">{t('cart.vietqrTab')}</span>
                     </button>
                   </div>
 
@@ -511,13 +560,13 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                   {paymentMode === 'CORE' && (
                     <div className="p-4 rounded-xl bg-white dark:bg-card border border-slate-200 dark:border-border space-y-3">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-600 dark:text-muted-foreground">{isEn ? 'Order Total:' : 'Tổng tiền đơn hàng:'}</span>
+                        <span className="text-slate-600 dark:text-muted-foreground">{t('cart.orderTotalLabel')}</span>
                         <span className="font-bold text-[#ee4d2d] text-sm">
                           {Number(activeParentOrder.total_amount).toLocaleString()} Core
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-600 dark:text-muted-foreground">{isEn ? 'Your Core Wallet Balance:' : 'Số dư ví Core của bạn:'}</span>
+                        <span className="text-slate-600 dark:text-muted-foreground">{t('cart.yourWalletBalanceLabel')}</span>
                         <span
                           className={`font-bold text-sm ${
                             userBalance >= Number(activeParentOrder.total_amount)
@@ -538,29 +587,25 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                         >
                           {isPayingCore ? (
                             <>
-                              <RefreshCw className="w-4 h-4 animate-spin" /> {isEn ? 'Deducting Core Wallet...' : 'Đang trừ ví Core...'}
+                              <RefreshCw className="w-4 h-4 animate-spin" /> {t('cart.deductingWallet')}
                             </>
                           ) : (
                             <>
-                              <CheckCircle2 className="w-4 h-4" /> {isEn
-                                ? `Confirm Payment (${Number(activeParentOrder.total_amount).toLocaleString()} Core)`
-                                : `Xác Nhận Thanh Toán (${Number(activeParentOrder.total_amount).toLocaleString()} Core)`}
+                              <CheckCircle2 className="w-4 h-4" /> {t('cart.confirmCorePayment', { amount: Number(activeParentOrder.total_amount).toLocaleString() })}
                             </>
                           )}
                         </button>
                       ) : (
                         <div className="space-y-2">
                           <p className="text-[11px] text-rose-600 dark:text-destructive text-center">
-                            {isEn
-                              ? `Insufficient wallet balance. Short by ${(Number(activeParentOrder.total_amount) - userBalance).toLocaleString()} Core.`
-                              : `Số dư ví không đủ để thanh toán. Bạn còn thiếu ${(Number(activeParentOrder.total_amount) - userBalance).toLocaleString()} Core.`}
+                            {t('cart.insufficientWalletShort', { shortage: (Number(activeParentOrder.total_amount) - userBalance).toLocaleString() })}
                           </p>
                           <button
                             type="button"
                             onClick={onOpenWallet}
                             className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                           >
-                            <Wallet className="w-4 h-4" /> {isEn ? 'Top Up Core Wallet' : 'Nạp Thêm Core Vào Ví'}
+                            <Wallet className="w-4 h-4" /> {t('cart.topUpCoreWallet')}
                           </button>
                         </div>
                       )}
@@ -571,11 +616,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                   {paymentMode === 'QR' && (
                     <div className="space-y-3">
                       <div className="p-3 rounded-xl bg-white dark:bg-muted/60 border border-slate-200 dark:border-border text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
-                        {isEn ? (
-                          <>💡 Transfer the exact <strong>Amount</strong> and <strong>Memo</strong> for each sub-order below. Payment is verified automatically within seconds.</>
-                        ) : (
-                          <>💡 Chuyển khoản chính xác <strong>Số Tiền</strong> và <strong>Nội Dung</strong> cho từng đơn con dưới đây. Hệ thống sẽ tự động quét biến động và giao mã ngay khi tiền vào tài khoản.</>
-                        )}
+                        {t('cart.qrTransferHint')}
                       </div>
 
                       <div className="space-y-3">
@@ -588,7 +629,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                               <div className="min-w-0">
                                 <div className="text-xs font-bold text-slate-900 dark:text-foreground truncate">{co.product_name}</div>
                                 <div className="text-[10px] text-slate-500 dark:text-muted-foreground">
-                                  {isEn ? 'Shop:' : 'Gian hàng:'} <span className="font-semibold text-slate-900 dark:text-foreground">{co.seller_name}</span> • {isEn ? 'Sub-order:' : 'Mã đơn con:'}{' '}
+                                  {t('cart.shopPrefix')} <span className="font-semibold text-slate-900 dark:text-foreground">{co.seller_name}</span> • {t('cart.subOrderPrefix')}{' '}
                                   <span className="font-mono text-[#ee4d2d] font-bold">{co.order_code}</span>
                                 </div>
                               </div>
@@ -600,8 +641,8 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                 }`}
                               >
                                 {co.status === 'PAID' || co.status === 'COMPLETED'
-                                  ? (isEn ? 'Paid' : 'Đã Thanh Toán')
-                                  : (isEn ? 'Awaiting Transfer' : 'Chờ Chuyển Khoản')}
+                                  ? t('cart.statusPaid')
+                                  : t('cart.statusAwaitingTransfer')}
                               </span>
                             </div>
 
@@ -610,12 +651,10 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                 <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs space-y-1.5">
                                   <div className="font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
                                     <AlertCircle className="w-4 h-4 shrink-0" />
-                                    {isEn ? 'Only Core Wallet Payment Supported' : 'Chỉ hỗ trợ thanh toán bằng Ví Core'}
+                                    {t('cart.onlyCoreSupportedTitle')}
                                   </div>
                                   <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
-                                    {isEn
-                                      ? <>Store <strong>{co.seller_name}</strong> has not enabled direct bank QR. Please switch to the <strong>Core Wallet</strong> tab above to complete payment.</>
-                                      : <>Gian hàng <strong>{co.seller_name}</strong> hiện chưa mở cổng chuyển khoản QR SePay tiền thật. Vui lòng chuyển sang tab <strong>Ví Core Nội Bộ</strong> phía trên để hoàn tất thanh toán cho đơn này.</>}
+                                    {t('cart.onlyCoreSupportedDesc', { shop: co.seller_name })}
                                   </p>
                                 </div>
                               ) : (
@@ -628,7 +667,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                       className="w-36 h-36 object-contain"
                                     />
                                   ) : (
-                                    <div className="w-36 h-36 flex items-center justify-center text-slate-400">
+                                    <div className="w-36 h-36 flex items-center justify-center text-slate-500 dark:text-slate-400">
                                       <RefreshCw className="w-6 h-6 animate-spin" />
                                     </div>
                                   )}
@@ -636,7 +675,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
 
                                 <div className="flex-1 space-y-2 text-xs w-full">
                                   <div>
-                                    <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{isEn ? 'Bank & Account Number' : 'Ngân hàng & Số tài khoản'}</div>
+                                    <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{t('cart.bankAndAccount')}</div>
                                     <div className="font-bold text-slate-900 dark:text-foreground">
                                       {co.bank_name || 'TPBank'} •{' '}
                                       <span className="font-mono">{co.account_number || '10004681879'}</span>
@@ -645,14 +684,14 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                   </div>
 
                                   <div>
-                                    <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{isEn ? 'Transfer Amount' : 'Số tiền chuyển khoản'}</div>
+                                    <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{t('cart.transferAmount')}</div>
                                     <div className="font-mono text-sm font-black text-[#ee4d2d]">
                                       {formatCurrency(Number(co.price_core))}
                                     </div>
                                   </div>
 
                                   <div>
-                                    <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{isEn ? 'Transfer Memo (Required)' : 'Nội dung chuyển khoản (bắt buộc)'}</div>
+                                    <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{t('cart.transferMemoRequired')}</div>
                                     <div className="flex items-center gap-2 mt-0.5">
                                       <span className="font-mono font-black text-xs px-2.5 py-1 rounded-lg bg-[#ee4d2d]/10 text-[#ee4d2d] border border-[#ee4d2d]/25 select-all">
                                         {co.qr_content || `WCG ${co.order_code}`}
@@ -661,8 +700,8 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                         type="button"
                                         onClick={() => handleCopy(co.qr_content || `WCG ${co.order_code}`, `qr_${co.id}`)}
                                         className="p-1.5 rounded text-slate-500 hover:text-slate-900 dark:hover:text-foreground cursor-pointer"
-                                        title={isEn ? 'Copy memo' : 'Sao chép nội dung'}
-                                        aria-label={isEn ? 'Copy memo' : 'Sao chép nội dung'}
+                                        title={t('cart.copyMemo')}
+                                        aria-label={t('cart.copyMemo')}
                                       >
                                         {copiedKey === `qr_${co.id}` ? (
                                           <Check className="w-4 h-4 text-emerald-600" />
@@ -681,20 +720,20 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 space-y-1">
                                   <div className="text-[10px] font-semibold text-amber-800 dark:text-amber-400 uppercase flex items-center gap-1.5">
                                     <Truck className="w-3.5 h-3.5" />
-                                    <span>{isEn ? 'Physical Order Status:' : 'Trạng thái vận chuyển bưu cục:'}</span>
+                                    <span>{t('cart.physicalOrderStatus')}</span>
                                   </div>
                                   <div className="text-xs font-bold text-slate-900 dark:text-foreground">
-                                    {isEn ? 'Awaiting Pickup & Courier Dispatch (168h Escrow Protection)' : 'Chờ lấy hàng & Bàn giao bưu cục (Bảo chứng 168 giờ)'}
+                                    {t('cart.awaitingPickupEscrow')}
                                   </div>
                                 </div>
                               ) : (
                                 <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 space-y-1">
                                   <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">
-                                    {isEn ? 'Delivered Giftcode:' : 'Mã code đã nhận:'}
+                                    {t('cart.deliveredGiftcodeLabel')}
                                   </div>
                                   <div className="flex items-center justify-between gap-2">
                                     <span className="font-mono font-bold text-sm text-slate-900 dark:text-foreground select-all">
-                                      {co.delivered_code || (isEn ? '(Code ready)' : '(Mã đang sẵn sàng)')}
+                                      {co.delivered_code || t('cart.codeReadyFallback')}
                                     </span>
                                     {co.delivered_code && (
                                       <button
@@ -703,7 +742,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                         className="px-2 py-1 rounded bg-white dark:bg-card text-[11px] font-semibold border border-slate-200 dark:border-border flex items-center gap-1 cursor-pointer"
                                       >
                                         {copiedKey === `code_${co.id}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                                        {copiedKey === `code_${co.id}` ? (isEn ? 'Copied' : 'Đã chép') : (isEn ? 'Copy' : 'Sao chép')}
+                                        {copiedKey === `code_${co.id}` ? t('cart.copiedShort') : t('cart.copyShort')}
                                       </button>
                                     )}
                                   </div>
@@ -722,7 +761,9 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
               {isPaid && (
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-slate-600 dark:text-muted-foreground uppercase tracking-wider">
-                    {isEn ? `Delivered Items (${activeChildOrders.length})` : `Danh Sách Đã Giao (${activeChildOrders.length} món)`}
+                    {activeChildOrders.length === 1
+                      ? t('cart.deliveredItemsSingular', { count: 1 })
+                      : t('cart.deliveredItemsPlural', { count: activeChildOrders.length })}
                   </h4>
                   <div className="space-y-2.5">
                     {activeChildOrders.map((co) => (
@@ -733,7 +774,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                         <div>
                           <div className="text-xs font-bold text-slate-900 dark:text-foreground">{co.product_name}</div>
                           <div className="text-[10px] text-slate-500 dark:text-muted-foreground">
-                            {isEn ? 'Shop:' : 'Gian hàng:'} <span className="font-semibold text-slate-900 dark:text-foreground">{co.seller_name}</span> • {isEn ? 'Sub-order:' : 'Mã đơn con:'}{' '}
+                            {t('cart.shopPrefix')} <span className="font-semibold text-slate-900 dark:text-foreground">{co.seller_name}</span> • {t('cart.subOrderPrefix')}{' '}
                             <span className="font-mono text-[#ee4d2d] font-bold">{co.order_code}</span>
                           </div>
                         </div>
@@ -742,20 +783,20 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                           {co.product_type === 'physical' ? (
                             <div className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-800 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5">
                               <Truck className="w-4 h-4" />
-                              <span>{isEn ? 'Awaiting Courier' : 'Chờ bưu tá lấy hàng'}</span>
+                              <span>{t('cart.awaitingCourier')}</span>
                             </div>
                           ) : (
                             <>
                               <div className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-muted border border-slate-200 dark:border-border font-mono text-xs font-black text-[#ee4d2d] select-all">
-                                {co.delivered_code || (isEn ? '(Unlocking code)' : '(Mã đang mở khóa)')}
+                                {co.delivered_code || t('cart.unlockingCodeFallback')}
                               </div>
                               {co.delivered_code && (
                                 <button
                                   type="button"
                                   onClick={() => handleCopy(co.delivered_code, `code_del_${co.id}`)}
                                   className="p-1.5 rounded-lg bg-white dark:bg-card hover:bg-slate-50 dark:hover:bg-card-hover border border-slate-200 dark:border-border text-xs flex items-center gap-1 shadow-xs cursor-pointer"
-                                  title={isEn ? 'Copy code' : 'Sao chép mã'}
-                                  aria-label={isEn ? 'Copy code' : 'Sao chép mã'}
+                                  title={t('cart.copyCodeAria')}
+                                  aria-label={t('cart.copyCodeAria')}
                                 >
                                   {copiedKey === `code_del_${co.id}` ? (
                                     <Check className="w-4 h-4 text-emerald-600" />
@@ -780,7 +821,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                       }}
                       className="w-full sm:flex-1 py-2.5 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <ExternalLink className="w-4 h-4" /> {isEn ? 'Open My Code Vault' : 'Mở Tủ Mã Của Tôi'}
+                      <ExternalLink className="w-4 h-4" /> {t('cart.openMyVault')}
                     </button>
                     <button
                       type="button"
@@ -849,7 +890,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                               }}
                               className="text-[10px] text-[#ee4d2d] hover:underline flex items-center gap-0.5 shrink-0 cursor-pointer font-semibold"
                             >
-                              {isEn ? 'Visit shop' : 'Ghé shop'} <ChevronRight className="w-3 h-3" aria-hidden="true" />
+                              {t('cart.visitShop')} <ChevronRight className="w-3 h-3" aria-hidden="true" />
                             </button>
                           )}
                         </div>
@@ -913,7 +954,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                         ? 'bg-[#00bfa5]/15 text-[#00897b] dark:text-[#00bfa5] border border-[#00bfa5]/30'
                                         : 'bg-violet-50 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30'
                                     }`}>
-                                      {item.productType === 'physical' ? (isEn ? 'Physical' : 'Hàng Vật Lý') : (isEn ? 'Digital' : 'Hàng Số')}
+                                      {item.productType === 'physical' ? t('cart.badgePhysicalShort') : t('cart.badgeDigitalShort')}
                                     </span>
                                     <span className="text-xs font-extrabold text-[#ee4d2d]">
                                       {item.priceCore.toLocaleString()} Core
@@ -958,7 +999,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveItem(item.productId, item.variantId)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-[#d0011b] hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors shrink-0 cursor-pointer"
+                                  className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-[#d0011b] hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors shrink-0 cursor-pointer"
                                   title={t('cart.remove')}
                                   aria-label={t('cart.remove')}
                                 >
@@ -975,7 +1016,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                         <div className="p-3 bg-orange-50/50 dark:bg-slate-800/40 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
                           <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                             <span aria-hidden="true">✨</span>
-                            <span>{isEn ? `Recommended add-ons from ${store.sellerName}:` : `Gợi ý mua kèm từ ${store.sellerName}:`}</span>
+                            <span>{t('cart.recommendedAddons', { shop: store.sellerName })}</span>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             {crossSellMap[store.sellerId].map((cs) => (
@@ -989,7 +1030,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                   onClick={() => handleAddCrossSell(cs, store)}
                                   className="px-2 py-1 rounded bg-[#ee4d2d]/10 hover:bg-[#ee4d2d]/20 text-[#ee4d2d] text-[10px] font-bold shrink-0 cursor-pointer"
                                 >
-                                  + {isEn ? 'Add' : 'Thêm'}
+                                  + {t('cart.addAddonBtn')}
                                 </button>
                               </div>
                             ))}
@@ -1013,9 +1054,7 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="font-bold">{checkoutError}</div>
                   <div className="text-[11px] text-rose-600/90 dark:text-destructive/80 mt-0.5">
-                    {isEn
-                      ? 'No order was created and inventory remains safe. Please review and try placing your order again.'
-                      : 'Đơn hàng chưa được tạo và kho mã được bảo toàn. Bạn có thể kiểm tra lại hoặc bấm đặt hàng lại.'}
+                    {t('cart.errorSafeRetryHint')}
                   </div>
                 </div>
               </div>
@@ -1025,57 +1064,55 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
             {cartItems.every((i) => (i.productType || 'digital') === 'digital') ? (
               <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 text-[11px] flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden="true" />
-                <span>
-                  {isEn
-                    ? 'Digital Goods: Instant 0s delivery. COD is not available for digital products.'
-                    : 'Hàng số & Giftcode: Giao mã tức thì 0 giây. Không áp dụng hình thức nhận hàng trả tiền (COD).'}
-                </span>
+                <span>{t('cart.digitalNoCodNotice')}</span>
               </div>
             ) : (
               <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[11px] flex items-center gap-2">
                 <Truck className="w-4 h-4 shrink-0" aria-hidden="true" />
-                <span>
-                  {isEn
-                    ? 'Cart contains physical goods (GHTK / GHN / Viettel Post). COD available if enabled by store.'
-                    : 'Giỏ hàng có hàng vật lý giao qua bưu cục (GHTK / GHN / Viettel Post). Hỗ trợ COD theo gian hàng.'}
-                </span>
+                <span>{t('cart.physicalCourierNotice')}</span>
               </div>
             )}
 
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-600 dark:text-slate-400 font-medium">
-                {isEn ? `Total (${cartItems.length} items):` : `Tổng thanh toán (${cartItems.length} sản phẩm):`}
+                {totalItemCount === 1
+                  ? t('cart.totalWithCountSingular', { count: 1 })
+                  : t('cart.totalWithCountPlural', { count: totalItemCount })}
               </span>
               <div className="text-right">
                 <span className="font-mono text-lg font-extrabold text-[#ee4d2d]">
                   {totalCore.toLocaleString()} Core
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1">
-                  ({isEn ? '1 Core = 1 VND' : '1 Core = 1 VNĐ'})
+                  ({t('cart.coreRateHint')})
                 </span>
               </div>
             </div>
 
             {currentUser && (
               <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
-                <span>{isEn ? 'Your wallet balance:' : 'Số dư ví của bạn:'}</span>
+                <span>{t('cart.walletBalanceFooter')}</span>
                 <span className="font-bold text-slate-900 dark:text-slate-100">{userBalance.toLocaleString()} Core</span>
               </div>
             )}
 
             <button
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isSyncingCart}
               onClick={handleCreateOrder}
               className="w-full py-3 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white text-xs sm:text-sm font-bold shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
-              {isSubmitting ? (
+              {isSyncingCart ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> {isEn ? 'Creating order...' : 'Đang tạo đơn hàng...'}
+                  <RefreshCw className="w-4 h-4 animate-spin" /> {t('cart.syncingCart')}
+                </>
+              ) : isSubmitting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> {t('cart.creatingOrder')}
                 </>
               ) : (
                 <>
-                  <CreditCard className="w-4 h-4" aria-hidden="true" /> {isEn ? `Proceed to Checkout (${totalCore.toLocaleString()} Core)` : `Mua Hàng (${totalCore.toLocaleString()} Core)`}
+                  <CreditCard className="w-4 h-4" aria-hidden="true" /> {t('cart.proceedCheckoutWithTotal', { total: totalCore.toLocaleString() })}
                 </>
               )}
             </button>

@@ -306,6 +306,52 @@ interface Env {
 
 let lastGiveawaySimulationTick = 0;
 
+const SAMPLE_UPCOMING_ICON_SLUGS = new Set([
+  'azur-promilia',
+  'elancia-mobile',
+  'temppal',
+  'crownstone',
+  'overwatch-rush',
+  'plants-vs-zombies-3',
+  'garena-free-city',
+  'arad-idle-rpg',
+]);
+
+function normalizeSyncUpcomingGamesJson(rawBody: string): string {
+  try {
+    const parsed = JSON.parse(rawBody);
+    if (!parsed || typeof parsed !== 'object') return rawBody;
+    const normalizeList = (list: any[]) =>
+      list.map((ug: any) => {
+        if (!ug || typeof ug !== 'object') return ug;
+        const slugLower = String(ug.slug || '').trim().toLowerCase();
+        const isSample = SAMPLE_UPCOMING_ICON_SLUGS.has(slugLower);
+        const iconVerified = isSample ? false : Boolean(ug.icon_verified);
+        const rawSource = typeof ug.icon_source === 'string' ? ug.icon_source.trim() : '';
+        const iconSource =
+          isSample && (!rawSource || rawSource === 'store chính thức')
+            ? 'icon mẫu (chờ xác minh)'
+            : rawSource || (iconVerified ? 'store chính thức' : 'chưa xác minh');
+        return {
+          ...ug,
+          icon_verified: iconVerified,
+          icon_source: iconSource,
+        };
+      });
+    if (Array.isArray(parsed.upcomingGames)) {
+      parsed.upcomingGames = normalizeList(parsed.upcomingGames);
+      return JSON.stringify(parsed);
+    }
+    if (parsed.key === 'wcg_admin_upcoming_games_v1' && Array.isArray(parsed.data)) {
+      parsed.data = normalizeList(parsed.data);
+      return JSON.stringify(parsed);
+    }
+    return rawBody;
+  } catch {
+    return rawBody;
+  }
+}
+
 async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/$/, '') || '/';
@@ -677,12 +723,16 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
                               request.headers.get('Pragma')?.includes('no-cache')
                             ));
           const isPublic = !authHeader && !syncKeyHeader && !isNoCache && !url.searchParams.has('key');
+          const currentEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+          const etag = `W/"sync-${currentEpoch}"`;
+          const buildTag = typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ ? __BUILD_ID__ : 'live';
+
+          const reqHeaders = new Headers(request.headers);
+          reqHeaders.set('X-Internal-Catalog-Epoch', currentEpoch);
+          const epochCtx = { ...context, request: new Request(request, { headers: reqHeaders }) };
 
           // Đồng bộ tức thì qua Catalog Epoch + ETag / 304 + Edge Cache theo khóa epoch cho public GET /api/sync
           if (isPublic) {
-            const currentEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
-            const etag = `W/"sync-${currentEpoch}"`;
-
             if (matchesIfNoneMatch(request.headers.get('If-None-Match'), etag)) {
               return new Response(null, {
                 status: 304,
@@ -701,9 +751,10 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
             const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
             const cacheUrl = new URL(request.url);
             const cacheKey = cache
-              ? new Request(`${cacheUrl.origin}${cacheUrl.pathname}?_epoch=${encodeURIComponent(currentEpoch)}`, {
-                  method: 'GET',
-                })
+              ? new Request(
+                  `${cacheUrl.origin}${cacheUrl.pathname}?_epoch=${encodeURIComponent(currentEpoch)}&_b=${encodeURIComponent(buildTag)}`,
+                  { method: 'GET' }
+                )
               : null;
 
             if (cache && cacheKey) {
@@ -719,18 +770,15 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
               }
             }
 
-            const reqHeaders = new Headers(request.headers);
-            reqHeaders.set('X-Internal-Catalog-Epoch', currentEpoch);
-            const epochCtx = { ...context, request: new Request(request, { headers: reqHeaders }) };
             const response = await syncApi.onRequestGet(epochCtx);
             if (response.status === 200) {
-              const responseText = await response.text();
+              const responseText = normalizeSyncUpcomingGamesJson(await response.text());
               const headers = new Headers(response.headers);
               headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
               headers.set('CDN-Cache-Control', 'no-store');
               headers.set('ETag', etag);
               headers.set('X-Catalog-Epoch', currentEpoch);
-              headers.set('Access-Control-Expose-Headers', 'ETag, X-Catalog-Epoch, X-Cache-Status, X-Build-Id');
+              headers.set('Access-Control-Expose-Headers', 'ETag, X-Catalog-Epoch, X-Cache-Status, X-Server-Time, X-Build-Id');
 
               if (cache && cacheKey) {
                 const edgeHeaders = new Headers(headers);
@@ -749,7 +797,24 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
             return response;
           }
 
-          return await syncApi.onRequestGet(context);
+          const bypassRes = await syncApi.onRequestGet(epochCtx);
+          if (bypassRes.status === 200) {
+            const normalizedBody = normalizeSyncUpcomingGamesJson(await bypassRes.text());
+            const headers = new Headers(bypassRes.headers);
+            if (isNoCache || authHeader || syncKeyHeader) {
+              headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+              headers.set('X-Cache-Status', 'BYPASS');
+            }
+            headers.set('CDN-Cache-Control', 'no-store');
+            headers.set('ETag', etag);
+            headers.set('X-Catalog-Epoch', currentEpoch);
+            headers.set('Access-Control-Expose-Headers', 'ETag, X-Catalog-Epoch, X-Cache-Status, X-Server-Time, X-Build-Id');
+            return new Response(normalizedBody, {
+              status: bypassRes.status,
+              headers,
+            });
+          }
+          return bypassRes;
         }
 
         if (method === 'POST') {
@@ -1216,31 +1281,20 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
       }
 
-      // 7. /api/giveaways/claim
+      // 7. /api/giveaways/claim (epoch bumped once inside claim.ts when a new code is claimed)
       if (pathname === '/api/giveaways/claim') {
+        if (method === 'OPTIONS') return await giveawaysClaimApi.onRequestOptions(context);
         if (method === 'POST') {
-          const res = await giveawaysClaimApi.onRequestPost(context);
-          if (res.status === 200) {
-            try {
-              ctx.waitUntil(invalidateCatalogEdgeCache(ctx, request, env));
-            } catch (cErr: any) {
-              console.warn('[GiveawaysClaim] Edge cache purge non-fatal error:', cErr?.message);
-            }
-          }
-          return res;
+          return await giveawaysClaimApi.onRequestPost(context);
         }
       }
 
-      // 7b. /api/giveaways/simulate (Tự động mô phỏng lượt giật cho giveaway có giãn cách toàn sàn)
+      // 7b. /api/giveaways/simulate (epoch bumped once inside simulate.ts only when simulatedCount > 0)
       if (pathname === '/api/giveaways/simulate') {
         if (method === 'OPTIONS') return await giveawaysSimulateApi.onRequestOptions(context);
         if (method === 'GET') return await giveawaysSimulateApi.onRequestGet(context);
         if (method === 'POST') {
-          const simRes = await giveawaysSimulateApi.onRequestPost(context);
-          try {
-            ctx.waitUntil(invalidateCatalogEdgeCache(ctx, request, env));
-          } catch {}
-          return simRes;
+          return await giveawaysSimulateApi.onRequestPost(context);
         }
       }
 
@@ -3110,6 +3164,8 @@ export default {
       if (
         res.status >= 200 &&
         res.status < 300 &&
+        pathname !== '/api/giveaways/claim' &&
+        pathname !== '/api/giveaways/simulate' &&
         shouldBumpCatalogEpoch(pathname, method) &&
         !wasEpochBumpedForRequest(request)
       ) {
@@ -4188,12 +4244,18 @@ async function handleGameIconRequest(
 
         const cacheControl = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400';
 
-        const contentType = filename.toLowerCase().endsWith('.webp') ? 'image/webp' : (row.content_type || 'image/webp');
+        const rawRowContentType =
+          typeof row.content_type === 'string' ? row.content_type.split(';')[0].trim().toLowerCase() : '';
+        const safeRowContentType = /^image\/[a-z0-9.+-]+$/.test(rawRowContentType)
+          ? rawRowContentType
+          : 'image/webp';
+        const contentType = filename.toLowerCase().endsWith('.webp') ? 'image/webp' : safeRowContentType;
         const headers = new Headers({
           'Content-Type': contentType,
           'Content-Length': len.toString(),
           'Cache-Control': cacheControl,
           'Access-Control-Allow-Origin': '*',
+          'X-Content-Type-Options': 'nosniff',
           'X-Icon-Source': 'd1-uploaded',
           'X-Build-Id': buildTag,
         });

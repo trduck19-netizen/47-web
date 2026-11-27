@@ -1,6 +1,7 @@
 import { claimGiveawayD1, getSettingD1, setSettingD1 } from '../../services/d1_service';
 import { verifyToken, authenticateCaller } from '../../services/auth_service';
 import { getRealEventsHub, saveRealEventsHub } from '../../services/realEventsHub';
+import { invalidateCatalogEdgeCache, wasEpochBumpedForRequest } from '../../services/cache_service';
 
 interface Env {
   DB: D1Database;
@@ -596,6 +597,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       (context as any).waitUntil(backgroundSync());
     } else {
       backgroundSync();
+    }
+
+    if (!wasEpochBumpedForRequest(request)) {
+      try {
+        await invalidateCatalogEdgeCache(context as any, request, env);
+      } catch (cErr: any) {
+        console.warn('[GiveawaysClaim] Catalog epoch bump warning:', cErr?.message);
+      }
     }
 
     const claimedCodesNext = (Number(campaign.claimed_codes) || 0) + 1;

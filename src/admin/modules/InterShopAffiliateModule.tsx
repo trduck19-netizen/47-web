@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Link2,
   RefreshCw,
@@ -178,6 +178,7 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
 
   const [activeTab, setActiveTab] = useState<SubTab>('partnerships');
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const [serverPolicy, setServerPolicy] = useState<AffiliatePolicyConfig>(DEFAULT_AFFILIATE_POLICY);
@@ -230,6 +231,11 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
     [onShowToast, t]
   );
 
+  const notifyRef = useRef(notify);
+  notifyRef.current = notify;
+  const tRef = useRef(t);
+  tRef.current = t;
+
   const apiFetch = useCallback(async (url: string, options: RequestInit = {}) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 9000);
@@ -238,11 +244,17 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
         localStorage.getItem('pine_auth_token') ||
         sessionStorage.getItem('pine_auth_token') ||
         '';
+      const syncKey =
+        sessionStorage.getItem('pine_admin_sync_key') ||
+        localStorage.getItem('pine_admin_sync_key') ||
+        '';
       const res = await fetch(url, {
+        cache: 'no-store',
         ...options,
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(syncKey ? { 'X-Sync-Key': syncKey } : {}),
           ...(options.headers || {}),
         },
         signal: controller.signal,
@@ -259,8 +271,8 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
     async (silent = false) => {
       if (!silent) setLoading(true);
       try {
-        // Fetch unfiltered overview so platform KPIs remain accurate before client filtering
-        const res = await apiFetch('/api/admin/affiliate');
+        // Fetch unfiltered overview with cache: 'no-store' so platform KPIs remain fresh on initial mount
+        const res = await apiFetch('/api/admin/affiliate', { cache: 'no-store' });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data?.success) {
           throw new Error(data?.error || `HTTP ${res.status}`);
@@ -273,15 +285,16 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
         setListings(Array.isArray(data.listings) ? data.listings : []);
         setSellers(Array.isArray(data.sellers) ? data.sellers : []);
         if (silent) {
-          notify('success', t('intershopAffiliate.toastRefreshed'));
+          notifyRef.current('success', tRef.current('intershopAffiliate.toastRefreshed'));
         }
       } catch (err: any) {
-        notify('error', err?.message || `Load error`);
+        notifyRef.current('error', err?.message || `Load error`);
       } finally {
+        setHasLoaded(true);
         setLoading(false);
       }
     },
-    [apiFetch, notify, t]
+    [apiFetch]
   );
 
   useEffect(() => {
@@ -745,7 +758,11 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
             {t('intershopAffiliate.kpiPendingAdmin')}
           </div>
           <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-            {fmtNum(kpis.pending_admin_count)}
+            {loading && !hasLoaded ? (
+              <span className="inline-block h-6 w-12 rounded bg-slate-200 dark:bg-slate-800 animate-pulse align-middle" />
+            ) : (
+              fmtNum(kpis.pending_admin_count)
+            )}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
             {t('intershopAffiliate.kpiPendingAdminHint')}
@@ -757,7 +774,11 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
             {t('intershopAffiliate.kpiApproved')}
           </div>
           <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-            {fmtNum(kpis.approved_count)}
+            {loading && !hasLoaded ? (
+              <span className="inline-block h-6 w-12 rounded bg-slate-200 dark:bg-slate-800 animate-pulse align-middle" />
+            ) : (
+              fmtNum(kpis.approved_count)
+            )}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
             {t('intershopAffiliate.kpiApprovedOf', { total: fmtNum(kpis.total_partnerships) })}
@@ -769,7 +790,11 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
             {t('intershopAffiliate.kpiSuspendedRevoked')}
           </div>
           <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-            {fmtNum(kpis.suspended_count + kpis.revoked_count)}
+            {loading && !hasLoaded ? (
+              <span className="inline-block h-6 w-12 rounded bg-slate-200 dark:bg-slate-800 animate-pulse align-middle" />
+            ) : (
+              fmtNum(kpis.suspended_count + kpis.revoked_count)
+            )}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
             {t('intershopAffiliate.kpiSuspendedRevokedDetail', {
@@ -784,7 +809,11 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
             {t('intershopAffiliate.kpiActiveListings')}
           </div>
           <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-            {fmtNum(kpis.active_listings)}
+            {loading && !hasLoaded ? (
+              <span className="inline-block h-6 w-12 rounded bg-slate-200 dark:bg-slate-800 animate-pulse align-middle" />
+            ) : (
+              fmtNum(kpis.active_listings)
+            )}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
             {t('intershopAffiliate.kpiActiveListingsOf', { total: fmtNum(kpis.total_listings) })}
@@ -803,7 +832,11 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
             {t('intershopAffiliate.kpiAntiLoss')}
           </div>
           <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-            {fmtNum(kpis.anti_loss_paused_count)}
+            {loading && !hasLoaded ? (
+              <span className="inline-block h-6 w-12 rounded bg-slate-200 dark:bg-slate-800 animate-pulse align-middle" />
+            ) : (
+              fmtNum(kpis.anti_loss_paused_count)
+            )}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
             {t('intershopAffiliate.kpiAntiLossHint')}
@@ -961,7 +994,16 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredPartnerships.length === 0 ? (
+                {loading && !hasLoaded ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-2 font-medium">
+                        <RefreshCw className="w-4 h-4 animate-spin text-indigo-500" />
+                        <span>{t('common.loading')}</span>
+                      </span>
+                    </td>
+                  </tr>
+                ) : filteredPartnerships.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                       {t('intershopAffiliate.emptyPartnerships')}
@@ -1207,7 +1249,16 @@ export const InterShopAffiliateModule: React.FC<InterShopAffiliateModuleProps> =
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredListings.length === 0 ? (
+                {loading && !hasLoaded ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-2 font-medium">
+                        <RefreshCw className="w-4 h-4 animate-spin text-indigo-500" />
+                        <span>{t('common.loading')}</span>
+                      </span>
+                    </td>
+                  </tr>
+                ) : filteredListings.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                       {t('intershopAffiliate.emptyListings')}
