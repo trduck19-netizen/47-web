@@ -64,12 +64,22 @@
   html {
     font-family: 'Inter', 'Noto Sans Thai', 'Leelawadee UI', 'Thonburi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Tahoma, 'Helvetica Neue', Arial, sans-serif;
     scroll-behavior: smooth;
+    scroll-padding-top: 120px;
     -webkit-text-size-adjust: 100%;
     overflow-x: clip;
     overflow-y: scroll;
     scrollbar-gutter: stable;
     width: 100%;
     max-width: 100%;
+    --scrollbar-thumb: #64748b;
+    --scrollbar-track: #0f172a;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    scrollbar-width: thin;
+  }
+
+  html.light {
+    --scrollbar-thumb: #94a3b8;
+    --scrollbar-track: #f1f5f9;
   }
 
   body {
@@ -111,33 +121,100 @@
   }
 }
 
-/* Custom modern scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Custom modern scrollbar (customize-scrollbar-color-and-thickness: standard + WebKit fallback) */
+@supports not (scrollbar-color: auto) {
+  html {
+    scrollbar-width: auto;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, var(--color-background));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, var(--color-muted));
+    border-radius: 9999px;
+    border: 2px solid var(--scrollbar-track, var(--color-background));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ee4d2d;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: var(--color-background);
+/* Hide scrollbar utility (strictly enforced across desktop & mobile) */
+.scrollbar-none,
+.overflow-x-auto.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.scrollbar-none::-webkit-scrollbar,
+.overflow-x-auto.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--color-muted);
-  border-radius: 9999px;
-  border: 2px solid var(--color-background);
+/* Scrollability affordance hints (scrollability-affordance-hints) for horizontal sub-nav */
+@property --fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary);
+@property --fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
 }
 
-/* Hide scrollbar utility */
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+@supports (animation-timeline: scroll(self inline)) {
+  .subnav-fade-scroller {
+    --fade-size: 2rem;
+    scroll-padding-inline: var(--fade-size);
+    mask:
+      linear-gradient(black, black) no-clip subtract,
+      linear-gradient(to right, black, transparent) 0 0 / var(--fade-start) 100% no-repeat no-clip,
+      linear-gradient(to right, transparent, black) 100% 0 / var(--fade-end) 100% no-repeat no-clip;
+    animation: subnav-reveal-start linear both, subnav-hide-end linear both;
+    animation-timeline: scroll(self inline);
+    animation-range: 0 var(--fade-size), calc(100% - var(--fade-size)) 100%;
+  }
+
+  @keyframes subnav-reveal-start {
+    to {
+      --fade-start: var(--fade-size);
+    }
+  }
+
+  @keyframes subnav-hide-end {
+    from {
+      --fade-end: var(--fade-size);
+    }
+  }
 }
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+
+/* State-aware sticky header elevation (state-aware-sticky-headers) */
+.shopee-sticky-header {
+  container-type: scroll-state;
+  container-name: mall-header;
+}
+
+@container mall-header scroll-state(stuck: top) {
+  .shopee-sticky-inner {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+  }
+}
+
+/* Prevent page scroll underneath modal dialogs (prevent-page-scroll-under-modal-dialog) */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 /* Glassmorphism utility */
@@ -303,8 +380,8 @@ html.light .shadow-cyber-card, .light .shadow-cyber-card {
     max-width: 100% !important;
   }
 
-  /* E. Table Horizontal Scrolling Wrapper */
-  .overflow-x-auto {
+  /* E. Table Horizontal Scrolling Wrapper (never override .scrollbar-none) */
+  .overflow-x-auto:not(.scrollbar-none) {
     -webkit-overflow-scrolling: touch !important;
     max-width: 100% !important;
     overflow-x: auto !important;
@@ -541,7 +618,7 @@ html.light .custom-scrollbar, .light .custom-scrollbar {
         top: 0;
         left: 0;
         right: 0;
-        z-index: 50;
+        z-index: 30;
         width: 100%;
         height: 56px;
         min-height: 56px;
@@ -687,7 +764,7 @@ html.light .custom-scrollbar, .light .custom-scrollbar {
         inset: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
-        background: #0B0D19 !important;
+        background: #ffffff !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
@@ -697,13 +774,16 @@ html.light .custom-scrollbar, .light .custom-scrollbar {
         opacity: 1;
         transition: opacity 0.35s ease, visibility 0.35s ease;
       }
+      html.dark #app-preloader {
+        background: #0B0D19 !important;
+      }
       .loader-wrapper {
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 170px;
-        height: 170px;
+        width: 150px;
+        height: 150px;
         border-radius: 50%;
         background-color: transparent;
       }
@@ -715,26 +795,29 @@ html.light .custom-scrollbar, .light .custom-scrollbar {
         aspect-ratio: 1 / 1;
         border-radius: 50%;
         background-color: transparent;
-        animation: loader-rotate 2s linear infinite;
+        animation: loader-rotate 1.8s linear infinite;
         z-index: 0;
       }
       @keyframes loader-rotate {
-        0% { transform: rotate(90deg); box-shadow: 0 10px 20px 0 #fff inset, 0 20px 30px 0 #ad5fff inset, 0 60px 60px 0 #471eec inset; }
-        50% { transform: rotate(270deg); box-shadow: 0 10px 20px 0 #fff inset, 0 20px 10px 0 #d60a47 inset, 0 40px 60px 0 #311e80 inset; }
-        100% { transform: rotate(450deg); box-shadow: 0 10px 20px 0 #fff inset, 0 20px 30px 0 #ad5fff inset, 0 60px 60px 0 #471eec inset; }
+        0% { transform: rotate(90deg); box-shadow: 0 8px 18px 0 #ff7337 inset, 0 16px 26px 0 #ee4d2d inset, 0 42px 48px 0 #d73211 inset; }
+        50% { transform: rotate(270deg); box-shadow: 0 8px 18px 0 #ffb74d inset, 0 16px 12px 0 #f53d2d inset, 0 36px 48px 0 #ee4d2d inset; }
+        100% { transform: rotate(450deg); box-shadow: 0 8px 18px 0 #ff7337 inset, 0 16px 26px 0 #ee4d2d inset, 0 42px 48px 0 #d73211 inset; }
       }
       .loader-center-avatar {
         position: relative;
         z-index: 2;
-        width: 102px;
-        height: 102px;
+        width: 96px;
+        height: 96px;
         border-radius: 50%;
         overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 0 24px rgba(173, 95, 255, 0.45);
-        border: 2px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 6px 24px rgba(238, 77, 45, 0.28);
+        border: 2px solid rgba(238, 77, 45, 0.45);
+        background: #ffffff;
+      }
+      html.dark .loader-center-avatar {
         background: #0b0d19;
       }
       .loader-center-avatar img {
@@ -745,13 +828,16 @@ html.light .custom-scrollbar, .light .custom-scrollbar {
       }
       .loader-letter {
         display: inline-block;
-        opacity: 0.4;
-        animation: loader-letter-anim 2s infinite;
+        opacity: 0.45;
+        animation: loader-letter-anim 1.8s infinite;
         font-family: 'Inter', sans-serif;
         font-weight: 800;
         letter-spacing: 0.15em;
-        color: #fff;
+        color: #ee4d2d;
         font-size: 14px;
+      }
+      html.dark .loader-letter {
+        color: #ffffff;
       }
       @keyframes loader-letter-anim {
         0%, 100% { opacity: 0.4; transform: translateY(0); }

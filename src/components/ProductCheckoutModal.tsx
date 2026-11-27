@@ -30,7 +30,6 @@ import {
   Package,
   Ticket,
   ChevronRight,
-  ExternalLink,
 } from 'lucide-react';
 import { addressService, type UserAddress } from '../services/addressService';
 import confetti from 'canvas-confetti';
@@ -546,6 +545,21 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
   }, [product?.id]);
 
   useLockBodyScroll(Boolean(product));
+
+  useEffect(() => {
+    if (!product) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (priceEscalatedDialog) {
+          setPriceEscalatedDialog(null);
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [product, priceEscalatedDialog, onClose]);
 
   const [liveStock, setLiveStock] = useState<number | null>(null);
 
@@ -1268,6 +1282,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
   if (typeof document === 'undefined') return null;
 
+  const rawCheckoutImg = resolveProductCoverImage(product, '/package-placeholder.svg');
+  const checkoutCoverSrc = rawCheckoutImg.includes('test-game.webp') ? '/package-placeholder.svg' : rawCheckoutImg;
+  const isCheckoutImgPlaceholder = checkoutCoverSrc.includes('package-placeholder.svg');
+
   return createPortal(
     <>
       {isProcessing && (
@@ -1277,68 +1295,75 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
           subText={isPhysical ? t('checkoutModal.processingPhysicalSub') : t('checkoutModal.processingDigitalSub')}
         />
       )}
-      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md overflow-hidden animate-fade-in">
       <div
-        className="relative w-full max-w-lg bg-card border-t sm:border border-border/90 rounded-t-[28px] sm:rounded-3xl overflow-hidden shadow-2xl animate-scale-in flex flex-col h-[88dvh] sm:h-auto max-h-[88dvh] sm:max-h-[88vh]"
+        onClick={onClose}
+        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm overflow-hidden animate-fade-in"
+      >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="checkout-modal-title"
+        className="relative w-full max-w-lg bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[24px] sm:rounded-2xl overflow-hidden shadow-2xl animate-scale-in flex flex-col h-[88dvh] sm:h-auto max-h-[88dvh] sm:max-h-[88vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-3.5 sm:p-5 border-b border-border/70 bg-card/95 backdrop-blur-md shrink-0 sticky top-0 z-20">
-          <div className="w-12 h-1.5 bg-slate-600/60 rounded-full mx-auto mb-2 sm:hidden shrink-0" />
+        <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shrink-0 sticky top-0 z-20">
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600/60 rounded-full mx-auto mb-2 sm:hidden shrink-0" />
 
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="p-2 sm:p-2.5 rounded-xl bg-secondary/20 text-secondary shrink-0">
-                <CreditCard className="w-5 h-5" />
+              <div className="p-2 sm:p-2.5 rounded-xl bg-[#ee4d2d]/10 text-[#ee4d2d] border border-[#ee4d2d]/20 shrink-0">
+                <CreditCard className="w-5 h-5" aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-heading font-bold text-sm sm:text-base text-foreground truncate">
-                  Thanh Toán Đơn Hàng
-                </h3>
-                <p className="text-xs text-muted-foreground truncate">{effectiveTitle}</p>
+                <h2 id="checkout-modal-title" className="font-heading font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">
+                  {t('checkout.title')}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{effectiveTitle}</p>
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-slate-600 shadow-md cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0"
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700 cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0"
               aria-label={t('checkoutModal.closeBtn')}
               title={t('checkoutModal.closeBtn')}
             >
-              <X className="w-5 h-5 text-white" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y p-4 sm:p-6 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y p-4 sm:p-5 space-y-4">
           {!user ? (
             /* Auth Required */
             <div className="py-6 text-center space-y-5 animate-scale-in">
-              <div className="w-16 h-16 rounded-2xl bg-secondary/15 text-secondary flex items-center justify-center mx-auto border border-secondary/30 shadow-sm">
-                <Lock className="w-8 h-8" />
+              <div className="w-16 h-16 rounded-2xl bg-[#ee4d2d]/10 text-[#ee4d2d] flex items-center justify-center mx-auto border border-[#ee4d2d]/25 shadow-xs">
+                <Lock className="w-8 h-8" aria-hidden="true" />
               </div>
 
               <div className="space-y-1.5">
-                <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 max-w-sm mx-auto">
-                  <Sparkles className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 max-w-sm mx-auto">
+                  <Sparkles className="w-4 h-4 text-[#ee4d2d] shrink-0 animate-pulse" aria-hidden="true" />
                   <span>{t.authModal?.firstPurchaseDiscount || (isEn ? 'Log in to enjoy first-purchase discount at only 2,000 Core' : 'Đăng nhập để nhận ưu đãi mua lần đầu chỉ 2.000 Core')}</span>
                 </div>
 
-                <h3 className="font-heading font-extrabold text-xl text-foreground">
+                <h3 className="font-heading font-extrabold text-xl text-slate-900 dark:text-slate-100">
                   {t.authModal?.loginRequiredTitle || (isEn ? 'Login Required' : 'Yêu Cầu Đăng Nhập')}
                 </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
                   {t.authModal?.checkoutLoginRequiredDesc || (isEn ? 'Please log in to receive instant giftcode delivery and activate escrow warranty for your order.' : 'Bạn cần đăng nhập tài khoản để nhận mã quà tặng tự động và kích hoạt bảo hành cho đơn hàng.')}
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center justify-between text-left">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-left gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-lg bg-white dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0">
                     <img
-                      src={resolveProductCoverImage(product, '/package-placeholder.svg')}
+                      src={checkoutCoverSrc}
                       alt={product.game_name || product.title}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full ${isCheckoutImgPlaceholder ? 'object-contain p-1.5' : 'object-cover'}`}
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -1352,36 +1377,39 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           return;
                         }
                         target.onerror = null;
+                        target.className = 'w-full h-full object-contain p-1.5';
                         target.src = '/package-placeholder.svg';
                       }}
                     />
                   </div>
-                  <div>
-                    <h4 className="font-heading font-bold text-xs text-foreground truncate max-w-[180px]">
+                  <div className="min-w-0">
+                    <h4 className="font-heading font-bold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[180px]">
                       {effectiveTitle}
                     </h4>
-                    <span className="text-[11px] text-muted-foreground">{product.game_name || (product as any).category_label || ''}</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">{product.game_name || (product as any).category_label || ''}</span>
                   </div>
                 </div>
-                <span className="font-display font-black text-sm text-emerald-400">
-                  {formatCore(effectivePrice)}
+                <span className="font-display font-extrabold text-sm text-[#ee4d2d] shrink-0">
+                  {isPhysical ? formatCurrency(effectiveRegularPrice) : formatCore(effectiveRegularPrice)}
                 </span>
               </div>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
+                  type="button"
                   onClick={() => {
                     onClose();
                     if (onOpenAuth) onOpenAuth();
                   }}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-secondary to-primary hover:opacity-95 text-white font-bold text-xs shadow-glow-primary cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-6 py-3 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs shadow-sm cursor-pointer flex items-center justify-center gap-2 transition-colors"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="w-4 h-4" aria-hidden="true" />
                   <span>{t.authModal?.loginOrRegisterNow || (isEn ? 'Log In / Register Now' : 'Đăng Nhập / Đăng Ký Ngay')}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="w-full sm:w-auto px-4 py-3 rounded-xl bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-3 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold cursor-pointer transition-colors"
                 >
                   {t.authModal?.later || (isEn ? 'Later' : 'Để sau')}
                 </button>
@@ -1443,10 +1471,10 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                     {completedOrder.shipping_note && (
                       <div className="flex items-start gap-2">
-                        <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-muted-foreground">{isEn ? 'Delivery Note: ' : 'Ghi chú bưu tá: '}</span>
-                          <span className="text-amber-300 italic">{completedOrder.shipping_note}</span>
+                          <span className="text-amber-800 dark:text-amber-300 italic">{completedOrder.shipping_note}</span>
                         </div>
                       </div>
                     )}
@@ -1526,26 +1554,26 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     )}
 
                     {completedOrder.voucher_code && (
-                      <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between text-[11px]">
-                        <span className="text-orange-400 font-semibold flex items-center gap-1">
+                      <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 flex items-center justify-between text-[11px]">
+                        <span className="text-[#ee4d2d] font-semibold flex items-center gap-1">
                           <Ticket className="w-3.5 h-3.5" /> Voucher: {completedOrder.voucher_code}
                         </span>
-                        <span className="text-orange-400 font-bold">
-                          Tiết kiệm -{formatCurrency((completedOrder.voucher_discount || 0) + (completedOrder.freeship_discount || 0))}
+                        <span className="text-[#ee4d2d] font-bold">
+                          {isEn ? 'Saved' : 'Tiết kiệm'} -{formatCurrency((completedOrder.voucher_discount || 0) + (completedOrder.freeship_discount || 0))}
                         </span>
                       </div>
                     )}
 
                     <div className="flex items-center justify-between pt-2 border-t border-border/80 text-[11px]">
                       <span className="text-muted-foreground">{isEn ? 'Courier Fee:' : 'Cước phí vận chuyển:'}</span>
-                      <span className="font-semibold text-emerald-400">
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                         {completedOrder.shipping_fee === 0 ? (isEn ? 'Free Nationwide' : 'Miễn phí toàn quốc (0đ)') : formatCurrency(completedOrder.shipping_fee)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-muted-foreground">{isEn ? 'Total Paid:' : 'Tổng tiền thanh toán:'}</span>
-                      <span className="font-bold font-mono text-emerald-400 text-sm">
+                      <span className="font-bold font-mono text-[#ee4d2d] text-sm">
                         {formatCurrency(completedOrder.amount)}
                       </span>
                     </div>
@@ -1553,18 +1581,19 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 </div>
               ) : (
                 /* Code List Box */
-                <div className="p-3 sm:p-4 rounded-2xl bg-muted/70 border border-border space-y-2.5 text-left">
+                <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-muted/70 border border-slate-200 dark:border-border space-y-2.5 text-left">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground font-semibold">
-                      Danh Sách Mã Code Ingame:
+                    <span className="text-xs text-slate-600 dark:text-muted-foreground font-semibold">
+                      {isEn ? 'Delivered Code List:' : 'Danh Sách Mã Code Đã Giao:'}
                     </span>
                     {deliveredLines.length > 1 && (
                       <button
+                        type="button"
                         onClick={handleCopyAllCodes}
-                        className="px-2.5 py-1 rounded-lg bg-secondary hover:bg-secondary/90 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                        className="px-2.5 py-1 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
                       >
                         {copiedAll ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedAll ? 'Đã sao chép tất cả' : 'Sao chép tất cả'}</span>
+                        <span>{copiedAll ? (isEn ? 'Copied all' : 'Đã sao chép tất cả') : (isEn ? 'Copy all' : 'Sao chép tất cả')}</span>
                       </button>
                     )}
                   </div>
@@ -1573,19 +1602,20 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                     {deliveredLines.map((codeItem: string, idx: number) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between gap-2 bg-card p-2.5 sm:p-3 rounded-xl border border-border"
+                        className="flex items-center justify-between gap-2 bg-white dark:bg-card p-2.5 sm:p-3 rounded-xl border border-slate-200 dark:border-border"
                       >
                         <div className="min-w-0 flex-1">
                           {deliveredLines.length > 1 && (
-                            <span className="text-[10px] text-muted-foreground font-mono block">#{idx + 1}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-muted-foreground font-mono block">#{idx + 1}</span>
                           )}
-                          <span className="font-mono font-bold text-xs sm:text-sm text-primary-light break-all block">
+                          <span className="font-mono font-bold text-xs sm:text-sm text-[#ee4d2d] dark:text-orange-300 break-all block">
                             {codeItem}
                           </span>
                         </div>
                         <button
+                          type="button"
                           onClick={() => handleCopySingleCode(codeItem, idx)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white text-xs font-bold transition-all cursor-pointer shrink-0"
                         >
                           {copiedCodeIdx === idx ? (
                             <>
@@ -1614,14 +1644,15 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 theme="indigo"
               />
 
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center justify-center gap-2">
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400 flex items-center justify-center gap-2">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
                 <span>{completedOrder.order_type === 'physical' ? t('shopeePhysical.orderSavedWarranty') : t('checkoutModal.orderSavedWarranty')}</span>
               </div>
 
               <button
+                type="button"
                 onClick={onClose}
-                className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-xs shadow-sm cursor-pointer"
+                className="w-full py-3 rounded-xl bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs shadow-sm cursor-pointer transition-colors"
               >
                 {t('checkoutModal.finishClose')}
               </button>
@@ -1630,13 +1661,13 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
             /* Checkout Form */
             <div className="space-y-4">
               {/* Product Summary */}
-              <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
+              <div className="p-3.5 rounded-xl bg-[#fafafa] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-lg bg-white dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0">
                     <img
-                      src={resolveProductCoverImage(product, '/package-placeholder.svg')}
+                      src={checkoutCoverSrc}
                       alt={product.game_name || product.title}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full ${isCheckoutImgPlaceholder ? 'object-contain p-1.5' : 'object-cover'}`}
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -1650,41 +1681,44 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           return;
                         }
                         target.onerror = null;
+                        target.className = 'w-full h-full object-contain p-1.5';
                         target.src = '/package-placeholder.svg';
                       }}
                     />
                   </div>
-                  <div>
-                    <h4 className="font-heading font-bold text-sm text-foreground truncate max-w-[190px]">
+                  <div className="min-w-0">
+                    <h4 className="font-heading font-bold text-sm text-slate-900 dark:text-slate-100 truncate max-w-[190px]">
                       {effectiveTitle}
                     </h4>
-                    <span className="text-xs text-muted-foreground">{product.game_name || (product as any).category_label || ''}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{product.game_name || (product as any).category_label || ''}</span>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <div className="flex items-center gap-1.5 justify-end">
                     {!isEscalating && isFirstPurchaseEligible && totalDiscountAmount > 0 && (
-                      <span className="text-xs text-muted-foreground line-through font-mono">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 line-through font-mono">
                         {formatCore(effectiveRegularPrice)}
                       </span>
                     )}
-                    <span className="font-display font-black text-base text-emerald-400">
-                      {formatCore(isEscalating ? totalPrice : (isFirstPurchaseEligible ? firstItemActualPrice : effectiveRegularPrice))}
+                    <span className="font-display font-extrabold text-base text-[#ee4d2d]">
+                      {isPhysical
+                        ? formatCurrency(isEscalating ? totalPrice : (isFirstPurchaseEligible ? firstItemActualPrice : effectiveRegularPrice))
+                        : formatCore(isEscalating ? totalPrice : (isFirstPurchaseEligible ? firstItemActualPrice : effectiveRegularPrice))}
                     </span>
                   </div>
                   {isEscalating ? (
-                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
-                      ⚡ Nâng Giá (+{formatCore(escalatingData.step)}/lượt)
+                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 uppercase tracking-wider">
+                      ⚡ {t('productDetailModal.escalatingPrice', { step: formatCore(escalatingData.step) })}
                     </span>
                   ) : isFirstPurchaseEligible ? (
-                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-rose-500 to-amber-500 text-slate-950 uppercase tracking-wider animate-pulse">
-                      Ưu đãi lần đầu
+                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#ffe97a] text-[#ee4d2d] uppercase tracking-wider">
+                      {isEn ? 'First-order deal' : 'Ưu đãi lần đầu'}
                     </span>
                   ) : null}
-                  <span className={`text-[10px] font-semibold flex items-center gap-1 justify-end font-sans mt-0.5 ${checkoutDisplayStock > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <span className={`text-[10px] font-semibold flex items-center gap-1 justify-end font-sans mt-0.5 ${checkoutDisplayStock > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                     {checkoutDisplayStock > 0 ? (
                       <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         <span>{isPhysical ? t('shopeePhysical.nationwideShip') : t('shopeePhysical.instant0s')}</span>
                       </>
                     ) : (
@@ -1697,95 +1731,95 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
               {/* Quantity Selector */}
               {isEscalating ? (
                 <div className="space-y-2">
-                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3">
+                  <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-300/70 dark:border-amber-500/30 flex items-center justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
+                        <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                         <span>{t('checkoutModal.escalatingModeTitle')}</span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Cố định 1 gói/đơn để bảo đảm giá theo lượt mua.
+                      <p className="text-[11px] text-slate-600 dark:text-muted-foreground mt-0.5">
+                        {isEn ? 'Fixed at 1 item/order to guarantee tier pricing.' : 'Cố định 1 gói/đơn để bảo đảm giá theo lượt mua.'}
                       </p>
                     </div>
-                    <span className="font-mono font-bold text-xs text-foreground px-3 py-1 bg-muted rounded-xl border border-border">
-                      1 Gói
+                    <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground px-3 py-1 bg-white dark:bg-muted rounded-lg border border-amber-200 dark:border-border shrink-0">
+                      {t('productDetailModal.onePackage')}
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-slate-900/80 border border-border/80 space-y-2 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-border/80 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t('checkoutModal.yourPurchaseTurn')}</span>
-                      <span className="font-mono font-bold text-amber-300">
+                      <span className="text-slate-600 dark:text-muted-foreground">{t('checkoutModal.yourPurchaseTurn')}</span>
+                      <span className="font-mono font-bold text-amber-700 dark:text-amber-300">
                         #{Number(escalatingData.completed_count) + 1}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t('checkoutModal.completedPurchases')}</span>
-                      <span className="font-mono font-bold text-foreground">
+                      <span className="text-slate-600 dark:text-muted-foreground">{t('checkoutModal.completedPurchases')}</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-foreground">
                         {escalatingData.completed_count}
                       </span>
                     </div>
 
                     {/* Thang đo giá trực quan 3 lượt */}
-                    <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-amber-400 font-bold flex items-center gap-1">
+                        <span className="text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1">
                           <TrendingUp className="w-3.5 h-3.5" />
-                          Thang đo giá (Lượt mua càng sớm càng rẻ):
+                          {isEn ? 'Price Ladder (Earlier turns pay less):' : 'Thang đo giá (Lượt mua càng sớm càng rẻ):'}
                         </span>
-                        <span className="text-rose-400 font-mono font-bold text-[10px]">
-                          +{formatCore(escalatingData.step)}/lượt
+                        <span className="text-[#ee4d2d] font-mono font-bold text-[10px]">
+                          +{formatCore(escalatingData.step)}
                         </span>
                       </div>
                       <div className="grid grid-cols-3 gap-1.5 text-center">
-                        <div className="p-1.5 rounded-xl bg-amber-500/20 border border-amber-500/50">
-                          <span className="text-[9px] text-amber-300 font-bold uppercase block">
-                            Lượt {Number(escalatingData.completed_count) + 1} (Hiện tại)
+                        <div className="p-1.5 rounded-lg bg-amber-100/80 dark:bg-amber-500/20 border border-amber-400/70 dark:border-amber-500/50">
+                          <span className="text-[9px] text-amber-900 dark:text-amber-300 font-bold uppercase block">
+                            {t('productDetailModal.escalatingTurn', { turn: Number(escalatingData.completed_count) + 1 })}
                           </span>
-                          <span className="font-mono font-black text-xs text-amber-400 block mt-0.5">
+                          <span className="font-mono font-black text-xs text-[#ee4d2d] dark:text-amber-400 block mt-0.5">
                             {formatCore(totalPrice)}
                           </span>
-                          <span className="text-[8px] text-emerald-400 font-semibold block">{t('checkoutModal.thisUnitPrice')}</span>
+                          <span className="text-[8px] text-emerald-700 dark:text-emerald-400 font-semibold block">{t('checkoutModal.thisUnitPrice')}</span>
                         </div>
-                        <div className="p-1.5 rounded-xl bg-muted/40 border border-border">
-                          <span className="text-[9px] text-muted-foreground font-bold uppercase block">
+                        <div className="p-1.5 rounded-lg bg-white dark:bg-muted/40 border border-slate-200 dark:border-border">
+                          <span className="text-[9px] text-slate-600 dark:text-muted-foreground font-bold uppercase block">
                             #{Number(escalatingData.completed_count) + 2}
                           </span>
-                          <span className="font-mono font-bold text-xs text-foreground block mt-0.5">
+                          <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground block mt-0.5">
                             {formatCore(
                               escalatingData.max_price && (totalPrice + escalatingData.step) > escalatingData.max_price
                                 ? escalatingData.max_price
                                 : totalPrice + escalatingData.step
                             )}
                           </span>
-                          <span className="text-[8px] text-muted-foreground block">{t('checkoutModal.nextTurn')}</span>
+                          <span className="text-[8px] text-slate-500 dark:text-muted-foreground block">{t('checkoutModal.nextTurn')}</span>
                         </div>
-                        <div className="p-1.5 rounded-xl bg-muted/20 border border-border/60 opacity-80">
-                          <span className="text-[9px] text-muted-foreground font-bold uppercase block">
+                        <div className="p-1.5 rounded-lg bg-white/70 dark:bg-muted/20 border border-slate-200/80 dark:border-border/60">
+                          <span className="text-[9px] text-slate-600 dark:text-muted-foreground font-bold uppercase block">
                             #{Number(escalatingData.completed_count) + 3}
                           </span>
-                          <span className="font-mono font-bold text-xs text-foreground block mt-0.5">
+                          <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground block mt-0.5">
                             {formatCore(
                               escalatingData.max_price && (totalPrice + (escalatingData.step * 2)) > escalatingData.max_price
                                 ? escalatingData.max_price
                                 : totalPrice + (escalatingData.step * 2)
                             )}
                           </span>
-                          <span className="text-[8px] text-muted-foreground block">{t('checkoutModal.laterTurn')}</span>
+                          <span className="text-[8px] text-slate-500 dark:text-muted-foreground block">{t('checkoutModal.laterTurn')}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-800">
-                      <span className="text-muted-foreground">{t('checkoutModal.priceIncreaseAfter')}</span>
-                      <span className="font-mono font-bold text-rose-400">
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-600 dark:text-muted-foreground">{t('checkoutModal.priceIncreaseAfter')}</span>
+                      <span className="font-mono font-bold text-[#ee4d2d]">
                         +{formatCore(escalatingData.step)}
                       </span>
                     </div>
                     {escalatingData.max_price ? (
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[11px] text-muted-foreground">
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/70 dark:border-slate-800/60 text-[11px] text-slate-600 dark:text-muted-foreground">
                         <span>{t('checkoutModal.maxPriceCap')}</span>
-                        <span className="font-mono text-slate-300">{formatCore(escalatingData.max_price)}</span>
+                        <span className="font-mono text-slate-800 dark:text-slate-300">{formatCore(escalatingData.max_price)}</span>
                       </div>
                     ) : null}
                   </div>
@@ -2142,7 +2176,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      <QrCode className="w-4 h-4 text-emerald-300 shrink-0" />
+                      <QrCode className={`w-4 h-4 shrink-0 ${paymentMethod === 'vietqr' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
                       <span className="truncate">{t('shopeePhysical.paymentVietqrLabel')} ({formatCurrency(finalGrandTotal)})</span>
                     </button>
                   </div>
@@ -2232,12 +2266,12 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   {qrStatus === 'waiting' && qrOrder && (
                     <div className="p-4 rounded-2xl bg-card border border-emerald-500/40 space-y-4 text-xs animate-scale-in">
                       {/* Countdown Header */}
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-amber-400 font-bold">
+                      <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-400 font-bold">
                           <Clock className="w-4 h-4 animate-pulse" />
                           <span>{t('checkoutModal.expiresInLabel')}</span>
                         </div>
-                        <span className="font-mono font-black text-base text-amber-300">
+                        <span className="font-mono font-black text-base text-[#ee4d2d] dark:text-amber-300">
                           {formatCountdown(qrSecondsLeft)}
                         </span>
                       </div>
@@ -2249,7 +2283,9 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                             <div className="w-52 sm:w-60 mx-auto flex flex-col items-center justify-center p-3.5 rounded-xl bg-slate-900 border border-amber-500/30 text-center space-y-2.5">
                               <AlertCircle className="w-8 h-8 text-amber-400 shrink-0" />
                               <p className="text-[11px] text-amber-200 font-medium leading-tight">
-                                Không thể tải ảnh mã QR sau 4 tầng thử nghiệm (có thể do trình chặn quảng cáo hoặc trình duyệt chặn ảnh).
+                                {isEn
+                                  ? 'Unable to load QR image after 4 fallback tiers (may be blocked by an ad-blocker or browser policy).'
+                                  : 'Không thể tải ảnh mã QR sau 4 tầng thử nghiệm (có thể do trình chặn quảng cáo hoặc trình duyệt chặn ảnh).'}
                               </p>
                               <div className="flex flex-col sm:flex-row items-center gap-2 w-full pt-1">
                                 <button
@@ -2353,17 +2389,17 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
                         {/* Thanh công cụ dưới ảnh QR: Hướng dẫn, Đổi nguồn QR & Mở tab mới */}
                         <div className="space-y-1 text-center">
-                          <p className="text-[11px] text-muted-foreground italic">
+                          <p className="text-[11px] text-slate-600 dark:text-muted-foreground italic">
                             {qrImageLoadFailed
-                              ? 'Quý khách vẫn có thể thanh toán bằng thông tin STK và nội dung bên dưới'
-                              : 'Mở App Ngân Hàng hoặc Ví Điện Tử quét mã QR ở trên'}
+                              ? (isEn ? 'You can still complete payment using the bank account & memo details below' : 'Quý khách vẫn có thể thanh toán bằng thông tin STK và nội dung bên dưới')
+                              : (isEn ? 'Open any Banking App or E-Wallet to scan the QR code above' : 'Mở App Ngân Hàng hoặc Ví Điện Tử quét mã QR ở trên')}
                           </p>
 
                           <div className="flex items-center justify-center gap-3 pt-0.5 flex-wrap">
                             <button
                               type="button"
                               onClick={handleCycleQrTier}
-                              className="text-[11px] font-medium text-emerald-400 hover:text-emerald-300 underline cursor-pointer inline-flex items-center gap-1"
+                              className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 underline cursor-pointer inline-flex items-center gap-1"
                               title={t('checkoutModal.cycleQrHintTitle')}
                             >
                               <RefreshCw className="w-3 h-3" />
@@ -2424,7 +2460,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
                           <span className="text-muted-foreground">{t('checkoutModal.accountNumberLabel')}</span>
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-bold text-primary-light">{qrOrder.bankInfo?.accountNumber}</span>
+                            <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{qrOrder.bankInfo?.accountNumber}</span>
                             <button
                               type="button"
                               onClick={() => handleCopyQrField(qrOrder.bankInfo?.accountNumber, 'acc')}
@@ -2461,7 +2497,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <div className="flex items-center justify-between pt-0.5">
                           <span className="text-muted-foreground">{t('checkoutModal.transferMemoLabel')}</span>
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            <span className="font-mono font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/20">
                               {qrOrder.bankInfo?.content}
                             </span>
                             <button
@@ -2536,75 +2572,75 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
               ) : (
                 <>
 {/* Wallet Method & Balance Box */}
-              <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+              <div className="p-4 rounded-xl bg-white dark:bg-card border border-slate-200 dark:border-border space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-xl bg-primary/15 text-primary">
-                      <Wallet className="w-5 h-5" />
+                    <div className="p-2 rounded-xl bg-[#ee4d2d]/10 text-[#ee4d2d]">
+                      <Wallet className="w-5 h-5" aria-hidden="true" />
                     </div>
                     <div>
-                      <span className="text-xs font-bold text-foreground block">{t('shopeePhysical.paymentWalletLabel')}</span>
-                      <span className="text-[11px] text-muted-foreground">{t('checkoutModal.autoPayment')}</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-foreground block">{t('shopeePhysical.paymentWalletLabel')}</span>
+                      <span className="text-[11px] text-slate-500 dark:text-muted-foreground">{t('checkoutModal.autoPayment')}</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">{t('checkoutModal.currentBalance')}</span>
-                    <span className="text-sm font-black font-display text-primary-light">{formatCore(userBalance)}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-muted-foreground uppercase font-bold tracking-wider block">{t('checkoutModal.currentBalance')}</span>
+                    <span className="text-sm font-black font-display text-[#ee4d2d]">{formatCore(userBalance)}</span>
                   </div>
                 </div>
 
                 {/* Total Calculation Row */}
                 <div className="space-y-2">
                   {isEscalating ? (
-                    <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">
-                        Giá theo lượt mua thứ {Number(escalatingData.completed_count) + 1}:
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-muted/40 border border-slate-200 dark:border-border flex items-center justify-between text-xs">
+                      <span className="text-slate-600 dark:text-muted-foreground">
+                        {isEn ? `Turn #${Number(escalatingData.completed_count) + 1} price:` : `Giá theo lượt mua thứ ${Number(escalatingData.completed_count) + 1}:`}
                       </span>
-                      <span className="font-mono font-bold text-amber-300">
+                      <span className="font-mono font-bold text-amber-700 dark:text-amber-300">
                         {formatCore(totalPrice)}
                       </span>
                     </div>
                   ) : (
-                    <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">
-                        Đơn giá niêm yết ({safeQty} gói x {formatCore(effectiveRegularPrice)}):
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-muted/40 border border-slate-200 dark:border-border flex items-center justify-between text-xs">
+                      <span className="text-slate-600 dark:text-muted-foreground">
+                        {isEn ? `Listed price (${safeQty} x ${formatCore(effectiveRegularPrice)}):` : `Đơn giá niêm yết (${safeQty} gói x ${formatCore(effectiveRegularPrice)}):`}
                       </span>
-                      <span className="font-mono font-bold text-foreground">
+                      <span className="font-mono font-bold text-slate-900 dark:text-foreground">
                         {formatCore(effectiveRegularPrice * safeQty)}
                       </span>
                     </div>
                   )}
 
                   {!isEscalating && isFirstPurchaseEligible && totalDiscountAmount > 0 && (
-                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 flex flex-col gap-1 text-xs">
-                      <div className="flex items-center justify-between text-rose-400 font-bold">
+                    <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/25 flex flex-col gap-1 text-xs">
+                      <div className="flex items-center justify-between text-rose-700 dark:text-rose-400 font-bold">
                         <div className="flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                          <Sparkles className="w-3.5 h-3.5 text-[#ee4d2d] animate-pulse" aria-hidden="true" />
                           <span>{t('checkoutModal.firstPurchaseOfferLabel')}</span>
                         </div>
                         <span>−{formatCore(totalDiscountAmount)}</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground italic">
-                        Chỉ áp dụng 1 lần cho lần mua đầu tiên của gói này
+                      <p className="text-[10px] text-slate-600 dark:text-muted-foreground italic">
+                        {isEn ? 'Applies once per account for the first purchase of this package' : 'Chỉ áp dụng 1 lần cho lần mua đầu tiên của gói này'}
                       </p>
                     </div>
                   )}
 
                   {isPhysical && (
-                    <div className="pt-1 border-t border-border/70 space-y-1.5 text-xs">
-                      <div className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                    <div className="pt-1 border-t border-slate-200 dark:border-border/70 space-y-1.5 text-xs">
+                      <div className="text-[11px] font-bold text-slate-900 dark:text-foreground uppercase tracking-wider">
                         {t('shopeePhysical.paymentDetailsTitle')}
                       </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
+                      <div className="flex items-center justify-between text-slate-600 dark:text-muted-foreground">
                         <span>{t('shopeePhysical.subtotalProducts')} ({safeQty})</span>
-                        <span className="font-mono text-foreground">{formatCurrency(effectiveRegularPrice * safeQty)}</span>
+                        <span className="font-mono text-slate-900 dark:text-foreground">{formatCurrency(effectiveRegularPrice * safeQty)}</span>
                       </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
+                      <div className="flex items-center justify-between text-slate-600 dark:text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Truck className="w-3.5 h-3.5 text-[#00bfa5]" />
+                          <Truck className="w-3.5 h-3.5 text-[#00bfa5]" aria-hidden="true" />
                           {t('shopeePhysical.subtotalShipping')} ({CARRIERS[selectedCarrier]?.shortName})
                         </span>
-                        <span className="font-mono text-foreground">
+                        <span className="font-mono text-slate-900 dark:text-foreground">
                           {rawShippingFee === 0 ? t('shopeePhysical.freeShippingLabel') : formatCurrency(rawShippingFee)}
                         </span>
                       </div>
@@ -2624,79 +2660,84 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                   )}
 
                   {!isPhysical && voucherStacking.totalSavings > 0 && (
-                    <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between text-xs">
-                      <span className="text-orange-500 font-semibold flex items-center gap-1.5">
-                        <Ticket className="w-3.5 h-3.5" /> {t('shopeePhysical.voucherSectionTitle')}:
+                    <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 flex items-center justify-between text-xs">
+                      <span className="text-[#ee4d2d] font-semibold flex items-center gap-1.5">
+                        <Ticket className="w-3.5 h-3.5" aria-hidden="true" /> {t('shopeePhysical.voucherSectionTitle')}:
                       </span>
-                      <span className="font-mono font-bold text-orange-500">
+                      <span className="font-mono font-bold text-[#ee4d2d]">
                         -{formatCurrency(voucherStacking.totalSavings)}
                       </span>
                     </div>
                   )}
 
-                  <div className={`p-3 rounded-xl border flex items-center justify-between text-xs ${isPhysical ? 'bg-[#ee4d2d]/10 border-[#ee4d2d]/30' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
-                    <span className="font-bold text-foreground">{t('shopeePhysical.grandTotalLabel')}:</span>
-                    <span className={`font-display font-black text-lg ${isPhysical ? 'text-[#ee4d2d]' : 'text-emerald-400'}`}>
+                  <div className="p-3 rounded-xl border flex items-center justify-between text-xs bg-[#ee4d2d]/8 border-[#ee4d2d]/30">
+                    <span className="font-bold text-slate-900 dark:text-foreground">{t('shopeePhysical.grandTotalLabel')}:</span>
+                    <span className="font-display font-black text-lg text-[#ee4d2d]">
                       {isPhysical ? formatCurrency(finalGrandTotal) : formatCore(finalGrandTotal)}
                     </span>
                   </div>
                 </div>
 
                 {!isPriceValid ? (
-                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-500 space-y-2">
+                  <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-300/70 dark:border-amber-500/30 text-xs text-amber-800 dark:text-amber-400 space-y-2">
                     <div className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                       <div>
                         <p className="font-bold">{t('checkoutModal.updatingPriceTitle')}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                          Vui lòng đợi giây lát hoặc tải lại trang để kiểm tra giá mới nhất.
+                        <p className="text-[11px] text-slate-600 dark:text-muted-foreground mt-0.5 leading-relaxed">
+                          {isEn ? 'Please wait a moment or refresh the page to sync the latest price.' : 'Vui lòng đợi giây lát hoặc tải lại trang để kiểm tra giá mới nhất.'}
                         </p>
                       </div>
                     </div>
                   </div>
                 ) : !isBalanceEnough ? (
-                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-500 space-y-2.5">
+                  <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-300/70 dark:border-amber-500/30 text-xs text-amber-800 dark:text-amber-400 space-y-2.5">
                     <div className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                       <div>
                         <p className="font-bold">{t('checkoutModal.insufficientBalanceTitle')}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                          Cần <strong className="text-foreground font-bold">{formatCore(finalGrandTotal)}</strong>, ví hiện có <strong className="text-foreground font-bold">{formatCore(userBalance)}</strong>. Còn thiếu <strong className="text-amber-400 font-bold">{formatCore(finalGrandTotal - userBalance)}</strong>.
+                        <p className="text-[11px] text-slate-600 dark:text-muted-foreground mt-0.5 leading-relaxed">
+                          {isEn ? (
+                            <>Need <strong className="text-slate-900 dark:text-foreground font-bold">{formatCore(finalGrandTotal)}</strong>, current balance <strong className="text-slate-900 dark:text-foreground font-bold">{formatCore(userBalance)}</strong>. Short by <strong className="text-[#ee4d2d] font-bold">{formatCore(finalGrandTotal - userBalance)}</strong>.</>
+                          ) : (
+                            <>Cần <strong className="text-slate-900 dark:text-foreground font-bold">{formatCore(finalGrandTotal)}</strong>, ví hiện có <strong className="text-slate-900 dark:text-foreground font-bold">{formatCore(userBalance)}</strong>. Còn thiếu <strong className="text-[#ee4d2d] font-bold">{formatCore(finalGrandTotal - userBalance)}</strong>.</>
+                          )}
                         </p>
                       </div>
                     </div>
                     <button
+                      type="button"
                       onClick={handleOpenTopup}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-95 text-slate-950 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-95 text-slate-950 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
                     >
-                      <PlusCircle className="w-4 h-4" />
+                      <PlusCircle className="w-4 h-4" aria-hidden="true" />
                       <span>{t('checkoutModal.topupNowBtn')}</span>
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center justify-between">
+                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 shrink-0" />
-                      <span>{t('checkoutModal.balanceSufficient')}</span>
+                      <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                      <span className="font-semibold">{t('checkoutModal.balanceSufficient')}</span>
                     </div>
-                    <span className="text-[11px] text-muted-foreground font-mono">
-                      Sau mua còn: {formatCore(userBalance - finalGrandTotal)}
+                    <span className="text-[11px] text-slate-600 dark:text-muted-foreground font-mono shrink-0">
+                      {isEn ? `After order: ${formatCore(userBalance - finalGrandTotal)}` : `Sau mua còn: ${formatCore(userBalance - finalGrandTotal)}`}
                     </span>
                   </div>
                 )}
               </div>
 
               {/* Guarantees */}
-              <div className="grid grid-cols-2 gap-2.5 text-[11px] text-muted-foreground">
-                <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <div className="grid grid-cols-2 gap-2.5 text-[11px] text-slate-600 dark:text-muted-foreground">
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
                   <span>{t('checkoutModal.warranty100')}</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-muted/30 border border-border flex items-center gap-1.5">
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border flex items-center gap-1.5">
                   {isPhysical ? (
-                    <Truck className="w-3.5 h-3.5 text-secondary shrink-0" />
+                    <Truck className="w-3.5 h-3.5 text-[#00bfa5] shrink-0" aria-hidden="true" />
                   ) : (
-                    <Zap className="w-3.5 h-3.5 text-secondary shrink-0" />
+                    <Zap className="w-3.5 h-3.5 text-[#ee4d2d] shrink-0" aria-hidden="true" />
                   )}
                   <span>{isPhysical ? t('shopeePhysical.nationwideShip') : t('shopeePhysical.instant0s')}</span>
                 </div>
@@ -2707,24 +2748,22 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 type="button"
                 onClick={!isBalanceEnough ? handleOpenTopup : handlePayWithWallet}
                 disabled={isProcessing || maxStock <= 0 || !isPriceValid}
-                className={`w-full min-h-[48px] py-3.5 rounded-2xl font-display font-bold text-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
+                className={`w-full min-h-[48px] py-3.5 rounded-xl font-display font-bold text-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
                   !isBalanceEnough
-                    ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:opacity-95 text-slate-950 font-black shadow-amber-500/20'
-                    : isPhysical
-                    ? 'bg-[#ee4d2d] hover:bg-[#d73211] text-white shadow-lg shadow-orange-500/25'
+                    ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:opacity-95 text-slate-950 font-black shadow-sm'
                     : isEscalating
-                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black shadow-amber-500/30'
-                    : 'bg-gradient-to-r from-secondary to-primary hover:opacity-95 text-white shadow-glow-primary'
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black shadow-sm'
+                    : 'bg-[#ee4d2d] hover:bg-[#d73211] text-white shadow-md shadow-orange-500/20'
                 }`}
               >
                 {!isBalanceEnough ? (
-                  <PlusCircle className="w-4 h-4 text-slate-950" />
+                  <PlusCircle className="w-4 h-4 text-slate-950" aria-hidden="true" />
                 ) : isEscalating ? (
-                  <Zap className="w-4 h-4 fill-slate-950 text-slate-950" />
+                  <Zap className="w-4 h-4 fill-slate-950 text-slate-950" aria-hidden="true" />
                 ) : isPhysical ? (
-                  <Truck className="w-4 h-4 text-white" />
+                  <Truck className="w-4 h-4 text-white" aria-hidden="true" />
                 ) : (
-                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <Sparkles className="w-4 h-4 text-[#ffe97a]" aria-hidden="true" />
                 )}
                 <span>
                   {isProcessing
@@ -2743,7 +2782,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 </span>
               </button>
               {isPhysical && (
-                <p className="text-[10px] text-center text-muted-foreground">
+                <p className="text-[10px] text-center text-slate-500 dark:text-muted-foreground">
                   {t('shopeePhysical.placeOrderNote')}
                 </p>
               )}
@@ -2762,12 +2801,16 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         window.dispatchEvent(new CustomEvent('pine_user_updated', { detail: updated }));
                         window.dispatchEvent(new CustomEvent('pine_wallet_updated', { detail: { newBalance: updated.wallet_balance } }));
                       }
-                      onShowToast('Nạp Thử Nghiệm Sandbox', 'Đã cộng 1.000.000₫ vào ví test để trải nghiệm mua sắm.', 'success');
+                      onShowToast(
+                        isEn ? 'Sandbox Top-up' : 'Nạp Thử Nghiệm Sandbox',
+                        isEn ? 'Added 1,000,000₫ to your test wallet.' : 'Đã cộng 1.000.000₫ vào ví test để trải nghiệm mua sắm.',
+                        'success'
+                      );
                     }
                   }}
-                  className="w-full py-2.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-300/70 dark:border-amber-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                   <span>{t('checkoutModal.sandboxTopupBtn')}</span>
                 </button>
               )}
@@ -2781,22 +2824,30 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
     {/* Slippage Protection Dialog (Chống tăng giá bất ngờ khi có người mua trước) */}
     {priceEscalatedDialog && (
-      <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-        <div className="relative w-full max-w-md bg-card border border-amber-500/50 rounded-3xl p-5 sm:p-6 shadow-2xl animate-scale-in space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/40">
-            <Zap className="w-6 h-6 animate-pulse" />
+      <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          className="relative w-full max-w-md bg-white dark:bg-card border border-amber-400/70 dark:border-amber-500/50 rounded-2xl p-5 sm:p-6 shadow-2xl animate-scale-in space-y-4"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto border border-amber-300 dark:border-amber-500/40">
+            <Zap className="w-6 h-6 animate-pulse" aria-hidden="true" />
           </div>
           <div className="text-center space-y-1">
-            <h4 className="font-heading font-extrabold text-base sm:text-lg text-foreground">
-              Giá Gói Vừa Tăng Theo Lượt!
+            <h4 className="font-heading font-extrabold text-base sm:text-lg text-slate-900 dark:text-foreground">
+              {isEn ? 'Tier Price Just Increased!' : 'Giá Gói Vừa Tăng Theo Lượt!'}
             </h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Đã có khách hàng hoàn tất thanh toán trước bạn một tích tắc. Theo quy tắc Nâng Giá, giá lượt hiện tại đã tăng từ <strong className="text-foreground font-mono">{formatCore(priceEscalatedDialog.oldPrice)}</strong> lên <strong className="text-amber-400 font-mono font-bold">{formatCore(priceEscalatedDialog.newPrice)}</strong>.
+            <p className="text-xs text-slate-600 dark:text-muted-foreground leading-relaxed">
+              {isEn ? (
+                <>Another customer completed a purchase right before you. The current tier price changed from <strong className="text-slate-900 dark:text-foreground font-mono">{formatCore(priceEscalatedDialog.oldPrice)}</strong> to <strong className="text-[#ee4d2d] font-mono font-bold">{formatCore(priceEscalatedDialog.newPrice)}</strong>.</>
+              ) : (
+                <>Đã có khách hàng hoàn tất thanh toán trước bạn một tích tắc. Theo quy tắc Nâng Giá, giá lượt hiện tại đã tăng từ <strong className="text-slate-900 dark:text-foreground font-mono">{formatCore(priceEscalatedDialog.oldPrice)}</strong> lên <strong className="text-[#ee4d2d] font-mono font-bold">{formatCore(priceEscalatedDialog.newPrice)}</strong>.</>
+              )}
             </p>
           </div>
-          <div className="p-3 rounded-2xl bg-muted/50 border border-border text-center space-y-1">
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">{t('checkoutModal.newTurnPriceLabel')}</span>
-            <p className="font-display font-black text-2xl text-emerald-400">
+          <div className="p-3 rounded-xl bg-orange-50 dark:bg-muted/50 border border-orange-200 dark:border-border text-center space-y-1">
+            <span className="text-[11px] text-slate-600 dark:text-muted-foreground uppercase font-bold tracking-wider">{t('checkoutModal.newTurnPriceLabel')}</span>
+            <p className="font-display font-black text-2xl text-[#ee4d2d]">
               {formatCore(priceEscalatedDialog.newPrice)}
             </p>
           </div>
@@ -2804,16 +2855,16 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
             <button
               type="button"
               onClick={() => setPriceEscalatedDialog(null)}
-              className="flex-1 py-3 px-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold cursor-pointer transition-all"
+              className="flex-1 py-3 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-muted dark:hover:bg-muted/80 text-slate-800 dark:text-foreground text-xs font-semibold cursor-pointer transition-all"
             >
-              Hủy bỏ
+              {t('common.cancel')}
             </button>
             <button
               type="button"
               onClick={() => handleAcceptNewEscalatedPrice(priceEscalatedDialog.newPrice)}
-              className="flex-1 py-3 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-95 text-slate-950 font-bold text-xs shadow-md cursor-pointer transition-all"
+              className="flex-1 py-3 px-3 rounded-xl bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs shadow-sm cursor-pointer transition-all"
             >
-              Đồng ý mua giá mới
+              {isEn ? 'Accept New Price' : 'Đồng ý mua giá mới'}
             </button>
           </div>
         </div>

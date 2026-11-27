@@ -10,6 +10,18 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-340: Bẫy Proxy `LanguageContext` Trả Key Thô (`||` Fallback Vô Hiệu), CSS Mobile Ghi Đè `.scrollbar-none`, Cắt Header 390px, Tương Phản Nền Sáng & 404 `/game_icons/test-game.webp` (27/11/2026)
+- **Triệu chứng & Nguyên nhân**:
+  - `LanguageContext` dùng `Proxy` trả về chính tên thuộc tính (truthy string) khi thiếu khóa trong `vi.json`/`en.json`, khiến biểu thức `t.nav.notifications || 'Thông Báo'` hiển thị nguyên chữ `"notifications"`, `"support"`, `"login"` trên topbar live.
+  - `@media (max-width: 768px) { .overflow-x-auto { scrollbar-width: thin; } }` trong `src/index.css` ghi đè `.scrollbar-none`, làm lộ thanh cuộn xám trên thanh danh mục mobile.
+  - Trên viewport `390px`, cụm logo + tìm kiếm + yêu thích + giỏ hàng nằm chung 1 hàng thiếu `min-w-0` khiến ô tìm kiếm bị bóp còn `24px` và biểu tượng giỏ hàng tràn ra `x=388..416px`; thanh thông báo đầu trang thiếu `min-w-0 flex-1` gây tràn `754px`.
+  - Nhiều class thiết kế chỉ cho dark-mode (`text-slate-300`, `text-amber-300`, `text-indigo-300`, `text-rose-300`, `text-primary-light`, `bg-slate-900/80`) trong `StoreView`, `ProductDetailModal`, `ProductCheckoutModal` bị chìm chữ hoàn toàn khi chạy giao diện nền sáng mặc định.
+  - Bản ghi sản phẩm chứa ảnh bìa `/game_icons/test-game.webp` không tồn tại gây 6 lỗi HTTP 404 mỗi lần tải trang chủ.
+- **Giải pháp chuẩn đã kiểm chứng (Mục 488)**:
+  - Khai báo đầy đủ khóa đối xứng trong `vi.json` & `en.json` (`2.093 / 2.093`, tuyệt đối không dựa vào `||` sau Proxy `t.x.y`).
+  - Đổi selector trong `src/index.css` thành `.overflow-x-auto:not(.scrollbar-none)` và khóa `.scrollbar-none { scrollbar-width: none !important; }`.
+  - Bố cục header mobile 2 tầng trong `UniversalMallView.tsx`, phân tầng z-index (`z-30` cho sticky header/theme switcher, `z-[110]` cho modals), lọc `/game_icons/test-game.webp` sang `/package-placeholder.svg` kèm `onError`, và bổ sung cặp màu chuẩn nền sáng/tối (`text-amber-700 dark:text-amber-300`, `bg-amber-50 dark:bg-amber-500/10`, ...) trên toàn bộ cụm thương mại.
+
 ### ISSUE-339: Stale `selectedCategory` Khi Đồng Bộ 1 Chiều Từ `App.tsx` Xuống `UniversalMallView` & `StoreView` (27/11/2026)
 - **Triệu chứng & Nguyên nhân**:
   - `App.tsx` giữ `storeCategoryFilter` và đẩy xuống `UniversalMallView` qua `controlledStoreCategory`, nhưng khi người dùng thao tác nội bộ (`handleFilterGameToStore`, xóa chip `#game ✕` trong `StoreView`, reset/chọn category pill) thì `UniversalMallView` chỉ đổi state cục bộ `selectedCategory` mà không báo ngược về `App.tsx`. Hệ quả: chuỗi bấm `A (modal tầng App) → B (nội bộ sàn) → A (lại từ modal)` bị React bỏ qua `useEffect([controlledStoreCategory])` do `A === A`, giữ stale game B trên kệ.

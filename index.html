@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="vi" class="dark w-full max-w-full">
+<html lang="vi" class="light w-full max-w-full">
   <head>
     <meta charset="UTF-8" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0B0D19" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ee4d2d" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B0D19" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ee4d2d" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -17,10 +17,10 @@
     <!-- Anti-FOUC & Instant Canvas Background Initialization -->
     <script>
       (function() {
-        // Storage Migration: wcg_* -> pine_*
+        // Storage Migration: wcg_* -> pine_* (single clean pass)
         try {
           for (var k in localStorage) {
-            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0) {
+            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0 && k !== 'wcg_shopee_theme') {
               var nk = 'pine_' + k.slice(4);
               if (localStorage.getItem(nk) === null) {
                 localStorage.setItem(nk, localStorage.getItem(k));
@@ -29,46 +29,7 @@
             }
           }
         } catch(e) {}
-        
-        // Storage Migration: wcg_* -> pine_*
-        try {
-          for (var k in localStorage) {
-            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0) {
-              var nk = 'pine_' + k.slice(4);
-              if (localStorage.getItem(nk) === null) {
-                localStorage.setItem(nk, localStorage.getItem(k));
-              }
-              localStorage.removeItem(k);
-            }
-          }
-        } catch(e) {}
-        
-        // Storage Migration: wcg_* -> pine_*
-        try {
-          for (var k in localStorage) {
-            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0) {
-              var nk = 'pine_' + k.slice(4);
-              if (localStorage.getItem(nk) === null) {
-                localStorage.setItem(nk, localStorage.getItem(k));
-              }
-              localStorage.removeItem(k);
-            }
-          }
-        } catch(e) {}
-        
-        // Storage Migration: wcg_* -> pine_*
-        try {
-          for (var k in localStorage) {
-            if (k.indexOf('wcg_') === 0 && k.indexOf('wcg_virtual_') !== 0) {
-              var nk = 'pine_' + k.slice(4);
-              if (localStorage.getItem(nk) === null) {
-                localStorage.setItem(nk, localStorage.getItem(k));
-              }
-              localStorage.removeItem(k);
-            }
-          }
-        } catch(e) {}
-        
+
         var host = window.location.hostname.toLowerCase();
         var pathname = window.location.pathname.toLowerCase();
         var hash = window.location.hash.toLowerCase();
@@ -215,7 +176,7 @@
         <div class="loader-center-avatar">
           <img
             src="/logo.webp"
-            alt="Code Game Logo"
+            alt="Pine Universal Mall Logo"
             width="102"
             height="102"
             fetchpriority="high"
@@ -226,15 +187,15 @@
         </div>
       </div>
       <div style="display:flex;gap:4px;">
-        <span class="loader-letter" style="animation-delay:0s">C</span>
-        <span class="loader-letter" style="animation-delay:0.1s">O</span>
-        <span class="loader-letter" style="animation-delay:0.2s">D</span>
-        <span class="loader-letter" style="animation-delay:0.3s">E</span>
-        <span class="loader-letter" style="animation-delay:0.4s">&nbsp;</span>
-        <span class="loader-letter" style="animation-delay:0.5s">G</span>
-        <span class="loader-letter" style="animation-delay:0.6s">A</span>
-        <span class="loader-letter" style="animation-delay:0.7s">M</span>
-        <span class="loader-letter" style="animation-delay:0.8s">E</span>
+        <span class="loader-letter" style="animation-delay:0s">P</span>
+        <span class="loader-letter" style="animation-delay:0.08s">I</span>
+        <span class="loader-letter" style="animation-delay:0.16s">N</span>
+        <span class="loader-letter" style="animation-delay:0.24s">E</span>
+        <span class="loader-letter" style="animation-delay:0.32s">&nbsp;</span>
+        <span class="loader-letter" style="animation-delay:0.4s">M</span>
+        <span class="loader-letter" style="animation-delay:0.48s">A</span>
+        <span class="loader-letter" style="animation-delay:0.56s">L</span>
+        <span class="loader-letter" style="animation-delay:0.64s">L</span>
       </div>
     </div>
 

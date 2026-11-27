@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage, sanitizeImageUrl } from '../utils/safeImageUrl';
 import {
   X,
+  AlertCircle,
   ShieldCheck,
   Zap,
   ZoomIn,
@@ -111,6 +112,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     return { offers: {} };
   });
   useLockBodyScroll(Boolean(product));
+  useEffect(() => {
+    if (!product) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isZoomed) {
+          setIsZoomed(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [product, isZoomed, onClose]);
   const [, setTick] = useState(0);
 
   // Danh sách các gói tùy chọn
@@ -275,15 +290,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? (product as StoreProduct).game_name
     : (product as UtilityProduct).category_label || (product as UtilityProduct).category || t('productDetailModal.utility');
 
-  const defaultImg = resolveProductCoverImage(product, '/package-placeholder.svg');
+  const rawDefaultImg = resolveProductCoverImage(product, '/package-placeholder.svg');
+  const defaultImg = rawDefaultImg.includes('test-game.webp') ? '/package-placeholder.svg' : rawDefaultImg;
 
   const rawProductImages: unknown[] = Array.isArray(product.product_images) && product.product_images.length > 0
     ? product.product_images
     : (Array.isArray((product as any).images) && (product as any).images.length > 0 ? (product as any).images : []);
   const cleanProductImages: string[] = rawProductImages
     .map((u) => sanitizeImageUrl(typeof u === 'string' ? u : ''))
-    .filter((u): u is string => Boolean(u));
+    .filter((u): u is string => Boolean(u) && !u.includes('test-game.webp'));
   const images: string[] = cleanProductImages.length > 0 ? cleanProductImages : [defaultImg];
+  const isActiveImgPlaceholder = images[activeImageIdx]?.includes('package-placeholder.svg');
 
   // Tồn kho & Đã bán của gói được chọn (Khi còn tồn kho thật realStock > 0, đảm bảo displayStock >= 1)
   const displayStock = realStock <= 0 ? 0 : Math.max(1, marketingService.getDisplayStock(selectedPackage.id || product.id, realStock));
@@ -415,7 +432,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       try {
         await navigator.share({
           title: product.title,
-          text: `Mua ngay ${product.title} (${gameName}) uy tín, giá rẻ tại Pine Universal Mall`,
+          text: t('packageShareModal.shareTextFormat', {
+            name: product.title,
+            game: gameName,
+            price: formatPriceVal(displayCurrentPrice),
+          }),
           url: shareUrl,
         });
         return;
@@ -429,7 +450,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(shareUrl);
       if (onShowToast) {
-        onShowToast('Đã sao chép link sản phẩm!', `Đường dẫn: ${shareUrl}`, 'success');
+        onShowToast(t('productDetailModal.linkCopiedToast'), t('store.copyUrl', { url: shareUrl }), 'success');
       }
     }
   };
@@ -524,23 +545,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   return createPortal(
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md overflow-hidden animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm overflow-hidden animate-fade-in"
     >
       <div
-        className="relative w-full max-w-5xl bg-card border-t sm:border border-border/90 rounded-t-[28px] sm:rounded-3xl overflow-hidden shadow-2xl animate-scale-in flex flex-col h-[90dvh] sm:h-auto max-h-[90dvh] sm:max-h-[90vh]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-detail-modal-title"
+        className="relative w-full max-w-5xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[24px] sm:rounded-2xl overflow-hidden shadow-2xl animate-scale-in flex flex-col h-[90dvh] sm:h-auto max-h-[90dvh] sm:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Bar Header */}
-        <div className="p-3.5 sm:p-5 border-b border-border/70 bg-card/95 backdrop-blur-md shrink-0 sticky top-0 z-20">
-          <div className="w-12 h-1.5 bg-slate-600/60 rounded-full mx-auto mb-2 sm:hidden shrink-0" />
+        <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shrink-0 sticky top-0 z-20">
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600/60 rounded-full mx-auto mb-2 sm:hidden shrink-0" />
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-muted overflow-hidden border border-border shrink-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0">
                 <img
                   key={defaultImg}
                   src={defaultImg}
                   alt={product.title}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full ${defaultImg.includes('package-placeholder.svg') ? 'object-contain p-1.5' : 'object-cover'}`}
                   referrerPolicy="no-referrer"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -555,35 +579,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       return;
                     }
                     target.onerror = null;
+                    target.className = 'w-full h-full object-contain p-1.5';
                     target.src = '/package-placeholder.svg';
                   }}
                 />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  {isPhysicalProduct && (
-                    <span className="px-1.5 py-0.5 rounded bg-[#d0011b] text-white text-[10px] font-bold shrink-0">
-                      {t('shopeePhysical.mallBadge')}
-                    </span>
-                  )}
-                  <h3 className="font-heading font-bold text-sm sm:text-base text-foreground truncate">
+                  <span className="px-1.5 py-0.5 rounded-xs bg-[#d0011b] text-white text-[10px] font-bold shrink-0 leading-none">
+                    {t('shopeePhysical.mallBadge')}
+                  </span>
+                  <h2 id="product-detail-modal-title" className="font-heading font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">
                     {product.title}
-                  </h3>
+                  </h2>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap mt-0.5">
                   {isPhysicalProduct ? (
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#ee4d2d]">
-                      <Truck className="w-3 h-3 shrink-0" />
+                      <Truck className="w-3 h-3 shrink-0" aria-hidden="true" />
                       <span>{t('shopeePhysical.physicalTag')}</span>
                     </span>
                   ) : (
-                    <span className="text-[11px] sm:text-xs text-secondary font-semibold truncate block">
+                    <span className="text-[11px] sm:text-xs text-[#ee4d2d] font-semibold truncate block">
                       {gameName}
                     </span>
                   )}
                   {(product as any).is_affiliate && (product as any).show_supplier !== false && (product as any).supplier_name && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-muted/80 text-[10px] text-muted-foreground font-medium border border-border/60">
-                      <Store className="w-3 h-3 text-secondary shrink-0" />
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-600 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700">
+                      <Store className="w-3 h-3 text-[#ee4d2d] shrink-0" aria-hidden="true" />
                       <span>{t('productDetailModal.resoldBy', { seller: (product as any).store_name || (product as any).seller_name || 'Shop', supplier: (product as any).supplier_name })}</span>
                     </span>
                   )}
@@ -601,37 +624,42 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     handleShare();
                   }
                 }}
-                className="p-2 sm:p-2.5 rounded-xl bg-muted/60 hover:bg-muted text-slate-300 hover:text-foreground cursor-pointer transition-all active:scale-95"
+                className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-orange-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-[#ee4d2d] border border-slate-200 dark:border-slate-700 cursor-pointer transition-all active:scale-95"
                 title={t('productDetailModal.shareSelectedPackage')}
                 aria-label={t('productDetailModal.shareSelectedPackage')}
               >
                 <Share2 className="w-4 h-4" />
               </button>
               <button
+                type="button"
                 onClick={onClose}
-                className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-slate-600 shadow-md cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0"
+                className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700 cursor-pointer transition-all active:scale-90 flex items-center justify-center shrink-0"
                 aria-label={t('productDetailModal.close')}
                 title={t('productDetailModal.close')}
               >
-                <X className="w-5 h-5 text-white" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
         </div>
 
         {/* Modal Body - 2 Columns Layout */}
-        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y p-4 sm:p-6 scrollbar-thin">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y p-4 sm:p-6 scrollbar-thin">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* CỘT TRÁI (Left Column): Ảnh đại diện lớn, Cam kết uy tín, Chi tiết thông tin */}
             <div className="lg:col-span-7 space-y-4 sm:space-y-5">
               {/* Main Image Gallery */}
               <div className="space-y-2.5">
-                <div className={`relative rounded-2xl bg-muted overflow-hidden border border-border group select-none shadow-inner ${isPhysicalProduct ? 'aspect-square max-h-[360px] sm:max-h-[420px] mx-auto w-full' : 'h-52 sm:h-80'}`}>
+                <div className="relative rounded-xl bg-slate-50 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-800 group select-none shadow-xs aspect-square max-h-[340px] sm:max-h-[420px] mx-auto w-full">
                   <img
                     key={images[activeImageIdx]}
                     src={images[activeImageIdx]}
                     alt={product.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className={`w-full h-full transition-transform duration-300 ${
+                      isActiveImgPlaceholder
+                        ? 'object-contain p-8 bg-slate-50 dark:bg-slate-800'
+                        : 'object-cover group-hover:scale-105'
+                    }`}
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -646,17 +674,25 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         return;
                       }
                       target.onerror = null;
+                      target.className = 'w-full h-full object-contain p-8 bg-slate-50 dark:bg-slate-800';
                       target.src = '/package-placeholder.svg';
                     }}
                   />
-                  {isPhysicalProduct && (
+                  {isPhysicalProduct ? (
                     <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
-                      <span className="px-2 py-0.5 rounded bg-[#00bfa5] text-white text-[10px] font-extrabold shadow flex items-center gap-1">
-                        <Truck className="w-3 h-3" />
+                      <span className="px-2 py-0.5 rounded-xs bg-[#00bfa5] text-white text-[10px] font-extrabold shadow flex items-center gap-1">
+                        <Truck className="w-3 h-3" aria-hidden="true" />
                         <span>{t('shopeePhysical.freeshipXtra')}</span>
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-[#ee4d2d] text-white text-[10px] font-bold shadow">
+                      <span className="px-2 py-0.5 rounded-xs bg-[#ee4d2d] text-white text-[10px] font-bold shadow">
                         {t('shopeePhysical.return15Days')}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                      <span className="px-2 py-0.5 rounded-xs bg-violet-600/95 text-white text-[10px] font-bold shadow flex items-center gap-1">
+                        <Zap className="w-3 h-3" aria-hidden="true" />
+                        <span>{t('shopeePhysical.instant0s')}</span>
                       </span>
                     </div>
                   )}
@@ -670,22 +706,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   {images.length > 1 && (
                     <>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
                         }}
                         className="absolute left-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition-all cursor-pointer opacity-90 sm:opacity-0 sm:group-hover:opacity-100 z-10 active:scale-95"
                         title={t('productDetailModal.prevImage')}
+                        aria-label={t('productDetailModal.prevImage')}
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
                         }}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition-all cursor-pointer opacity-90 sm:opacity-0 sm:group-hover:opacity-100 z-10 active:scale-95"
                         title={t('productDetailModal.nextImage')}
+                        aria-label={t('productDetailModal.nextImage')}
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -693,9 +733,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   )}
 
                   <button
+                    type="button"
                     onClick={() => setIsZoomed(true)}
                     className="absolute bottom-2.5 right-2.5 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition-all cursor-pointer z-10"
                     title={t('productDetailModal.zoomImage')}
+                    aria-label={t('productDetailModal.zoomImage')}
                   >
                     <ZoomIn className="w-4 h-4" />
                   </button>
@@ -707,43 +749,54 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {images.map((img, idx) => (
                       <button
                         key={idx}
+                        type="button"
                         onClick={() => setActiveImageIdx(idx)}
-                        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
                           activeImageIdx === idx
-                            ? 'border-secondary ring-2 ring-secondary/30 scale-95 shadow-md opacity-100'
-                            : 'border-border/80 opacity-60 hover:opacity-100'
+                            ? 'border-[#ee4d2d] ring-2 ring-[#ee4d2d]/25 shadow-sm opacity-100'
+                            : 'border-slate-200 dark:border-slate-700 opacity-70 hover:opacity-100 hover:border-[#ee4d2d]/50'
                         }`}
                       >
-                        <img src={img} alt={`thumb-${idx + 1}`} className="w-full h-full object-cover" />
+                        <img
+                          src={img}
+                          alt={`thumb-${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.onerror = null;
+                            target.src = isPhysicalProduct ? PHYSICAL_DEFAULT_IMAGE_URL : '/package-placeholder.svg';
+                          }}
+                        />
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* 3 Khối Cam Kết Uy Tín Chuẩn Mẫu (Trust & Security Badges) */}
+              {/* 3 Khối Cam Kết Uy Tín Chuẩn Shopee (WCAG AA Contrast Light & Dark) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/80 dark:border-emerald-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
                   <div>
-                    <h5 className="font-bold text-xs text-emerald-300">{t('productDetailModal.trustSafe')}</h5>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{t('productDetailModal.trustSafeDesc')}</p>
+                    <h4 className="font-bold text-xs text-emerald-800 dark:text-emerald-300">{t('productDetailModal.trustSafe')}</h4>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">{t('productDetailModal.trustSafeDesc')}</p>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
-                  <Clock className="w-5 h-5 text-amber-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
+                  <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
                   <div>
-                    <h5 className="font-bold text-xs text-amber-300">{t('productDetailModal.trustFast')}</h5>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{t('productDetailModal.trustFastDesc')}</p>
+                    <h4 className="font-bold text-xs text-amber-800 dark:text-amber-300">{t('productDetailModal.trustFast')}</h4>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">{t('productDetailModal.trustFastDesc')}</p>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
-                  <Sparkles className="w-5 h-5 text-indigo-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200/80 dark:border-orange-500/20 flex items-center sm:flex-col sm:text-center sm:justify-center gap-2.5">
+                  <Sparkles className="w-5 h-5 text-[#ee4d2d] shrink-0" aria-hidden="true" />
                   <div>
-                    <h5 className="font-bold text-xs text-indigo-300">{t('productDetailModal.trustAuthentic')}</h5>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{t('productDetailModal.trustAuthenticDesc')}</p>
+                    <h4 className="font-bold text-xs text-[#d0011b] dark:text-orange-300">{t('productDetailModal.trustAuthentic')}</h4>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">{t('productDetailModal.trustAuthenticDesc')}</p>
                   </div>
                 </div>
               </div>
@@ -877,57 +930,57 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               )}
             </div>
 
-            {/* CỘT PHẢI (Right Column): Khối Chọn Gói & Thanh Toán Mẫu Chuẩn (Packages Selection) */}
+            {/* CỘT PHẢI (Right Column): Khối Chọn Gói & Thanh Toán Chuẩn Shopee */}
             <div className="lg:col-span-5 space-y-4">
-              <div className="rounded-2xl border border-border/80 bg-slate-50 dark:bg-slate-900/60 p-4 sm:p-5 shadow-xl space-y-4 sticky top-4">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-4 sm:p-5 shadow-sm space-y-4 sticky top-4">
                 {/* Header Gói Đã Chọn */}
-                <div className="pb-3 border-b border-border/70">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs font-semibold text-muted-foreground">
+                <div className="pb-3 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                       {t('productDetailModal.selectedPackageLabel')}
                     </span>
-                    <span className="text-xs font-bold text-secondary truncate max-w-[260px]">
+                    <span className="text-xs font-bold text-[#ee4d2d] truncate max-w-[260px]">
                       {selectedPackage.name}
                     </span>
                   </div>
-                  <div className={`flex items-baseline justify-between gap-2 ${isPhysicalProduct ? 'p-3 rounded-xl bg-orange-50/80 dark:bg-slate-800/80 border border-orange-200/70 dark:border-orange-500/20' : ''}`}>
+                  <div className="flex items-baseline justify-between gap-2 p-3 rounded-lg bg-[#fafafa] dark:bg-slate-800/80 border border-orange-200/70 dark:border-slate-700">
                     <div className="flex items-baseline gap-2 flex-wrap">
-                      <span className={`font-display font-extrabold text-2xl sm:text-3xl tracking-tight ${isPhysicalProduct ? 'text-[#ee4d2d]' : 'text-emerald-400'}`}>
+                      <span className="font-display font-extrabold text-2xl sm:text-3xl tracking-tight text-[#ee4d2d]">
                         {formatPriceVal(displayCurrentPrice)}
                       </span>
                       {!isSelectedEscalating && isSelectedOfferEligible && displayCurrentPrice !== currentPrice && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 shadow-xs">
-                          <Sparkles className="w-3 h-3 text-rose-400" />
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/40 flex items-center gap-1 shadow-xs">
+                          <Sparkles className="w-3 h-3 text-rose-500" aria-hidden="true" />
                           <span>{t('productDetailModal.firstPurchaseOffer')}</span>
                         </span>
                       )}
                       {!isSelectedEscalating && displayOriginalPrice > displayCurrentPrice && (
-                        <span className="text-xs sm:text-sm text-muted-foreground line-through font-mono">
+                        <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 line-through font-mono">
                           {formatPriceVal(displayOriginalPrice)}
                         </span>
                       )}
                       {!isSelectedEscalating && discountPercent > 0 && (
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                        <span className="text-[11px] font-mono font-extrabold px-1.5 py-0.5 rounded-xs bg-[#ffe97a] text-[#ee4d2d] shadow-xs">
                           -{discountPercent}%
                         </span>
                       )}
                       {isSelectedEscalating && (
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                          <Zap className="w-3 h-3 text-amber-400" />
-                          Nâng Giá (+{formatCore(selectedEscData.step)}/lượt)
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 flex items-center gap-1">
+                          <Zap className="w-3 h-3 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                          <span>{t('productDetailModal.escalatingPrice', { step: formatCore(selectedEscData.step) })}</span>
                         </span>
                       )}
                     </div>
 
-                    {/* Trạng thái kho: Ghi rõ còn hàng hay hết hàng (không ghi số lượng) */}
-                    <div>
+                    {/* Trạng thái kho: Ghi rõ còn hàng hay hết hàng */}
+                    <div className="shrink-0">
                       {isOutOfStock ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-bold">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs font-bold whitespace-nowrap shrink-0">
                           <span>{t('productDetailModal.outOfStockShort')}</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                           <span>{t('productDetailModal.inStockShort')}</span>
                         </span>
                       )}
@@ -935,49 +988,55 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
 
                   {isSelectedEscalating && (
-                    <div className="mt-2.5 p-3 rounded-2xl bg-amber-50 dark:bg-slate-900/90 border border-amber-500/30 space-y-2 text-xs">
+                    <div className="mt-2.5 p-3 rounded-xl bg-amber-50 dark:bg-slate-900/90 border border-amber-300/70 dark:border-amber-500/30 space-y-2 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-300">
-                          <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                          Lượt mua thứ {Number(selectedEscData.completed_count) + 1}
+                        <span className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                          <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                          <span>{t('productDetailModal.purchaseLadderTurn', { count: Number(selectedEscData.completed_count) + 1 })}</span>
                         </span>
-                        <span className="text-[11px] font-mono text-amber-700 dark:text-amber-300 font-bold">
-                          +{formatCore(selectedEscData.step)}/lượt
+                        <span className="text-[11px] font-mono text-amber-800 dark:text-amber-300 font-bold">
+                          +{formatCore(selectedEscData.step)}
                         </span>
                       </div>
 
                       {/* Thang đo giá trực quan 3 lượt */}
-                      <div className="grid grid-cols-3 gap-1.5 text-center pt-1 border-t border-slate-800">
-                        <div className="p-1.5 rounded-xl bg-amber-500/20 border border-amber-500/50">
-                          <span className="text-[9px] text-amber-300 font-bold uppercase block">Lượt {Number(selectedEscData.completed_count) + 1} (Hiện tại)</span>
-                          <span className="font-mono font-black text-xs text-amber-400 block mt-0.5">{formatPriceVal(displayCurrentPrice)}</span>
-                          <span className="text-[8px] text-emerald-400 font-semibold block">{t('productDetailModal.escalatingCurrentTurn')}</span>
+                      <div className="grid grid-cols-3 gap-1.5 text-center pt-1.5 border-t border-amber-200 dark:border-slate-800">
+                        <div className="p-1.5 rounded-lg bg-amber-100/80 dark:bg-amber-500/20 border border-amber-400/70 dark:border-amber-500/50">
+                          <span className="text-[9px] text-amber-900 dark:text-amber-300 font-bold uppercase block">
+                            {t('productDetailModal.escalatingTurn', { turn: Number(selectedEscData.completed_count) + 1 })}
+                          </span>
+                          <span className="font-mono font-black text-xs text-[#ee4d2d] dark:text-amber-400 block mt-0.5">{formatPriceVal(displayCurrentPrice)}</span>
+                          <span className="text-[8px] text-emerald-700 dark:text-emerald-400 font-semibold block">{t('productDetailModal.escalatingCurrentTurn')}</span>
                         </div>
-                        <div className="p-1.5 rounded-xl bg-muted/40 border border-border">
-                          <span className="text-[9px] text-muted-foreground font-bold uppercase block">Lượt {Number(selectedEscData.completed_count) + 2}</span>
-                          <span className="font-mono font-bold text-xs text-foreground block mt-0.5">
+                        <div className="p-1.5 rounded-lg bg-white dark:bg-muted/40 border border-slate-200 dark:border-border">
+                          <span className="text-[9px] text-slate-600 dark:text-muted-foreground font-bold uppercase block">
+                            {t('productDetailModal.escalatingTurn', { turn: Number(selectedEscData.completed_count) + 2 })}
+                          </span>
+                          <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground block mt-0.5">
                             {formatCore(
                               selectedEscData.max_price && (displayCurrentPrice + selectedEscData.step) > selectedEscData.max_price
                                 ? selectedEscData.max_price
                                 : displayCurrentPrice + selectedEscData.step
                             )}
                           </span>
-                          <span className="text-[8px] text-muted-foreground block">{t('productDetailModal.escalatingNextTurn')}</span>
+                          <span className="text-[8px] text-slate-500 dark:text-muted-foreground block">{t('productDetailModal.escalatingNextTurn')}</span>
                         </div>
-                        <div className="p-1.5 rounded-xl bg-muted/20 border border-border/60 opacity-80">
-                          <span className="text-[9px] text-muted-foreground font-bold uppercase block">Lượt {Number(selectedEscData.completed_count) + 3}</span>
-                          <span className="font-mono font-bold text-xs text-foreground block mt-0.5">
+                        <div className="p-1.5 rounded-lg bg-white/70 dark:bg-muted/20 border border-slate-200/80 dark:border-border/60">
+                          <span className="text-[9px] text-slate-600 dark:text-muted-foreground font-bold uppercase block">
+                            {t('productDetailModal.escalatingTurn', { turn: Number(selectedEscData.completed_count) + 3 })}
+                          </span>
+                          <span className="font-mono font-bold text-xs text-slate-900 dark:text-foreground block mt-0.5">
                             {formatCore(
                               selectedEscData.max_price && (displayCurrentPrice + (selectedEscData.step * 2)) > selectedEscData.max_price
                                 ? selectedEscData.max_price
                                 : displayCurrentPrice + (selectedEscData.step * 2)
                             )}
                           </span>
-                          <span className="text-[8px] text-muted-foreground block">{t('productDetailModal.escalatingLaterTurn')}</span>
+                          <span className="text-[8px] text-slate-500 dark:text-muted-foreground block">{t('productDetailModal.escalatingLaterTurn')}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-slate-800/60">
+                      <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-muted-foreground pt-1 border-t border-amber-200/70 dark:border-slate-800/60">
                         <span>{t('productDetailModal.escalatingBoughtCount', { count: selectedEscData.completed_count })}</span>
                         {selectedEscData.max_price ? (
                           <span>{t('productDetailModal.escalatingPriceCap', { cap: formatCore(selectedEscData.max_price) })}</span>
@@ -989,19 +1048,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   )}
 
                   {!isSelectedEscalating && isSelectedOfferEligible && (
-                    <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 w-fit">
-                      <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                    <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-500/20 w-fit">
+                      <Sparkles className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 animate-pulse" aria-hidden="true" />
                       <span>{t('productDetailModal.firstPurchaseOfferOnly')}</span>
                     </div>
                   )}
 
-                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1 text-amber-400 font-semibold">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <div className="mt-2 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
                       <span>{t('productDetailModal.ratingTrusted')}</span>
                     </span>
                     {isSoldVisible && (
-                      <span className="text-slate-400">
+                      <span className="text-slate-600 dark:text-slate-400">
                         {t('productDetailModal.soldPackages', { count: displaySold })}
                       </span>
                     )}
@@ -1112,19 +1171,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   )}
                 </div>
 
-                {/* Khối Thông Tin Chi Tiết Gói Đang Chọn & Nút Mua Ngay Duy Nhất (Sticky Ghim trên Mobile & Desktop khi cuộn) */}
-                <div className="sticky top-0 z-20 bg-card -mx-4 px-4 py-3 sm:-mx-5 sm:px-5 border-y border-border shadow-2xl space-y-2.5 transition-all">
+                {/* Khối Thông Tin Chi Tiết Gói Đang Chọn & Nút Mua Ngay Chuẩn Shopee (Sticky) */}
+                <div className="sticky top-0 z-20 bg-white dark:bg-slate-900 -mx-4 px-4 py-3 sm:-mx-5 sm:px-5 border-y border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5 transition-all">
                   {/* Tiêu đề & Nút Xem thêm / Thu gọn */}
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-heading font-bold text-xs text-foreground flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-secondary" />
+                    <h4 className="font-heading font-bold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5 text-[#ee4d2d]" aria-hidden="true" />
                       <span>{t('productDetailModal.packageDetails')}</span>
                     </h4>
                     {currentDescription && currentDescription.length > 80 && (
                       <button
                         type="button"
                         onClick={() => setIsDescExpanded(!isDescExpanded)}
-                        className="min-h-[44px] px-3 py-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary border border-secondary/30 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shrink-0"
+                        className="min-h-[36px] px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 dark:bg-orange-500/15 dark:hover:bg-orange-500/25 text-[#ee4d2d] border border-[#ee4d2d]/30 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shrink-0"
                         aria-label={isDescExpanded ? t('productDetailModal.collapseDesc') : t('productDetailModal.expandDesc')}
                       >
                         <span>{isDescExpanded ? (t('productDetailModal.collapseDesc')) : (t('common.viewMore'))}</span>
@@ -1133,12 +1192,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     )}
                   </div>
 
-                  {/* Nội dung mô tả (Cuộn nội bộ khi mở rộng để không che hay đẩy nút mua) */}
+                  {/* Nội dung mô tả (Cuộn nội bộ khi mở rộng) */}
                   {currentDescription && (
                     <div
-                      className={`text-xs text-muted-foreground leading-relaxed whitespace-pre-line transition-all ${
+                      className={`text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line transition-all ${
                         isDescExpanded
-                          ? 'max-h-[22vh] sm:max-h-[160px] overflow-y-auto pr-1 scrollbar-thin bg-slate-950 p-2.5 rounded-xl border border-slate-800'
+                          ? 'max-h-[22vh] sm:max-h-[160px] overflow-y-auto pr-1 scrollbar-thin bg-slate-50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800'
                           : 'line-clamp-2'
                       }`}
                     >
@@ -1146,8 +1205,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </div>
                   )}
 
-                  {/* NÚT MUA NGAY DUY NHẤT TRONG BẢNG (Cố định ở đáy khối ghim) */}
-                  <div className="pt-0.5 space-y-1">
+                  {/* Shopee Sticky CTA Row: Add to Cart (outlined #ee4d2d) + Buy Now (solid #ee4d2d) + Wishlist */}
+                  <div className="pt-0.5 space-y-1.5">
                     {!currentUser ? (
                       <button
                         type="button"
@@ -1155,9 +1214,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           onClose();
                           if (onOpenAuth) onOpenAuth();
                         }}
-                        className="w-full min-h-[44px] h-[48px] py-3 px-4 rounded-xl bg-gradient-to-r from-secondary to-primary hover:opacity-95 text-white font-display font-bold text-xs sm:text-sm shadow-glow-primary transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                        className="w-full min-h-[44px] h-[46px] py-2.5 px-4 rounded-lg bg-[#ee4d2d] hover:bg-[#d73211] text-white font-display font-bold text-xs sm:text-sm shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
                       >
-                        <LogIn className="w-4 h-4" />
+                        <LogIn className="w-4 h-4" aria-hidden="true" />
                         <span>
                           {offerData.campaign?.enabled
                             ? t('productDetailModal.loginForOffer', { price: formatPriceVal(totalPrice) })
@@ -1166,97 +1225,80 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
-                        {isPhysicalProduct && (
-                          <button
-                            type="button"
-                            disabled={isOutOfStock}
-                            onClick={handleAddToCart}
-                            className="flex-1 px-3 min-h-[44px] h-[48px] rounded-xl font-bold text-xs sm:text-sm border-2 border-[#ee4d2d] bg-[#ee4d2d]/10 hover:bg-[#ee4d2d]/20 text-[#ee4d2d] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={t('productDetailModal.addToCartTitle')}
-                          >
-                            <ShoppingCart className="w-4 h-4 shrink-0" />
-                            <span className="truncate">{t('shopeePhysical.addToCart')}</span>
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                        disabled={isOutOfStock}
-                        onClick={() => {
-                          if (isOutOfStock) {
-                            if (onShowToast) onShowToast(t('productDetailModal.outOfStockToast'), t('productDetailModal.outOfStockToastDesc'), 'error');
-                            return;
-                          }
-                          const finalSafeQty = isSelectedEscalating ? 1 : (realStock > 0 ? Math.min(Math.max(1, quantity), realStock) : 0);
-                          if (finalSafeQty <= 0) {
-                            if (onShowToast) onShowToast(t('productDetailModal.outOfStockToast'), t('productDetailModal.outOfStockToastDesc'), 'error');
-                            return;
-                          }
-                          onBuyNow(
-                            product,
-                            {
-                              ...selectedPackage,
-                              stock_quantity: realStock,
-                              price: displayCurrentPrice,
-                              isFirstPurchaseOffer: isSelectedOfferEligible,
-                              discountAmount: isSelectedEscalating ? 0 : (selectedOffer?.discount_amount || 0),
-                              sale_mode: isSelectedEscalating ? 'escalating' : (selectedPackage.sale_mode || 'normal'),
-                              escalating_base_price: selectedEscData.base_price,
-                              escalating_step: selectedEscData.step,
-                              escalating_max_price: selectedEscData.max_price,
-                              escalating_current_price: selectedEscData.current_price,
-                              escalating_completed_count: selectedEscData.completed_count,
-                            },
-                            finalSafeQty
-                          );
-                        }}
-                        className={`flex-1 min-h-[44px] h-[48px] py-3 px-3 rounded-xl font-display font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 shadow-lg active:scale-95 cursor-pointer ${
-                          !isOutOfStock
-                            ? isPhysicalProduct
-                              ? 'bg-[#ee4d2d] hover:bg-[#d73211] text-white shadow-orange-500/25'
-                              : isSelectedEscalating
-                                ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black shadow-amber-500/25'
-                                : isSelectedOfferEligible
-                                  ? 'bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:to-orange-600 text-white shadow-rose-500/20'
-                                  : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-emerald-500/20'
-                            : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
-                        }`}
-                      >
-                        {isPhysicalProduct ? <Truck className="w-4 h-4 shrink-0" /> : <Zap className={`w-4 h-4 ${isSelectedEscalating ? 'fill-slate-950 text-slate-950' : ''}`} />}
-                        <span className="truncate">
-                          {!isOutOfStock
-                            ? (isSelectedEscalating || isSelectedOfferEligible
-                                ? t('productDetailModal.buyNowOffer', { price: formatPriceVal(totalPrice) })
-                                : t('productDetailModal.buyNow', { price: formatPriceVal(totalPrice) }))
-                            : (t('productDetailModal.outOfStock'))}
-                        </span>
-                      </button>
-                      {!isPhysicalProduct && (
                         <button
                           type="button"
                           disabled={isOutOfStock}
                           onClick={handleAddToCart}
-                          className="flex-1 sm:w-auto px-4 min-h-[44px] h-[48px] rounded-xl font-bold text-xs sm:text-sm border-2 border-secondary/60 text-secondary hover:bg-secondary/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                          className="flex-1 px-3 min-h-[44px] h-[46px] rounded-lg font-bold text-xs sm:text-sm border border-[#ee4d2d] bg-[#ee4d2d]/10 hover:bg-[#ee4d2d]/20 text-[#ee4d2d] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           title={t('productDetailModal.addToCartTitle')}
                         >
-                          <ShoppingCart className="w-4 h-4" />
-                          <span>{t('productDetailModal.addToCart')}</span>
+                          <ShoppingCart className="w-4 h-4 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{isPhysicalProduct ? t('shopeePhysical.addToCart') : t('productDetailModal.addToCart')}</span>
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={handleToggleWishlist}
-                        className={`px-3 min-h-[44px] h-[48px] rounded-xl font-bold border-2 transition-all flex items-center justify-center cursor-pointer shrink-0 ${
-                          isWishlisted
-                            ? 'border-rose-500 bg-rose-500/10 text-rose-500'
-                            : 'border-border text-muted-foreground hover:border-rose-500/50 hover:text-rose-500'
-                        }`}
-                        title={isWishlisted ? t('wishlist.removeTooltip') : t('wishlist.addTooltip')}
-                      >
-                        <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          disabled={isOutOfStock}
+                          onClick={() => {
+                            if (isOutOfStock) {
+                              if (onShowToast) onShowToast(t('productDetailModal.outOfStockToast'), t('productDetailModal.outOfStockToastDesc'), 'error');
+                              return;
+                            }
+                            const finalSafeQty = isSelectedEscalating ? 1 : (realStock > 0 ? Math.min(Math.max(1, quantity), realStock) : 0);
+                            if (finalSafeQty <= 0) {
+                              if (onShowToast) onShowToast(t('productDetailModal.outOfStockToast'), t('productDetailModal.outOfStockToastDesc'), 'error');
+                              return;
+                            }
+                            onBuyNow(
+                              product,
+                              {
+                                ...selectedPackage,
+                                stock_quantity: realStock,
+                                price: displayCurrentPrice,
+                                isFirstPurchaseOffer: isSelectedOfferEligible,
+                                discountAmount: isSelectedEscalating ? 0 : (selectedOffer?.discount_amount || 0),
+                                sale_mode: isSelectedEscalating ? 'escalating' : (selectedPackage.sale_mode || 'normal'),
+                                escalating_base_price: selectedEscData.base_price,
+                                escalating_step: selectedEscData.step,
+                                escalating_max_price: selectedEscData.max_price,
+                                escalating_current_price: selectedEscData.current_price,
+                                escalating_completed_count: selectedEscData.completed_count,
+                              },
+                              finalSafeQty
+                            );
+                          }}
+                          className={`flex-1 min-h-[44px] h-[46px] py-2.5 px-3 rounded-lg font-display font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer ${
+                            !isOutOfStock
+                              ? isSelectedEscalating
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-95 text-slate-950 font-black'
+                                : 'bg-[#ee4d2d] hover:bg-[#d73211] text-white'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {isPhysicalProduct ? <Truck className="w-4 h-4 shrink-0" aria-hidden="true" /> : <Zap className={`w-4 h-4 shrink-0 ${isSelectedEscalating ? 'fill-slate-950 text-slate-950' : ''}`} aria-hidden="true" />}
+                          <span className="truncate">
+                            {!isOutOfStock
+                              ? (isSelectedEscalating || isSelectedOfferEligible
+                                  ? t('productDetailModal.buyNowOffer', { price: formatPriceVal(totalPrice) })
+                                  : t('productDetailModal.buyNow', { price: formatPriceVal(totalPrice) }))
+                              : (t('productDetailModal.outOfStock'))}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleToggleWishlist}
+                          className={`px-3 min-h-[44px] h-[46px] rounded-lg font-bold border transition-all flex items-center justify-center cursor-pointer shrink-0 ${
+                            isWishlisted
+                              ? 'border-[#ee4d2d] bg-[#ee4d2d]/10 text-[#ee4d2d]'
+                              : 'border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-[#ee4d2d] hover:text-[#ee4d2d]'
+                          }`}
+                          title={isWishlisted ? t('wishlist.removeTooltip') : t('wishlist.addTooltip')}
+                          aria-label={isWishlisted ? t('wishlist.removeTooltip') : t('wishlist.addTooltip')}
+                        >
+                          <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-[#ee4d2d] text-[#ee4d2d]' : ''}`} />
+                        </button>
+                      </div>
                     )}
-                    <p className="text-[10px] text-center text-muted-foreground pt-0.5">
+                    <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 pt-0.5">
                       {(product as any).product_type === 'physical'
                         ? (t('productDetailModal.physicalDeliveryGuarantee'))
                         : (t('productDetailModal.digitalDeliveryGuarantee'))}
@@ -1266,40 +1308,38 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Banner Gợi Ý Cho Khách Chưa Đăng Nhập */}
                 {!currentUser && offerData.campaign?.enabled && Number(offerData.campaign?.offer_price) > 0 && (
-                  <div
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     onClick={() => {
                       if (onOpenAuth) onOpenAuth();
                     }}
-                    className="p-2.5 rounded-xl bg-gradient-to-r from-rose-500/15 via-orange-500/15 to-amber-500/15 border border-rose-500/30 hover:border-rose-500/50 transition-all cursor-pointer flex items-center justify-between gap-2 text-xs"
+                    className="w-full text-left p-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 hover:border-[#ee4d2d]/60 transition-all cursor-pointer flex items-center justify-between gap-2 text-xs"
                   >
-                    <div className="flex items-center gap-1.5 text-rose-300 font-bold">
-                      <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-pulse shrink-0" />
+                    <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-300 font-bold">
+                      <Sparkles className="w-3.5 h-3.5 text-[#ee4d2d] animate-pulse shrink-0" aria-hidden="true" />
                       <span>{t('productDetailModal.loginPromptOffer', { price: formatCore(Number(offerData.campaign.offer_price)) })}</span>
                     </div>
-                    <span className="text-[10px] text-amber-400 font-bold underline shrink-0">{t('productDetailModal.loginNow')}</span>
-                  </div>
+                    <span className="text-[10px] text-[#ee4d2d] dark:text-amber-400 font-bold underline shrink-0">{t('productDetailModal.loginNow')}</span>
+                  </button>
                 )}
 
                 {/* Banner Hướng Dẫn Xác Minh Email Cho Tài Khoản Đã Đăng Nhập */}
                 {currentUser && offerData.campaign?.enabled && Number(offerData.campaign?.offer_price) > 0 && offerData.campaign?.require_verified_email && !currentUser.email_verified && (
-                  <div
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     onClick={() => {
                       if (typeof window !== 'undefined') {
                         window.location.hash = '#/account';
                       }
                     }}
-                    className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/35 hover:border-amber-500/50 transition-all cursor-pointer flex items-center justify-between gap-2 text-xs"
+                    className="w-full text-left p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 hover:border-amber-400 transition-all cursor-pointer flex items-center justify-between gap-2 text-xs"
                   >
-                    <div className="flex items-center gap-1.5 text-amber-300 font-medium">
-                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-medium">
+                      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
                       <span>{t('productDetailModal.verifyEmailNotice', { price: formatCore(Number(offerData.campaign.offer_price)) })}</span>
                     </div>
-                    <span className="text-[10px] text-amber-400 font-bold underline shrink-0">{t('productDetailModal.verifyNow')}</span>
-                  </div>
+                    <span className="text-[10px] text-amber-800 dark:text-amber-400 font-bold underline shrink-0">{t('productDetailModal.verifyNow')}</span>
+                  </button>
                 )}
 
                 {/* Danh Sách Chọn Gói (Chọn Gói) */}
@@ -1350,16 +1390,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                   }}
                                   className={`relative px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer overflow-hidden ${
                                     isValSelected
-                                      ? isPhysicalProduct
-                                        ? 'bg-[#ee4d2d]/10 text-[#ee4d2d] border-[#ee4d2d] shadow-xs'
-                                        : 'bg-secondary text-white border-secondary shadow-sm'
-                                      : 'bg-card text-foreground border-border hover:border-[#ee4d2d]/60'
+                                      ? 'bg-[#ee4d2d]/10 text-[#ee4d2d] border-[#ee4d2d] shadow-xs'
+                                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 hover:border-[#ee4d2d]/60'
                                   }`}
                                 >
                                   <span>{val}</span>
-                                  {isValSelected && isPhysicalProduct && (
+                                  {isValSelected && (
                                     <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#ee4d2d] text-white flex items-center justify-center rounded-tl">
-                                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                      <Check className="w-2.5 h-2.5 stroke-[3]" aria-hidden="true" />
                                     </span>
                                   )}
                                 </button>
@@ -1466,76 +1504,81 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               setIsDescExpanded(false);
                             }
                           }}
-                          className={`w-full text-left p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 relative ${
+                          className={`w-full text-left p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 relative overflow-hidden ${
                             isPkgOut
-                              ? 'opacity-55 cursor-not-allowed border-border/50 bg-muted/20'
+                              ? 'opacity-55 cursor-not-allowed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40'
                               : isSelected
-                              ? 'border-red-500 bg-red-500/10 shadow-md ring-1 ring-red-500/60 cursor-pointer'
-                              : 'border-border/80 bg-card/60 hover:bg-card hover:border-slate-600 cursor-pointer'
+                              ? 'border-[#ee4d2d] bg-[#ee4d2d]/8 dark:bg-[#ee4d2d]/15 shadow-sm ring-1 ring-[#ee4d2d]/50 cursor-pointer'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:bg-orange-50/40 dark:hover:bg-slate-800 hover:border-[#ee4d2d]/60 cursor-pointer'
                           }`}
                         >
+                          {isSelected && !isPkgOut && (
+                            <span className="absolute bottom-0 right-0 w-4 h-4 bg-[#ee4d2d] text-white flex items-center justify-center rounded-tl-md" aria-hidden="true">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </span>
+                          )}
                           <div className="min-w-0 flex-1 space-y-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-foreground'}`}>
+                              <span className={`text-xs font-bold truncate ${isSelected ? 'text-[#ee4d2d] dark:text-white' : 'text-slate-900 dark:text-slate-100'}`}>
                                 {pkg.name}
                               </span>
                               {isPkgEscalating && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 flex items-center gap-1">
-                                  <Zap className="w-2.5 h-2.5 text-amber-400" />
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 shrink-0 flex items-center gap-1">
+                                  <Zap className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                                   {t('productDetailModal.escalatingPrice', { step: formatCore(pkgEscData.step) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferEligible && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0 flex items-center gap-1">
-                                  <Sparkles className="w-2.5 h-2.5 text-rose-400" />
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 shrink-0 flex items-center gap-1">
+                                  <Sparkles className="w-2.5 h-2.5 text-rose-500" aria-hidden="true" />
                                   {t('productDetailModal.firstPurchaseOfferPrice', { price: formatCore(pkgRawOfferPrice) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferUnverified && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 flex items-center gap-1" title={t('productDetailModal.needEmailVerification')}>
-                                  <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 shrink-0 flex items-center gap-1" title={t('productDetailModal.needEmailVerification')}>
+                                  <Sparkles className="w-2.5 h-2.5 text-amber-500" aria-hidden="true" />
                                   {t('productDetailModal.firstPurchaseOfferPriceEmail', { price: formatCore(pkgRawOfferPrice) })}
                                 </span>
                               )}
                               {!isPkgEscalating && isPkgOfferLoginReq && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0 flex items-center gap-1">
-                                  <Sparkles className="w-2.5 h-2.5 text-rose-400" />
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 shrink-0 flex items-center gap-1">
+                                  <Sparkles className="w-2.5 h-2.5 text-rose-500" aria-hidden="true" />
                                   {t('productDetailModal.firstPurchaseOfferPrice', { price: formatCore(pkgRawOfferPrice) })}
                                 </span>
                               )}
                               {pkg.badge && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300/70 dark:border-amber-500/30 shrink-0 leading-none">
                                   {pkg.badge === 'Hàng Số' ? t('productDetailModal.digitalBadge') : pkg.badge === 'Hàng Vật Lý' ? t('productDetailModal.physicalBadge') : pkg.badge}
                                 </span>
                               )}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[11px] text-muted-foreground truncate">
+                              <span className="text-[11px] text-slate-600 dark:text-slate-400 truncate">
                                 {isPkgEscalating
                                   ? t('productDetailModal.purchaseLadderTurn', { count: Number(pkgEscData.completed_count) + 1 })
                                   : (pkg.note || t('productDetailModal.standardProcessing'))}
                               </span>
                               {isSoldVisible && (pkg as any).show_sold_count !== false && (
-                                <span className="text-[11px] text-slate-400 font-mono shrink-0">
-                                  • {t('productDetailModal.soldPrefix')}: <strong className="text-foreground">{isPkgEscalating ? pkgEscData.completed_count : marketingService.getSoldDisplay({ ...pkg, created_at: product.created_at } as any)}</strong>
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono shrink-0">
+                                  • {t('productDetailModal.soldPrefix')}: <strong className="text-slate-800 dark:text-slate-100">{isPkgEscalating ? pkgEscData.completed_count : marketingService.getSoldDisplay({ ...pkg, created_at: product.created_at } as any)}</strong>
                                 </span>
                               )}
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-800/60 w-full sm:w-auto">
+                          <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800/60 w-full sm:w-auto">
                             <div className="flex items-baseline gap-2 sm:block sm:text-right">
-                              <span className={`font-mono font-bold text-xs sm:text-sm block ${isSelected ? (isPkgEscalating ? 'text-amber-400' : 'text-red-400') : (isPkgEscalating ? 'text-amber-300' : 'text-emerald-400')}`}>
+                              <span className={`font-mono font-bold text-xs sm:text-sm block ${isPkgEscalating ? 'text-amber-700 dark:text-amber-400' : 'text-[#ee4d2d]'}`}>
                                 {formatPriceVal(pkgDisplayPrice)}
                               </span>
                               {!isPkgEscalating && isPkgOfferEligible && pkgOriginalPrice > pkgDisplayPrice ? (
-                                <span className="text-[10px] text-muted-foreground line-through font-mono block">
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 line-through font-mono block">
                                   {formatPriceVal(pkgOriginalPrice)}
                                 </span>
                               ) : isPkgOut ? (
-                                <span className="text-[10px] text-rose-400 font-semibold block">{t('productDetailModal.outOfStockShort')}</span>
+                                <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold block">{t('productDetailModal.outOfStockShort')}</span>
                               ) : (
-                                <span className="text-[10px] text-emerald-400 font-semibold block">{t('productDetailModal.inStockShort')}</span>
+                                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold block">{t('productDetailModal.inStockShort')}</span>
                               )}
                             </div>
 
@@ -1546,7 +1589,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                 e.stopPropagation();
                                 setPackageToShare(pkg);
                               }}
-                              className="p-1.5 sm:p-2 rounded-lg bg-slate-800/80 hover:bg-secondary/20 text-slate-400 hover:text-secondary border border-slate-700/60 hover:border-secondary/40 transition-all cursor-pointer active:scale-90 shrink-0 ml-auto sm:ml-0"
+                              className="p-1.5 sm:p-2 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-orange-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-[#ee4d2d] border border-slate-200 dark:border-slate-700 hover:border-[#ee4d2d]/40 transition-all cursor-pointer active:scale-90 shrink-0 ml-auto sm:ml-0"
                               title={t('productDetailModal.sharePackage', { name: pkg.name })}
                               aria-label={t('productDetailModal.sharePackage', { name: pkg.name })}
                             >
@@ -1559,13 +1602,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                 </div>
 
-                {/* Số lượng mua */}
-                {!isOutOfStock && (
+                {/* Số lượng mua (chỉ hiển thị cho sản phẩm số để tránh trùng lặp với bộ chọn số lượng Shopee của hàng vật lý ở trên) */}
+                {!isPhysicalProduct && !isOutOfStock && (
                   isSelectedEscalating ? (
                     <div className="pt-2 border-t border-border/70 flex items-center justify-between">
                       <div>
                         <span className="text-xs font-bold text-foreground block">{t('productDetailModal.purchaseQuantity')}</span>
-                        <span className="text-[10px] text-amber-300">{t('productDetailModal.fixedOnePerOrderNotice')}</span>
+                        <span className="text-[10px] text-amber-700 dark:text-amber-300 font-medium">{t('productDetailModal.fixedOnePerOrderNotice')}</span>
                       </div>
                       <span className="font-mono font-bold text-xs text-foreground px-3 py-1 bg-muted rounded-lg border border-border">
                         {t('productDetailModal.onePackage')}

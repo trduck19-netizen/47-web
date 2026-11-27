@@ -7,6 +7,24 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-27]
 
+### 488. Đồng Bộ Giao Diện `UniversalMallView` & Cụm Thương Mại Chuẩn Shopee (Header Mobile 390px, Flash Sale, Cards, Store, Detail, Cart, Checkout & Song Ngữ VI/EN) (27/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục triệt để các lỗi phát hiện qua kiểm toán trực quan Shopee trên live (`https://universal-mall-shop.pages.dev/`, cả VI `/` & EN `/en/`, desktop `1280×800` & mobile `390×844`, nền sáng): 3 khóa i18n thô trên topbar (`notifications`, `support`, `login`), header mobile 390px bị cắt giỏ hàng và bóp thanh tìm kiếm xuống 24px, thanh thông báo tràn ngang và ngắt chữ giữa từ, thanh cuộn xám hiện trên subnav mobile, va chạm z-index modal, 6 ảnh `/game_icons/test-game.webp` trả HTTP 404, lỗi tương phản nền sáng ở `StoreView` / `ProductDetailModal` / `ProductCheckoutModal`, và chuẩn hóa toàn bộ hành trình mua sắm theo ngôn ngữ thiết kế Shopee `#ee4d2d`.
+- **Giải pháp áp dụng (Solution — 12 tệp code, `+2130/-1584`)**:
+  1. *Shell, Header, Flash Sale, Footer, CSS & I18N (`UniversalMallView.tsx`, `MallGuaranteeModal.tsx`, `MallSupportModal.tsx`, `src/locales/vi.json`, `src/locales/en.json`, `src/index.css`, `index.html`)*:
+     - Bổ sung đối xứng các khóa còn thiếu (`nav.notifications`, `nav.support`, `nav.login`, `mall.services.freeshipXtra`, `mall.flashSale.*`, `mall.products.*`, `mall.footer.*`, `mall.guaranteeModal.*`, `mall.supportModal.*`, `mall.toasts.*`), cập nhật `header.portalSubtitle` bỏ nhãn kho giftcode cũ; xác minh đối xứng từ điển `2.093 / 2.093` khóa (`0` lệch).
+     - Thiết kế lại header mobile 2 tầng gọn trong `390px` (Logo + Yêu thích + Giỏ hàng vừa khung nhìn; thanh tìm kiếm Shopee rộng 100%), thanh thông báo không dính & chống tràn (`min-w-0 flex-1`, badge `whitespace-nowrap`), phân tầng z-index chuẩn (sticky header & nút đổi theme `z-30` dưới modal `z-[110]` kèm `role="dialog" aria-modal="true"`, bấm nền ngoài & `Escape` để đóng, `overscroll-contain`), sửa hero scrim + side banner `md:grid-rows-2 h-full`, thêm shortcut thứ 8 `Freeship Xtra`, chuẩn hóa Flash Sale (hộp đếm ngược đen, cờ `-XX%` vàng, thanh tiến độ cam đỏ, chặn 404 `/game_icons/test-game.webp` → `/package-placeholder.svg`), sửa phân trang `pageSize=24`, và đồng bộ Footer 5 cột Shopee (VietQR/SePay/Core Wallet/COD & GHTK/GHN/Viettel Post).
+     - Sửa `src/index.css` loại trừ `.scrollbar-none` khỏi luật `.overflow-x-auto` mobile, thêm `scroll-padding-top: 120px`, hiệu ứng đổ bóng sticky header và modal scroll containment; chuyển preloader `index.html` sang phong cách sáng `PINE MALL` và gỡ script migrate storage lặp 4 lần.
+  2. *Cụm Thương Mại & Tương Phản Nền Sáng (`ProductCard.tsx`, `StoreView.tsx`, `ProductDetailModal.tsx`, `CartDrawerModal.tsx`, `ProductCheckoutModal.tsx`)*:
+     - Chuẩn hóa `ProductCard` (`<article>`, ruy-băng Mall `#d0011b`, cờ giảm giá `#ffe97a`/`#ee4d2d`, dải `FREESHIP XTRA`/`Instant 0s`, thanh hover `Tìm sản phẩm tương tự` / `Find Similar`, chặn 404 `/game_icons/test-game.webp`).
+     - Khắc phục toàn bộ lỗi tương phản nền sáng (`text-slate-300`, `text-amber-300`, `text-indigo-300`, `text-rose-300`, `text-emerald-400`, `text-primary-light`, `bg-slate-900/80`) tại `StoreView`, `ProductDetailModal`, và `ProductCheckoutModal` (gồm cả khung đếm ngược VietQR & nội dung chuyển khoản); sửa thiếu import `AlertCircle`, xóa import trùng `ExternalLink`, và sửa biến `effectivePrice` chưa định nghĩa ở nhánh `!user`.
+     - Nâng cấp `CartDrawerModal` dạng ngăn kéo trượt cạnh phải trên desktop / bottom sheet trên mobile với màu nhấn `#ee4d2d`, hỗ trợ đóng bằng nền ngoài / `Escape` / `overscroll-contain`, và Việt/Anh hóa toàn bộ chuỗi từng ghi cứng.
+- **Kiểm thử tự động trước commit code**:
+  - `npm test`: `225/225 PASS` (`12` icons + `10` products + `112` suppliers + `71` sync-epoch + `20` intershop — `docs/test_full_check.log`).
+  - `npm run check:i18n`: `22/22 PASSED`, `0` chuỗi tiếng Việt ghi cứng (`docs/i18n_full_check.log`); đối xứng từ điển `vi.json` / `en.json` đạt `2.093 / 2.093` khóa (`0` thiếu).
+  - `tsc`: `homepage_exit=0` (`HOMEPAGE_TSC_OK`), `tsconfig.json` tổng `1.717` lỗi (`full_tsc_exit=2`, giảm `9` lỗi so với baseline `1.726` tại `1515b7e`, `0` lỗi mới vs `1515b7e`), `TS6133` giảm `485 → 483` (`0` `TS6133` mới so với baseline `529` tại `75fa59b` — `docs/tsc_full_check.log`).
+  - Rule 10 security scan: `0` vi phạm (`ZERO_RULE10_VIOLATIONS` — `docs/rule10_scan.log`).
+
 ### 487. Sửa Nốt Stale `selectedCategory` (Cách a), Gỡ `TS6133 isCodeExpired`, Chuẩn Hóa Log `tsc`/Build & Đính Chính Số Liệu `013718d` (27/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Khắc phục 1 lỗi chức năng (`stale selectedCategory` ở chuỗi `A → B → A`) và 3 lỗi tầng bằng chứng/báo cáo từ kiểm chứng `013718d` theo kế hoạch [`ke_hoach_sua_not_universal_mall_013718d_27_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_sua_not_universal_mall_013718d_27_11.md).
@@ -293,16 +311,3 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
   3. *Thanh toán hàng vật lý chuẩn Shopee (`src/components/ProductCheckoutModal.tsx`)*:
      - Khối Địa chỉ nhận hàng có dải phong bì thư kẻ sọc đỏ–xanh đặc trưng Shopee, chọn nhãn `Nhà Riêng`/`Văn Phòng`, áp dụng chuẩn `modern-web-guidance` (`autofill-address-form` & `forms`: `<label htmlFor>`, `autocomplete="name"/"tel"/"street-address"`, `<textarea>` cho địa chỉ, `<fieldset>` + `<legend>` cho vận chuyển và thanh toán, `text-base sm:text-xs` chống iOS zoom).
      - Chuẩn hóa bảng **Chi Tiết Thanh Toán** 5 dòng (Tiền hàng, Phí vận chuyển, Giảm giá vận chuyển, Voucher giảm giá, Tổng thanh toán `#ee4d2d`), nút **Đặt Hàng** kèm số tiền cụ thể, sửa mô tả VietQR riêng cho hàng vật lý, và thêm thanh tiến trình 4 bước trên màn hình Đặt hàng thành công.
-
-## [2026-11-25]
-
-### 468. Gating 4 Vị Trí DDL Vô Điều Kiện Trong `ensureSchemaUpgrades`, Tách `Server-Timing` Schema, Nối Dây `preloadedMetaSettingPromise`, Sửa Nhãn `status.ts` & Bypass 16 Key Khi `?nocache=1` (25/11/2026)
-- **Bối cảnh & Yêu cầu**:
-  - Xử lý triệt để nguyên nhân gốc rễ khiến `search`, `automation/status`, `automation/config` vẫn tốn 17–28 giây trên isolate lạnh tại các POP ngoài HKG: `ensureSchemaUpgrades` chứa ~110 lệnh DDL vô điều kiện chạy lại trên mọi isolate lạnh.
-- **Giải pháp áp dụng (Solution)**:
-  1. *Phần 1 — Gating 4 vị trí DDL vô điều kiện & tách `Server-Timing`*:
-     - `functions/services/d1_service.ts`: Bọc đủ 4 vị trí DDL vô điều kiện sau kiểm tra `appliedMigSet`: đoạn chính `2842–3358` (`baseline_unconditional_ddl_v1`), `3409–3411` (`schema_v5_full_upgrades`), `3550–3582` (`wcg_virtual_layer_tables_v1`), `3585–3609` (`deleted_records_history_v1`). Mỗi khối chỉ ghi `INSERT OR IGNORE INTO schema_migrations` ở câu cuối cùng và log `console.warn` nếu lỗi.
-     - Xuất `lastSchemaTiming` (`migSelectMs`, `ddlMs`, `cacheHit`) và đưa `schema_mig_select`, `schema_ddl` vào `Server-Timing` ở `search/index.ts`, `automation/status.ts`, `automation/config.ts`.
-  2. *Phần 2 — Sửa nhỏ kèm theo*:
-     - `functions/api/sync-lite.ts` & `functions/services/d1_service.ts`: Định nghĩa `SYNC_LITE_SETTING_KEYS` (16 key) và `DEFAULT_BYPASS_KEYS` (4 key), nối dây `preloadedMetaSettingPromise` theo cơ chế promise-passing (giữ song song 3 nhánh), và chỉ bypass memory cache đủ 16 key khi `isNoCache === true`.
-     - `functions/api/admin/automation/status.ts`: Đo riêng từng nhánh trong `Promise.all` để nhãn `probe;dur` và `settings;dur` phản ánh đúng chặng tương ứng.

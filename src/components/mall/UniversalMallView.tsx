@@ -111,6 +111,23 @@ const getResponsiveSrcSet = (url?: string, widths: number[] = [480, 800, 1200]):
   return `${cleanUrl} 1200w`;
 };
 
+// Guard broken legacy 404 icon paths (e.g. /game_icons/test-game.webp) cleanly to SVG placeholder
+const resolveSafeCardImage = (prod: StoreProduct): string => {
+  const raw = resolveProductCoverImage(prod);
+  if (!raw || raw.includes('test-game.webp')) {
+    return prod.product_type === 'physical' ? PHYSICAL_DEFAULT_IMAGE_URL : '/package-placeholder.svg';
+  }
+  return raw;
+};
+
+// Strip leftover admin batch verification debug tags from CMS hero copy
+const cleanCmsDebugSuffix = (text?: string): string | undefined => {
+  if (!text) return text;
+  return text
+    .replace(/\s*\([^)]*(?:Đợt\s*\d+|Batch\s*\d+|Admin\s*Verified|xác minh Admin)[^)]*\)/gi, '')
+    .trim();
+};
+
 export const THEME_ACCENTS: Record<string, {
   name: string;
   headerGradient: string;
@@ -123,7 +140,7 @@ export const THEME_ACCENTS: Record<string, {
 }> = {
   orange: {
     name: 'Cam Shopee',
-    headerGradient: 'from-[#f53d2d] to-[#ee4d2d]',
+    headerGradient: 'from-[#ee4d2d] via-[#f53d2d] to-[#ff7337]',
     subNavBg: 'bg-[#d73211]',
     badgeBg: 'text-[#ee4d2d]',
     textColor: 'text-[#ee4d2d]',
@@ -350,7 +367,10 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
     if (e) e.stopPropagation();
     const res = dataService.toggleBookmark(gameId);
     syncBookmarks();
-    onShowToast(res.isBookmarked ? 'Đã lưu vào tủ game theo dõi!' : 'Đã bỏ theo dõi game khỏi tủ!', res.isBookmarked ? 'success' : 'info');
+    onShowToast(
+      res.isBookmarked ? t('mall.toasts.savedBookmark') : t('mall.toasts.removedBookmark'),
+      res.isBookmarked ? 'success' : 'info'
+    );
   };
 
   // White-Label Customizable Shop Brand from CMS / DataService
@@ -806,7 +826,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
   const handleAddProductToCart = (prod: StoreProduct, e: React.MouseEvent) => {
     e.stopPropagation();
     if ((prod.stock_quantity ?? 0) <= 0) {
-      onShowToast(`Sản phẩm "${prod.title}" hiện đã hết hàng trong kho.`, 'warning');
+      onShowToast(t('mall.toasts.outOfStock', { title: prod.title }), 'warning');
       return;
     }
 
@@ -815,15 +835,15 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
       productName: prod.title,
       priceCore: prod.current_price,
       sellerId: 'admin_store',
-      sellerName: 'Codegame Mall',
-      sellerSlug: 'codegame-mall',
+      sellerName: 'Universal Mall',
+      sellerSlug: 'universal-mall',
       gameSlug: prod.game_slug,
       gameName: prod.game_name,
-      coverUrl: prod.cover_image_url || prod.product_images?.[0]
+      coverUrl: resolveSafeCardImage(prod)
     });
 
     if (result.success) {
-      onShowToast(`Đã thêm "${prod.title}" vào Giỏ Hàng Shopee!`, 'success');
+      onShowToast(t('mall.toasts.addedToCart', { title: prod.title }), 'success');
       try {
         confetti({
           particleCount: 20,
@@ -1078,7 +1098,27 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           >
             {renderIconBox('💬', 'bg-pink-500/10 border border-pink-500/30 text-pink-500')}
             <span className="text-[11px] font-medium mt-2 leading-tight">
-              {customTitle || sub.internal_name || t.mall?.services?.support247 || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}
+              {customTitle || sub.internal_name || t('mall.services.support247')}
+            </span>
+          </button>
+        );
+      case 'shortcut_freeship_xtra':
+        return (
+          <button
+            key={shortcutId}
+            onClick={() => handleShortcutClick(() => {
+              setOnlyFreeshipFilter(true);
+              setSelectedProductType('all');
+              setCurrentPage(1);
+              onShowToast(t('mall.toasts.freeshipEnabled'), 'success');
+              const el = document.getElementById('shopee-products-grid');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            })}
+            className="group flex flex-col items-center cursor-pointer relative"
+          >
+            {renderIconBox('✨', 'bg-teal-500/10 border border-teal-500/30 text-teal-600')}
+            <span className="text-[11px] font-medium mt-2 leading-tight">
+              {customTitle || sub.internal_name || t('mall.services.freeshipXtra')}
             </span>
           </button>
         );
@@ -1275,9 +1315,9 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
     switch (sectionId) {
       case 'main_hero_banner': {
         const heroSection = orderedSections.find((s) => s.id === 'main_hero_banner');
-        const customHeroTitle = isEn ? heroSection?.title_en : heroSection?.title_vi;
-        const customHeroDesc = isEn ? heroSection?.description_en : heroSection?.description_vi;
-        const customHeroBadge = isEn ? heroSection?.badge_en : heroSection?.badge_vi;
+        const customHeroTitle = cleanCmsDebugSuffix(isEn ? heroSection?.title_en : heroSection?.title_vi);
+        const customHeroDesc = cleanCmsDebugSuffix(isEn ? heroSection?.description_en : heroSection?.description_vi);
+        const customHeroBadge = cleanCmsDebugSuffix(isEn ? heroSection?.badge_en : heroSection?.badge_vi);
         const heroLinkUrl = heroSection?.link_url;
         const heroLinkTarget = heroSection?.link_target || '_self';
         const heroLinkType = heroSection?.link_type || 'internal';
@@ -1285,30 +1325,36 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         return (
           <>
             {/* 3.1. HERO BANNER GRID (2/3 + 1/3) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-stretch">
               {/* Banner Chính Lớn - Dynamic Carousel 3 Slides */}
               <div 
-                className="md:col-span-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] shadow-sm group"
+                className="md:col-span-2 rounded-xl bg-gradient-to-r from-[#ee4d2d] via-[#f53d2d] to-[#ff7337] text-white p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between min-h-[210px] sm:min-h-[236px] shadow-sm group"
               >
                 {/* Ảnh Banner tùy chỉnh từ cấu hình (WebP, Eager Loading, Chống CLS, srcset đa biến thể 480w/800w/1200w) */}
                 {heroSection?.image_url && (
-                  <img
-                    src={heroSection.image_url}
-                    srcSet={getResponsiveSrcSet(heroSection.image_url, [480, 800, 1200])}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 70vw, 1200px"
-                    width={1200}
-                    height={450}
-                    alt={isEn ? (heroSection.image_alt_en || customHeroTitle || 'Hero Banner') : (heroSection.image_alt_vi || customHeroTitle || 'Banner lớn')}
-                    loading="eager"
-                    onClick={() => {
-                      if (heroLinkUrl) {
-                        handleNavigation(heroLinkUrl, heroLinkTarget, heroLinkType);
-                      }
-                    }}
-                    className={`absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:scale-102 transition duration-500 ${
-                      heroLinkUrl ? 'cursor-pointer' : ''
-                    }`}
-                  />
+                  <>
+                    <img
+                      src={heroSection.image_url}
+                      srcSet={getResponsiveSrcSet(heroSection.image_url, [480, 800, 1200])}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 70vw, 1200px"
+                      width={1200}
+                      height={450}
+                      alt={isEn ? (heroSection.image_alt_en || customHeroTitle || 'Hero Banner') : (heroSection.image_alt_vi || customHeroTitle || 'Banner lớn')}
+                      loading="eager"
+                      onClick={() => {
+                        if (heroLinkUrl) {
+                          handleNavigation(heroLinkUrl, heroLinkTarget, heroLinkType);
+                        }
+                      }}
+                      className={`absolute inset-0 w-full h-full object-cover z-0 opacity-85 group-hover:scale-102 transition duration-500 ${
+                        heroLinkUrl ? 'cursor-pointer' : ''
+                      }`}
+                    />
+                    <div
+                      aria-hidden="true"
+                      className="absolute inset-0 z-[1] bg-gradient-to-r from-black/65 via-black/35 to-black/10 pointer-events-none"
+                    />
+                  </>
                 )}
 
                 {/* Nút lùi slide */}
@@ -1449,7 +1495,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               </div>
 
               {/* 2 Banner Phụ Cột Phải */}
-              <div className="grid grid-cols-2 md:grid-cols-1 gap-2.5">
+              <div className="grid grid-cols-2 md:grid-cols-1 md:grid-rows-2 gap-2.5 h-full">
                 <div 
                   onClick={() => setIsGuaranteeOpen(true)}
                   className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3.5 flex flex-col justify-between cursor-pointer hover:opacity-95 transition shadow-sm"
@@ -1502,7 +1548,11 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         const categoriesLinkType = categoriesSection?.link_type || 'internal';
 
         const shortcutSubsections = getOrderedSubsections('categories_grid', 'shortcuts');
-        const activeShortcuts = shortcutSubsections.filter((s) => s.enabled && s.id !== 'nav_game_zone' && s.id !== 'shortcut_game_zone');
+        const baseShortcuts = shortcutSubsections.filter((s) => s.enabled && s.id !== 'nav_game_zone' && s.id !== 'shortcut_game_zone');
+        const activeShortcuts =
+          baseShortcuts.length === 7 && !baseShortcuts.some((s) => s.id === 'shortcut_freeship_xtra')
+            ? [...baseShortcuts, { id: 'shortcut_freeship_xtra', enabled: true, order: 99 } as any]
+            : baseShortcuts;
 
         const categorySubsections = getOrderedSubsections('categories_grid', 'categories');
         const activeCategorySubsections = categorySubsections.filter((s) => s.enabled);
@@ -1650,25 +1700,25 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 />
               </div>
             )}
-            <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
-                  <div className="flex items-center gap-3">
-                    <div className="text-lg sm:text-xl font-black text-[#ee4d2d] flex items-center tracking-tight">
-                      <Flame className="w-5 h-5 sm:w-6 sm:h-6 mr-1 fill-current" />
-                      <span>{customFlashTitle || t.mall?.flashSale?.title || (language === 'en' ? 'GOLDEN HOUR FLASH SALE' : 'FLASH SALE GIỜ VÀNG')}</span>
+            <div className={`rounded-xl shadow-sm border p-3.5 sm:p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800 gap-2 flex-wrap">
+                  <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                    <div className="text-lg sm:text-xl font-black italic text-[#ee4d2d] flex items-center tracking-tight">
+                      <Flame className="w-5 h-5 sm:w-6 sm:h-6 mr-1 fill-current not-italic" />
+                      <span>{cleanCmsDebugSuffix(customFlashTitle) || t('mall.flashSale.title')}</span>
                       {customFlashBadge && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950 ml-1.5">
+                        <span className="not-italic px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950 ml-1.5">
                           {customFlashBadge}
                         </span>
                       )}
                     </div>
-                    {/* Countdown Box */}
-                    <div className="flex items-center gap-1 font-mono text-xs font-bold">
-                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.hours).padStart(2, '0')}</span>
-                      <span>:</span>
-                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                      <span>:</span>
-                      <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                    {/* Shopee Black Flip-Style Countdown Boxes */}
+                    <div className="flex items-center gap-1 font-mono text-xs font-extrabold tabular-nums">
+                      <span className="bg-[#222222] text-white px-1.5 py-0.5 rounded-[3px] shadow-inner min-w-[24px] text-center">{String(timeLeft.hours).padStart(2, '0')}</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-black">:</span>
+                      <span className="bg-[#222222] text-white px-1.5 py-0.5 rounded-[3px] shadow-inner min-w-[24px] text-center">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-black">:</span>
+                      <span className="bg-[#222222] text-white px-1.5 py-0.5 rounded-[3px] shadow-inner min-w-[24px] text-center">{String(timeLeft.seconds).padStart(2, '0')}</span>
                     </div>
                   </div>
 
@@ -1683,35 +1733,36 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                     }}
                     className="text-xs text-[#ee4d2d] hover:underline font-semibold flex items-center cursor-pointer"
                   >
-                    <span>{t.mall?.flashSale?.viewAll || (language === 'en' ? 'View All' : 'Xem Tất Cả')}</span>
+                    <span>{t('mall.flashSale.viewAll')}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
                   {(currentStoreProducts && currentStoreProducts.length > 0 ? currentStoreProducts : storeProducts).slice(0, 6).map((prod) => {
-                    const flashCardImg = resolveProductCoverImage(prod);
+                    const flashCardImg = resolveSafeCardImage(prod);
+                    const isFlashPlaceholder = flashCardImg.includes('package-placeholder.svg');
                     const isFlashPhysical = prod.product_type === 'physical';
+                    const flashDiscount = prod.original_price > prod.current_price
+                      ? Math.round(((prod.original_price - prod.current_price) / prod.original_price) * 100)
+                      : (prod.discount_percent || 0);
+                    const flashSold = Math.max(0, Number(prod.sold_count || 0) + Number(prod.virtual_sold_count || 0));
+                    const flashProgressPct = flashSold > 0 ? Math.min(92, Math.max(24, Math.round((flashSold / (flashSold + 25)) * 100))) : 38;
                     return (
                     <div 
                       key={prod.id}
-                      onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`Sản phẩm: ${prod.title}`, 'info')}
-                      className={`rounded-lg border p-2 flex flex-col justify-between hover:border-[#ee4d2d] hover:shadow-md transition cursor-pointer group relative ${isShopeeDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'}`}
+                      onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(t('mall.toasts.productLabel', { title: prod.title }), 'info')}
+                      className={`rounded-md border p-2 flex flex-col justify-between hover:border-[#ee4d2d] hover:-translate-y-0.5 hover:shadow-md transition cursor-pointer group relative ${isShopeeDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'}`}
                     >
                       <div>
-                        <div className="relative w-full aspect-square rounded overflow-hidden bg-slate-100 dark:bg-slate-700 mb-2">
+                        <div className="relative w-full aspect-square rounded overflow-hidden bg-slate-50 dark:bg-slate-800 mb-2 flex items-center justify-center">
                           <img
                             key={flashCardImg}
                             src={flashCardImg}
                             alt={prod.title}
+                            loading="lazy"
                             onError={(e) => {
                               const img = e.currentTarget;
-                              console.warn('[CardImageError]', {
-                                location: 'flash_sale',
-                                failedSrc: img.currentSrc || img.src,
-                                productId: prod.id,
-                                cover_image_url: prod.cover_image_url,
-                              });
                               if (isFlashPhysical && !img.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
                                 img.src = PHYSICAL_DEFAULT_IMAGE_URL;
                                 return;
@@ -1719,26 +1770,43 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                               if (!img.dataset.fallbackApplied) {
                                 img.dataset.fallbackApplied = '1';
                                 img.src = '/package-placeholder.svg';
+                                img.className = 'w-full h-full object-contain p-4';
                               }
                             }}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                            className={isFlashPlaceholder ? 'w-full h-full object-contain p-4' : 'w-full h-full object-cover group-hover:scale-105 transition duration-200'}
                           />
-                          <span className="absolute top-0 left-0 bg-[#ee4d2d] text-white font-extrabold text-[9px] px-1 py-0.2 rounded-br">
-                            FLASH
+                          <span className="absolute top-0 left-0 bg-[#ee4d2d] text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-br">
+                            MALL
                           </span>
+                          {flashDiscount > 0 && (
+                            <span className="absolute top-0 right-0 bg-[#ffe97a] text-[#ee4d2d] font-extrabold text-[10px] px-1.5 py-0.5 rounded-bl shadow-2xs">
+                              -{flashDiscount}%
+                            </span>
+                          )}
                         </div>
-                        <div className="font-semibold text-xs truncate group-hover:text-[#ee4d2d] transition" title={prod.title}>
-                          {prod.title}
+                        <div className="font-semibold text-xs line-clamp-1 group-hover:text-[#ee4d2d] transition" title={prod.title}>
+                          {contentTranslationService.translateField('product', prod.id, 'name', prod.title, language)}
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 truncate">{prod.brand || 'Universal Mall'}</div>
                       </div>
 
-                      <div className="mt-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
-                        <div className="flex items-baseline justify-between">
-                          <div className="text-[#ee4d2d] font-bold text-xs">{formatPrice(prod.current_price)}</div>
+                      <div className="mt-2 space-y-1.5">
+                        <div className="text-center">
+                          <div className="text-[#ee4d2d] font-extrabold text-sm leading-tight">{formatPrice(prod.current_price)}</div>
                           {prod.original_price > prod.current_price && (
                             <div className="text-[10px] text-slate-400 line-through font-mono">{formatPrice(prod.original_price)}</div>
                           )}
+                        </div>
+                        {/* Shopee Signature Flash Sale Progress Pill */}
+                        <div className="relative h-4 rounded-full bg-[#ffbfa8]/70 dark:bg-orange-950/70 overflow-hidden flex items-center justify-center">
+                          <div
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#ee4d2d] to-[#ff7337] rounded-full"
+                            style={{ width: `${flashProgressPct}%` }}
+                          />
+                          <span className="relative z-10 text-[9px] font-extrabold uppercase tracking-tight text-white drop-shadow-xs px-1 truncate">
+                            {flashSold > 0
+                              ? t('mall.flashSale.soldCount', { count: flashSold })
+                              : `🔥 ${t('mall.flashSale.sellingFast')}`}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1834,11 +1902,17 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 />
               </div>
             )}
-            {/* 3.5. KỆ HÀNG HÓA SÀN ĐA NGÀNH: PHÂN LOẠI & SẢN PHẨM */}
+            {/* 3.5. KỆ HÀNG HÓA SÀN ĐA NGÀNH: GỢI Ý HÔM NAY (DAILY DISCOVER) */}
             <div id="shopee-products-grid" className="space-y-3 scroll-mt-28">
-              
+              {/* Shopee Daily Discover Centered Header */}
+              <div className={`rounded-t-lg border border-b-4 border-b-[#ee4d2d] py-3 px-4 text-center shadow-2xs ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <h3 className="text-sm sm:text-base font-extrabold uppercase tracking-wider text-[#ee4d2d]">
+                  {cleanCmsDebugSuffix(customGamesTitle) || t('mall.products.dailyDiscover')}
+                </h3>
+              </div>
+
               {/* TAB CHUYỂN ĐỔI KỆ HÀNG */}
-              <div className="flex items-center justify-between border-b-2 border-[#ee4d2d] pb-2 flex-wrap gap-2">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 flex-wrap gap-2">
                 <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
                   {[
                     { id: 'all', label: t.mall?.products?.allTab || (language === 'en' ? '🔥 All Packages' : '🔥 Tất Cả Gói'), count: filteredStoreProducts.length },
@@ -1981,13 +2055,14 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                     return (
                       <div
                         key={prod.id}
-                        onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(`${prod.title}`, 'info')}
-                        className={`rounded-md border hover:border-[#ee4d2d] hover:-translate-y-0.5 transition duration-150 shadow-xs hover:shadow-md cursor-pointer overflow-hidden flex flex-col justify-between group ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+                        onClick={() => onSelectProduct ? onSelectProduct(prod) : onShowToast(t('mall.toasts.productLabel', { title: prod.title }), 'info')}
+                        className={`rounded-sm border hover:border-[#ee4d2d] hover:-translate-y-0.5 hover:z-10 transition duration-150 shadow-2xs hover:shadow-md cursor-pointer overflow-hidden flex flex-col justify-between group relative h-full ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}
                       >
                         <div>
-                          <div className="w-full aspect-square bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
+                          <div className="w-full aspect-square bg-slate-50 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
                             {(() => {
-                              const shelfCardImg = resolveProductCoverImage(prod);
+                              const shelfCardImg = resolveSafeCardImage(prod);
+                              const isShelfPlaceholder = shelfCardImg.includes('package-placeholder.svg');
                               return (
                                 <img
                                   key={shelfCardImg}
@@ -1996,12 +2071,6 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                                   loading="lazy"
                                   onError={(e) => {
                                     const img = e.currentTarget;
-                                    console.warn('[CardImageError]', {
-                                      location: 'main_shelf',
-                                      failedSrc: img.currentSrc || img.src,
-                                      productId: prod.id,
-                                      cover_image_url: prod.cover_image_url,
-                                    });
                                     if (isPhysicalProd && !img.src.includes(PHYSICAL_DEFAULT_IMAGE_URL)) {
                                       img.src = PHYSICAL_DEFAULT_IMAGE_URL;
                                       return;
@@ -2009,19 +2078,20 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                                     if (!img.dataset.fallbackApplied) {
                                       img.dataset.fallbackApplied = '1';
                                       img.src = '/package-placeholder.svg';
+                                      img.className = 'w-full h-full object-contain p-4';
                                     }
                                   }}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                  className={isShelfPlaceholder ? 'w-full h-full object-contain p-4' : 'w-full h-full object-cover group-hover:scale-105 transition duration-300'}
                                 />
                               );
                             })()}
                             {/* Top-left Mall / Preferred Shopee Ribbon */}
-                            <span className={`absolute top-2 left-0 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-r shadow-xs ${isPhysicalProd ? 'bg-[#d0011b]' : 'bg-emerald-600'}`}>
+                            <span className={`absolute top-2 left-0 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-r shadow-xs ${isPhysicalProd ? 'bg-[#d0011b]' : 'bg-[#ee4d2d]'}`}>
                               {isPhysicalProd
                                 ? t('shopeePhysical.mallBadge')
                                 : (prod.badge && prod.badge !== 'Hàng Số' && prod.badge !== 'Hàng Vật Lý'
                                     ? prod.badge
-                                    : t('mall.products.digitalBadge'))}
+                                    : t('shopeePhysical.favoriteBadge'))}
                             </span>
                             {/* Top-right Shopee Yellow Discount Flag */}
                             {discountPercent > 0 && (
@@ -2029,9 +2099,9 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                                 -{discountPercent}%
                               </span>
                             )}
-                            {/* Bottom-left Freeship Xtra Overlay for Physical Goods */}
+                            {/* Bottom-left Freeship Xtra / Voucher Xtra Overlay */}
                             {isPhysicalProd && (
-                              <div className="absolute bottom-0 left-0 right-0 px-1.5 py-1 bg-gradient-to-t from-black/55 to-transparent flex items-center justify-between">
+                              <div className="absolute bottom-0 left-0 right-0 px-1.5 py-1 bg-gradient-to-t from-black/55 to-transparent flex items-center gap-1">
                                 <span className="bg-[#00bfa5] text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-xs inline-flex items-center gap-0.5 tracking-tight">
                                   <Truck className="w-2.5 h-2.5 shrink-0" />
                                   <span>{t('shopeePhysical.freeshipXtra')}</span>
@@ -2044,90 +2114,89 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                             <div className="text-xs font-medium line-clamp-2 leading-snug min-h-[2rem] group-hover:text-[#ee4d2d] transition" title={prod.title}>
                               {contentTranslationService.translateField('product', prod.id, 'name', prod.title, language)}
                             </div>
-                            <div className="flex items-center gap-1 flex-wrap">
+                            <div className="flex items-center gap-1 flex-wrap min-h-[18px]">
                               {isPhysicalProd ? (
                                 <>
                                   <span className="text-[9px] border border-[#ee4d2d] text-[#ee4d2d] px-1 rounded-xs font-semibold">
                                     {t('shopeePhysical.cheapGuarantee')}
                                   </span>
-                                  <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1 rounded-xs font-medium">
-                                    {t('shopeePhysical.return15Days')}
+                                  <span className="text-[9px] bg-amber-500/15 text-amber-700 dark:text-amber-300 px-1 rounded-xs font-semibold">
+                                    {t('mall.products.voucherXtra')}
                                   </span>
                                 </>
                               ) : (
-                                <span className="text-[9px] border border-emerald-500 text-emerald-500 px-1 rounded-xs font-medium">
+                                <span className="text-[9px] border border-emerald-600 text-emerald-700 dark:text-emerald-400 px-1 rounded-xs font-semibold">
                                   {t('shopeePhysical.instant0s')}
                                 </span>
                               )}
-                              {prod.variants && prod.variants.length > 0 && (
-                                <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1 rounded-xs">
-                                  {prod.variants.length} {t('shopeePhysical.selectVariant')}
-                                </span>
-                              )}
                             </div>
-
-                            {/* Rating & Sold count row (Shopee style) */}
-                            <div className="flex items-center justify-between gap-1 text-[10px] pt-0.5">
-                              {prod.rating && prod.review_count && prod.review_count > 0 ? (
-                                <div className="flex items-center gap-0.5 text-amber-500 font-medium">
-                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                  <span className="font-bold">{Number(prod.rating).toFixed(1)}</span>
-                                </div>
-                              ) : (
-                                <span className="text-slate-400 text-[10px] truncate">
-                                  {prod.brand ? contentTranslationService.translateField('brand', prod.brand, 'name', prod.brand, language) : (prod.game_name || 'Universal Mall')}
-                                </span>
-                              )}
-                              {prod.show_sold_count !== false && totalSoldCount > 0 && (
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
-                                  {t('shopeePhysical.soldPrefix')} {totalSoldCount}
-                                </span>
-                              )}
-                            </div>
-
-                            {isPhysicalProd && (
-                              <div className="flex items-center gap-1 text-[9px] text-slate-400 truncate">
-                                <MapPin className="w-2.5 h-2.5 shrink-0" />
-                                <span className="truncate">{shipLocation}</span>
-                              </div>
-                            )}
                           </div>
                         </div>
 
                         <div className="p-2 pt-0 space-y-1.5">
-                          <div className="flex items-baseline justify-between gap-1 flex-wrap">
-                            {hasFirstOffer ? (
-                              <div className="flex items-center gap-1">
-                                <span className="text-[#ee4d2d] font-bold text-xs sm:text-sm">{formatPrice(firstPrice)}</span>
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="min-w-0">
+                              <div className="text-[#ee4d2d] font-bold text-xs sm:text-sm truncate">
+                                {formatPrice(hasFirstOffer ? firstPrice : prod.current_price)}
                               </div>
-                            ) : (
-                              <div className="text-[#ee4d2d] font-bold text-xs sm:text-sm">{formatPrice(prod.current_price)}</div>
-                            )}
-                            {displayOriginalPrice > displayCurrentPrice && (
-                              <div className="text-[10px] text-slate-400 line-through font-mono">{formatPrice(displayOriginalPrice)}</div>
-                            )}
+                              {displayOriginalPrice > displayCurrentPrice && (
+                                <div className="text-[10px] text-slate-400 line-through font-mono leading-none">
+                                  {formatPrice(displayOriginalPrice)}
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              disabled={isOutOfStock}
+                              title={isOutOfStock ? t('shopeePhysical.outOfStock') : (prod.variants && prod.variants.length > 1 ? t('shopeePhysical.selectVariant') : t('shopeePhysical.addToCart'))}
+                              aria-label={isOutOfStock ? t('shopeePhysical.outOfStock') : t('shopeePhysical.addToCart')}
+                              onClick={isOutOfStock ? undefined : (e) => {
+                                e.stopPropagation();
+                                if (prod.variants && prod.variants.length > 1 && onSelectProduct) {
+                                  onSelectProduct(prod);
+                                } else {
+                                  handleAddProductToCart(prod, e);
+                                }
+                              }}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition shadow-xs ${
+                                isOutOfStock
+                                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                                  : 'bg-[#ee4d2d]/10 hover:bg-[#ee4d2d] text-[#ee4d2d] hover:text-white cursor-pointer'
+                              }`}
+                            >
+                              <ShoppingCart className="w-3.5 h-3.5" />
+                            </button>
                           </div>
 
-                          <button
-                            type="button"
-                            disabled={isOutOfStock}
-                            onClick={isOutOfStock ? undefined : (e) => {
-                              e.stopPropagation();
-                              if (prod.variants && prod.variants.length > 1 && onSelectProduct) {
-                                onSelectProduct(prod);
-                              } else {
-                                handleAddProductToCart(prod, e);
-                              }
-                            }}
-                            className={`w-full py-1.5 rounded text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-xs ${
-                              isOutOfStock
-                                ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed'
-                                : 'bg-[#ee4d2d] hover:bg-[#d73211] text-white cursor-pointer'
-                            }`}
-                          >
-                            <ShoppingCart className="w-3 h-3" />
-                            <span>{isOutOfStock ? t('shopeePhysical.outOfStock') : (prod.variants && prod.variants.length > 1 ? t('shopeePhysical.selectVariant') : t('shopeePhysical.addToCart'))}</span>
-                          </button>
+                          {/* Rating, Sold count & Location row (Shopee style) */}
+                          <div className="flex items-center justify-between gap-1 text-[10px] pt-0.5 border-t border-slate-100 dark:border-slate-800/80">
+                            {prod.rating && prod.review_count && prod.review_count > 0 ? (
+                              <div className="flex items-center gap-0.5 text-amber-500 font-medium shrink-0">
+                                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                                <span className="font-bold">{Number(prod.rating).toFixed(1)}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-0.5 text-slate-400 truncate min-w-0">
+                                {isPhysicalProd && <MapPin className="w-2.5 h-2.5 shrink-0" />}
+                                <span className="truncate">
+                                  {isPhysicalProd
+                                    ? shipLocation
+                                    : (prod.brand ? contentTranslationService.translateField('brand', prod.brand, 'name', prod.brand, language) : (prod.game_name || 'Universal Mall'))}
+                                </span>
+                              </div>
+                            )}
+                            {prod.show_sold_count !== false && totalSoldCount > 0 && (
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
+                                {t('shopeePhysical.soldPrefix')} {totalSoldCount}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Shopee signature hover footer bar */}
+                        <div className="hidden sm:block bg-[#ee4d2d] text-white text-[11px] font-semibold text-center py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                          {t('mall.products.findSimilar')}
                         </div>
                       </div>
                     );
@@ -2146,8 +2215,8 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                           total: 1,
                         })
                       : t('mall.showingCount_plural', {
-                          from: (currentPage - 1) * 20 + 1,
-                          to: Math.min(currentPage * 20, currentMallProducts.length),
+                          from: (currentPage - 1) * pageSize + 1,
+                          to: Math.min(currentPage * pageSize, currentMallProducts.length),
                           total: currentMallProducts.length,
                         })}
                   </div>
@@ -2291,21 +2360,21 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 font-sans pb-16 ${isShopeeDark ? 'bg-[#0a0f1d] text-slate-100' : 'bg-[#f5f5f5] text-slate-800'}`}>
+    <div className={`min-h-screen transition-colors duration-200 font-sans ${isShopeeDark ? 'bg-[#0a0f1d] text-slate-100' : 'bg-[#f5f5f5] text-slate-800'}`}>
       
-      {/* 0. TOP BAR THÔNG BÁO SÀN UNIVERSAL MALL */}
+      {/* 0. TOP BAR THÔNG BÁO SÀN UNIVERSAL MALL (Non-sticky so Shopee sticky header anchors cleanly at top-0) */}
       {isSectionEnabled('top_announcement') && (() => {
         const topSec = orderedSections.find((s) => s.id === 'top_announcement');
-        const customTopTitle = isEn ? topSec?.title_en : topSec?.title_vi;
-        const customTopDesc = isEn ? topSec?.description_en : topSec?.description_vi;
-        const customTopBadge = isEn ? topSec?.badge_en : topSec?.badge_vi;
+        const customTopTitle = cleanCmsDebugSuffix(isEn ? topSec?.title_en : topSec?.title_vi);
+        const customTopDesc = cleanCmsDebugSuffix(isEn ? topSec?.description_en : topSec?.description_vi);
+        const customTopBadge = cleanCmsDebugSuffix(isEn ? topSec?.badge_en : topSec?.badge_vi);
         const topLinkUrl = topSec?.link_url;
         const topLinkTarget = topSec?.link_target || '_self';
         const topLinkType = topSec?.link_type || 'internal';
 
         return (
-          <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold flex items-center justify-between shadow-sm sticky top-0 z-50">
-            <div className="flex items-center gap-2">
+          <div className="bg-amber-400 text-slate-950 px-2.5 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold flex items-center justify-between gap-2 shadow-xs relative z-20 w-full max-w-full overflow-hidden">
+            <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
               {topSec?.image_url && (
                 <img 
                   src={topSec.image_url} 
@@ -2315,26 +2384,22 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                   className="w-4 h-4 rounded object-cover shrink-0" 
                 />
               )}
-              <span className="bg-black text-amber-400 px-2 py-0.5 rounded uppercase text-[10px] tracking-wider font-mono">
-                {customTopBadge || t.mall?.topNav?.marketplace || (language === 'en' ? 'Comprehensive Marketplace' : 'Bản Sàn Toàn Diện')}
+              <span className="bg-slate-950 text-amber-400 px-2 py-0.5 rounded uppercase text-[10px] tracking-wider font-mono whitespace-nowrap shrink-0">
+                {customTopBadge || t('mall.topNav.marketplace')}
               </span>
-              <span className="truncate">
+              <span className="truncate min-w-0">
                 {customTopTitle ? (
                   <span>{customTopTitle}{customTopDesc ? ` - ${customTopDesc}` : ''}</span>
                 ) : (
                   <>
-                    {language === 'en'
-                      ? (t.mall?.topNav?.editionDesc || 'Universal Mall — Official Multi-Industry E-Commerce Marketplace')
-                      : (t.mall?.topNav?.editionDesc || 'Universal Mall — Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng')}
+                    {t('mall.topNav.editionDesc')}
                     {' '}
-                    {language === 'en'
-                      ? (t.mall?.topNav?.mainSiteUnaffected || ' (0s instant delivery & 168h escrow)')
-                      : (t.mall?.topNav?.mainSiteUnaffected || ' (Giao mã 0s & Bảo chứng 168h)')}
+                    {t('mall.topNav.mainSiteUnaffected')}
                   </>
                 )}
               </span>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
               <button 
                 onClick={() => {
                   if (topLinkUrl) {
@@ -2344,11 +2409,10 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className="flex items-center gap-1.5 bg-black hover:bg-slate-900 text-white px-3 py-1 rounded text-xs transition active:scale-95 cursor-pointer font-bold"
+                className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 text-white px-3 py-1 rounded text-xs transition active:scale-95 cursor-pointer font-bold whitespace-nowrap"
               >
-                <Store className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{customTopBadge || t.mall?.topNav?.mallHomepage || (language === 'en' ? 'Universal Mall Homepage' : 'Trang Chủ Sàn Pine Universal Mall')}</span>
-                <span className="sm:hidden">{t.mall?.subnav?.home || (language === 'en' ? 'Marketplace' : 'Trang Chủ')}</span>
+                <Store className="w-3.5 h-3.5 shrink-0" />
+                <span>{customTopBadge || t('mall.topNav.mallHomepage')}</span>
               </button>
             </div>
           </div>
@@ -2356,35 +2420,35 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
       })()}
 
       {/* 1. UNIVERSAL MALL TOPBAR */}
-      <div className="bg-[#ee4d2d] text-white text-[12px] py-1 px-4 border-b border-white/10">
-        <div className="max-w-6xl mx-auto flex justify-between items-center gap-2">
+      <div className="bg-[#ee4d2d] text-white text-[11px] sm:text-[12px] py-1 px-2.5 sm:px-4 border-b border-white/10">
+        <div className="max-w-6xl mx-auto flex justify-between items-center gap-2 min-w-0">
           {/* Left Topbar Links: Kênh Người Bán & Mở Gian Hàng */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 overflow-hidden">
             <button 
               onClick={() => setSubView('seller')}
-              className={`hover:opacity-80 transition cursor-pointer font-medium ${subView === 'seller' ? 'underline font-bold text-amber-200' : ''}`}
+              className={`hover:opacity-80 transition cursor-pointer font-medium whitespace-nowrap ${subView === 'seller' ? 'underline font-bold text-amber-200' : ''}`}
             >
-              {t.mall?.topNav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}
+              {t('mall.topNav.sellerCenter')}
             </button>
-            <span className="opacity-40">|</span>
+            <span className="opacity-40 hidden xs:inline sm:inline">|</span>
             <button 
               onClick={() => setSubView('seller')}
-              className={`hover:opacity-80 transition cursor-pointer font-medium ${subView === 'seller' ? 'underline font-bold text-amber-200' : ''}`}
+              className={`hover:opacity-80 transition cursor-pointer font-medium hidden sm:inline whitespace-nowrap ${subView === 'seller' ? 'underline font-bold text-amber-200' : ''}`}
             >
-              {t.mall?.topNav?.openStore || (language === 'en' ? 'Open Store' : 'Mở Gian Hàng')}
+              {t('mall.topNav.openStore')}
             </button>
             <span className="opacity-40 hidden sm:inline">|</span>
             <button 
               onClick={onOpenDownloadApp}
-              className="hover:opacity-80 transition cursor-pointer hidden sm:flex items-center gap-1 font-medium"
+              className="hover:opacity-80 transition cursor-pointer hidden sm:flex items-center gap-1 font-medium whitespace-nowrap"
             >
               <Smartphone className="w-3.5 h-3.5" />
-              <span>{t.mall?.topNav?.downloadApp || (language === 'en' ? 'Download App (APK)' : 'Tải App (APK)')}</span>
+              <span>{t('mall.topNav.downloadApp')}</span>
             </button>
             <span className="opacity-40 hidden md:inline">|</span>
             <button 
               onClick={() => setSubView('telegram')}
-              className={`hover:opacity-80 transition cursor-pointer hidden md:flex items-center gap-1 font-medium ${subView === 'telegram' ? 'underline font-bold text-amber-200' : ''}`}
+              className={`hover:opacity-80 transition cursor-pointer hidden md:flex items-center gap-1 font-medium whitespace-nowrap ${subView === 'telegram' ? 'underline font-bold text-amber-200' : ''}`}
             >
               <Send className="w-3.5 h-3.5" />
               <span>Telegram</span>
@@ -2392,34 +2456,36 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           </div>
 
           {/* Right Topbar Links */}
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
             {/* Tủ Mã / Đơn Mua Shopee */}
             <button 
-              onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('marketplace') : onShowToast(t.mall?.topNav?.myVault || (language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem quà đã nhận'), 'info')}
-              className="hover:opacity-80 transition cursor-pointer flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded font-medium text-[11px] sm:text-xs"
-              title={language === 'en' ? 'View purchased giftcodes, game cards & accounts' : 'Xem các mã quà tặng, thẻ game & tài khoản đã mua'}
+              onClick={() => onOpenReceivedCodes ? onOpenReceivedCodes('marketplace') : onShowToast(t('mall.topNav.myVault'), 'info')}
+              className="hover:opacity-80 transition cursor-pointer flex items-center gap-1 bg-white/15 px-2 py-0.5 rounded font-medium text-[11px] sm:text-xs whitespace-nowrap"
+              title={t('mall.topNav.myVault')}
             >
-              <Package className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t.mall?.topNav?.myVault || (language === 'en' ? 'Orders & Vault' : 'Đơn Mua / Tủ Mã')}</span>
-              <span className="sm:hidden">{language === 'en' ? 'Vault' : 'Tủ Mã'}</span>
+              <Package className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">{t('mall.topNav.myVault')}</span>
+              <span className="sm:hidden">{t('mall.topNav.myVault')}</span>
             </button>
 
             {/* Thông Báo */}
             <button 
               onClick={onOpenEmailModal}
-              className="hover:opacity-80 transition cursor-pointer hidden sm:flex items-center gap-1"
+              className="hover:opacity-80 transition cursor-pointer hidden sm:flex items-center gap-1 whitespace-nowrap"
             >
-              <Bell className="w-3.5 h-3.5" />
-              <span>{t.nav?.notifications || (language === 'en' ? 'Notifications' : 'Thông Báo')}</span>
+              <Bell className="w-3.5 h-3.5 shrink-0" />
+              <span>{t('nav.notifications')}</span>
             </button>
 
             {/* Hỗ Trợ 24/7 */}
             <button 
               onClick={() => setIsSupportOpen(true)}
-              className="hover:opacity-80 transition cursor-pointer flex items-center gap-1"
+              className="hover:opacity-80 transition cursor-pointer flex items-center gap-1 whitespace-nowrap"
+              title={t('nav.support')}
+              aria-label={t('nav.support')}
             >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t.nav?.support || (language === 'en' ? 'Support 24/7' : 'Hỗ Trợ 24/7')}</span>
+              <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">{t('nav.support')}</span>
             </button>
 
             {/* Bộ chuyển đổi ngôn ngữ VI / EN */}
@@ -2429,25 +2495,25 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
 
             {/* Người dùng & Số Dư Ví Thực */}
             {currentUser ? (
-              <div className="flex items-center gap-2 pl-2 border-l border-white/20">
+              <div className="flex items-center gap-1.5 sm:gap-2 pl-2 border-l border-white/20">
                 <button 
                   onClick={() => setSubView('account')}
-                  className="font-semibold text-amber-200 hover:underline cursor-pointer truncate max-w-[100px]"
-                  title={language === 'en' ? 'Open account and wallet' : 'Mở trang tài khoản & ví'}
+                  className="font-semibold text-amber-200 hover:underline cursor-pointer truncate max-w-[84px] sm:max-w-[100px]"
+                  title={t('mall.subnav.account')}
                 >
                   {currentUser.displayName || currentUser.name || currentUser.username}
                 </button>
-                <button onClick={onOpenWallet} className="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer">
-                  {t.nav?.wallet || (isEn ? 'Wallet' : 'Ví')}: {walletBalanceDisplay}
+                <button onClick={onOpenWallet} className="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer whitespace-nowrap">
+                  {t('nav.wallet')}: {walletBalanceDisplay}
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2 pl-2 border-l border-white/20">
-                <button onClick={onOpenWallet} className="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer hidden sm:block">
-                  {t.nav?.wallet || (isEn ? 'Wallet' : 'Ví')}: {walletBalanceDisplay}
+              <div className="flex items-center gap-1.5 sm:gap-2 pl-2 border-l border-white/20">
+                <button onClick={onOpenWallet} className="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer hidden sm:block whitespace-nowrap">
+                  {t('nav.wallet')}: {walletBalanceDisplay}
                 </button>
-                <button onClick={onOpenAuth} className="hover:opacity-80 font-medium cursor-pointer">
-                  {t.nav?.login || (language === 'en' ? 'Login' : 'Đăng Nhập')}
+                <button onClick={onOpenAuth} className="hover:opacity-80 font-semibold cursor-pointer whitespace-nowrap">
+                  {t('nav.login')}
                 </button>
               </div>
             )}
@@ -2455,39 +2521,40 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         </div>
       </div>
 
-      {/* 2. STICKY HEADER CONTAINER (Main Header + Sub-nav dính liền nhau) */}
-      <div className="sticky top-[36px] z-40 shadow-md">
+      {/* 2. STICKY HEADER CONTAINER (Main Header + Sub-nav anchored cleanly at top-0, z-30 below z-50+ modals) */}
+      <div className="sticky top-0 z-30 shopee-sticky-header">
+        <div className="shopee-sticky-inner shadow-md">
         {/* MAIN HEADER SHOPEE */}
-        <div className={`bg-gradient-to-b ${currentAccent.headerGradient} text-white pt-2.5 pb-3 px-4 transition-colors duration-300`}>
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 sm:gap-6">
+        <div className={`bg-gradient-to-b ${currentAccent.headerGradient} text-white pt-2 pb-2.5 sm:pt-2.5 sm:pb-3 px-3 sm:px-4 transition-colors duration-300`}>
+        <div className="max-w-6xl mx-auto flex flex-wrap sm:flex-nowrap items-center justify-between gap-y-2 gap-x-2 sm:gap-x-6 min-w-0">
           
-          {/* Logo Sàn Shopee (Dynamic White-Label Brand) */}
-          <div onClick={() => setSubView('home')} className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0 cursor-pointer">
-            <div className={`w-10 h-10 sm:w-11 sm:h-11 bg-white rounded-xl shadow-lg flex items-center justify-center ${currentAccent.textColor} font-black text-xl sm:text-2xl tracking-tighter overflow-hidden`}>
+          {/* Logo Sàn Shopee (Row 1 Left on Mobile, Left on Desktop) */}
+          <div onClick={() => setSubView('home')} className="order-1 flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial shrink-0 cursor-pointer">
+            <div className={`w-9 h-9 sm:w-11 sm:h-11 bg-white rounded-xl shadow-md flex items-center justify-center ${currentAccent.textColor} font-black text-lg sm:text-2xl tracking-tighter overflow-hidden shrink-0`}>
               {shopBrand.logoUrl && shopBrand.logoUrl !== '/logo.png' ? (
                 <img src={shopBrand.logoUrl} alt={shopBrand.name} className="w-full h-full object-contain p-1" />
               ) : (
                 '🛍️'
               )}
             </div>
-            <div>
-              <div className="font-extrabold text-base sm:text-lg tracking-tight leading-none text-white drop-shadow flex items-center gap-1.5">
-                <span>{shopBrand.name}</span>
-                <span className={`bg-white ${currentAccent.badgeBg} font-bold text-[9px] px-1.5 py-0.2 rounded uppercase`}>Mall</span>
+            <div className="min-w-0">
+              <div className="font-extrabold text-sm sm:text-lg tracking-tight leading-none text-white drop-shadow flex items-center gap-1.5">
+                <span className="truncate">{shopBrand.name}</span>
+                <span className={`bg-white ${currentAccent.badgeBg} font-bold text-[9px] px-1.5 py-0.5 rounded uppercase shrink-0`}>{t('mall.topNav.mallBadge')}</span>
               </div>
-              <div className="text-[10px] text-white/80 font-medium leading-none mt-1 hidden sm:block">
+              <div className="text-[10px] text-white/90 font-medium leading-none mt-1 hidden sm:block truncate max-w-[240px]">
                 {language === 'en'
-                  ? (shopBrand.slogan?.toLowerCase().includes('cổng tra cứu')
-                      ? (t.header?.portalSubtitle || '#1 Giftcode Search Portal')
-                      : (t.mall?.slogan || 'Official Multi-Industry E-Commerce & Digital Utility Marketplace'))
-                  : (shopBrand.slogan || 'Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số')}
+                  ? t('mall.slogan')
+                  : (shopBrand.slogan && !shopBrand.slogan.toLowerCase().includes('cổng tra cứu')
+                      ? shopBrand.slogan
+                      : t('mall.slogan'))}
               </div>
             </div>
           </div>
 
-          {/* Khung Tìm Kiếm Phong Cách Shopee (Lọc Đồng Bộ Game + Flash Sale + Hàng Hóa) */}
-          <div ref={searchDropdownRef} className="flex-1 max-w-2xl relative">
-            <div className="bg-white rounded-lg p-1 flex items-center shadow-md">
+          {/* Khung Tìm Kiếm Phong Cách Shopee (Row 2 Full-Width on Mobile < sm, Center Flex-1 on Desktop) */}
+          <div ref={searchDropdownRef} className="order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-2xl relative min-w-0">
+            <div className="bg-white rounded-md p-1 flex items-center shadow-sm">
               <input 
                 type="text" 
                 value={searchKeyword}
@@ -2503,17 +2570,19 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                     handleHeroSearchSubmit();
                   }
                 }}
-                placeholder={t.mall?.search?.placeholder || (language === 'en' ? 'Search games, giftcodes, accounts, VIP utilities...' : 'Tìm tựa game, thẻ nạp, gói code, tiện ích VIP...')} 
-                className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white text-slate-900 placeholder:text-slate-400 font-medium focus:outline-none"
+                placeholder={t('mall.search.placeholder')} 
+                className="w-full min-w-0 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white text-slate-900 placeholder:text-slate-400 font-medium focus:outline-none"
               />
               {searchKeyword && (
-                <button onClick={() => { setSearchKeyword(''); setIsSearchDropdownOpen(false); }} className="px-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                <button type="button" onClick={() => { setSearchKeyword(''); setIsSearchDropdownOpen(false); }} className="px-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer shrink-0">
                   ✕
                 </button>
               )}
               <button 
+                type="button"
+                aria-label={t('glossary.search')}
                 onClick={() => { setIsSearchDropdownOpen(false); handleHeroSearchSubmit(); }}
-                className={`${currentAccent.buttonBg} hover:opacity-90 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded transition flex items-center justify-center flex-shrink-0 cursor-pointer`}
+                className={`${currentAccent.buttonBg} hover:opacity-90 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded transition flex items-center justify-center shrink-0 cursor-pointer`}
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -2521,7 +2590,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
 
             {/* Server-side Autocomplete Live Dropdown */}
             {isSearchDropdownOpen && (liveSearchResults.products?.length || 0) > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 overflow-hidden divide-y divide-slate-100 max-h-80 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 z-40 overflow-hidden divide-y divide-slate-100 max-h-80 overflow-y-auto">
                 {liveSearchResults.products.length > 0 && (
                   <div className="p-2">
                     <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1">{language === 'en' ? 'Products' : 'Sản phẩm nổi bật'}</div>
@@ -2531,7 +2600,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                         onClick={() => {
                           setIsSearchDropdownOpen(false);
                           if (onSelectProduct) onSelectProduct(prod as any);
-                          else onShowToast(`Sản phẩm: ${prod.title}`, 'info');
+                          else onShowToast(t('mall.toasts.productLabel', { title: prod.title }), 'info');
                         }}
                         className="flex items-center gap-2.5 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
                       >
@@ -2549,8 +2618,8 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               </div>
             )}
 
-            {/* Từ khóa gợi ý song ngữ VI/EN */}
-            <div className="hidden sm:flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-white/80 mt-1.5">
+            {/* Từ khóa gợi ý song ngữ VI/EN (Single crisp line on desktop) */}
+            <div className="hidden sm:flex items-center flex-nowrap overflow-hidden gap-x-3 text-[11px] text-white/90 mt-1.5 whitespace-nowrap">
               {(() => {
                 const rawList = (categoriesConfig.searchSuggestions && categoriesConfig.searchSuggestions.length > 0)
                   ? categoriesConfig.searchSuggestions.slice(0, 5)
@@ -2562,37 +2631,38 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                   const kwLower = kw.toLowerCase();
 
                   if (kwLower.includes('polo')) {
-                    displayLabel = t.mall?.search?.suggestionPolo || (language === 'en' ? "Men's polo t-shirt" : 'Áo thun polo nam');
+                    displayLabel = t('mall.search.suggestionPolo');
                     searchTarget = language === 'en' ? 'polo' : kw;
                   } else if (kwLower.includes('serum') || kwLower.includes('b5')) {
-                    displayLabel = t.mall?.search?.suggestionSerum || (language === 'en' ? 'B5 hydrating serum' : 'Serum cấp ẩm B5');
+                    displayLabel = t('mall.search.suggestionSerum');
                     searchTarget = language === 'en' ? 'B5' : kw;
                   } else if (kwLower.includes('sạc') || kwLower.includes('gan')) {
-                    displayLabel = t.mall?.search?.suggestionCharger || (language === 'en' ? '65W GaN fast charger' : 'Củ sạc nhanh GaN 65W');
+                    displayLabel = t('mall.search.suggestionCharger');
                     searchTarget = language === 'en' ? 'GaN' : kw;
                   } else if (kwLower.includes('canva')) {
-                    displayLabel = t.mall?.search?.suggestionCanvaPro || (language === 'en' ? 'Canva Pro account' : 'Tài khoản Canva Pro');
+                    displayLabel = t('mall.search.suggestionCanvaPro');
                     searchTarget = language === 'en' ? 'Canva' : kw;
                   } else if (kwLower.includes('garena') || kwLower.includes('thẻ nạp')) {
-                    displayLabel = t.mall?.search?.suggestionGarena || (language === 'en' ? 'Garena game top-up card' : 'Thẻ nạp game Garena');
+                    displayLabel = t('mall.search.suggestionGarena');
                     searchTarget = language === 'en' ? 'Garena' : kw;
                   } else if (kwLower.includes('hoodie')) {
-                    displayLabel = t.mall?.search?.suggestionHoodie || (language === 'en' ? 'Hoodie' : 'Áo Hoodie');
+                    displayLabel = t('mall.search.suggestionHoodie');
                     searchTarget = language === 'en' ? 'hoodie' : kw;
                   }
 
                   return (
                     <button
                       key={i}
+                      type="button"
                       onClick={() => handleHeroSearchSubmit(searchTarget)}
-                      className="hover:text-amber-200 transition cursor-pointer"
+                      className="hover:text-amber-200 transition cursor-pointer shrink-0"
                     >
                       {displayLabel}
                     </button>
                   );
                 });
               })()}
-              <button onClick={() => handleHeroSearchSubmit('')} className="hover:text-amber-200 transition font-bold text-amber-300 cursor-pointer">
+              <button type="button" onClick={() => handleHeroSearchSubmit('')} className="hover:text-amber-200 transition font-bold text-amber-200 cursor-pointer shrink-0">
                 {(currentStoreProducts?.length || storeProducts?.length || 0) === 1
                   ? t('mall.search.allProductsCount_singular')
                   : t('mall.search.allProductsCount_plural', { count: currentStoreProducts?.length || storeProducts?.length || 0 })}
@@ -2600,32 +2670,37 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
             </div>
           </div>
 
-          {/* Danh Sách Yêu Thích (Wishlist Realtime Counter) */}
-          {onOpenWishlist && (
-            <div
-              onClick={onOpenWishlist}
-              className="relative cursor-pointer group flex-shrink-0 pr-1"
-              title={language === 'en' ? 'Saved Wishlist' : 'Danh sách yêu thích'}
-            >
-              <div className="relative p-1.5 sm:p-2">
-                <Heart className={`w-7 h-7 sm:w-8 sm:h-8 text-white group-hover:scale-105 transition ${wishlistCount > 0 ? 'fill-rose-300' : ''}`} />
+          {/* Wishlist + Giỏ Hàng Shopee (Row 1 Right on Mobile, Right on Desktop — strictly within viewport) */}
+          <div className="order-2 sm:order-3 flex items-center gap-1 sm:gap-2 shrink-0">
+            {onOpenWishlist && (
+              <button
+                type="button"
+                onClick={onOpenWishlist}
+                className="relative cursor-pointer group shrink-0 p-1.5 sm:p-2"
+                title={language === 'en' ? 'Saved Wishlist' : 'Danh sách yêu thích'}
+                aria-label={language === 'en' ? 'Saved Wishlist' : 'Danh sách yêu thích'}
+              >
+                <Heart className={`w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:scale-105 transition ${wishlistCount > 0 ? 'fill-rose-300' : ''}`} />
                 {wishlistCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-rose-500 text-white font-bold text-[10px] sm:text-[11px] px-1.5 py-0.2 rounded-full border border-white shadow">
+                  <span className="absolute top-0 right-0 bg-rose-600 text-white font-bold text-[10px] px-1.5 py-0.2 rounded-full border border-white shadow">
                     {wishlistCount > 99 ? '99+' : wishlistCount}
                   </span>
                 )}
-              </div>
-            </div>
-          )}
+              </button>
+            )}
 
-          {/* Giỏ Hàng Shopee (Realtime Live Counter) */}
-          <div onClick={onOpenCart} className="relative cursor-pointer group flex-shrink-0 pr-1">
-            <div className="relative p-1.5 sm:p-2">
-              <ShoppingCart className="w-7 h-7 sm:w-8 sm:h-8 text-white group-hover:scale-105 transition" />
-              <span className={`absolute top-0 right-0 bg-white ${currentAccent.textColor} font-bold text-[10px] sm:text-[11px] px-1.5 py-0.2 rounded-full border shadow`}>
+            <button
+              type="button"
+              onClick={onOpenCart}
+              className="relative cursor-pointer group shrink-0 p-1.5 sm:p-2"
+              title={t('nav.cart')}
+              aria-label={t('nav.cart')}
+            >
+              <ShoppingCart className="w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:scale-105 transition" />
+              <span className={`absolute top-0 right-0 bg-white ${currentAccent.textColor} font-bold text-[10px] px-1.5 py-0.2 rounded-full border border-[#ee4d2d]/30 shadow`}>
                 {cartCount}
               </span>
-            </div>
+            </button>
           </div>
 
         </div>
@@ -2639,26 +2714,26 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         if (activeNavSubsections.length === 0) return null;
 
         return (
-          <div className={`${currentAccent.subNavBg} text-white text-xs font-semibold px-2 sm:px-4 shadow-inner border-t border-black/20 sticky top-0 z-40 transition-colors duration-300`}>
+          <div className={`${currentAccent.subNavBg} text-white text-xs font-semibold px-2 sm:px-4 shadow-inner border-t border-black/15 transition-colors duration-300`}>
             <div className="max-w-6xl xl:max-w-7xl mx-auto flex items-center gap-1 sm:gap-1.5 py-1.5">
               {/* Mũi tên cuộn trái */}
               {canScrollLeft && (
                 <button
                   type="button"
                   onClick={() => scrollNav('left')}
-                  className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition bg-black/20 hover:bg-black/40 text-white cursor-pointer active:scale-95"
-                  title={language === 'en' ? (t.mall?.subnav?.scrollLeft || 'Scroll left') : (t.mall?.subnav?.scrollLeft || 'Cuộn sang trái')}
-                  aria-label={language === 'en' ? (t.mall?.subnav?.scrollLeft || 'Scroll left') : (t.mall?.subnav?.scrollLeft || 'Cuộn sang trái')}
+                  className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition bg-black/25 hover:bg-black/45 text-white cursor-pointer active:scale-95"
+                  title={t('mall.subnav.scrollLeft')}
+                  aria-label={t('mall.subnav.scrollLeft')}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
               )}
 
-              {/* Dải mục cuộn mượt */}
+              {/* Dải mục cuộn mượt (hidden native scrollbar + scrollability affordance fade) */}
               <div
                 ref={navScrollRef}
                 onScroll={checkNavScroll}
-                className="flex-1 flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none whitespace-nowrap scroll-smooth py-0.5"
+                className="flex-1 flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none subnav-fade-scroller whitespace-nowrap scroll-smooth py-0.5 min-w-0"
               >
                 {activeNavSubsections.map((sub) => renderNavButton(sub))}
               </div>
@@ -2668,9 +2743,9 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 <button
                   type="button"
                   onClick={() => scrollNav('right')}
-                  className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition bg-black/20 hover:bg-black/40 text-white cursor-pointer active:scale-95"
-                  title={language === 'en' ? (t.mall?.subnav?.scrollRight || 'Scroll right') : (t.mall?.subnav?.scrollRight || 'Cuộn sang phải')}
-                  aria-label={language === 'en' ? (t.mall?.subnav?.scrollRight || 'Scroll right') : (t.mall?.subnav?.scrollRight || 'Cuộn sang phải')}
+                  className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition bg-black/25 hover:bg-black/45 text-white cursor-pointer active:scale-95"
+                  title={t('mall.subnav.scrollRight')}
+                  aria-label={t('mall.subnav.scrollRight')}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -2679,6 +2754,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           </div>
         );
       })()}
+        </div>
       </div>
 
       {/* 2.2. BREADCRUMB QUAY LẠI TRANG CHỦ SÀN (KHI ĐANG XEM SUBVIEW KHÁC) */}
@@ -3322,16 +3398,19 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           </>
         )}
 
-        {/* 3.6. FOOTER ĐẦY ĐỦ 4 CỘT CHUẨN WEB CHÍNH (ĐỘ TƯƠNG PHẢN CAO CHO THEME TRẮNG) */}
-        {isSectionEnabled('footer') && (() => {
-          const footerSection = orderedSections.find((s) => s.id === 'footer');
-          const customFooterTitle = isEn ? footerSection?.title_en : footerSection?.title_vi;
-          const footerLinkUrl = footerSection?.link_url;
-          const footerLinkTarget = footerSection?.link_target || '_self';
-          const footerLinkType = footerSection?.link_type || 'internal';
+      </div>
 
-          return (
-            <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 mt-8 shadow-xs space-y-6 text-xs text-slate-700 dark:text-slate-300">
+      {/* 3.6. SHOPEE-STYLE FULL-BLEED LIGHT-GRAY FOOTER (5 COLUMNS + PAYMENT & SHIPPING BADGES) */}
+      {isSectionEnabled('footer') && (() => {
+        const footerSection = orderedSections.find((s) => s.id === 'footer');
+        const customFooterTitle = isEn ? footerSection?.title_en : footerSection?.title_vi;
+        const footerLinkUrl = footerSection?.link_url;
+        const footerLinkTarget = footerSection?.link_target || '_self';
+        const footerLinkType = footerSection?.link_type || 'internal';
+
+        return (
+          <footer className={`w-full border-t-4 border-[#ee4d2d] mt-10 pb-14 sm:pb-10 text-xs ${isShopeeDark ? 'bg-slate-900 border-b border-slate-800 text-slate-300' : 'bg-[#fbfbfb] border-b border-slate-200 text-slate-600'}`}>
+            <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10 space-y-6">
               {/* Banner Chân Trang hoặc Logo Đối tác tùy chỉnh nếu admin cấu hình */}
               {footerSection?.image_url && (
                 <div
@@ -3350,163 +3429,207 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                   />
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            
-            {/* Cột 1: Về Universal Mall */}
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#ee4d2d] flex items-center justify-center text-white font-black text-sm">
-                  🛍️
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                {/* Cột 1: Về Universal Mall */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#ee4d2d] flex items-center justify-center text-white font-black text-xs shrink-0">
+                      🛍️
+                    </div>
+                    <h4 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs">
+                      {shopBrand.name}
+                    </h4>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                    {t('mall.footer.aboutDesc')}
+                  </p>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <span>{t('mall.footer.edgeNetwork')}</span>
+                    <span>•</span>
+                    <span>{t('mall.footer.operating247')}</span>
+                    <span>•</span>
+                    <span>{t('mall.footer.escrow168h')}</span>
+                  </div>
                 </div>
-                <span className="font-extrabold text-base text-slate-950 dark:text-white">{shopBrand.name}</span>
-              </div>
-              <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed font-medium">
-                {t.mall?.footer?.aboutDesc || (language === 'en' ? 'Authentic multi-industry e-commerce marketplace: Fashion, Beauty, Digital Tech, Services & Gaming. Nationwide courier shipping and 0s instant digital code delivery.' : 'Sàn thương mại điện tử đa ngành chính hãng: Thời trang, Làm đẹp, Thiết bị số, Dịch vụ số & Giải trí. Hệ thống giao hàng bưu chính toàn quốc và giao mã tự động 0s.')}
-              </p>
-              <div className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span>{t.mall?.footer?.edgeNetwork || (language === 'en' ? 'Edge Network Infrastructure' : 'Hạ tầng Edge Network')}</span>
-                <span>•</span>
-                <span>{t.mall?.footer?.operating247 || (language === 'en' ? 'Operating 24/7' : 'Vận hành 24/7')}</span>
-                <span>•</span>
-                <span>{t.mall?.footer?.escrow168h || (language === 'en' ? '168H Escrow Hold' : 'Giữ tiền 168h')}</span>
-              </div>
-            </div>
 
-            {/* Cột 2: Danh Mục Thể Loại & Hàng Hóa */}
-            <div className="space-y-2">
-              <h4 className="font-extrabold text-slate-950 dark:text-white uppercase tracking-wider text-xs">
-                {t.mall?.footer?.topCategories || (language === 'en' ? 'Top Categories' : 'Chuyên Mục Hàng Đầu')}
-              </h4>
-              <ul className="space-y-2 text-xs font-semibold">
-                {(categoriesConfig.categories.length > 1 ? categoriesConfig.categories.slice(1) : categoriesConfig.categories).map((cat) => (
-                  <li key={cat.id}>
+                {/* Cột 2: Chăm Sóc Khách Hàng & Pháp Lý */}
+                <div className="space-y-2.5">
+                  <h4 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs">
+                    {t('mall.footer.customerCare')}
+                  </h4>
+                  <ul className="space-y-2 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                    <li>
+                      <button type="button" onClick={() => setIsGuaranteeOpen(true)} className="hover:text-[#ee4d2d] transition cursor-pointer text-left">
+                        {t('mall.footer.escrowPolicy')}
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" onClick={() => setSubView('terms')} className="hover:text-[#ee4d2d] transition cursor-pointer text-left">
+                        {t('mall.footer.terms')}
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" onClick={() => setSubView('privacy')} className="hover:text-[#ee4d2d] transition cursor-pointer text-left">
+                        {t('mall.footer.privacy')}
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" onClick={() => setIsSupportOpen(true)} className="hover:text-[#ee4d2d] transition cursor-pointer text-left">
+                        {t('mall.footer.supportCenter')}
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" onClick={() => onShowToast(t('mall.toasts.hotlineInfo', { number: shopBrand.hotline }), 'info')} className="hover:text-[#ee4d2d] transition cursor-pointer text-left">
+                        {t('mall.footer.hotline', { number: shopBrand.hotline })}
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Cột 3: Chuyên Mục Hàng Đầu */}
+                <div className="space-y-2.5">
+                  <h4 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs">
+                    {t('mall.footer.topCategories')}
+                  </h4>
+                  <ul className="space-y-2 text-[11px] font-medium">
+                    {(categoriesConfig.categories.length > 1 ? categoriesConfig.categories.slice(1) : categoriesConfig.categories).map((cat) => (
+                      <li key={cat.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            syncSelectedCategory(cat.id);
+                            setSubView('home');
+                            const el = document.getElementById('shopee-products-grid');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="text-slate-600 dark:text-slate-300 hover:text-[#ee4d2d] transition text-left cursor-pointer flex items-center gap-1.5"
+                        >
+                          <span>{cat.icon || '📦'}</span>
+                          <span>{(t.mall?.categories as any)?.[cat.id] || contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Cột 4: Thanh Toán & Đơn Vị Vận Chuyển (Shopee Signature Badges) */}
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs mb-2">
+                      {t('mall.footer.paymentMethods')}
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: 'VietQR', cls: 'text-blue-700 dark:text-blue-300' },
+                        { label: 'SePay', cls: 'text-emerald-700 dark:text-emerald-300' },
+                        { label: t('mall.footer.walletCore'), cls: 'text-[#ee4d2d]' },
+                        { label: t('mall.footer.cod'), cls: 'text-slate-700 dark:text-slate-200' },
+                      ].map((badge) => (
+                        <span
+                          key={badge.label}
+                          className={`px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs text-[10px] font-extrabold tracking-tight ${badge.cls}`}
+                        >
+                          {badge.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs mb-2">
+                      {t('mall.footer.shippingPartners')}
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: 'GHTK', cls: 'text-emerald-700 dark:text-emerald-300' },
+                        { label: 'GHN', cls: 'text-orange-600 dark:text-orange-300' },
+                        { label: 'Viettel Post', cls: 'text-red-600 dark:text-red-400' },
+                      ].map((carrier) => (
+                        <span
+                          key={carrier.label}
+                          className={`px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs text-[10px] font-extrabold tracking-tight ${carrier.cls}`}
+                        >
+                          {carrier.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cột 5: Kết Nối & Tải Ứng Dụng */}
+                <div className="space-y-2.5">
+                  <h4 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs">
+                    {t('mall.footer.connectAndApp')}
+                  </h4>
+                  <div className="space-y-2 text-xs">
                     <button
-                      onClick={() => {
-                        syncSelectedCategory(cat.id);
-                        setSubView('home');
-                        const el = document.getElementById('shopee-products-grid');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="text-slate-700 dark:text-slate-300 hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition text-left cursor-pointer flex items-center gap-1.5"
+                      type="button"
+                      onClick={() => setSubView('telegram')}
+                      className="w-full py-1.5 px-3 rounded-md bg-blue-500 hover:bg-blue-600 text-white font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs text-[11px]"
                     >
-                      <span>{cat.icon || '📦'}</span>
-                      <span>{(t.mall?.categories as any)?.[cat.id] || contentTranslationService.translateField('category', cat.id, 'name', cat.label, language)}</span>
+                      <Send className="w-3.5 h-3.5 shrink-0" />
+                      <span>{t('mall.footer.telegramChannel')}</span>
                     </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                    <button
+                      type="button"
+                      onClick={onOpenDownloadApp}
+                      className="w-full py-1.5 px-3 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs text-[11px]"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                      <span>{t('mall.footer.downloadApk')}</span>
+                    </button>
+                  </div>
 
-            {/* Cột 3: Hỗ Trợ & Pháp Lý */}
-            <div className="space-y-2">
-              <h4 className="font-extrabold text-slate-950 dark:text-white uppercase tracking-wider text-xs">
-                {t.mall?.footer?.supportAndLegal || (language === 'en' ? 'Support & Legal' : 'Hỗ Trợ & Pháp Lý')}
-              </h4>
-              <ul className="space-y-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <li>
-                  <button onClick={() => setIsGuaranteeOpen(true)} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    {t.mall?.footer?.escrowPolicy || (language === 'en' ? '🛡️ 168-Hour Escrow Policy' : '🛡️ Chính Sách Bảo Chứng 168 Giờ')}
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => setSubView('terms')} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    {t.mall?.footer?.terms || (language === 'en' ? '📄 Terms of Service' : '📄 Điều Khoản Dịch Vụ')}
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => setSubView('privacy')} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    {t.mall?.footer?.privacy || (language === 'en' ? '🔒 Privacy Policy' : '🔒 Chính Sách Bảo Mật')}
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => setIsSupportOpen(true)} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    {t.mall?.footer?.supportCenter || (language === 'en' ? '💬 24/7 Customer Support' : '💬 Trung Tâm Hỗ Trợ CSKH 24/7')}
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => onShowToast('Hotline CSKH: 0987.654.321', 'info')} className="hover:text-[#ee4d2d] dark:hover:text-[#ff6b4a] transition cursor-pointer">
-                    {t('mall.footer.hotline', { number: shopBrand.hotline }) || `📞 Hotline: ${shopBrand.hotline}`}
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Cột 4: Kết Nối & Tải App */}
-            <div className="space-y-2.5">
-              <h4 className="font-extrabold text-slate-950 dark:text-white uppercase tracking-wider text-xs">
-                {t.mall?.footer?.connectAndApp || (language === 'en' ? 'Connect & Download App' : 'Kết Nối & Tải Ứng Dụng')}
-              </h4>
-              <div className="space-y-2 text-xs">
-                <button
-                  onClick={() => setSubView('telegram')}
-                  className="w-full py-2 px-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{t.mall?.footer?.telegramChannel || (language === 'en' ? 'Telegram Announcement Channel' : 'Kênh Telegram Thông Báo')}</span>
-                </button>
-                <button
-                  onClick={onOpenDownloadApp}
-                  className="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>{t.mall?.footer?.downloadApk || (language === 'en' ? 'Direct App Download (APK)' : 'Tải App Trực Tiếp (APK)')}</span>
-                </button>
+                  {/* Ngôn ngữ Footer */}
+                  <div className="pt-1">
+                    <span className="text-[11px] text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                      {t('mall.footer.displayLanguage')}
+                    </span>
+                    <LanguageSelector variant="footer" />
+                  </div>
+                </div>
               </div>
 
-              {/* Ngôn ngữ Footer */}
-              <div className="pt-2">
-                <span className="text-xs text-slate-700 dark:text-slate-300 font-bold block mb-1">
-                  {t.mall?.footer?.displayLanguage || (language === 'en' ? 'Display Language:' : 'Ngôn ngữ hiển thị:')}
-                </span>
-                <LanguageSelector variant="footer" />
+              {/* Bottom Legal & Back-to-Top Bar */}
+              <div className="pt-5 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 text-center sm:text-left">
+                  {t('mall.footer.copyright', { name: shopBrand.name })}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubView('home');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-[11px] px-4 py-1.5 rounded-full shadow-xs transition cursor-pointer shrink-0"
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  <span>{t('mall.footer.backToTop')}</span>
+                </button>
               </div>
             </div>
+          </footer>
+        );
+      })()}
 
-          </div>
-
-          {/* NÚT VỀ ĐẦU TRANG SÀN */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-            <button 
-              onClick={() => {
-                setSubView('home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="inline-flex items-center gap-2 bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs px-6 py-2.5 rounded-full shadow transition cursor-pointer"
-            >
-              <Store className="w-4 h-4" />
-              <span>{t.mall?.footer?.backToTop || (language === 'en' ? 'Back to Top of Universal Mall' : 'Về Đầu Trang Sàn Pine Universal Mall')}</span>
-            </button>
-          </div>
-
-          <div className="text-center text-xs font-semibold text-slate-700 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-slate-800">
-            {language === 'en'
-              ? `© 2026 ${shopBrand.name} - Multi-Industry E-Commerce & Gaming Services Platform`
-              : `© 2026 ${shopBrand.name} - Giao Diện Sàn Thương Mại Điện Tử Tiện Ích & Code Game`}
-          </div>
-        </div>
-          );
-        })()}
-
-      </div>
-
-
-
-      {/* 5. MODE SWITCHER NỔI GÓC PHẢI DƯỚI */}
-      <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-2xl border border-slate-300 dark:border-slate-700 px-3 py-2 rounded-full text-xs font-semibold">
-        <span className="text-slate-600 dark:text-slate-300">
-          {t.mall?.footer?.themeLabel || (language === 'en' ? 'Theme:' : 'Giao diện:')}
+      {/* 5. MODE SWITCHER NỔI GÓC PHẢI DƯỚI (Compact, z-30 below all modals) */}
+      <div className="fixed bottom-3 right-3 z-30 flex items-center gap-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-lg border border-slate-300/80 dark:border-slate-700 px-2.5 py-1.5 rounded-full text-[11px] font-semibold opacity-90 hover:opacity-100 transition">
+        <span className="hidden sm:inline text-slate-600 dark:text-slate-300">
+          {t('mall.footer.themeLabel')}
         </span>
         <button 
+          type="button"
           onClick={() => setIsShopeeDark(false)}
-          className={`px-2.5 py-1 rounded-full transition cursor-pointer ${!isShopeeDark ? 'bg-[#ee4d2d] text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+          className={`px-2 py-0.5 rounded-full transition cursor-pointer ${!isShopeeDark ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
         >
-          {t.mall?.footer?.themeLight || (language === 'en' ? 'Light' : 'Shopee Trắng')}
+          {t('mall.footer.themeLight')}
         </button>
         <button 
+          type="button"
           onClick={() => setIsShopeeDark(true)}
-          className={`px-2.5 py-1 rounded-full transition cursor-pointer ${isShopeeDark ? 'bg-[#ee4d2d] text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+          className={`px-2 py-0.5 rounded-full transition cursor-pointer ${isShopeeDark ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
         >
-          {t.mall?.footer?.themeDark || (language === 'en' ? 'Dark' : 'Shopee Dark')}
+          {t('mall.footer.themeDark')}
         </button>
       </div>
 
@@ -3537,9 +3660,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 navigator.clipboard.writeText(pickedCode).catch(() => {});
               }
               onShowToast(
-                language === 'en'
-                  ? `Copied voucher code: ${pickedCode}`
-                  : `Đã sao chép mã voucher: ${pickedCode}`,
+                t('mall.toasts.voucherCopied', { code: pickedCode }),
                 'success'
               );
             }
@@ -3586,7 +3707,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         onClearAll={() => {
           localStorage.removeItem('pine_bookmarks');
           syncBookmarks();
-          onShowToast('Đã xóa toàn bộ tủ game', 'info');
+          onShowToast(t('mall.toasts.clearedBookmarks'), 'info');
         }}
       />
 

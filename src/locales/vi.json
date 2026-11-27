@@ -54,10 +54,13 @@
     "cart": "Giỏ Hàng",
     "wallet": "Ví",
     "solutions": "Thuê / Mua Sàn",
-    "sellerCenter": "Kênh Người Bán"
+    "sellerCenter": "Kênh Người Bán",
+    "notifications": "Thông Báo",
+    "support": "Hỗ Trợ 24/7",
+    "login": "Đăng Nhập"
   },
   "header": {
-    "portalSubtitle": "Cổng Tra Cứu Giftcode #1",
+    "portalSubtitle": "Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số",
     "bookmarksTitle": "Tủ game đã lưu",
     "account": "Tài Khoản",
     "wallet": "Nạp Ví và Lịch Sử",
@@ -530,13 +533,13 @@
       "mallBadge": "Mall"
     },
     "search": {
-      "placeholder": "Tìm tựa game, thẻ nạp, gói code, tiện ích VIP...",
+      "placeholder": "Tìm sản phẩm, thương hiệu và deal hot trên Universal Mall...",
       "suggestionsTitle": "Gợi ý:",
       "suggestionPolo": "Áo thun polo nam",
       "suggestionSerum": "Serum cấp ẩm B5",
-      "suggestionCharger": "Củ sạc nhanh GaN 65W",
-      "suggestionCanvaPro": "Tài khoản Canva Pro",
-      "suggestionGarena": "Thẻ nạp game Garena",
+      "suggestionCharger": "Củ sạc GaN 65W",
+      "suggestionCanvaPro": "Canva Pro",
+      "suggestionGarena": "Thẻ nạp Garena",
       "suggestionHoodie": "Áo Hoodie",
       "suggestionSunscreen": "Kem chống nắng",
       "suggestionGanCharger": "Củ sạc GaN",
@@ -606,7 +609,8 @@
       "vietqrTopup": "Nạp VietQR",
       "luckyWheel": "Vòng Quay Xu",
       "vouchers": "Mã Giảm Giá",
-      "support247": "Hỗ Trợ 24/7"
+      "support247": "Hỗ Trợ 24/7",
+      "freeshipXtra": "Freeship Xtra"
     },
     "paginationSummary": "Trang {page} / {totalPages} • Tổng {total} gói",
     "paginationSummary_singular": "Trang {page} / {totalPages} • Tổng {total} gói",
@@ -628,8 +632,11 @@
       "gaming": "Gaming & Thẻ Nạp"
     },
     "flashSale": {
-      "title": "FLASH SALE GIỜ VÀNG",
-      "viewAll": "Xem Tất Cả"
+      "title": "FLASH SALE",
+      "viewAll": "Xem Tất Cả",
+      "sellingFast": "ĐANG BÁN CHẠY",
+      "soldCount": "ĐÃ BÁN {count}",
+      "endsIn": "KẾT THÚC TRONG"
     },
     "vouchers": {
       "exclusiveTitle": "Ưu Đãi Độc Quyền Sàn Universal Mall",
@@ -637,6 +644,9 @@
       "viewAllBtn": "Xem Kho Voucher Sàn"
     },
     "products": {
+      "dailyDiscover": "GỢI Ý HÔM NAY",
+      "findSimilar": "Tìm sản phẩm tương tự",
+      "voucherXtra": "Voucher Xtra",
       "allTab": "🔥 Tất Cả Gói",
       "physicalTab": "🚚 Hàng Vật Lý (Ship)",
       "digitalTab": "⚡ Hàng Số (Mã 0s)",
@@ -659,7 +669,13 @@
       "edgeNetwork": "Hạ tầng Edge Network",
       "operating247": "Vận hành 24/7",
       "escrow168h": "Giữ tiền 168h",
+      "customerCare": "Chăm Sóc Khách Hàng",
+      "aboutMall": "Về Universal Mall",
       "topCategories": "Chuyên Mục Hàng Đầu",
+      "paymentMethods": "Thanh Toán",
+      "shippingPartners": "Đơn Vị Vận Chuyển",
+      "walletCore": "Ví Core",
+      "cod": "COD",
       "supportAndLegal": "Hỗ Trợ & Pháp Lý",
       "escrowPolicy": "🛡️ Chính Sách Bảo Chứng 168 Giờ",
       "terms": "📄 Điều Khoản Dịch Vụ",
@@ -671,10 +687,55 @@
       "downloadApk": "Tải App Trực Tiếp (APK)",
       "displayLanguage": "Ngôn ngữ hiển thị:",
       "backToTop": "Về Đầu Trang Pine Universal Mall",
-      "copyright": "© 2026 {name} - Giao Diện Sàn Thương Mại Điện Tử Tiện Ích & Code Game",
+      "copyright": "© 2026 {name} — Nền Tảng Thương Mại Điện Tử Đa Ngành & Tiện Ích Số Chính Hãng",
       "themeLabel": "Giao diện:",
       "themeLight": "Sáng",
       "themeDark": "Tối"
+    },
+    "guaranteeModal": {
+      "title": "Bảo Chứng Giao Dịch 168 Giờ",
+      "subtitle": "Chính sách giữ tiền 168 giờ an toàn tuyệt đối",
+      "escrowTitle": "Giữ Tiền 168 Giờ (7 Ngày)",
+      "escrowDesc": "Khi bạn mua hàng hóa, mã thẻ hoặc sản phẩm số, tiền của bạn sẽ được sàn tạm giữ an toàn trong 168 giờ. Người bán chưa thể rút tiền ngay.",
+      "benefitsHeading": "Quyền Lợi Dành Cho Người Mua:",
+      "benefit1Title": "Giao mã tự động 0 giây:",
+      "benefit1Desc": "Mã thẻ và tài khoản hiển thị ngay sau khi thanh toán và lưu vĩnh viễn vào Tủ Mã.",
+      "benefit2Title": "Báo lỗi 1-chạm & Đổi mới:",
+      "benefit2Desc": "Nếu sản phẩm lỗi hoặc mã không hợp lệ, bấm \"Báo lỗi\" trong Tủ Mã để yêu cầu đổi mới ngay lập tức.",
+      "benefit3Title": "Hoàn tiền 100% khi có tranh chấp:",
+      "benefit3Desc": "Quản trị viên đối soát trực tiếp, nếu người bán không thể xử lý đúng cam kết, sàn tự động hoàn tiền về ví của bạn.",
+      "securityLabel": "Cam kết bảo mật",
+      "securityDesc": "Toàn bộ mã thẻ và dữ liệu đơn hàng được mã hóa chuẩn AES-GCM Web Crypto. Chỉ duy nhất người mua mới có thể giải mã xem nội dung.",
+      "confirmBtn": "Đã Hiểu & Yên Tâm Mua Sắm"
+    },
+    "supportModal": {
+      "title": "Trung Tâm Hỗ Trợ Universal Mall 24/7",
+      "subtitle": "Giải đáp thắc mắc, hỗ trợ giao dịch & xử lý đơn hàng",
+      "telegramTitle": "Bot Telegram 24/7",
+      "telegramDesc": "Phản hồi dưới 30 giây",
+      "hotlineTitle": "Hotline & Zalo CSKH",
+      "hotlineDesc": "0987.654.321 (Nhấp để chép)",
+      "hotlineCopied": "Đã sao chép số Hotline CSKH: 0987.654.321",
+      "faqHeading": "Câu Hỏi Thường Gặp (FAQ):",
+      "faq1Title": "1. Mua hàng xong thì xem đơn và mã ở đâu?",
+      "faq1Desc": "Đơn hàng và mã số hiển thị ngay khi thanh toán thành công. Bạn cũng có thể mở mục \"Đơn Mua / Tủ Mã\" trên thanh menu để xem lại bất cứ lúc nào.",
+      "openVaultBtn": "→ Mở Tủ Mã & Đơn Mua Ngay",
+      "faq2Title": "2. Nếu đơn hàng hoặc mã nhận về bị lỗi?",
+      "faq2Desc": "Bạn hoàn toàn yên tâm vì tiền của bạn được giữ an toàn 168 giờ. Hãy vào Tủ Mã bấm nút \"Báo Lỗi\" để yêu cầu đổi mới hoặc hoàn tiền ví tức thì.",
+      "faq3Title": "3. Nạp tiền VietQR bao lâu thì tiền vào ví?",
+      "faq3Desc": "Hệ thống tích hợp cổng SePay tự động. Khi quét mã VietQR đúng cú pháp, tiền sẽ tự động cộng vào ví của bạn trong vòng 3 đến 5 giây.",
+      "closeBtn": "Đóng Hỗ Trợ"
+    },
+    "toasts": {
+      "savedBookmark": "Đã lưu vào danh sách theo dõi!",
+      "removedBookmark": "Đã bỏ khỏi danh sách theo dõi!",
+      "outOfStock": "Sản phẩm \"{title}\" hiện đã hết hàng trong kho.",
+      "addedToCart": "Đã thêm \"{title}\" vào Giỏ Hàng!",
+      "clearedBookmarks": "Đã xóa toàn bộ danh sách theo dõi",
+      "hotlineInfo": "Hotline CSKH: {number}",
+      "voucherCopied": "Đã sao chép mã voucher: {code}",
+      "freeshipEnabled": "Đã bật lọc ưu đãi Freeship Xtra!",
+      "productLabel": "Sản phẩm: {title}"
     }
   },
   "marketing": {

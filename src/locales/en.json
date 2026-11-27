@@ -54,10 +54,13 @@
     "cart": "Shopping Cart",
     "wallet": "Wallet",
     "solutions": "Buy / Rent Platform",
-    "sellerCenter": "Seller Center"
+    "sellerCenter": "Seller Center",
+    "notifications": "Notifications",
+    "support": "Support 24/7",
+    "login": "Login"
   },
   "header": {
-    "portalSubtitle": "#1 Giftcode Search Portal",
+    "portalSubtitle": "Official Multi-Industry E-Commerce & Digital Utility Marketplace",
     "bookmarksTitle": "Saved Bookmarks",
     "account": "Account",
     "wallet": "Wallet & History",
@@ -530,13 +533,13 @@
       "mallBadge": "Mall"
     },
     "search": {
-      "placeholder": "Search games, giftcodes, accounts, VIP utilities...",
+      "placeholder": "Search products, brands and hot deals on Universal Mall...",
       "suggestionsTitle": "Suggestions:",
-      "suggestionPolo": "Men's polo t-shirt",
-      "suggestionSerum": "B5 hydrating serum",
-      "suggestionCharger": "65W GaN fast charger",
-      "suggestionCanvaPro": "Canva Pro account",
-      "suggestionGarena": "Garena game top-up card",
+      "suggestionPolo": "Men's Polo",
+      "suggestionSerum": "B5 Serum",
+      "suggestionCharger": "65W GaN Charger",
+      "suggestionCanvaPro": "Canva Pro",
+      "suggestionGarena": "Garena Card",
       "suggestionHoodie": "Hoodie",
       "suggestionSunscreen": "Sunscreen",
       "suggestionGanCharger": "GaN Fast Charger",
@@ -606,7 +609,8 @@
       "vietqrTopup": "VietQR Top-up",
       "luckyWheel": "Lucky Wheel",
       "vouchers": "Vouchers",
-      "support247": "Support 24/7"
+      "support247": "Support 24/7",
+      "freeshipXtra": "Freeship Xtra"
     },
     "paginationSummary": "Page {page} / {totalPages} • Total {total} packages",
     "paginationSummary_singular": "Page {page} / {totalPages} • Total 1 package",
@@ -628,8 +632,11 @@
       "gaming": "Gaming & Top-up Cards"
     },
     "flashSale": {
-      "title": "GOLDEN HOUR FLASH SALE",
-      "viewAll": "View All"
+      "title": "FLASH SALE",
+      "viewAll": "See All",
+      "sellingFast": "SELLING FAST",
+      "soldCount": "SOLD {count}",
+      "endsIn": "ENDS IN"
     },
     "vouchers": {
       "exclusiveTitle": "Universal Mall Exclusive Deals",
@@ -637,6 +644,9 @@
       "viewAllBtn": "View Mall Vouchers"
     },
     "products": {
+      "dailyDiscover": "DAILY DISCOVER",
+      "findSimilar": "Find Similar",
+      "voucherXtra": "Voucher Xtra",
       "allTab": "🔥 All Packages",
       "physicalTab": "🚚 Physical Goods (Ship)",
       "digitalTab": "⚡ Digital Goods (0s Code)",
@@ -659,7 +669,13 @@
       "edgeNetwork": "Edge Network Infrastructure",
       "operating247": "Operating 24/7",
       "escrow168h": "168H Escrow Hold",
+      "customerCare": "Customer Service",
+      "aboutMall": "About Universal Mall",
       "topCategories": "Top Categories",
+      "paymentMethods": "Payment",
+      "shippingPartners": "Logistics",
+      "walletCore": "Core Wallet",
+      "cod": "COD",
       "supportAndLegal": "Support & Legal",
       "escrowPolicy": "🛡️ 168-Hour Escrow Policy",
       "terms": "📄 Terms of Service",
@@ -671,10 +687,55 @@
       "downloadApk": "Direct App Download (APK)",
       "displayLanguage": "Display Language:",
       "backToTop": "Back to Top of Universal Mall",
-      "copyright": "© 2026 {name} - Multi-Industry E-Commerce & Gaming Services Platform",
+      "copyright": "© 2026 {name} — Official Multi-Industry E-Commerce & Digital Services Platform",
       "themeLabel": "Theme:",
       "themeLight": "Light",
       "themeDark": "Dark"
+    },
+    "guaranteeModal": {
+      "title": "168-Hour Escrow Protection",
+      "subtitle": "100% secure 168-hour buyer escrow guarantee",
+      "escrowTitle": "168-Hour Escrow Hold (7 Days)",
+      "escrowDesc": "When purchasing physical items, top-ups or digital goods, funds are safely held in escrow for 168 hours. Sellers cannot withdraw until buyer confirmation.",
+      "benefitsHeading": "Buyer Protection Benefits:",
+      "benefit1Title": "Instant 0-second code delivery:",
+      "benefit1Desc": "Codes and credentials appear immediately upon checkout and remain permanently in your Vault.",
+      "benefit2Title": "1-Tap dispute & replacement:",
+      "benefit2Desc": "If an item or code is defective, simply tap \"Report Issue\" in your Vault for immediate replacement.",
+      "benefit3Title": "100% money-back guarantee:",
+      "benefit3Desc": "Audited directly by admin. If a seller fails to fulfill valid orders, full funds are refunded to your wallet.",
+      "securityLabel": "Security commitment",
+      "securityDesc": "All codes and order credentials are encrypted using AES-GCM Web Crypto. Only the buyer can decrypt and view contents.",
+      "confirmBtn": "Understood & Shop with Confidence"
+    },
+    "supportModal": {
+      "title": "24/7 Universal Mall Support",
+      "subtitle": "Inquiries, transaction assistance & order troubleshooting",
+      "telegramTitle": "Telegram 24/7 Bot",
+      "telegramDesc": "Response under 30s",
+      "hotlineTitle": "Support Hotline & Zalo",
+      "hotlineDesc": "0987.654.321 (Click to copy)",
+      "hotlineCopied": "Copied Support Hotline: 0987.654.321",
+      "faqHeading": "Frequently Asked Questions (FAQ):",
+      "faq1Title": "1. Where do I view my orders & codes after purchasing?",
+      "faq1Desc": "Orders and digital codes appear immediately after checkout. You can also open \"Orders & Vault\" in the top menu at any time.",
+      "openVaultBtn": "→ Open My Vault & Orders Now",
+      "faq2Title": "2. What if an order or digital code has an issue?",
+      "faq2Desc": "Your funds are 100% safe under our 168-hour escrow protection. Open your Vault and click \"Report Issue\" for immediate replacement or wallet refund.",
+      "faq3Title": "3. How fast is VietQR automatic top-up?",
+      "faq3Desc": "Our system connects with automated SePay gateways. After scanning VietQR with exact syntax, funds are credited to your wallet in 3-5 seconds.",
+      "closeBtn": "Close Support"
+    },
+    "toasts": {
+      "savedBookmark": "Saved to your watchlist!",
+      "removedBookmark": "Removed from your watchlist!",
+      "outOfStock": "Product \"{title}\" is currently out of stock.",
+      "addedToCart": "Added \"{title}\" to your Cart!",
+      "clearedBookmarks": "Cleared all saved items",
+      "hotlineInfo": "Support Hotline: {number}",
+      "voucherCopied": "Copied voucher code: {code}",
+      "freeshipEnabled": "Freeship Xtra filter enabled!",
+      "productLabel": "Product: {title}"
     }
   },
   "marketing": {
