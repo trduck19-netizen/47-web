@@ -41,7 +41,7 @@
  *    - Tự động lưu và đồng bộ qua API và D1 (bảng system_settings, khóa homepage_sections).
  *    - Tự động tuân theo quy tắc: tắt mục lớn thì ẩn cả cụm mục con, bật mục lớn thì chỉ hiện mục con đang bật.
  * 
- * 4. TRÊN WEB KHÁCH (ShopeeTestView / App):
+ * 4. TRÊN WEB KHÁCH (UniversalMallView / App):
  *    - Bọc component mục con bằng điều kiện:
  *      {isSubsectionEnabled('categories_grid', 'shortcut_zalo_support') && <ZaloSupportShortcut />}
  * ============================================================================

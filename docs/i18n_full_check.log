@@ -3,10 +3,16 @@
 > node scripts/check-hardcoded-i18n.cjs
 
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-27T08:32:43.643Z — Batch: Dot 20 Trang Chu (24/11/2026)
-   [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét 23 file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...
-✅ [I18N SCANNER PASSED] Đã quét sạch 23 file giao diện.
+   Timestamp: 2026-11-27T13:22:48.489Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét 22 file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...
+✅ [I18N SCANNER PASSED] Đã quét sạch 22 file giao diện.
    🎉 0 chuỗi tiếng Việt ghi cứng ngoài từ điển! Sẵn sàng cho quy trình build & deploy.
 
-vn_diacritics_outside_comments=0
-i18n_exit=0
+---TEST1_IN_APP--- 
+ZERO_TEST1_IN_APP 
+---SCOPED_GREP--- 
+functions/_worker.ts:2941:      // Chuyển hướng 301 mọi URL legacy (/test1*, /game/*, /g/*) về Trang Chủ Sàn Universal Mall (phủ cả GET & HEAD)
+functions/_worker.ts:2944:        (pathname === '/test1' ||
+functions/_worker.ts:2945:          pathname.startsWith('/test1/') ||
+functions/api/sync.ts:4845:          'playertest1',
+functions/api/sync.ts:4854:          'usr_playertest1',

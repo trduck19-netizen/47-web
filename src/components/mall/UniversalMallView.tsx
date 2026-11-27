@@ -1,40 +1,40 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import type { GameItem, UserProfile, StoreProduct, UtilityProduct, GiveawayCampaign, UpcomingGame, ProductCategoriesConfig, ProductCategoryItem } from '../../types/game';
-import { getDefaultCategoriesConfig, INDUSTRY_PRESETS } from '../../data/industryPresets';
+import type { GameItem, UserProfile, StoreProduct, UtilityProduct, GiveawayCampaign, UpcomingGame, ProductCategoriesConfig, ProductPackageVariant } from '../../types/game';
 import rawGamesFallback from '../../data/games188.json';
 import { 
   Search, ShoppingCart, Bell, HelpCircle, ArrowLeft, 
-  Zap, Gift, ShieldCheck, CreditCard, Flame, Sparkles, 
-  ChevronRight, ChevronLeft, Smartphone, Compass, Trophy, Copy, Check,
-  ShoppingBag, Package, User, Tag, Plus, CheckCircle, CheckCircle2, ExternalLink,
-  Layers, Clock, PhoneCall, Send, ShieldAlert, Sparkle, Rocket,
-  Calendar, Newspaper, Store, List, FileText, Globe, Award, ArrowUpDown, SlidersHorizontal,
-  Filter, X, Bookmark, ChevronDown, Wallet, Settings, LogOut, Lock, Heart, Truck, MapPin, Star
+  Gift, ShieldCheck, CreditCard, Flame, Sparkles, 
+  ChevronRight, ChevronLeft, Smartphone, Compass, Trophy, 
+  ShoppingBag, Package, User, Plus, 
+  Layers, Clock, Send, Rocket,
+  Calendar, Newspaper, Store, List, FileText, ArrowUpDown, 
+  Bookmark, Wallet, Settings, Lock, Heart, Truck, MapPin, Star
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { cartService } from '../../services/cartService';
 import { wishlistService } from '../../services/wishlistService';
 import { dataService } from '../../services/dataService';
-import { authService } from '../../services/authService';
 import { newsService } from '../../services/newsService';
 import { gameEventService } from '../../services/gameEventService';
-import { formatCore, formatCurrencyVND } from '../../utils/textUtils';
-import { formatCurrency, formatDateTime } from '../../utils/formatUtils';
+import { formatCore } from '../../utils/textUtils';
+import { formatCurrency } from '../../utils/formatUtils';
 import { contentTranslationService } from '../../services/contentTranslationService';
 import { homepageSectionsService } from '../../services/homepageSectionsService';
 import { getDefaultSubsectionsForParent } from '../../config/homepageSections';
-import { ShopeeGuaranteeModal } from './ShopeeGuaranteeModal';
-import { ShopeeSupportModal } from './ShopeeSupportModal';
+import { MallGuaranteeModal } from './MallGuaranteeModal';
+import { MallSupportModal } from './MallSupportModal';
 import { ShopeeCouponModal } from '../voucher/ShopeeCouponModal';
 
 // Subview components from codebase
 import { NewsView } from '../NewsView';
-import { TodayCodesView } from '../TodayCodesView';
-import { GameEventsList } from '../GameEventsList';
 import { StoreView } from '../StoreView';
+import { GiveawaysView } from '../GiveawaysView';
+import { UtilitiesView } from '../UtilitiesView';
 import { SellerCenterView } from '../seller/SellerCenterView';
+import { PublicStoreView } from '../seller/PublicStoreView';
 import { MissionsView } from '../MissionsView';
 import { TelegramView } from '../TelegramView';
+import { PlatformSolutionsView } from '../showcase/PlatformSolutionsView';
 import { UserProfileModal } from '../UserProfileModal';
 import { SubmitCodeModal } from '../SubmitCodeModal';
 import { BookmarkDrawer } from '../BookmarkDrawer';
@@ -43,33 +43,47 @@ import { useLanguage } from '../../context/LanguageContext';
 import { groupStoreProductsByGame } from '../../utils/productPackageUtils';
 import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage } from '../../utils/safeImageUrl';
 
-export type ShopeeSubView = 
-  | 'home' 
-  | 'game-zone'
-  | 'news' 
-  | 'events' 
-  | 'today-codes' 
-  | 'upcoming' 
-  | 'store' 
-  | 'seller' 
-  | 'account' 
-  | 'missions' 
-  | 'telegram' 
-  | 'a-z' 
-  | 'terms' 
+export type MallSubView =
+  | 'home'
+  | 'news'
+  | 'events'
+  | 'today-codes'
+  | 'upcoming'
+  | 'store'
+  | 'store-detail'
+  | 'seller'
+  | 'account'
+  | 'missions'
+  | 'telegram'
+  | 'giveaways'
+  | 'utilities'
+  | 'platform-solutions'
+  | 'a-z'
+  | 'terms'
   | 'privacy';
 
-interface ShopeeTestViewProps {
+interface UniversalMallViewProps {
   allGames: GameItem[];
   storeProducts?: StoreProduct[];
-  utilities?: UtilityProduct[];
-  giveaways?: GiveawayCampaign[];
   upcomingGames?: UpcomingGame[];
-  onSelectGame: (game: GameItem) => void;
-  onSelectGameSlug?: (slug: string) => void;
+  controlledSubView?: MallSubView;
+  controlledStoreCategory?: string;
+  currentStoreSlug?: string;
+  initialNewsSlug?: string | null;
+  initialGiveawayId?: string | null;
+  selectedUtilityId?: string | null;
+  initialMissionId?: string | null;
+  onSubViewChange?: (
+    sub: MallSubView,
+    extra?: { storeSlug?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
+  ) => void;
+  onClearInitialGiveawayId?: () => void;
+  onClearSelectedUtility?: () => void;
   onSelectProduct?: (product: StoreProduct) => void;
-  onSelectUtility?: (utilityId: string) => void;
-  onSelectGiveaway?: (giveawayId: string) => void;
+  onDirectCheckout?: (product: StoreProduct, packageVariant?: ProductPackageVariant | null) => void;
+  onOpenShareProduct?: (product: StoreProduct, e?: React.MouseEvent) => void;
+  onOpenShareGiveaway?: (campaign: GiveawayCampaign, e?: React.MouseEvent) => void;
+  onOpenShareUtility?: (utility: UtilityProduct, e?: React.MouseEvent) => void;
   onOpenAuth: () => void;
   onOpenWallet: () => void;
   onOpenCart?: () => void;
@@ -79,9 +93,7 @@ interface ShopeeTestViewProps {
   onOpenDownloadApp?: () => void;
   onOpenEmailModal?: () => void;
   onOpenReceivedCodes?: (tab?: 'giveaways' | 'orders' | 'privates' | 'missions' | 'marketplace') => void;
-  onOpenSellerCenter?: () => void;
-  onNavigateTodayCodes?: () => void;
-  onBackToHome: () => void;
+  onOpenProfile?: () => void;
   currentUser: UserProfile | null;
   onShowToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   onLogout?: () => void;
@@ -96,30 +108,6 @@ const getResponsiveSrcSet = (url?: string, widths: number[] = [480, 800, 1200]):
     return widths.map((w) => `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}w=${w} ${w}w`).join(', ');
   }
   return `${cleanUrl} 1200w`;
-};
-
-// 6 Danh mục Game Chuẩn Web Chính (Dùng regex đối sánh chính xác)
-const MAIN_GAME_CATEGORIES = [
-  { id: 'all', label: 'Tất Cả Game', icon: '🎮', match: () => true },
-  { id: 'kiem-hiep-tien-hiep', label: 'Kiếm Hiệp & Tiên Hiệp', icon: '⚔️', match: (c: string) => /kiếm hiệp|tiên hiệp|võ hiệp|tu tiên/i.test(c) },
-  { id: 'nhap-vai-gacha-anime', label: 'Nhập Vai Gacha & Anime', icon: '✨', match: (c: string) => /anime|gacha|waifu/i.test(c) },
-  { id: 'ban-sung-sinh-ton', label: 'Bắn Súng & Sinh Tồn', icon: '🎯', match: (c: string) => /bắn súng|sinh tồn|battle royale|fps/i.test(c) },
-  { id: 'tam-quoc-chien-thuat', label: 'Tam Quốc & Chiến Thuật', icon: '🏰', match: (c: string) => /tam quốc|chiến thuật|chiến lược|slg|đế chế|thẻ tướng/i.test(c) },
-  { id: 'roblox-mini-game', label: 'Roblox & Mini Game', icon: '🕹️', match: (c: string) => /roblox|mini game/i.test(c) },
-  { id: 'nhap-vai-morpg', label: 'Nhập Vai & MMORPG', icon: '🛡️', match: (c: string) => /mmorpg|nhập vai|arpg/i.test(c) },
-];
-
-// Quy tắc gộp Canonical Alias chuẩn xác để chống trùng lặp tựa game (Where Winds Meet, Seven Deadly Sins, Hắc Ngộ Không, X-Wukong)
-const GAME_CANONICAL_ALIASES: Record<string, string> = {
-  'dau-truong-chan-ly-mobile': 'dau-truong-chan-ly',
-  'ta-la-hac-ngo-khong-vplay': 'ta-la-hac-ngo-khong',
-  'tam-quoc-huyen-tuong': 'tam-quoc-huyen-tuong-vng',
-  'x-wukong-dai-chien-tam-gioi': 'x-wukong',
-  'huyen-thoai-hai-tac': 'pirate-legends',
-  'seven-deadly-sins-grand-cross': 'the-seven-deadly-sins-grand-cross',
-  'where-winds-meet-mobile': 'yen-van-thap-luc-thanh',
-  'where-winds-meet': 'yen-van-thap-luc-thanh',
-  'loan-the-3q': 'loan-the-3q-than-ma-lenh-oeg',
 };
 
 export const THEME_ACCENTS: Record<string, {
@@ -184,29 +172,34 @@ export const THEME_ACCENTS: Record<string, {
   },
 };
 
-export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
+export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
   allGames = [],
   storeProducts = [],
-  utilities = [],
-  giveaways = [],
   upcomingGames = [],
-  onSelectGame,
-  onSelectGameSlug,
+  controlledSubView,
+  controlledStoreCategory,
+  currentStoreSlug,
+  initialNewsSlug,
+  initialGiveawayId,
+  selectedUtilityId,
+  initialMissionId,
+  onSubViewChange,
+  onClearInitialGiveawayId,
+  onClearSelectedUtility,
   onSelectProduct,
-  onSelectUtility,
-  onSelectGiveaway,
+  onDirectCheckout,
+  onOpenShareProduct,
+  onOpenShareGiveaway,
+  onOpenShareUtility,
   onOpenAuth,
   onOpenWallet,
   onOpenCart,
   onOpenWishlist,
   onOpenGrowth,
-  onOpenUpcoming,
   onOpenDownloadApp,
   onOpenEmailModal,
   onOpenReceivedCodes,
-  onOpenSellerCenter,
-  onNavigateTodayCodes,
-  onBackToHome,
+  onOpenProfile,
   currentUser,
   onShowToast,
   onLogout,
@@ -215,11 +208,33 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   const { t, language } = useLanguage();
   const isEn = language === 'en';
 
-  // Internal SubView state (All navigation stays inside test1)
-  const [subView, setSubView] = useState<ShopeeSubView>('home');
+  // SubView state synced 2-way with App.tsx URL router
+  const [subView, setSubViewState] = useState<MallSubView>(controlledSubView || 'home');
 
-  // Theme state within Shopee view (Supports Classic Orange/White or Dark Gamer)
-  const [isShopeeDark, setIsShopeeDark] = useState(false);
+  useEffect(() => {
+    if (controlledSubView && controlledSubView !== subView) {
+      setSubViewState(controlledSubView);
+    }
+  }, [controlledSubView]);
+
+  const setSubView = (
+    nextSub: MallSubView,
+    extra?: { storeSlug?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
+  ) => {
+    setSubViewState(nextSub);
+    if (onSubViewChange) {
+      onSubViewChange(nextSub, extra);
+    }
+  };
+
+  // Theme state synced with localStorage['wcg_shopee_theme']
+  const [isShopeeDark, setIsShopeeDark] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('wcg_shopee_theme') || localStorage.getItem('pine_shopee_theme');
+      return saved === 'dark';
+    }
+    return false;
+  });
 
   // Navigation scroll state & ref for 12-item subnav bar
   const navScrollRef = useRef<HTMLDivElement>(null);
@@ -256,9 +271,20 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   const [selectedProductType, setSelectedProductType] = useState<'all' | 'physical' | 'digital' | 'giftcode' | 'utility' | 'account' | 'giveaway'>('all');
   const [mallSortBy, setMallSortBy] = useState<'popular' | 'newest' | 'sales' | 'price_asc' | 'price_desc'>('popular');
   const [onlyFreeshipFilter, setOnlyFreeshipFilter] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(controlledStoreCategory || 'all');
   const [sortOrder, setSortOrder] = useState<'latest' | 'codes' | 'licensed'>('latest');
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (controlledStoreCategory !== undefined) {
+      setSelectedCategory(controlledStoreCategory || 'all');
+    }
+  }, [controlledStoreCategory]);
+
+  const handleFilterGameToStore = (slug: string) => {
+    setSelectedCategory(slug || 'all');
+    setSubView('store');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Pagination state for games (24 games / page)
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -411,19 +437,21 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Đồng bộ theme Shopee với thẻ html toàn cục để mọi modal và subview hiển thị chuẩn màu
+  // Đồng bộ theme với thẻ html toàn cục và lưu wcg_shopee_theme làm nguồn chuẩn
   useEffect(() => {
     if (isShopeeDark) {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
+      document.documentElement.style.colorScheme = 'dark';
     } else {
       document.documentElement.classList.remove('dark');
       document.documentElement.classList.add('light');
+      document.documentElement.style.colorScheme = 'light';
     }
-    return () => {
-      document.documentElement.classList.remove('light');
-      document.documentElement.classList.add('dark');
-    };
+    try {
+      localStorage.setItem('wcg_shopee_theme', isShopeeDark ? 'dark' : 'light');
+      localStorage.setItem('pine_shopee_theme', isShopeeDark ? 'dark' : 'light');
+    } catch {}
   }, [isShopeeDark]);
 
   // Tự động reset danh mục khi người dùng gõ từ khóa tìm kiếm mới
@@ -500,7 +528,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   // Dynamic counts for news, events, and upcoming (đồng bộ thời gian thực từ live API)
   const [newsCount, setNewsCount] = useState<number>(277);
 
-  const [eventsCount, setEventsCount] = useState<number>(() => {
+  const [eventsCount] = useState<number>(() => {
     try {
       return gameEventService.getPublishedEvents().length || 93;
     } catch {
@@ -604,57 +632,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     setCurrentPage(1);
   }, [selectedCategory, searchKeyword, sortOrder]);
 
-  // 1. Filter games based on 6 Main Categories, search & sort
-  const filteredGames = useMemo(() => {
-    let list = allGames || [];
-
-    // Filter by category matcher
-    if (selectedCategory !== 'all') {
-      const activeCat = categoriesConfig.categories.find((c) => c.id === selectedCategory);
-      if (activeCat) {
-        if (activeCat.matchKeywords && activeCat.matchKeywords.length > 0) {
-          list = list.filter((g) => {
-            const targetText = `${g.category || ''} ${g.name || ''} ${g.publisher || ''} ${g.description || ''}`.toLowerCase();
-            return activeCat.matchKeywords!.some((kw) => targetText.includes(kw.toLowerCase()));
-          });
-        } else {
-          list = list.filter((g) => {
-            const catLower = (g.category || '').toLowerCase();
-            return catLower === activeCat.id.toLowerCase() || catLower.includes(activeCat.label.toLowerCase());
-          });
-        }
-      }
-    }
-
-    // Filter by search keyword
-    if (searchKeyword.trim()) {
-      const q = searchKeyword.toLowerCase();
-      list = list.filter((g) => 
-        (g.name || '').toLowerCase().includes(q) || 
-        (g.publisher || '').toLowerCase().includes(q) ||
-        (g.category || '').toLowerCase().includes(q)
-      );
-    }
-
-    // Sort order
-    return [...list].sort((a, b) => {
-      if (sortOrder === 'codes') {
-        const countA = a.codes_count || a.active_codes_count || a.codes?.length || 0;
-        const countB = b.codes_count || b.active_codes_count || b.codes?.length || 0;
-        return countB - countA;
-      }
-      if (sortOrder === 'licensed') {
-        const hasA = Boolean(a.license_number || a.so_giay_phep);
-        const hasB = Boolean(b.license_number || b.so_giay_phep);
-        if (hasA && !hasB) return -1;
-        if (!hasA && hasB) return 1;
-        return (b.license_issued_date || b.ngay_cap || '').localeCompare(a.license_issued_date || a.ngay_cap || '');
-      }
-      // default: latest release_date
-      return (b.release_date || '').localeCompare(a.release_date || '');
-    });
-  }, [allGames, selectedCategory, searchKeyword, sortOrder]);
-
   // Định danh chuẩn mực chống trùng tên trên cùng 1 bảng A-Z
   const getGameDisplayName = (g: GameItem) => {
     const slug = g.slug || '';
@@ -724,55 +701,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     return groupStoreProductsByGame(currentStoreProducts && currentStoreProducts.length > 0 ? currentStoreProducts : (storeProducts || [])).length;
   }, [currentStoreProducts, storeProducts]);
 
-  // 3. Filter utility products (Cloud Phone, Gói nạp)
-  const filteredUtilities = useMemo(() => {
-    let list = utilities || [];
-    if (searchKeyword.trim()) {
-      const q = searchKeyword.toLowerCase();
-      list = list.filter((u) => 
-        (u.title || '').toLowerCase().includes(q) || 
-        (u.category_label || '').toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [utilities, searchKeyword]);
-
-  // 4. Filter giveaways
-  const filteredGiveaways = useMemo(() => {
-    let list = giveaways || [];
-    if (searchKeyword.trim()) {
-      const q = searchKeyword.toLowerCase();
-      list = list.filter((gw) => 
-        (gw.title || '').toLowerCase().includes(q) || 
-        (gw.game_name || '').toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [giveaways, searchKeyword]);
-
-  // Paginated slices theo tab đang chọn
-  const activeTotalCount = useMemo(() => {
-    if (selectedProductType === 'giveaway') return filteredGiveaways.length;
-    if (selectedProductType === 'utility') return filteredUtilities.length;
-    if (selectedProductType === 'account') return filteredStoreProducts.length;
-    return filteredGames.length;
-  }, [selectedProductType, filteredGiveaways.length, filteredUtilities.length, filteredStoreProducts.length, filteredGames.length]);
-
-  const totalPages = Math.max(1, Math.ceil(activeTotalCount / pageSize));
-
-  const paginatedGames = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredGames.slice(start, start + pageSize);
-  }, [filteredGames, currentPage, pageSize]);
-
-  const paginatedStoreProducts = useMemo(() => {
-    if (selectedProductType !== 'account') {
-      return filteredStoreProducts.slice(0, 6);
-    }
-    const start = (currentPage - 1) * pageSize;
-    return filteredStoreProducts.slice(start, start + pageSize);
-  }, [filteredStoreProducts, selectedProductType, currentPage, pageSize]);
-
   // Bộ phân loại, sắp xếp Shopee và phân trang riêng cho Sàn Đa Ngành Universal Mall
   const currentMallProducts = useMemo(() => {
     let list = filteredStoreProducts;
@@ -803,32 +731,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     const start = (currentPage - 1) * pageSize;
     return currentMallProducts.slice(start, start + pageSize);
   }, [currentMallProducts, currentPage, pageSize]);
-
-  const paginatedUtilities = useMemo(() => {
-    if (selectedProductType !== 'utility') {
-      return filteredUtilities.slice(0, 6);
-    }
-    const start = (currentPage - 1) * pageSize;
-    return filteredUtilities.slice(start, start + pageSize);
-  }, [filteredUtilities, selectedProductType, currentPage, pageSize]);
-
-  const paginatedGiveaways = useMemo(() => {
-    if (selectedProductType !== 'giveaway') {
-      return filteredGiveaways.slice(0, 6);
-    }
-    const start = (currentPage - 1) * pageSize;
-    return filteredGiveaways.slice(start, start + pageSize);
-  }, [filteredGiveaways, selectedProductType, currentPage, pageSize]);
-
-  // Top flash sale items (đồng bộ từ khóa tìm kiếm)
-  const flashSaleGames = useMemo(() => {
-    let list = (allGames || []).filter((g) => (g.codes_count || g.active_codes_count || g.codes?.length || 0) > 0);
-    if (searchKeyword.trim()) {
-      const q = searchKeyword.toLowerCase();
-      list = list.filter((g) => (g.name || '').toLowerCase().includes(q) || (g.publisher || '').toLowerCase().includes(q));
-    }
-    return list.slice(0, 6);
-  }, [allGames, searchKeyword]);
 
   // Filter raw upcoming games (90 bản ghi thật đồng bộ từ web chính)
   const filteredUpcoming = useMemo(() => {
@@ -891,25 +793,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     return Object.values(azGroupedGames).reduce((acc, curr) => acc + (curr ? curr.length : 0), 0);
   }, [azGroupedGames]);
 
-  // Copy code handler
-  const handleCopyCode = (code: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    onShowToast(language === 'en' ? `Copied code: ${code}` : `Đã sao chép mã: ${code}`, 'success');
-    
-    // Confetti effect
-    try {
-      confetti({
-        particleCount: 25,
-        spread: 60,
-        origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight }
-      });
-    } catch {}
-
-    setTimeout(() => setCopiedCode(null), 2000);
-  };
-
   // Add store product to cart
   const handleAddProductToCart = (prod: StoreProduct, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -932,40 +815,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
 
     if (result.success) {
       onShowToast(`Đã thêm "${prod.title}" vào Giỏ Hàng Shopee!`, 'success');
-      try {
-        confetti({
-          particleCount: 20,
-          spread: 45,
-          origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight }
-        });
-      } catch {}
-    } else {
-      onShowToast(result.message, 'warning');
-    }
-  };
-
-  // Add utility product to cart
-  const handleAddUtilityToCart = (ut: UtilityProduct, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if ((ut.stock_quantity ?? 0) <= 0) {
-      onShowToast(`Tiện ích "${ut.title}" hiện đã hết hàng (Còn 0).`, 'warning');
-      return;
-    }
-
-    const result = cartService.addToCart({
-      productId: ut.id,
-      productName: ut.title,
-      priceCore: ut.current_price,
-      sellerId: 'admin_store',
-      sellerName: 'Codegame Mall',
-      sellerSlug: 'codegame-mall',
-      gameSlug: 'tien-ich',
-      gameName: ut.category_label || 'Tiện Ích Game',
-      coverUrl: ut.cover_image_url || ut.icon_url
-    });
-
-    if (result.success) {
-      onShowToast(`Đã thêm "${ut.title}" vào Giỏ Hàng Shopee!`, 'success');
       try {
         confetti({
           particleCount: 20,
@@ -1040,31 +889,24 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
     }
 
     // System & Internal Routing
-    if (url === '/' || url === '/home') {
+    if (url === '/' || url === '/home' || url === '/game') {
       setSubView('home');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (url === '/store') {
       setSubView('store');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (url === '/seller-center') {
-      if (onOpenSellerCenter) onOpenSellerCenter();
-      else setSubView('seller-center' as any);
-    } else if (url === '/game') {
-      setSubView('game-zone');
+      setSubView('seller');
     } else if (url === '/news') {
       setSubView('news');
     } else if (url === '/giveaways') {
-      if (onOpenGiveaways) onOpenGiveaways();
-      else onShowToast(language === 'en' ? 'Open Giveaways' : 'Mở Quà Tặng Giveaways', 'info');
+      setSubView('giveaways');
     } else if (url === '/utilities') {
-      if (onOpenUtilities) onOpenUtilities();
-      else onShowToast(language === 'en' ? 'Open Utilities' : 'Mở Kho Tiện Ích', 'info');
+      setSubView('utilities');
     } else if (url === '/missions') {
-      if (onOpenMissions) onOpenMissions();
-      else onShowToast(language === 'en' ? 'Open Missions' : 'Mở Trung Tâm Nhiệm Vụ', 'info');
+      setSubView('missions');
     } else if (url === '/telegram') {
-      if (onOpenTelegram) onOpenTelegram();
-      else window.open('https://t.me/UniversalMallSupport', '_blank', 'noopener,noreferrer');
+      setSubView('telegram');
     } else if (url === '#/orders' || url === '/orders') {
       if (onOpenReceivedCodes) onOpenReceivedCodes('orders');
       else onShowToast(language === 'en' ? 'Open Vault to view orders' : 'Mở Tủ Mã để xem đơn hàng', 'info');
@@ -1092,6 +934,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   // Helper render các nút lối tắt dịch vụ theo mã con (Hỗ trợ tiêu đề tùy chỉnh & link hoạt động - Nhóm 3)
   const renderShortcutItem = (subInput: any) => {
     const sub = typeof subInput === 'object' && subInput ? subInput : (getOrderedSubsections('categories_grid', 'shortcuts').find((s) => s.id === subInput) || { id: String(subInput) });
+    if (sub.id === 'nav_game_zone' || sub.id === 'shortcut_game_zone') return null;
     const shortcutId = sub.id;
     const customTitle = isEn ? sub.title_en : sub.title_vi;
     const customBadge = isEn ? sub.badge_en : sub.badge_vi;
@@ -1217,19 +1060,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             </span>
           </button>
         );
-      case 'shortcut_game_zone':
-        return (
-          <button 
-            key={shortcutId}
-            onClick={() => handleShortcutClick(() => setSubView('game-zone'))} 
-            className="group flex flex-col items-center cursor-pointer relative"
-          >
-            {renderIconBox('🎮', 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-500')}
-            <span className="text-[11px] font-medium mt-2 leading-tight">
-              {customTitle || sub.internal_name || 'Game Zone'}
-            </span>
-          </button>
-        );
       case 'shortcut_support_247':
         return (
           <button 
@@ -1267,6 +1097,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   // Helper render các nút thanh điều hướng theo mã con (Hỗ trợ tiêu đề tùy chỉnh & link hoạt động - Nhóm 3)
   const renderNavButton = (navInput: any) => {
     const sub = typeof navInput === 'object' && navInput ? navInput : (getOrderedSubsections('top_announcement', 'navigation').find((s) => s.id === navInput) || { id: String(navInput) });
+    if (sub.id === 'nav_game_zone' || sub.id === 'shortcut_game_zone') return null;
     const navId = sub.id;
     const customTitle = isEn ? sub.title_en : sub.title_vi;
     const customBadge = isEn ? sub.badge_en : sub.badge_vi;
@@ -1341,22 +1172,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           >
             <User className="w-3.5 h-3.5 shrink-0" />
             <span>{customTitle || sub.internal_name || t.mall?.subnav?.account || (language === 'en' ? 'Account & Wallet' : 'Tài Khoản & Ví')}</span>
-            {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
-          </button>
-        );
-      case 'nav_game_zone':
-        return (
-          <button
-            key={navId}
-            onClick={() => handleNavClick(() => setSubView('game-zone' as any))}
-            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
-              subView === ('game-zone' as any)
-                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
-                : 'hover:bg-white/15 text-white/95'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span>{customTitle || sub.internal_name || 'Game Zone'}</span>
             {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
           </button>
         );
@@ -1678,7 +1493,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         const categoriesLinkType = categoriesSection?.link_type || 'internal';
 
         const shortcutSubsections = getOrderedSubsections('categories_grid', 'shortcuts');
-        const activeShortcuts = shortcutSubsections.filter((s) => s.enabled);
+        const activeShortcuts = shortcutSubsections.filter((s) => s.enabled && s.id !== 'nav_game_zone' && s.id !== 'shortcut_game_zone');
 
         const categorySubsections = getOrderedSubsections('categories_grid', 'categories');
         const activeCategorySubsections = categorySubsections.filter((s) => s.enabled);
@@ -2469,7 +2284,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
   return (
     <div className={`min-h-screen transition-colors duration-200 font-sans pb-16 ${isShopeeDark ? 'bg-[#0a0f1d] text-slate-100' : 'bg-[#f5f5f5] text-slate-800'}`}>
       
-      {/* 0. TOP BAR BÁO HIỆU WEB TEST 1 */}
+      {/* 0. TOP BAR THÔNG BÁO SÀN UNIVERSAL MALL */}
       {isSectionEnabled('top_announcement') && (() => {
         const topSec = orderedSections.find((s) => s.id === 'top_announcement');
         const customTopTitle = isEn ? topSec?.title_en : topSec?.title_vi;
@@ -2500,12 +2315,12 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 ) : (
                   <>
                     {language === 'en'
-                      ? (t.mall?.topNav?.editionDesc || 'Running full Shopee Game edition at ')
-                      : (t.mall?.topNav?.editionDesc || 'Đang chạy phiên bản sàn Shopee Game tại đường dẫn ')}
-                    <code className="bg-amber-600/30 px-1.5 py-0.5 rounded font-mono">codegame.shop/test1</code>
+                      ? (t.mall?.topNav?.editionDesc || 'Universal Mall — Official Multi-Industry E-Commerce Marketplace')
+                      : (t.mall?.topNav?.editionDesc || 'Universal Mall — Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng')}
+                    {' '}
                     {language === 'en'
-                      ? (t.mall?.topNav?.mainSiteUnaffected || ' (Main site unaffected)')
-                      : (t.mall?.topNav?.mainSiteUnaffected || ' (Web chính không bị ảnh hưởng)')}
+                      ? (t.mall?.topNav?.mainSiteUnaffected || ' (0s instant delivery & 168h escrow)')
+                      : (t.mall?.topNav?.mainSiteUnaffected || ' (Giao mã 0s & Bảo chứng 168h)')}
                   </>
                 )}
               </span>
@@ -2531,10 +2346,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         );
       })()}
 
-      {/* 1. SHOPEE TOPBAR (Giữ người dùng ở lại test1) */}
+      {/* 1. UNIVERSAL MALL TOPBAR */}
       <div className="bg-[#ee4d2d] text-white text-[12px] py-1 px-4 border-b border-white/10">
         <div className="max-w-6xl mx-auto flex justify-between items-center gap-2">
-          {/* Left Topbar Links: Kênh Người Bán & Mở Gian Hàng ở lại test1 */}
+          {/* Left Topbar Links: Kênh Người Bán & Mở Gian Hàng */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button 
               onClick={() => setSubView('seller')}
@@ -2669,7 +2484,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 onFocus={() => {
-                  const total = (liveSearchResults.products?.length || 0) + (liveSearchResults.games?.length || 0);
+                  const total = liveSearchResults.products?.length || 0;
                   if (total > 0) setIsSearchDropdownOpen(true);
                 }}
                 onKeyDown={(e) => {
@@ -2696,7 +2511,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             </div>
 
             {/* Server-side Autocomplete Live Dropdown */}
-            {isSearchDropdownOpen && ((liveSearchResults.products?.length || 0) + (liveSearchResults.games?.length || 0)) > 0 && (
+            {isSearchDropdownOpen && (liveSearchResults.products?.length || 0) > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 overflow-hidden divide-y divide-slate-100 max-h-80 overflow-y-auto">
                 {liveSearchResults.products.length > 0 && (
                   <div className="p-2">
@@ -2717,30 +2532,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                         <div className="min-w-0 flex-1">
                           <div className="text-xs font-semibold text-slate-900 truncate">{prod.title}</div>
                           <div className="text-[11px] font-bold text-[#ee4d2d]">{formatCore(prod.priceCore)}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {liveSearchResults.games.length > 0 && (
-                  <div className="p-2">
-                    <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1">{language === 'en' ? 'Games & Giftcodes' : 'Game & Giftcode'}</div>
-                    {liveSearchResults.games.map((g) => (
-                      <div
-                        key={g.id}
-                        onClick={() => {
-                          setIsSearchDropdownOpen(false);
-                          if (onSelectGameSlug) onSelectGameSlug(g.slug || g.gameSlug || g.id);
-                          else if (onSelectGame) onSelectGame({ id: g.id, name: g.title, slug: g.slug || g.gameSlug || g.id, icon_url: g.coverUrl || '', codes_count: 0, is_hot: false, categories: [] });
-                        }}
-                        className="flex items-center gap-2.5 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
-                      >
-                        <div className="w-8 h-8 rounded bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-                          {g.coverUrl ? <img src={g.coverUrl} alt={g.title} className="w-full h-full object-cover" /> : <span>🎮</span>}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-semibold text-slate-900 truncate">{g.title}</div>
-                          <div className="text-[10px] text-slate-500">{language === 'en' ? 'Game / Codes' : 'Tra cứu mã quà'}</div>
                         </div>
                       </div>
                     ))}
@@ -2831,9 +2622,11 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         </div>
       </div>
 
-      {/* 2.1. SUB-NAVIGATION BAR (Thanh Điều Hướng Toàn Diện Giữ Khách Ở Lại test1 Kèm 2 Mũi Tên Cuộn) */}
+      {/* 2.1. SUB-NAVIGATION BAR */}
       {isSectionEnabled('top_announcement') && (() => {
-        const activeNavSubsections = getOrderedSubsections('top_announcement', 'navigation').filter((sub) => sub.enabled);
+        const activeNavSubsections = getOrderedSubsections('top_announcement', 'navigation').filter(
+          (sub) => sub.enabled && sub.id !== 'nav_game_zone' && sub.id !== 'shortcut_game_zone'
+        );
         if (activeNavSubsections.length === 0) return null;
 
         return (
@@ -2902,7 +2695,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                     ? t('mall.breadcrumb.store_singular')
                     : t('mall.breadcrumb.store_plural', { count: groupedStoreProductsCount || storeProducts?.length || 1 })
                 )}
-                {subView === 'game-zone' && t('mall.breadcrumb.gameZone', { count: allGames?.length || 593 })}
+                {subView === 'store-detail' && (t.mall?.breadcrumb?.store || (language === 'en' ? 'Official Store' : 'Gian Hàng Chính Hãng'))}
+                {subView === 'giveaways' && (language === 'en' ? 'Giveaways & Free Gifts' : 'Săn Quà Giveaway')}
+                {subView === 'utilities' && (language === 'en' ? 'Digital Utilities & Top-up' : 'Kho Tiện Ích Số & Thẻ Nạp')}
+                {subView === 'platform-solutions' && (language === 'en' ? 'Platform Solutions' : 'Giải Pháp Sàn & Mở Web')}
                 {subView === 'seller' && (t.mall?.breadcrumb?.seller || (language === 'en' ? 'Marketplace & Seller Portal' : 'Sàn Giao Dịch & Kênh Người Bán'))}
                 {subView === 'account' && (t.mall?.breadcrumb?.account || (language === 'en' ? 'Account & Core Wallet' : 'Tài Khoản & Ví Core'))}
                 {subView === 'missions' && (t.mall?.breadcrumb?.missions || (language === 'en' ? 'Game Mission Center' : 'Trung Tâm Nhiệm Vụ Game'))}
@@ -2925,66 +2721,14 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
       {/* 3. MAIN BODY CONTAINER */}
       <div className={`${subView === 'seller' ? 'max-w-[1600px]' : 'max-w-6xl'} mx-auto px-2 sm:px-4 py-4 space-y-5`}>
         
-        {/* SUBVIEW 1: TIN TỨC GAME (272 BÀI TIN) */}
-        {subView === 'news' && (
+        {/* SUBVIEW 1: TIN TỨC, SỰ KIỆN & MÃ HÔM NAY */}
+        {(subView === 'news' || subView === 'events' || subView === 'today-codes') && (
           <div className="rounded-xl overflow-hidden shadow-sm">
             <NewsView
               onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
-              onSelectGameSlug={onSelectGameSlug}
-              keepInTest1={true}
-            />
-          </div>
-        )}
-
-        {/* SUBVIEW 2: SỰ KIỆN HOT (93 SỰ KIỆN) */}
-        {subView === 'events' && (
-          <div className="rounded-xl overflow-hidden shadow-sm p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-            <div className="mb-4 pb-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#ee4d2d]" />
-                  <span>Sự Kiện Game Hot Nhất ({eventsCount} Sự Kiện)</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Đồng bộ chuẩn xác từ web chính: Giờ Việt Nam, ảnh chính thức, cách tham gia và giftcode xác thực.
-                </p>
-              </div>
-            </div>
-            <GameEventsList
-              onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
-              onSelectGameSlug={onSelectGameSlug}
-            />
-          </div>
-        )}
-
-        {/* SUBVIEW 3: MÃ HÔM NAY (TỰ ĐÓNG 22:30) */}
-        {subView === 'today-codes' && (
-          <div className="rounded-xl overflow-hidden shadow-sm p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-            <div className="mb-4 pb-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-[#ee4d2d]" />
-                  <span>{isEn ? "Today's Giftcodes (Closes at 22:30)" : 'Mã Giftcode Hôm Nay (Đóng lúc 22:30)'}</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {isEn ? 'Exclusive daily giftcodes, claim before 22:30 GMT+7.' : 'Các mã phát hành độc quyền trong ngày, nhận ngay trước khi đồng hồ điểm 22:30.'}
-                </p>
-              </div>
-            </div>
-            <TodayCodesView
-              onSelectGame={(slugOrGame: any) => {
-                const slug = typeof slugOrGame === 'string' ? slugOrGame : (slugOrGame?.slug || slugOrGame?.id);
-                if (slug) {
-                  if (onSelectGameSlug) {
-                    onSelectGameSlug(slug);
-                  } else {
-                    const found = allGames.find((g) => (g.slug || g.id) === slug);
-                    if (found) onSelectGame(found);
-                    else onSelectGame({ id: slug, slug, name: slug } as any);
-                  }
-                }
-              }}
-              onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
+              onSelectGameSlug={handleFilterGameToStore}
+              initialArticleSlug={initialNewsSlug}
+              initialSubTab={subView}
             />
           </div>
         )}
@@ -3118,23 +2862,83 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           </div>
         )}
 
-        {/* SUBVIEW 5: CỬA HÀNG CODE RIÊNG (10 GÓI HIỆP KHÁCH HÀNH) */}
+        {/* SUBVIEW 5: CỬA HÀNG ĐA NGÀNH */}
         {subView === 'store' && (
           <div className="rounded-xl overflow-hidden shadow-sm p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <StoreView
               onSelectProduct={onSelectProduct || (() => {})}
-              onDirectCheckout={(prod, variant) => {
-                handleAddProductToCart(prod, { stopPropagation: () => {} } as any);
-                if (onOpenCart) onOpenCart();
-              }}
+              onDirectCheckout={
+                onDirectCheckout ||
+                ((prod) => {
+                  handleAddProductToCart(prod, { stopPropagation: () => {} } as any);
+                  if (onOpenCart) onOpenCart();
+                })
+              }
               onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
               currentUser={currentUser}
               onOpenAuth={onOpenAuth}
+              onOpenShare={onOpenShareProduct}
+              initialGameSlug={selectedCategory !== 'all' ? selectedCategory : undefined}
             />
           </div>
         )}
 
-        {/* SUBVIEW 6: SÀN GIAO DỊCH RIÊNG (SELLER CENTER Ở LẠI TEST1) */}
+        {/* SUBVIEW 5.5: CHI TIẾT GIAN HÀNG ĐỐI TÁC (/gian-hang/:slug) */}
+        {subView === 'store-detail' && (
+          <div className="rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <PublicStoreView
+              slug={currentStoreSlug || ''}
+              currentUser={currentUser}
+              onOpenLogin={onOpenAuth}
+              onNavigateHome={() => setSubView('home')}
+              onOpenProfile={() => (onOpenProfile ? onOpenProfile() : setIsProfileOpen(true))}
+              onOpenCart={onOpenCart}
+            />
+          </div>
+        )}
+
+        {/* SUBVIEW 5.6: SỰ KIỆN GIVEAWAY */}
+        {subView === 'giveaways' && (
+          <div className="rounded-xl overflow-hidden shadow-sm p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <GiveawaysView
+              onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
+              onSelectGameSlug={handleFilterGameToStore}
+              currentUser={currentUser}
+              onOpenAuth={onOpenAuth}
+              onShareGiveaway={onOpenShareGiveaway}
+              initialGiveawayId={initialGiveawayId}
+              onClearInitialGiveawayId={onClearInitialGiveawayId}
+            />
+          </div>
+        )}
+
+        {/* SUBVIEW 5.7: KHO TIỆN ÍCH SỐ & NẠP GAME */}
+        {subView === 'utilities' && (
+          <div className="rounded-xl overflow-hidden shadow-sm p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <UtilitiesView
+              onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
+              currentUser={currentUser}
+              onUpdateUser={onUpdateUser}
+              onOpenAuth={onOpenAuth}
+              onOpenShare={onOpenShareUtility}
+              onOpenWallet={onOpenWallet}
+              selectedUtilityId={selectedUtilityId}
+              onClearSelectedUtility={onClearSelectedUtility}
+            />
+          </div>
+        )}
+
+        {/* SUBVIEW 5.8: GIẢI PHÁP SÀN & MỞ WEB */}
+        {subView === 'platform-solutions' && (
+          <div className="rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <PlatformSolutionsView
+              onNavigateBack={() => setSubView('home')}
+              onOpenStoreDemo={() => setSubView('store')}
+            />
+          </div>
+        )}
+
+        {/* SUBVIEW 6: SÀN GIAO DỊCH & KÊNH NGƯỜI BÁN */}
         {subView === 'seller' && (
           <div className="rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <SellerCenterView
@@ -3146,7 +2950,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
           </div>
         )}
 
-        {/* SUBVIEW 6.5: TRANG TÀI KHOẢN & VÍ CORE (VÀO TRONG TEST1) */}
+        {/* SUBVIEW 6.5: TRANG TÀI KHOẢN & VÍ CORE */}
         {subView === 'account' && (
           <div className="rounded-xl overflow-hidden shadow-sm p-4 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-6">
             {/* Header hồ sơ */}
@@ -3162,14 +2966,16 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                      {currentUser?.displayName || currentUser?.name || currentUser?.username || 'Khách Thử Nghiệm Sàn'}
+                      {currentUser?.displayName || currentUser?.name || currentUser?.username || (isEn ? 'Universal Mall Member' : 'Thành Viên Universal Mall')}
                     </h2>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-[#ee4d2d] border border-[#ee4d2d]/30">
-                      {currentUser?.role === 'admin' ? 'Quản Trị Viên' : 'Thành Viên Shopee Mall'}
+                      {currentUser?.role === 'admin'
+                        ? (isEn ? 'Administrator' : 'Quản Trị Viên')
+                        : (isEn ? 'Universal Mall Member' : 'Thành Viên Universal Mall')}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {currentUser?.email || 'Tài khoản trải nghiệm tại sàn codegame.shop/test1'}
+                    {currentUser?.email || (isEn ? 'Universal Mall Account' : 'Tài khoản mua sắm tại sàn Universal Mall')}
                   </p>
                 </div>
               </div>
@@ -3337,7 +3143,8 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             <MissionsView
               currentUser={currentUser}
               onOpenAuth={onOpenAuth}
-              onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
+              onOpenWallet={onOpenWallet}
+              initialMissionId={initialMissionId}
             />
           </div>
         )}
@@ -3348,6 +3155,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
             <TelegramView
               onOpenAuth={onOpenAuth}
               onOpenProfile={() => setIsProfileOpen(true)}
+              onBackToHome={() => setSubView('home')}
               onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
             />
           </div>
@@ -3406,7 +3214,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
                         {gamesInLetter.map((g) => (
                           <button
                             key={g.id || g.slug}
-                            onClick={() => onSelectGame(g)}
+                            onClick={() => handleFilterGameToStore(g.slug || g.id)}
                             className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-orange-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-left transition flex items-center gap-2 cursor-pointer group"
                           >
                             <div className="w-7 h-7 rounded bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center text-xs">
@@ -3502,392 +3310,6 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
               </div>
             )}
           </>
-        )}
-
-        {/* ========================================================================= */}
-        {/* SUBVIEW RIÊNG BIỆT: KHU VỰC GAME & GIFTCODE KHẢO SÁT                      */}
-        {/* ========================================================================= */}
-        {subView === ('game-zone' as any) && (
-          <div className="space-y-4">
-            {/* Header Game Zone */}
-            <div className="rounded-xl p-4 sm:p-5 bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-600 text-white shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-xs mb-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Game Zone Area' : 'Khu Vực Game Zone'}</span>
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black">{isEn ? 'GAME ZONE — UTILITIES & GIFTCODES' : 'GAME ZONE — TIỆN ÍCH GAME & GIFTCODE'}</h2>
-                <p className="text-xs text-white/80 mt-0.5">
-                  {isEn ? `Catalog of ${allGames.length} licensed games (ABEI G1/G234), free codes and utilities.` : `Tổng hợp ${allGames.length} tựa game có giấy phép ABEI G1/G234, nhận mã miễn phí và tiện ích game.`}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSubView('news')}
-                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                >
-                  <Newspaper className="w-3.5 h-3.5" />
-                  <span>Tin Tức ({newsCount})</span>
-                </button>
-                <button
-                  onClick={() => setSubView('events')}
-                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>Sự Kiện ({eventsCount})</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Flash Sale Game */}
-            <div className={`rounded-xl shadow-sm border p-4 space-y-3 ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
-                <div className="flex items-center gap-3">
-                  <div className="text-lg sm:text-xl font-black text-purple-600 flex items-center tracking-tight">
-                    <Flame className="w-5 h-5 sm:w-6 sm:h-6 mr-1 fill-current" />
-                    <span>FLASH SALE GIFTCODE GAME</span>
-                  </div>
-                  <div className="flex items-center gap-1 font-mono text-xs font-bold">
-                    <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.hours).padStart(2, '0')}</span>
-                    <span>:</span>
-                    <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                    <span>:</span>
-                    <span className="bg-black text-white px-1.5 py-0.5 rounded">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-                {flashSaleGames.slice(0, 6).map((game) => {
-                  const activeCount = game.active_codes_count ?? game.codes_count ?? (game.codes?.filter(c => !isCodeExpired(c)).length || 0);
-
-                  return (
-                    <div 
-                      key={game.id || game.slug}
-                      onClick={() => onSelectGame(game)}
-                      className={`rounded-lg border p-2 flex flex-col justify-between hover:border-purple-500 hover:shadow-md transition cursor-pointer group relative ${isShopeeDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'}`}
-                    >
-                      <div>
-                        <div className="relative w-full aspect-square rounded overflow-hidden bg-slate-100 dark:bg-slate-700 mb-2">
-                          {game.icon_url ? (
-                            <img src={game.icon_url} alt={game.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-2xl">🎮</div>
-                          )}
-                          <span className="absolute top-0 left-0 bg-purple-600 text-white font-extrabold text-[9px] px-1 py-0.2 rounded-br">
-                            -100%
-                          </span>
-                          <span className="absolute top-0 right-0 bg-yellow-400 text-red-600 font-extrabold text-[9px] px-1 py-0.2">
-                            HOT
-                          </span>
-                        </div>
-                        <div className="font-semibold text-xs truncate group-hover:text-purple-600 transition" title={game.name}>
-                          {game.name}
-                        </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 truncate">{game.publisher || 'NPH Game'}</div>
-                      </div>
-
-                      <div className="mt-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
-                        <div className="flex items-baseline justify-between">
-                          <div className="text-purple-600 font-bold text-xs">0 Core (Miễn Phí)</div>
-                        </div>
-                        <div className="w-full bg-purple-100 dark:bg-purple-950/60 rounded-full h-3 mt-1 relative overflow-hidden flex items-center">
-                          <div className="bg-purple-600 h-full rounded-full" style={{ width: `${Math.min(100, Math.max(30, activeCount * 5))}%` }}></div>
-                          <span className="absolute inset-0 text-[8px] text-center font-bold text-white flex items-center justify-center leading-none">
-                            {activeCount} Mã Sẵn
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* TABS & LƯỚI KHU VỰC GAME */}
-            <div id="game-zone-grid" className="space-y-3 scroll-mt-28">
-              <div className="flex items-center justify-between border-b-2 border-purple-600 pb-2 flex-wrap gap-2">
-                <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
-                  {[
-                    { id: 'all', label: language === 'en' ? '🎮 All Games' : '🎮 Tất Cả Game', count: allGames.length },
-                    { id: 'giftcode', label: language === 'en' ? '🎁 Free Codes' : '🎁 Giftcode 0Đ', count: filteredGames.length },
-                    { id: 'utility', label: language === 'en' ? '💳 Utilities' : '💳 Tiện Ích & Thẻ', count: filteredUtilities.length },
-                    { id: 'giveaway', label: language === 'en' ? '🎉 Giveaways' : '🎉 Săn Giveaway', count: filteredGiveaways.length },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setSelectedProductType(tab.id as any)}
-                      className={`px-3 py-1.5 rounded-t-lg font-bold text-xs whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                        selectedProductType === tab.id
-                          ? 'bg-purple-600 text-white shadow'
-                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-purple-50'
-                      }`}
-                    >
-                      <span>{tab.label}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${selectedProductType === tab.id ? 'bg-white text-purple-600' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'}`}>
-                        {tab.count}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="text-xs text-slate-500 font-medium">
-                  {language === 'en' ? `Page ${currentPage} / ${totalPages}` : `Trang ${currentPage} / ${totalPages}`}
-                </div>
-              </div>
-
-              {/* LƯỚI SẢN PHẨM KHU VỰC GAME */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                {/* 1. Tiện ích */}
-                {(selectedProductType === 'all' || selectedProductType === 'utility') && paginatedUtilities.map((ut) => {
-                  const isOutOfStock = (ut.stock_quantity ?? 0) <= 0;
-                  return (
-                    <div
-                      key={ut.id}
-                      onClick={() => onSelectUtility ? onSelectUtility(ut.id) : onShowToast(`Tiện ích: ${ut.title}`, 'info')}
-                      className={`rounded-lg border hover:border-purple-600 hover:-translate-y-0.5 transition duration-150 shadow-sm cursor-pointer overflow-hidden flex flex-col justify-between group ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
-                    >
-                      <div>
-                        <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
-                          {ut.cover_image_url || ut.icon_url ? (
-                            <img src={ut.cover_image_url || ut.icon_url} alt={ut.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
-                          ) : (
-                            <span className="text-4xl">📱</span>
-                          )}
-                          <span className="absolute top-0 left-0 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-br">
-                            Tiện Ích
-                          </span>
-                        </div>
-                        <div className="p-2 space-y-1">
-                          <div className="text-[11px] font-semibold line-clamp-2 leading-snug group-hover:text-purple-600 transition" title={ut.title}>
-                            {ut.title}
-                          </div>
-                          <span className="text-[9px] text-slate-400">Còn {ut.stock_quantity ?? 99}</span>
-                        </div>
-                      </div>
-                      <div className="p-2 pt-0 space-y-1.5">
-                        <div className="text-purple-600 font-bold text-xs">{formatPrice(ut.current_price)}</div>
-                        <button
-                          disabled={isOutOfStock}
-                          onClick={isOutOfStock ? undefined : (e) => handleAddUtilityToCart(ut, e)}
-                          className={`w-full py-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-sm ${
-                            isOutOfStock ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 text-white cursor-pointer'
-                          }`}
-                        >
-                          <ShoppingCart className="w-3 h-3" />
-                          <span>{isOutOfStock ? 'Hết Hàng' : 'Thêm Giỏ'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* 2. Giveaways */}
-                {(selectedProductType === 'all' || selectedProductType === 'giveaway') && paginatedGiveaways.map((gw) => (
-                  <div
-                    key={gw.id}
-                    onClick={() => onSelectGiveaway ? onSelectGiveaway(gw.id) : onShowToast(`Sự kiện Giveaway: ${gw.title}`, 'info')}
-                    className={`rounded-lg border hover:border-purple-600 hover:-translate-y-0.5 transition duration-150 shadow-sm cursor-pointer overflow-hidden flex flex-col justify-between group ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
-                  >
-                    <div>
-                      <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
-                        {gw.banner_url || gw.game_icon ? (
-                          <img src={gw.banner_url || gw.game_icon} alt={gw.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
-                        ) : (
-                          <span className="text-4xl">🎉</span>
-                        )}
-                        <span className="absolute top-0 left-0 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-br">
-                          Giveaway
-                        </span>
-                      </div>
-                      <div className="p-2 space-y-1">
-                        <div className="text-[11px] font-semibold line-clamp-2 leading-snug group-hover:text-purple-600 transition" title={gw.title}>
-                          {gw.title}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-2 pt-0 space-y-1.5">
-                      <div className="text-purple-600 font-bold text-xs">0 Core (Miễn Phí)</div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onSelectGiveaway) onSelectGiveaway(gw.id);
-                        }}
-                        className="w-full py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-sm cursor-pointer"
-                      >
-                        <Gift className="w-3 h-3" />
-                        <span>{isEn ? 'Claim 0 VND' : 'Săn Quà 0Đ'}</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {/* 3. Games */}
-                {(selectedProductType === 'all' || selectedProductType === 'giftcode') && paginatedGames.map((game) => {
-                  const activeCount = game.active_codes_count ?? game.codes_count ?? (game.codes?.filter(c => !isCodeExpired(c)).length || 0);
-                  const firstCode = game.codes && game.codes.length > 0 ? game.codes[0].code : null;
-
-                  return (
-                    <div 
-                      key={game.id || game.slug}
-                      onClick={() => onSelectGame(game)}
-                      className={`rounded-lg border hover:border-purple-600 hover:-translate-y-0.5 transition duration-150 shadow-sm cursor-pointer overflow-hidden flex flex-col justify-between group ${isShopeeDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
-                    >
-                      <div>
-                        <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
-                          {game.icon_url ? (
-                            <img src={game.icon_url} alt={game.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
-                          ) : (
-                            <span className="text-4xl">🎮</span>
-                          )}
-                          <span className="absolute top-0 left-0 bg-purple-600 text-white font-extrabold text-[9px] px-1 py-0.2 rounded-br">
-                            Code G1
-                          </span>
-                          <span className="absolute top-0 right-0 bg-yellow-400 text-red-600 font-extrabold text-[9px] px-1 py-0.2">
-                            {activeCount > 0 ? `${activeCount} Code` : 'Mới'}
-                          </span>
-
-                          <button
-                            onClick={(e) => handleToggleBookmark(game.id || game.slug, e)}
-                            className={`absolute bottom-1 right-1 p-1 rounded-full transition z-10 cursor-pointer ${
-                              bookmarkedGamesList.some((bg) => bg.id === game.id || bg.slug === game.slug)
-                                ? 'bg-amber-400 text-slate-950 shadow-md'
-                                : 'bg-black/50 hover:bg-black/80 text-white/90 backdrop-blur-xs'
-                            }`}
-                            title={language === 'en' ? 'Save to tracked games' : 'Lưu vào tủ game theo dõi'}
-                          >
-                            <Bookmark className="w-3 h-3 fill-current" />
-                          </button>
-                        </div>
-
-                        <div className="p-2 space-y-1">
-                          <div className="text-[11px] font-semibold line-clamp-2 leading-snug group-hover:text-purple-600 transition" title={game.name}>
-                            {game.name}
-                          </div>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <span className="text-[9px] bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-1 rounded truncate max-w-[80px]">
-                              {game.publisher || 'NPH Game'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-2 pt-0 space-y-1.5">
-                        <div className="flex items-baseline justify-between">
-                          <div className="text-purple-600 font-bold text-xs">
-                            {language === 'en' ? '0 Core (Free)' : '0 Core (Miễn Phí)'}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-medium">
-                            {language === 'en' ? `${activeCount} available` : `${activeCount} mã sẵn`}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <button 
-                            onClick={() => onSelectGame(game)}
-                            className="flex-1 py-1 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 text-[10px] font-bold flex items-center justify-center gap-1 transition cursor-pointer"
-                          >
-                            <Gift className="w-3 h-3" />
-                            <span>{language === 'en' ? 'View Giftcode Details' : 'Xem Chi Tiết Mã'}</span>
-                          </button>
-                          {firstCode && (
-                            <button
-                              onClick={(e) => handleCopyCode(firstCode, e)}
-                              className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-mono font-bold flex items-center justify-center transition cursor-pointer shrink-0"
-                              title={language === 'en' ? `Quick copy code: ${firstCode}` : `Copy nhanh mã: ${firstCode}`}
-                            >
-                              {copiedCode === firstCode ? (
-                                <Check className="w-3 h-3 text-emerald-500" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Thông báo nếu không tìm thấy game */}
-              {filteredGames.length === 0 && (
-                <div className="py-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500">
-                  <Compass className="w-10 h-10 mx-auto text-slate-400 mb-2 opacity-50" />
-                  <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                    {isEn ? 'No games found in this category' : 'Không tìm thấy tựa game nào trong danh mục này'}
-                  </p>
-                  <button
-                    onClick={() => { setSelectedCategory('all'); setSearchKeyword(''); }}
-                    className="mt-3 px-4 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition cursor-pointer"
-                  >
-                    {isEn ? `View All ${allGames.length} Games` : `Xem Toàn Bộ ${allGames.length} Game`}
-                  </button>
-                </div>
-              )}
-
-              {/* PHÂN TRANG KHU VỰC GAME */}
-              {totalPages > 1 && (
-                <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                  <div className="text-slate-500 font-medium">
-                    Đang hiển thị {paginatedGames.length} / {filteredGames.length} tựa game (Trang {currentPage} / {totalPages})
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      disabled={currentPage <= 1}
-                      onClick={() => {
-                        setCurrentPage((p) => Math.max(1, p - 1));
-                        const el = document.getElementById('game-zone-grid');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className={`p-1.5 rounded border ${currentPage <= 1 ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer'}`}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum = currentPage;
-                      if (currentPage <= 3) pageNum = i + 1;
-                      else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-                      else pageNum = currentPage - 2 + i;
-                      if (pageNum < 1 || pageNum > totalPages) return null;
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => {
-                            setCurrentPage(pageNum);
-                            const el = document.getElementById('game-zone-grid');
-                            if (el) el.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                          className={`w-7 h-7 rounded text-xs font-bold transition cursor-pointer ${
-                            currentPage === pageNum
-                              ? 'bg-purple-600 text-white shadow-xs'
-                              : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-purple-50 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-
-                    <button
-                      disabled={currentPage >= totalPages}
-                      onClick={() => {
-                        setCurrentPage((p) => Math.min(totalPages, p + 1));
-                        const el = document.getElementById('game-zone-grid');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className={`p-1.5 rounded border ${currentPage >= totalPages ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer'}`}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         )}
 
         {/* 3.6. FOOTER ĐẦY ĐỦ 4 CỘT CHUẨN WEB CHÍNH (ĐỘ TƯƠNG PHẢN CAO CHO THEME TRẮNG) */}
@@ -4078,13 +3500,13 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         </button>
       </div>
 
-      {/* 6. MODALS TÍCH HỢP TRONG TEST1 */}
-      <ShopeeGuaranteeModal
+      {/* 6. MODALS TÍCH HỢP */}
+      <MallGuaranteeModal
         isOpen={isGuaranteeOpen}
         onClose={() => setIsGuaranteeOpen(false)}
       />
 
-      <ShopeeSupportModal
+      <MallSupportModal
         isOpen={isSupportOpen}
         onClose={() => setIsSupportOpen(false)}
         onOpenReceivedCodes={() => onOpenReceivedCodes ? onOpenReceivedCodes('marketplace') : null}
@@ -4115,7 +3537,7 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         />
       )}
 
-      {/* User Profile Modal trong test1 */}
+      {/* User Profile Modal */}
       <UserProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
@@ -4124,11 +3546,15 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
         onOpenWallet={onOpenWallet}
         onOpenReceivedCodes={onOpenReceivedCodes}
+        onNavigateToSellerCenter={() => {
+          setIsProfileOpen(false);
+          setSubView('seller');
+        }}
         onLogout={onLogout}
         onUpdateUser={onUpdateUser}
       />
 
-      {/* Submit Code Modal trong test1 */}
+      {/* Submit Code Modal */}
       <SubmitCodeModal
         isOpen={isSubmitCodeOpen}
         onClose={() => setIsSubmitCodeOpen(false)}
@@ -4143,7 +3569,10 @@ export const ShopeeTestView: React.FC<ShopeeTestViewProps> = ({
         onClose={() => setIsBookmarkDrawerOpen(false)}
         bookmarkedGames={bookmarkedGamesList}
         onRemoveBookmark={(id) => handleToggleBookmark(id)}
-        onSelectGame={onSelectGame}
+        onSelectGame={(game) => {
+          setIsBookmarkDrawerOpen(false);
+          handleFilterGameToStore(game.slug || game.id);
+        }}
         onClearAll={() => {
           localStorage.removeItem('pine_bookmarks');
           syncBookmarks();

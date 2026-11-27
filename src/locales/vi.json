@@ -517,8 +517,8 @@
   "mall": {
     "topNav": {
       "marketplace": "Bản Sàn Toàn Diện",
-      "editionDesc": "Đang chạy phiên bản sàn Shopee Game tại đường dẫn ",
-      "mainSiteUnaffected": " (Web chính không bị ảnh hưởng)",
+      "editionDesc": "Universal Mall — Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng",
+      "mainSiteUnaffected": " (Giao mã 0s & Bảo chứng 168h)",
       "mallHomepage": "Trang Chủ Pine Universal Mall",
       "sellerCenter": "Kênh Người Bán",
       "openStore": "Mở Gian Hàng",
@@ -552,7 +552,6 @@
       "store": "Cửa Hàng Đa Ngành",
       "sellerCenter": "Kênh Người Bán",
       "account": "Tài Khoản & Ví",
-      "gameZone": "Game Zone",
       "missions": "Nhiệm Vụ",
       "telegram": "Telegram",
       "azIndex": "Mục Lục A-Z",
@@ -568,7 +567,6 @@
       "todayCodes": "Mã Hôm Nay (Tự Đóng 22:30)",
       "upcoming": "Bảng Game Sắp Ra Mắt ({count} Bản Ghi Chuẩn Web Chính)",
       "store": "Cửa Hàng Đa Ngành ({count} Sản Phẩm)",
-      "gameZone": "Khu Vực Game & Giftcode ({count} Game)",
       "seller": "Sàn Giao Dịch & Kênh Người Bán",
       "account": "Tài Khoản & Ví Core",
       "missions": "Trung Tâm Nhiệm Vụ Game",
@@ -608,7 +606,6 @@
       "vietqrTopup": "Nạp VietQR",
       "luckyWheel": "Vòng Quay Xu",
       "vouchers": "Mã Giảm Giá",
-      "gameZone": "Game Zone",
       "support247": "Hỗ Trợ 24/7"
     },
     "paginationSummary": "Trang {page} / {totalPages} • Tổng {total} gói",

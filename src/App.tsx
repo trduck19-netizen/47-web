@@ -1,36 +1,18 @@
-import React, { useState, useEffect, useCallback, useTransition, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 import { resolveProductCoverImage, safeGameIconUrl } from './utils/safeImageUrl';
-import { Header } from './components/Header';
-import { AnnouncementBar } from './components/AnnouncementBar';
-import { TopEventBanner } from './components/countdown/TopEventBanner';
-import { HeroBanner } from './components/HeroBanner';
-import { CategoryFilter } from './components/CategoryFilter';
-import { GameGrid } from './components/GameGrid';
-import { PinnedGamesBar } from './components/PinnedGamesBar';
-import { UpcomingGamesBanner } from './components/UpcomingGamesBanner';
-import { MobileBottomNav } from './components/MobileBottomNav';
 import { CyberLoader } from './components/CyberLoader';
-import { SearchAutocomplete } from './components/SearchAutocomplete';
-import { ArrowUp } from 'lucide-react';
-import { Footer } from './components/Footer';
 import { ToastContainer, type ToastMessage } from './components/Toast';
-import { GameGridSkeleton } from './components/GameCardSkeleton';
 import { LanguageSeoHead } from './components/seo/LanguageSeoHead';
 import { useLanguage } from './context/LanguageContext';
 import { homepageSectionsService } from './services/homepageSectionsService';
+import type { MallSubView } from './components/mall/UniversalMallView';
 
 // P4: Code Splitting & Lazy Loaded Views / Modals with auto-recovery on stale deployment chunks
 const FloatingAnnouncement = lazyWithRetry(() => import('./components/FloatingAnnouncement').then((m) => ({ default: m.FloatingAnnouncement })));
 const MarketingNotificationToast = lazyWithRetry(() => import('./components/MarketingNotificationToast').then((m) => ({ default: m.MarketingNotificationToast })));
 const AdminApp = lazyWithRetry(() => import('./admin/AdminApp'));
-const NewsView = lazyWithRetry(() => import('./components/NewsView').then((m) => ({ default: m.NewsView })));
-const GiveawaysView = lazyWithRetry(() => import('./components/GiveawaysView').then((m) => ({ default: m.GiveawaysView })));
-const StoreView = lazyWithRetry(() => import('./components/StoreView').then((m) => ({ default: m.StoreView })));
-const UtilitiesView = lazyWithRetry(() => import('./components/UtilitiesView').then((m) => ({ default: m.UtilitiesView })));
-const MissionsView = lazyWithRetry(() => import('./components/MissionsView').then((m) => ({ default: m.MissionsView })));
-const TelegramView = lazyWithRetry(() => import('./components/TelegramView').then((m) => ({ default: m.TelegramView })));
-const GameDetailModal = lazyWithRetry(() => import('./components/GameDetailModal').then((m) => ({ default: m.GameDetailModal })));
+const UniversalMallView = lazyWithRetry(() => import('./components/mall/UniversalMallView').then((m) => ({ default: m.UniversalMallView })));
 const SubmitCodeModal = lazyWithRetry(() => import('./components/SubmitCodeModal').then((m) => ({ default: m.SubmitCodeModal })));
 const BookmarkDrawer = lazyWithRetry(() => import('./components/BookmarkDrawer').then((m) => ({ default: m.BookmarkDrawer })));
 const AllUpcomingGamesModal = lazyWithRetry(() => import('./components/AllUpcomingGamesModal').then((m) => ({ default: m.AllUpcomingGamesModal })));
@@ -45,21 +27,12 @@ const MyReceivedCodesModal = lazyWithRetry(() => import('./components/MyReceived
 const UserProfileModal = lazyWithRetry(() => import('./components/UserProfileModal').then((m) => ({ default: m.UserProfileModal })));
 const DownloadAppModal = lazyWithRetry(() => import('./components/DownloadAppModal').then((m) => ({ default: m.DownloadAppModal })));
 const EmailSubscriptionModal = lazyWithRetry(() => import('./components/notification/EmailSubscriptionModal').then((m) => ({ default: m.EmailSubscriptionModal })));
-const SellerCenterView = lazyWithRetry(() => import('./components/seller/SellerCenterView').then((m) => ({ default: m.SellerCenterView })));
-const PublicStoreView = lazyWithRetry(() => import('./components/seller/PublicStoreView').then((m) => ({ default: m.PublicStoreView })));
 const CartDrawerModal = lazyWithRetry(() => import('./components/cart/CartDrawerModal').then((m) => ({ default: m.CartDrawerModal })));
 const WishlistDrawerModal = lazyWithRetry(() => import('./components/wishlist/WishlistDrawerModal').then((m) => ({ default: m.WishlistDrawerModal })));
-const ShopeeTestView = lazyWithRetry(() => import('./components/shopee/ShopeeTestView').then((m) => ({ default: m.ShopeeTestView })));
-const PlatformSolutionsView = lazyWithRetry(() => import('./components/showcase/PlatformSolutionsView').then((m) => ({ default: m.PlatformSolutionsView })));
 import { dataService } from './services/dataService';
-import fallbackGamesData from './data/games188.json';
-import { marketingService } from './services/marketingService';
 import { authService } from './services/authService';
-import { growthService } from './services/growthService';
-import type { GameItem, FilterState, StoreProduct, UserProfile, GiveawayCampaign, UtilityProduct, ProductPackageVariant, UpcomingGame } from './types/game';
-import { saveRecentSearch } from './utils/recentSearchUtils';
+import type { GameItem, StoreProduct, UserProfile, GiveawayCampaign, UtilityProduct, ProductPackageVariant, UpcomingGame } from './types/game';
 import { groupStoreProductsByGame, getProductPackages } from './utils/productPackageUtils';
-import { isCodeExpired } from './utils/codeUtils';
 
 export interface SharePayload {
   title: string;
@@ -93,63 +66,61 @@ const ADMIN_HASH_PREFIXES = [
   '#/profile',
 ];
 
+const resolveRouteToMallSubView = (pathnameInput: string, hashInput: string): MallSubView => {
+  const path = pathnameInput.toLowerCase();
+  const hash = hashInput.toLowerCase();
+
+  if (
+    hash.includes('giai-phap-san') || hash.includes('ban-web') || hash.includes('cho-thue-web') || hash.includes('platform-solutions') ||
+    path === '/giai-phap-san' || path.startsWith('/giai-phap-san/') ||
+    path === '/ban-web' || path.startsWith('/ban-web/') ||
+    path === '/cho-thue-web' || path.startsWith('/cho-thue-web/')
+  ) return 'platform-solutions';
+
+  if (hash.includes('ban-hang') || path === '/ban-hang' || path.startsWith('/ban-hang/') || path === '/en/ban-hang' || path.startsWith('/en/ban-hang/')) return 'seller';
+  if (hash.includes('gian-hang') || path.startsWith('/gian-hang/')) return 'store-detail';
+  if (hash.includes('ma-hom-nay') || hash.includes('today') || path === '/ma-hom-nay' || path.startsWith('/ma-hom-nay/')) return 'today-codes';
+  if (hash.includes('su-kien') || hash.includes('events') || path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/')) return 'events';
+  if (hash.includes('news') || hash.includes('tintuc') || path === '/news' || path.startsWith('/news/')) return 'news';
+  if (hash.includes('giveaways') || hash.includes('gw=') || hash.includes('giveaway=') || path === '/giveaways' || path.startsWith('/giveaways/') || path === '/giveaway' || path.startsWith('/giveaway/')) return 'giveaways';
+  if (hash.includes('store') || hash.includes('product=') || hash.includes('prod=') || path === '/store' || path.startsWith('/store/') || path === '/en/store' || path.startsWith('/en/store/')) return 'store';
+  if (hash.includes('utilities') || hash.includes('utility=') || hash.includes('ut=') || path === '/utilities' || path.startsWith('/utilities/')) return 'utilities';
+  if (hash.includes('missions') || hash.includes('nhiem-vu') || path === '/missions' || path.startsWith('/missions/') || path === '/nhiem-vu' || path.startsWith('/nhiem-vu/')) return 'missions';
+  if (hash.includes('telegram') || path === '/telegram' || path.startsWith('/telegram/')) return 'telegram';
+
+  return 'home';
+};
+
 export const App: React.FC = () => {
   const { language, t } = useLanguage();
   const isEn = language === 'en' || (typeof window !== 'undefined' && (window.location.pathname.startsWith('/en') || localStorage.getItem('pine_language') === 'en'));
-  const [, startTransition] = useTransition();
 
-  // Navigation Tab State (Decoupled Frontends Domain Detection & Hash Routing)
-  const [currentTab, setCurrentTab] = useState<'catalog' | 'news' | 'giveaways' | 'store' | 'utilities' | 'missions' | 'telegram' | 'today-codes' | 'seller-center' | 'store-detail' | 'admin' | 'shopee-test' | 'platform-solutions'>(() => {
+  // Navigation Tab State (Unified Admin vs Single Universal Mall Client Shell)
+  const [currentTab, setCurrentTab] = useState<'admin' | 'mall'>(() => {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       const path = window.location.pathname.toLowerCase();
 
-      // 1. If on dedicated admin domain or admin hash/route -> Open AdminApp directly
       const isAdminDomain = host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.includes('admin-test-code-game-shop') || host.startsWith('admin.');
       const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hash.startsWith(p));
       const isAdminPath = path.startsWith('/admin') || path.startsWith('/en/admin');
       if (isAdminDomain || isAdminPath || isAdminHash) {
         return 'admin';
       }
-
-      // Check platform solutions route
-      if (
-        hash.includes('giai-phap-san') ||
-        hash.includes('ban-web') ||
-        hash.includes('cho-thue-web') ||
-        hash.includes('platform-solutions') ||
-        path === '/giai-phap-san' ||
-        path.startsWith('/giai-phap-san/') ||
-        path === '/ban-web' ||
-        path.startsWith('/ban-web/') ||
-        path === '/cho-thue-web' ||
-        path.startsWith('/cho-thue-web/')
-      ) {
-        return 'platform-solutions';
-      }
-
-      // Explicit game catalog route
-      if (path === '/game' || path.startsWith('/game/') || hash === '#catalog' || hash === '#game') {
-        return 'catalog';
-      }
-
-      if (hash.includes('test1') || path === '/test1' || path.startsWith('/test1/')) return 'shopee-test';
-      if (hash.includes('ban-hang') || path === '/ban-hang' || path.startsWith('/ban-hang/') || path === '/en/ban-hang' || path.startsWith('/en/ban-hang/')) return 'seller-center';
-      if (hash.includes('gian-hang') || path.startsWith('/gian-hang/')) return 'store-detail';
-      if (hash.includes('news') || hash.includes('tintuc') || path === '/news' || path.startsWith('/news/') || hash.includes('su-kien') || hash.includes('events') || path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/')) return 'news';
-      if (hash.includes('giveaways') || hash.includes('gw=') || path === '/giveaways' || path.startsWith('/giveaways/')) return 'giveaways';
-      if (hash.includes('store') || hash.includes('product=') || hash.includes('prod=') || path === '/store' || path.startsWith('/store/') || path === '/en/store' || path.startsWith('/en/store/')) return 'store';
-      if (hash.includes('utilities') || hash.includes('utility=') || hash.includes('ut=') || path === '/utilities' || path.startsWith('/utilities/')) return 'utilities';
-      if (hash.includes('missions') || hash.includes('nhiem-vu') || path === '/missions' || path.startsWith('/missions/') || path === '/nhiem-vu' || path.startsWith('/nhiem-vu/')) return 'missions';
-      if (hash.includes('telegram') || path === '/telegram' || path.startsWith('/telegram/')) return 'telegram';
-      if (hash.includes('ma-hom-nay') || hash.includes('today') || path === '/ma-hom-nay' || path.startsWith('/ma-hom-nay/')) return 'news';
-
-      // 2. Phương án 2 (Sàn Đa Ngành Shopee Mall làm Trang Chủ mặc định)
-      return 'shopee-test';
+      return 'mall';
     }
-    return 'shopee-test';
+    return 'mall';
   });
+
+  const [mallSubView, setMallSubView] = useState<MallSubView>(() => {
+    if (typeof window !== 'undefined') {
+      return resolveRouteToMallSubView(window.location.pathname, window.location.hash);
+    }
+    return 'home';
+  });
+
+  const [storeCategoryFilter, setStoreCategoryFilter] = useState<string>('all');
 
   const [currentStoreSlug, setCurrentStoreSlug] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -159,20 +130,6 @@ export const App: React.FC = () => {
       }
     }
     return '';
-  });
-
-  const [initialNewsSubTab, setInitialNewsSubTab] = useState<'news' | 'events' | 'today-codes'>(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname.toLowerCase();
-      const hash = window.location.hash.toLowerCase();
-      if (path === '/ma-hom-nay' || path.startsWith('/ma-hom-nay/') || hash.includes('ma-hom-nay') || hash.includes('today')) {
-        return 'today-codes';
-      }
-      if (path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/') || hash.includes('su-kien') || hash.includes('events')) {
-        return 'events';
-      }
-    }
-    return 'news';
   });
 
   const [initialNewsSlug, setInitialNewsSlug] = useState<string | null>(() => {
@@ -212,24 +169,9 @@ export const App: React.FC = () => {
     return null;
   });
 
-  // Search & Filter State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isStickySearchVisible, setIsStickySearchVisible] = useState(false);
-  const [isMobileSearchActive, setIsMobileSearchActive] = useState(false);
-  const [filter, setFilter] = useState<FilterState>({
-    search: '',
-    category: 'all',
-    tag: 'all',
-    sortBy: 'release_date',
-    sortOrder: 'desc',
-  });
-
-  // Data & Pagination State
-  const [paginationConfig, setPaginationConfig] = useState(() => dataService.getPaginationConfig());
-  const [games, setGames] = useState<GameItem[]>([]);
+  // Games list & CMS branding synced from dataService
   const [allGamesList, setAllGamesList] = useState<GameItem[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [branding, setBranding] = useState(() => dataService.getWebsiteBranding());
 
   // Homepage sections state for floating notifications
   const [isFloatingEnabled, setIsFloatingEnabled] = useState(() =>
@@ -242,15 +184,6 @@ export const App: React.FC = () => {
     });
     return unsub;
   }, []);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Branding & Assets from CMS
-  const [branding, setBranding] = useState(() => dataService.getWebsiteBranding());
-
   // User State & Bookmarks
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => dataService.getCurrentUser());
   const [bookmarks, setBookmarks] = useState<string[]>([]);
@@ -260,27 +193,6 @@ export const App: React.FC = () => {
   const [selectedUpcomingSlug, setSelectedUpcomingSlug] = useState<string | null>(null);
 
   // Modals & Drawers
-  const [selectedGame, setSelectedGame] = useState<GameItem | null>(() => {
-    if (typeof window !== 'undefined') {
-      const pathname = window.location.pathname;
-      let pathSlug = '';
-      if (pathname.startsWith('/test1/game/') || pathname.startsWith('/test1/g/')) {
-        pathSlug = pathname.replace(/^\/test1\/(?:game|g)\//i, '').replace(/\/$/, '').trim().toLowerCase();
-      } else if (pathname.startsWith('/game/') || pathname.startsWith('/g/')) {
-        pathSlug = pathname.replace(/^\/(?:game|g)\//i, '').replace(/\/$/, '').trim().toLowerCase();
-      }
-      if (pathSlug === 'where-winds-meet-mobile' || pathSlug === 'yen-van-thap-luc-thanh') {
-        pathSlug = 'where-winds-meet';
-      }
-      if (pathSlug) {
-        const found = (fallbackGamesData as any[]).find((g: any) =>
-          g && ((g.slug && g.slug.toLowerCase() === pathSlug) || (g.id && String(g.id).toLowerCase() === pathSlug))
-        );
-        if (found) return found;
-      }
-    }
-    return null;
-  });
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   const [selectedPackageIdParam, setSelectedPackageIdParam] = useState<string | null>(null);
@@ -296,45 +208,12 @@ export const App: React.FC = () => {
   const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
   const [isGrowthCenterOpen, setIsGrowthCenterOpen] = useState(false);
   const [growthInitialTab, setGrowthInitialTab] = useState<'wheel' | 'welcome' | 'referral' | 'checkin' | 'leaderboard'>('wheel');
-  const [isGrowthEnabled, setIsGrowthEnabled] = useState(() => {
-    try {
-      return Boolean(growthService.getConfig().isEnabled);
-    } catch {
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    const handleConfigUpdate = (e?: any) => {
-      try {
-        const cfg = e?.detail || growthService.getConfig();
-        const enabled = Boolean(cfg?.isEnabled);
-        setIsGrowthEnabled(enabled);
-      } catch {
-        setIsGrowthEnabled(false);
-      }
-    };
-
-    growthService.fetchFreshConfigFromServer()
-      .then((cfg) => {
-        const enabled = Boolean(cfg?.isEnabled);
-        setIsGrowthEnabled(enabled);
-      })
-      .catch(() => {});
-
-    window.addEventListener('pine_growth_config_updated', handleConfigUpdate);
-    window.addEventListener('storage', handleConfigUpdate);
-    return () => {
-      window.removeEventListener('pine_growth_config_updated', handleConfigUpdate);
-      window.removeEventListener('storage', handleConfigUpdate);
-    };
-  }, []);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isReceivedCodesOpen, setIsReceivedCodesOpen] = useState(false);
-  const [receivedCodesInitialTab, setReceivedCodesInitialTab] = useState<'giveaways' | 'orders' | 'privates' | 'missions'>('giveaways');
+  const [receivedCodesInitialTab, setReceivedCodesInitialTab] = useState<'giveaways' | 'orders' | 'privates' | 'missions' | 'marketplace'>('giveaways');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'security' | 'telegram' | 'missions'>('profile');
+  const [profileInitialTab] = useState<'profile' | 'security' | 'telegram' | 'missions'>('profile');
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -345,10 +224,6 @@ export const App: React.FC = () => {
     return false;
   });
 
-  const handleOpenProfile = (tab: 'profile' | 'security' | 'telegram' | 'missions' = 'profile') => {
-    setProfileInitialTab(tab);
-    setIsProfileModalOpen(true);
-  };
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   const handleOpenReceivedCodes = (tab: 'giveaways' | 'orders' | 'privates' | 'missions' | 'marketplace' = 'giveaways') => {
@@ -371,38 +246,24 @@ export const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Initialize Theme
+  // Initialize Theme (Unified Universal Mall Light default via wcg_shopee_theme)
   useEffect(() => {
-    const isTest1 = typeof window !== 'undefined' && (window.location.pathname.startsWith('/test1') || window.location.hash.includes('test1'));
-    if (isTest1) {
-      const shopeeTheme = localStorage.getItem('pine_shopee_theme');
-      const isDark = shopeeTheme === 'dark';
-      setIsDarkMode(isDark);
-      if (isDark) {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-        document.documentElement.style.colorScheme = 'dark';
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-        document.documentElement.style.colorScheme = 'light';
-      }
-      return;
-    }
-    const savedTheme = localStorage.getItem('pine_theme');
+    const saved =
+      localStorage.getItem('wcg_shopee_theme') ||
+      localStorage.getItem('pine_shopee_theme');
+    const isDark = saved === 'dark';
+    setIsDarkMode(isDark);
     const metaCs = document.querySelector('meta[name="color-scheme"]');
-    if (savedTheme === 'light') {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-      document.documentElement.style.colorScheme = 'light';
-      if (metaCs) metaCs.setAttribute('content', 'light');
-    } else {
-      setIsDarkMode(true);
+    if (isDark) {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
       document.documentElement.style.colorScheme = 'dark';
       if (metaCs) metaCs.setAttribute('content', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      document.documentElement.style.colorScheme = 'light';
+      if (metaCs) metaCs.setAttribute('content', 'light');
     }
   }, []);
 
@@ -415,63 +276,19 @@ export const App: React.FC = () => {
         document.documentElement.classList.remove('light');
         document.documentElement.style.colorScheme = 'dark';
         if (metaCs) metaCs.setAttribute('content', 'dark');
-        localStorage.setItem('pine_theme', 'dark');
+        localStorage.setItem('wcg_shopee_theme', 'dark');
+        localStorage.setItem('pine_shopee_theme', 'dark');
       } else {
         document.documentElement.classList.remove('dark');
         document.documentElement.classList.add('light');
         document.documentElement.style.colorScheme = 'light';
         if (metaCs) metaCs.setAttribute('content', 'light');
-        localStorage.setItem('pine_theme', 'light');
+        localStorage.setItem('wcg_shopee_theme', 'light');
+        localStorage.setItem('pine_shopee_theme', 'light');
       }
       return next;
     });
   };
-
-  // Sticky Floating Search Bar visibility handler on Catalog scroll
-  useEffect(() => {
-    const handleMobileSearchToggle = (e: any) => {
-      const active = Boolean(e?.detail?.isOpen);
-      setIsMobileSearchActive(active);
-    };
-    window.addEventListener('pine_mobile_search_toggled', handleMobileSearchToggle);
-
-    if (currentTab !== 'catalog') {
-      setIsStickySearchVisible(false);
-      return () => {
-        window.removeEventListener('pine_mobile_search_toggled', handleMobileSearchToggle);
-      };
-    }
-
-    const checkStickyVisibility = () => {
-      const heroSearchEl = document.getElementById('hero-search-container');
-      if (!heroSearchEl) {
-        setIsStickySearchVisible(false);
-        return;
-      }
-
-      // If user is currently focusing inside the hero search bar, keep sticky bar hidden to prevent UI clashes on mobile keyboard popups
-      if (typeof document !== 'undefined' && heroSearchEl.contains(document.activeElement)) {
-        setIsStickySearchVisible(false);
-        return;
-      }
-
-      const rect = heroSearchEl.getBoundingClientRect();
-      // Header height: 64px on sm/desktop (>=640px), 56px on mobile (<640px)
-      const headerHeight = window.innerWidth >= 640 ? 64 : 56;
-      // Show sticky floating search bar once the hero search bar has scrolled up under the header
-      setIsStickySearchVisible(rect.bottom < headerHeight);
-    };
-
-    checkStickyVisibility();
-    window.addEventListener('scroll', checkStickyVisibility, { passive: true });
-    window.addEventListener('resize', checkStickyVisibility, { passive: true });
-
-    return () => {
-      window.removeEventListener('pine_mobile_search_toggled', handleMobileSearchToggle);
-      window.removeEventListener('scroll', checkStickyVisibility);
-      window.removeEventListener('resize', checkStickyVisibility);
-    };
-  }, [currentTab]);
 
   // Toast Helper
   const showToast = useCallback(
@@ -569,10 +386,7 @@ export const App: React.FC = () => {
         const hash = window.location.hash;
         const hashLower = hash.toLowerCase();
         const host = window.location.hostname;
-        const isTestClientDomain = host.toLowerCase().includes('universal-mall') || host.toLowerCase().includes('test-code-game-shop') || host.toLowerCase().includes('test-shopee');
         const urlParams = new URLSearchParams(window.location.search);
-
-        // URL-hash state import disabled for security (hashes carry no origin information)
 
         // 1. If on dedicated admin domain -> ALWAYS remain in admin app
         if (host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.includes('admin-test-code-game-shop') || host.startsWith('admin.')) {
@@ -588,13 +402,7 @@ export const App: React.FC = () => {
           return;
         }
 
-        // 3. Deep link hashes / query params have top priority over static pathname
-        const gameSlugParam =
-          urlParams.get('game') ||
-          urlParams.get('g') ||
-          (hashLower.includes('game=') ? hash.split(/game=/i)[1]?.split('&')[0] : null) ||
-          (hashLower.includes('g=') ? hash.split(/g=/i)[1]?.split('&')[0] : null);
-
+        // 3. Deep link hashes / query params
         const pkgIdParam =
           urlParams.get('pkg') ||
           urlParams.get('package') ||
@@ -617,45 +425,28 @@ export const App: React.FC = () => {
           (hashLower.includes('utility=') ? hash.split(/utility=/i)[1]?.split('&')[0] : null) ||
           (hashLower.includes('ut=') ? hash.split(/ut=/i)[1]?.split('&')[0] : null);
 
-        if (gameSlugParam || pkgIdParam) {
-          setCurrentTab('store');
+        if (pkgIdParam) {
+          setCurrentTab('mall');
+          setMallSubView('store');
           const storeProducts = dataService.getStoreProducts();
           const grouped = groupStoreProductsByGame(storeProducts);
-
-          let found = null;
-          if (gameSlugParam) {
-            const cleanSlug = gameSlugParam.toLowerCase().trim();
-            found = grouped.find(
-              (p) => (p.game_slug && p.game_slug.toLowerCase() === cleanSlug) ||
-                     (p.game_name && p.game_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === cleanSlug)
-            );
-          }
-
-          if (!found && pkgIdParam) {
-            found = grouped.find(
-              (p) => p.id === pkgIdParam ||
-                     p.id.toLowerCase() === pkgIdParam.toLowerCase() ||
-                     (p.packages && p.packages.some((pkg) => pkg.id.toLowerCase() === pkgIdParam.toLowerCase()))
-            ) || storeProducts.find(
-              (p) => p.id === pkgIdParam || p.id.toLowerCase() === pkgIdParam.toLowerCase()
-            );
-          }
-
+          const found =
+            grouped.find(
+              (p) =>
+                p.id === pkgIdParam ||
+                p.id.toLowerCase() === pkgIdParam.toLowerCase() ||
+                (p.packages && p.packages.some((pkg) => pkg.id.toLowerCase() === pkgIdParam.toLowerCase()))
+            ) ||
+            storeProducts.find((p) => p.id === pkgIdParam || p.id.toLowerCase() === pkgIdParam.toLowerCase());
           if (found) {
             setSelectedProduct(found);
-            if (pkgIdParam) {
-              const allPkgs = getProductPackages(found);
-              const pkgExists = allPkgs.some(
-                (pkg) => pkg.id.toLowerCase() === pkgIdParam.toLowerCase()
-              );
-              if (pkgExists) {
-                setSelectedPackageIdParam(pkgIdParam);
-              } else {
-                setSelectedPackageIdParam(null);
-                showToast('Thông báo', 'Gói này không còn nữa hoặc đã ngừng bán.', 'info');
-              }
+            const allPkgs = getProductPackages(found);
+            const pkgExists = allPkgs.some((pkg) => pkg.id.toLowerCase() === pkgIdParam.toLowerCase());
+            if (pkgExists) {
+              setSelectedPackageIdParam(pkgIdParam);
             } else {
               setSelectedPackageIdParam(null);
+              showToast('Thông báo', 'Gói này không còn nữa hoặc đã ngừng bán.', 'info');
             }
             return;
           } else {
@@ -663,186 +454,87 @@ export const App: React.FC = () => {
             return;
           }
         } else if (utilityId) {
-          setCurrentTab('utilities');
+          setCurrentTab('mall');
+          setMallSubView('utilities');
           setSelectedUtilityId(utilityId);
           return;
         } else if (gwId) {
-          setCurrentTab('giveaways');
+          setCurrentTab('mall');
+          setMallSubView('giveaways');
           setInitialGiveawayId(gwId);
           return;
-        } else if (hashLower === '#news' || hashLower.startsWith('#news')) {
-          setCurrentTab('news');
-          const nSlug = hash.includes('news/') ? hash.split(/news\//i)[1]?.split('&')[0] : null;
-          if (nSlug) setInitialNewsSlug(nSlug);
+        } else if (urlParams.get('g') || urlParams.get('game') || hashLower.includes('game=') || hashLower.includes('g=')) {
+          window.history.replaceState(null, '', isEn ? '/en/' : '/');
+          setCurrentTab('mall');
+          setMallSubView('home');
           return;
-        } else if (hashLower === '#giveaways' || hashLower.startsWith('#giveaways')) {
-          setCurrentTab('giveaways');
-          const hashGwId = hash.includes('gw=') ? hash.split(/gw=/i)[1]?.split('&')[0] : null;
-          if (hashGwId) setInitialGiveawayId(hashGwId);
-          return;
-        } else if (hashLower === '#store' || hashLower.startsWith('#store')) {
-          setCurrentTab('store');
-          return;
-        } else if (hashLower === '#utilities' || hashLower.startsWith('#utilities')) {
-          setCurrentTab('utilities');
-          return;
-        } else if (hashLower === '#catalog' || hashLower.startsWith('#catalog')) {
-          setCurrentTab('catalog');
-          return;
-        } else if (hashLower.includes('g=') || urlParams.get('g') || urlParams.get('game')) {
-          const slug = urlParams.get('g') || urlParams.get('game') || hash.split(/g=/i)[1]?.split('&')[0];
-          if (slug) {
-            const game = await dataService.getGameBySlug(slug);
-            if (game) {
-              setSelectedGame(game);
-              setCurrentTab(isTestClientDomain ? 'shopee-test' : 'catalog');
-              return;
-            }
-          }
         }
 
-        // 4. Pathname Routes (/su-kien, /events, /game/:slug, /g/:slug, /news, /giveaways, /store, /utilities) from Google or Shared Links
+        // 4. Pathname & Hash Routes unified via resolveRouteToMallSubView
         const pathname = window.location.pathname.toLowerCase();
+        const resolvedSub = resolveRouteToMallSubView(pathname, hashLower);
+        const isRootOrLang = pathname === '/' || pathname === '' || pathname === '/en' || pathname === '/en/' || pathname === '/vi' || pathname === '/vi/' || pathname === '/gio-hang' || pathname === '/cart';
         if (
-          pathname === '/su-kien' ||
-          pathname.startsWith('/su-kien/') ||
-          pathname === '/events' ||
-          pathname.startsWith('/events/')
+          pathname.startsWith('/game/') ||
+          pathname.startsWith('/g/') ||
+          hashLower === '#catalog' ||
+          hashLower.startsWith('#catalog') ||
+          (resolvedSub === 'home' && !isRootOrLang)
         ) {
-          setSelectedGame(null);
-          setCurrentTab('news');
-          setInitialNewsSubTab('events');
+          window.history.replaceState(null, '', isEn ? '/en/' : '/');
+          setCurrentTab('mall');
+          setMallSubView('home');
           return;
-        } else if (pathname.startsWith('/game/') || pathname.startsWith('/g/')) {
-          let pathSlug = window.location.pathname.replace(/^\/(?:game|g)\//i, '').replace(/\/$/, '').trim();
-          if (pathSlug === 'where-winds-meet-mobile' || pathSlug === 'yen-van-thap-luc-thanh') {
-            pathSlug = 'where-winds-meet';
-          }
-          if (pathSlug) {
-            setCurrentTab(isTestClientDomain ? 'shopee-test' : 'catalog');
-            const localFallback = (dataService.getGames() || []).find((g) => (g.slug || g.id) === pathSlug);
-            if (localFallback) {
-              setSelectedGame(localFallback);
-            }
-            dataService.getGameBySlug(pathSlug, false).then((freshGame) => {
-              if (freshGame) {
-                setSelectedGame(freshGame);
-                setGames((prev) =>
-                  prev.map((g) =>
-                    g.slug === freshGame.slug || g.id === freshGame.id
-                      ? { ...g, codes_count: freshGame.codes_count, codes: (freshGame.codes || []).slice(0, 3) }
-                      : g
-                  )
-                );
-              }
-            });
-          }
-        } else if (pathname === '/news' || pathname.startsWith('/news/')) {
-          setCurrentTab('news');
-          setInitialNewsSubTab('news');
-          const nSlug = window.location.pathname.replace(/^\/news\//i, '').replace(/\/$/, '').trim();
+        }
+
+        setCurrentTab('mall');
+        setMallSubView(resolvedSub);
+
+        if (resolvedSub === 'news') {
+          const nSlug = pathname.startsWith('/news/')
+            ? window.location.pathname.replace(/^\/news\//i, '').replace(/\/$/, '').trim()
+            : hash.includes('news/')
+            ? hash.split(/news\//i)[1]?.split('&')[0]
+            : null;
           if (nSlug) setInitialNewsSlug(nSlug);
-          return;
-        } else if (pathname === '/giveaways' || pathname.startsWith('/giveaways/') || pathname === '/giveaway' || pathname.startsWith('/giveaway/')) {
-          setCurrentTab('giveaways');
-          const pGwId = window.location.pathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim();
+        } else if (resolvedSub === 'giveaways') {
+          const pGwId = pathname.startsWith('/giveaway')
+            ? window.location.pathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim()
+            : hash.includes('gw=')
+            ? hash.split(/gw=/i)[1]?.split('&')[0]
+            : null;
           if (pGwId) setInitialGiveawayId(pGwId);
-          return;
-        } else if (pathname === '/store' || pathname.startsWith('/store/') || pathname === '/en/store' || pathname.startsWith('/en/store/')) {
-          setCurrentTab('store');
-          return;
-        } else if (pathname === '/utilities' || pathname.startsWith('/utilities/')) {
-          setCurrentTab('utilities');
-          return;
-        } else if (pathname === '/nhiem-vu' || pathname.startsWith('/nhiem-vu/') || pathname === '/missions' || pathname.startsWith('/missions/')) {
-          setCurrentTab('missions');
+        } else if (resolvedSub === 'missions') {
           const mId = window.location.pathname.replace(/^\/(?:nhiem-vu|missions)\/?/i, '').split('/')[0].trim();
           if (mId) setInitialMissionId(mId);
-          return;
-        } else if (pathname === '/ma-hom-nay' || pathname.startsWith('/ma-hom-nay/') || hash.includes('ma-hom-nay')) {
-          setSelectedGame(null);
-          setCurrentTab('news');
-          setInitialNewsSubTab('today-codes');
-          return;
-        } else if (pathname === '/ban-hang' || pathname.startsWith('/ban-hang/') || pathname === '/en/ban-hang' || pathname.startsWith('/en/ban-hang/') || hash.includes('ban-hang')) {
-          setCurrentTab('seller-center');
-          return;
-        } else if (pathname.startsWith('/gian-hang/')) {
+        } else if (resolvedSub === 'store-detail' && pathname.startsWith('/gian-hang/')) {
           const sSlug = window.location.pathname.replace(/^\/gian-hang\//i, '').replace(/\/$/, '').trim();
           setCurrentStoreSlug(sSlug);
-          setCurrentTab('store-detail');
-          return;
-        } else if (pathname.startsWith('/test1/game/') || pathname.startsWith('/test1/g/')) {
-          let pathSlug = window.location.pathname.replace(/^\/test1\/(?:game|g)\//i, '').replace(/\/$/, '').trim();
-          if (pathSlug === 'where-winds-meet-mobile' || pathSlug === 'yen-van-thap-luc-thanh') {
-            pathSlug = 'where-winds-meet';
-          }
-          setCurrentTab('shopee-test');
-          if (pathSlug) {
-            const fallbackList = dataService.getGames().length > 0 ? dataService.getGames() : (fallbackGamesData as any[]);
-            const localFallback = fallbackList.find((g: any) => (g.slug || g.id) === pathSlug || (g.slug && g.slug.toLowerCase() === pathSlug.toLowerCase()));
-            if (localFallback) {
-              setSelectedGame(localFallback);
-            }
-            try {
-              const freshGame = await dataService.getGameBySlug(pathSlug, false);
-              if (freshGame) {
-                setSelectedGame(freshGame);
-              }
-            } catch {}
-          }
-          return;
-        } else if (pathname === '/test1' || pathname.startsWith('/test1/') || hashLower.includes('test1')) {
-          setSelectedGame(null);
-          setCurrentTab('shopee-test');
-          return;
-        } else if ((pathname === '/en' || pathname === '/en/' || pathname === '/vi' || pathname === '/vi/' || !hash || hash === '#') && pathname !== '/store' && !pathname.startsWith('/store/') && pathname !== '/en/store' && !pathname.startsWith('/en/store/')) {
-          setSelectedGame(null);
-          setCurrentTab(isTestClientDomain ? 'shopee-test' : 'catalog');
-        } else if (hash === '#catalog' || hashLower.startsWith('#catalog')) {
-          setCurrentTab('catalog');
         }
       };
 
-      // Resolve deep link route first so UI reflects target page immediately
       await parseHash();
       setIsInitialLoadDone(true);
 
-      setIsLoading(true);
       const bmarks = dataService.getBookmarks();
       setBookmarks(bmarks);
       dataService.getBookmarkedGames(bmarks).then((bList) => setBookmarkedGamesList(bList));
       dataService.getUpcomingGames().then((uList) => {
         if (uList && uList.length > 0) setUpcomingGames(uList);
       });
-      const pCfg = dataService.getPaginationConfig();
-      setPaginationConfig(pCfg);
-
-      // Lightweight CMS sync to reflect branding & CMS updates immediately (only 4 KB instead of full sync)
       dataService.syncBrandingAndContentOnly().then(() => {
         setBranding(dataService.getWebsiteBranding());
       });
 
+      const pCfg = dataService.getPaginationConfig();
       const res = await dataService.queryGames(
         { search: '', category: 'all', tag: 'all', sortBy: 'release_date', sortOrder: 'desc' },
         1,
-        pCfg.pageSize,
+        Math.max(pCfg.pageSize || 24, 100),
         bmarks
       );
-      setGames(res.items);
       setAllGamesList(res.items);
-      setTotalPages(res.totalPages);
-      setTotalResults(res.total);
-      setHasMore(res.hasMore);
-      if (res.categories && res.categories.length > 0) {
-        setCategories(res.categories);
-      } else {
-        const cats = await dataService.getCategories();
-        setCategories(cats);
-      }
-      setIsLoading(false);
     };
-
     loadInitialData();
 
     // Listen to cross-origin snapshot messages from admin panel (strictly origin-checked)
@@ -873,208 +565,186 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Unified Single-Click Tab Switcher (History pushState routing without hash conflicts)
-  const handleSelectTab = useCallback((tab: 'catalog' | 'news' | 'giveaways' | 'store' | 'utilities' | 'missions' | 'telegram' | 'today-codes' | 'seller-center' | 'store-detail' | 'shopee-test') => {
-    setSelectedGame(null);
-    setSelectedProduct(null);
-    setSelectedUtilityId(null);
-
-    if (tab === 'today-codes') {
-      setCurrentTab('news');
-      setInitialNewsSubTab('today-codes');
-      if (window.location.pathname !== '/ma-hom-nay' || window.location.hash) {
-        window.history.pushState(null, '', '/ma-hom-nay');
-      }
-      return;
-    }
-
-    setCurrentTab(tab);
-
+  // Unified Single-Click Mall SubView Switcher (History pushState routing)
+  const getPathForMallSubView = useCallback((sub: MallSubView, storeSlugOverride?: string): string => {
     const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
-    const targetPath = tab === 'catalog'
-      ? '/'
-      : tab === 'missions'
-      ? '/nhiem-vu'
-      : tab === 'seller-center'
-      ? (isEnMode ? '/en/ban-hang' : '/ban-hang')
-      : tab === 'store-detail'
-      ? `/gian-hang/${currentStoreSlug}`
-      : tab === 'shopee-test'
-      ? '/test1'
-      : `/${tab}`;
+    switch (sub) {
+      case 'home':
+        return isEnMode ? '/en/' : '/';
+      case 'store':
+        return isEnMode ? '/en/store' : '/store';
+      case 'seller':
+        return isEnMode ? '/en/ban-hang' : '/ban-hang';
+      case 'store-detail':
+        return `/gian-hang/${storeSlugOverride || currentStoreSlug}`;
+      case 'missions':
+        return '/nhiem-vu';
+      case 'today-codes':
+        return '/ma-hom-nay';
+      case 'events':
+        return '/su-kien';
+      case 'platform-solutions':
+        return '/giai-phap-san';
+      case 'news':
+      case 'giveaways':
+      case 'utilities':
+      case 'telegram':
+        return `/${sub}`;
+      default:
+        return isEnMode ? '/en/' : '/';
+    }
+  }, [currentStoreSlug, language]);
+
+  const handleSelectMallView = useCallback((
+    sub: MallSubView,
+    extra?: { storeSlug?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
+  ) => {
+    setSelectedProduct(null);
+    if (extra?.storeSlug !== undefined) setCurrentStoreSlug(extra.storeSlug);
+    if (extra?.newsSlug !== undefined) setInitialNewsSlug(extra.newsSlug);
+    if (extra?.utilityId !== undefined) setSelectedUtilityId(extra.utilityId);
+    else setSelectedUtilityId(null);
+    if (extra?.giveawayId !== undefined) setInitialGiveawayId(extra.giveawayId);
+    if (extra?.missionId !== undefined) setInitialMissionId(extra.missionId);
+
+    setCurrentTab('mall');
+    setMallSubView(sub);
+
+    const targetPath = getPathForMallSubView(sub, extra?.storeSlug);
     if (window.location.pathname !== targetPath || window.location.hash) {
       window.history.pushState(null, '', targetPath);
     }
-  }, [currentStoreSlug, language]);
+  }, [getPathForMallSubView]);
+
+  const handleFilterStoreByGame = useCallback((slug: string) => {
+    setStoreCategoryFilter(slug || 'all');
+    setCurrentTab('mall');
+    setMallSubView('store');
+    const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
+    const targetPath = isEnMode ? '/en/store' : '/store';
+    if (window.location.pathname !== targetPath || window.location.hash) {
+      window.history.pushState(null, '', targetPath);
+    }
+  }, [language]);
+
+  const mapLegacyTabToMallSubView = (tab: string): MallSubView => {
+    switch (tab) {
+      case 'seller-center':
+        return 'seller';
+      case 'catalog':
+      case 'shopee-test':
+      case 'home':
+        return 'home';
+      case 'news':
+      case 'events':
+      case 'today-codes':
+      case 'store':
+      case 'store-detail':
+      case 'giveaways':
+      case 'utilities':
+      case 'missions':
+      case 'telegram':
+      case 'platform-solutions':
+        return tab;
+      default:
+        return 'home';
+    }
+  };
 
   // Sync Dynamic Document Title & Clean URL bar
   useEffect(() => {
     if (currentTab === 'admin') return;
+    if (!isInitialLoadDone) return;
 
-    if (selectedGame && typeof selectedGame === 'object' && selectedGame.slug && selectedGame.slug !== 'undefined') {
-      const effectiveSlug = (selectedGame.slug === 'where-winds-meet-mobile' || selectedGame.slug === 'yen-van-thap-luc-thanh')
-        ? 'where-winds-meet'
-        : selectedGame.slug;
-      const codeCount = selectedGame.active_codes_count !== undefined
-        ? selectedGame.active_codes_count
-        : (selectedGame.codes_count || selectedGame.codes?.filter((c: any) => !isCodeExpired(c))?.length || 0);
-      const countSuffix = codeCount > 0 ? `Nhận ${codeCount} Mã Code ` : '';
-      document.title = `Giftcode ${selectedGame.name || effectiveSlug} Mới Nhất 2026 - ${countSuffix}| Pine Universal Mall`;
-      const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
-      const inTest1 = currentTab === 'shopee-test' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/test1')) || isTestClientDomain;
-      if (inTest1) {
-        const targetPath = isTestClientDomain ? `/game/${effectiveSlug}` : `/test1/game/${effectiveSlug}`;
-        if (window.location.pathname !== targetPath) {
-          window.history.replaceState(null, '', targetPath);
-        }
-      } else if (window.location.pathname !== `/game/${effectiveSlug}`) {
-        window.history.replaceState(null, '', `/game/${effectiveSlug}`);
-      }
-    } else {
-      // Do not wipe pathname if initial deep-link routing is still parsing
-      if (!isInitialLoadDone) return;
+    const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
 
-      const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
-      const inTest1 = currentTab === 'shopee-test' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/test1')) || isTestClientDomain;
-      if (inTest1) {
-        if (window.location.pathname.startsWith('/test1/game/') || window.location.pathname.startsWith('/test1/g/') || (isTestClientDomain && window.location.pathname.startsWith('/game/'))) {
-          return;
-        }
-        const currentLowerPath = window.location.pathname.toLowerCase();
-        if (currentLowerPath === '/store' || currentLowerPath.startsWith('/store/') || currentLowerPath === '/en/store' || currentLowerPath.startsWith('/en/store/')) {
-          return;
-        }
-        if (isTestClientDomain) {
-          const path = window.location.pathname.toLowerCase();
-          const isLangPath = path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/';
-          if (!isLangPath && (window.location.pathname !== '/' || window.location.hash)) {
-            window.history.replaceState(null, '', '/');
-          }
-        } else if (window.location.pathname !== '/test1' || window.location.hash) {
-          window.history.replaceState(null, '', '/test1');
-        }
-      } else if (window.location.pathname.startsWith('/game/') || window.location.pathname.startsWith('/g/')) {
-        return;
-      }
-
-      if (currentTab === 'news') {
-        const path = window.location.pathname.toLowerCase();
-        const isTodayCodesPath =
-          path === '/ma-hom-nay' ||
-          path.startsWith('/ma-hom-nay/') ||
-          initialNewsSubTab === 'today-codes';
-
-        const isEventsPath =
-          path === '/su-kien' ||
-          path.startsWith('/su-kien/') ||
-          path === '/events' ||
-          path.startsWith('/events/') ||
-          initialNewsSubTab === 'events';
-
-        if (window.location.pathname.startsWith('/news/') && window.location.pathname.length > 6) {
-          // Viewing a specific news article full page: preserve /news/<slug> in address bar!
-        } else if (isTodayCodesPath) {
-          document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
-          if (path !== '/ma-hom-nay') {
-            window.history.replaceState(null, '', '/ma-hom-nay');
-          }
-        } else if (isEventsPath) {
-          document.title = 'Sự Kiện Game & Lịch Khởi Tranh Mới Nhất 2026 | Pine Universal Mall';
-          if (path !== '/su-kien' && path !== '/events') {
-            window.history.replaceState(null, '', '/su-kien');
-          }
-        } else {
-          document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
-          if (window.location.pathname !== '/news' || window.location.hash) {
-            window.history.replaceState(null, '', '/news');
-          }
-        }
-      } else if (currentTab === 'giveaways') {
-        document.title = 'Sự Kiện Giveaway Game Miễn Phí 2026 | Pine Universal Mall';
-        if (window.location.pathname !== '/giveaways' || window.location.hash) {
-          window.history.replaceState(null, '', '/giveaways');
-        }
-      } else if (currentTab === 'store') {
-        document.title = 'Cửa Hàng Thẻ Game & Robux Giá Rẻ | Pine Universal Mall';
-        const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
-        const expectedStorePath = isEnMode ? '/en/store' : '/store';
-        if (window.location.pathname !== expectedStorePath || window.location.hash) {
-          window.history.replaceState(null, '', expectedStorePath);
-        }
-      } else if (currentTab === 'utilities') {
-        document.title = 'Tiện Ích Nạp Game & Key Bản Quyền | Pine Universal Mall';
-        if (window.location.pathname !== '/utilities' || window.location.hash) {
-          window.history.replaceState(null, '', '/utilities');
-        }
-      } else if (currentTab === 'missions') {
-        document.title = 'Nhiệm Vụ Nhận Quà & Tiền Ví Miễn Phí | Pine Universal Mall';
-        const normPath = window.location.pathname.replace(/\/$/, '');
-        if (normPath !== '/nhiem-vu' || window.location.hash || window.location.pathname.endsWith('/')) {
-          window.history.replaceState(null, '', '/nhiem-vu');
-        }
-      } else if (currentTab === 'telegram') {
-        document.title = 'Cộng Đồng Telegram & Nhận Giftcode Tự Động | Pine Universal Mall';
-        if (window.location.pathname !== '/telegram' || window.location.hash) {
-          window.history.replaceState(null, '', '/telegram');
-        }
-      } else if (currentTab === 'today-codes') {
+    if (mallSubView === 'news' || mallSubView === 'events' || mallSubView === 'today-codes') {
+      const path = window.location.pathname.toLowerCase();
+      if (window.location.pathname.startsWith('/news/') && window.location.pathname.length > 6) {
+        // Preserve /news/<slug> in address bar
+      } else if (mallSubView === 'today-codes') {
         document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
-        if (window.location.pathname !== '/ma-hom-nay' || window.location.hash) {
+        if (path !== '/ma-hom-nay') {
           window.history.replaceState(null, '', '/ma-hom-nay');
         }
-      } else if (currentTab === 'seller-center') {
-        const isEnMode = language === 'en' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/en'));
-        document.title = isEnMode
-          ? 'Seller Center & Store Management | Pine Universal Mall'
-          : 'Kênh Người Bán & Quản Lý Gian Hàng | Pine Universal Mall';
-        const expectedSellerPath = isEnMode ? '/en/ban-hang' : '/ban-hang';
-        if (window.location.pathname !== expectedSellerPath || window.location.hash) {
-          window.history.replaceState(null, '', expectedSellerPath);
-        }
-      } else if (currentTab === 'store-detail') {
-        document.title = 'Gian Hàng Số | Pine Universal Mall';
-        if (currentStoreSlug && (window.location.pathname !== `/gian-hang/${currentStoreSlug}` || window.location.hash)) {
-          window.history.replaceState(null, '', `/gian-hang/${currentStoreSlug}`);
-        }
-      } else if (currentTab === 'shopee-test') {
-        const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
-        if (isTestClientDomain) {
-          document.title = language === 'en'
-            ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace'
-            : 'Universal Mall - Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng';
-          const metaDesc = document.querySelector('meta[name="description"]');
-          if (metaDesc) {
-            metaDesc.setAttribute(
-              'content',
-              language === 'en'
-                ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace: Fashion, Beauty, Digital Tech, Services & Gaming. Nationwide courier and 0s instant code delivery.'
-                : 'Sàn thương mại điện tử đa ngành chính hãng Universal Mall: Thời trang, Làm đẹp, Thiết bị số, Dịch vụ số & Gaming. Giao hàng toàn quốc và mã 0s.'
-            );
-          }
-        } else {
-          document.title = 'Giao Diện Thử Nghiệm Phong Cách Shopee Game (Test 1) | Pine Universal Mall';
-        }
-        const isDeepLink = window.location.pathname.startsWith('/test1/game/') || window.location.pathname.startsWith('/test1/g/') || (isTestClientDomain && window.location.pathname.startsWith('/game/'));
-        if (!isDeepLink) {
-          if (isTestClientDomain) {
-            const path = window.location.pathname.toLowerCase();
-            const isLangPath = path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/';
-            const expectedPath = language === 'en' ? '/en/' : '/';
-            if ((isLangPath || path === '/' || path === '') && path !== expectedPath) {
-              window.history.replaceState(null, '', expectedPath);
-            }
-          } else if (window.location.pathname !== '/test1' || window.location.hash) {
-            window.history.replaceState(null, '', '/test1');
-          }
+      } else if (mallSubView === 'events') {
+        document.title = 'Sự Kiện Game & Lịch Khởi Tranh Mới Nhất 2026 | Pine Universal Mall';
+        if (path !== '/su-kien' && path !== '/events') {
+          window.history.replaceState(null, '', '/su-kien');
         }
       } else {
-        document.title = 'Pine Universal Mall - Cổng Tra Cứu Giftcode & Game Bản Quyền Hàng Đầu';
-        if (window.location.pathname !== '/' || window.location.hash) {
-          window.history.replaceState(null, '', '/');
+        document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
+        if (window.location.pathname !== '/news' || window.location.hash) {
+          window.history.replaceState(null, '', '/news');
         }
       }
+    } else if (mallSubView === 'giveaways') {
+      document.title = 'Sự Kiện Giveaway Game Miễn Phí 2026 | Pine Universal Mall';
+      if (!window.location.pathname.startsWith('/giveaways') || window.location.hash) {
+        window.history.replaceState(null, '', '/giveaways');
+      }
+    } else if (mallSubView === 'store') {
+      document.title = isEnMode
+        ? 'Multi-Industry Store & Digital Deals | Universal Mall'
+        : 'Cửa Hàng Đa Ngành & Tiện Ích Số | Universal Mall';
+      const expectedStorePath = isEnMode ? '/en/store' : '/store';
+      if (window.location.pathname !== expectedStorePath || window.location.hash) {
+        window.history.replaceState(null, '', expectedStorePath);
+      }
+    } else if (mallSubView === 'utilities') {
+      document.title = 'Tiện Ích Nạp Game & Key Bản Quyền | Pine Universal Mall';
+      if (window.location.pathname !== '/utilities' || window.location.hash) {
+        window.history.replaceState(null, '', '/utilities');
+      }
+    } else if (mallSubView === 'missions') {
+      document.title = 'Nhiệm Vụ Nhận Quà & Tiền Ví Miễn Phí | Pine Universal Mall';
+      const normPath = window.location.pathname.replace(/\/$/, '');
+      if (normPath !== '/nhiem-vu' || window.location.hash || window.location.pathname.endsWith('/')) {
+        window.history.replaceState(null, '', '/nhiem-vu');
+      }
+    } else if (mallSubView === 'telegram') {
+      document.title = 'Cộng Đồng Telegram & Nhận Thông Báo Tự Động | Pine Universal Mall';
+      if (window.location.pathname !== '/telegram' || window.location.hash) {
+        window.history.replaceState(null, '', '/telegram');
+      }
+    } else if (mallSubView === 'seller') {
+      document.title = isEnMode
+        ? 'Seller Center & Store Management | Pine Universal Mall'
+        : 'Kênh Người Bán & Quản Lý Gian Hàng | Pine Universal Mall';
+      const expectedSellerPath = isEnMode ? '/en/ban-hang' : '/ban-hang';
+      if (window.location.pathname !== expectedSellerPath || window.location.hash) {
+        window.history.replaceState(null, '', expectedSellerPath);
+      }
+    } else if (mallSubView === 'store-detail') {
+      document.title = 'Gian Hàng Chính Hãng | Pine Universal Mall';
+      if (currentStoreSlug && (window.location.pathname !== `/gian-hang/${currentStoreSlug}` || window.location.hash)) {
+        window.history.replaceState(null, '', `/gian-hang/${currentStoreSlug}`);
+      }
+    } else if (mallSubView === 'platform-solutions') {
+      document.title = isEnMode
+        ? 'E-Commerce Platform & Turnkey Solutions | Universal Mall'
+        : 'Giải Pháp Sàn Thương Mại & Mở Gian Hàng | Universal Mall';
+    } else {
+      document.title = isEnMode
+        ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace'
+        : 'Universal Mall - Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng';
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute(
+          'content',
+          isEnMode
+            ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace: Fashion, Beauty, Digital Tech, Services & Gaming. Nationwide courier and 0s instant code delivery.'
+            : 'Sàn thương mại điện tử đa ngành chính hãng Universal Mall: Thời trang, Làm đẹp, Thiết bị số, Dịch vụ số & Gaming. Giao hàng toàn quốc và mã 0s.'
+        );
+      }
+      const expectedHome = isEnMode ? '/en/' : '/';
+      const pathLower = window.location.pathname.toLowerCase();
+      const isLangPath = pathLower === '/en' || pathLower === '/en/' || pathLower === '/vi' || pathLower === '/vi/' || pathLower === '/';
+      if (mallSubView === 'home' && ((isLangPath && window.location.pathname !== expectedHome) || (!isLangPath && window.location.pathname !== '/') || window.location.hash)) {
+        window.history.replaceState(null, '', expectedHome);
+      }
     }
-  }, [selectedGame, currentTab, isInitialLoadDone, language]);
+  }, [currentTab, mallSubView, currentStoreSlug, isInitialLoadDone, language]);
 
   // Handle browser popstate and hashchange navigation (Back / Forward buttons & anchors)
   useEffect(() => {
@@ -1088,117 +758,46 @@ export const App: React.FC = () => {
       const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hash.startsWith(p));
       const isAdminPath = path.startsWith('/admin') || path.startsWith('/en/admin');
       if (isAdminDomain || isAdminPath || isAdminHash) {
-        setSelectedGame(null);
         setCurrentTab('admin');
         return;
       }
 
-      // Check platform solutions route
+      // Redirect legacy /game/, /g/, #catalog, and unknown legacy paths to Universal Mall home
+      const resolvedSub = resolveRouteToMallSubView(path, hash);
+      const isRootOrLang = path === '/' || path === '' || path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/' || path === '/gio-hang' || path === '/cart';
       if (
-        hash === '#giai-phap-san' ||
-        hash.startsWith('#giai-phap-san') ||
-        hash === '#ban-web' ||
-        hash.startsWith('#ban-web') ||
-        hash === '#cho-thue-web' ||
-        hash.startsWith('#cho-thue-web') ||
-        hash === '#platform-solutions' ||
-        hash.startsWith('#platform-solutions') ||
-        path === '/giai-phap-san' ||
-        path.startsWith('/giai-phap-san/') ||
-        path === '/ban-web' ||
-        path.startsWith('/ban-web/') ||
-        path === '/cho-thue-web' ||
-        path.startsWith('/cho-thue-web/')
+        path.startsWith('/game/') ||
+        path.startsWith('/g/') ||
+        hash === '#catalog' ||
+        hash.startsWith('#catalog') ||
+        (resolvedSub === 'home' && !isRootOrLang)
       ) {
-        setSelectedGame(null);
-        setCurrentTab('platform-solutions');
+        window.history.replaceState(null, '', isEn ? '/en/' : '/');
+        setCurrentTab('mall');
+        setMallSubView('home');
         return;
       }
 
-      // 1. Explicit hash deep links precedence
-      if (hash === '#su-kien' || hash.startsWith('#su-kien') || hash === '#events' || hash.startsWith('#events')) {
-        setSelectedGame(null);
-        setCurrentTab('news');
-        setInitialNewsSubTab('events');
-        return;
-      }
-      if (hash === '#news' || hash.startsWith('#news')) {
-        setSelectedGame(null);
-        setCurrentTab('news');
-        setInitialNewsSubTab('news');
-        return;
-      }
-      if (hash === '#giveaways' || hash.startsWith('#giveaways') || hash.includes('gw=') || hash.includes('giveaway=')) {
-        setSelectedGame(null);
-        setCurrentTab('giveaways');
-        const popGwId = hash.includes('gw=')
-          ? hash.split(/gw=/i)[1]?.split('&')[0]
-          : hash.includes('giveaway=')
-          ? hash.split(/giveaway=/i)[1]?.split('&')[0]
-          : null;
-        if (popGwId) setInitialGiveawayId(popGwId);
-        return;
-      }
-      if (hash === '#store' || hash.startsWith('#store') || hash.includes('product=')) {
-        setSelectedGame(null);
-        setCurrentTab('store');
-        return;
-      }
-      if (hash === '#utilities' || hash.startsWith('#utilities') || hash.includes('utility=')) {
-        setSelectedGame(null);
-        setCurrentTab('utilities');
-        return;
-      }
-      if (hash === '#missions' || hash.startsWith('#missions') || hash === '#nhiem-vu' || hash.startsWith('#nhiem-vu')) {
-        setSelectedGame(null);
-        setCurrentTab('missions');
-        return;
-      }
-      if (hash === '#telegram' || hash.startsWith('#telegram') || path === '/telegram' || path.startsWith('/telegram/')) {
-        setSelectedGame(null);
-        setCurrentTab('telegram');
-        return;
-      }
-      if (hash === '#ma-hom-nay' || hash.startsWith('#ma-hom-nay') || hash.includes('today') || path === '/ma-hom-nay' || path.startsWith('/ma-hom-nay/')) {
-        setSelectedGame(null);
-        setCurrentTab('news');
-        setInitialNewsSubTab('today-codes');
-        return;
-      }
       if (hash === '#cart' || hash === '#gio-hang' || path === '/gio-hang' || path === '/cart') {
         setIsCartOpen(true);
       }
 
-      // 2. Pathname routes
-      if (path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/')) {
-        setSelectedGame(null);
-        setCurrentTab('news');
-        setInitialNewsSubTab('events');
-      } else if (path.startsWith('/game/') || path.startsWith('/g/')) {
-        const pathSlug = window.location.pathname.replace(/^\/(?:game|g)\//i, '').replace(/\/$/, '').trim();
-        if (pathSlug) {
-          dataService.getGameBySlug(pathSlug).then((g) => {
-            if (g) {
-              setSelectedGame(g);
-              const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
-              setCurrentTab(isTestClient ? 'shopee-test' : 'catalog');
-            }
-          });
-        }
-      } else if (path === '/news' || path.startsWith('/news/')) {
-        setSelectedGame(null);
-        setCurrentTab('news');
-        setInitialNewsSubTab('news');
-        const nSlug = path.replace(/^\/news\//i, '').replace(/\/$/, '').trim();
+      setCurrentTab('mall');
+      setMallSubView(resolvedSub);
+
+      if (resolvedSub === 'news') {
+        const nSlug = path.startsWith('/news/') ? path.replace(/^\/news\//i, '').replace(/\/$/, '').trim() : null;
         setInitialNewsSlug(nSlug || null);
-      } else if (path === '/giveaways' || path.startsWith('/giveaways/') || path === '/giveaway' || path.startsWith('/giveaway/')) {
-        setSelectedGame(null);
-        setCurrentTab('giveaways');
-        const pGwId = window.location.pathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim();
-        if (pGwId) setInitialGiveawayId(pGwId);
-      } else if (path === '/store' || path.startsWith('/store/') || path === '/en/store' || path.startsWith('/en/store/')) {
-        setSelectedGame(null);
-        setCurrentTab('store');
+      } else if (resolvedSub === 'giveaways') {
+        const popGwId = hash.includes('gw=')
+          ? hash.split(/gw=/i)[1]?.split('&')[0]
+          : hash.includes('giveaway=')
+          ? hash.split(/giveaway=/i)[1]?.split('&')[0]
+          : path.startsWith('/giveaway')
+          ? window.location.pathname.replace(/^\/(?:giveaways|giveaway)\/?/i, '').split('/')[0].trim()
+          : null;
+        if (popGwId) setInitialGiveawayId(popGwId);
+      } else if (resolvedSub === 'store') {
         const popParams = new URLSearchParams(window.location.search);
         const popGame = popParams.get('game') || popParams.get('g');
         const popPkg = popParams.get('pkg') || popParams.get('package') || popParams.get('product') || popParams.get('prod');
@@ -1209,26 +808,25 @@ export const App: React.FC = () => {
           if (popGame) {
             const cleanSlug = popGame.toLowerCase().trim();
             found = grouped.find(
-              (p) => (p.game_slug && p.game_slug.toLowerCase() === cleanSlug) ||
-                     (p.game_name && p.game_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === cleanSlug)
+              (p) =>
+                (p.game_slug && p.game_slug.toLowerCase() === cleanSlug) ||
+                (p.game_name && p.game_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === cleanSlug)
             );
           }
           if (!found && popPkg) {
-            found = grouped.find(
-              (p) => p.id === popPkg ||
-                     p.id.toLowerCase() === popPkg.toLowerCase() ||
-                     (p.packages && p.packages.some((pkg) => pkg.id.toLowerCase() === popPkg.toLowerCase()))
-            ) || storeProducts.find(
-              (p) => p.id === popPkg || p.id.toLowerCase() === popPkg.toLowerCase()
-            );
+            found =
+              grouped.find(
+                (p) =>
+                  p.id === popPkg ||
+                  p.id.toLowerCase() === popPkg.toLowerCase() ||
+                  (p.packages && p.packages.some((pkg) => pkg.id.toLowerCase() === popPkg.toLowerCase()))
+              ) || storeProducts.find((p) => p.id === popPkg || p.id.toLowerCase() === popPkg.toLowerCase());
           }
           if (found) {
             setSelectedProduct(found);
             if (popPkg) {
               const allPkgs = getProductPackages(found);
-              const pkgExists = allPkgs.some(
-                (pkg) => pkg.id.toLowerCase() === popPkg.toLowerCase()
-              );
+              const pkgExists = allPkgs.some((pkg) => pkg.id.toLowerCase() === popPkg.toLowerCase());
               if (pkgExists) {
                 setSelectedPackageIdParam(popPkg);
               } else {
@@ -1240,48 +838,11 @@ export const App: React.FC = () => {
             }
           }
         }
-      } else if (path === '/utilities' || path.startsWith('/utilities/')) {
-        setSelectedGame(null);
-        setCurrentTab('utilities');
-      } else if (path === '/missions' || path.startsWith('/missions/') || path === '/nhiem-vu' || path.startsWith('/nhiem-vu/')) {
-        setSelectedGame(null);
-        setCurrentTab('missions');
-      } else if (path === '/ma-hom-nay' || path.startsWith('/ma-hom-nay/')) {
-        setSelectedGame(null);
-        setCurrentTab('news');
-        setInitialNewsSubTab('today-codes');
-      } else if (path === '/ban-hang' || path.startsWith('/ban-hang/') || path === '/en/ban-hang' || path.startsWith('/en/ban-hang/')) {
-        setSelectedGame(null);
-        setCurrentTab('seller-center');
-      } else if (path.startsWith('/gian-hang/')) {
-        setSelectedGame(null);
+      } else if (resolvedSub === 'store-detail' && path.startsWith('/gian-hang/')) {
         const sSlug = window.location.pathname.replace(/^\/gian-hang\//i, '').replace(/\/$/, '').trim();
         setCurrentStoreSlug(sSlug);
-        setCurrentTab('store-detail');
-      } else if (path.startsWith('/test1/game/') || path.startsWith('/test1/g/')) {
-        const pathSlug = window.location.pathname.replace(/^\/test1\/(?:game|g)\//i, '').replace(/\/$/, '').trim();
-        setCurrentTab('shopee-test');
-        if (pathSlug) {
-          const localFallback = (dataService.getGames() || []).find((g) => (g.slug || g.id) === pathSlug);
-          if (localFallback) {
-            setSelectedGame(localFallback);
-          }
-          dataService.getGameBySlug(pathSlug, false).then((freshGame) => {
-            if (freshGame) {
-              setSelectedGame(freshGame);
-            }
-          });
-        }
-      } else if (path === '/test1' || path.startsWith('/test1/') || hash.includes('test1')) {
-        setSelectedGame(null);
-        setCurrentTab('shopee-test');
-      } else if (path === '/' || path === '' || path === '/en' || path === '/en/' || path === '/vi' || path === '/vi/') {
-        setSelectedGame(null);
-        const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
-        setCurrentTab(isTestClient ? 'shopee-test' : 'catalog');
       }
     };
-
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('hashchange', handlePopState);
     return () => {
@@ -1290,72 +851,15 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const searchDebounceTimerRef = useRef<any>(null);
-
-  // Sync Search Query with Filter (P4: 300ms Debounce to prevent server hammering)
-  const handleSearchChange = (q: string) => {
-    setSearchQuery(q);
-    if (currentTab !== 'catalog') {
-      handleSelectTab('catalog');
-    }
-    if (searchDebounceTimerRef.current) {
-      clearTimeout(searchDebounceTimerRef.current);
-    }
-    // Instant clear when emptied, otherwise debounce 300ms
-    if (!q || !q.trim()) {
-      startTransition(() => {
-        setFilter((prev) => ({ ...prev, search: '' }));
-        setCurrentPage(1);
-      });
-    } else {
-      searchDebounceTimerRef.current = setTimeout(() => {
-        startTransition(() => {
-          setFilter((prev) => ({ ...prev, search: q }));
-          setCurrentPage(1);
-        });
-      }, 300);
-    }
-  };
-
-  // Immediate search submit handler for "Xem tất cả kết quả" / Search button / Enter
-  const handleExploreOrSubmitSearch = (explicitQuery?: string) => {
-    const q = explicitQuery !== undefined ? explicitQuery : searchQuery;
-    if (searchDebounceTimerRef.current) {
-      clearTimeout(searchDebounceTimerRef.current);
-    }
-    setSearchQuery(q);
-    startTransition(() => {
-      setFilter((prev) => ({ ...prev, search: q }));
-      setCurrentPage(1);
-    });
-    if (currentTab !== 'catalog') {
-      handleSelectTab('catalog');
-    }
-    const target = document.getElementById('game-catalog-section');
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Filter Updates
-  const handleFilterChange = (newFilter: Partial<FilterState>) => {
-    startTransition(() => {
-      setFilter((prev) => ({ ...prev, ...newFilter }));
-      setCurrentPage(1);
-    });
-  };
-
-  // Reset Filters
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setFilter({
-      search: '',
-      category: 'all',
-      tag: 'all',
-      sortBy: 'release_date',
-      sortOrder: 'desc',
-    });
-    setCurrentPage(1);
+  // Immediate search trigger from MarketingNotificationToast
+  const handleExploreOrSubmitSearch = () => {
+    handleSelectMallView('home');
+    setTimeout(() => {
+      const target = document.getElementById('shopee-products-grid');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
   };
 
   // Keep bookmarkedGamesList synced with bookmarks
@@ -1369,117 +873,9 @@ export const App: React.FC = () => {
     });
   }, [bookmarks]);
 
-  // Query Execution for Catalog Tab
-  useEffect(() => {
-    if (currentTab !== 'catalog') return;
-    if (!isInitialLoadDone) return;
-    let isCancelled = false;
-
-    const executeQuery = async () => {
-      // Only show CyberLoader on initial blank state to prevent full-screen unmount flicker
-      setGames((prev) => {
-        if (prev.length === 0) {
-          setIsLoading(true);
-        }
-        return prev;
-      });
-
-      try {
-        const res = await dataService.queryGames(filter, 1, paginationConfig.pageSize, bookmarks);
-        if (!isCancelled && res) {
-          setGames(res.items || []);
-          setCurrentPage(1);
-          setTotalPages(res.totalPages || 1);
-          setTotalResults(res.total || 0);
-          setHasMore(Boolean(res.hasMore));
-          if (res.categories && res.categories.length > 0) {
-            setCategories(res.categories);
-          }
-        }
-      } catch (err) {
-        console.error('[App] executeQuery error, fallback to client dataset:', err);
-        const fallbackList = dataService.getGames();
-        if (!isCancelled && fallbackList.length > 0) {
-          setGames(fallbackList.slice(0, paginationConfig.pageSize));
-          setTotalResults(fallbackList.length);
-          setTotalPages(Math.ceil(fallbackList.length / paginationConfig.pageSize));
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    executeQuery();
-    return () => {
-      isCancelled = true;
-    };
-  }, [filter, currentTab, paginationConfig.mode, paginationConfig.pageSize]);
-
-  // Safety Watchdog: Guarantee CyberLoader never hangs indefinitely under any network condition
-  useEffect(() => {
-    if (!isLoading) return;
-    const watchdogTimer = setTimeout(() => {
-      console.warn('[App] Watchdog: Force clearing CyberLoader after 2500ms to guarantee instant interactivity');
-      setIsLoading(false);
-      setGames((prev) => {
-        if (prev.length === 0) {
-          const fallbackList = dataService.getGames();
-          return fallbackList.slice(0, paginationConfig.pageSize);
-        }
-        return prev;
-      });
-    }, 2500);
-
-    return () => clearTimeout(watchdogTimer);
-  }, [isLoading, paginationConfig.pageSize]);
-
-  // Infinite Scroll: Load Next Page
-  const handleLoadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore || paginationConfig.mode !== 'infinite') return;
-    setIsLoadingMore(true);
-    const nextPage = currentPage + 1;
-    const res = await dataService.queryGames(filter, nextPage, paginationConfig.pageSize, bookmarks);
-    if (res.items && res.items.length > 0) {
-      setGames((prev) => {
-        const seen = new Set(prev.map((g) => g.id || g.slug));
-        const unique = res.items.filter((g) => !seen.has(g.id || g.slug));
-        return [...prev, ...unique];
-      });
-      setCurrentPage(nextPage);
-      setTotalPages(res.totalPages);
-      setTotalResults(res.total);
-      setHasMore(res.hasMore);
-    } else {
-      setHasMore(false);
-    }
-    setIsLoadingMore(false);
-  }, [currentPage, filter, bookmarks, hasMore, isLoadingMore, paginationConfig]);
-
-  // Manual Page Change (Classic numbered pagination / jump)
-  const handlePageChange = useCallback(async (p: number) => {
-    setCurrentPage(p);
-    const res = await dataService.queryGames(filter, p, paginationConfig.pageSize, bookmarks);
-    setGames(res.items);
-    setCurrentPage(p);
-    setTotalPages(res.totalPages);
-    setTotalResults(res.total);
-    setHasMore(res.hasMore);
-    const section = document.getElementById('game-catalog-section');
-    if (section) section.scrollIntoView({ behavior: 'smooth' });
-    else window.scrollTo({ top: 400, behavior: 'smooth' });
-  }, [filter, bookmarks, paginationConfig.pageSize]);
-
   // Real-time Data Sync Subscription (Reflect Admin updates instantly without CPU loops)
   useEffect(() => {
     const unsubscribe = dataService.subscribe(async () => {
-      const cats = await dataService.getCategories();
-      setCategories((prev) => {
-        if (prev.length === cats.length && prev.every((c, i) => c.id === cats[i]?.id)) return prev;
-        return cats;
-      });
-
       const newBranding = dataService.getWebsiteBranding();
       setBranding((prev) => {
         if (
@@ -1493,13 +889,10 @@ export const App: React.FC = () => {
         return newBranding;
       });
 
-      const newPagination = dataService.getPaginationConfig();
-      setPaginationConfig((prev) => {
-        if (prev.mode === newPagination.mode && prev.pageSize === newPagination.pageSize) {
-          return prev;
-        }
-        return newPagination;
-      });
+      const syncedGames = dataService.getGames();
+      if (syncedGames && syncedGames.length > 0) {
+        setAllGamesList(syncedGames);
+      }
 
       const u = dataService.getCurrentUser();
       setCurrentUser((prev) => {
@@ -1519,17 +912,9 @@ export const App: React.FC = () => {
         }
         return prev;
       });
-
-      if (currentTab === 'catalog') {
-        const res = await dataService.queryGames(filter, currentPage, paginationConfig.pageSize, bookmarks);
-        setGames(res.items);
-        setTotalPages(res.totalPages);
-        setTotalResults(res.total);
-        setHasMore(res.hasMore);
-      }
     });
     return () => unsubscribe();
-  }, [filter, bookmarks, currentTab, currentPage, paginationConfig.pageSize]);
+  }, []);
 
   // Gentle Event-Driven User Balance Refresh
   useEffect(() => {
@@ -1584,20 +969,14 @@ export const App: React.FC = () => {
       }
       link.href = branding.avatarUrl;
     }
-    const isTestClientDomain = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
-    if (isTestClientDomain || currentTab === 'shopee-test') {
-      document.title = language === 'en'
-        ? 'Universal Mall - Official Multi-Industry E-Commerce Marketplace'
-        : 'Universal Mall - Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng';
-      return;
-    }
-
     const rawTitle = branding.siteTitle?.trim();
     const cleanTitle =
       rawTitle && rawTitle.toUpperCase() !== 'WEB CODE GAME' && rawTitle.toUpperCase() !== 'WEB CODE'
         ? rawTitle
-        : 'Pine Universal Mall';
-    document.title = `${cleanTitle} - Cổng Tra Cứu Giftcode & Tiện Ích Game`;
+        : 'Universal Mall';
+    document.title = language === 'en'
+      ? `${cleanTitle} - Official Multi-Industry E-Commerce Marketplace`
+      : `${cleanTitle} - Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng`;
   }, [branding.avatarUrl, branding.siteTitle, language, currentTab]);
 
   // Real-time listener for CMS content changes (Events, Storage & BroadcastChannel)
@@ -1654,84 +1033,6 @@ export const App: React.FC = () => {
     showToast('Đã làm trống tủ game', undefined, 'info');
   };
 
-  // Quick Copy Handler
-  const handleQuickCopyCode = (code: string, gameName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(code);
-    dataService.recordCopyEvent(code, gameName);
-    marketingService.recordRealCopy(gameName, '', 1);
-    showToast(`Đã sao chép mã code cho ${gameName}!`, code, 'success');
-  };
-
-  // Handle Game Selection
-  const handleSelectGame = async (game: GameItem) => {
-    saveRecentSearch(game.name);
-    // 1. Immediately enrich with complete code list from dataService so the modal opens with full codes on the VERY FIRST RENDER
-    const localCodes = dataService.getCodesForGame(game);
-    const cachedGame = dataService.getCachedServerGame(game.slug);
-    const fullCodes = (cachedGame?.codes && cachedGame.codes.length > 0)
-      ? cachedGame.codes
-      : (localCodes && localCodes.length > (game.codes?.length || 0) ? localCodes : (game.codes || []));
-
-    const usableFullCodes = fullCodes.filter((c: any) => !isCodeExpired(c));
-    const initialEnrichedGame: GameItem = {
-      ...game,
-      codes: fullCodes,
-      codes_count: typeof game.codes_count === 'number' ? game.codes_count : usableFullCodes.length,
-      active_codes_count: typeof game.active_codes_count === 'number' ? game.active_codes_count : usableFullCodes.length,
-      expired_codes_count: fullCodes.length - usableFullCodes.length,
-      total_codes_count: fullCodes.length,
-      icon_url: game.icon_url || cachedGame?.icon_url || safeGameIconUrl(game.slug, '/og-image.jpg'),
-    };
-    setSelectedGame(initialEnrichedGame);
-
-    // 2. Background verify with serverless API without forceFresh bypass unless needed
-    const fullGame = await dataService.getGameBySlug(game.slug, false);
-    if (fullGame && fullGame.codes) {
-      setSelectedGame((prev) => {
-        if (!prev || (prev.slug !== game.slug && prev.id !== game.id)) return prev;
-        return {
-          ...prev,
-          ...fullGame,
-          icon_url: fullGame.icon_url || prev.icon_url || safeGameIconUrl(game.slug, '/og-image.jpg'),
-        };
-      });
-      // Synchronize back to games list state so homepage card badge immediately reflects authoritative codes_count!
-      setGames((prev) =>
-        prev.map((g) =>
-          g.slug === fullGame.slug || g.id === fullGame.id
-            ? { ...g, codes_count: fullGame.codes_count, codes: (fullGame.codes || []).slice(0, 3) }
-            : g
-        )
-      );
-    }
-  };
-
-  const handleSelectGameSlug = async (slug: string) => {
-    const cachedGame = dataService.getCachedServerGame(slug);
-    if (cachedGame && (cachedGame as any).is_full_detail && !cachedGame.is_partial_preview) {
-      setSelectedGame(cachedGame);
-    } else {
-      const localFallback = (fallbackGamesData as any[]).find((g: any) =>
-        g && ((g.slug && g.slug.toLowerCase() === slug.toLowerCase()) || (g.id && String(g.id).toLowerCase() === slug.toLowerCase()))
-      );
-      if (localFallback) {
-        setSelectedGame(localFallback);
-      }
-    }
-    const fullGame = await dataService.getGameBySlug(slug, false);
-    if (fullGame) {
-      setSelectedGame(fullGame);
-      setGames((prev) =>
-        prev.map((g) =>
-          g.slug === fullGame.slug || g.id === fullGame.id
-            ? { ...g, codes_count: fullGame.codes_count, codes: (fullGame.codes || []).slice(0, 3) }
-            : g
-        )
-      );
-    }
-  };
-
   const handleSelectProductById = (productId: string) => {
     const prods = dataService.getStoreProducts();
     const grouped = groupStoreProductsByGame(prods);
@@ -1753,28 +1054,12 @@ export const App: React.FC = () => {
     return 'https://universal-mall-shop.pages.dev';
   };
 
-  const handleOpenShareGame = (game: GameItem, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    const origin = getShareOrigin();
-    const rawIcon = game.icon_url || (game.slug ? `/game_icons/${game.slug}.webp` : '/og-image.jpg');
-    const fullIcon = rawIcon.startsWith('http') ? rawIcon : `${origin}${rawIcon.startsWith('/') ? rawIcon : `/${rawIcon}`}`;
-    const codeCount = game.codes_count || game.codes?.length || 0;
-    setSharePayload({
-      title: `Giftcode ${game.name}`,
-      subtitle: game.publisher || 'Nhà phát hành chính thức',
-      shareUrl: `${origin}/game/${game.slug}`,
-      itemType: 'game',
-      imageUrl: fullIcon,
-      badge: codeCount > 0 ? `${codeCount} Mã Code` : 'Code Tân Thủ',
-    });
-  };
-
   const handleOpenShareGiveaway = (campaign: GiveawayCampaign, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const origin = getShareOrigin();
     let rawIcon = campaign.cover_image_url || campaign.game_icon_url || '';
     if (!rawIcon && campaign.game_slug) {
-      const g = allGames.find((x) => x && (x.slug?.toLowerCase() === campaign.game_slug?.toLowerCase() || x.id?.toLowerCase() === campaign.game_slug?.toLowerCase()));
+      const g = allGamesList.find((x) => x && (x.slug?.toLowerCase() === campaign.game_slug?.toLowerCase() || x.id?.toLowerCase() === campaign.game_slug?.toLowerCase()));
       if (g?.icon_url) rawIcon = g.icon_url;
       else rawIcon = safeGameIconUrl(campaign.game_slug, '/og-image.jpg');
     }
@@ -1795,7 +1080,7 @@ export const App: React.FC = () => {
     const origin = getShareOrigin();
     let rawIcon = resolveProductCoverImage(product, '');
     if (!rawIcon && product.game_slug) {
-      const g = allGames.find((x) => x && (x.slug?.toLowerCase() === product.game_slug?.toLowerCase() || x.id?.toLowerCase() === product.game_slug?.toLowerCase()));
+      const g = allGamesList.find((x) => x && (x.slug?.toLowerCase() === product.game_slug?.toLowerCase() || x.id?.toLowerCase() === product.game_slug?.toLowerCase()));
       if (g?.icon_url) rawIcon = g.icon_url;
       else rawIcon = safeGameIconUrl(product.game_slug, '/og-image.jpg');
     }
@@ -1825,40 +1110,6 @@ export const App: React.FC = () => {
       imageUrl: fullIcon,
       badge: `${utility.category_label || utility.category}`,
     });
-  };
-
-  const handleBannerNavigate = (link: string, targetType?: string, targetId?: string) => {
-    if (targetType === 'GIVEAWAY' || targetType === 'giveaway' || link.startsWith('/giveaways') || link.startsWith('/giveaway')) {
-      handleSelectTab('giveaways');
-      if (targetId) {
-        setInitialGiveawayId(targetId);
-      }
-      return;
-    }
-    if (targetType === 'FLASH_SALE_PRODUCT' || targetType === 'product' || targetType === 'utility' || link.startsWith('/utilities')) {
-      handleSelectTab('utilities');
-      if (targetId) {
-        setSelectedUtilityId(targetId);
-      }
-      return;
-    }
-    if (link.startsWith('/store') || link.startsWith('/en/store')) {
-      handleSelectTab('store');
-      if (targetId) {
-        handleSelectProductById(targetId);
-      }
-      return;
-    }
-    if (link.startsWith('/game/')) {
-      const slug = link.replace('/game/', '').trim();
-      if (slug) {
-        handleSelectGameSlug(slug);
-      }
-      return;
-    }
-    if (link.startsWith('http')) {
-      window.open(link, '_blank', 'noopener,noreferrer');
-    }
   };
 
   const handleLogout = () => {
@@ -1909,7 +1160,7 @@ export const App: React.FC = () => {
               if (window.location.pathname.toLowerCase().startsWith('/admin') || window.location.pathname.toLowerCase().startsWith('/en/admin')) {
                 window.location.href = targetPath;
               } else {
-                handleSelectTab('store');
+                handleSelectMallView('store');
               }
             }
           }}
@@ -1955,391 +1206,65 @@ export const App: React.FC = () => {
         {/* Dynamic SEO hreflang, canonical & Meta Title / Description */}
         <LanguageSeoHead />
 
-        {/* Dynamic Announcement Banner from Admin CMS */}
-        {currentTab !== 'shopee-test' && currentTab !== 'platform-solutions' && <AnnouncementBar />}
-
-        {/* Top Sticky Event Countdown Banner */}
-        {currentTab !== 'shopee-test' && currentTab !== 'platform-solutions' && <TopEventBanner onNavigate={handleBannerNavigate} />}
-
-        {/* Top Navigation Bar */}
-        {currentTab !== 'shopee-test' && currentTab !== 'platform-solutions' && (
-          <Header
-            currentTab={currentTab}
-            onSelectTab={handleSelectTab}
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            allGames={allGamesList}
-            onSelectGame={handleSelectGame}
-            branding={branding}
-            bookmarkCount={bookmarks.length}
-            onOpenBookmarks={() => setIsBookmarkDrawerOpen(true)}
-            onOpenSubmitCode={() => setIsSubmitModalOpen(true)}
-            onOpenPlayground={() => {
-              if (!isGrowthEnabled) return;
-              setGrowthInitialTab('wheel');
-              setIsGrowthCenterOpen(true);
-            }}
-            onOpenDownloadApp={() => setIsDownloadModalOpen(true)}
-            onOpenNotificationModal={() => setIsEmailModalOpen(true)}
-            onOpenCart={() => setIsCartOpen(true)}
-            onOpenWishlist={() => setIsWishlistOpen(true)}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onOpenWallet={() => setIsWalletModalOpen(true)}
-            onOpenReceivedCodes={handleOpenReceivedCodes}
-            onOpenProfile={handleOpenProfile}
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            isDarkMode={isDarkMode}
-            onToggleTheme={handleToggleTheme}
-          />
-        )}
-
-        {/* Sticky Floating Search Bar for Catalog on Scroll */}
-        {currentTab === 'catalog' && (
-          <div
-            className={`fixed top-14 sm:top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border shadow-xl shadow-black/25 py-2 sm:py-2.5 transition-all duration-300 ease-in-out ${
-              isStickySearchVisible && !isMobileSearchActive
-                ? 'translate-y-0 opacity-100 pointer-events-auto'
-                : '-translate-y-4 opacity-0 pointer-events-none'
-            }`}
-          >
-            <div className="max-w-3xl mx-auto px-3 sm:px-6 flex items-center gap-2 sm:gap-3">
-              <div className="flex-1 min-w-0">
-                <SearchAutocomplete
-                  searchQuery={searchQuery}
-                  onSearchChange={handleSearchChange}
-                  onSelectGame={handleSelectGame}
-                  onShowToast={showToast}
-                  isActive={isStickySearchVisible}
-                  isFloating={true}
-                  placeholder={t?.hero?.searchPlaceholder || (isEn ? 'Quick search games, giftcodes...' : 'Tìm nhanh tên game, giftcode mới nhất...')}
-                  onExploreClick={handleExploreOrSubmitSearch}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                title={t?.footer?.backToTop || (isEn ? 'Scroll to top' : 'Cuộn lên đầu trang')}
-                aria-label={t?.footer?.backToTop || (isEn ? 'Scroll to top' : 'Cuộn lên đầu trang')}
-                className="px-2.5 sm:px-3 py-2 rounded-xl bg-card hover:bg-card-hover border border-border text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
-              >
-                <ArrowUp className="w-4 h-4 text-primary-light" />
-                <span className="hidden sm:inline">{isEn ? 'Top' : 'Lên đầu'}</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content Area */}
-        <main className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
-          {currentTab === 'catalog' && (
-            <>
-              <HeroBanner
-                totalGames={totalResults || (allGamesList.length > 0 ? allGamesList.length : (dataService.getGames().length > 0 ? dataService.getGames().length : 593))}
-                searchQuery={searchQuery}
-                onSearchChange={handleSearchChange}
-                onSelectGame={handleSelectGame}
-                onShowToast={showToast}
-                onSelectQuickTag={(tag) => {
-                  saveRecentSearch(tag);
-                  handleSearchChange(tag);
-                }}
-                onExploreClick={handleExploreOrSubmitSearch}
-                isFloatingActive={isStickySearchVisible}
-              />
-
-              <div id="game-catalog-section" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-1.5 sm:py-8">
-                {/* 1. Khối Game Bạn Đang Theo Dõi (Pinned Games Bar) */}
-                <PinnedGamesBar
-                  bookmarks={bookmarks}
-                  bookmarkedGames={bookmarkedGamesList}
-                  upcomingGames={dataService.getAllUpcomingGamesRawSync ? dataService.getAllUpcomingGamesRawSync() : upcomingGames}
-                  onToggleBookmark={handleToggleBookmark}
-                  onSelectGame={handleSelectGame}
-                  onSelectUpcomingGame={(game) => {
-                    setSelectedUpcomingSlug(game ? (game.slug || game.id) : null);
-                    setIsAllUpcomingModalOpen(true);
-                  }}
-                  onClearAll={handleClearAllBookmarks}
-                  onOpenBookmarksDrawer={() => setIsBookmarkDrawerOpen(true)}
-                  onScrollToUpcoming={() => {
-                    const elem = document.getElementById('upcoming-games-banner-section');
-                    elem?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                />
-
-                {/* 2. Khối Game Sắp Ra Mắt (Upcoming Games Banner) */}
-                <div id="upcoming-games-banner-section" className="min-h-[145px] sm:min-h-[195px]">
-                  <UpcomingGamesBanner
-                    upcomingGames={dataService.getAllUpcomingGamesRawSync ? dataService.getAllUpcomingGamesRawSync() : upcomingGames}
-                    bookmarkedSlugs={bookmarks}
-                    onToggleBookmark={handleToggleBookmark}
-                    onOpenAllUpcomingModal={() => {
-                      setSelectedUpcomingSlug(null);
-                      setIsAllUpcomingModalOpen(true);
-                    }}
-                    onSelectUpcomingGame={(game) => {
-                      setSelectedUpcomingSlug(game ? (game.slug || game.id) : null);
-                      setIsAllUpcomingModalOpen(true);
-                    }}
-                    onShowToast={showToast}
-                  />
-                </div>
-
-                <CategoryFilter
-                  filter={filter}
-                  onFilterChange={handleFilterChange}
-                  categories={categories}
-                  totalResults={totalResults}
-                />
-
-                {isLoading ? (
-                  <div className="py-2 w-full">
-                    <GameGridSkeleton count={24} viewMode="compact" />
-                  </div>
-                ) : (
-                  <GameGrid
-                    games={games}
-                    total={totalResults}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    bookmarks={bookmarks}
-                    onToggleBookmark={handleToggleBookmark}
-                    onSelectGame={handleSelectGame}
-                    onQuickCopyCode={handleQuickCopyCode}
-                    onResetFilters={handleResetFilters}
-                    onShareGame={handleOpenShareGame}
-                    onShowToast={showToast}
-                    hasMore={hasMore}
-                    isLoadingMore={isLoadingMore}
-                    onLoadMore={handleLoadMore}
-                    useInfiniteScroll={paginationConfig.mode === 'infinite'}
-                  />
-                )}
-              </div>
-            </>
-          )}
-
+        {/* Unified Universal Mall Client Shell */}
+        <main className="flex-1">
           <Suspense fallback={<div className="py-20 flex justify-center"><CyberLoader title={isEn ? (t?.common?.loadingInterface || 'LOADING INTERFACE...') : (t?.common?.loadingInterface || 'ĐANG TẢI GIAO DIỆN...')} subText={isEn ? (t?.common?.loadingData || 'Loading data...') : (t?.common?.loadingData || 'Đang nạp dữ liệu...')} /></div>}>
-            {currentTab === 'news' && (
-              <NewsView
-                onShowToast={showToast}
-                onSelectGameSlug={handleSelectGameSlug}
-                initialArticleSlug={initialNewsSlug}
-                initialSubTab={initialNewsSubTab}
-              />
-            )}
-
-            {currentTab === 'giveaways' && (
-              <GiveawaysView
-                onShowToast={showToast}
-                onSelectGameSlug={handleSelectGameSlug}
-                currentUser={currentUser}
-                onOpenAuth={() => setIsAuthModalOpen(true)}
-                onShareGiveaway={handleOpenShareGiveaway}
-                initialGiveawayId={initialGiveawayId}
-                onClearInitialGiveawayId={() => setInitialGiveawayId(null)}
-              />
-            )}
-
-            {currentTab === 'store' && (
-              <StoreView
-                onSelectProduct={(prod) => setSelectedProduct(prod)}
-                onDirectCheckout={(prod, pkg) => {
-                  setSelectedProduct(null);
-                  setSelectedPackageIdParam(null);
-                  if (!currentUser) {
-                    setIsAuthModalOpen(true);
-                    showToast('Cần đăng nhập', 'Vui lòng đăng nhập để thanh toán.', 'info');
-                  } else {
-                    setCheckoutProduct(prod);
-                    setCheckoutPackage(pkg || null);
-                    setCheckoutQuantity(1);
-                  }
-                }}
-                onShowToast={showToast}
-                currentUser={currentUser}
-                onOpenAuth={() => setIsAuthModalOpen(true)}
-                onOpenShare={handleOpenShareProduct}
-              />
-            )}
-
-            {currentTab === 'utilities' && (
-              <UtilitiesView
-                onShowToast={showToast}
-                currentUser={currentUser}
-                onUpdateUser={handleUpdateUser}
-                onOpenAuth={() => setIsAuthModalOpen(true)}
-                onOpenShare={handleOpenShareUtility}
-                onOpenWallet={() => setIsWalletModalOpen(true)}
-                selectedUtilityId={selectedUtilityId}
-                onClearSelectedUtility={() => setSelectedUtilityId(null)}
-              />
-            )}
-
-            {currentTab === 'missions' && (
-              <MissionsView
-                currentUser={currentUser}
-                onOpenAuth={() => setIsAuthModalOpen(true)}
-                onOpenWallet={() => setIsWalletModalOpen(true)}
-                initialMissionId={initialMissionId}
-              />
-            )}
-
-            {currentTab === 'telegram' && (
-              <TelegramView
-                onOpenAuth={() => setIsAuthModalOpen(true)}
-                onOpenProfile={() => setIsProfileModalOpen(true)}
-                onShowToast={showToast}
-              />
-            )}
-
-            {currentTab === 'today-codes' && (
-              <NewsView
-                onShowToast={showToast}
-                onSelectGameSlug={handleSelectGameSlug}
-                initialArticleSlug={initialNewsSlug}
-                initialSubTab="today-codes"
-              />
-            )}
-
-            {currentTab === 'seller-center' && (
-              <SellerCenterView
-                currentUser={currentUser}
-                onOpenLogin={() => setIsAuthModalOpen(true)}
-                games={allGamesList}
-                onNavigateHome={() => handleSelectTab('catalog')}
-              />
-            )}
-
-            {currentTab === 'store-detail' && (
-              <PublicStoreView
-                slug={currentStoreSlug}
-                currentUser={currentUser}
-                onOpenLogin={() => setIsAuthModalOpen(true)}
-                onNavigateHome={() => handleSelectTab('catalog')}
-                onOpenProfile={() => setIsProfileModalOpen(true)}
-                onOpenCart={() => setIsCartOpen(true)}
-              />
-            )}
-
-            {currentTab === 'shopee-test' && (
-              <ShopeeTestView
-                allGames={dataService.getGames().length > 0 ? dataService.getGames() : (allGamesList.length > 0 ? allGamesList : games)}
-                storeProducts={dataService.getStoreProducts()}
-                utilities={dataService.getUtilityProducts()}
-                giveaways={dataService.getGiveaways()}
-                upcomingGames={dataService.getAllUpcomingGamesRawSync ? dataService.getAllUpcomingGamesRawSync() : upcomingGames}
-                onSelectGame={setSelectedGame}
-                onSelectGameSlug={handleSelectGameSlug}
-                onSelectProduct={(prod) => {
-                  setSelectedProduct(prod);
-                  setSelectedPackageIdParam(null);
-                }}
-                onSelectUtility={(utilityId) => {
-                  handleSelectTab('utilities');
-                  setSelectedUtilityId(utilityId);
-                  window.location.hash = `#utility=${utilityId}`;
-                }}
-                onSelectGiveaway={(giveawayId) => {
-                  handleSelectTab('giveaways');
-                  window.location.hash = `#gw=${giveawayId}`;
-                }}
-                onOpenAuth={() => setIsAuthModalOpen(true)}
-                onOpenWallet={() => setIsWalletModalOpen(true)}
-                onOpenCart={() => setIsCartOpen(true)}
-                onOpenWishlist={() => setIsWishlistOpen(true)}
-                onOpenGrowth={() => {
-                  setGrowthInitialTab('wheel');
-                  setIsGrowthCenterOpen(true);
-                }}
-                onOpenUpcoming={() => setIsAllUpcomingModalOpen(true)}
-                onOpenDownloadApp={() => setIsDownloadModalOpen(true)}
-                onOpenEmailModal={() => setIsEmailModalOpen(true)}
-                onOpenReceivedCodes={(initialTab = 'marketplace') => handleOpenReceivedCodes(initialTab)}
-                onOpenSellerCenter={() => handleSelectTab('seller-center')}
-                onNavigateTodayCodes={() => {
-                  setCurrentTab('news');
-                  setInitialNewsSubTab('today-codes');
-                }}
-                onBackToHome={() => handleSelectTab('catalog')}
-                currentUser={currentUser}
-                onShowToast={showToast}
-                onLogout={handleLogout}
-                onUpdateUser={handleUpdateUser}
-              />
-            )}
-
-            {currentTab === 'platform-solutions' && (
-              <PlatformSolutionsView
-                onNavigateBack={() => {
-                  const isTestClient = typeof window !== 'undefined' && (window.location.hostname.includes('universal-mall') || window.location.hostname.includes('test-code-game-shop') || window.location.hostname.includes('test-shopee'));
-                  setCurrentTab(isTestClient ? 'shopee-test' : 'catalog');
-                }}
-                onOpenStoreDemo={(ind) => {
-                  setCurrentTab('shopee-test');
-                  window.location.hash = '#shopee-test';
-                }}
-              />
-            )}
+            <UniversalMallView
+              allGames={dataService.getGames().length > 0 ? dataService.getGames() : allGamesList}
+              storeProducts={dataService.getStoreProducts()}
+              upcomingGames={dataService.getAllUpcomingGamesRawSync ? dataService.getAllUpcomingGamesRawSync() : upcomingGames}
+              controlledSubView={mallSubView}
+              controlledStoreCategory={storeCategoryFilter}
+              currentStoreSlug={currentStoreSlug}
+              initialNewsSlug={initialNewsSlug}
+              initialGiveawayId={initialGiveawayId}
+              selectedUtilityId={selectedUtilityId}
+              initialMissionId={initialMissionId}
+              onSubViewChange={handleSelectMallView}
+              onClearInitialGiveawayId={() => setInitialGiveawayId(null)}
+              onClearSelectedUtility={() => setSelectedUtilityId(null)}
+              onSelectProduct={(prod) => {
+                setSelectedProduct(prod);
+                setSelectedPackageIdParam(null);
+              }}
+              onDirectCheckout={(prod, pkg) => {
+                setSelectedProduct(null);
+                setSelectedPackageIdParam(null);
+                if (!currentUser) {
+                  setIsAuthModalOpen(true);
+                  showToast('Cần đăng nhập', 'Vui lòng đăng nhập để thanh toán.', 'info');
+                } else {
+                  setCheckoutProduct(prod);
+                  setCheckoutPackage(pkg || null);
+                  setCheckoutQuantity(1);
+                }
+              }}
+              onOpenShareProduct={handleOpenShareProduct}
+              onOpenShareGiveaway={handleOpenShareGiveaway}
+              onOpenShareUtility={handleOpenShareUtility}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenWallet={() => setIsWalletModalOpen(true)}
+              onOpenCart={() => setIsCartOpen(true)}
+              onOpenWishlist={() => setIsWishlistOpen(true)}
+              onOpenGrowth={() => {
+                setGrowthInitialTab('wheel');
+                setIsGrowthCenterOpen(true);
+              }}
+              onOpenUpcoming={() => setIsAllUpcomingModalOpen(true)}
+              onOpenDownloadApp={() => setIsDownloadModalOpen(true)}
+              onOpenEmailModal={() => setIsEmailModalOpen(true)}
+              onOpenReceivedCodes={(initialTab = 'marketplace') => handleOpenReceivedCodes(initialTab as any)}
+              onOpenProfile={() => setIsProfileModalOpen(true)}
+              currentUser={currentUser}
+              onShowToast={showToast}
+              onLogout={handleLogout}
+              onUpdateUser={handleUpdateUser}
+            />
           </Suspense>
         </main>
-
-        {/* Footer */}
-        {currentTab !== 'shopee-test' && currentTab !== 'platform-solutions' && (
-          <Footer
-            categories={categories}
-            totalGames={totalResults || allGamesList.length || games.length || 593}
-            onSelectCategory={(cat) => {
-              handleSelectTab('catalog');
-              handleFilterChange({ category: cat });
-              const gridElem = document.getElementById('game-catalog-section');
-              gridElem?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            onOpenDownloadApp={() => setIsDownloadModalOpen(true)}
-          />
-        )}
-
-        {/* Mobile Sticky Bottom Navigation Dock */}
-        {currentTab !== 'shopee-test' && currentTab !== 'platform-solutions' && (
-          <MobileBottomNav
-            currentTab={currentTab}
-            onSelectTab={handleSelectTab}
-            onOpenReceivedCodes={handleOpenReceivedCodes}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onOpenWallet={() => setIsWalletModalOpen(true)}
-            onOpenProfile={() => setIsProfileModalOpen(true)}
-            currentUser={currentUser}
-          />
-        )}
       </div>
-
       {/* Modals & Drawers (P4: Lazy loaded via Suspense to keep main bundle tiny) */}
       <Suspense fallback={null}>
-        {selectedGame && (
-          <GameDetailModal
-            game={selectedGame}
-            onClose={() => {
-              setSelectedGame(null);
-              const inTest1 = currentTab === 'shopee-test' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/test1'));
-              if (inTest1) {
-                window.history.replaceState(null, '', '/test1');
-              } else if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/game/') || window.location.pathname.startsWith('/g/'))) {
-                window.history.replaceState(null, '', '/');
-              }
-            }}
-            isBookmarked={
-              bookmarks.includes(selectedGame.id) || bookmarks.includes(selectedGame.slug)
-            }
-            onToggleBookmark={(id) => handleToggleBookmark(id)}
-            onOpenShare={(g) => handleOpenShareGame(g)}
-            onShowToast={showToast}
-            currentUser={currentUser}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-          />
-        )}
-
         <ShareModal
           isOpen={Boolean(sharePayload)}
           onClose={() => setSharePayload(null)}
@@ -2401,7 +1326,8 @@ export const App: React.FC = () => {
           games={allGamesList}
           onSuccess={(_slug, code) => {
             showToast('Đóng góp mã code thành công!', `Mã ${code} đã được nạp vào hệ thống.`, 'success');
-            handleFilterChange({});
+            const freshGames = dataService.getGames();
+            if (freshGames && freshGames.length > 0) setAllGamesList(freshGames);
           }}
         />
 
@@ -2410,7 +1336,10 @@ export const App: React.FC = () => {
           onClose={() => setIsBookmarkDrawerOpen(false)}
           bookmarkedGames={bookmarkedGamesList}
           onRemoveBookmark={(id) => handleToggleBookmark(id)}
-          onSelectGame={handleSelectGame}
+          onSelectGame={(game) => {
+            setIsBookmarkDrawerOpen(false);
+            handleFilterStoreByGame(game.slug || game.id);
+          }}
           onClearAll={handleClearAllBookmarks}
         />
 
@@ -2431,7 +1360,10 @@ export const App: React.FC = () => {
           isOpen={isPlaygroundModalOpen}
           onClose={() => setIsPlaygroundModalOpen(false)}
           games={allGamesList}
-          onSelectGame={handleSelectGame}
+          onSelectGame={(game) => {
+            setIsPlaygroundModalOpen(false);
+            handleFilterStoreByGame(game.slug || game.id);
+          }}
           onShowToast={showToast}
         />
 
@@ -2468,7 +1400,7 @@ export const App: React.FC = () => {
           onShowToast={showToast}
           onNavigateToMissions={() => {
             setIsReceivedCodesOpen(false);
-            setCurrentTab('missions');
+            handleSelectMallView('missions');
           }}
           onOpenAuth={() => {
             setIsReceivedCodesOpen(false);
@@ -2490,7 +1422,7 @@ export const App: React.FC = () => {
           onOpenReceivedCodes={handleOpenReceivedCodes}
           onNavigateToSellerCenter={() => {
             setIsProfileModalOpen(false);
-            handleSelectTab('seller-center');
+            handleSelectMallView('seller');
           }}
           onLogout={handleLogout}
           onShowToast={showToast}
@@ -2523,8 +1455,7 @@ export const App: React.FC = () => {
             }}
             onNavigateStore={(slug) => {
               setIsCartOpen(false);
-              setCurrentStoreSlug(slug);
-              handleSelectTab('store-detail');
+              handleSelectMallView('store-detail', { storeSlug: slug });
             }}
           />
         )}
@@ -2546,9 +1477,9 @@ export const App: React.FC = () => {
               setIsWishlistOpen(false);
               if (type === 'game') {
                 const game = allGamesList.find((g) => g.id === id || g.slug === id);
-                if (game) handleSelectGame(game);
+                if (game) handleFilterStoreByGame(game.slug || game.id);
               } else {
-                handleOpenStoreProduct(id);
+                handleSelectProductById(id);
               }
             }}
           />
@@ -2571,7 +1502,7 @@ export const App: React.FC = () => {
             onToggleBookmark={(slug) => handleToggleBookmark(slug)}
             onSelectGame={(game) => {
               setIsEmailModalOpen(false);
-              handleSelectGame(game);
+              handleFilterStoreByGame(game.slug || game.id);
             }}
             onShowToast={showToast}
           />
@@ -2582,15 +1513,14 @@ export const App: React.FC = () => {
       {isFloatingEnabled && (
         <Suspense fallback={null}>
           <MarketingNotificationToast
-            onSelectGameSlug={handleSelectGameSlug}
+            onSelectGameSlug={(slug) => handleFilterStoreByGame(slug)}
             onSelectProduct={handleSelectProductById}
             onSelectUtility={(utilityId) => {
-              handleSelectTab('utilities');
-              setSelectedUtilityId(utilityId);
+              handleSelectMallView('utilities', { utilityId });
               window.location.hash = `#utility=${utilityId}`;
             }}
             onSelectGiveaway={(giveawayId) => {
-              handleSelectTab('giveaways');
+              handleSelectMallView('giveaways', { giveawayId });
               window.location.hash = `#gw=${giveawayId}`;
             }}
             onOpenWallet={() => setIsWalletModalOpen(true)}
@@ -2598,8 +1528,8 @@ export const App: React.FC = () => {
           />
 
           {/* Floating Announcement (Configured via Admin) */}
-          {currentTab !== 'admin' && currentTab !== 'shopee-test' && (
-            <FloatingAnnouncement onNavigateTab={(tab) => handleSelectTab(tab as any)} />
+          {currentTab === 'mall' && mallSubView !== 'home' && (
+            <FloatingAnnouncement onNavigateTab={(tab) => handleSelectMallView(mapLegacyTabToMallSubView(tab))} />
           )}
         </Suspense>
       )}

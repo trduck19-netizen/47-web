@@ -3021,8 +3021,7 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     } catch {}
 
     const isTestSite = typeof window !== 'undefined' && (
-      window.location.hostname.includes('test-code-game') ||
-      window.location.pathname.startsWith('/test1')
+      window.location.hostname.includes('test-code-game')
     );
 
     const activePreset = customPresetId || this.getProductCategoriesConfig().activePresetId || 'universal';

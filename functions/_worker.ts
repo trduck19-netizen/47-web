@@ -2871,12 +2871,10 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       // Root Homepage HTML - Edge Cache TTL 3600s
       if ((request.method === 'GET' || request.method === 'HEAD') && (pathname === '/' || pathname === '/index.html')) {
         const reqStart = performance.now();
-        // Tự động chuyển hướng 301 về URL canonical /game/:slug nếu người dùng hoặc bot truy cập qua ?game= hoặc ?g=
+        // Tự động chuyển hướng 301 về Trang Chủ Sàn Universal Mall nếu người dùng hoặc bot truy cập qua ?game= hoặc ?g=
         const gameQueryParam = url.searchParams.get('game') || url.searchParams.get('g');
         if (gameQueryParam) {
-          const cleanSlug = gameQueryParam.trim().toLowerCase();
-          const primarySlug = GAME_CANONICAL_ALIASES[cleanSlug] || cleanSlug;
-          return Response.redirect(`${url.origin}/game/${primarySlug}`, 301);
+          return Response.redirect(`${url.origin}/`, 301);
         }
 
         const pageParam = url.searchParams.get('page');
@@ -2940,12 +2938,21 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return assetResponse;
       }
 
-      // Luôn phục vụ trang game, tin tức, danh mục A-Z, chuyên mục thể loại, nhiệm vụ & sự kiện giveaway qua renderSeoHtml (Kèm Edge Cache TTL 3600s)
+      // Chuyển hướng 301 mọi URL legacy (/test1*, /game/*, /g/*) về Trang Chủ Sàn Universal Mall (phủ cả GET & HEAD)
+      if (
+        (request.method === 'GET' || request.method === 'HEAD') &&
+        (pathname === '/test1' ||
+          pathname.startsWith('/test1/') ||
+          pathname === '/game' ||
+          pathname.startsWith('/game/') ||
+          pathname === '/g' ||
+          pathname.startsWith('/g/'))
+      ) {
+        return Response.redirect(`${url.origin}/`, 301);
+      }
+
+      // Luôn phục vụ tin tức, danh mục A-Z, chuyên mục thể loại, nhiệm vụ & sự kiện giveaway qua renderSeoHtml (Kèm Edge Cache TTL 3600s)
       if ((request.method === 'GET' || request.method === 'HEAD') && (
-        pathname.startsWith('/game/') ||
-        pathname.startsWith('/g/') ||
-        pathname.startsWith('/test1/game/') ||
-        pathname.startsWith('/test1/g/') ||
         pathname === '/news' ||
         pathname.startsWith('/news/') ||
         pathname.startsWith('/giveaways/') ||
@@ -3169,51 +3176,6 @@ function getClusterSlug(category: string = ''): string {
     if (cluster.match(c)) return cluster.slug;
   }
   return 'nhap-vai-mmorpg';
-}
-
-function parseHowToSteps(instructions: string = '', gameName: string = '') {
-  const text = (instructions || '').trim();
-  if (text) {
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 5);
-    const stepLines = lines.filter((l) => /^(bước|\d+[\.\)]|b\d+:)/i.test(l));
-    if (stepLines.length >= 2) {
-      return stepLines.slice(0, 6).map((line, idx) => {
-        const cleanText = line.replace(/^(bước\s*\d+[:\.]*|\d+[\.\)]|b\d+[:\.]*)\s*/i, '').trim();
-        return {
-          '@type': 'HowToStep',
-          position: idx + 1,
-          name: cleanText.slice(0, 60),
-          text: line,
-        };
-      });
-    }
-  }
-  return [
-    {
-      '@type': 'HowToStep',
-      position: 1,
-      name: 'Mở game và đăng nhập',
-      text: `Khởi động trò chơi ${gameName} trên thiết bị và đăng nhập vào tài khoản nhân vật của bạn.`,
-    },
-    {
-      '@type': 'HowToStep',
-      position: 2,
-      name: 'Tìm mục Đổi Quà / Phúc Lợi',
-      text: `Nhấp vào biểu tượng Sự Kiện, Phúc Lợi hoặc Cài Đặt theo giao diện của ${gameName}.`,
-    },
-    {
-      '@type': 'HowToStep',
-      position: 3,
-      name: 'Nhập mã giftcode',
-      text: `Sao chép mã giftcode từ Pine Universal Mall và dán chính xác vào ô nhập mã quà tặng.`,
-    },
-    {
-      '@type': 'HowToStep',
-      position: 4,
-      name: 'Xác nhận và nhận quà',
-      text: `Bấm Đổi Quà và kiểm tra hòm Thư trong game ${gameName} để nhận vật phẩm ngay tức thì.`,
-    },
-  ];
 }
 
 function parseDateMs(val: any): number {
@@ -3481,23 +3443,18 @@ async function generateDynamicSitemapXml(env: Env): Promise<string> {
 
   let latestGlobalGameOrCodeTime = 0;
   const clusterMaxTimes = new Map<string, number>();
-  const gameUrls: Array<{ loc: string; lastmod: string; changefreq: string; priority: string }> = [];
 
   for (const [slug, game] of gamesBySlug.entries()) {
     if (!slug || GAME_CANONICAL_ALIASES[slug]) continue;
     if (game.is_active === 0 || game.is_active === false || game.status === 'DELETED' || game.status === 'INACTIVE') continue;
 
     const codeTime = getEffectiveCodeTime(slug, game.id);
-    let maxTime = Math.max(
+    const maxTime = Math.max(
       codeTime,
       parseDateMs(game.updated_at),
       parseDateMs(game.created_at),
       parseDateMs(game.last_code_at)
-    );
-
-    if (maxTime === 0) {
-      maxTime = new Date('2026-10-22T00:00:00Z').getTime();
-    }
+    ) || new Date('2026-10-22T00:00:00Z').getTime();
 
     if (maxTime > latestGlobalGameOrCodeTime) {
       latestGlobalGameOrCodeTime = maxTime;
@@ -3508,14 +3465,6 @@ async function generateDynamicSitemapXml(env: Env): Promise<string> {
     if (maxTime > prevClusterTime) {
       clusterMaxTimes.set(clusterSlug, maxTime);
     }
-
-    const lastmod = formatDate(maxTime, todayStr);
-    gameUrls.push({
-      loc: `${BASE_URL}/game/${encodeURIComponent(slug)}`,
-      lastmod,
-      changefreq: 'weekly',
-      priority: '0.8',
-    });
   }
 
   let latestNewsTime = 0;
@@ -3602,8 +3551,7 @@ async function generateDynamicSitemapXml(env: Env): Promise<string> {
     });
   }
 
-  // 3. Games
-  for (const gUrl of gameUrls) addEntry(gUrl);
+  // 3. Games URLs removed (routes /game/:slug redirect 301 to /)
 
   // 4. News Articles
   for (const nUrl of newsUrls) addEntry(nUrl);
@@ -3630,13 +3578,6 @@ async function renderSeoHtml(
 ): Promise<Response> {
   const origin = (env?.SITE_URL || 'https://universal-mall-shop.pages.dev').replace(/\/$/, '');
   const url = new URL(request.url);
-
-  // 1. Chuyển hướng 301 chuẩn hóa cho /g/:slug -> /game/:slug hoặc slug chính
-  if (pathname.startsWith('/g/')) {
-    const rawSlug = pathname.replace(/^\/g\//i, '').replace(/\/$/, '').trim().toLowerCase();
-    const primarySlug = GAME_CANONICAL_ALIASES[rawSlug] || rawSlug;
-    return Response.redirect(`${origin}/game/${primarySlug}`, 301);
-  }
 
   // 1.5. Phục vụ trực tiếp các trang tĩnh chuyên mục thể loại, nhiệm vụ và mục lục A-Z từ prerender
   if (
@@ -3675,14 +3616,6 @@ async function renderSeoHtml(
       headers.set('Content-Type', 'text/html; charset=utf-8');
       headers.set('X-Content-Type-Options', 'nosniff');
       return new Response(idxRes.body, { status: 200, headers });
-    }
-  }
-
-  // 2. Chuyển hướng 301 chuẩn hóa cho các bí danh trùng lặp -> slug chính
-  if (pathname.startsWith('/game/')) {
-    const rawSlug = pathname.replace(/^\/game\//i, '').replace(/\/$/, '').trim().toLowerCase();
-    if (GAME_CANONICAL_ALIASES[rawSlug]) {
-      return Response.redirect(`${origin}/game/${GAME_CANONICAL_ALIASES[rawSlug]}`, 301);
     }
   }
 
@@ -3756,452 +3689,7 @@ async function renderSeoHtml(
     }
   };
 
-  if (
-    pathname.startsWith('/game/') ||
-    pathname.startsWith('/g/') ||
-    pathname.startsWith('/test1/game/') ||
-    pathname.startsWith('/test1/g/')
-  ) {
-    let slug = pathname
-      .replace(/^\/(?:test1\/)?(?:game|g)\//i, '')
-      .replace(/\/$/, '')
-      .trim()
-      .toLowerCase();
-    if (slug === 'doors') slug = 'doors-roblox';
-    const cleanWithoutMobile = slug.replace(/-mobile$/i, '');
-    let game: any = null;
-    let displayCodes: any[] = [];
-    const isYenVan = slug === 'where-winds-meet-mobile' || slug === 'yen-van-thap-luc-thanh' || slug === 'where-winds-meet';
-
-    const gScope = globalThis as any;
-    if (!gScope.__wcg_game_cache) gScope.__wcg_game_cache = new Map();
-    const lookupSlug = isYenVan ? 'where-winds-meet' : slug;
-    const ramKey = `game_${lookupSlug}_${cleanWithoutMobile}`;
-    const ramCached = gScope.__wcg_game_cache.get(ramKey);
-    const now = Date.now();
-
-    if (ramCached && (now - ramCached.ts < 60000)) {
-      game = JSON.parse(JSON.stringify(ramCached.game));
-      displayCodes = JSON.parse(JSON.stringify(ramCached.displayCodes));
-      gScope.__wcg_last_d1_dur = 0;
-    } else if (env.DB) {
-      try {
-        const d1Start = performance.now();
-        // 1. Tra cứu trực tiếp từ bảng games D1
-        const gameRow = await env.DB.prepare(
-          'SELECT * FROM games WHERE slug = ? OR id = ? OR slug = ? LIMIT 1'
-        ).bind(lookupSlug, lookupSlug, cleanWithoutMobile).first<any>().catch(() => null);
-
-        if (gameRow) {
-          game = { ...gameRow };
-          const codesRes = await (
-            lookupSlug === 'where-winds-meet'
-              ? env.DB.prepare(
-                  `SELECT code, rewards, status, expires_at FROM codes WHERE game_slug = 'where-winds-meet' OR game_slug = 'yen-van-thap-luc-thanh' OR game_slug = 'where-winds-meet-mobile' ORDER BY CASE WHEN status = 'active' OR status = 'verified' THEN 0 ELSE 1 END, added_at DESC`
-                ).all<any>()
-              : env.DB.prepare(
-                  `SELECT code, rewards, status, expires_at FROM codes WHERE game_slug = ? ORDER BY CASE WHEN status = 'active' OR status = 'verified' THEN 0 ELSE 1 END, added_at DESC`
-                ).bind(gameRow.slug).all<any>()
-          ).catch(() => ({ results: [] as any[] }));
-          const allCodes = codesRes?.results || [];
-          if (allCodes.length === 0) {
-            const fbList = (fallbackCodesData as any)?.[gameRow.slug] || (fallbackCodesData as any)?.[slug] || (fallbackCodesData as any)?.[cleanWithoutMobile];
-            if (Array.isArray(fbList) && fbList.length > 0) {
-              displayCodes = fbList.map((c: any) => ({
-                code: String(c.code || '').trim().toUpperCase(),
-                rewards: c.rewards || c.description || null,
-                status: 'active',
-                expires_at: c.expires_at || c.expiry || null,
-              })).filter((c: any) => Boolean(c.code));
-            }
-          } else {
-            displayCodes = allCodes;
-          }
-
-          const activeCodes = displayCodes.filter((c: any) => !isCodeExpired(c));
-          displayCodes = activeCodes.length > 0 ? activeCodes : displayCodes;
-          game.codes = displayCodes;
-          game.codes_count = activeCodes.length;
-          game.active_codes_count = activeCodes.length;
-          game.free_codes_count = activeCodes.length;
-          game.expired_codes_count = allCodes.length - activeCodes.length;
-          game.total_codes_count = allCodes.length;
-        }
-
-        // Tự động đối chiếu với fallbackGamesData nếu bảng games D1 còn giữ văn mẫu Avatar cũ
-        let currentInst = game?.instructions || '';
-        let currentRedeem = game?.redeem_url || '';
-        if (game && (!currentInst || currentInst.includes('Avatar nhân vật'))) {
-          const fbG = (fallbackGamesData as any[]).find((x: any) => x && (x.slug === slug || x.id === slug || x.slug === game.slug || (isYenVan && (x.slug === 'yen-van-thap-luc-thanh' || x.slug === 'where-winds-meet-mobile'))));
-          if (fbG?.instructions && !fbG.instructions.includes('Avatar nhân vật')) {
-            currentInst = fbG.instructions;
-            currentRedeem = fbG.redeem_url || '';
-            game.instructions = currentInst;
-            game.redeem_url = currentRedeem;
-          }
-        }
-
-        // 2. Fallback sang catalog nếu bảng games chưa có
-        if (!game) {
-          const catalog = await gamesApi.getLoadedCatalog(env.DB);
-          game = catalog.allRawGames?.find((g: any) => g && (String(g.slug || '').toLowerCase() === slug || String(g.id || '').toLowerCase() === slug || String(g.slug || '').toLowerCase().replace(/-mobile$/i, '') === cleanWithoutMobile || (isYenVan && (g.slug === 'yen-van-thap-luc-thanh' || g.slug === 'where-winds-meet-mobile'))));
-          if (game) {
-            const allResolved = gamesApi.resolveCodesForGame(game, catalog.codesMap) || [];
-            const activeCodes = allResolved.filter((c: any) => !isCodeExpired(c));
-            displayCodes = activeCodes.length > 0 ? activeCodes : allResolved;
-            game.codes = displayCodes;
-            game.codes_count = activeCodes.length;
-            game.active_codes_count = activeCodes.length;
-            game.free_codes_count = activeCodes.length;
-            game.expired_codes_count = (allResolved.length - activeCodes.length);
-            game.total_codes_count = allResolved.length;
-          }
-        }
-
-        if (game) {
-          gScope.__wcg_game_cache.set(ramKey, {
-            game: JSON.parse(JSON.stringify(game)),
-            displayCodes: JSON.parse(JSON.stringify(displayCodes)),
-            ts: now,
-          });
-        }
-        gScope.__wcg_last_d1_dur = Number((performance.now() - d1Start).toFixed(1));
-      } catch (err: any) {
-        gScope.__wcg_last_d1_dur = 0;
-      }
-    }
-
-    if (game) {
-      const isWwm = isYenVan || game.slug === 'where-winds-meet-mobile' || game.slug === 'yen-van-thap-luc-thanh';
-      const codeCount = game.codes_count || game.active_codes_count || displayCodes.length || 0;
-      const countSuffix = codeCount > 0
-        ? ` - Nhận ${codeCount} Mã Code`
-        : ` - Hướng Dẫn Nhập & Nhận Quà`;
-      const title = `Giftcode ${game.name} Mới Nhất 2026${countSuffix} | Pine Universal Mall`;
-      const hasVerifiedLicense = Boolean(
-        game.so_giay_phep &&
-        game.co_quan_cap &&
-        game.ngay_cap_phep &&
-        game.publisher
-      );
-      const licenseSuffix = hasVerifiedLicense
-        ? ` Bản quyền G1 số ${game.so_giay_phep} cấp ngày ${game.ngay_cap_phep}.`
-        : '';
-      const description = codeCount > 0
-        ? `Tổng hợp ${codeCount} mã giftcode ${game.name} còn hạn mới nhất 2026. Hướng dẫn nhập code chi tiết và nhận quà tân thủ miễn phí.${licenseSuffix}`
-        : `Hướng dẫn nhập code ${game.name} chi tiết và cập nhật các đợt phát quà tặng tân thủ mới nhất 2026 từ ${game.publisher || 'NPH'}.${licenseSuffix}`;
-      const rawIcon = game.icon_url || (game.slug ? `/game_icons/${game.slug}.jpg` : '/og-image.jpg');
-      const jpgIcon = rawIcon.replace(/\.webp$/i, '.jpg');
-      const iconUrl = jpgIcon.startsWith('http') ? jpgIcon : `${origin}${jpgIcon.startsWith('/') ? jpgIcon : `/${jpgIcon}`}`;
-
-      let maxTime = 0;
-      if (game.updated_at) {
-        const t = new Date(game.updated_at).getTime();
-        if (!isNaN(t)) maxTime = Math.max(maxTime, t);
-      }
-      if (game.created_at) {
-        const t = new Date(game.created_at).getTime();
-        if (!isNaN(t)) maxTime = Math.max(maxTime, t);
-      }
-      for (const c of displayCodes) {
-        if (c.added_at) {
-          const t = new Date(c.added_at).getTime();
-          if (!isNaN(t)) maxTime = Math.max(maxTime, t);
-        }
-      }
-      if (maxTime === 0) {
-        maxTime = new Date('2026-10-26T12:00:00Z').getTime();
-      }
-      const dateObj = new Date(maxTime);
-      const dd = String(dateObj.getDate()).padStart(2, '0');
-      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const yyyy = dateObj.getFullYear();
-      const formattedDate = `${dd}/${mm}/${yyyy}`;
-      const lastmodIso = dateObj.toISOString();
-      const clusterSlug = getClusterSlug(game.category);
-
-      const instructions = (game.instructions || '').trim();
-      const redeemUrl = (game.redeem_url || '').trim();
-
-      const schemas: any[] = [
-        {
-          "@context": "https://schema.org",
-          "@type": "VideoGame",
-          "name": game.name,
-          "url": `${origin}/game/${game.slug}`,
-          "image": iconUrl,
-          "description": game.description || description,
-          "gamePlatform": game.platform || "PC / Mobile",
-          "applicationCategory": "Game",
-          "publisher": {
-            "@type": "Organization",
-            "name": game.publisher || game.name
-          },
-          "dateModified": lastmodIso,
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "VND",
-            "availability": "https://schema.org/InStock"
-          }
-        },
-        {
-          "@context": "https://schema.org",
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Trang chủ", "item": `${origin}/` },
-            { "@type": "ListItem", "position": 2, "name": "Tra Cứu Giftcode", "item": `${origin}/` },
-            { "@type": "ListItem", "position": 3, "name": game.name, "item": `${origin}/game/${game.slug}` }
-          ]
-        },
-        {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": `Giftcode ${game.name} có hạn sử dụng không?`,
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": `Các mã giftcode ${game.name} có thời hạn tùy thuộc vào sự kiện của ${game.publisher || 'Nhà phát hành'}. Bạn nên nhập ngay khi lấy mã để tránh hết hạn hoặc hết lượt kích hoạt.`
-              }
-            },
-            {
-              "@type": "Question",
-              "name": `Làm sao để nhận thêm mã code ${game.name} mới nhất 2026?`,
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": `Pine Universal Mall tự động theo dõi và cập nhật giftcode ${game.name} 24/7 từ các sự kiện bảo trì, ra mắt máy chủ và fanpage chính thức của ${game.publisher || 'NPH'}.`
-              }
-            }
-          ]
-        },
-        {
-          "@context": "https://schema.org",
-          "@type": "HowTo",
-          "name": `Cách nhập Giftcode ${game.name} nhận quà tân thủ`,
-          "description": `Hướng dẫn từng bước cách nhập mã giftcode ${game.name} thành công 100% để nhận Kim Cương, KNB và quà VIP.`,
-          "image": iconUrl,
-          "step": parseHowToSteps(instructions, game.name)
-        }
-      ];
-
-      replaceTitleAndMeta(title, description, `/game/${game.slug}`, iconUrl, schemas);
-
-      const playUrl = game.google_play_url || game.download_android || '';
-      const iosUrl = game.app_store_url || game.download_ios || '';
-
-      const escape = (str: any) => String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-
-      // Compute Related Games for Internal Linking Spider Matrix (at least 4 links)
-      let relatedGames: any[] = [];
-      const currentNormSlug = String(game.slug || slug).toLowerCase();
-      const currentCategory = (game.category || '').toLowerCase();
-      const currentPublisher = (game.publisher || '').toLowerCase();
-
-      const candidates = (fallbackGamesData as any[]).filter((g: any) => {
-        if (!g || !g.slug) return false;
-        const s = String(g.slug).toLowerCase();
-        return s !== currentNormSlug && !GAME_CANONICAL_ALIASES[s];
-      });
-
-      relatedGames = candidates.filter((g: any) => {
-        const gCat = (g.category || '').toLowerCase();
-        const gPub = (g.publisher || '').toLowerCase();
-        return (currentCategory && gCat.includes(currentCategory)) ||
-               (currentPublisher && gPub.includes(currentPublisher)) ||
-               getClusterSlug(g.category) === clusterSlug;
-      }).slice(0, 6);
-
-      if (relatedGames.length < 4) {
-        const seen = new Set(relatedGames.map((g: any) => String(g.slug).toLowerCase()));
-        for (const g of candidates) {
-          if (relatedGames.length >= 6) break;
-          const s = String(g.slug).toLowerCase();
-          if (!seen.has(s)) {
-            relatedGames.push(g);
-            seen.add(s);
-          }
-        }
-      }
-
-      const ssrBodyHtml = `
-      <div class="min-h-screen flex flex-col bg-dark-950 text-gray-100 font-sans">
-        <div class="max-w-4xl mx-auto px-4 py-6 w-full space-y-6">
-          <!-- Breadcrumb -->
-          <nav class="flex items-center gap-2 text-xs text-gray-400">
-            <a href="/" class="hover:text-brand-400">Trang chủ</a>
-            <span>/</span>
-            <span class="text-white">${escape(game.name)}</span>
-          </nav>
-
-          <!-- Game Card Header -->
-          <div class="flex items-start gap-4 p-5 rounded-2xl bg-dark-900 border border-gray-800">
-            <img src="${escape(iconUrl)}" alt="${escape(game.name)}" width="64" height="64" class="w-16 h-16 rounded-2xl object-cover shrink-0" loading="eager" />
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">${escape(game.name)}</h1>
-                ${game.category ? `<a href="/the-loai/${clusterSlug}" class="px-2 py-0.5 text-xs font-semibold rounded-md bg-brand-600/20 text-brand-400 border border-brand-500/30 hover:underline">${escape(game.category)}</a>` : ''}
-              </div>
-              ${game.publisher ? `<p class="text-xs sm:text-sm text-gray-400 font-semibold mt-0.5">${escape(game.publisher)}</p>` : ''}
-              <div class="mt-2 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-                <span>📅 Cập nhật: ${formattedDate} (Kiểm tra thực tế)</span>
-              </div>
-            </div>
-          </div>
-
-          ${(playUrl || iosUrl) ? `
-          <!-- Download Section -->
-          <div class="p-5 rounded-2xl bg-dark-900 border border-gray-800 space-y-3">
-            <h2 class="text-base sm:text-lg font-bold text-white flex items-center justify-between">
-              <span>📲 Tải Game Chính Thức</span>
-              <span class="text-xs text-emerald-400 font-semibold">Official Store</span>
-            </h2>
-            <div class="flex items-center gap-3 flex-wrap">
-              ${playUrl ? `<a href="${escape(playUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md">Tải trên CH Play</a>` : ''}
-              ${iosUrl ? `<a href="${escape(iosUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs sm:text-sm shadow-md">Tải trên App Store</a>` : ''}
-            </div>
-          </div>` : ''}
-
-          <!-- Codes List -->
-          <div class="p-5 rounded-2xl bg-dark-900 border border-gray-800 space-y-3">
-            <h2 class="text-base sm:text-lg font-bold text-white flex items-center justify-between">
-              <span>🎁 Danh Sách Giftcode ${escape(game.name)} Còn Hạn</span>
-              <span class="text-xs text-brand-400 font-semibold">${displayCodes.length} mã khả dụng</span>
-            </h2>
-            <div class="space-y-2">
-              ${displayCodes.length > 0 ? displayCodes.map((c: any) => {
-                const val = escape(c.code || c.codeValue || c.code_value);
-                const rew = c.rewards ? `🎁 ${escape(c.rewards)}` : `🎁 Chưa rõ phần thưởng`;
-                const exp = String(c.expires_at || c.expiresAt || c.expiry || '').trim();
-                const isDummy = exp.includes('2026-12-31') || exp.includes('31/12/2026');
-                const expText = exp && !isDummy ? `⏱️ HSD: ${escape(exp)}` : `⏱️ HSD: Chưa rõ hạn dùng`;
-                return `
-                <div class="flex items-center justify-between p-3 rounded-xl bg-dark-850 border border-gray-800">
-                  <div>
-                    <code class="font-mono font-bold text-brand-400 text-sm sm:text-base">${val}</code>
-                    <div class="text-xs text-gray-400 mt-0.5">${rew} • ${expText}</div>
-                  </div>
-                  <span class="text-xs px-2.5 py-1 rounded-lg bg-brand-600/20 text-brand-400 border border-brand-500/30 font-bold">Mới nhất</span>
-                </div>`;
-              }).join('') : `
-                <div class="p-6 rounded-2xl bg-dark-850/80 border border-gray-800 text-center space-y-2">
-                  <div class="text-2xl">⏳</div>
-                  <h3 class="text-sm sm:text-base font-bold text-gray-200">Hiện Chưa Có Mã Giftcode Mới Cho ${escape(game.name)}</h3>
-                  <p class="text-xs text-gray-400 max-w-lg mx-auto leading-relaxed">
-                    Hệ thống Pine Universal Mall đang tự động theo dõi và kiểm tra mã quà tặng mới từ nhà phát hành ${escape(game.publisher || 'chính thức')} 24/7.
-                    <br>📅 <strong>Kiểm tra lần cuối:</strong> ${formattedDate} (Chưa phát sinh mã mới).
-                  </p>
-                  <p class="text-xs text-brand-400 font-semibold pt-1">
-                    👉 Bạn có thể xem hướng dẫn nhập code bên dưới hoặc khám phá các tựa game cùng thể loại đang có mã khả dụng!
-                  </p>
-                </div>`}
-            </div>
-          </div>
-
-          <!-- Instructions (Chỉ render khi có hướng dẫn và không rỗng) -->
-          ${instructions && instructions.length > 0 ? `
-          <div class="p-5 rounded-2xl bg-dark-900 border border-gray-800 space-y-2">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-              <h2 class="text-base sm:text-lg font-bold text-white">📖 Hướng Dẫn Nhập Code ${escape(game.name)}</h2>
-              ${redeemUrl ? `<a href="${escape(redeemUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all">🌐 Mở Trang Đổi Code</a>` : ''}
-            </div>
-            <div class="text-xs sm:text-sm text-gray-300 whitespace-pre-line leading-relaxed">${escape(instructions)}</div>
-          </div>` : ''}
-
-          <!-- Description -->
-          ${game.description ? `
-          <div class="p-5 rounded-2xl bg-dark-900 border border-gray-800 space-y-2">
-            <h2 class="text-base sm:text-lg font-bold text-white">ℹ️ Giới Thiệu Trò Chơi</h2>
-            <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">${escape(game.description)}</p>
-          </div>` : ''}
-
-          <!-- Game-Specific FAQ matching FAQPage Schema -->
-          <section class="p-5 rounded-2xl bg-dark-900 border border-gray-800 space-y-4">
-            <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <span>❓ Câu Hỏi Thường Gặp Về Giftcode ${escape(game.name)}</span>
-            </h2>
-            <div class="space-y-3 text-xs sm:text-sm text-gray-300">
-              <div class="p-4 rounded-xl bg-dark-850 border border-gray-800/80">
-                <h3 class="font-bold text-gray-100 mb-1">1. Giftcode ${escape(game.name)} có hạn sử dụng không?</h3>
-                <p class="text-gray-400 leading-relaxed">Các mã giftcode ${escape(game.name)} có thời hạn tùy thuộc vào từng sự kiện của ${escape(game.publisher || 'Nhà phát hành')}. Bạn nên nhập ngay khi lấy mã để tránh hết hạn hoặc hết lượt kích hoạt.</p>
-              </div>
-              <div class="p-4 rounded-xl bg-dark-850 border border-gray-800/80">
-                <h3 class="font-bold text-gray-100 mb-1">2. Làm sao để nhận thêm mã code ${escape(game.name)} mới nhất 2026?</h3>
-                <p class="text-gray-400 leading-relaxed">Hệ thống Pine Universal Mall tự động theo dõi và cập nhật mã mới 24/7 từ các sự kiện bảo trì, ra mắt máy chủ và fanpage chính thức của ${escape(game.publisher || 'NPH')}. Hãy lưu trang này để nhận thông báo sớm nhất.</p>
-              </div>
-            </div>
-          </section>
-
-          <!-- Related Games Matrix (Deep Crawl Spider) -->
-          <section class="p-5 rounded-2xl bg-dark-900 border border-gray-800 space-y-3">
-            <h2 class="text-base sm:text-lg font-bold text-white flex items-center space-x-2">
-              <span>🎮 Tựa Game Cùng Thể Loại & NPH Đang Có Giftcode</span>
-            </h2>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-              ${relatedGames.map((rg: any) => {
-                const rgKey = rg.slug || rg.id;
-                const rgSlug = escape(rgKey);
-                const thumb1x = `/game_icons/${escape(rgKey)}-thumb.webp`;
-                const thumb2x = `/game_icons/${escape(rgKey)}-thumb-256.webp`;
-                const rgName = escape(rg.name);
-                const rgPub = escape(rg.publisher || 'NPH Việt Nam');
-                return `
-                <a href="/game/${rgSlug}" class="flex flex-col bg-dark-850 hover:bg-dark-800 p-2.5 rounded-xl border border-gray-800 hover:border-brand-500/40 transition-all text-left group">
-                  <img src="${thumb1x}" srcset="${thumb1x} 1x, ${thumb2x} 2x" alt="${rgName}" loading="lazy" decoding="async" width="64" height="64" class="w-full aspect-square rounded-lg object-cover mb-2 border border-gray-700/60" />
-                  <h3 class="font-bold text-xs text-gray-200 group-hover:text-brand-400 line-clamp-1">${rgName}</h3>
-                  <span class="text-[10px] text-gray-400 truncate mt-0.5">${rgPub}</span>
-                </a>`;
-              }).join('')}
-            </div>
-          </section>
-
-          <div class="text-center pt-2">
-            <a href="${pathname.startsWith('/test1') ? '/test1' : '/'}" class="inline-block px-6 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold transition-all">
-              ${pathname.startsWith('/test1') ? '← Quay Lại Sàn Test 1' : '← Quay Lại Danh Sách Game'}
-            </a>
-          </div>
-
-          <footer class="mt-8 pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
-            <p>© 2026 Pine Universal Mall. Cập nhật mã ${escape(game.name)}.</p>
-            <div class="flex items-center gap-3">
-              <a href="/danh-sach-game-a-z" class="text-brand-400 hover:underline">Danh Mục A-Z</a>
-              <span>•</span>
-              <a href="/the-loai/${clusterSlug}" class="text-gray-300 hover:text-white">${escape(game.category || 'Thể loại')}</a>
-              <span>•</span>
-              <a href="${pathname.startsWith('/test1') ? '/test1' : '/'}" class="hover:text-white">${pathname.startsWith('/test1') ? 'Sàn Test 1' : 'Trang Chủ'}</a>
-            </div>
-          </footer>
-        </div>
-      </div>
-      `;
-
-      if (html.includes('<div id="root"></div>')) {
-        html = html.replace('<div id="root"></div>', `<div id="root">${ssrBodyHtml}</div>`);
-      } else {
-        html = html.replace(/<div\s+id="root">[\s\S]*?<\/div>\s*<\/div>\s*(<script)/i, `<div id="root">${ssrBodyHtml}</div>\n  $1`);
-      }
-    } else {
-      // Slug không tồn tại -> Trả HTTP 404 thực sự (tránh soft 404)
-      const notFoundRes = await env.ASSETS.fetch(new Request(`${origin}/404.html`)).catch(() => null);
-      if (notFoundRes && notFoundRes.status === 200) {
-        const notFoundHtml = await notFoundRes.text();
-        return new Response(notFoundHtml, {
-          status: 404,
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-          },
-        });
-      }
-      return new Response('404 Not Found', { status: 404 });
-    }
-  } else if (pathname === '/news' || pathname.startsWith('/news/')) {
+  if (pathname === '/news' || pathname.startsWith('/news/')) {
     const newsSlug = pathname.replace(/^\/news\//i, '').replace(/\/$/, '').trim().toLowerCase();
     let article: any = null;
     if (newsSlug && env.DB) {

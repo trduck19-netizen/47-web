@@ -2,14 +2,14 @@ import React from 'react';
 import { HelpCircle, X, Send, PhoneCall, ShieldAlert, BookOpen, MessageSquare } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
-interface ShopeeSupportModalProps {
+interface MallSupportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenReceivedCodes?: () => void;
   onShowToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
-export const ShopeeSupportModal: React.FC<ShopeeSupportModalProps> = ({
+export const MallSupportModal: React.FC<MallSupportModalProps> = ({
   isOpen,
   onClose,
   onOpenReceivedCodes,
@@ -30,7 +30,7 @@ export const ShopeeSupportModal: React.FC<ShopeeSupportModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-lg leading-tight">
-                {language === 'en' ? '24/7 Universal Mall Support' : 'Trung Tâm Hỗ Trợ Shopee Game 24/7'}
+                {language === 'en' ? '24/7 Universal Mall Support' : 'Trung Tâm Hỗ Trợ Universal Mall 24/7'}
               </h3>
               <p className="text-xs text-white/90">
                 {language === 'en' ? 'Inquiries, transaction assistance & code troubleshooting' : 'Giải đáp thắc mắc, hỗ trợ giao dịch & xử lý lỗi mã'}

@@ -21,12 +21,14 @@ import { useLanguage } from '../context/LanguageContext';
 interface TelegramViewProps {
   onOpenAuth?: () => void;
   onOpenProfile?: () => void;
+  onBackToHome?: () => void;
   onShowToast?: (title: string, message?: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const TelegramView: React.FC<TelegramViewProps> = ({
   onOpenAuth,
   onOpenProfile,
+  onBackToHome,
   onShowToast,
 }) => {
   const { language } = useLanguage();
@@ -234,11 +236,13 @@ export const TelegramView: React.FC<TelegramViewProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (typeof window !== 'undefined' && window.location.pathname.startsWith('/test1')) {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+              if (onBackToHome) {
+                onBackToHome();
               } else {
-                window.location.href = '/';
+                window.history.pushState(null, '', '/');
+                window.dispatchEvent(new PopStateEvent('popstate'));
               }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 font-bold transition-colors shrink-0 cursor-pointer"
           >

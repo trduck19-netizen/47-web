@@ -348,10 +348,7 @@ html.light .shadow-cyber-card, .light .shadow-cyber-card {
     padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
   }
 
-  /* G. Footer Spacing - Ensure MobileBottomNav does not obscure footer */
-  footer {
-    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
-  }
+
 
   /* H. Long String & Code Wrap (Prevent overflow from keys/hashes/uuids) */
   .font-mono {

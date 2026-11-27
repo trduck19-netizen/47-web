@@ -1,3 +1,1 @@
-﻿CMD: git grep -nE wcg_[a-z]+_[0-9a-f]{32} / TG / PRIVATE KEY -- functions/ src/
-RULE10_WCG=0 RULE10_TG=0 RULE10_PK=0
-exit=0
+ZERO_RULE10_VIOLATIONS 

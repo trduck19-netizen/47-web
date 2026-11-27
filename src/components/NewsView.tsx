@@ -34,7 +34,6 @@ interface NewsViewProps {
   onSelectGameSlug?: (slug: string) => void;
   initialArticleSlug?: string | null;
   initialSubTab?: 'news' | 'events' | 'today-codes';
-  keepInTest1?: boolean;
 }
 
 export const NewsView: React.FC<NewsViewProps> = ({
@@ -42,9 +41,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
   onSelectGameSlug,
   initialArticleSlug,
   initialSubTab,
-  keepInTest1 = false,
 }) => {
-  const inTest1 = keepInTest1 || (typeof window !== 'undefined' && window.location.pathname.startsWith('/test1'));
   const { t } = useLanguage();
   const [subTab, setSubTab] = useState<'news' | 'today-codes' | 'events'>(() => {
     if (initialSubTab) return initialSubTab;
@@ -308,11 +305,9 @@ export const NewsView: React.FC<NewsViewProps> = ({
       prev.map((a) => (a.id === art.id ? { ...a, views: (a.views || 0) + 1 } : a))
     );
     if (typeof window !== 'undefined') {
-      if (!inTest1) {
-        const targetPath = `/news/${art.slug}`;
-        if (window.location.pathname !== targetPath) {
-          window.history.pushState({ articleSlug: art.slug }, '', targetPath);
-        }
+      const targetPath = `/news/${art.slug}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ articleSlug: art.slug }, '', targetPath);
       }
       document.title = `${art.title} | Pine Universal Mall`;
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -322,12 +317,10 @@ export const NewsView: React.FC<NewsViewProps> = ({
   const handleCloseArticle = () => {
     setSelectedArticle(null);
     if (typeof window !== 'undefined') {
-      if (!inTest1 && window.location.pathname !== '/news') {
+      if (window.location.pathname !== '/news') {
         window.history.pushState(null, '', '/news');
       }
-      document.title = inTest1
-        ? 'Pine Universal Mall - Sàn TMĐT Tiện Ích & Code Game #1 Việt Nam | /test1'
-        : 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
+      document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -386,12 +379,10 @@ export const NewsView: React.FC<NewsViewProps> = ({
             type="button"
             onClick={() => {
               setSubTab('news');
-              if (!inTest1 && typeof window !== 'undefined' && window.history?.pushState) {
+              if (typeof window !== 'undefined' && window.history?.pushState) {
                 window.history.pushState(null, '', '/news');
               }
-              document.title = inTest1
-                ? 'Pine Universal Mall - Sàn TMĐT Tiện Ích & Code Game #1 Việt Nam | /test1'
-                : 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
+              document.title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
               subTab === 'news'
@@ -407,12 +398,10 @@ export const NewsView: React.FC<NewsViewProps> = ({
             type="button"
             onClick={() => {
               setSubTab('today-codes');
-              if (!inTest1 && typeof window !== 'undefined' && window.history?.pushState) {
+              if (typeof window !== 'undefined' && window.history?.pushState) {
                 window.history.pushState(null, '', '/ma-hom-nay');
               }
-              document.title = inTest1
-                ? 'Pine Universal Mall - Mã Hôm Nay | /test1'
-                : 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
+              document.title = 'Giftcode Hôm Nay - Tổng Hợp Mã Code Game Có Hạn Trong Ngày 2026 | Pine Universal Mall';
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
               subTab === 'today-codes'
@@ -428,12 +417,10 @@ export const NewsView: React.FC<NewsViewProps> = ({
             type="button"
             onClick={() => {
               setSubTab('events');
-              if (!inTest1 && typeof window !== 'undefined' && window.history?.pushState) {
+              if (typeof window !== 'undefined' && window.history?.pushState) {
                 window.history.pushState(null, '', '/su-kien');
               }
-              document.title = inTest1
-                ? 'Pine Universal Mall - Sự Kiện Game Hot | /test1'
-                : 'Sự Kiện Game - Tổng Hợp Sự Kiện Nhận Giftcode Hot 2026 | Pine Universal Mall';
+              document.title = 'Sự Kiện Game - Tổng Hợp Sự Kiện Nhận Giftcode Hot 2026 | Pine Universal Mall';
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
               subTab === 'events'

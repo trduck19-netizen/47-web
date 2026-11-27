@@ -28,6 +28,7 @@ interface StoreViewProps {
   currentUser?: UserProfile | null;
   onOpenAuth?: () => void;
   onOpenShare?: (product: StoreProduct) => void;
+  initialGameSlug?: string;
 }
 
 const STORE_VIEW_MODE_STORAGE_KEY = 'pine_store_view_mode';
@@ -39,12 +40,18 @@ export const StoreView: React.FC<StoreViewProps> = ({
   currentUser,
   onOpenAuth,
   onOpenShare,
+  initialGameSlug,
 }) => {
   const { t, language } = useLanguage();
   const [products, setProducts] = useState<StoreProduct[]>(() => dataService.getStoreProducts().map((p) => templateService.resolveStoreProduct(p)));
   const [categoriesList, setCategoriesList] = useState(() => dataService.getStoreCategories());
   const [filterType, setFilterType] = useState<string>('all');
+  const [gameFilter, setGameFilter] = useState<string>(initialGameSlug || 'all');
   const [search, setSearch] = useState<string>('');
+
+  useEffect(() => {
+    setGameFilter(initialGameSlug && initialGameSlug !== 'all' ? initialGameSlug : 'all');
+  }, [initialGameSlug]);
   const [cmsIntro, setCmsIntro] = useState(() => dataService.getContentByKey('store_section'));
   const [isGlobalSoldEnabled, setIsGlobalSoldEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
@@ -202,6 +209,12 @@ export const StoreView: React.FC<StoreViewProps> = ({
         const matches = pkgType === target || cat === target || catLabel === target;
         if (!matches) return false;
       }
+      if (gameFilter !== 'all') {
+        const targetGame = gameFilter.toLowerCase().trim();
+        if ((p.game_slug || '').toLowerCase().trim() !== targetGame && (p.category || '').toLowerCase().trim() !== targetGame) {
+          return false;
+        }
+      }
       if (!search.trim()) return true;
       const childNames = Array.isArray(p.packages) ? p.packages.map((pkg) => pkg.name) : [];
       const gameSlugWords = p.game_slug ? p.game_slug.replace(/[-_]/g, ' ') : '';
@@ -280,6 +293,17 @@ export const StoreView: React.FC<StoreViewProps> = ({
         {/* Type tabs - Horizontal scrollable on mobile */}
         <div className="relative flex-1 min-w-0 overflow-hidden w-full max-w-full">
           <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap scrollbar-none sm:flex-wrap pb-1 sm:pb-0 w-full max-w-full">
+            {gameFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setGameFilter('all')}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer bg-[#ee4d2d] text-white shadow-sm active:scale-95"
+                title={t('store.allPackages')}
+              >
+                <span>#{gameFilter}</span>
+                <span aria-hidden="true">✕</span>
+              </button>
+            )}
             {categoryTabs.map((tab) => (
               <button
                 key={tab.id}

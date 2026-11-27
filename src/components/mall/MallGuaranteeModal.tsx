@@ -2,12 +2,12 @@ import React from 'react';
 import { ShieldCheck, X, CheckCircle, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
-interface ShopeeGuaranteeModalProps {
+interface MallGuaranteeModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const ShopeeGuaranteeModal: React.FC<ShopeeGuaranteeModalProps> = ({ isOpen, onClose }) => {
+export const MallGuaranteeModal: React.FC<MallGuaranteeModalProps> = ({ isOpen, onClose }) => {
   const { language } = useLanguage();
   if (!isOpen) return null;
 

@@ -517,8 +517,8 @@
   "mall": {
     "topNav": {
       "marketplace": "Comprehensive Marketplace",
-      "editionDesc": "Running full Shopee Game edition at ",
-      "mainSiteUnaffected": " (Main site unaffected)",
+      "editionDesc": "Universal Mall — Official Multi-Industry E-Commerce Marketplace",
+      "mainSiteUnaffected": " (0s instant delivery & 168h escrow)",
       "mallHomepage": "Universal Mall Homepage",
       "sellerCenter": "Seller Center",
       "openStore": "Open Store",
@@ -552,7 +552,6 @@
       "store": "Multi-Industry Store",
       "sellerCenter": "Seller Center",
       "account": "Account & Wallet",
-      "gameZone": "Game Zone",
       "missions": "Missions",
       "telegram": "Telegram",
       "azIndex": "A-Z Index",
@@ -570,7 +569,6 @@
       "store": "Multi-Industry Store ({count} Products)",
       "store_singular": "Multi-Industry Store (1 Product)",
       "store_plural": "Multi-Industry Store ({count} Products)",
-      "gameZone": "Game Zone & Giftcodes ({count} Games)",
       "seller": "Marketplace & Seller Portal",
       "account": "Account & Core Wallet",
       "missions": "Game Mission Center",
@@ -608,7 +606,6 @@
       "vietqrTopup": "VietQR Top-up",
       "luckyWheel": "Lucky Wheel",
       "vouchers": "Vouchers",
-      "gameZone": "Game Zone",
       "support247": "Support 24/7"
     },
     "paginationSummary": "Page {page} / {totalPages} • Total {total} packages",

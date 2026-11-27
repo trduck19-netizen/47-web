@@ -79,17 +79,10 @@
             return;
           }
         }
-        var isShopee = pathname === '/' || pathname.startsWith('/test1') || hash.includes('test1') || !pathname.startsWith('/game');
-        var savedTheme = isShopee ? 'light' : 'dark';
+        var savedTheme = 'light';
         try {
-          if (isShopee) {
-            var st = localStorage.getItem('wcg_shopee_theme');
-            if (st === 'dark') savedTheme = 'dark';
-            else savedTheme = 'light';
-          } else {
-            var t = localStorage.getItem('wcg_theme');
-            if (t === 'light') savedTheme = 'light';
-          }
+          var st = localStorage.getItem('wcg_shopee_theme') || localStorage.getItem('pine_shopee_theme');
+          if (st === 'dark') savedTheme = 'dark';
         } catch(e) {}
         var metaCs = document.querySelector('meta[name="color-scheme"]');
         if (savedTheme === 'light') {
