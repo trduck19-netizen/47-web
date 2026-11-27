@@ -4,7 +4,7 @@
 
 🛡️ 0. Scanning UI code for hardcoded Vietnamese strings (i18n Guard)...
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-27T16:44:26.503Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   Timestamp: 2026-11-27T17:35:44.205Z — Batch: Dot 20 Trang Chu (24/11/2026)
    [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét 23 file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...
    [DANH SÁCH FILE QUÉT]: src/App.tsx, src/components/MarketingNotificationToast.tsx, src/components/mall/UniversalMallView.tsx, src/components/seller/SellerCenterView.tsx, src/admin/AdminApp.tsx, src/admin/components/AdminSidebar.tsx, src/admin/components/AdminTopbar.tsx, src/admin/components/MultiLineAnalyticsChart.tsx, src/admin/components/RecentBalanceChangesWidget.tsx, src/admin/components/ui/DataTable.tsx, src/admin/modules/DashboardModule.tsx, src/admin/modules/OrdersModule.tsx, src/admin/modules/MembersModule.tsx, src/admin/modules/HomepageSectionsModule.tsx, src/components/ProductDetailModal.tsx, src/components/ProductCheckoutModal.tsx, src/components/PackageShareModal.tsx, src/components/ProductReviewsSection.tsx, src/components/AuthModal.tsx, src/admin/modules/SupplierConnectorsModule.tsx, src/admin/modules/InterShopAffiliateModule.tsx, src/components/seller/SellerAffiliateManager.tsx, src/components/cart/CartDrawerModal.tsx
 ✅ [I18N SCANNER PASSED] Đã quét sạch 23 file giao diện.
@@ -38,6 +38,9 @@
 transforming...
 [32m✓[39m 2385 modules transformed.
 rendering chunks...
+[1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+(!) C:/4 Antigravity all/47 web da nganh/src/services/growthService.ts is dynamically imported by C:/4 Antigravity all/47 web da nganh/src/services/dataService.ts but also statically imported by C:/4 Antigravity all/47 web da nganh/src/admin/components/LuckyWheelAdminManager.tsx, C:/4 Antigravity all/47 web da nganh/src/admin/modules/GrowthModule.tsx, C:/4 Antigravity all/47 web da nganh/src/components/GrowthCenterModal.tsx, C:/4 Antigravity all/47 web da nganh/src/components/LuckyWheelSection.tsx, C:/4 Antigravity all/47 web da nganh/src/components/UserWalletModal.tsx, C:/4 Antigravity all/47 web da nganh/src/services/authService.ts, dynamic import will not move module into another chunk.
+[39m
 computing gzip size...
 [2mdist/[22m[32mindex.html                                     [39m[1m[2m 12.50 kB[22m[1m[22m[2m │ gzip:   3.49 kB[22m
 [2mdist/[22m[35massets/index-CfXo3Y4R.css                      [39m[1m[2m261.22 kB[22m[1m[22m[2m │ gzip:  37.43 kB[22m
@@ -137,9 +140,14 @@ computing gzip size...
 [2mdist/[22m[36massets/games-catalog-fallback-DcEoXQue.js      [39m[1m[2m790.41 kB[22m[1m[22m[2m │ gzip: 123.00 kB[22m
 [2mdist/[22m[36massets/seed-news-fallback-CyezkEkv.js          [39m[1m[2m884.33 kB[22m[1m[22m[2m │ gzip: 185.96 kB[22m
 [2mdist/[22m[36massets/CrawlerModule-DNdXIMk_.js               [39m[1m[2m972.13 kB[22m[1m[22m[2m │ gzip: 180.03 kB[22m
-[32m✓ built in 28.19s[39m
+[32m✓ built in 25.52s[39m
 ⚡ 2. Compiling Cloudflare Pages Edge Worker bundle...
-   🏷️ Injected Build ID: ec54834 (2026-11-27T16:45:05.894Z)
+⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is 7770896. If this is a release build, commit first before deploying.
+   🏷️ Injected Build ID: 7770896 (2026-11-27T17:36:20.662Z)
+
+  dist\_worker.js  6.7mb
+
+Done in 257ms
 📄 3. Ensuring _routes.json in dist/ ...
    _routes.json copied to dist/_routes.json
 🛡️ 4. Running Post-build Chunk & Worker Budget Check (Lean Guard)...
@@ -165,11 +173,3 @@ computing gzip size...
 🎉 [LEAN GUARD PASSED] Toàn bộ ngân sách kích thước hệ thống đạt chuẩn 100%!
 ================================================================================
 ✅ Build completed successfully with active Cloudflare Edge Worker bundle (dist/_worker.js)!
-[1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-(!) C:/4 Antigravity all/47 web da nganh/src/services/growthService.ts is dynamically imported by C:/4 Antigravity all/47 web da nganh/src/services/dataService.ts but also statically imported by C:/4 Antigravity all/47 web da nganh/src/admin/components/LuckyWheelAdminManager.tsx, C:/4 Antigravity all/47 web da nganh/src/admin/modules/GrowthModule.tsx, C:/4 Antigravity all/47 web da nganh/src/components/GrowthCenterModal.tsx, C:/4 Antigravity all/47 web da nganh/src/components/LuckyWheelSection.tsx, C:/4 Antigravity all/47 web da nganh/src/components/UserWalletModal.tsx, C:/4 Antigravity all/47 web da nganh/src/services/authService.ts, dynamic import will not move module into another chunk.
-[39m
-⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is ec54834. If this is a release build, commit first before deploying.
-
-  dist\_worker.js  6.7mb
-
-Done in 2555ms
