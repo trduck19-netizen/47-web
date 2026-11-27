@@ -7,6 +7,17 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-27]
 
+### 485. Sửa Nốt Mảnh 4 & 3 Lỗi Backlog UI/Routing: Memoize `getHeaders`, Khóa Nút Dòng Đang Tải `SellerAffiliateManager`, `/en/ban-hang` & `AdminLayout` Mobile Nav (`8e5f4b0` + `9360d21`) (27/11/2026)
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  1. `SellerCenterView.tsx:165` khai báo `getHeaders` là hàm thường không memoize; mỗi lần cha re-render tạo reference mới khiến `fetchRequestsAll`, `fetchPartners`, `fetchListings`, `fetchWebhooks` và `useEffect` mount trong `SellerAffiliateManager.tsx` chạy lặp lại liên tục, bật `loadingWebhooks = true` và tháo bỏ bảng `<table>` thay bằng `"Đang tải dữ liệu..."` — làm nút Xóa webhook bị stale DOM (10 lần bấm không bật `window.confirm`) và tải lần đầu kéo dài `13,4s–19,5s`.
+  2. `src/App.tsx` chưa khớp `/en/ban-hang` (tự chuyển về `/en/`) và `SellerCenterView.tsx:189` hiển thị nguyên văn lỗi tiếng Việt `404` ở chế độ EN; `AdminLayout.tsx` hiện thanh bottom mobile nav ở `760×702` (`< lg`) gây che nửa dưới nút hàng cuối bảng.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Commit [`8e5f4b0`](https://github.com/trduck19-netizen/47-web/commit/8e5f4b0)*: Bọc `getHeaders` bằng `useCallback(..., [])` trong `SellerCenterView.tsx`, dùng `getHeadersRef = useRef(getHeaders)` bỏ `[getHeaders]` khỏi deps `useEffect` mount, giữ `<table>` khi đã có dữ liệu (`&& list.length === 0`), bổ sung định tuyến `/en/ban-hang` + dịch lỗi `404` EN, và chuyển mobile bottom nav sang `sm:hidden` + `pb-28 sm:pb-8` ở `AdminLayout.tsx`.
+  2. *Commit [`9360d21`](https://github.com/trduck19-netizen/47-web/commit/9360d21)*: Khóa cả 4 nút dòng Webhook (`Ping`, `Power`, `Rotate`, `Trash2`) và nút `Retry` theo `loadingWebhooks` (`disabled={Boolean(isBusy || loadingWebhooks)}`) kèm class `disabled:opacity-50 disabled:cursor-not-allowed` + `aria-label` riêng đúng từng khóa `whPingBtn` / `whToggleBtn` / `whRotateBtn` / `whDeleteBtn`, đồng bộ `getHeadersRef.current()` cho đủ 12 handler + `ResellSettingsModal.handleSubmit`. Không sửa API `/api/seller/webhooks` và không thêm chuỗi UI mới.
+- **Kiểm chứng & Số đo thực tế**:
+  - Repo logs (`docs/test_full_check.log` `225/225 PASS`, `docs/i18n_full_check.log` `23/23 PASS` & `vn_diacritics_outside_comments=0`, `docs/tsc_full_check.log` `homepage_exit=0` & `1.825` tổng / `0` lỗi ở `SellerAffiliateManager.tsx`, `docs/rule10_scan.log` `0`, `docs/build_success.log` Pre `5/5` + Post `4/4 PASS`).
+  - Live trên `Shop Test Anti` (`sel_1795764780992_eqp7i`, panel thực tế `760 × 702` px): tải sub-tab Webhook sau reload hoàn tất **`1,053s` (VI)** / **`1,339s` (EN)**; bấm Xóa webhook qua UI **`5/5` lần** (`4` VI + `1` EN kèm Ping Test) đều bật `window.confirm`, `DELETE 200`, `webhooks: []`; dọn sạch đúng mục `[TEST-E2E]` và giữ nguyên 2 shop thử, cặp `sap_mwug5g1i_7cixz`, `sal_mwug5ubc_ijx9m` (`ACTIVE`), và 2 sản phẩm thật của shop `anhlinh`.
+
 ### 484. Liên Kết Gian Hàng Nội Bộ — Mảnh 4: Nâng Cấp Giao Diện Gian Hàng `SellerAffiliateManager.tsx` (4 Sub-Tab, Sửa 9 Lệch Hợp Đồng, Partners `seller_orders`, E2E 225/225, I18N 23/23) (27/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Tiếp nối Mảnh 3 (`28931f1`), sửa triệt để các lỗi lệch hợp đồng API có sẵn trong `SellerAffiliateManager.tsx` và hoàn thiện trọn bộ 4 sub-tab tự chủ cho chủ gian hàng theo kế hoạch Mảnh 4 đã duyệt (`ke_hoach_lien_ket_noi_bo_manh4_27_11.md` kèm 9 điểm sửa).

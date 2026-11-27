@@ -10,6 +10,12 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-337: Truyền Hàm `getHeaders()` Không Memoize Vào `SellerAffiliateManager` Gây Vòng Lặp Refetch, Tải Chậm & Chết Nút Xóa Webhook Qua UI (27/11/2026)
+- **Triệu chứng & Nguyên nhân**:
+  - `SellerCenterView.tsx:165` tạo hàm `getHeaders` mới mỗi lần render; `SellerAffiliateManager.tsx` đưa `[getHeaders]` vào `useCallback` của 4 hàm fetch và `useEffect` mount, khiến mỗi lần component cha re-render đều tái kích hoạt 4 request + đặt `loadingWebhooks = true`, tháo bỏ bảng `<table>` thay bằng `"Đang tải dữ liệu..."` → bấm Xóa webhook rơi vào DOM stale (`0` `window.confirm` trong 10 lần bấm) và kẹt tải `13,4s–19,5s`.
+- **Giải pháp chuẩn đã kiểm chứng (`8e5f4b0` + `9360d21`)**:
+  - Memoize `getHeaders` bằng `useCallback(..., [])` tại `SellerCenterView.tsx`, giữ `getHeadersRef = useRef(getHeaders)` trong `SellerAffiliateManager.tsx` (và `ResellSettingsModal`) để `useEffect` mount không phụ thuộc `[getHeaders]`, giữ DOM bảng khi `list.length > 0`, và khóa cả 4 nút dòng Webhook + nút Retry theo `loadingWebhooks`.
+
 ### ISSUE-336: Đua Tranh Trừ Kho/Mã Trong Batch Checkout Không Hoàn Tác, Thiếu Đường Ghi `stock_quantity` & Chữ Hoa/Thường `escrow_service.ts` (26/11/2026)
 - **Triệu chứng & Rủi ro**:
   - Gộp `UPDATE members` + `UPDATE seller_products/seller_codes` + `INSERT seller_orders` vào chung 1 `db.batch` rồi kiểm `meta.changes === 0` sau khi commit khiến buyer thua đua tranh nhận `409` nhưng tiền/pending/HOLD/đơn `PAID` vẫn đã ghi; `multi.ts` bỏ qua kết quả `batch` nên có thể tạo đơn QR vượt kho.
