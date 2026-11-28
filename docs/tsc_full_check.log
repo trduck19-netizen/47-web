@@ -1,5 +1,11 @@
+=== TSC HOMEPAGE CHECK (2026-11-28T07:17:53.807Z) ===
+$ npx tsc -p tsconfig.homepage.json --noEmit
+
 HOMEPAGE_TSC_OK
 homepage_exit=0
+
+=== TSC FULL PROJECT CHECK (2026-11-28T07:17:53.807Z) ===
+$ npx tsc -p tsconfig.json --noEmit
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(542,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
@@ -129,11 +135,11 @@ functions/_worker.ts(2821,73): error TS2554: Expected 1 arguments, but got 0.
 functions/_worker.ts(2829,75): error TS2554: Expected 1 arguments, but got 0.
 functions/_worker.ts(2837,74): error TS2554: Expected 1 arguments, but got 0.
 functions/_worker.ts(2845,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(3463,37): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3463,44): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3465,45): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3511,26): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
-functions/_worker.ts(3802,24): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
+functions/_worker.ts(3482,37): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3482,44): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3484,45): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3530,26): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
+functions/_worker.ts(3821,24): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
 functions/api/admin/audit-log.ts(63,11): error TS6133: 'bindings' is declared but its value is never read.
 functions/api/admin/automation/status.ts(63,16): error TS6133: 'readSystemSettingJson' is declared but its value is never read.
 functions/api/admin/free-codes/index.ts(163,11): error TS6133: 'isHot' is declared but its value is never read.
@@ -1844,4 +1850,5 @@ src/utils/productPackageUtils.ts(498,58): error TS2367: This comparison appears 
 src/utils/productPackageUtils.ts(498,82): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
 src/utils/productPackageUtils.ts(498,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
 src/utils/productPackageUtils.ts(507,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'GiveawayCampaign'.
+
 full_tsc_exit=2

@@ -103,7 +103,27 @@ function sanitizeLinkUrl(val: unknown, fallback: string): string {
 function isLegacyTitle(title?: string | null): boolean {
   if (!title) return true;
   const u = title.trim().toUpperCase();
-  return !u || u === 'WEB CODE GAME' || u === 'WEB CODE' || u === 'WEB CODE GAME 2026';
+  return (
+    !u ||
+    u === 'WEB CODE GAME' ||
+    u === 'WEB CODE' ||
+    u === 'WEB CODE GAME 2026' ||
+    u === 'CODEGAME.SHOP' ||
+    u === 'CODEGAME' ||
+    u === 'CODEGAME MALL' ||
+    u === 'SHOP CODE GAME' ||
+    u === 'WEBCODEGAME' ||
+    u === 'WEBCODEGAME.VN'
+  );
+}
+
+function normalizeLegacyLogoPath(url?: string | null): string {
+  if (typeof url !== 'string') return DEFAULT_BRAND_IDENTITY.logoUrl;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === '/logo.png' || trimmed === '/favicon.png') {
+    return DEFAULT_BRAND_IDENTITY.logoUrl;
+  }
+  return trimmed;
 }
 
 export function extractPrimaryBrandWord(name: string): string {
@@ -238,7 +258,8 @@ export function extractBrandFromSettingsMap(
       ? String(footerItem.extraData.brandTitle).trim()
       : DEFAULT_BRAND_IDENTITY.brandName;
 
-    const legacyLogo = brandingItem?.extraData?.logoUrl || footerItem?.extraData?.brandLogo;
+    const legacyLogo = normalizeLegacyLogoPath(brandingItem?.extraData?.logoUrl || footerItem?.extraData?.brandLogo);
+    const legacyFavicon = normalizeLegacyLogoPath(brandingItem?.extraData?.avatarUrl || legacyLogo);
     const rawSubtitle = brandingItem?.extraData?.portalSubtitle;
     const cleanSubtitleVi =
       rawSubtitle && !String(rawSubtitle).toLowerCase().includes('cổng tra cứu')
@@ -250,8 +271,8 @@ export function extractBrandFromSettingsMap(
         brandName: rawTitle,
         shortName: rawTitle === DEFAULT_BRAND_IDENTITY.brandName ? DEFAULT_BRAND_IDENTITY.shortName : deriveShortName(rawTitle),
         taglineVi: cleanSubtitleVi,
-        logoUrl: legacyLogo || DEFAULT_BRAND_IDENTITY.logoUrl,
-        faviconUrl: brandingItem?.extraData?.avatarUrl || legacyLogo || DEFAULT_BRAND_IDENTITY.faviconUrl,
+        logoUrl: legacyLogo,
+        faviconUrl: legacyFavicon,
         supportHotline: brandingItem?.extraData?.hotline || footerItem?.extraData?.hotline || DEFAULT_BRAND_IDENTITY.supportHotline,
         supportEmail: footerItem?.extraData?.email || DEFAULT_BRAND_IDENTITY.supportEmail,
         telegramUrl: footerItem?.extraData?.telegram || DEFAULT_BRAND_IDENTITY.telegramUrl,

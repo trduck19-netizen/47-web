@@ -404,6 +404,31 @@ test('Core UI shells, Admin Sidebar, CMS Tab 9 shortcut & ApiKeysModule BRAND_MA
   const worker = fs.readFileSync(path.join(root, 'functions/_worker.ts'), 'utf8');
   assert.ok(worker.includes("pathname === '/manifest.json'"), 'Worker must serve dynamic /manifest.json');
   assert.ok(worker.includes('window.__WCG_BRAND__'), 'Worker must inject Zero-FOUC window.__WCG_BRAND__');
+  assert.ok(worker.includes('isDynamicShellPath'), 'Worker must serve /, /en/, /seller via dynamic Brand SSR with epoch-keyed cache');
+
+  const routesJson = JSON.parse(fs.readFileSync(path.join(root, 'public/_routes.json'), 'utf8'));
+  assert.ok(
+    !Array.isArray(routesJson.exclude) || !routesJson.exclude.includes('/manifest.json'),
+    'public/_routes.json must NOT exclude /manifest.json so dynamic manifest executes in Worker'
+  );
+});
+
+// 11. Legacy D1 wcg_admin_content_v4 ("CodeGame.Shop" + "/logo.png") sanitization
+test('extractBrandFromSettingsMap ignores stale legacy CodeGame.Shop title & /logo.png when wcg_brand_identity_v1 absent', () => {
+  const brand = extractBrandFromSettingsMap({
+    wcg_admin_content_v4: [
+      {
+        key: 'website_branding',
+        title: 'CodeGame.Shop',
+        extraData: { logoUrl: '/logo.png', avatarUrl: '/logo.png', currencyMode: 'VND' },
+      },
+    ],
+  });
+  assert.equal(brand.brandName, DEFAULT_BRAND_IDENTITY.brandName);
+  assert.equal(brand.shortName, DEFAULT_BRAND_IDENTITY.shortName);
+  assert.equal(brand.aiBrandName, DEFAULT_BRAND_IDENTITY.aiBrandName);
+  assert.equal(brand.logoUrl, '/logo.webp');
+  assert.equal(brand.faviconUrl, '/logo.webp');
 });
 
 (async () => {

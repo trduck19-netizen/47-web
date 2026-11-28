@@ -3064,31 +3064,47 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return await handleDynamicSitemap(request, env, ctx);
       }
 
-      // Root Homepage HTML - Edge Cache TTL 3600s
-      if ((request.method === 'GET' || request.method === 'HEAD') && (pathname === '/' || pathname === '/index.html')) {
+      // Root Homepage, Bilingual /en & Standalone Seller Portal HTML — Dynamic Brand SSR + Epoch-Keyed Worker Cache
+      const isDynamicShellPath =
+        pathname === '/' ||
+        pathname === '/index.html' ||
+        pathname === '/vi' ||
+        pathname === '/vi/' ||
+        pathname === '/en' ||
+        pathname === '/en/' ||
+        pathname === '/seller' ||
+        pathname.startsWith('/seller/') ||
+        pathname === '/en/seller' ||
+        pathname.startsWith('/en/seller/');
+
+      if ((request.method === 'GET' || request.method === 'HEAD') && isDynamicShellPath) {
         const reqStart = performance.now();
         // Tự động chuyển hướng 301 về Trang Chủ Sàn Universal Mall nếu người dùng hoặc bot truy cập qua ?game= hoặc ?g=
-        const gameQueryParam = url.searchParams.get('game') || url.searchParams.get('g');
-        if (gameQueryParam) {
-          return Response.redirect(`${url.origin}/`, 301);
+        if (pathname === '/' || pathname === '/index.html') {
+          const gameQueryParam = url.searchParams.get('game') || url.searchParams.get('g');
+          if (gameQueryParam) {
+            return Response.redirect(`${url.origin}/`, 301);
+          }
+          const pageParam = url.searchParams.get('page');
+          const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
+          if (pageNum > 1) {
+            return await renderSeoHtml(request, env, pathname);
+          }
         }
 
-        const pageParam = url.searchParams.get('page');
-        const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
-        if (pageNum > 1) {
-          return await renderSeoHtml(request, env, pathname);
-        }
         const isFresh = url.searchParams.has('fresh') || url.searchParams.has('nocache') || url.searchParams.has('_t');
         const cfCache = (typeof caches !== 'undefined' && !isFresh) ? (caches as any).default : null;
         const buildTag = typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ ? __BUILD_ID__ : 'live';
-        const cacheKey = new Request(`${url.origin}/__edge_cache_v/${buildTag}/`, { method: 'GET' });
+        const shellEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+        const cacheKey = new Request(`${url.origin}/__edge_cache_v/${buildTag}/${shellEpoch}${pathname}`, { method: 'GET' });
         const isHead = request.method === 'HEAD';
         if (cfCache) {
           try {
             const cached = await cfCache.match(cacheKey);
             if (cached) {
               const cachedBuildId = cached.headers.get('x-build-id');
-              if (!cachedBuildId || cachedBuildId === buildTag) {
+              const cachedEpoch = cached.headers.get('x-catalog-epoch');
+              if ((!cachedBuildId || cachedBuildId === buildTag) && (!cachedEpoch || cachedEpoch === shellEpoch)) {
                 const edgeDur = (performance.now() - reqStart).toFixed(1);
                 const res = new Response(isHead ? null : cached.body, cached);
                 res.headers.set('cf-cache-status', 'HIT');
@@ -3100,21 +3116,23 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           } catch {}
         }
 
-        const assetResponse = await env.ASSETS.fetch(isHead ? new Request(request.url, { method: 'GET' }) : request);
-        if (assetResponse.status === 200) {
+        const seoRes = await renderSeoHtml(request, env, pathname);
+        if (seoRes.status === 200) {
           const edgeDur = (performance.now() - reqStart).toFixed(1);
-          const bodyText = await assetResponse.text();
-          const baseHeaders = new Headers(assetResponse.headers);
-          baseHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate, s-maxage=3600, stale-while-revalidate=86400');
+          const bodyText = await seoRes.text();
+          const baseHeaders = new Headers(seoRes.headers);
+          baseHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate');
+          baseHeaders.set('CDN-Cache-Control', 'no-store');
+          baseHeaders.set('X-Catalog-Epoch', shellEpoch);
+          baseHeaders.set('X-Build-Id', buildTag);
           baseHeaders.delete('Pragma');
           baseHeaders.delete('Expires');
 
-          if (cfCache && ctx.waitUntil) {
+          if (cfCache && bodyText.length > 50 && ctx.waitUntil) {
             try {
               const toCacheHeaders = new Headers(baseHeaders);
               toCacheHeaders.set('cf-cache-status', 'HIT');
               toCacheHeaders.set('X-Edge-Cache', 'HIT');
-              toCacheHeaders.set('X-Build-Id', buildTag);
               toCacheHeaders.set('Server-Timing', `edge;dur=0.1, cache;desc="HIT"`);
               ctx.waitUntil(cfCache.put(cacheKey, new Response(bodyText, { status: 200, headers: toCacheHeaders })));
             } catch {}
@@ -3131,7 +3149,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           }
           return new Response(bodyText, { status: 200, headers: clientHeaders });
         }
-        return assetResponse;
+        return seoRes;
       }
 
       // Chuyển hướng 301 đường dẫn Kênh Người Bán cũ (/ban-hang*, /seller-center*) sang Cổng Quản Trị Gian Hàng độc lập (/seller & /en/seller)
@@ -3192,7 +3210,8 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         const isFresh = url.searchParams.has('fresh') || url.searchParams.has('nocache') || url.searchParams.has('_t');
         const cfCache = (typeof caches !== 'undefined' && !isFresh) ? (caches as any).default : null;
         const buildTag = typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ ? __BUILD_ID__ : 'live';
-        const cacheKey = new Request(`${url.origin}/__edge_cache_v/${buildTag}${url.pathname}`, { method: 'GET' });
+        const seoEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+        const cacheKey = new Request(`${url.origin}/__edge_cache_v/${buildTag}/${seoEpoch}${url.pathname}`, { method: 'GET' });
         const isHead = request.method === 'HEAD';
         if (cfCache) {
           try {
@@ -4250,11 +4269,43 @@ async function renderSeoHtml(
       }
     ];
     replaceTitleAndMeta(title, description, '/utilities', '/og-image.jpg', utilSchema);
+  } else if (pathname === '/en/seller' || pathname.startsWith('/en/seller/')) {
+    const title = `Seller Portal & Store Management | ${brand.sellerPortalName}`;
+    const description = `Manage your storefront, digital & physical products, instant code vault, and payouts directly on ${brandName}.`;
+    replaceTitleAndMeta(title, description, '/en/seller', '/og-image.jpg');
   } else if (pathname === '/seller' || pathname.startsWith('/seller/')) {
     const title = `Kênh Người Bán & Quản Lý Gian Hàng | ${brand.sellerPortalName}`;
     const description = `Quản trị gian hàng, sản phẩm, kho mã tự động và doanh thu trực tiếp trên ${brandName}.`;
     replaceTitleAndMeta(title, description, '/seller', '/og-image.jpg');
-  } else if (pathname === '/' || pathname === '') {
+  } else if (pathname === '/en' || pathname === '/en/') {
+    const title = `${brandName} - ${brand.taglineEn}`;
+    const description = `${brandName} — ${brand.taglineEn}. Verified multi-industry shopping, digital services, instant 0s VietQR & ${coreUnit} wallet checkout.`;
+    const enHomeSchema = [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": `${origin}/en/#website`,
+        "url": `${origin}/en/`,
+        "name": brandName,
+        "description": brand.taglineEn,
+        "inLanguage": "en-US"
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": `${origin}/#organization`,
+        "name": brandName,
+        "url": `${origin}/en/`,
+        "logo": {
+          "@type": "ImageObject",
+          "url": brand.logoUrl?.startsWith('http') ? brand.logoUrl : `${origin}${brand.logoUrl?.startsWith('/') ? brand.logoUrl : '/logo.webp'}`,
+          "width": 512,
+          "height": 512
+        }
+      }
+    ];
+    replaceTitleAndMeta(title, description, '/en/', '/og-image.jpg', enHomeSchema);
+  } else if (pathname === '/' || pathname === '' || pathname === '/index.html' || pathname === '/vi' || pathname === '/vi/') {
     const urlObj = new URL(request.url);
     const pageParam = urlObj.searchParams.get('page');
     const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
