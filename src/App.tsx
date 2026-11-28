@@ -91,7 +91,7 @@ const resolveRouteToMallSubView = (pathnameInput: string, hashInput: string): Ma
     path === '/cho-thue-web' || path.startsWith('/cho-thue-web/')
   ) return 'platform-solutions';
 
-  if (hash.includes('ban-hang') || path === '/ban-hang' || path.startsWith('/ban-hang/') || path === '/seller-center' || path.startsWith('/seller-center/')) return 'seller';
+  if (isSellerPortalPathname(path) || hash.includes('ban-hang')) return 'seller';
   if (hash.includes('gian-hang') || path.startsWith('/gian-hang/')) return 'store-detail';
   if (hash.includes('ma-hom-nay') || hash.includes('today') || path === '/ma-hom-nay' || path.startsWith('/ma-hom-nay/')) return 'today-codes';
   if (hash.includes('su-kien') || hash.includes('events') || path === '/su-kien' || path.startsWith('/su-kien/') || path === '/events' || path.startsWith('/events/')) return 'events';
@@ -440,9 +440,15 @@ export const App: React.FC = () => {
           return;
         }
 
-        // 2. Admin routes on client domain or localhost
-        const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hashLower.startsWith(p));
+        // 2. Dedicated Seller Portal routes (/seller, /en/seller, /ban-hang, /seller-center) -> ALWAYS check BEFORE isAdminHash!
         const currentPath = window.location.pathname.toLowerCase();
+        if (isSellerPortalPathname(currentPath)) {
+          setCurrentTab('seller');
+          return;
+        }
+
+        // 2.5. Admin routes on client domain or localhost
+        const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hashLower.startsWith(p));
         if (isAdminHash || currentPath.startsWith('/admin') || currentPath.startsWith('/en/admin')) {
           setCurrentTab('admin');
           return;

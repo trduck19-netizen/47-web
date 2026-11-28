@@ -144,9 +144,15 @@ async function main() {
   check('hash_format_roundtrip', formatSellerPortalHash('api_keys') === '#/api-keys' && formatSellerPortalHash('sepay') === '#/sepay', true);
 
   const appSrc = fs.readFileSync(path.resolve(root, 'src/App.tsx'), 'utf8');
-  const idxSellerPathCheck = appSrc.indexOf('isSellerPortalPathname(path)');
-  const idxAdminHashCheck = appSrc.indexOf('ADMIN_HASH_PREFIXES.some');
-  check('app_checks_seller_path_before_admin_hash', idxSellerPathCheck > 0 && idxAdminHashCheck > idxSellerPathCheck, true);
+  const sellerCheckMatches = [...appSrc.matchAll(/isSellerPortalPathname\(/g)].map((m) => m.index || 0);
+  const adminHashMatches = [...appSrc.matchAll(/ADMIN_HASH_PREFIXES\.some\(/g)].map((m) => m.index || 0);
+  // Every ADMIN_HASH_PREFIXES.some(...) site (init state, parseHash, handlePopState) must have a preceding isSellerPortalPathname check within 500 chars
+  const allAdminSitesGuarded =
+    adminHashMatches.length >= 3 &&
+    adminHashMatches.every((aIdx) =>
+      sellerCheckMatches.some((sIdx) => sIdx < aIdx && aIdx - sIdx < 600)
+    );
+  check('app_guards_all_admin_hash_sites_with_seller_path', allAdminSitesGuarded, true);
 
   // =========================================================================
   // PART 3: RBAC Sidebar Filtering (OWNER vs MANAGE_STOCK vs VIEW_ORDERS)

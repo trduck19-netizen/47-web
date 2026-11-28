@@ -972,29 +972,29 @@ src/admin/services/adminDataService.ts(4114,51): error TS2367: This comparison a
 src/admin/services/adminDataService.ts(4123,11): error TS2322: Type '"HOLD"' is not assignable to type '"AVAILABLE" | "SOLD" | "RESERVED"'.
 src/admin/services/adminDataService.ts(4583,42): error TS6133: 'forceReset' is declared but its value is never read.
 src/admin/services/adminDataService.ts(5521,18): error TS2551: Property 'saveGame' does not exist on type 'AdminDataService'. Did you mean 'saveGames'?
-src/App.tsx(1193,29): error TS2339: Property 'image_url' does not exist on type 'UtilityProduct'.
-src/App.tsx(1193,50): error TS2339: Property 'icon' does not exist on type 'UtilityProduct'.
-src/App.tsx(1394,33): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1398,34): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1398,40): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
-src/App.tsx(1460,24): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1460,30): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
-src/App.tsx(1460,35): error TS7006: Parameter 'qty' implicitly has an 'any' type.
-src/App.tsx(1495,23): error TS7006: Parameter '_slug' implicitly has an 'any' type.
-src/App.tsx(1495,30): error TS7006: Parameter 'code' implicitly has an 'any' type.
-src/App.tsx(1506,30): error TS7006: Parameter 'id' implicitly has an 'any' type.
-src/App.tsx(1507,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1531,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1620,35): error TS7006: Parameter 'initialTab' implicitly has an 'any' type.
-src/App.tsx(1624,31): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1644,32): error TS7006: Parameter 'id' implicitly has an 'any' type.
-src/App.tsx(1644,36): error TS7006: Parameter 'type' implicitly has an 'any' type.
-src/App.tsx(1670,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1671,28): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1684,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1686,31): error TS7006: Parameter 'utilityId' implicitly has an 'any' type.
-src/App.tsx(1690,32): error TS7006: Parameter 'giveawayId' implicitly has an 'any' type.
-src/App.tsx(1700,51): error TS7006: Parameter 'tab' implicitly has an 'any' type.
+src/App.tsx(1199,29): error TS2339: Property 'image_url' does not exist on type 'UtilityProduct'.
+src/App.tsx(1199,50): error TS2339: Property 'icon' does not exist on type 'UtilityProduct'.
+src/App.tsx(1400,33): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1404,34): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1404,40): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
+src/App.tsx(1466,24): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1466,30): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
+src/App.tsx(1466,35): error TS7006: Parameter 'qty' implicitly has an 'any' type.
+src/App.tsx(1501,23): error TS7006: Parameter '_slug' implicitly has an 'any' type.
+src/App.tsx(1501,30): error TS7006: Parameter 'code' implicitly has an 'any' type.
+src/App.tsx(1512,30): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/App.tsx(1513,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1537,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1626,35): error TS7006: Parameter 'initialTab' implicitly has an 'any' type.
+src/App.tsx(1630,31): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1650,32): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/App.tsx(1650,36): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/App.tsx(1676,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1677,28): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1690,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1692,31): error TS7006: Parameter 'utilityId' implicitly has an 'any' type.
+src/App.tsx(1696,32): error TS7006: Parameter 'giveawayId' implicitly has an 'any' type.
+src/App.tsx(1706,51): error TS7006: Parameter 'tab' implicitly has an 'any' type.
 src/components/AllUpcomingGamesModal.tsx(120,56): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
 src/components/AllUpcomingGamesModal.tsx(282,82): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
 src/components/AuthModal.tsx(64,40): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
