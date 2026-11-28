@@ -4,12 +4,13 @@
  * trên cùng origin qua BroadcastChannel + fallback window storage event.
  */
 
-export type CrossTabEventType = 'AUTH_UPDATED' | 'AUTH_LOGOUT' | 'WALLET_UPDATED' | 'THEME_UPDATED';
+export type CrossTabEventType = 'AUTH_UPDATED' | 'AUTH_LOGOUT' | 'WALLET_UPDATED' | 'THEME_UPDATED' | 'BRAND_UPDATED';
 
 export interface CrossTabEventPayload {
   type: CrossTabEventType;
   balance?: number;
   theme?: 'light' | 'dark';
+  brand?: Record<string, any>;
   ts: number;
   senderId: string;
 }
@@ -34,7 +35,7 @@ function getChannel(): BroadcastChannel | null {
 
 export function broadcastCrossTabEvent(
   type: CrossTabEventType,
-  extra?: { balance?: number; theme?: 'light' | 'dark' }
+  extra?: { balance?: number; theme?: 'light' | 'dark'; brand?: Record<string, any> }
 ): void {
   if (typeof window === 'undefined') return;
   const payload: CrossTabEventPayload = {

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { HelpCircle, X, Send, PhoneCall, ShieldAlert, BookOpen, MessageSquare } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useBrand } from '../../context/BrandContext';
 
 interface MallSupportModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const MallSupportModal: React.FC<MallSupportModalProps> = ({
   onShowToast
 }) => {
   const { t } = useLanguage();
+  const { brand } = useBrand();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -71,7 +73,7 @@ export const MallSupportModal: React.FC<MallSupportModalProps> = ({
           {/* Quick Support Channels */}
           <div className="grid grid-cols-2 gap-3">
             <a
-              href="https://t.me/codegame_hotro"
+              href={brand.telegramUrl || 'https://t.me/webcodegame_vn'}
               target="_blank"
               rel="noopener noreferrer"
               className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition flex flex-col items-center text-center group cursor-pointer"
@@ -90,7 +92,7 @@ export const MallSupportModal: React.FC<MallSupportModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard.writeText('0987654321').catch(() => {});
+                navigator.clipboard.writeText(brand.supportHotline || '0987.654.321').catch(() => {});
                 onShowToast(t('mall.supportModal.hotlineCopied'), 'success');
               }}
               className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition flex flex-col items-center text-center group cursor-pointer"

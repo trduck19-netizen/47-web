@@ -1,4 +1,5 @@
 import { getMarketplaceConfig, recordLedgerTransaction } from './marketplace_service';
+import { getBrandIdentity } from './brand_service';
 
 function generateSecureIdSuffix(length = 4): string {
   if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
@@ -31,17 +32,26 @@ export async function ensureOfficialSeller(db: D1Database): Promise<string> {
 
   if (!existing) {
     const nowIso = new Date().toISOString();
+    const brand = await getBrandIdentity(db).catch(() => ({ brandName: 'Pine Universal Mall' } as any));
+    const bName = brand?.brandName || 'Pine Universal Mall';
     await db
       .prepare(`
         INSERT INTO sellers (
           id, owner_member_id, name, slug, contact_phone, bank_name, bank_account, bank_account_name,
           description, status, pending_balance_core, available_balance_core, withdrawn_balance_core, created_at, updated_at
-        ) VALUES (?, 'admin', 'Universal Mall Official Store', 'universal-mall-official',
-          '0987654321', 'TPBANK', '00000000000', 'UNIVERSAL MALL',
-          'Gian hàng chính hãng sàn Universal Mall - Bảo chứng giữ tiền đa tầng (24h - 168h)', 'ACTIVE', 0, 0, 0, ?, ?
+        ) VALUES (?, 'admin', ?, 'universal-mall-official',
+          '0987654321', 'TPBANK', '00000000000', ?,
+          ?, 'ACTIVE', 0, 0, 0, ?, ?
         )
       `)
-      .bind(defaultSellerId, nowIso, nowIso)
+      .bind(
+        defaultSellerId,
+        `${bName} Official Store`,
+        bName.toUpperCase().slice(0, 32),
+        `Gian hàng chính hãng sàn ${bName} - Bảo chứng giữ tiền đa tầng (24h - 168h)`,
+        nowIso,
+        nowIso
+      )
       .run()
       .catch(() => {});
   }

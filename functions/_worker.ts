@@ -259,6 +259,13 @@ import * as shippingCalculateFeeApi from './api/shipping/calculate-fee';
 import * as shippingIdApi from './api/shipping/[id]';
 import * as platformLeadsIndexApi from './api/platform-leads/index';
 import * as platformLeadsIdApi from './api/platform-leads/[id]';
+import * as brandPublicApi from './api/brand';
+import * as adminBrandApi from './api/admin/brand';
+import {
+  getBrandIdentity,
+  buildDynamicManifestJson,
+  serializeBrandForInlineScript,
+} from './services/brand_service';
 import { getMultipleSettingsD1 } from './services/d1_service';
 import {
   invalidateCatalogEdgeCache,
@@ -416,7 +423,24 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       return Response.redirect(redirectUrl.toString(), 301);
     }
 
-    // Dedicated Admin Domain & Route: redirect root to /admin, and serve /admin/index.html
+    // Dynamic PWA /manifest.json driven by Cloudflare D1 Brand Identity SSOT
+    if (pathname === '/manifest.json' && (method === 'GET' || method === 'HEAD')) {
+      const brand = await getBrandIdentity(env.DB);
+      const epoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+      const manifestBody = JSON.stringify(buildDynamicManifestJson(brand), null, 2);
+      return new Response(method === 'HEAD' ? null : manifestBody, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/manifest+json; charset=utf-8',
+          'Cache-Control': 'public, max-age=0, must-revalidate',
+          'CDN-Cache-Control': 'no-store',
+          'X-Catalog-Epoch': epoch,
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
+
+    // Dedicated Admin Domain & Route: redirect root to /admin, and serve /admin/index.html with live Brand injection
     const isAdminHost = url.hostname.includes('admin-universal-mall') || url.hostname.includes('admin-code-game-shop') || url.hostname.includes('admin-test-code-game-shop') || url.hostname.startsWith('admin.');
     if (isAdminHost && (pathname === '/' || pathname === '')) {
       const adminRedirect = new URL('/admin', request.url);
@@ -433,7 +457,31 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       const adminUrl = new URL('/admin/index.html', request.url);
       const res = await env.ASSETS.fetch(new Request(adminUrl.toString()));
       if (res.status === 200) {
-        return res;
+        try {
+          const brand = await getBrandIdentity(env.DB);
+          const epoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+          const brandScript = `<script>window.__WCG_BRAND__=${serializeBrandForInlineScript(brand)};</script>`;
+          let adminHtml = await res.text();
+          adminHtml = adminHtml.replace(
+            /<title>.*?<\/title>/i,
+            `<title>Trang Quản Trị | ${brand.adminPortalName}</title>`
+          );
+          if (adminHtml.includes('</head>')) {
+            adminHtml = adminHtml.replace('</head>', `  ${brandScript}\n</head>`);
+          }
+          return new Response(adminHtml, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'CDN-Cache-Control': 'no-store',
+              'X-Catalog-Epoch': epoch,
+              'X-Content-Type-Options': 'nosniff',
+            },
+          });
+        } catch {
+          return res;
+        }
       }
     }
 
@@ -1382,6 +1430,18 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS') return await categoriesIdApi.onRequestOptions(customContext);
         if (method === 'PUT' || method === 'PATCH') return await categoriesIdApi.onRequestPut(customContext);
         if (method === 'DELETE') return await categoriesIdApi.onRequestDelete(customContext);
+      }
+
+      // Brand Identity Public & Admin APIs (/api/brand, /api/admin/brand)
+      if (pathname === '/api/brand') {
+        if (method === 'OPTIONS') return await brandPublicApi.onRequestOptions(context);
+        return await brandPublicApi.onRequestGet(context);
+      }
+      if (pathname === '/api/admin/brand') {
+        if (method === 'OPTIONS') return await adminBrandApi.onRequestOptions(context);
+        if (method === 'PUT' || method === 'PATCH') return await adminBrandApi.onRequestPut(context);
+        if (method === 'POST') return await adminBrandApi.onRequestPost(context);
+        return await adminBrandApi.onRequestGet(context);
       }
 
       // Homepage Sections Public API (/api/homepage-sections)
@@ -3783,6 +3843,11 @@ async function renderSeoHtml(
   }
 
   const gScope = globalThis as any;
+  const brand = await getBrandIdentity(env.DB);
+  const brandEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
+  const brandName = brand.brandName;
+  const shortName = brand.shortName;
+  const coreUnit = brand.coreUnitName;
   const buildTag = typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ ? __BUILD_ID__ : 'live';
   let html = gScope.__wcg_base_html;
   if (!html || gScope.__wcg_base_html_build !== buildTag) {
@@ -3794,6 +3859,17 @@ async function renderSeoHtml(
     html = await baseRes.text();
     gScope.__wcg_base_html = html;
     gScope.__wcg_base_html_build = buildTag;
+  }
+
+  // Always update static shell brand tags & inject Zero-FOUC window.__WCG_BRAND__
+  html = html
+    .replace(/<meta\s+name="apple-mobile-web-app-title"\s+content=".*?"\s*\/?>/i, `<meta name="apple-mobile-web-app-title" content="${shortName}" />`)
+    .replace(/<meta\s+property="og:site_name"\s+content=".*?"\s*\/?>/i, `<meta property="og:site_name" content="${brandName}" />`)
+    .replace(/alt="Pine Universal Mall Logo"/gi, `alt="${brandName} Logo"`);
+
+  const inlineBrandScript = `<script>window.__WCG_BRAND__=${serializeBrandForInlineScript(brand)};</script>`;
+  if (html.includes('</head>')) {
+    html = html.replace('</head>', `    ${inlineBrandScript}\n  </head>`);
   }
 
   const replaceTitleAndMeta = (
@@ -3874,7 +3950,7 @@ async function renderSeoHtml(
     }
 
     if (article) {
-      const title = `${article.title} | Pine Universal Mall`;
+      const title = `${article.title} | ${brandName}`;
       const description = article.summary || article.content?.slice(0, 160) || 'Tin tức game và sự kiện giftcode mới nhất.';
       const thumb = (article.cover_url && article.cover_url.trim()) || article.thumbnail_url || (article.game_slug ? `/game_icons/${article.game_slug}-thumb.webp` : '/og-image-thumb.webp');
       const artCover = thumb.startsWith('http') ? thumb : `${origin}${thumb.startsWith('/') ? thumb : `/${thumb}`}`;
@@ -3890,11 +3966,11 @@ async function renderSeoHtml(
           "dateModified": article.updated_at || article.published_at || article.created_at || "2026-10-13T00:00:00.000Z",
           "author": {
             "@type": "Person",
-            "name": article.author || "Ban Biên Tập Pine Universal Mall"
+            "name": article.author || `Ban Biên Tập ${brandName}`
           },
           "publisher": {
             "@type": "Organization",
-            "name": "Pine Universal Mall",
+            "name": brandName,
             "logo": {
               "@type": "ImageObject",
               "url": `${origin}/logo.webp`
@@ -3918,8 +3994,8 @@ async function renderSeoHtml(
 
       replaceTitleAndMeta(title, description, `/news/${article.slug || article.id}`, thumb, newsSchema);
     } else {
-      const title = 'Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | Pine Universal Mall';
-      const description = 'Cập nhật tin tức game mobile, giftcode tân thủ và sự kiện nhận quà hot nhất 2026 tại Pine Universal Mall.';
+      const title = `Tin Tức Game & Sự Kiện Giftcode Mới Nhất 2026 | ${brandName}`;
+      const description = `Cập nhật tin tức game mobile, giftcode tân thủ và sự kiện nhận quà hot nhất 2026 tại ${brandName}.`;
       const newsListSchema = [
         {
           "@context": "https://schema.org",
@@ -3938,7 +4014,7 @@ async function renderSeoHtml(
     pathname === '/events' ||
     pathname.startsWith('/events/')
   ) {
-    const title = 'Sự Kiện Game & Lịch Khởi Tranh Mới Nhất 2026 | Pine Universal Mall';
+    const title = `Sự Kiện Game & Lịch Khởi Tranh Mới Nhất 2026 | ${brandName}`;
     const description = 'Tổng hợp sự kiện game mobile, giải đấu, lịch khởi tranh và quà tặng chính thức từ Fanpage, Group, Web game 2026.';
     const eventsListSchema = [
       {
@@ -3955,8 +4031,8 @@ async function renderSeoHtml(
     pathname === '/telegram' ||
     pathname.startsWith('/telegram/')
   ) {
-    const title = 'Cộng Đồng Telegram & Nhận Giftcode Tự Động | Pine Universal Mall';
-    const description = 'Tham gia nhóm Telegram Pine Universal Mall để nhận Giftcode mới nhất, sự kiện hot và theo dõi mã quà tặng tự động.';
+    const title = `Cộng Đồng Telegram & Nhận Giftcode Tự Động | ${brandName}`;
+    const description = `Tham gia nhóm Telegram ${brandName} để nhận Giftcode mới nhất, sự kiện hot và theo dõi mã quà tặng tự động.`;
     const telegramSchema = [
       {
         "@context": "https://schema.org",
@@ -3978,7 +4054,7 @@ async function renderSeoHtml(
       month: '2-digit',
       year: 'numeric',
     }).format(new Date());
-    const title = `Mã Giftcode Hôm Nay ${todayVNFormatted} — Tổng Hợp Code Ngày Mới Nhất | Pine Universal Mall`;
+    const title = `Mã Giftcode Hôm Nay ${todayVNFormatted} — Tổng Hợp Code Ngày Mới Nhất | ${brandName}`;
     const description = `Tổng hợp toàn bộ mã giftcode còn hạn phát hành và có hiệu lực hôm nay ${todayVNFormatted} của các tựa game hot tại Việt Nam. Cập nhật liên tục, kiểm tra thực tế, lấy mã nhanh trong ngày.`;
     const todaySchema = [
       {
@@ -4034,9 +4110,9 @@ async function renderSeoHtml(
     if (campaign) {
       const gameName = campaign.game_name || 'Game Mobile';
       const gameSlug = campaign.game_slug || '';
-      const title = `🎁 Nhận Code: ${campaign.title} - ${gameName} | Pine Universal Mall`;
+      const title = `🎁 Nhận Code: ${campaign.title} - ${gameName} | ${brandName}`;
       const description = campaign.description
-        ? `${campaign.description} Nhận mã quà tặng độc quyền ${gameName} miễn phí tại Pine Universal Mall.`
+        ? `${campaign.description} Nhận mã quà tặng độc quyền ${gameName} miễn phí tại ${brandName}.`
         : `Nhận ngay ${campaign.title} cho tựa game ${gameName}. Số lượng có hạn, kiểm tra điều kiện tài khoản và nhận mã tức thì!`;
 
       // Thuật toán xác định ảnh đại diện chính xác 100% cho Giveaway
@@ -4067,7 +4143,7 @@ async function renderSeoHtml(
           "eventStatus": "https://schema.org/EventScheduled",
           "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
           "location": { "@type": "VirtualLocation", "url": `${origin}/giveaways/${campaign.id}` },
-          "organizer": { "@type": "Organization", "name": "Pine Universal Mall", "url": origin },
+          "organizer": { "@type": "Organization", "name": brandName, "url": origin },
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "VND", "availability": "https://schema.org/InStock" }
         },
         {
@@ -4083,8 +4159,8 @@ async function renderSeoHtml(
 
       replaceTitleAndMeta(title, description, `/giveaways/${campaign.id}`, iconUrl, giveawaySchema);
     } else {
-      const title = 'Sự Kiện Giveaway Nhận Giftcode Game Miễn Phí 2026 | Pine Universal Mall';
-      const description = 'Tham gia sự kiện giveaway nhận quà tân thủ, giftcode VIP độc quyền và thẻ game miễn phí mỗi ngày tại Pine Universal Mall.';
+      const title = `Sự Kiện Giveaway Nhận Giftcode Game Miễn Phí 2026 | ${brandName}`;
+      const description = `Tham gia sự kiện giveaway nhận quà tân thủ, giftcode VIP độc quyền và thẻ game miễn phí mỗi ngày tại ${brandName}.`;
       const giveawayListSchema = [
         {
           "@context": "https://schema.org",
@@ -4101,8 +4177,8 @@ async function renderSeoHtml(
     const gameSlugParam = (url.searchParams.get('game') || url.searchParams.get('g') || '').trim();
     const pkgIdParam = (url.searchParams.get('pkg') || url.searchParams.get('package') || url.searchParams.get('product') || url.searchParams.get('prod') || '').trim();
 
-    let title = 'Cửa Hàng Giftcode VIP & Giao Dịch Mã Game Tự Động 24/7 | Pine Universal Mall';
-    let description = 'Mua bán giftcode VIP, gói nạp game bản quyền chiết khấu tới 40%. Giao dịch tự động 24/7 qua SePay, nhận mã ngay trên màn hình trong 30 giây.';
+    let title = `Cửa Hàng Đa Ngành & Giao Dịch Tự Động 24/7 | ${brandName}`;
+    let description = 'Mua bán giftcode VIP, sản phẩm đa ngành và tiện ích số chính hãng. Giao dịch tự động 24/7 qua VietQR / SePay.';
     let canonical = '/store';
     let ogImage = '/og-image.jpg';
 
@@ -4116,10 +4192,10 @@ async function renderSeoHtml(
         }
 
         if (matchedPkg) {
-          const priceStr = matchedPkg.current_price ? `${Number(matchedPkg.current_price).toLocaleString('vi-VN')} Core` : 'Giá tốt';
+          const priceStr = matchedPkg.current_price ? `${Number(matchedPkg.current_price).toLocaleString('vi-VN')} ${coreUnit}` : 'Giá tốt';
           const gName = matchedPkg.game_name || '';
-          title = `${matchedPkg.title} — ${priceStr} | ${gName} | Pine Universal Mall`;
-          description = `Mua ngay gói ${matchedPkg.title} game ${gName} giá chỉ ${priceStr}${matchedPkg.discount_percent ? ` (giảm ${matchedPkg.discount_percent}%)` : ''}. Tình trạng: ${matchedPkg.stock_quantity > 0 ? 'Còn hàng' : 'Hết hàng'}. Nhận mã tự động 100% trong 30 giây tại Pine Universal Mall.`;
+          title = `${matchedPkg.title} — ${priceStr} | ${gName} | ${brandName}`;
+          description = `Mua ngay gói ${matchedPkg.title} ${gName} giá chỉ ${priceStr}${matchedPkg.discount_percent ? ` (giảm ${matchedPkg.discount_percent}%)` : ''}. Tình trạng: ${matchedPkg.stock_quantity > 0 ? 'Còn hàng' : 'Hết hàng'}. Nhận mã tự động 100% tại ${brandName}.`;
           canonical = `/store?game=${encodeURIComponent(gameSlugParam || matchedPkg.game_slug || '')}&pkg=${encodeURIComponent(matchedPkg.id)}`;
           ogImage = matchedPkg.game_icon_url || (matchedPkg.game_slug ? `/game_icons/${matchedPkg.game_slug}.webp` : '') || matchedPkg.cover_image_url || '/og-image.jpg';
         } else if (gameSlugParam) {
@@ -4128,8 +4204,8 @@ async function renderSeoHtml(
           ).bind(gameSlugParam, gameSlugParam).first<any>().catch(() => null);
 
           if (matchedGame) {
-            title = `Gói Nạp & Code VIP ${matchedGame.name} | Pine Universal Mall`;
-            description = `Danh sách gói nạp, code VIP và mã quà tặng game ${matchedGame.name} chiết khấu tốt nhất. Nhận mã tự động 100% tại Pine Universal Mall.`;
+            title = `Gói Nạp & Code VIP ${matchedGame.name} | ${brandName}`;
+            description = `Danh sách gói nạp, code VIP và mã quà tặng game ${matchedGame.name} chiết khấu tốt nhất. Nhận mã tự động 100% tại ${brandName}.`;
             canonical = `/store?game=${encodeURIComponent(matchedGame.slug)}`;
             ogImage = matchedGame.icon_url || `/game_icons/${matchedGame.slug}.webp` || '/og-image.jpg';
           }
@@ -4143,8 +4219,8 @@ async function renderSeoHtml(
       {
         "@context": "https://schema.org",
         "@type": "Store",
-        "name": "Chợ Code VIP - Pine Universal Mall",
-        "description": "Cửa hàng giao dịch mã game bản quyền và giftcode VIP tự động 24/7 qua SePay.",
+        "name": `Cửa Hàng - ${brandName}`,
+        "description": "Cửa hàng giao dịch đa ngành và tiện ích số tự động 24/7 qua SePay.",
         "url": `${origin}/store`,
         "priceRange": "10.000 VND - 500.000 VND",
         "paymentAccepted": "Chuyển khoản Ngân hàng (SePay), Ví điện tử",
@@ -4155,40 +4231,44 @@ async function renderSeoHtml(
         "@type": "BreadcrumbList",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Trang chủ", "item": `${origin}/` },
-          { "@type": "ListItem", "position": 2, "name": "Chợ Code VIP", "item": `${origin}/store` }
+          { "@type": "ListItem", "position": 2, "name": "Cửa Hàng", "item": `${origin}/store` }
         ]
       }
     ];
     replaceTitleAndMeta(title, description, canonical, ogImage, storeSchema);
   } else if (pathname === '/utilities' || pathname.startsWith('/utilities/')) {
-    const title = 'Tiện Ích & Tool Hỗ Trợ Game Số 1 Việt Nam | Pine Universal Mall';
-    const description = 'Dịch vụ tiện ích game, hỗ trợ game thủ tối ưu trải nghiệm chơi game an toàn, tốc độ và bảo mật cao tại Pine Universal Mall.';
+    const title = `Tiện Ích & Dịch Vụ Số Chính Hãng | ${brandName}`;
+    const description = `Dịch vụ tiện ích số, tài khoản bản quyền và hỗ trợ tối ưu trải nghiệm an toàn, tốc độ cao tại ${brandName}.`;
     const utilSchema = [
       {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Trang chủ", "item": `${origin}/` },
-          { "@type": "ListItem", "position": 2, "name": "Tiện Ích Game", "item": `${origin}/utilities` }
+          { "@type": "ListItem", "position": 2, "name": "Tiện Ích", "item": `${origin}/utilities` }
         ]
       }
     ];
     replaceTitleAndMeta(title, description, '/utilities', '/og-image.jpg', utilSchema);
+  } else if (pathname === '/seller' || pathname.startsWith('/seller/')) {
+    const title = `Kênh Người Bán & Quản Lý Gian Hàng | ${brand.sellerPortalName}`;
+    const description = `Quản trị gian hàng, sản phẩm, kho mã tự động và doanh thu trực tiếp trên ${brandName}.`;
+    replaceTitleAndMeta(title, description, '/seller', '/og-image.jpg');
   } else if (pathname === '/' || pathname === '') {
     const urlObj = new URL(request.url);
     const pageParam = urlObj.searchParams.get('page');
     const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
     const canonicalPath = pageNum > 1 ? `/?page=${pageNum}` : '/';
-    const title = 'Pine Universal Mall - Săn Giftcode Miễn Phí & Giao Dịch Mã Game Uy Tín';
-    const description = 'Kho tổng hợp hơn 14.739+ giftcode game mobile và webgame mới nhất 2026 của 595 tựa game chuẩn. Cập nhật liên tục 24/7 từ các NPH VNG, Garena, VTC, SohaGame, Funtap.';
+    const title = `${brandName} - ${brand.taglineVi}`;
+    const description = `${brandName} — ${brand.taglineVi}. Mua sắm trực tuyến đa ngành, tiện ích số chính hãng, thanh toán VietQR tự động 0s.`;
     const homeSchema = [
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "@id": `${origin}/#website`,
         "url": `${origin}/`,
-        "name": "Pine Universal Mall",
-        "description": "Cổng tra cứu giftcode game mobile và webgame số 1 Việt Nam",
+        "name": brandName,
+        "description": brand.taglineVi,
         "potentialAction": {
           "@type": "SearchAction",
           "target": {
@@ -4203,22 +4283,22 @@ async function renderSeoHtml(
         "@context": "https://schema.org",
         "@type": "Organization",
         "@id": `${origin}/#organization`,
-        "name": "Pine Universal Mall",
+        "name": brandName,
         "url": `${origin}/`,
         "logo": {
           "@type": "ImageObject",
-          "url": `${origin}/logo.webp`,
+          "url": brand.logoUrl?.startsWith('http') ? brand.logoUrl : `${origin}${brand.logoUrl?.startsWith('/') ? brand.logoUrl : '/logo.webp'}`,
           "width": 512,
           "height": 512
         },
         "sameAs": [
-          "https://t.me/webcodegame_vn",
+          brand.telegramUrl || "https://t.me/webcodegame_vn",
           "https://zalo.me/g/qdtlmj2tebfa0baraedg",
-          "https://zalo.me/0386767888"
+          brand.zaloUrl || "https://zalo.me/0386767888"
         ],
         "contactPoint": {
           "@type": "ContactPoint",
-          "telephone": "+84-386-767-888",
+          "telephone": brand.supportHotline || "+84-386-767-888",
           "contactType": "customer service",
           "availableLanguage": ["Vietnamese", "English"]
         }
@@ -4229,10 +4309,10 @@ async function renderSeoHtml(
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "Giftcode trên Pine Universal Mall có miễn phí không?",
+            "name": `Giftcode trên ${brandName} có miễn phí không?`,
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Tất cả mã giftcode trong mục Mã Miễn Phí và Đợt Phát Code đều hoàn toàn miễn phí 100%, được tổng hợp và kiểm duyệt từ các Nhà phát hành game chính thức tại Việt Nam."
+              "text": "Tất cả mã giftcode trong mục Mã Miễn Phí và Đợt Phát Code đều hoàn toàn miễn phí 100%, được tổng hợp và kiểm duyệt từ các Nhà phát hành chính thức tại Việt Nam."
             }
           },
           {
@@ -4245,10 +4325,10 @@ async function renderSeoHtml(
           },
           {
             "@type": "Question",
-            "name": "Các tựa game trên Pine Universal Mall có hợp pháp không?",
+            "name": `Mua sắm trên ${brandName} có được bảo chứng không?`,
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Hệ thống cập nhật và đối soát thông tin phát hành game công khai đối với từng tựa game phát hành tại Việt Nam."
+              "text": `Hệ thống áp dụng cơ chế bảo chứng thanh toán và giữ tiền đa tầng (24h - 168h) bảo vệ người mua toàn diện trên ${brandName}.`
             }
           }
         ]
@@ -4258,7 +4338,7 @@ async function renderSeoHtml(
         "@type": "BreadcrumbList",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Trang chủ", "item": `${origin}/` },
-          { "@type": "ListItem", "position": 2, "name": "Mã Miễn Phí", "item": `${origin}/` }
+          { "@type": "ListItem", "position": 2, "name": shortName, "item": `${origin}/` }
         ]
       }
     ];
@@ -4269,7 +4349,9 @@ async function renderSeoHtml(
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=0, must-revalidate, s-maxage=3600, stale-while-revalidate=86400',
+      'Cache-Control': 'public, max-age=0, must-revalidate',
+      'CDN-Cache-Control': 'no-store',
+      'X-Catalog-Epoch': brandEpoch,
       'X-Content-Type-Options': 'nosniff',
     },
   });

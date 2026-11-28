@@ -60,6 +60,7 @@ import {
   Ticket,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { getActiveBrandIdentity } from '../../utils/brandRuntime';
 
 export type ApiKeyScope =
   | 'TELEGRAM_NOTIFY'
@@ -103,6 +104,7 @@ export type ApiKeyScope =
   | 'SECURITY_LOGS_FULL'
   | 'SYSTEM_SETTINGS_FULL'
   | 'HOMEPAGE_SECTIONS_MANAGE'
+  | 'BRAND_MANAGE'
   | 'AUTOMATION_CENTER_FULL'
   | 'SUPPLIER_CONNECTORS_FULL'
   | 'SUPPLIER_FULFILLMENT_MANAGE'
@@ -654,6 +656,17 @@ export const ALL_API_SCOPES: ScopeOption[] = [
     badgeText: 'text-purple-500',
     badgeBorder: 'border-purple-500/20',
     icon: Globe,
+  },
+  {
+    id: 'BRAND_MANAGE',
+    name: 'Quản Lý Đổi Tên Sàn, Nhãn AI & Đơn Vị Ví (Brand Identity API)',
+    category: 'Hệ Thống',
+    description: 'Đọc và cập nhật tên sàn, tên ngắn, Cổng Người Bán, nhãn AI, tên đơn vị Ví và nhận diện thương hiệu toàn sàn (/api/admin/brand).',
+    color: 'purple',
+    badgeBg: 'bg-purple-500/10',
+    badgeText: 'text-purple-500',
+    badgeBorder: 'border-purple-500/20',
+    icon: Sparkles,
   },
   {
     id: 'UNIVERSAL_MALL_FULL',
@@ -1403,7 +1416,10 @@ export const ApiKeysModule: React.FC<ApiKeysModuleProps> = ({ onShowToast }) => 
             {t('apiKeys.presetMissions')}
           </button>
           <button
-            onClick={() => handleQuickCreate('MISSIONS_REVIEW', isEn ? 'Pine AI Reviewer' : 'Pine AI Thẩm Định')}
+            onClick={() => {
+              const aiLabel = getActiveBrandIdentity().aiBrandName;
+              handleQuickCreate('MISSIONS_REVIEW', isEn ? `${aiLabel} Reviewer` : `${aiLabel} Thẩm Định`);
+            }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 transition-all"
           >
             <Plus className="w-3 h-3" />
@@ -2661,7 +2677,13 @@ curl -X GET "https://universal-mall-shop.pages.dev/api/admin/content/hero_banner
 curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/content/hero_banner" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
-  -d '{"title": "Cổng Giftcode Game Số 1 Việt Nam 2026", "subtitle": "Cập nhật giftcode 24/7"}'`}
+  -d '{"title": "Cổng Giftcode Game Số 1 Việt Nam 2026", "subtitle": "Cập nhật giftcode 24/7"}'
+
+# 4. Đổi tên sàn, nhãn AI & đơn vị Ví toàn hệ thống (Scope: BRAND_MANAGE)
+curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/brand" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_API_KEY_HERE" \\
+  -d '{"brandName": "Nova Mega Mall", "shortName": "Nova Mall", "aiBrandName": "Nova AI", "coreUnitName": "Xu"}'`}
                 </pre>
               </div>
 

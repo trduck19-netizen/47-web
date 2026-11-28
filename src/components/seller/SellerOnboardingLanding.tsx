@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useBrand } from '../../context/BrandContext';
 import { type ThemePresetPalette } from './sellerPortalTheme';
 
 interface SellerOnboardingLandingProps {
@@ -48,6 +49,7 @@ export const SellerOnboardingLanding: React.FC<SellerOnboardingLandingProps> = (
   registrationSlot,
 }) => {
   const { t, language } = useLanguage();
+  const { brand } = useBrand();
   const isEn = language === 'en';
 
   const benefitCards = [
@@ -79,8 +81,12 @@ export const SellerOnboardingLanding: React.FC<SellerOnboardingLandingProps> = (
       {/* Clean standalone portal header */}
       <header className="sticky top-0 z-30 h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-8 h-8 rounded-lg ${palette.accentBgClass} text-white flex items-center justify-center shrink-0 shadow-sm`}>
-            <Store className="w-4 h-4" aria-hidden="true" />
+          <div className={`w-8 h-8 rounded-lg ${palette.accentBgClass} text-white flex items-center justify-center shrink-0 shadow-sm overflow-hidden`}>
+            {brand.logoUrl && brand.logoUrl !== '/logo.png' && brand.logoUrl !== '/logo.webp' ? (
+              <img src={brand.logoUrl} alt={brand.sellerPortalName} className="w-full h-full object-contain p-0.5 bg-white" />
+            ) : (
+              <Store className="w-4 h-4" aria-hidden="true" />
+            )}
           </div>
           <div className="min-w-0">
             <div className="text-sm font-extrabold tracking-tight truncate">

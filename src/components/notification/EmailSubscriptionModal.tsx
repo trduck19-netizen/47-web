@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 import { dataService } from '../../services/dataService';
+import { getActiveBrandIdentity } from '../../utils/brandRuntime';
 import type { UserProfile, GameItem, UpcomingGame } from '../../types/game';
 
 interface EmailSubscriptionModalProps {
@@ -237,23 +238,24 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
   };
 
   const handleShareCode = async (item: CodeNotificationEntry) => {
+    const brandName = getActiveBrandIdentity().brandName;
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev';
     const gameUrl = `${origin}/game/${item.gameSlug}`;
     const shareText = `🎁 Giftcode ${item.gameName} Mới Nhất!\n🔑 Mã Code: ${item.code}\n${
       item.rewards ? `📦 Phần thưởng: ${item.rewards}\n` : ''
-    }🌐 Nguồn: Pine Universal Mall - Tra cứu giftcode tự động 24/7\n👉 Nhận thêm mã tại: ${gameUrl}`;
+    }🌐 Nguồn: ${brandName} - Tra cứu giftcode tự động 24/7\n👉 Nhận thêm mã tại: ${gameUrl}`;
 
     // 1. Nếu thiết bị hỗ trợ Web Share API (chia sẻ trực tiếp qua Zalo, Messenger, Facebook trên điện thoại)
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: `Giftcode ${item.gameName} - Pine Universal Mall`,
+          title: `Giftcode ${item.gameName} - ${brandName}`,
           text: shareText,
           url: gameUrl,
         });
         setSharedCodeId(item.id);
         setTimeout(() => setSharedCodeId(null), 2500);
-        onShowToast('Chia sẻ thành công!', `Đã chia sẻ mã ${item.code} kèm nguồn Pine Universal Mall!`, 'success');
+        onShowToast('Chia sẻ thành công!', `Đã chia sẻ mã ${item.code} kèm nguồn ${brandName}!`, 'success');
         return;
       } catch (err: any) {
         if (err.name === 'AbortError') return; // Người dùng ấn hủy hộp thoại chia sẻ
@@ -267,7 +269,7 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
       setTimeout(() => setSharedCodeId(null), 2500);
       onShowToast(
         'Đã sao chép nội dung chia sẻ!',
-        `Mã code "${item.code}" của game ${item.gameName} kèm nguồn Pine Universal Mall đã sẵn sàng để dán vào Zalo, Facebook, Messenger!`,
+        `Mã code "${item.code}" của game ${item.gameName} kèm nguồn ${brandName} đã sẵn sàng để dán vào Zalo, Facebook, Messenger!`,
         'success'
       );
     } catch {
@@ -329,7 +331,7 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
   };
 
   const handleUnsubscribe = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy nhận toàn bộ thông báo email từ Pine Universal Mall?')) {
+    if (!window.confirm(`Bạn có chắc chắn muốn hủy nhận toàn bộ thông báo email từ ${getActiveBrandIdentity().brandName}?`)) {
       return;
     }
     setIsUnsubscribing(true);
@@ -596,12 +598,12 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
                             )}
                           </button>
 
-                          {/* Nút Chia Sẻ Kèm Nguồn Pine Universal Mall */}
+                          {/* Nút Chia Sẻ Kèm Nguồn */}
                           <button
                             type="button"
                             onClick={() => handleShareCode(item)}
                             className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
-                            title="Chia sẻ mã code kèm link nguồn Pine Universal Mall"
+                            title={`Chia sẻ mã code kèm link nguồn ${getActiveBrandIdentity().brandName}`}
                           >
                             {sharedCodeId === item.id ? (
                               <>
@@ -626,7 +628,7 @@ export const EmailSubscriptionModal: React.FC<EmailSubscriptionModalProps> = ({
                         </div>
 
                         <div className="text-[10px] text-cyan-400 font-mono font-medium shrink-0 flex items-center gap-0.5">
-                          <span>Nguồn: Pine Universal Mall</span>
+                          <span>Nguồn: {getActiveBrandIdentity().brandName}</span>
                         </div>
                       </div>
                     </div>

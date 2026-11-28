@@ -1,143 +1,139 @@
-=== STEP 1: tsc -p tsconfig.homepage.json --noEmit ===
-
-homepage_exit=0
 HOMEPAGE_TSC_OK
-
-=== STEP 2: tsc -p tsconfig.json --noEmit ===
+homepage_exit=0
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
-functions/_worker.ts(494,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
+functions/_worker.ts(542,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
     Type 'D1Database | undefined' is not assignable to type 'D1Database'.
       Type 'undefined' is not assignable to type 'D1Database'.
-functions/_worker.ts(1322,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1347,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1353,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1389,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1397,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1520,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1527,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1536,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1574,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1583,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1587,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1592,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1601,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1606,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1613,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1619,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1623,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1631,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1636,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1644,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1651,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1659,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1665,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1670,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1678,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1683,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1691,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1701,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1706,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1716,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1724,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1733,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1742,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1748,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1755,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1763,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1769,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1776,81): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1782,79): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1787,78): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1795,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1803,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1811,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1819,79): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1826,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1833,83): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1840,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1845,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1850,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1911,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1925,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1967,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1974,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1982,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1989,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1994,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(1999,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2005,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2012,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2017,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2022,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2030,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2036,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2044,58): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2052,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2060,60): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2068,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2082,61): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2140,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2146,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2154,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2163,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2172,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2179,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2187,72): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2195,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2202,62): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2219,63): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2229,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2238,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2255,68): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2267,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2275,65): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2282,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2290,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2298,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2306,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2315,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2323,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2378,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2387,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2395,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2403,64): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2492,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2501,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2511,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2519,67): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2526,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2534,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2541,66): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2548,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2556,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2564,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2572,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2580,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2588,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2594,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2602,78): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2610,77): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2616,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2626,69): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2634,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2650,71): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2659,70): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2665,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2671,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2730,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2736,81): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2745,87): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2751,84): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2761,73): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2769,75): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2777,74): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(2785,76): error TS2554: Expected 1 arguments, but got 0.
-functions/_worker.ts(3403,37): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3403,44): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3405,45): error TS2304: Cannot find name 'xml'.
-functions/_worker.ts(3451,26): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
-functions/_worker.ts(3742,24): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
+functions/_worker.ts(1370,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1395,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1401,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1449,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1457,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1580,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1587,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1596,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1634,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1643,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1647,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1652,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1661,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1666,72): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1673,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1679,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1683,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1691,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1696,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1704,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1711,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1719,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1725,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1730,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1738,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1743,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1751,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1761,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1766,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1776,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1784,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1793,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1802,72): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1808,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1815,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1823,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1829,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1836,81): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1842,79): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1847,78): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1855,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1863,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1871,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1879,79): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1886,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1893,83): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1900,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1905,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1910,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1971,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(1985,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2027,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2034,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2042,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2049,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2054,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2059,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2065,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2072,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2077,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2082,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2090,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2096,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2104,58): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2112,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2120,60): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2128,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2142,61): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2200,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2206,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2214,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2223,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2232,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2239,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2247,72): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2255,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2262,62): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2279,63): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2289,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2298,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2315,68): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2327,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2335,65): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2342,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2350,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2358,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2366,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2375,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2383,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2438,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2447,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2455,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2463,64): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2552,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2561,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2571,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2579,67): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2586,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2594,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2601,66): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2608,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2616,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2624,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2632,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2640,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2648,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2654,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2662,78): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2670,77): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2676,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2686,69): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2694,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2710,71): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2719,70): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2725,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2731,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2790,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2796,81): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2805,87): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2811,84): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2821,73): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2829,75): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2837,74): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(2845,76): error TS2554: Expected 1 arguments, but got 0.
+functions/_worker.ts(3463,37): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3463,44): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3465,45): error TS2304: Cannot find name 'xml'.
+functions/_worker.ts(3511,26): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
+functions/_worker.ts(3802,24): error TS2339: Property 'SITE_URL' does not exist on type 'Env'.
 functions/api/admin/audit-log.ts(63,11): error TS6133: 'bindings' is declared but its value is never read.
 functions/api/admin/automation/status.ts(63,16): error TS6133: 'readSystemSettingJson' is declared but its value is never read.
 functions/api/admin/free-codes/index.ts(163,11): error TS6133: 'isHot' is declared but its value is never read.
@@ -240,7 +236,7 @@ functions/api/migrate.ts(202,20): error TS18048: 'results' is possibly 'undefine
 functions/api/missions/index.ts(316,13): error TS6133: 'nowIso' is declared but its value is never read.
 functions/api/my-seller-orders.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
 functions/api/notifications/logs.ts(32,28): error TS2347: Untyped function calls may not accept type arguments.
-functions/api/notifications/send.ts(91,37): error TS2347: Untyped function calls may not accept type arguments.
+functions/api/notifications/send.ts(93,37): error TS2347: Untyped function calls may not accept type arguments.
 functions/api/notifications/subscribe.ts(42,7): error TS2322: Type 'unknown[]' is not assignable to type 'string[]'.
   Type 'unknown' is not assignable to type 'string'.
 functions/api/notifications/subscribe.ts(42,82): error TS7006: Parameter 's' implicitly has an 'any' type.
@@ -515,9 +511,9 @@ functions/services/snapshotService.ts(395,37): error TS2322: Type 'GlobalMetrics
 functions/services/snapshotService.ts(409,5): error TS2322: Type 'GlobalMetricsSnapshot | null' is not assignable to type 'GlobalMetricsSnapshot'.
   Type 'null' is not assignable to type 'GlobalMetricsSnapshot'.
 functions/services/store_api_service.ts(104,61): error TS6133: 'allowReadOnly' is declared but its value is never read.
-functions/services/telegram_service.ts(339,28): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
-functions/services/telegram_service.ts(339,40): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
-functions/services/telegram_service.ts(340,24): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
+functions/services/telegram_service.ts(340,28): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
+functions/services/telegram_service.ts(340,40): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
+functions/services/telegram_service.ts(341,24): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
 functions/services/virtualLayerService.ts(23,3): error TS6133: 'loadVirtualAggregatesD1' is declared but its value is never read.
 functions/services/virtualLayerService.ts(24,3): error TS6133: 'batchFlushVirtualLayerD1' is declared but its value is never read.
 functions/services/virtualLayerService.ts(26,3): error TS6133: 'VirtualAggregateRow' is declared but its value is never read.
@@ -529,28 +525,28 @@ functions/services/virtualLayerService.ts(423,33): error TS7053: Element implici
   No index signature with a parameter of type 'string' was found on type 'Record<string, number> | {}'.
 functions/services/virtualLayerService.ts(714,50): error TS6133: 'env' is declared but its value is never read.
 functions/services/virtualLayerService.ts(714,60): error TS6133: 'waitUntil' is declared but its value is never read.
-src/admin/AdminApp.tsx(557,126): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(557,171): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(557,216): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(557,261): error TS2304: Cannot find name 'hostname'.
-src/admin/AdminApp.tsx(559,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
-src/admin/components/AdminLoginGuard.tsx(151,19): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
-src/admin/components/AdminLoginGuard.tsx(152,61): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
-src/admin/components/AdminLoginGuard.tsx(153,63): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
+src/admin/AdminApp.tsx(563,126): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(563,171): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(563,216): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(563,261): error TS2304: Cannot find name 'hostname'.
+src/admin/AdminApp.tsx(565,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/admin/components/AdminLoginGuard.tsx(153,19): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
+src/admin/components/AdminLoginGuard.tsx(154,61): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
+src/admin/components/AdminLoginGuard.tsx(155,63): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminModuleSkeleton.tsx(61,43): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/admin/components/AdminSidebar.tsx(114,9): error TS6133: 'isEn' is declared but its value is never read.
-src/admin/components/AdminSidebar.tsx(167,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(189,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(196,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(223,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(237,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(244,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(251,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(268,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(315,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(327,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminTopbar.tsx(33,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; 'free-codes': { title: string; subtitle: string; }; ... 22 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, translations, vouchers, "first-purchase", and 2 more.
-src/admin/components/AdminTopbar.tsx(98,7): error TS2740: Type '{ dashboard: string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; utilities: string; ... 14 more ...; 'seller-sepay': string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, "platform-leads", translations, and 4 more.
+src/admin/components/AdminSidebar.tsx(117,9): error TS6133: 'isEn' is declared but its value is never read.
+src/admin/components/AdminSidebar.tsx(177,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(199,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(206,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(233,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(247,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(254,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(261,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(278,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(325,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminSidebar.tsx(337,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/admin/components/AdminTopbar.tsx(34,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; 'brand-identity': { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; ... 23 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, translations, vouchers, "first-purchase", and 2 more.
+src/admin/components/AdminTopbar.tsx(101,7): error TS2740: Type '{ dashboard: string; 'brand-identity': string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; ... 15 more ...; 'seller-sepay': string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, "platform-leads", translations, and 4 more.
 src/admin/components/LuckyWheelAdminManager.tsx(7,3): error TS6133: 'Copy' is declared but its value is never read.
 src/admin/components/LuckyWheelAdminManager.tsx(9,3): error TS6133: 'RotateCw' is declared but its value is never read.
 src/admin/components/LuckyWheelAdminManager.tsx(10,3): error TS6133: 'Coins' is declared but its value is never read.
@@ -608,7 +604,7 @@ src/admin/modules/ApiKeysModule.tsx(32,3): error TS6133: 'Timer' is declared but
 src/admin/modules/ApiKeysModule.tsx(33,3): error TS6133: 'ChevronRight' is declared but its value is never read.
 src/admin/modules/ApiKeysModule.tsx(34,3): error TS6133: 'ExternalLink' is declared but its value is never read.
 src/admin/modules/ApiKeysModule.tsx(40,3): error TS6133: 'Database' is declared but its value is never read.
-src/admin/modules/ApiKeysModule.tsx(821,9): error TS6133: 'toggleVisibility' is declared but its value is never read.
+src/admin/modules/ApiKeysModule.tsx(834,9): error TS6133: 'toggleVisibility' is declared but its value is never read.
 src/admin/modules/AutomationCenterModule.tsx(10,3): error TS6133: 'Power' is declared but its value is never read.
 src/admin/modules/AutomationCenterModule.tsx(13,3): error TS6133: 'AlertTriangle' is declared but its value is never read.
 src/admin/modules/AutomationCenterModule.tsx(15,3): error TS6133: 'ExternalLink' is declared but its value is never read.
@@ -630,9 +626,9 @@ src/admin/modules/CodeInventoryModule.tsx(2731,9): error TS2322: Type '{ childre
   Property 'description' does not exist on type 'IntrinsicAttributes & FormModalProps'.
 src/admin/modules/CodeInventoryModule.tsx(2785,9): error TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; title: string; description: string; }' is not assignable to type 'IntrinsicAttributes & FormModalProps'.
   Property 'description' does not exist on type 'IntrinsicAttributes & FormModalProps'.
-src/admin/modules/ContentCMSModule.tsx(43,38): error TS6133: 'INDUSTRY_PRESETS' is declared but its value is never read.
-src/admin/modules/ContentCMSModule.tsx(706,30): error TS2341: Property 'syncToCloudflareKV' is private and only accessible within class 'AdminDataService'.
-src/admin/modules/ContentCMSModule.tsx(870,30): error TS2341: Property 'syncToCloudflareKV' is private and only accessible within class 'AdminDataService'.
+src/admin/modules/ContentCMSModule.tsx(45,38): error TS6133: 'INDUSTRY_PRESETS' is declared but its value is never read.
+src/admin/modules/ContentCMSModule.tsx(718,30): error TS2341: Property 'syncToCloudflareKV' is private and only accessible within class 'AdminDataService'.
+src/admin/modules/ContentCMSModule.tsx(882,30): error TS2341: Property 'syncToCloudflareKV' is private and only accessible within class 'AdminDataService'.
 src/admin/modules/CrawlerModule.tsx(34,3): error TS6133: 'DownloadCloud' is declared but its value is never read.
 src/admin/modules/CrawlerModule.tsx(38,3): error TS6133: 'Gamepad2' is declared but its value is never read.
 src/admin/modules/CrawlerModule.tsx(45,3): error TS6133: 'Play' is declared but its value is never read.
@@ -971,29 +967,29 @@ src/admin/services/adminDataService.ts(4114,51): error TS2367: This comparison a
 src/admin/services/adminDataService.ts(4123,11): error TS2322: Type '"HOLD"' is not assignable to type '"AVAILABLE" | "SOLD" | "RESERVED"'.
 src/admin/services/adminDataService.ts(4583,42): error TS6133: 'forceReset' is declared but its value is never read.
 src/admin/services/adminDataService.ts(5521,18): error TS2551: Property 'saveGame' does not exist on type 'AdminDataService'. Did you mean 'saveGames'?
-src/App.tsx(1199,29): error TS2339: Property 'image_url' does not exist on type 'UtilityProduct'.
-src/App.tsx(1199,50): error TS2339: Property 'icon' does not exist on type 'UtilityProduct'.
-src/App.tsx(1400,33): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1404,34): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1404,40): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
-src/App.tsx(1466,24): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1466,30): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
-src/App.tsx(1466,35): error TS7006: Parameter 'qty' implicitly has an 'any' type.
-src/App.tsx(1501,23): error TS7006: Parameter '_slug' implicitly has an 'any' type.
-src/App.tsx(1501,30): error TS7006: Parameter 'code' implicitly has an 'any' type.
-src/App.tsx(1512,30): error TS7006: Parameter 'id' implicitly has an 'any' type.
-src/App.tsx(1513,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1537,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1626,35): error TS7006: Parameter 'initialTab' implicitly has an 'any' type.
-src/App.tsx(1630,31): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1650,32): error TS7006: Parameter 'id' implicitly has an 'any' type.
-src/App.tsx(1650,36): error TS7006: Parameter 'type' implicitly has an 'any' type.
-src/App.tsx(1676,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1677,28): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1690,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1692,31): error TS7006: Parameter 'utilityId' implicitly has an 'any' type.
-src/App.tsx(1696,32): error TS7006: Parameter 'giveawayId' implicitly has an 'any' type.
-src/App.tsx(1706,51): error TS7006: Parameter 'tab' implicitly has an 'any' type.
+src/App.tsx(1203,29): error TS2339: Property 'image_url' does not exist on type 'UtilityProduct'.
+src/App.tsx(1203,50): error TS2339: Property 'icon' does not exist on type 'UtilityProduct'.
+src/App.tsx(1404,33): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1408,34): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1408,40): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
+src/App.tsx(1470,24): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1470,30): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
+src/App.tsx(1470,35): error TS7006: Parameter 'qty' implicitly has an 'any' type.
+src/App.tsx(1505,23): error TS7006: Parameter '_slug' implicitly has an 'any' type.
+src/App.tsx(1505,30): error TS7006: Parameter 'code' implicitly has an 'any' type.
+src/App.tsx(1516,30): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/App.tsx(1517,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1541,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1630,35): error TS7006: Parameter 'initialTab' implicitly has an 'any' type.
+src/App.tsx(1634,31): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1654,32): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/App.tsx(1654,36): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/App.tsx(1680,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1681,28): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1694,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1696,31): error TS7006: Parameter 'utilityId' implicitly has an 'any' type.
+src/App.tsx(1700,32): error TS7006: Parameter 'giveawayId' implicitly has an 'any' type.
+src/App.tsx(1710,51): error TS7006: Parameter 'tab' implicitly has an 'any' type.
 src/components/AllUpcomingGamesModal.tsx(120,56): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
 src/components/AllUpcomingGamesModal.tsx(282,82): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
 src/components/AuthModal.tsx(64,40): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
@@ -1007,114 +1003,114 @@ src/components/GameEventsList.tsx(14,3): error TS6133: 'Flame' is declared but i
 src/components/GameEventsList.tsx(15,3): error TS6133: 'ChevronRight' is declared but its value is never read.
 src/components/GameEventsList.tsx(16,3): error TS6133: 'ShieldCheck' is declared but its value is never read.
 src/components/GameEventsList.tsx(17,3): error TS6133: 'Share2' is declared but its value is never read.
-src/components/GiveawaysView.tsx(22,3): error TS6133: 'ChevronRight' is declared but its value is never read.
-src/components/GiveawaysView.tsx(42,65): error TS6196: 'GiveawayRewardPackage' is declared but never used.
-src/components/GiveawaysView.tsx(47,1): error TS6133: 'eventSchedulerService' is declared but its value is never read.
-src/components/GiveawaysView.tsx(316,14): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(668,52): error TS18048: 'campaign.global_cooldown_seconds' is possibly 'undefined'.
-src/components/GiveawaysView.tsx(668,107): error TS18048: 'campaign.global_cooldown_seconds' is possibly 'undefined'.
-src/components/GiveawaysView.tsx(869,20): error TS2304: Cannot find name 'PowerOff'.
-src/components/GiveawaysView.tsx(1111,15): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1111,31): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1137,15): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1137,35): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1324,18): error TS2339: Property 'alreadyClaimed' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/components/GiveawaysView.tsx(1329,32): error TS2339: Property 'isAdminBypass' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/components/GiveawaysView.tsx(1340,17): error TS2339: Property 'isNewCode' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/components/GiveawaysView.tsx(1340,35): error TS2339: Property 'alreadyClaimed' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/components/GiveawaysView.tsx(1358,32): error TS2339: Property 'isAdminBypass' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/components/GiveawaysView.tsx(1362,17): error TS2339: Property 'isAdminBypass' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/components/GiveawaysView.tsx(1374,32): error TS2339: Property 'isAdminBypass' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/components/GiveawaysView.tsx(1484,11): error TS2367: This comparison appears to be unintentional because the types '"all" | "hot" | "mine"' and '"out_of_stock"' have no overlap.
-src/components/GiveawaysView.tsx(1518,11): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1518,35): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1519,11): error TS2339: Property 'created_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1519,35): error TS2339: Property 'created_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1522,11): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1522,35): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1523,11): error TS2339: Property 'created_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1523,35): error TS2339: Property 'created_at' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1626,52): error TS2345: Argument of type '"out_of_stock"' is not assignable to parameter of type 'SetStateAction<"all" | "hot" | "available" | "mine">'.
-src/components/GiveawaysView.tsx(1628,21): error TS2367: This comparison appears to be unintentional because the types '"all" | "hot" | "available" | "mine"' and '"out_of_stock"' have no overlap.
-src/components/GiveawaysView.tsx(1707,23): error TS6133: 'poolCount' is declared but its value is never read.
-src/components/GiveawaysView.tsx(1780,28): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/components/GiveawaysView.tsx(1971,48): error TS18048: 'campaign.global_cooldown_seconds' is possibly 'undefined'.
-src/components/GiveawaysView.tsx(1971,103): error TS18048: 'campaign.global_cooldown_seconds' is possibly 'undefined'.
-src/components/GiveawaysView.tsx(2056,32): error TS2304: Cannot find name 'PowerOff'.
-src/components/GiveawaysView.tsx(2259,11): error TS2820: Type '"giveaways"' is not assignable to type '"giveaway" | "utilities" | undefined'. Did you mean '"giveaway"'?
-src/components/GiveawaysView.tsx(2812,11): error TS2322: Type '((campaign: GiveawayCampaign, e: MouseEvent<Element, MouseEvent>) => void) | undefined' is not assignable to type '((campaign: GiveawayCampaign, e?: MouseEvent<Element, MouseEvent> | undefined) => void) | undefined'.
+src/components/GiveawaysView.tsx(23,3): error TS6133: 'ChevronRight' is declared but its value is never read.
+src/components/GiveawaysView.tsx(43,65): error TS6196: 'GiveawayRewardPackage' is declared but never used.
+src/components/GiveawaysView.tsx(48,1): error TS6133: 'eventSchedulerService' is declared but its value is never read.
+src/components/GiveawaysView.tsx(317,14): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(669,52): error TS18048: 'campaign.global_cooldown_seconds' is possibly 'undefined'.
+src/components/GiveawaysView.tsx(669,107): error TS18048: 'campaign.global_cooldown_seconds' is possibly 'undefined'.
+src/components/GiveawaysView.tsx(870,20): error TS2304: Cannot find name 'PowerOff'.
+src/components/GiveawaysView.tsx(1112,15): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1112,31): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1138,15): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1138,35): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1325,18): error TS2339: Property 'alreadyClaimed' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/components/GiveawaysView.tsx(1330,32): error TS2339: Property 'isAdminBypass' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/components/GiveawaysView.tsx(1341,17): error TS2339: Property 'isNewCode' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/components/GiveawaysView.tsx(1341,35): error TS2339: Property 'alreadyClaimed' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/components/GiveawaysView.tsx(1359,32): error TS2339: Property 'isAdminBypass' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/components/GiveawaysView.tsx(1363,17): error TS2339: Property 'isAdminBypass' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/components/GiveawaysView.tsx(1375,32): error TS2339: Property 'isAdminBypass' does not exist on type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/components/GiveawaysView.tsx(1487,11): error TS2367: This comparison appears to be unintentional because the types '"all" | "hot" | "mine"' and '"out_of_stock"' have no overlap.
+src/components/GiveawaysView.tsx(1521,11): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1521,35): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1522,11): error TS2339: Property 'created_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1522,35): error TS2339: Property 'created_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1525,11): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1525,35): error TS2339: Property 'updated_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1526,11): error TS2339: Property 'created_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1526,35): error TS2339: Property 'created_at' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1629,52): error TS2345: Argument of type '"out_of_stock"' is not assignable to parameter of type 'SetStateAction<"all" | "hot" | "available" | "mine">'.
+src/components/GiveawaysView.tsx(1631,21): error TS2367: This comparison appears to be unintentional because the types '"all" | "hot" | "available" | "mine"' and '"out_of_stock"' have no overlap.
+src/components/GiveawaysView.tsx(1710,23): error TS6133: 'poolCount' is declared but its value is never read.
+src/components/GiveawaysView.tsx(1783,28): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/components/GiveawaysView.tsx(1974,48): error TS18048: 'campaign.global_cooldown_seconds' is possibly 'undefined'.
+src/components/GiveawaysView.tsx(1974,103): error TS18048: 'campaign.global_cooldown_seconds' is possibly 'undefined'.
+src/components/GiveawaysView.tsx(2059,32): error TS2304: Cannot find name 'PowerOff'.
+src/components/GiveawaysView.tsx(2262,11): error TS2820: Type '"giveaways"' is not assignable to type '"giveaway" | "utilities" | undefined'. Did you mean '"giveaway"'?
+src/components/GiveawaysView.tsx(2815,11): error TS2322: Type '((campaign: GiveawayCampaign, e: MouseEvent<Element, MouseEvent>) => void) | undefined' is not assignable to type '((campaign: GiveawayCampaign, e?: MouseEvent<Element, MouseEvent> | undefined) => void) | undefined'.
   Type '(campaign: GiveawayCampaign, e: MouseEvent<Element, MouseEvent>) => void' is not assignable to type '(campaign: GiveawayCampaign, e?: MouseEvent<Element, MouseEvent> | undefined) => void'.
     Types of parameters 'e' and 'e' are incompatible.
       Type 'MouseEvent<Element, MouseEvent> | undefined' is not assignable to type 'MouseEvent<Element, MouseEvent>'.
         Type 'undefined' is not assignable to type 'MouseEvent<Element, MouseEvent>'.
-src/components/GrowthCenterModal.tsx(13,3): error TS6133: 'Share2' is declared but its value is never read.
-src/components/GrowthCenterModal.tsx(14,3): error TS6133: 'ExternalLink' is declared but its value is never read.
-src/components/GrowthCenterModal.tsx(16,3): error TS6133: 'ChevronRight' is declared but its value is never read.
-src/components/GrowthCenterModal.tsx(22,3): error TS6133: 'ArrowRight' is declared but its value is never read.
-src/components/GrowthCenterModal.tsx(23,3): error TS6133: 'ShieldCheck' is declared but its value is never read.
-src/components/GrowthCenterModal.tsx(28,22): error TS2305: Module '"../utils/textUtils"' has no exported member 'formatVnd'.
-src/components/GrowthCenterModal.tsx(28,22): error TS6133: 'formatVnd' is declared but its value is never read.
-src/components/GrowthCenterModal.tsx(175,9): error TS6133: 'currentUserId' is declared but its value is never read.
+src/components/GrowthCenterModal.tsx(14,3): error TS6133: 'Share2' is declared but its value is never read.
+src/components/GrowthCenterModal.tsx(15,3): error TS6133: 'ExternalLink' is declared but its value is never read.
+src/components/GrowthCenterModal.tsx(17,3): error TS6133: 'ChevronRight' is declared but its value is never read.
+src/components/GrowthCenterModal.tsx(23,3): error TS6133: 'ArrowRight' is declared but its value is never read.
+src/components/GrowthCenterModal.tsx(24,3): error TS6133: 'ShieldCheck' is declared but its value is never read.
+src/components/GrowthCenterModal.tsx(29,22): error TS2305: Module '"../utils/textUtils"' has no exported member 'formatVnd'.
+src/components/GrowthCenterModal.tsx(29,22): error TS6133: 'formatVnd' is declared but its value is never read.
+src/components/GrowthCenterModal.tsx(176,9): error TS6133: 'currentUserId' is declared but its value is never read.
 src/components/LuckyWheelSection.tsx(13,3): error TS6133: 'AlertCircle' is declared but its value is never read.
 src/components/LuckyWheelSection.tsx(14,3): error TS6133: 'HelpCircle' is declared but its value is never read.
 src/components/LuckyWheelSection.tsx(15,3): error TS6133: 'Flame' is declared but its value is never read.
 src/components/LuckyWheelSection.tsx(17,3): error TS6133: 'ExternalLink' is declared but its value is never read.
-src/components/mall/UniversalMallView.tsx(777,91): error TS2367: This comparison appears to be unintentional because the types '"UPCOMING" | "APPROVED"' and '"LAUNCHED"' have no overlap.
-src/components/mall/UniversalMallView.tsx(777,118): error TS2367: This comparison appears to be unintentional because the types '"UPCOMING" | "APPROVED"' and '"RELEASED"' have no overlap.
-src/components/mall/UniversalMallView.tsx(777,181): error TS2769: No overload matches this call.
+src/components/mall/UniversalMallView.tsx(771,91): error TS2367: This comparison appears to be unintentional because the types '"UPCOMING" | "APPROVED"' and '"LAUNCHED"' have no overlap.
+src/components/mall/UniversalMallView.tsx(771,118): error TS2367: This comparison appears to be unintentional because the types '"UPCOMING" | "APPROVED"' and '"RELEASED"' have no overlap.
+src/components/mall/UniversalMallView.tsx(771,181): error TS2769: No overload matches this call.
   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number | Date'.
       Type 'undefined' is not assignable to type 'string | number | Date'.
   Overload 2 of 4, '(value: string | number): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number'.
       Type 'undefined' is not assignable to type 'string | number'.
-src/components/mall/UniversalMallView.tsx(781,60): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
-src/components/mall/UniversalMallView.tsx(781,123): error TS2769: No overload matches this call.
+src/components/mall/UniversalMallView.tsx(775,60): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
+src/components/mall/UniversalMallView.tsx(775,123): error TS2769: No overload matches this call.
   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number | Date'.
       Type 'undefined' is not assignable to type 'string | number | Date'.
   Overload 2 of 4, '(value: string | number): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number'.
       Type 'undefined' is not assignable to type 'string | number'.
-src/components/mall/UniversalMallView.tsx(792,112): error TS2367: This comparison appears to be unintentional because the types '"UPCOMING" | "APPROVED"' and '"LAUNCHED"' have no overlap.
-src/components/mall/UniversalMallView.tsx(792,139): error TS2367: This comparison appears to be unintentional because the types '"UPCOMING" | "APPROVED"' and '"RELEASED"' have no overlap.
-src/components/mall/UniversalMallView.tsx(792,202): error TS2769: No overload matches this call.
+src/components/mall/UniversalMallView.tsx(786,112): error TS2367: This comparison appears to be unintentional because the types '"UPCOMING" | "APPROVED"' and '"LAUNCHED"' have no overlap.
+src/components/mall/UniversalMallView.tsx(786,139): error TS2367: This comparison appears to be unintentional because the types '"UPCOMING" | "APPROVED"' and '"RELEASED"' have no overlap.
+src/components/mall/UniversalMallView.tsx(786,202): error TS2769: No overload matches this call.
   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number | Date'.
       Type 'undefined' is not assignable to type 'string | number | Date'.
   Overload 2 of 4, '(value: string | number): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number'.
       Type 'undefined' is not assignable to type 'string | number'.
-src/components/mall/UniversalMallView.tsx(802,81): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
-src/components/mall/UniversalMallView.tsx(802,144): error TS2769: No overload matches this call.
+src/components/mall/UniversalMallView.tsx(796,81): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
+src/components/mall/UniversalMallView.tsx(796,144): error TS2769: No overload matches this call.
   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number | Date'.
       Type 'undefined' is not assignable to type 'string | number | Date'.
   Overload 2 of 4, '(value: string | number): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number'.
       Type 'undefined' is not assignable to type 'string | number'.
-src/components/mall/UniversalMallView.tsx(2182,35): error TS2339: Property 'rating' does not exist on type 'StoreProduct'.
-src/components/mall/UniversalMallView.tsx(2182,50): error TS2339: Property 'review_count' does not exist on type 'StoreProduct'.
-src/components/mall/UniversalMallView.tsx(2182,71): error TS2339: Property 'review_count' does not exist on type 'StoreProduct'.
-src/components/mall/UniversalMallView.tsx(2185,74): error TS2339: Property 'rating' does not exist on type 'StoreProduct'.
-src/components/mall/UniversalMallView.tsx(2356,32): error TS2339: Property 'category' does not exist on type 'NewsArticle'.
-src/components/mall/UniversalMallView.tsx(2516,59): error TS2339: Property 'name' does not exist on type 'UserProfile'.
-src/components/mall/UniversalMallView.tsx(2916,46): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "LAUNCHED" | "CANCELLED"' and '"RELEASED"' have no overlap.
-src/components/mall/UniversalMallView.tsx(2916,145): error TS2769: No overload matches this call.
+src/components/mall/UniversalMallView.tsx(2176,35): error TS2339: Property 'rating' does not exist on type 'StoreProduct'.
+src/components/mall/UniversalMallView.tsx(2176,50): error TS2339: Property 'review_count' does not exist on type 'StoreProduct'.
+src/components/mall/UniversalMallView.tsx(2176,71): error TS2339: Property 'review_count' does not exist on type 'StoreProduct'.
+src/components/mall/UniversalMallView.tsx(2179,74): error TS2339: Property 'rating' does not exist on type 'StoreProduct'.
+src/components/mall/UniversalMallView.tsx(2350,32): error TS2339: Property 'category' does not exist on type 'NewsArticle'.
+src/components/mall/UniversalMallView.tsx(2510,59): error TS2339: Property 'name' does not exist on type 'UserProfile'.
+src/components/mall/UniversalMallView.tsx(2906,46): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "LAUNCHED" | "CANCELLED"' and '"RELEASED"' have no overlap.
+src/components/mall/UniversalMallView.tsx(2906,145): error TS2769: No overload matches this call.
   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number | Date'.
       Type 'undefined' is not assignable to type 'string | number | Date'.
   Overload 2 of 4, '(value: string | number): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number'.
       Type 'undefined' is not assignable to type 'string | number'.
-src/components/mall/UniversalMallView.tsx(3055,33): error TS2339: Property 'avatar' does not exist on type 'UserProfile'.
-src/components/mall/UniversalMallView.tsx(3056,43): error TS2339: Property 'avatar' does not exist on type 'UserProfile'.
-src/components/mall/UniversalMallView.tsx(3064,65): error TS2339: Property 'name' does not exist on type 'UserProfile'.
-src/components/mall/UniversalMallView.tsx(3707,9): error TS2322: Type '{ isOpen: boolean; onClose: () => void; games: GameItem[]; currentUser: UserProfile | null; onShowToast: (t: any, m: any, type: any) => void; }' is not assignable to type 'IntrinsicAttributes & SubmitCodeModalProps'.
+src/components/mall/UniversalMallView.tsx(3045,33): error TS2339: Property 'avatar' does not exist on type 'UserProfile'.
+src/components/mall/UniversalMallView.tsx(3046,43): error TS2339: Property 'avatar' does not exist on type 'UserProfile'.
+src/components/mall/UniversalMallView.tsx(3054,65): error TS2339: Property 'name' does not exist on type 'UserProfile'.
+src/components/mall/UniversalMallView.tsx(3701,9): error TS2322: Type '{ isOpen: boolean; onClose: () => void; games: GameItem[]; currentUser: UserProfile | null; onShowToast: (t: any, m: any, type: any) => void; }' is not assignable to type 'IntrinsicAttributes & SubmitCodeModalProps'.
   Property 'currentUser' does not exist on type 'IntrinsicAttributes & SubmitCodeModalProps'.
-src/components/mall/UniversalMallView.tsx(3708,23): error TS7006: Parameter 't' implicitly has an 'any' type.
-src/components/mall/UniversalMallView.tsx(3708,26): error TS7006: Parameter 'm' implicitly has an 'any' type.
-src/components/mall/UniversalMallView.tsx(3708,29): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/components/mall/UniversalMallView.tsx(3702,23): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/components/mall/UniversalMallView.tsx(3702,26): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/components/mall/UniversalMallView.tsx(3702,29): error TS7006: Parameter 'type' implicitly has an 'any' type.
 src/components/MarketingNotificationToast.tsx(329,13): error TS6133: 'slotHideTimeMs' is declared but its value is never read.
 src/components/MissionsView.tsx(12,3): error TS6133: 'ShieldCheck' is declared but its value is never read.
 src/components/MyReceivedCodesModal.tsx(14,3): error TS6133: 'BookOpen' is declared but its value is never read.
@@ -1137,36 +1133,36 @@ src/components/NewsDetailModal.tsx(857,63): error TS2339: Property 'codes_count'
   Property 'codes_count' does not exist on type 'UpcomingGame'.
 src/components/NewsView.tsx(11,3): error TS6133: 'Tag' is declared but its value is never read.
 src/components/NewsView.tsx(13,3): error TS6133: 'Share2' is declared but its value is never read.
-src/components/NewsView.tsx(95,10): error TS6133: 'isLoading' is declared but its value is never read.
+src/components/NewsView.tsx(96,10): error TS6133: 'isLoading' is declared but its value is never read.
 src/components/notification/EmailSubscriptionModal.tsx(16,3): error TS6133: 'ExternalLink' is declared but its value is never read.
 src/components/notification/EmailSubscriptionModal.tsx(18,3): error TS6133: 'Clock' is declared but its value is never read.
 src/components/notification/EmailSubscriptionModal.tsx(20,3): error TS6133: 'ChevronRight' is declared but its value is never read.
 src/components/notification/EmailSubscriptionModal.tsx(22,3): error TS6133: 'Sliders' is declared but its value is never read.
-src/components/notification/EmailSubscriptionModal.tsx(66,3): error TS6133: 'bookmarkedGames' is declared but its value is never read.
-src/components/notification/EmailSubscriptionModal.tsx(155,26): error TS2339: Property 'is_hot' does not exist on type 'GiftCode'.
-src/components/notification/EmailSubscriptionModal.tsx(162,20): error TS2339: Property 'is_hot' does not exist on type 'GiftCode'.
-src/components/notification/EmailSubscriptionModal.tsx(187,9): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+src/components/notification/EmailSubscriptionModal.tsx(67,3): error TS6133: 'bookmarkedGames' is declared but its value is never read.
+src/components/notification/EmailSubscriptionModal.tsx(156,26): error TS2339: Property 'is_hot' does not exist on type 'GiftCode'.
+src/components/notification/EmailSubscriptionModal.tsx(163,20): error TS2339: Property 'is_hot' does not exist on type 'GiftCode'.
+src/components/notification/EmailSubscriptionModal.tsx(188,9): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
   Type 'null' is not assignable to type 'string | undefined'.
 src/components/ProductCheckoutModal.tsx(614,9): error TS6133: 'effectiveOriginalPrice' is declared but its value is never read.
 src/components/ProductCheckoutModal.tsx(689,23): error TS2339: Property 'max_original_price' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; escalating?: any; }'.
 src/components/ProductCheckoutModal.tsx(951,11): error TS2353: Object literal may only specify known properties, and 'productFallback' does not exist in type '{ expectedPrice?: number | undefined; paymentMethod?: "wallet" | "vietqr" | undefined; orderType?: "physical" | "digital" | undefined; shippingInfo?: { name: string; phone: string; address: string; note?: string | undefined; } | undefined; ... 8 more ...; freeshipDiscount?: number | undefined; }'.
 src/components/ProductCheckoutModal.tsx(1212,9): error TS2353: Object literal may only specify known properties, and 'productFallback' does not exist in type '{ expectedPrice?: number | undefined; paymentMethod?: "wallet" | "vietqr" | undefined; orderType?: "physical" | "digital" | undefined; shippingInfo?: { name: string; phone: string; address: string; note?: string | undefined; } | undefined; ... 8 more ...; freeshipDiscount?: number | undefined; }'.
-src/components/ProductDetailModal.tsx(14,3): error TS6133: 'ExternalLink' is declared but its value is never read.
-src/components/ProductDetailModal.tsx(26,3): error TS6133: 'Lock' is declared but its value is never read.
-src/components/ProductDetailModal.tsx(27,3): error TS6133: 'TrendingUp' is declared but its value is never read.
-src/components/ProductDetailModal.tsx(308,25): error TS2339: Property 'created_at' does not exist on type 'StoreProduct | UtilityProduct | { packages: any; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; game_icon_url?: string | undefined; ... 51 more ...; resell_map_price?: number | undefined; }'.
+src/components/ProductDetailModal.tsx(15,3): error TS6133: 'ExternalLink' is declared but its value is never read.
+src/components/ProductDetailModal.tsx(27,3): error TS6133: 'Lock' is declared but its value is never read.
+src/components/ProductDetailModal.tsx(28,3): error TS6133: 'TrendingUp' is declared but its value is never read.
+src/components/ProductDetailModal.tsx(309,25): error TS2339: Property 'created_at' does not exist on type 'StoreProduct | UtilityProduct | { packages: any; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; game_icon_url?: string | undefined; ... 51 more ...; resell_map_price?: number | undefined; }'.
   Property 'created_at' does not exist on type 'StoreProduct'.
-src/components/ProductDetailModal.tsx(330,101): error TS2339: Property 'escalating' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; reason: string | null; }'.
-src/components/ProductDetailModal.tsx(332,33): error TS2339: Property 'escalating' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; reason: string | null; }'.
-src/components/ProductDetailModal.tsx(362,5): error TS2367: This comparison appears to be unintentional because the types 'boolean | undefined' and 'number' have no overlap.
-src/components/ProductDetailModal.tsx(368,29): error TS2339: Property 'max_original_price' does not exist on type '{ enabled: boolean; offer_price: number; }'.
-src/components/ProductDetailModal.tsx(1270,33): error TS2353: Object literal may only specify known properties, and 'isFirstPurchaseOffer' does not exist in type 'ProductPackageVariant'.
-src/components/ProductDetailModal.tsx(1340,131): error TS2339: Property 'require_verified_email' does not exist on type '{ enabled: boolean; offer_price: number; }'.
-src/components/ProductDetailModal.tsx(1433,99): error TS2339: Property 'escalating' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; reason: string | null; }'.
-src/components/ProductDetailModal.tsx(1434,51): error TS2339: Property 'escalating' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; reason: string | null; }'.
-src/components/ProductDetailModal.tsx(1456,25): error TS2367: This comparison appears to be unintentional because the types 'boolean | undefined' and 'number' have no overlap.
-src/components/ProductDetailModal.tsx(1462,49): error TS2339: Property 'max_original_price' does not exist on type '{ enabled: boolean; offer_price: number; }'.
-src/components/ProductDetailModal.tsx(1576,240): error TS2339: Property 'created_at' does not exist on type 'StoreProduct | UtilityProduct | { packages: any; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; game_icon_url?: string | undefined; ... 51 more ...; resell_map_price?: number | undefined; }'.
+src/components/ProductDetailModal.tsx(331,101): error TS2339: Property 'escalating' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; reason: string | null; }'.
+src/components/ProductDetailModal.tsx(333,33): error TS2339: Property 'escalating' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; reason: string | null; }'.
+src/components/ProductDetailModal.tsx(363,5): error TS2367: This comparison appears to be unintentional because the types 'boolean | undefined' and 'number' have no overlap.
+src/components/ProductDetailModal.tsx(369,29): error TS2339: Property 'max_original_price' does not exist on type '{ enabled: boolean; offer_price: number; }'.
+src/components/ProductDetailModal.tsx(1272,33): error TS2353: Object literal may only specify known properties, and 'isFirstPurchaseOffer' does not exist in type 'ProductPackageVariant'.
+src/components/ProductDetailModal.tsx(1342,131): error TS2339: Property 'require_verified_email' does not exist on type '{ enabled: boolean; offer_price: number; }'.
+src/components/ProductDetailModal.tsx(1435,99): error TS2339: Property 'escalating' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; reason: string | null; }'.
+src/components/ProductDetailModal.tsx(1436,51): error TS2339: Property 'escalating' does not exist on type '{ eligible: boolean; offer_price: number; discount_amount: number; reason: string | null; }'.
+src/components/ProductDetailModal.tsx(1458,25): error TS2367: This comparison appears to be unintentional because the types 'boolean | undefined' and 'number' have no overlap.
+src/components/ProductDetailModal.tsx(1464,49): error TS2339: Property 'max_original_price' does not exist on type '{ enabled: boolean; offer_price: number; }'.
+src/components/ProductDetailModal.tsx(1578,240): error TS2339: Property 'created_at' does not exist on type 'StoreProduct | UtilityProduct | { packages: any; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; game_icon_url?: string | undefined; ... 51 more ...; resell_map_price?: number | undefined; }'.
   Property 'created_at' does not exist on type 'StoreProduct'.
 src/components/ProductModal.tsx(2,39): error TS6133: 'RotateCcw' is declared but its value is never read.
 src/components/ProductModal.tsx(2,70): error TS6133: 'Zap' is declared but its value is never read.
@@ -1180,102 +1176,102 @@ src/components/seller/PublicStoreView.tsx(11,3): error TS6133: 'ExternalLink' is
 src/components/seller/PublicStoreView.tsx(12,3): error TS6133: 'ChevronRight' is declared but its value is never read.
 src/components/seller/PublicStoreView.tsx(13,3): error TS6133: 'Sparkles' is declared but its value is never read.
 src/components/seller/PublicStoreView.tsx(17,3): error TS6133: 'Info' is declared but its value is never read.
-src/components/seller/PublicStoreView.tsx(395,53): error TS2304: Cannot find name 'isEn'.
+src/components/seller/PublicStoreView.tsx(396,53): error TS2304: Cannot find name 'isEn'.
 src/components/seller/SellerCenterView.tsx(18,3): error TS6133: 'EyeOff' is declared but its value is never read.
 src/components/seller/SellerCenterView.tsx(24,3): error TS6133: 'Send' is declared but its value is never read.
 src/components/seller/SellerCenterView.tsx(28,3): error TS6133: 'FileText' is declared but its value is never read.
 src/components/seller/SellerCenterView.tsx(32,3): error TS6133: 'Layers' is declared but its value is never read.
 src/components/seller/SellerCenterView.tsx(36,3): error TS6133: 'ExternalLink' is declared but its value is never read.
 src/components/seller/SellerCenterView.tsx(37,3): error TS6133: 'Lock' is declared but its value is never read.
-src/components/seller/SellerCenterView.tsx(43,10): error TS2305: Module '"../../types/game"' has no exported member 'Game'.
-src/components/seller/SellerCenterView.tsx(75,3): error TS6133: 'onNavigateHome' is declared but its value is never read.
-src/components/seller/SellerCenterView.tsx(169,30): error TS6133: 'setRegBankAccountName' is declared but its value is never read.
-src/components/seller/SellerCenterView.tsx(935,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(938,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(944,52): error TS6133: 'keyName' is declared but its value is never read.
-src/components/seller/SellerCenterView.tsx(945,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(953,59): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(956,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(959,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(963,52): error TS6133: 'keyName' is declared but its value is never read.
-src/components/seller/SellerCenterView.tsx(964,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(975,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(978,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(982,50): error TS6133: 'appName' is declared but its value is never read.
-src/components/seller/SellerCenterView.tsx(983,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(991,59): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(994,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(997,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(1484,86): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(1716,83): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2431,46): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2434,45): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2442,45): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2450,46): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2455,38): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2459,44): error TS2345: Argument of type '"No API keys yet. Click \"Create Key\" to issue your first key." | "Chưa có khóa API nào. Bấm \"Tạo Khóa Mới\" để cấp khóa đầu tiên."' is not assignable to parameter of type 'Record<string, any> | undefined'.
+src/components/seller/SellerCenterView.tsx(44,10): error TS2305: Module '"../../types/game"' has no exported member 'Game'.
+src/components/seller/SellerCenterView.tsx(76,3): error TS6133: 'onNavigateHome' is declared but its value is never read.
+src/components/seller/SellerCenterView.tsx(170,30): error TS6133: 'setRegBankAccountName' is declared but its value is never read.
+src/components/seller/SellerCenterView.tsx(936,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(939,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(945,52): error TS6133: 'keyName' is declared but its value is never read.
+src/components/seller/SellerCenterView.tsx(946,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(954,59): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(957,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(960,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(964,52): error TS6133: 'keyName' is declared but its value is never read.
+src/components/seller/SellerCenterView.tsx(965,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(976,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(979,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(983,50): error TS6133: 'appName' is declared but its value is never read.
+src/components/seller/SellerCenterView.tsx(984,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(992,59): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(995,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(998,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(1485,86): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(1717,83): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2432,46): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2435,45): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2443,45): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2451,46): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2456,38): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2460,44): error TS2345: Argument of type '"No API keys yet. Click \"Create Key\" to issue your first key." | "Chưa có khóa API nào. Bấm \"Tạo Khóa Mới\" để cấp khóa đầu tiên."' is not assignable to parameter of type 'Record<string, any> | undefined'.
   Type 'string' is not assignable to type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2466,93): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2467,95): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2468,94): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2469,96): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2470,97): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2471,105): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2472,107): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2467,93): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2468,95): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2469,94): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2470,96): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2471,97): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2472,105): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/components/seller/SellerCenterView.tsx(2473,107): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2492,80): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2493,89): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2494,93): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2495,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2502,125): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2510,64): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2514,65): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2523,69): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2527,63): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2531,69): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2535,63): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2540,65): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2556,58): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2559,57): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2564,38): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2568,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2582,58): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2590,58): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2594,59): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2608,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2612,47): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2616,94): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2633,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(2643,62): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3234,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3244,52): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3251,70): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3258,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3265,70): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3266,79): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3267,83): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3268,79): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3278,49): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3285,56): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3285,109): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3300,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3305,57): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3309,82): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3329,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3334,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/seller/SellerCenterView.tsx(3347,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
-src/components/ShareModal.tsx(81,9): error TS6133: 'success' is declared but its value is never read.
-src/components/shipping/ShippingTrackingModal.tsx(11,3): error TS6133: 'CheckCircle2' is declared but its value is never read.
-src/components/shipping/ShippingTrackingModal.tsx(15,3): error TS6133: 'ExternalLink' is declared but its value is never read.
-src/components/shipping/ShippingTrackingModal.tsx(21,3): error TS6133: 'CarrierCode' is declared but its value is never read.
-src/components/shipping/ShippingTrackingModal.tsx(23,1): error TS6133: 'formatCurrency' is declared but its value is never read.
-src/components/shipping/ShippingTrackingModal.tsx(41,9): error TS6133: 'currentLanguage' is declared but its value is never read.
-src/components/shipping/ShippingTrackingModal.tsx(41,11): error TS2339: Property 'currentLanguage' does not exist on type 'LanguageContextType'.
-src/components/shipping/ShippingTrackingModal.tsx(58,7): error TS2322: Type 'ShippingOrderRecord | null' is not assignable to type 'ShippingOrderRecord | undefined'.
+src/components/seller/SellerCenterView.tsx(2474,107): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2493,80): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2494,89): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2495,93): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2496,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2503,125): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2511,64): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2515,65): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2524,69): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2528,63): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2532,69): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2536,63): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2541,65): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2557,58): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2560,57): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2565,38): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2569,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2583,58): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2591,58): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2595,59): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2609,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2613,47): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2617,94): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2634,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(2644,62): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3235,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3245,52): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3252,70): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3259,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3266,70): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3267,79): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3268,83): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3269,79): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3279,49): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3286,56): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3286,109): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3301,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3306,57): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3310,82): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3330,50): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3335,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/seller/SellerCenterView.tsx(3348,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+src/components/ShareModal.tsx(83,9): error TS6133: 'success' is declared but its value is never read.
+src/components/shipping/ShippingTrackingModal.tsx(12,3): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/components/shipping/ShippingTrackingModal.tsx(16,3): error TS6133: 'ExternalLink' is declared but its value is never read.
+src/components/shipping/ShippingTrackingModal.tsx(22,3): error TS6133: 'CarrierCode' is declared but its value is never read.
+src/components/shipping/ShippingTrackingModal.tsx(24,1): error TS6133: 'formatCurrency' is declared but its value is never read.
+src/components/shipping/ShippingTrackingModal.tsx(42,9): error TS6133: 'currentLanguage' is declared but its value is never read.
+src/components/shipping/ShippingTrackingModal.tsx(42,11): error TS2339: Property 'currentLanguage' does not exist on type 'LanguageContextType'.
+src/components/shipping/ShippingTrackingModal.tsx(59,7): error TS2322: Type 'ShippingOrderRecord | null' is not assignable to type 'ShippingOrderRecord | undefined'.
   Type 'null' is not assignable to type 'ShippingOrderRecord | undefined'.
-src/components/shipping/ShippingTrackingModal.tsx(60,7): error TS2322: Type 'ShippingOrderRecord | null' is not assignable to type 'ShippingOrderRecord | undefined'.
+src/components/shipping/ShippingTrackingModal.tsx(61,7): error TS2322: Type 'ShippingOrderRecord | null' is not assignable to type 'ShippingOrderRecord | undefined'.
   Type 'null' is not assignable to type 'ShippingOrderRecord | undefined'.
-src/components/shipping/ShippingTrackingModal.tsx(269,27): error TS6133: 'isLast' is declared but its value is never read.
+src/components/shipping/ShippingTrackingModal.tsx(270,27): error TS6133: 'isLast' is declared but its value is never read.
 src/components/showcase/PlatformSolutionsView.tsx(6,3): error TS6133: 'Globe' is declared but its value is never read.
 src/components/showcase/PlatformSolutionsView.tsx(13,3): error TS6133: 'Phone' is declared but its value is never read.
 src/components/showcase/PlatformSolutionsView.tsx(18,3): error TS6133: 'Server' is declared but its value is never read.
@@ -1304,15 +1300,15 @@ src/components/StoreView.tsx(265,47): error TS2339: Property 'created_at' does n
 src/components/StoreView.tsx(266,23): error TS2339: Property 'created_at' does not exist on type 'StoreProduct'.
 src/components/StoreView.tsx(266,47): error TS2339: Property 'created_at' does not exist on type 'StoreProduct'.
 src/components/TelegramHomeBanner.tsx(2,43): error TS6133: 'ArrowRight' is declared but its value is never read.
-src/components/TelegramHomeBanner.tsx(32,30): error TS2339: Property 'getCurrentUser' does not exist on type 'AuthService'.
-src/components/TelegramHomeBanner.tsx(37,31): error TS2551: Property 'getAuthToken' does not exist on type 'AuthService'. Did you mean 'getToken'?
+src/components/TelegramHomeBanner.tsx(33,30): error TS2339: Property 'getCurrentUser' does not exist on type 'AuthService'.
+src/components/TelegramHomeBanner.tsx(38,31): error TS2551: Property 'getAuthToken' does not exist on type 'AuthService'. Did you mean 'getToken'?
 src/components/TelegramView.tsx(6,3): error TS6133: 'Sparkles' is declared but its value is never read.
 src/components/TelegramView.tsx(11,3): error TS6133: 'Zap' is declared but its value is never read.
 src/components/TelegramView.tsx(12,3): error TS6133: 'Gift' is declared but its value is never read.
 src/components/TelegramView.tsx(14,3): error TS6133: 'MessageSquare' is declared but its value is never read.
-src/components/TelegramView.tsx(41,10): error TS6133: 'isLoading' is declared but its value is never read.
-src/components/TelegramView.tsx(71,31): error TS2551: Property 'getAuthToken' does not exist on type 'AuthService'. Did you mean 'getToken'?
-src/components/TelegramView.tsx(93,9): error TS6133: 'botUrl' is declared but its value is never read.
+src/components/TelegramView.tsx(42,10): error TS6133: 'isLoading' is declared but its value is never read.
+src/components/TelegramView.tsx(72,31): error TS2551: Property 'getAuthToken' does not exist on type 'AuthService'. Did you mean 'getToken'?
+src/components/TelegramView.tsx(95,9): error TS6133: 'botUrl' is declared but its value is never read.
 src/components/TodayCodesView.tsx(3,3): error TS6133: 'Calendar' is declared but its value is never read.
 src/components/TodayCodesView.tsx(5,3): error TS6133: 'Sparkles' is declared but its value is never read.
 src/components/TodayCodesView.tsx(16,1): error TS6133: 'GameItem' is declared but its value is never read.
@@ -1324,25 +1320,25 @@ src/components/UserAiKeysManager.tsx(25,1): error TS6133: 'formatCore' is declar
 src/components/UserAiKeysManager.tsx(96,3): error TS6133: 'currentUser' is declared but its value is never read.
 src/components/UserAiKeysManager.tsx(98,3): error TS6133: 'isDarkMode' is declared but its value is never read.
 src/components/UserProfileModal.tsx(12,3): error TS6133: 'Calendar' is declared but its value is never read.
-src/components/UserProfileModal.tsx(154,27): error TS2339: Property 'category' does not exist on type 'Mission'.
-src/components/UserProfileModal.tsx(159,56): error TS2339: Property 'max_participants' does not exist on type 'Mission'.
-src/components/UserProfileModal.tsx(163,14): error TS2367: This comparison appears to be unintentional because the types 'MissionRewardType' and '"WALLET"' have no overlap.
-src/components/UserProfileModal.tsx(163,44): error TS2367: This comparison appears to be unintentional because the types 'MissionRewardType' and '"WALLET_CORE"' have no overlap.
-src/components/UserProfileModal.tsx(166,42): error TS2367: This comparison appears to be unintentional because the types '"WALLET_BALANCE"' and '"GIFTCODE"' have no overlap.
-src/components/UserProfileModal.tsx(320,11): error TS2353: Object literal may only specify known properties, and 'link_url' does not exist in type '{ token: string; bot_username: string; expires_in: number; deep_link: string; } | ((prevState: { token: string; bot_username: string; expires_in: number; deep_link: string; } | null) => { ...; } | null)'.
-src/components/UserProfileModal.tsx(432,11): error TS2722: Cannot invoke an object which is possibly 'undefined'.
-src/components/UserProfileModal.tsx(485,9): error TS2722: Cannot invoke an object which is possibly 'undefined'.
-src/components/UserProfileModal.tsx(1217,38): error TS2367: This comparison appears to be unintentional because the types 'MissionRewardType' and '"WALLET"' have no overlap.
-src/components/UserProfileModal.tsx(1217,68): error TS2367: This comparison appears to be unintentional because the types 'MissionRewardType' and '"WALLET_CORE"' have no overlap.
-src/components/UserProfileModal.tsx(1229,47): error TS2339: Property 'reward_amount' does not exist on type 'Mission'.
-src/components/UserProfileModal.tsx(1238,36): error TS2339: Property 'category' does not exist on type 'Mission'.
-src/components/UserProfileModal.tsx(1256,68): error TS2339: Property 'max_participants' does not exist on type 'Mission'.
-src/components/UserProfileModal.tsx(1476,78): error TS2339: Property 'link_url' does not exist on type '{ token: string; bot_username: string; expires_in: number; deep_link: string; }'.
-src/components/UserProfileModal.tsx(1665,44): error TS2339: Property 'is_expired' does not exist on type 'GiftCode'.
-src/components/UserProfileModal.tsx(1666,46): error TS2339: Property 'date' does not exist on type 'GiftCode'.
-src/components/UserWalletModal.tsx(15,3): error TS6133: 'Plus' is declared but its value is never read.
-src/components/UserWalletModal.tsx(195,9): error TS6133: 'rawUserId' is declared but its value is never read.
-src/components/UserWalletModal.tsx(633,86): error TS2322: Type '{ className: string; title: string; }' is not assignable to type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
+src/components/UserProfileModal.tsx(155,27): error TS2339: Property 'category' does not exist on type 'Mission'.
+src/components/UserProfileModal.tsx(160,56): error TS2339: Property 'max_participants' does not exist on type 'Mission'.
+src/components/UserProfileModal.tsx(164,14): error TS2367: This comparison appears to be unintentional because the types 'MissionRewardType' and '"WALLET"' have no overlap.
+src/components/UserProfileModal.tsx(164,44): error TS2367: This comparison appears to be unintentional because the types 'MissionRewardType' and '"WALLET_CORE"' have no overlap.
+src/components/UserProfileModal.tsx(167,42): error TS2367: This comparison appears to be unintentional because the types '"WALLET_BALANCE"' and '"GIFTCODE"' have no overlap.
+src/components/UserProfileModal.tsx(321,11): error TS2353: Object literal may only specify known properties, and 'link_url' does not exist in type '{ token: string; bot_username: string; expires_in: number; deep_link: string; } | ((prevState: { token: string; bot_username: string; expires_in: number; deep_link: string; } | null) => { ...; } | null)'.
+src/components/UserProfileModal.tsx(433,11): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/components/UserProfileModal.tsx(486,9): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/components/UserProfileModal.tsx(1218,38): error TS2367: This comparison appears to be unintentional because the types 'MissionRewardType' and '"WALLET"' have no overlap.
+src/components/UserProfileModal.tsx(1218,68): error TS2367: This comparison appears to be unintentional because the types 'MissionRewardType' and '"WALLET_CORE"' have no overlap.
+src/components/UserProfileModal.tsx(1230,47): error TS2339: Property 'reward_amount' does not exist on type 'Mission'.
+src/components/UserProfileModal.tsx(1239,36): error TS2339: Property 'category' does not exist on type 'Mission'.
+src/components/UserProfileModal.tsx(1257,68): error TS2339: Property 'max_participants' does not exist on type 'Mission'.
+src/components/UserProfileModal.tsx(1477,78): error TS2339: Property 'link_url' does not exist on type '{ token: string; bot_username: string; expires_in: number; deep_link: string; }'.
+src/components/UserProfileModal.tsx(1666,44): error TS2339: Property 'is_expired' does not exist on type 'GiftCode'.
+src/components/UserProfileModal.tsx(1667,46): error TS2339: Property 'date' does not exist on type 'GiftCode'.
+src/components/UserWalletModal.tsx(16,3): error TS6133: 'Plus' is declared but its value is never read.
+src/components/UserWalletModal.tsx(196,9): error TS6133: 'rawUserId' is declared but its value is never read.
+src/components/UserWalletModal.tsx(634,86): error TS2322: Type '{ className: string; title: string; }' is not assignable to type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
   Property 'title' does not exist on type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
 src/components/UtilitiesView.tsx(7,3): error TS6133: 'LogIn' is declared but its value is never read.
 src/components/UtilitiesView.tsx(9,3): error TS6133: 'ChevronLeft' is declared but its value is never read.
@@ -1720,52 +1716,51 @@ src/services/authService.ts(433,49): error TS6133: 'remember' is declared but it
 src/services/contentTranslationService.ts(245,11): error TS6133: 'isLoaded' is declared but its value is never read.
 src/services/crossOriginSync.ts(12,40): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
 src/services/dataService.ts(15,3): error TS6196: 'ProductCategoryItem' is declared but never used.
-src/services/dataService.ts(19,38): error TS6133: 'INDUSTRY_PRESETS' is declared but its value is never read.
-src/services/dataService.ts(24,25): error TS6133: 'parseExpirationDate' is declared but its value is never read.
-src/services/dataService.ts(1890,66): error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'GiftCode'.
-src/services/dataService.ts(1928,85): error TS2339: Property 'is_partial_preview' does not exist on type 'GameItem'.
-src/services/dataService.ts(2057,7): error TS2353: Object literal may only specify known properties, and 'is_full_detail' does not exist in type 'GameItem'.
-src/services/dataService.ts(2442,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'number' have no overlap.
-src/services/dataService.ts(2443,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
-src/services/dataService.ts(2446,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2447,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2448,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2476,21): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2476,53): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2493,23): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
-src/services/dataService.ts(2493,47): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
-src/services/dataService.ts(2494,23): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
-src/services/dataService.ts(2494,47): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
-src/services/dataService.ts(2520,50): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2520,81): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2520,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2590,9): error TS2353: Object literal may only specify known properties, and 'alreadyClaimed' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/services/dataService.ts(2647,13): error TS2353: Object literal may only specify known properties, and 'errorCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/services/dataService.ts(2741,30): error TS2304: Cannot find name 'ClaimedCodeRecord'.
-src/services/dataService.ts(2771,13): error TS2353: Object literal may only specify known properties, and 'isNewCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/services/dataService.ts(2801,13): error TS2353: Object literal may only specify known properties, and 'errorCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/services/dataService.ts(2836,22): error TS2304: Cannot find name 'ClaimedCodeRecord'.
-src/services/dataService.ts(2839,19): error TS2304: Cannot find name 'ClaimedCodeRecord'.
-src/services/dataService.ts(2843,27): error TS2304: Cannot find name 'ClaimedCodeRecord'.
-src/services/dataService.ts(3094,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
-src/services/dataService.ts(3094,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
-src/services/dataService.ts(3095,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
-src/services/dataService.ts(3095,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
-src/services/dataService.ts(3282,76): error TS2339: Property 'stock' does not exist on type 'ProductVariantItem'.
-src/services/dataService.ts(3382,14): error TS2339: Property 'saveRemoteData' does not exist on type 'DataService'.
-src/services/dataService.ts(3549,38): error TS2339: Property 'orderCode' does not exist on type 'OrderRecord'.
-src/services/dataService.ts(3622,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
-src/services/dataService.ts(3622,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
-src/services/dataService.ts(3623,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
-src/services/dataService.ts(3623,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
-src/services/dataService.ts(4330,17): error TS6133: 'footerTitle' is declared but its value is never read.
-src/services/dataService.ts(4671,11): error TS6133: 'isLocalhost' is declared but its value is never read.
+src/services/dataService.ts(20,38): error TS6133: 'INDUSTRY_PRESETS' is declared but its value is never read.
+src/services/dataService.ts(25,25): error TS6133: 'parseExpirationDate' is declared but its value is never read.
+src/services/dataService.ts(1896,66): error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'GiftCode'.
+src/services/dataService.ts(1934,85): error TS2339: Property 'is_partial_preview' does not exist on type 'GameItem'.
+src/services/dataService.ts(2063,7): error TS2353: Object literal may only specify known properties, and 'is_full_detail' does not exist in type 'GameItem'.
+src/services/dataService.ts(2448,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'number' have no overlap.
+src/services/dataService.ts(2449,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
+src/services/dataService.ts(2452,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2453,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2454,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2482,21): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2482,53): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2499,23): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
+src/services/dataService.ts(2499,47): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
+src/services/dataService.ts(2500,23): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
+src/services/dataService.ts(2500,47): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
+src/services/dataService.ts(2526,50): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2526,81): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2526,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2596,9): error TS2353: Object literal may only specify known properties, and 'alreadyClaimed' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/services/dataService.ts(2653,13): error TS2353: Object literal may only specify known properties, and 'errorCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/services/dataService.ts(2747,30): error TS2304: Cannot find name 'ClaimedCodeRecord'.
+src/services/dataService.ts(2777,13): error TS2353: Object literal may only specify known properties, and 'isNewCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/services/dataService.ts(2807,13): error TS2353: Object literal may only specify known properties, and 'errorCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/services/dataService.ts(2842,22): error TS2304: Cannot find name 'ClaimedCodeRecord'.
+src/services/dataService.ts(2845,19): error TS2304: Cannot find name 'ClaimedCodeRecord'.
+src/services/dataService.ts(2849,27): error TS2304: Cannot find name 'ClaimedCodeRecord'.
+src/services/dataService.ts(3100,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
+src/services/dataService.ts(3100,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
+src/services/dataService.ts(3101,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
+src/services/dataService.ts(3101,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
+src/services/dataService.ts(3288,76): error TS2339: Property 'stock' does not exist on type 'ProductVariantItem'.
+src/services/dataService.ts(3388,14): error TS2339: Property 'saveRemoteData' does not exist on type 'DataService'.
+src/services/dataService.ts(3555,38): error TS2339: Property 'orderCode' does not exist on type 'OrderRecord'.
+src/services/dataService.ts(3628,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
+src/services/dataService.ts(3628,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
+src/services/dataService.ts(3629,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
+src/services/dataService.ts(3629,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
+src/services/dataService.ts(4678,11): error TS6133: 'isLocalhost' is declared but its value is never read.
 src/services/gameEventService.ts(1,30): error TS6196: 'GameEventStatus' is declared but never used.
 src/services/growthService.ts(6,3): error TS6196: 'MilestoneTier' is declared but never used.
-src/services/growthService.ts(231,9): error TS2322: Type 'GrowthConfig | null' is not assignable to type 'GrowthConfig'.
+src/services/growthService.ts(232,9): error TS2322: Type 'GrowthConfig | null' is not assignable to type 'GrowthConfig'.
   Type 'null' is not assignable to type 'GrowthConfig'.
-src/services/growthService.ts(514,21): error TS2551: Property 'saveClaimedCode' does not exist on type 'DataService'. Did you mean 'getClaimedCodes'?
-src/services/growthService.ts(532,21): error TS2551: Property 'saveClaimedCode' does not exist on type 'DataService'. Did you mean 'getClaimedCodes'?
+src/services/growthService.ts(515,21): error TS2551: Property 'saveClaimedCode' does not exist on type 'DataService'. Did you mean 'getClaimedCodes'?
+src/services/growthService.ts(533,21): error TS2551: Property 'saveClaimedCode' does not exist on type 'DataService'. Did you mean 'getClaimedCodes'?
 src/services/marketingService.ts(15,1): error TS6192: All imports in import declaration are unused.
 src/services/marketingService.ts(24,7): error TS6133: 'MARKETING_VIRTUAL_STOCK_TIMESTAMPS_KEY' is declared but its value is never read.
 src/services/marketingService.ts(164,10): error TS6133: 'stringHash' is declared but its value is never read.
@@ -1850,9 +1845,3 @@ src/utils/productPackageUtils.ts(498,82): error TS2367: This comparison appears 
 src/utils/productPackageUtils.ts(498,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
 src/utils/productPackageUtils.ts(507,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'GiveawayCampaign'.
 full_tsc_exit=2
-total_tsc_errors=1689
-prev_94dacc4_tsc_errors=1690
-delta_vs_94dacc4=-1
-baseline_75fa59b_ts6133_count=529
-current_ts6133_count=467
-new_ts6133_vs_75fa59b=0

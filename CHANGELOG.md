@@ -7,6 +7,27 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-28]
 
+### 494. Phân Hệ Admin Đổi Tên Sàn & Thương Hiệu (`BrandIdentityModule`), Đồng Bộ Nhãn Hiệu Toàn Sàn, Thương Hiệu AI (`aiBrandName`) & Đơn Vị Tiền Ví (`coreUnitName`) (28/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai trọn vẹn 4 mảnh theo kế hoạch đã duyệt ([`ke_hoach_doi_ten_san_dong_bo_nhan_hieu_28_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_doi_ten_san_dong_bo_nhan_hieu_28_11.md)): tạo phân hệ nổi bật ngay trên Sidebar Admin (**Đổi Tên Sàn & Thương Hiệu** kèm **Live Preview 5 bề mặt** và phím tắt 1 chạm từ Tab 9 CMS), xây dựng nguồn chân lý duy nhất (SSOT) đồng bộ tức thì tên sàn, tên thương hiệu AI nội bộ (`Pine AI` → tùy biến), và tên đơn vị tiền ví (`Core` → `Xu`/`Point`/`Coin`/`Gem`...) trên toàn bộ Sàn Khách (`/` & `/en/`), Cổng Người Bán (`/seller` & `/en/seller`), Trang Quản Trị (`/admin`), SSR SEO/OG/JSON-LD, PWA `/manifest.json`, Preloader, Email OTP/Broadcast và Telegram Bot.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Mảnh 1 — Backend Brand SSOT, API, SSR Zero-FOUC, Dynamic `/manifest.json`, Email & Telegram (`brand_service.ts`, `api/brand.ts`, `api/admin/brand.ts`, `sync-lite.ts`, `cache_service.ts`, `mission_service.ts`, `_worker.ts`, Email/Telegram/Escrow endpoints)*:
+     - Tạo SSOT `wcg_brand_identity_v1` trong D1 `system_settings` (gồm `brandName`, `shortName`, `brandBadge`, `sellerPortalName`, `adminPortalName`, `aiBrandName`, `coreUnitName`, `taglineVi/En`, `logoUrl`, `faviconUrl`, `copyrightHolder`, `autoDerive`), đồng bộ 2 chiều sang `wcg_admin_content_v4`, tự đổi tên Gian hàng chính hãng (`Official Store`), tăng `X-Catalog-Epoch` và xóa RAM/Edge cache ngay lập tức.
+     - Tạo `GET /api/brand` (công khai, `ETag` + `304`), `GET/PUT/POST /api/admin/brand` (bảo vệ bằng `BRAND_MANAGE`, hỗ trợ `reset: true`, ghi `logAdminAudit`), ghép `brandIdentity` vào `/api/sync-lite` (0 truy vấn D1 phụ), phục vụ động `GET /manifest.json`, và tiêm `window.__WCG_BRAND__` + `<title>` động vào cả SSR `renderSeoHtml` lẫn `/admin/index.html` (`CDN-Cache-Control: no-store` chống ghim tên cũ).
+     - Thay toàn bộ tên sàn và đơn vị `"Core"` cứng trong Email OTP/Reset/Broadcast/Unsubscribe, Telegram Bot, và mô tả QR đơn hàng sang đọc động từ `getBrandIdentity()`.
+  2. *Mảnh 2 & 3 — Frontend Brand Runtime, `BrandContext`, `formatCore()`, Từ Điển Song Ngữ & Toàn Bộ Bề Mặt UI (`brandRuntime.ts`, `BrandContext.tsx`, `crossTabSync.ts`, `textUtils.ts`, `LanguageContext.tsx`, `index.html`, `dataService.ts`, `vi.json`, `en.json`, `th.json`, `UniversalMallView.tsx`, `CyberLoader.tsx`, `LanguageSeoHead.tsx`, Modals, Seller Portal & Admin Shell)*:
+     - Lưu cache cục bộ `pine_brand_identity_cache_v1` (tránh xung đột migration `wcg_*`), đồng bộ đa tab qua `BroadcastChannel` (`BRAND_UPDATED`), cập nhật `index.html` preloader chống FOUC.
+     - Nội suy tự động 10 biến thương hiệu (`{brandName}`, `{shortName}`, `{aiBrandName}`, `{coreUnit}`, `{sellerPortalName}`, `{adminPortalName}`...) ngay trong `LanguageContext` (`t()`, Proxy `t.section.key`, `tStatic()`) và cập nhật `formatCore()` (bao phủ 86 điểm gọi). Giữ nguyên cột D1, route `/pay-core`, enum `'CORE'` và chuỗi tiếng Anh `"6 Core Pillars of Our Architecture"`.
+     - Quét và gỡ sạch toàn bộ thương hiệu cũ (`Codegame Mall`, `Shop Code Game`, `CODEGAME.SHOP`, `CODE GAME`) trên toàn bộ UI Khách, Modal, Cổng Người Bán và Vỏ Admin.
+  3. *Mảnh 4 — Module Admin `BrandIdentityModule.tsx`, Phím Tắt CMS Tab 9, Quyền API Rule 8 & Kiểm Thử Hồi Quy (`BrandIdentityModule.tsx`, `AdminSidebar.tsx`, `AdminApp.tsx`, `ContentCMSModule.tsx`, `ApiKeysModule.tsx`, `check-hardcoded-i18n.cjs`, `test_brand_identity_sync.ts`)*:
+     - Xây dựng `BrandIdentityModule.tsx` tải lười (`React.lazy()`, `30.95 kB` / `5.87 kB` gzip), 100% song ngữ VI/EN (`86` khóa `brandIdentity.*` đối xứng), bảng phạm vi 7 kênh chuẩn Rule 9 `table-fixed w-full`, gợi ý nhanh `Core`/`Xu`/`Point`/`Coin`/`Gem`, và khung **Live Preview 5 bề mặt** theo thời gian thực.
+     - Gắn mục riêng trên Sidebar Admin (`#/brand-identity` kèm nhãn `BRAND`), thêm banner lối tắt 1 chạm ở Tab 9 CMS, đăng ký quyền `BRAND_MANAGE` vào `ALL_API_SCOPES` + mẫu cURL (Rule 8), thêm vào `IN_SCOPE_UI_FILES` (`30` tệp) và bộ test `test_brand_identity_sync.ts` (`10/10 PASS`, nối vào `npm test`).
+- **Kiểm thử & Đo lường thực tế**:
+  - `npm test` (`docs/test_full_check.log`): **`309/309 PASS`** (`8` bộ test, thêm `10/10` ở `test_brand_identity_sync.ts`).
+  - Đối xứng từ điển `vi.json` / `en.json`: **`2.790 / 2.790`** khóa lá (`0` lệch; `th.json`: `238` khóa). `npm run check:i18n` (`docs/i18n_full_check.log`): **`30/30 PASSED`** (`0` vi phạm, gồm `BrandIdentityModule.tsx`). Quét toàn sàn `--all` trên `126` `.tsx` (`docs/check_hardcoded_i18n_all.log`): `2.896` (`+1` do tách nút JSX quanh `{brand.brandName}` ở 2 modal cũ ngoài phạm vi `DownloadAppModal` & `EmailSubscriptionModal`, bù `-1` ở `PlatformSolutionsView`, `0` chuỗi tiếng Việt mới thêm).
+  - `tsc` (`docs/tsc_full_check.log`): `homepage_exit=0` (`HOMEPAGE_TSC_OK`), `tsconfig.json` `full_tsc_exit=2`, tổng **`1.688` lỗi** (giảm `1` lỗi so với `6588932`, `0` lỗi mới ở toàn bộ file tạo/sửa, `TS6133=466`). Rule 10 (`docs/rule10_scan.log`): `TOTAL_VIOLATIONS=0`.
+  - `npm run build` (`docs/build_success.log`): Thành công, Lean Guard Pre `5/5` + Post `4/4 PASS` (`BrandIdentityModule 30.95 kB / 5.87 kB gzip`, `UniversalMallView 414.64 kB`, `AdminApp 568.75 KB < 600 KB`, `_worker.js 6.92 MB <= 10.00 MB`, `dist/ 69.09 MB <= 85.00 MB`).
+
 ### 493. Kiểm Thử E2E Toàn Trình Gian Hàng Trên Edge Worker + D1 Thật, Đo Thời Gian Đồng Bộ & Vá 3 Lỗi Backend (`subaccounts`, `report`, `is_vacation` Epoch) (28/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Thực thi kế hoạch kiểm thử toàn trình gian hàng ([`ke_hoach_test_gian_hang_va_do_dong_bo_28_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_test_gian_hang_va_do_dong_bo_28_11.md), Phương án A trên Local Cloudflare Pages Edge Worker + SQLite D1 thật, bỏ qua gán API SePay): tạo shop, duyệt `PENDING → TRIAL → ACTIVE`, nạp Core, tạo sản phẩm số & vật lý, mua bán, xử lý khiếu nại, kiểm tra nhân viên phụ, đo thời gian đồng bộ (ms) và kiểm tra ma trận lỗi.
@@ -313,17 +334,3 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
      - Viết mới `calculateResellPrice` (tính giá `PERCENT`/`FIXED`, đệm phí, tự động tạm dừng `BELOW_COST` / `BELOW_MIN_MARGIN` / `OUT_OF_STOCK` / `INVALID_SUPPLIER_COST`).
   3. *Bộ kiểm thử trong repo (`scripts/tests/test_supplier_connectors.ts`, `package.json`)*:
      - Bổ sung lệnh `npm run test:suppliers` (73 assertions bao phủ 5 nhóm: Fail-Closed AES-GCM & kiểm tĩnh, SSRF HTTPS-only, HMAC & anti-replay, Anti-Loss calculator, vị trí & DDL migration `0050`) và nối vào `npm test`.
-
-### 474. Chuẩn Hóa Bằng Chứng Kiểm Thử & Build Trong Repo (`scripts/tests/`, `docs/tsc_full_check.log`, `docs/build_success.log` & Quy Tắc `AGENTS.md`) (26/11/2026)
-- **Bối cảnh & Yêu cầu**:
-  - Khắc phục dứt điểm việc file log `tsc` (`docs/tsc_check_success.log` 0 byte / log full để ở `scratch/` ngoài repo), 2 file test (icon & `/api/products`) và `docs/build_success.log` (bản cũ 24/11) không tồn tại hoặc không khớp trong repo sau kiểm báo cáo `4a6235b`. Không chỉnh sửa code sản phẩm hay dữ liệu D1.
-- **Giải pháp áp dụng (Solution)**:
-  1. *Đưa 2 bộ test thật vào repo + runner `tsx` (`package.json`, `scripts/tests/test_icon_and_products_fixes.ts`, `scripts/tests/test_products_primary_select.ts`)*:
-     - Cài `tsx` vào `devDependencies`, thêm các lệnh `npm run test:icons`, `npm run test:products`, và `npm test`.
-     - `test_icon_and_products_fixes.ts` import và thực thi trực tiếp `src/utils/safeImageUrl.ts`, `functions/game_icons/[file].ts`, và `functions/_worker.ts` (12/12 checks).
-     - `test_products_primary_select.ts` import và thực thi trực tiếp `functions/api/products/index.ts` với mock `env.DB` kiểm đủ 10/10 trường nhánh `SELECT FROM products`.
-  2. *Log `tsc` thô ổn định có nội dung (`docs/tsc_full_check.log`)*:
-     - Dùng một tên file duy nhất `docs/tsc_full_check.log` gồm 2 mục có lệnh chạy, thời gian UTC và `exit=`: `tsconfig.homepage.json --noEmit --listFiles` (`exit=0`) và `tsconfig.json --noEmit` (output lỗi thô đầy đủ + đối chiếu số per-file với baseline).
-  3. *Cập nhật `docs/build_success.log` & bổ sung quy tắc bắt buộc vào `AGENTS.md`*:
-     - Pipe trực tiếp output `npm run build` vào `docs/build_success.log` khớp `X-Build-Id` live.
-     - Cập nhật Chốt Chặn 3 trong `AGENTS.md` quy định bắt buộc 100% file log `tsc`, log build và file test được trích dẫn trong báo cáo phải nằm trong repo (commit lên Git), tuyệt đối không để trong `scratch/` hay đường dẫn local ngoài repo.

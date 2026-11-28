@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useBrand } from '../../context/BrandContext';
 
 interface LanguageSeoHeadProps {
   title?: string;
@@ -13,20 +14,21 @@ export const LanguageSeoHead: React.FC<LanguageSeoHeadProps> = ({
   path = '',
 }) => {
   const { language } = useLanguage();
+  const { brand } = useBrand();
   const isEn = language === 'en';
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
-    // 1. Cập nhật document.title theo ngôn ngữ
-    const defaultViTitle = 'Pine Universal Mall - Siêu Thị Trực Tuyến & Cổng Tra Cứu Toàn Diện';
-    const defaultEnTitle = 'Pine Universal Mall - Leading Multi-Industry Shopping & Verified Services';
+    // 1. Cập nhật document.title theo ngôn ngữ & Brand SSOT
+    const defaultViTitle = `${brand.brandName} - ${brand.taglineVi}`;
+    const defaultEnTitle = `${brand.brandName} - ${brand.taglineEn}`;
     const finalTitle = title || (isEn ? defaultEnTitle : defaultViTitle);
     document.title = finalTitle;
 
     // 2. Cập nhật meta description
-    const defaultViDesc = 'Pine Universal Mall - Sàn thương mại điện tử đa ngành hàng đầu, mua sắm trực tuyến chất lượng cao, thanh toán VietQR tự động 0s.';
-    const defaultEnDesc = 'Discover and redeem 100% verified official game giftcodes in Vietnam. Multi-industry e-commerce store with instant 0s digital delivery.';
+    const defaultViDesc = `${brand.brandName} - ${brand.taglineVi}. Mua sắm trực tuyến chất lượng cao, thanh toán VietQR tự động 0s.`;
+    const defaultEnDesc = `${brand.brandName} - ${brand.taglineEn}. Multi-industry e-commerce store with instant 0s digital delivery.`;
     const finalDesc = description || (isEn ? defaultEnDesc : defaultViDesc);
 
     let metaDesc = document.querySelector('meta[name="description"]');
@@ -63,7 +65,7 @@ export const LanguageSeoHead: React.FC<LanguageSeoHeadProps> = ({
     updateLinkTag('alternate', 'vi', `${origin}${cleanPath}`);
     updateLinkTag('alternate', 'en', `${origin}/en${cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`}`);
     updateLinkTag('alternate', 'x-default', `${origin}${cleanPath}`);
-  }, [language, isEn, title, description, path]);
+  }, [language, isEn, title, description, path, brand.brandName, brand.taglineVi, brand.taglineEn]);
 
   return null;
 };

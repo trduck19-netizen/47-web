@@ -6,6 +6,7 @@ import type {
   MilestoneTier,
 } from '../types/growth';
 import { dataService } from './dataService';
+import { getActiveBrandIdentity } from '../utils/brandRuntime';
 
 const GROWTH_CONFIG_KEY = 'pine_growth_config_v1';
 const USER_GROWTH_DATA_PREFIX = 'pine_user_growth_v1_';
@@ -532,8 +533,8 @@ class GrowthService {
         dataService.saveClaimedCode({
           campaignId: `wheel_voucher_${wonSlice.id}`,
           campaignTitle: `Voucher Giảm Giá - ${wonSlice.label}`,
-          gameName: 'Shop Code Game',
-          gameSlug: 'shop-code-game',
+          gameName: getActiveBrandIdentity().brandName,
+          gameSlug: 'universal-mall',
           code: awardedCode,
           rewards: wonSlice.sublabel || wonSlice.label,
           claimedAt: new Date().toISOString(),

@@ -16,6 +16,7 @@ import { AdminModuleTab } from './AdminSidebar';
 import { adminDataService } from '../services/adminDataService';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { useLanguage } from '../../context/LanguageContext';
+import { useBrand } from '../../context/BrandContext';
 
 interface AdminTopbarProps {
   currentTab: AdminModuleTab;
@@ -32,6 +33,7 @@ interface AdminTopbarProps {
 
 const tabTitles: Record<AdminModuleTab, { title: string; subtitle: string }> = {
   dashboard: { title: 'Bảng Điều Khiển Tổng Quan', subtitle: 'Theo dõi các chỉ số kinh doanh, kho code và hoạt động hệ thống' },
+  'brand-identity': { title: 'Đổi Tên Sàn & Thương Hiệu', subtitle: 'Đổi tên sàn, tên ngắn, Cổng Người Bán, nhãn AI và đơn vị Ví — đồng bộ tức thì toàn hệ thống' },
   games: { title: 'Quản Lý Danh Mục Game', subtitle: 'Thêm mới, cập nhật thông tin, banner, gói CH Play và giftcode game' },
   news: { title: 'Quản Lý Tin Tức & Bài Viết', subtitle: 'Biên tập, hẹn giờ đăng bài, quản lý bài viết chuẩn SEO và mã code game' },
   crawler: { title: 'Crawler & Auto Sync', subtitle: 'Quét và cào giftcode tự động từ nhiều nguồn, đồng bộ dữ liệu thông minh' },
@@ -63,6 +65,7 @@ const tabTitles: Record<AdminModuleTab, { title: string; subtitle: string }> = {
 
 const tabTitlesEn: Record<string, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard Overview', subtitle: 'Monitor business KPIs, giftcode inventory, and system health' },
+  'brand-identity': { title: 'Brand & Platform Name', subtitle: 'Rename marketplace, short name, Seller Portal, AI label & Wallet unit across all channels' },
   games: { title: 'Game Directory Management', subtitle: 'Manage game catalogs, banners, Google Play packages, and codes' },
   news: { title: 'News & Articles Management', subtitle: 'Editorial, schedule publications, SEO articles, and game codes' },
   crawler: { title: 'Crawler & Auto Sync', subtitle: 'Automated crawler & code synchronization engine' },
@@ -97,6 +100,7 @@ const tabTitlesEn: Record<string, { title: string; subtitle: string }> = {
 
 const shortTabTitles: Record<AdminModuleTab, string> = {
   dashboard: 'Tổng Quan',
+  'brand-identity': 'Tên Sàn & Thương Hiệu',
   games: 'Quản Lý Game',
   news: 'Tin Tức',
   crawler: 'Crawler',
@@ -137,6 +141,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   pendingCount = 0,
 }) => {
   const { language, isPseudo, setIsPseudo } = useLanguage();
+  const { brand } = useBrand();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
@@ -165,7 +170,11 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   }, []);
 
   const activeTabTitles = language === 'en' ? tabTitlesEn : tabTitles;
-  const meta = activeTabTitles[currentTab] || (language === 'en' ? { title: 'System Administration', subtitle: 'Pine Universal Mall Management System' } : { title: 'Quản Trị Hệ Thống', subtitle: 'Hệ thống quản lý Pine Universal Mall' });
+  const rawMeta = activeTabTitles[currentTab] || (language === 'en' ? { title: 'System Administration', subtitle: `${brand.brandName} Management System` } : { title: 'Quản Trị Hệ Thống', subtitle: `Hệ thống quản lý ${brand.brandName}` });
+  const meta = {
+    title: rawMeta.title,
+    subtitle: rawMeta.subtitle.replace(/Pine AI/g, brand.aiBrandName),
+  };
 
   const isEn = language === 'en';
 

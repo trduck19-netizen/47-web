@@ -1,4 +1,5 @@
 import { authenticateAdmin } from '../../services/auth_service';
+import { getBrandIdentity } from '../../services/brand_service';
 import { DEFAULT_EMAIL_CONFIG, EmailProviderConfig } from './_emailHelper';
 
 interface Env {
@@ -130,11 +131,12 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
       finalApiKey = existingConfig.apiKey || '';
     }
 
+    const brand = await getBrandIdentity(env.DB);
     const newConfig: EmailProviderConfig = {
       provider: body.provider === 'brevo' ? 'brevo' : 'resend',
       apiKey: finalApiKey,
       senderEmail: String(body.senderEmail || 'notifications@universal-mall-shop.pages.dev').trim(),
-      senderName: String(body.senderName || 'Pine Universal Mall - Thông Báo Sự Kiện & Code Game').trim(),
+      senderName: String(body.senderName || `${brand.brandName} - Thông Báo Sự Kiện & Ưu Đãi`).trim(),
       isEnabled: Boolean(body.isEnabled),
     };
 

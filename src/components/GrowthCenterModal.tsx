@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getActiveBrandIdentity } from '../utils/brandRuntime';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -308,8 +309,9 @@ export const GrowthCenterModal: React.FC<GrowthCenterModalProps> = ({
   };
 
   const shareSocial = (platform: 'fb' | 'tg' | 'zalo') => {
+    const b = getActiveBrandIdentity();
     const text = encodeURIComponent(
-      `Vào săn Giftcode Game và quay vòng quay nhận quà miễn phí tại Shop Code Game! Đăng ký qua link nhận ngay +10,000 Core:`
+      `Vào săn Giftcode và quay vòng quay nhận quà miễn phí tại ${b.brandName}! Đăng ký qua link nhận ngay +10,000 ${b.coreUnitName}:`
     );
     const url = encodeURIComponent(referralLink);
 

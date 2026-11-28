@@ -33,8 +33,14 @@
         var host = window.location.hostname.toLowerCase();
         var pathname = window.location.pathname.toLowerCase();
         var hash = window.location.hash.toLowerCase();
+        var bootBrand = null;
+        try {
+          bootBrand = window.__WCG_BRAND__ || JSON.parse(localStorage.getItem('pine_brand_identity_cache_v1') || 'null');
+        } catch(e) {}
+        var bootBrandName = (bootBrand && bootBrand.brandName) ? bootBrand.brandName : 'Pine Universal Mall';
+        var bootAdminName = (bootBrand && bootBrand.adminPortalName) ? bootBrand.adminPortalName : (bootBrandName + ' Admin');
         if (host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.startsWith('admin.')) {
-          document.title = 'Quản Trị Hệ Thống | Pine Universal Mall';
+          document.title = 'Quản Trị Hệ Thống | ' + bootAdminName;
           if (window.location.pathname === '/' || window.location.pathname === '') {
             window.location.replace('/admin' + (window.location.hash || '#/dashboard'));
             return;
@@ -175,6 +181,7 @@
         <div class="loader"></div>
         <div class="loader-center-avatar">
           <img
+            id="app-preloader-logo"
             src="/logo.webp"
             alt="Pine Universal Mall Logo"
             width="102"
@@ -186,7 +193,7 @@
           />
         </div>
       </div>
-      <div style="display:flex;gap:4px;">
+      <div id="app-preloader-letters" style="display:flex;gap:4px;">
         <span class="loader-letter" style="animation-delay:0s">P</span>
         <span class="loader-letter" style="animation-delay:0.08s">I</span>
         <span class="loader-letter" style="animation-delay:0.16s">N</span>
@@ -198,6 +205,32 @@
         <span class="loader-letter" style="animation-delay:0.64s">L</span>
       </div>
     </div>
+    <script>
+      (function() {
+        try {
+          var b = window.__WCG_BRAND__ || JSON.parse(localStorage.getItem('pine_brand_identity_cache_v1') || 'null');
+          if (b) {
+            var logoEl = document.getElementById('app-preloader-logo');
+            if (logoEl && b.logoUrl && b.logoUrl !== '/logo.png') {
+              logoEl.src = b.logoUrl;
+              if (b.brandName) logoEl.alt = b.brandName + ' Logo';
+            }
+            var lettersEl = document.getElementById('app-preloader-letters');
+            var label = String(b.shortName || b.brandName || '').trim().toUpperCase();
+            if (lettersEl && label && label !== 'PINE MALL') {
+              lettersEl.innerHTML = '';
+              for (var i = 0; i < Math.min(label.length, 20); i++) {
+                var sp = document.createElement('span');
+                sp.className = 'loader-letter';
+                sp.style.animationDelay = ((i % 12) * 0.08) + 's';
+                sp.textContent = label[i] === ' ' ? '\u00A0' : label[i];
+                lettersEl.appendChild(sp);
+              }
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
 
     <div id="root"></div>
     <script>

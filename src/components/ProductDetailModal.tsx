@@ -2,6 +2,7 @@ import confetti from 'canvas-confetti';
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage, sanitizeImageUrl } from '../utils/safeImageUrl';
+import { getActiveBrandIdentity } from '../utils/brandRuntime';
 import {
   X,
   AlertCircle,
@@ -485,14 +486,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       return;
     }
     const finalSafeQty = isSelectedEscalating ? 1 : (realStock > 0 ? Math.min(Math.max(1, quantity), realStock) : 1);
-    const sellerDisplayName = (product as any).store_name || (product as any).seller_name || (product as any).brand || 'Codegame Mall';
+    const defaultPlatformBrand = getActiveBrandIdentity().brandName;
+    const sellerDisplayName = (product as any).store_name || (product as any).seller_name || (product as any).brand || defaultPlatformBrand;
     const result = cartService.addToCart({
       productId: product.id,
       productName: product.title,
       priceCore: displayCurrentPrice,
       sellerId: (product as any).seller_id || 'admin_store',
       sellerName: sellerDisplayName,
-      sellerSlug: (product as any).seller_slug || (sellerDisplayName ? sellerDisplayName.toLowerCase().replace(/\s+/g, '-') : 'codegame-mall'),
+      sellerSlug: (product as any).seller_slug || (sellerDisplayName ? sellerDisplayName.toLowerCase().replace(/\s+/g, '-') : 'universal-mall'),
       gameSlug: (product as any).game_slug,
       gameName: (product as any).brand || (product as any).game_name,
       coverUrl: product.cover_image_url || product.product_images?.[0],

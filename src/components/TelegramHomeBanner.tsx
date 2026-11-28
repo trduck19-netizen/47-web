@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Send, Users, Bell, ExternalLink, ArrowRight } from 'lucide-react';
 import { telegramService, TelegramPublicConfig } from '../services/telegramService';
 import { authService } from '../services/authService';
+import { useBrand } from '../context/BrandContext';
 
 interface TelegramHomeBannerProps {
   onOpenAuth?: () => void;
@@ -47,7 +48,8 @@ export const TelegramHomeBanner: React.FC<TelegramHomeBannerProps> = ({
     }
   };
 
-  const groupLink = config.group_link || 'https://t.me/codegameshop';
+  const { brand } = useBrand();
+  const groupLink = config.group_link || brand.telegramUrl || 'https://t.me/webcodegame_vn';
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-4">
@@ -62,7 +64,7 @@ export const TelegramHomeBanner: React.FC<TelegramHomeBannerProps> = ({
           <div>
             <div className="flex items-center justify-center sm:justify-start gap-2">
               <h4 className="text-sm sm:text-base font-black text-white tracking-tight">
-                Nhóm Telegram Pine Universal Mall
+                Nhóm Telegram {brand.brandName}
               </h4>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">
                 Official

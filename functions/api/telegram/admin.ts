@@ -13,6 +13,7 @@ import {
   getEffectiveTelegramConfig,
   saveTelegramConfigToDb,
 } from '../../services/telegram_service';
+import { getBrandIdentity } from '../../services/brand_service';
 import { verifyAdminAuth } from '../../services/mission_service';
 
 interface Env {
@@ -261,10 +262,11 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       );
     }
 
+    const brand = await getBrandIdentity(env.DB);
     const testMessage = [
-      '🧪 <b>[TEST] Tin Nhắn Thử Nghiệm Từ Quản Trị Viên Pine Universal Mall</b>',
+      `🧪 <b>[TEST] Tin Nhắn Thử Nghiệm Từ Quản Trị Viên ${brand.brandName}</b>`,
       '',
-      'Đây là tin nhắn kiểm tra kết nối hệ thống Telegram Bot với website Pine Universal Mall (universal-mall-shop.pages.dev).',
+      `Đây là tin nhắn kiểm tra kết nối hệ thống Telegram Bot với website ${brand.brandName} (universal-mall-shop.pages.dev).`,
       `⏰ Thời gian: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}`,
       '✅ <b>Trạng thái:</b> Kết nối Telegram Bot hoạt động hoàn hảo!',
       '📌 <i>Lưu ý: Bạn có thể tự xóa tin nhắn thử nghiệm này sau khi kiểm tra.</i>',

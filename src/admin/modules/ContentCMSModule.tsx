@@ -39,6 +39,8 @@ import {
 import { adminDataService } from '../services/adminDataService';
 import { ImageUploadInput } from '../components/ui/ImageUploadInput';
 import { FloatingNotificationModule } from './FloatingNotificationModule';
+import { useLanguage } from '../../context/LanguageContext';
+import { setActiveBrandIdentity } from '../../utils/brandRuntime';
 import type { ProductCategoriesConfig, ProductCategoryItem, IndustryPreset } from '../../types/game';
 import { getDefaultCategoriesConfig, INDUSTRY_PRESETS, INDUSTRY_PRESETS_LIST } from '../../data/industryPresets';
 
@@ -68,6 +70,7 @@ const isLegacyOrEmpty = (t?: string | null) => {
 };
 
 export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast, onNavigate }) => {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<SectionTab>('all');
@@ -523,6 +526,15 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
               currencyMode,
               themeAccent,
             },
+          });
+          setActiveBrandIdentity({
+            brandName: currentSiteTitle,
+            logoUrl: currentLogoUrl || undefined,
+            faviconUrl: avatarUrl.trim() || undefined,
+            taglineVi: portalSubtitle.trim() || undefined,
+            supportHotline: supportHotline.trim() || undefined,
+            currencyMode,
+            themeAccent,
           });
           // Tự động đồng bộ chân trang nếu chân trang chưa có hoặc đang khớp với tên cũ
           if (!footerBrandTitle || footerBrandTitle === 'WEB CODE GAME' || footerBrandTitle === siteTitle) {
@@ -1994,6 +2006,38 @@ export const ContentCMSModule: React.FC<ContentCMSModuleProps> = ({ onShowToast,
                   <Save className="w-3.5 h-3.5" /> Lưu mục này
                 </button>
               </div>
+            </div>
+
+            {/* LỐI TẮT CHUYỂN SANG MỤC ĐỔI TÊN SÀN & THƯƠNG HIỆU CHUYÊN BIỆT */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5 text-amber-200" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs sm:text-sm font-extrabold tracking-tight">
+                    {t('brandIdentity.cmsShortcutTitle')}
+                  </div>
+                  <p className="text-[11px] text-white/90 mt-0.5 leading-relaxed">
+                    {t('brandIdentity.cmsShortcutDesc')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigate) {
+                    onNavigate('brand-identity');
+                    window.location.hash = '#/brand-identity';
+                  } else {
+                    window.location.hash = '#/brand-identity';
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 text-xs font-extrabold shadow-sm cursor-pointer transition shrink-0"
+              >
+                <span>{t('brandIdentity.cmsShortcutBtn')}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
             {/* 0. TÊN WEBSITE / TIÊU ĐỀ THƯƠNG HIỆU CHÍNH */}

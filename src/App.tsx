@@ -5,6 +5,7 @@ import { CyberLoader } from './components/CyberLoader';
 import { ToastContainer, type ToastMessage } from './components/Toast';
 import { LanguageSeoHead } from './components/seo/LanguageSeoHead';
 import { useLanguage } from './context/LanguageContext';
+import { BRAND_UPDATED_EVENT } from './utils/brandRuntime';
 import { homepageSectionsService } from './services/homepageSectionsService';
 import type { MallSubView } from './components/mall/UniversalMallView';
 import { isSellerPortalPathname } from './components/seller/sellerPortalTheme';
@@ -49,6 +50,7 @@ export interface SharePayload {
 const ADMIN_HASH_PREFIXES = [
   '#/admin',
   '#/dashboard',
+  '#/brand-identity',
   '#/games',
   '#/news',
   '#/free-codes',
@@ -1085,6 +1087,7 @@ export const App: React.FC = () => {
     };
     window.addEventListener('pine_admin_content_updated', handleContentUpdate);
     window.addEventListener('pine_admin_data_updated', handleContentUpdate);
+    window.addEventListener(BRAND_UPDATED_EVENT, handleContentUpdate);
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key && e.key.startsWith('pine_admin_content')) {
@@ -1109,6 +1112,7 @@ export const App: React.FC = () => {
     return () => {
       window.removeEventListener('pine_admin_content_updated', handleContentUpdate);
       window.removeEventListener('pine_admin_data_updated', handleContentUpdate);
+      window.removeEventListener(BRAND_UPDATED_EVENT, handleContentUpdate);
       window.removeEventListener('storage', handleStorageChange);
       if (bc) bc.close();
     };

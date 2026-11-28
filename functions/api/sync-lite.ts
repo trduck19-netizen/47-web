@@ -1,5 +1,6 @@
 import { getMultipleSettingsD1, loadAllStoreProductsD1 } from '../services/d1_service';
 import { getCatalogEpoch, matchesIfNoneMatch } from '../services/cache_service';
+import { BRAND_IDENTITY_SETTING_KEY, extractBrandFromSettingsMap } from '../services/brand_service';
 import fallbackGamesData from '../data/compact_games_fallback.json';
 import fallbackGiveawaysData from '../../src/data/giveaways.json';
 import { DEFAULT_NEWS_ARTICLES as fallbackNewsArticles } from '../data/compact_seed_news';
@@ -26,6 +27,7 @@ const SYNC_LITE_SETTING_KEYS = [
   'wcg_news_articles_v1',
   'wcg_deleted_news_articles_v1',
   'wcg_admin_content_v4',
+  BRAND_IDENTITY_SETTING_KEY,
   'wcg_marketing_config_v1',
   'wcg_growth_config_v1',
   'wcg_admin_store_products_v4',
@@ -307,10 +309,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         status: a.status || 'PUBLISHED',
       }));
 
-    // 6. Content (Branding, announcements)
+    // 6. Content (Branding, announcements) + Unified Brand Identity SSOT
     const content = Array.isArray(d1Settings['wcg_admin_content_v4']) && d1Settings['wcg_admin_content_v4'].length > 0
       ? d1Settings['wcg_admin_content_v4']
       : ((canonicalBackupState as any).content || []);
+    const brandIdentity = extractBrandFromSettingsMap({
+      ...d1Settings,
+      wcg_admin_content_v4: content,
+    });
 
     // 7. Configs & Stats
     const marketingConfig = (d1Settings['wcg_marketing_config_v1'] && typeof d1Settings['wcg_marketing_config_v1'] === 'object')
@@ -429,6 +435,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       giveaways,
       newsArticles,
       content,
+      brandIdentity,
       marketingConfig,
       growthConfig,
       masterCopyClicks,

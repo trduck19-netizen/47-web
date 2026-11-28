@@ -1,5 +1,6 @@
 import { ensureSchemaUpgrades, getSettingD1 } from '../../services/d1_service';
 import { hashOtp, hashPasswordPBKDF2, computeHash } from '../../services/auth_service';
+import { getBrandIdentity, DEFAULT_BRAND_IDENTITY } from '../../services/brand_service';
 
 interface Env {
   DB: D1Database;
@@ -24,18 +25,22 @@ interface SendEmailOptions {
   otpCode: string;
   env: Env;
   emailConfig?: any;
+  brandName?: string;
+  copyrightHolder?: string;
 }
 
 async function sendOtpEmail(options: SendEmailOptions): Promise<{ success: boolean; provider?: string; error?: string }> {
   const { toEmail, displayName, otpCode, env, emailConfig } = options;
+  const brandName = options.brandName || DEFAULT_BRAND_IDENTITY.brandName;
+  const copyrightHolder = options.copyrightHolder || brandName;
 
   const resendKey = env.RESEND_API_KEY || emailConfig?.resendApiKey || emailConfig?.apiKey || '';
   const brevoKey = env.BREVO_API_KEY || emailConfig?.brevoApiKey || '';
   const sendgridKey = env.SENDGRID_API_KEY || emailConfig?.sendgridApiKey || '';
   const fromEmail = env.EMAIL_FROM || emailConfig?.fromEmail || 'no-reply@webcodegame.vn';
-  const fromName = 'Pine Universal Mall Security';
+  const fromName = `${brandName} Security`;
 
-  const subject = `[Pine Universal Mall] Mã OTP xác nhận khôi phục mật khẩu: ${otpCode}`;
+  const subject = `[${brandName}] Mã OTP xác nhận khôi phục mật khẩu: ${otpCode}`;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -44,13 +49,13 @@ async function sendOtpEmail(options: SendEmailOptions): Promise<{ success: boole
     <body style="margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f19; color: #f1f5f9;">
       <div style="max-width: 520px; margin: 0 auto; background: #131b2e; border: 1px solid #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
         <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 28px 24px; text-align: center;">
-          <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 0.5px;">Pine Universal Mall</h1>
+          <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 0.5px;">${brandName}</h1>
           <p style="margin: 6px 0 0 0; color: #e0e7ff; font-size: 13px;">Hệ Thống Xác Thực & Khôi Phục Tài Khoản</p>
         </div>
         <div style="padding: 32px 24px;">
           <p style="margin: 0 0 16px 0; font-size: 15px; color: #cbd5e1;">Xin chào <strong>${displayName || 'bạn'}</strong>,</p>
           <p style="margin: 0 0 24px 0; font-size: 14px; color: #94a3b8; line-height: 1.6;">
-            Bạn (hoặc ai đó) vừa yêu cầu đặt lại mật khẩu cho tài khoản liên kết với địa chỉ email này trên hệ thống <strong>Pine Universal Mall</strong>.
+            Bạn (hoặc ai đó) vừa yêu cầu đặt lại mật khẩu cho tài khoản liên kết với địa chỉ email này trên hệ thống <strong>${brandName}</strong>.
           </p>
           <div style="background: #0f172a; border: 2px dashed #6366f1; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
             <span style="display: block; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Mã xác thực OTP của bạn là:</span>
@@ -67,7 +72,7 @@ async function sendOtpEmail(options: SendEmailOptions): Promise<{ success: boole
           </div>
         </div>
         <div style="background: #090d16; padding: 16px 24px; text-align: center; border-top: 1px solid #1e293b;">
-          <p style="margin: 0; font-size: 11px; color: #64748b;">© 2026 Pine Universal Mall. All rights reserved.</p>
+          <p style="margin: 0; font-size: 11px; color: #64748b;">© 2026 ${copyrightHolder}. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -360,12 +365,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         : `${namePart}****@${domainPart}`;
 
       // Dispatch Email via integrated provider
+      const brand = await getBrandIdentity(env.DB);
       const emailResult = await sendOtpEmail({
         toEmail: member.email,
         displayName: member.display_name || member.username,
         otpCode: generatedOtp,
         env,
         emailConfig,
+        brandName: brand.brandName,
+        copyrightHolder: brand.copyrightHolder,
       });
 
       if (emailResult.success) {

@@ -1,4 +1,5 @@
 import { authenticateAdmin } from '../../services/auth_service';
+import { getBrandIdentity } from '../../services/brand_service';
 import {
   DEFAULT_EMAIL_CONFIG,
   EmailProviderConfig,
@@ -70,7 +71,8 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
     const gameName = String(body.gameName || '').trim();
     const testEmail = String(body.testEmail || '').trim().toLowerCase();
 
-    const title = String(body.title || 'Thông báo từ Pine Universal Mall').trim();
+    const brand = await getBrandIdentity(env.DB);
+    const title = String(body.title || `Thông báo từ ${brand.brandName}`).trim();
     const subject = String(body.subject || title).trim();
     const description = String(body.description || body.message || 'Có cập nhật mới trên website.').trim();
     const ctaText = body.ctaText ? String(body.ctaText).trim() : undefined;
@@ -192,6 +194,7 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
         ctaText,
         ctaUrl,
         unsubscribeUrl: unsubUrl,
+        brandName: brand.brandName,
       });
 
       const res = await dispatchEmail(config, {

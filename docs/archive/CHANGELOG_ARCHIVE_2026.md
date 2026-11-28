@@ -1,4 +1,18 @@
-# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 473)
+# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 474)
+
+### 474. Chuẩn Hóa Bằng Chứng Kiểm Thử & Build Trong Repo (`scripts/tests/`, `docs/tsc_full_check.log`, `docs/build_success.log` & Quy Tắc `AGENTS.md`) (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục dứt điểm việc file log `tsc` (`docs/tsc_check_success.log` 0 byte / log full để ở `scratch/` ngoài repo), 2 file test (icon & `/api/products`) và `docs/build_success.log` (bản cũ 24/11) không tồn tại hoặc không khớp trong repo sau kiểm báo cáo `4a6235b`. Không chỉnh sửa code sản phẩm hay dữ liệu D1.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Đưa 2 bộ test thật vào repo + runner `tsx` (`package.json`, `scripts/tests/test_icon_and_products_fixes.ts`, `scripts/tests/test_products_primary_select.ts`)*:
+     - Cài `tsx` vào `devDependencies`, thêm các lệnh `npm run test:icons`, `npm run test:products`, và `npm test`.
+     - `test_icon_and_products_fixes.ts` import và thực thi trực tiếp `src/utils/safeImageUrl.ts`, `functions/game_icons/[file].ts`, và `functions/_worker.ts` (12/12 checks).
+     - `test_products_primary_select.ts` import và thực thi trực tiếp `functions/api/products/index.ts` với mock `env.DB` kiểm đủ 10/10 trường nhánh `SELECT FROM products`.
+  2. *Log `tsc` thô ổn định có nội dung (`docs/tsc_full_check.log`)*:
+     - Dùng một tên file duy nhất `docs/tsc_full_check.log` gồm 2 mục có lệnh chạy, thời gian UTC và `exit=`: `tsconfig.homepage.json --noEmit --listFiles` (`exit=0`) và `tsconfig.json --noEmit` (output lỗi thô đầy đủ + đối chiếu số per-file với baseline).
+  3. *Cập nhật `docs/build_success.log` & bổ sung quy tắc bắt buộc vào `AGENTS.md`*:
+     - Pipe trực tiếp output `npm run build` vào `docs/build_success.log` khớp `X-Build-Id` live.
+     - Cập nhật Chốt Chặn 3 trong `AGENTS.md` quy định bắt buộc 100% file log `tsc`, log build và file test được trích dẫn trong báo cáo phải nằm trong repo (commit lên Git), tuyệt đối không để trong `scratch/` hay đường dẫn local ngoài repo.
 
 ### 473. Chặn Đầu Độc Cache 3 Tầng Cho `/game_icons/*` (`[file].ts` + `_headers` + `sw.js` v9 + `?v=2`), Bỏ Fallback Theo Slug Ở `onError` & Hoàn Thiện SELECT Nhánh Chính `/api/products` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:

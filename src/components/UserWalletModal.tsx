@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { getActiveBrandIdentity } from '../utils/brandRuntime';
 import {
   X,
   Wallet,
@@ -200,7 +201,7 @@ export const UserWalletModal: React.FC<UserWalletModalProps> = ({
   const prefix = rawPrefix || 'WCG';
   const transferContent = `${prefix} ${memberCode}`;
 
-  const bankAccount = sepayConfig?.bankAccount || 'CODE GAME SHOP';
+  const bankAccount = sepayConfig?.bankAccount || getActiveBrandIdentity().brandName.toUpperCase();
   const accountNumber = sepayConfig?.accountNumber || '10004681879';
   const rawBankName = sepayConfig?.bankName || 'TPBank';
 

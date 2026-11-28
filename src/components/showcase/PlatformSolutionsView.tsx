@@ -30,6 +30,7 @@ import {
 import { dataService } from '../../services/dataService';
 import type { TenantLeadRecord } from '../../types/game';
 import { LanguageSelector } from '../LanguageSelector';
+import { getActiveBrandIdentity } from '../../utils/brandRuntime';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface PlatformSolutionsViewProps {
@@ -888,9 +889,9 @@ export const PlatformSolutionsView: React.FC<PlatformSolutionsViewProps> = ({
             <span>• Cloudflare Edge Native</span>
           </div>
           <div className="flex items-center gap-4 text-neutral-400">
-            <span>Hotline Kỹ Thuật: 0988.123.456</span>
+            <span>Hotline: {getActiveBrandIdentity().supportHotline}</span>
             <span>•</span>
-            <span>Email: contact@codegame.shop</span>
+            <span>Email: {getActiveBrandIdentity().supportEmail}</span>
           </div>
         </div>
       </footer>

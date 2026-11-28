@@ -14,6 +14,7 @@ import { AdminUser } from '../types/adminTypes';
 import { adminDataService } from '../services/adminDataService';
 import { authService } from '../../services/authService';
 import { useLanguage } from '../../context/LanguageContext';
+import { useBrand } from '../../context/BrandContext';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { TurnstileWidget } from '../../components/TurnstileWidget';
 
@@ -29,6 +30,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
   initialErrorMessage,
 }) => {
   const { t, language } = useLanguage();
+  const { brand } = useBrand();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -61,9 +63,9 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
   useEffect(() => {
     document.title =
       language === 'en'
-        ? 'Admin Login - Secure Console | Universal Mall'
-        : 'Đăng Nhập Quản Trị - Bảo Mật | Universal Mall';
-  }, [language]);
+        ? `Admin Login - Secure Console | ${brand.adminPortalName}`
+        : `Đăng Nhập Quản Trị - Bảo Mật | ${brand.adminPortalName}`;
+  }, [language, brand.adminPortalName]);
 
   useEffect(() => {
     // Check if session token exists
@@ -209,10 +211,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
             ADMIN CONSOLE <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">v4.0 SECURE</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1 font-medium">
-            {t.admin?.login?.subtitle ||
-              (language === 'en'
-                ? 'Universal Mall Administration & Data Management System'
-                : 'Hệ thống Quản trị & Điều hành Dữ liệu Universal Mall')}
+            {t('admin.login.subtitle')}
           </p>
         </div>
 
@@ -336,10 +335,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span>
-              {t.admin?.login?.backToClient ||
-                (language === 'en'
-                  ? 'Return to Client Store (Universal Mall)'
-                  : 'Quay về trang web khách (Universal Mall)')}
+              {t('admin.login.backToClient')}
             </span>
           </button>
         </div>

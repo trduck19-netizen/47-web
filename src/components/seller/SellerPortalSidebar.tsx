@@ -17,6 +17,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useBrand } from '../../context/BrandContext';
 import {
   type SellerPortalTabId,
   type SellerSubRole,
@@ -73,6 +74,7 @@ export const SellerPortalSidebar: React.FC<SellerPortalSidebarProps> = ({
   storeName,
 }) => {
   const { t } = useLanguage();
+  const { brand } = useBrand();
 
   const groups: NavGroupDef[] = [
     {
@@ -174,9 +176,13 @@ export const SellerPortalSidebar: React.FC<SellerPortalSidebarProps> = ({
       <div className="h-14 px-3 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className={`w-8 h-8 rounded-lg ${palette.accentBgClass} text-white flex items-center justify-center shrink-0 shadow-sm`}
+            className={`w-8 h-8 rounded-lg ${palette.accentBgClass} text-white flex items-center justify-center shrink-0 shadow-sm overflow-hidden`}
           >
-            <Store className="w-4 h-4" aria-hidden="true" />
+            {brand.logoUrl && brand.logoUrl !== '/logo.png' && brand.logoUrl !== '/logo.webp' ? (
+              <img src={brand.logoUrl} alt={brand.sellerPortalName} className="w-full h-full object-contain p-0.5 bg-white" />
+            ) : (
+              <Store className="w-4 h-4" aria-hidden="true" />
+            )}
           </div>
           {(!collapsed || isMobileDrawer) && (
             <div className="min-w-0">

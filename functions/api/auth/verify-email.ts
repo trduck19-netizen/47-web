@@ -1,5 +1,6 @@
 import { ensureSchemaUpgrades, getSettingD1 } from '../../services/d1_service';
 import { verifyToken, hashOtp } from '../../services/auth_service';
+import { getBrandIdentity, DEFAULT_BRAND_IDENTITY } from '../../services/brand_service';
 
 interface Env {
   DB: D1Database;
@@ -30,16 +31,18 @@ async function sendVerificationEmail(options: {
   code: string;
   env: Env;
   emailConfig?: any;
+  brandName?: string;
 }): Promise<{ success: boolean; provider?: string }> {
   const { toEmail, displayName, code, env, emailConfig } = options;
+  const brandName = options.brandName || DEFAULT_BRAND_IDENTITY.brandName;
 
   const resendKey = env.RESEND_API_KEY || emailConfig?.resendApiKey || emailConfig?.apiKey || '';
   const brevoKey = env.BREVO_API_KEY || emailConfig?.brevoApiKey || '';
   const sendgridKey = env.SENDGRID_API_KEY || emailConfig?.sendgridApiKey || '';
   const fromEmail = env.EMAIL_FROM || emailConfig?.fromEmail || 'no-reply@webcodegame.vn';
-  const fromName = 'Universal Mall Security';
+  const fromName = `${brandName} Security`;
 
-  const subject = `[Universal Mall] Mã xác minh email của bạn: ${code}`;
+  const subject = `[${brandName}] Mã xác minh email của bạn: ${code}`;
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -47,13 +50,13 @@ async function sendVerificationEmail(options: {
     <body style="margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0b0f19; color: #f1f5f9;">
       <div style="max-width: 520px; margin: 0 auto; background: #131b2e; border: 1px solid #1e293b; border-radius: 16px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); padding: 24px; text-align: center;">
-          <h1 style="margin: 0; color: #ffffff; font-size: 20px;">Universal Mall</h1>
+          <h1 style="margin: 0; color: #ffffff; font-size: 20px;">${brandName}</h1>
           <p style="margin: 6px 0 0 0; color: #e0e7ff; font-size: 13px;">Xác Minh Địa Chỉ Email</p>
         </div>
         <div style="padding: 28px 24px;">
           <p style="margin: 0 0 16px 0; font-size: 14px; color: #cbd5e1;">Xin chào <strong>${displayName || 'bạn'}</strong>,</p>
           <p style="margin: 0 0 20px 0; font-size: 14px; color: #94a3b8; line-height: 1.6;">
-            Bạn vừa yêu cầu xác minh địa chỉ email trên hệ thống <strong>Universal Mall</strong>. Vui lòng nhập mã OTP bên dưới để xác nhận quyền sở hữu email:
+            Bạn vừa yêu cầu xác minh địa chỉ email trên hệ thống <strong>${brandName}</strong>. Vui lòng nhập mã OTP bên dưới để xác nhận quyền sở hữu email:
           </p>
           <div style="background: #0f172a; border: 2px dashed #38bdf8; border-radius: 12px; padding: 18px; text-align: center; margin: 20px 0;">
             <span style="display: block; font-size: 12px; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">Mã xác minh OTP:</span>
@@ -229,12 +232,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       `).bind(codeHash, expiresAt, member.id).run();
 
       const emailConfig = await getSettingD1(env.DB, 'wcg_email_service_config').catch(() => null);
+      const brand = await getBrandIdentity(env.DB);
       const emailRes = await sendVerificationEmail({
         toEmail: email,
         displayName: member.display_name || member.username,
         code: otpCode,
         env,
         emailConfig,
+        brandName: brand.brandName,
       });
 
       const maskedEmail = email.replace(/^(.{2})(.*)(@.*)$/, (_, start, mid, end) => `${start}${'*'.repeat(Math.max(1, mid.length))}${end}`);
@@ -314,10 +319,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         WHERE id = ?
       `).bind(member.id).run();
 
+      const brandVerified = await getBrandIdentity(env.DB);
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'Xác minh email thành công! Tài khoản đã mở khóa Ưu Đãi Mua Lần Đầu 2.000 Core.',
+          message: `Xác minh email thành công! Tài khoản đã mở khóa Ưu Đãi Mua Lần Đầu 2.000 ${brandVerified.coreUnitName}.`,
           email_verified: true,
           email_verified_at: nowIso,
         }),

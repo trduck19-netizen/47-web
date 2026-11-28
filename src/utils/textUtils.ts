@@ -1,3 +1,5 @@
+import { getActiveCoreUnitName } from './brandRuntime';
+
 // Remove Vietnamese accents for lightning-fast fuzzy & non-accent search
 export function stripAccents(str: string): string {
   if (!str) return '';
@@ -548,14 +550,14 @@ export function formatCurrencyVND(amount: number, language?: string): string {
   return `${formatted} đ`;
 }
 
-// Format Core Currency (1 VND = 1 Core) chuẩn song ngữ
+// Format Core Currency (1 VND = 1 Core/Custom Unit) chuẩn song ngữ & đồng bộ nhãn đơn vị từ Admin
 export function formatCore(amount: number, language?: string): string {
   const isEn = isCurrentEn(language);
   const val = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
   const formatted = new Intl.NumberFormat(isEn ? 'en-US' : 'vi-VN', {
     maximumFractionDigits: 0,
   }).format(val);
-  return `${formatted} Core`;
+  return `${formatted} ${getActiveCoreUnitName()}`;
 }
 
 // Format Dual Display: e.g. "50.000 Core (~50.000 đ)" vs "50,000 Core (~50,000 VND)"

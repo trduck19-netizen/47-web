@@ -283,13 +283,14 @@ export function formatTelegramPost(payload: NotifyPayload): string {
 /**
  * Định dạng tin nhắn DM gửi riêng cho người theo dõi (ngắn gọn hơn bài nhóm)
  */
-export function formatTelegramDm(payload: NotifyPayload): string {
+export function formatTelegramDm(payload: NotifyPayload, brandName?: string): string {
   const { game_name, title, codes, expiry, game_url } = payload;
   const escapedGame = escapeHtml(game_name || 'Game');
+  const escapedBrand = escapeHtml(brandName || 'Pine Universal Mall');
   const safeGameUrl = game_url || `https://universal-mall-shop.pages.dev/${payload.game_slug ? `code/${payload.game_slug}` : ''}`;
   const normCodes = normalizeCodes(codes);
 
-  const lines: string[] = [`🔔 <b>Thông báo từ Pine Universal Mall</b>`, `🎮 <b>${escapedGame}</b>`];
+  const lines: string[] = [`🔔 <b>Thông báo từ ${escapedBrand}</b>`, `🎮 <b>${escapedGame}</b>`];
   if (title && title.trim()) {
     lines.push(`⚡ ${escapeHtml(title.trim())}`);
   }

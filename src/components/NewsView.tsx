@@ -23,6 +23,7 @@ import {
 import { NewsArticle } from '../types/game';
 import { newsService } from '../services/newsService';
 import { dataService } from '../services/dataService';
+import { getActiveBrandIdentity } from '../utils/brandRuntime';
 import { SafeNewsCover } from '../utils/newsImageUtils';
 import { NewsDetailModal } from './NewsDetailModal';
 import { GameEventsList } from './GameEventsList';
@@ -316,7 +317,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
       if (window.location.pathname !== targetPath) {
         window.history.pushState({ articleSlug: art.slug }, '', targetPath);
       }
-      document.title = `${art.title} | Pine Universal Mall`;
+      document.title = `${art.title} | ${getActiveBrandIdentity().brandName}`;
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
   };
@@ -342,7 +343,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
         const found = newsService.getArticleBySlug(slug);
         if (found) {
           setSelectedArticle(found);
-          document.title = `${found.title} | Pine Universal Mall`;
+          document.title = `${found.title} | ${getActiveBrandIdentity().brandName}`;
           window.scrollTo({ top: 0, behavior: 'instant' });
           return;
         }
@@ -520,10 +521,10 @@ export const NewsView: React.FC<NewsViewProps> = ({
                     )}
                   </div>
 
-                  {/* Logo phụ & Nguồn: Pine Universal Mall */}
+                  {/* Logo phụ & Nguồn */}
                   <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/85 backdrop-blur-md border border-white/20 shadow-lg text-[10px] font-bold text-white select-none">
-                    <img src="/logo.webp" alt="Pine Universal Mall" width={14} height={14} className="w-3.5 h-3.5 rounded-full object-cover ring-1 ring-primary/60" />
-                    <span className="tracking-tight text-slate-200">Pine Universal Mall</span>
+                    <img src={getActiveBrandIdentity().logoUrl || '/logo.webp'} alt={getActiveBrandIdentity().brandName} width={14} height={14} className="w-3.5 h-3.5 rounded-full object-cover ring-1 ring-primary/60" />
+                    <span className="tracking-tight text-slate-200">{getActiveBrandIdentity().brandName}</span>
                   </div>
                 </div>
 
@@ -712,10 +713,10 @@ export const NewsView: React.FC<NewsViewProps> = ({
                           )}
                         </div>
 
-                        {/* Sub-logo Watermark Badge: Pine Universal Mall */}
+                        {/* Sub-logo Watermark Badge */}
                         <div className="absolute top-3 right-3 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/20 shadow-md text-[9px] font-bold text-white select-none">
-                          <img src="/logo.webp" alt="Pine Universal Mall" width={12} height={12} className="w-3 h-3 rounded-full object-cover ring-1 ring-primary/60" />
-                          <span className="text-slate-200">Pine Universal Mall</span>
+                          <img src={getActiveBrandIdentity().logoUrl || '/logo.webp'} alt={getActiveBrandIdentity().brandName} width={12} height={12} className="w-3 h-3 rounded-full object-cover ring-1 ring-primary/60" />
+                          <span className="text-slate-200">{getActiveBrandIdentity().brandName}</span>
                         </div>
 
                         {/* Codes badge on image bottom */}
@@ -734,7 +735,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
                       <div className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-muted-foreground flex-wrap">
                         <span className="font-semibold text-primary dark:text-primary-light flex items-center gap-1">
                           <ShieldCheck className="w-3 h-3 text-primary dark:text-primary-light" />
-                          Pine Universal Mall
+                          {getActiveBrandIdentity().brandName}
                         </span>
                         <span>•</span>
                         <span>{new Date(article.published_at || (article as any).created_at || Date.now()).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')}</span>

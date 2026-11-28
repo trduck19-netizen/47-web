@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useBrand } from '../context/BrandContext';
 
 export interface CyberLoaderProps {
   title?: string;
@@ -18,6 +19,7 @@ export const CyberLoader: React.FC<CyberLoaderProps> = ({
   isOverlay = false,
   className = '',
 }) => {
+  const { brand } = useBrand();
   let isEn = false;
   try {
     const langCtx = useLanguage();
@@ -28,13 +30,16 @@ export const CyberLoader: React.FC<CyberLoaderProps> = ({
     }
   }
 
-  // Automatic bilingual fallback mapping for legacy or hardcoded titles
+  const dynamicShortUpper = (brand.shortName || brand.brandName || 'PINE MALL').toUpperCase();
+
+  // Automatic bilingual + brand-aware fallback mapping
   let resolvedTitle = title;
   if (!resolvedTitle) {
-    resolvedTitle = isEn ? 'PINE MALL' : 'CODE GAME';
+    resolvedTitle = dynamicShortUpper;
+  } else if (resolvedTitle === 'CODE GAME' || resolvedTitle === 'PINE MALL') {
+    resolvedTitle = dynamicShortUpper;
   } else if (isEn) {
-    if (resolvedTitle === 'CODE GAME') resolvedTitle = 'PINE MALL';
-    else if (resolvedTitle === 'ĐANG GIẬT CODE...') resolvedTitle = 'CLAIMING CODE...';
+    if (resolvedTitle === 'ĐANG GIẬT CODE...') resolvedTitle = 'CLAIMING CODE...';
     else if (resolvedTitle === 'ĐANG XỬ LÝ ĐƠN...') resolvedTitle = 'PROCESSING ORDER...';
     else if (resolvedTitle === 'ĐANG TẠO MÃ QR...') resolvedTitle = 'CREATING QR CODE...';
     else if (resolvedTitle === 'ĐANG XỬ LÝ TIỆN ÍCH...') resolvedTitle = 'PROCESSING UTILITY...';
@@ -72,8 +77,8 @@ export const CyberLoader: React.FC<CyberLoaderProps> = ({
           style={{ width: `${calcAvatarSize}px`, height: `${calcAvatarSize}px` }}
         >
           <img
-            src="/brand_loader_logo.jpg"
-            alt="Code Game Logo"
+            src={brand.logoUrl && brand.logoUrl !== '/logo.png' ? brand.logoUrl : '/brand_loader_logo.jpg'}
+            alt={`${brand.brandName} Logo`}
             className="w-full h-full object-cover rounded-full"
             onError={(e) => {
               const target = e.target as HTMLImageElement;

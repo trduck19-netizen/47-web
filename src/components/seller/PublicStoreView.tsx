@@ -23,6 +23,7 @@ import {
 import QRCode from 'qrcode';
 import { dataService } from '../../services/dataService';
 import { cartService } from '../../services/cartService';
+import { getActiveBrandIdentity } from '../../utils/brandRuntime';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface PublicStoreViewProps {
@@ -318,7 +319,7 @@ export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
                     <Clock className="w-3.5 h-3.5" /> Giờ hỗ trợ: {store.support_hours || '08:00 - 22:00'}
                   </span>
                   <span>•</span>
-                  <span>Sàn TMĐT Số Pine Universal Mall</span>
+                  <span>Sàn TMĐT Số {getActiveBrandIdentity().brandName}</span>
                 </div>
               </div>
             </div>

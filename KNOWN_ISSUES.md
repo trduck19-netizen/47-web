@@ -10,6 +10,12 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-346: Bẫy Xung Đột Prefix `wcg_*` Với `storageMigration.ts`, Ghim Edge Cache `s-maxage=3600` Ở SSR HTML & Bảo Vệ Tính Từ Tiếng Anh `"6 Core Pillars"` Khi Đổi Đơn Vị Tiền `coreUnitName` (28/11/2026)
+- **Nguyên tắc & Bẫy cần tránh (Mục 494)**:
+  1. *Xung đột tên khóa `localStorage` với cơ chế tự động đổi tên `wcg_* -> pine_*`*: Script khởi động trong `index.html` và `src/utils/storageMigration.ts` quét và di trú toàn bộ khóa `localStorage` bắt đầu bằng `wcg_` sang `pine_*`. Vì vậy khóa cache thương hiệu phía trình duyệt **bắt buộc dùng tên `pine_brand_identity_cache_v1`** (trong khi khóa SSOT trong D1 `system_settings` giữ chuẩn hệ thống `wcg_brand_identity_v1`).
+  2. *Ghim cache SSR HTML làm chậm cập nhật tên sàn trên `<title>`/OG/JSON-LD*: Trước Mục 494, `renderSeoHtml` trong `functions/_worker.ts` trả `Cache-Control: public, max-age=300, s-maxage=3600` khiến đổi tên sàn trong Admin có thể bị kẹt tới 1 giờ ở CDN PoP. Đã đổi sang `Cache-Control: public, max-age=0, must-revalidate` + `CDN-Cache-Control: no-store` + `X-Catalog-Epoch` kèm tiêm tức thì `window.__WCG_BRAND__` (Zero-FOUC) cho cả trang khách và `/admin`.
+  3. *Bảo vệ tuyệt đối tính từ tiếng Anh `"Core"` và tên cột/route/enum kỹ thuật*: Khi người dùng đổi đơn vị tiền tệ ví từ `"Core"` sang `"Xu"`/`"Point"`/`"Coin"`, chỉ nội suy khóa hiển thị qua `{coreUnit}` và `formatCore()`. Tuyệt đối giữ nguyên cột D1 (`price_core`, `fee_debt_core`), đường dẫn API (`/pay-core`), giá trị enum (`currencyMode: 'VND' | 'CORE'`), và chuỗi tiếng Anh `en.solutions.pillarsTitle = "6 Core Pillars of Our Architecture"` (đã khóa hồi quy bởi bộ test `scripts/tests/test_brand_identity_sync.ts`).
+
 ### ISSUE-345: Lỗi `D1_TYPE_ERROR` Ở `POST /api/seller/subaccounts`, Chặn Báo Lỗi Đơn `PAID` Ở `/report` & Thiếu `PATCH /api/seller` Trong `shouldBumpCatalogEpoch` (28/11/2026)
 - **Triệu chứng & Nguyên nhân (Bắt được qua E2E Worker + SQLite D1 thật — Mục 493)**:
   1. `functions/api/seller/subaccounts/index.ts:106` đọc `storeAuth.seller.member_id` (thuộc tính không tồn tại, cột thật là `owner_member_id`) nên `currentMemberId` bị `undefined` khi `storeAuth.member` vắng mặt → `INSERT INTO seller_subaccounts` ném `HTTP 500 D1_TYPE_ERROR: Type 'undefined'`.

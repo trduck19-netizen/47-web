@@ -9,6 +9,10 @@ import {
   type LanguageMeta,
 } from '../i18n/config';
 import { formatCurrency, formatDateTime, formatNumber } from '../utils/formatUtils';
+import {
+  BRAND_UPDATED_EVENT,
+  getBrandInterpolationParams,
+} from '../utils/brandRuntime';
 
 export type TranslationDict = typeof viLocale;
 
@@ -121,12 +125,16 @@ function detectInitialPseudoMode(): boolean {
 }
 
 /**
- * Thay thế biến: {name}, {count}
+ * Thay thế biến: {name}, {count} + tự động nội suy các biến thương hiệu toàn sàn
+ * ({brandName}, {brandNameUpper}, {shortName}, {sellerPortalName}, {adminPortalName}, {aiBrandName}, {coreUnit})
  */
 function interpolate(template: string, params?: Record<string, any>): string {
-  if (!params || !template) return template;
+  if (!template) return template;
+  const brandParams = getBrandInterpolationParams();
+  const merged = params ? { ...brandParams, ...params } : brandParams;
+  if (!template.includes('{')) return template;
   return template.replace(/\{(\w+)\}/g, (match, key) => {
-    return params[key] !== undefined ? String(params[key]) : match;
+    return merged[key] !== undefined ? String(merged[key]) : match;
   });
 }
 
@@ -216,6 +224,15 @@ function syncUrlWithLanguage(targetLang: string) {
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<string>(detectInitialLanguage);
   const [isPseudo, setIsPseudoState] = useState<boolean>(detectInitialPseudoMode);
+  const [brandVersion, setBrandVersion] = useState<number>(0);
+
+  // Tự động làm mới mọi chuỗi dịch & Proxy t.x.y ngay khi Admin cập nhật Tên sàn / Nhãn AI / Đơn vị Core
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const bump = () => setBrandVersion((v) => v + 1);
+    window.addEventListener(BRAND_UPDATED_EVENT, bump);
+    return () => window.removeEventListener(BRAND_UPDATED_EVENT, bump);
+  }, []);
 
   const setIsPseudo = useCallback((enabled: boolean) => {
     setIsPseudoState(enabled);
@@ -293,10 +310,10 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
       return translated;
     },
-    [language, isPseudo]
+    [language, isPseudo, brandVersion]
   );
 
-  // Tạo Proxy để hỗ trợ cả t('path') và t.section.key đa tầng đệ quy
+  // Tạo Proxy để hỗ trợ cả t('path') và t.section.key đa tầng đệ quy (tự động nội suy brand tokens!)
   const t = useMemo(() => {
     const currentDict = dictionaries[language] || dictionaries.vi;
     const fallbackDict = dictionaries.vi;
@@ -311,7 +328,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (val !== null && typeof val === 'object') {
               return createRecursiveProxy(val, fbVal);
             }
-            const finalVal = val !== undefined ? val : prop;
+            const rawVal = val !== undefined ? val : prop;
+            const finalVal = typeof rawVal === 'string' ? interpolate(rawVal) : rawVal;
             if (isPseudo && typeof finalVal === 'string') {
               return pseudolocalize(finalVal);
             }
@@ -333,10 +351,11 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (typeof val === 'object' && val !== null) {
               return createRecursiveProxy(val, fallbackVal);
             }
-            if (isPseudo && typeof val === 'string') {
-              return pseudolocalize(val);
+            const resolvedVal = typeof val === 'string' ? interpolate(val) : val;
+            if (isPseudo && typeof resolvedVal === 'string') {
+              return pseudolocalize(resolvedVal);
             }
-            return val;
+            return resolvedVal;
           }
         }
         return Reflect.get(target, prop, receiver);
@@ -348,7 +367,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
 
     return new Proxy(translateFn, handler) as any;
-  }, [language, isPseudo, translateFn]);
+  }, [language, isPseudo, translateFn, brandVersion]);
 
   // Helpers định dạng tiền tệ và ngày giờ gắn liền ngôn ngữ
   const handleFormatCurrency = useCallback(

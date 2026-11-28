@@ -40,6 +40,7 @@ import {
   QrCode,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { getActiveBrandIdentity } from '../../utils/brandRuntime';
 import { Game } from '../../types/game';
 import { SellerAffiliateManager, ResellSettingsModal } from './SellerAffiliateManager';
 import { SellerSepayManager } from './SellerSepayManager';
@@ -1005,7 +1006,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-500">
           <Store className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">{isEn ? 'Pine Universal Mall Seller Center' : 'Trung Tâm Người Bán Pine Universal Mall'}</h2>
+        <h2 className="text-2xl font-bold mb-2">{isEn ? getActiveBrandIdentity().sellerPortalName : `Trung Tâm Người Bán ${getActiveBrandIdentity().brandName}`}</h2>
         <p className="text-muted-foreground max-w-md mb-6">
           {isEn ? 'Please log in with a member account to register a store and manage your business.' : 'Vui lòng đăng nhập tài khoản thành viên để đăng ký mở gian hàng và quản lý kinh doanh.'}
         </p>

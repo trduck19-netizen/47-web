@@ -15,6 +15,7 @@ import type {
   ProductCategoryItem,
   TenantLeadRecord,
 } from '../types/game';
+import { setActiveBrandIdentity, getActiveBrandIdentity } from '../utils/brandRuntime';
 import { DEFAULT_UPCOMING_GAMES } from '../types/game';
 import { getDefaultCategoriesConfig, INDUSTRY_PRESETS } from '../data/industryPresets';
 import { getIndustryPresetProducts, INDUSTRY_PRESET_PRODUCTS } from '../data/industryPresetProducts';
@@ -545,6 +546,11 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
                     localStorage.setItem('pine_marketing_config_v1', JSON.stringify(json.marketingConfig));
                     window.dispatchEvent(new CustomEvent('pine_marketing_config_updated', { detail: json.marketingConfig }));
                   } catch {}
+                }
+
+                // Apply Unified Brand Identity SSOT from /api/sync-lite (0 extra requests)
+                if (json.brandIdentity && typeof json.brandIdentity === 'object') {
+                  setActiveBrandIdentity(json.brandIdentity, { persist: true, emitEvent: true });
                 }
 
                 // Apply CMS Branding & Content
@@ -4310,14 +4316,26 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
     backgroundStyle?: string;
     backgroundOpacity?: number;
     siteTitle?: string;
+    shortName?: string;
+    brandBadge?: string;
+    sellerPortalName?: string;
+    adminPortalName?: string;
+    aiBrandName?: string;
+    coreUnitName?: string;
     portalSubtitle?: string;
+    taglineEn?: string;
+    copyrightHolder?: string;
     hotline?: string;
+    supportEmail?: string;
+    telegramUrl?: string;
+    zaloUrl?: string;
     currencyMode?: 'VND' | 'CORE';
     themeAccent?: 'orange' | 'blue' | 'red' | 'green' | 'purple';
     extraData?: any;
   } {
     const defaultBg =
       'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1920&auto=format&fit=crop&q=80';
+    const activeBrand = getActiveBrandIdentity();
 
     try {
       const saved = localStorage.getItem('pine_admin_content_v4');
@@ -4326,68 +4344,57 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
         if (Array.isArray(items)) {
           const branding = items.find((i: any) => i.key === 'website_branding');
           const footer = items.find((i: any) => i.key === 'footer_support');
-
-          const footerTitle = footer?.extraData?.brandTitle?.trim();
-          const footerLogo = footer?.extraData?.brandLogo?.trim();
-
-          const isLegacyOrEmpty = (t?: string | null) => {
-            if (!t) return true;
-            const s = t.trim().toUpperCase();
-            return !s || s === 'WEB CODE GAME' || s === 'WEB CODE' || s === 'WEB CODE GAME 2026';
-          };
-
-          const rawBTitle = branding?.title?.trim();
-          const rawFTitle = footer?.extraData?.brandTitle?.trim();
-
-          const effectiveTitle = !isLegacyOrEmpty(rawBTitle)
-            ? rawBTitle!
-            : !isLegacyOrEmpty(rawFTitle)
-            ? rawFTitle!
-            : 'Pine Universal Mall';
-
-          // Auto-migrate legacy cache in localStorage if needed
-          if (branding && isLegacyOrEmpty(branding.title)) {
-            branding.title = effectiveTitle;
-            try {
-              localStorage.setItem('pine_admin_content_v4', JSON.stringify(items));
-            } catch {}
-          }
-
-          const bLogo = branding?.extraData?.logoUrl?.trim();
-          const effectiveLogo =
-            bLogo && bLogo !== '/logo.png'
-              ? bLogo
-              : footerLogo && footerLogo !== '/logo.png'
-              ? footerLogo
-              : bLogo || footerLogo || '/logo.png';
+          const bExtra = branding?.extraData || {};
 
           return {
-            logoUrl: effectiveLogo,
-            avatarUrl: branding?.extraData?.avatarUrl || '/logo.png',
-            backgroundUrl: branding?.extraData?.backgroundUrl || defaultBg,
-            backgroundStyle: branding?.extraData?.backgroundStyle || 'ambient',
-            backgroundOpacity: branding?.extraData?.backgroundOpacity ?? 0.35,
-            siteTitle: effectiveTitle,
-            portalSubtitle: branding?.extraData?.portalSubtitle || 'Cổng Tra Cứu Giftcode #1',
-            hotline: branding?.extraData?.hotline || footer?.extraData?.supportHotline || '0987.654.321',
-            currencyMode: branding?.extraData?.currencyMode || 'VND',
-            themeAccent: branding?.extraData?.themeAccent || 'orange',
-            extraData: branding?.extraData || {},
+            logoUrl: activeBrand.logoUrl || bExtra.logoUrl || footer?.extraData?.brandLogo || '/logo.webp',
+            avatarUrl: activeBrand.faviconUrl || bExtra.avatarUrl || '/logo.webp',
+            backgroundUrl: bExtra.backgroundUrl || defaultBg,
+            backgroundStyle: bExtra.backgroundStyle || 'ambient',
+            backgroundOpacity: bExtra.backgroundOpacity ?? 0.35,
+            siteTitle: activeBrand.brandName,
+            shortName: activeBrand.shortName,
+            brandBadge: activeBrand.brandBadge,
+            sellerPortalName: activeBrand.sellerPortalName,
+            adminPortalName: activeBrand.adminPortalName,
+            aiBrandName: activeBrand.aiBrandName,
+            coreUnitName: activeBrand.coreUnitName,
+            portalSubtitle: activeBrand.taglineVi || bExtra.portalSubtitle || 'Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng',
+            taglineEn: activeBrand.taglineEn,
+            copyrightHolder: activeBrand.copyrightHolder,
+            hotline: activeBrand.supportHotline || bExtra.hotline || footer?.extraData?.supportHotline || '0987.654.321',
+            supportEmail: activeBrand.supportEmail,
+            telegramUrl: activeBrand.telegramUrl,
+            zaloUrl: activeBrand.zaloUrl,
+            currencyMode: activeBrand.currencyMode || bExtra.currencyMode || 'VND',
+            themeAccent: activeBrand.themeAccent || bExtra.themeAccent || 'orange',
+            extraData: bExtra,
           };
         }
       }
     } catch {}
     return {
-      logoUrl: '/logo.png',
-      avatarUrl: '/logo.png',
+      logoUrl: activeBrand.logoUrl || '/logo.webp',
+      avatarUrl: activeBrand.faviconUrl || '/logo.webp',
       backgroundUrl: defaultBg,
       backgroundStyle: 'ambient',
       backgroundOpacity: 0.35,
-      siteTitle: 'Pine Universal Mall',
-      portalSubtitle: 'Cổng Tra Cứu Giftcode #1',
-      hotline: '0987.654.321',
-      currencyMode: 'VND',
-      themeAccent: 'orange',
+      siteTitle: activeBrand.brandName,
+      shortName: activeBrand.shortName,
+      brandBadge: activeBrand.brandBadge,
+      sellerPortalName: activeBrand.sellerPortalName,
+      adminPortalName: activeBrand.adminPortalName,
+      aiBrandName: activeBrand.aiBrandName,
+      coreUnitName: activeBrand.coreUnitName,
+      portalSubtitle: activeBrand.taglineVi,
+      taglineEn: activeBrand.taglineEn,
+      copyrightHolder: activeBrand.copyrightHolder,
+      hotline: activeBrand.supportHotline,
+      supportEmail: activeBrand.supportEmail,
+      telegramUrl: activeBrand.telegramUrl,
+      zaloUrl: activeBrand.zaloUrl,
+      currencyMode: activeBrand.currencyMode,
+      themeAccent: activeBrand.themeAccent,
       extraData: {},
     };
   }

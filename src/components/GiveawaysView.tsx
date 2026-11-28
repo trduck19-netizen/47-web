@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { getActiveBrandIdentity } from '../utils/brandRuntime';
 import {
   Gift,
   Sparkles,
@@ -1424,7 +1425,7 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
           (c, idx) =>
             `${idx + 1}. [${c.game_name}] Mã: ${c.code_value} | Thưởng: ${c.rewards} (Nhận: ${formatFullDateTime(c.claimed_at)})`
         )
-        .join('\n') + '\n\n📌 Nguồn: Pine Universal Mall - Săn Giftcode VIP Miễn Phí tại https://universal-mall-shop.pages.dev';
+        .join('\n') + `\n\n📌 Nguồn: ${getActiveBrandIdentity().brandName} - Săn Giftcode VIP Miễn Phí tại ${typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev'}`;
     navigator.clipboard.writeText(text);
     marketingService.recordRealCopy('Giveaway Giftcode', '', uniqueClaimedList.length);
     onShowToast('Đã sao chép tất cả mã!', `Đã chép toàn bộ ${uniqueClaimedList.length} giftcode vào clipboard.`, 'success');
@@ -1432,7 +1433,9 @@ export const GiveawaysView: React.FC<GiveawaysViewProps> = ({
 
   const handleExportTxtFile = () => {
     if (uniqueClaimedList.length === 0) return;
-    const header = `=== DANH SÁCH GIFTCODE ĐÃ SĂN - CODEGAME.SHOP ===\nThời gian xuất: ${new Date().toLocaleString('vi-VN')}\nTổng số mã: ${uniqueClaimedList.length}\nTra cứu thêm mã mới: https://universal-mall-shop.pages.dev\n\n`;
+    const bName = getActiveBrandIdentity().brandName.toUpperCase();
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://universal-mall-shop.pages.dev';
+    const header = `=== DANH SÁCH GIFTCODE ĐÃ SĂN - ${bName} ===\nThời gian xuất: ${new Date().toLocaleString('vi-VN')}\nTổng số mã: ${uniqueClaimedList.length}\nTra cứu thêm mã mới: ${origin}\n\n`;
     const body = uniqueClaimedList
       .map(
         (c, idx) =>

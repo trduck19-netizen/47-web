@@ -58,6 +58,7 @@ export async function bumpCatalogEpoch(
   gScope.__wcg_metrics_snapshot = null;
   gScope.__wcg_public_sync_cache = null;
   gScope.__wcg_sync_lite_cache = null;
+  gScope.__wcg_brand_identity_cache = null;
   gScope.__wcg_hub = null;
   gScope.__wcg_hub_loaded_at = 0;
   gScope.__wcg_sitemap_xml = null;
@@ -158,6 +159,7 @@ export function shouldBumpCatalogEpoch(pathname: string, method: string): boolea
     '/api/admin/homepage-sections',
     '/api/homepage-sections',
     '/api/admin/content',
+    '/api/admin/brand',
     '/api/admin/growth',
     '/api/admin/marketing/config',
     '/api/admin/utilities',

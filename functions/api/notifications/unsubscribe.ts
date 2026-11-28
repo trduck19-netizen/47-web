@@ -1,4 +1,5 @@
 import { ensureNotificationTablesD1 } from './_emailHelper';
+import { getBrandIdentity } from '../../services/brand_service';
 
 interface Env {
   DB?: any;
@@ -45,6 +46,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
     }
   }
 
+  const brand = await getBrandIdentity(env.DB);
   // Trả về trang HTML thông báo trực quan, thân thiện
   const html = `
 <!DOCTYPE html>
@@ -52,7 +54,7 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hủy Nhận Thông Báo - Pine Universal Mall</title>
+  <title>Hủy Nhận Thông Báo - ${brand.brandName}</title>
   <style>
     body {
       margin: 0; padding: 0;
@@ -92,10 +94,10 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
     ${targetEmail ? `<div class="email-box">${targetEmail}</div>` : ''}
     <p>
       ${unsubscribed
-        ? 'Bạn sẽ không còn nhận email cập nhật mã giftcode và sự kiện tự động từ Pine Universal Mall. Bạn có thể đăng ký lại bất cứ khi nào bạn muốn trên website.'
+        ? `Bạn sẽ không còn nhận email cập nhật mã giftcode và sự kiện tự động từ ${brand.brandName}. Bạn có thể đăng ký lại bất cứ khi nào bạn muốn trên website.`
         : 'Liên kết không hợp lệ hoặc bạn đã hủy đăng ký trước đó.'}
     </p>
-    <a href="https://universal-mall-shop.pages.dev" class="btn">Quay Về Trang Chủ Pine Universal Mall</a>
+    <a href="https://universal-mall-shop.pages.dev" class="btn">Quay Về Trang Chủ ${brand.brandName}</a>
   </div>
 </body>
 </html>

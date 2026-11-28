@@ -10,6 +10,7 @@ import { AdminModuleSkeleton } from './components/AdminModuleSkeleton';
 
 // Lazy load all 30 admin modules for optimal performance & code-splitting
 const DashboardModule = React.lazy(() => import('./modules/DashboardModule').then((m) => ({ default: m.DashboardModule })));
+const BrandIdentityModule = React.lazy(() => import('./modules/BrandIdentityModule').then((m) => ({ default: m.BrandIdentityModule })));
 const GamesModule = React.lazy(() => import('./modules/GamesModule').then((m) => ({ default: m.GamesModule })));
 const NewsModule = React.lazy(() => import('./modules/NewsModule').then((m) => ({ default: m.NewsModule })));
 const FreeCodesModule = React.lazy(() => import('./modules/FreeCodesModule').then((m) => ({ default: m.FreeCodesModule })));
@@ -45,6 +46,7 @@ const AutomationCenterModule = React.lazy(() => import('./modules/AutomationCent
 const SupplierConnectorsModule = React.lazy(() => import('./modules/SupplierConnectorsModule').then((m) => ({ default: m.SupplierConnectorsModule })));
 import { MarketingNotificationToast } from '../components/MarketingNotificationToast';
 import { LanguageProvider, useLanguage } from '../context/LanguageContext';
+import { BrandProvider, useBrand } from '../context/BrandContext';
 
 interface AdminAppProps {
   onBackToClient?: () => void;
@@ -52,6 +54,7 @@ interface AdminAppProps {
 
 const tabTitlesVi: Record<AdminModuleTab, string> = {
   dashboard: 'Bảng Điều Khiển Tổng Quan',
+  'brand-identity': 'Đổi Tên Sàn & Thương Hiệu',
   games: 'Quản Lý Danh Mục Game',
   news: 'Quản Lý Tin Tức & Bài Viết',
   'free-codes': 'Quản Lý Code Miễn Phí',
@@ -89,6 +92,7 @@ const tabTitlesVi: Record<AdminModuleTab, string> = {
 
 const tabTitlesEn: Record<AdminModuleTab, string> = {
   dashboard: 'Dashboard Overview',
+  'brand-identity': 'Brand & Platform Name',
   games: 'Game Directory Management',
   news: 'News & Articles Management',
   'free-codes': 'Free Codes Management',
@@ -126,6 +130,7 @@ const tabTitlesEn: Record<AdminModuleTab, string> = {
 
 const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
   const { language, t } = useLanguage();
+  const { brand } = useBrand();
   const isEn = language === 'en';
 
   // Navigation State
@@ -135,6 +140,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       if (hash === 'events' || hash === 'su-kien') return 'news';
     const validTabs: AdminModuleTab[] = [
       'dashboard',
+      'brand-identity',
       'games',
       'news',
       'free-codes',
@@ -172,14 +178,14 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
     return validTabs.includes(hash as AdminModuleTab) ? (hash as AdminModuleTab) : 'dashboard';
   });
 
-  // Dynamic Browser Tab Title based on active language and current tab
+  // Dynamic Browser Tab Title based on active language, current tab & Brand SSOT
   useEffect(() => {
     const isEn = language === 'en';
     const tabName = isEn ? (tabTitlesEn[currentTab] || 'Dashboard') : (tabTitlesVi[currentTab] || 'Bảng Điều Khiển');
     document.title = isEn
-      ? `${tabName} - Admin Console | Universal Mall`
-      : `${tabName} - Trang Quản Trị Admin | Universal Mall`;
-  }, [language, currentTab]);
+      ? `${tabName} - Admin Console | ${brand.adminPortalName}`
+      : `${tabName} - Trang Quản Trị Admin | ${brand.adminPortalName}`;
+  }, [language, currentTab, brand.adminPortalName]);
 
   // Selected game for code deep-linking
   const [filteredGameSlug, setFilteredGameSlug] = useState<string | undefined>(undefined);
@@ -738,6 +744,10 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
           <ContentCMSModule onShowToast={showToast} onNavigate={(tab) => setCurrentTab(tab as any)} />
         )}
 
+        {currentTab === 'brand-identity' && (
+          <BrandIdentityModule onShowToast={showToast} />
+        )}
+
         {currentTab === 'floating-notification' && (
           <FloatingNotificationModule onShowToast={showToast} />
         )}
@@ -799,9 +809,11 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
 
 export const AdminApp: React.FC<AdminAppProps> = (props) => {
   return (
-    <LanguageProvider>
-      <AdminAppInner {...props} />
-    </LanguageProvider>
+    <BrandProvider>
+      <LanguageProvider>
+        <AdminAppInner {...props} />
+      </LanguageProvider>
+    </BrandProvider>
   );
 };
 

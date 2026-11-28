@@ -8,6 +8,7 @@ import {
   getEscalatingPriceD1,
 } from '../../services/d1_service';
 import { verifyToken } from '../../services/auth_service';
+import { getBrandIdentity } from '../../services/brand_service';
 
 interface Env {
   DB: D1Database;
@@ -403,9 +404,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // 4. Đọc cấu hình SePay từ D1 system_settings
+    const brandIdentity = await getBrandIdentity(env.DB);
     let bankName = 'TPBank';
     let accountNumber = '10004681879';
-    let bankAccount = 'UNIVERSAL MALL';
+    let bankAccount = brandIdentity.brandName.toUpperCase().slice(0, 36);
     let paymentPrefix = 'UM';
     let minQrAmount = 2000;
     let qrOrderExpiryMinutes = 15;

@@ -169,18 +169,21 @@ export interface EmailTemplateParams {
   ctaText?: string;
   ctaUrl?: string;
   unsubscribeUrl?: string;
+  brandName?: string;
 }
 
 /**
- * Trình tạo mẫu HTML Email phong cách Cyberpunk Dark Mode cho Pine Universal Mall
+ * Trình tạo mẫu HTML Email phong cách Cyberpunk Dark Mode theo thương hiệu sàn động
  */
 export function buildCyberpunkEmailHtml(params: EmailTemplateParams): string {
+  const brandName = (params.brandName || 'Pine Universal Mall').trim();
+  const brandUpper = brandName.toUpperCase();
   const origin = 'https://universal-mall-shop.pages.dev';
   const ctaUrl = params.ctaUrl || origin;
   const unsubUrl = params.unsubscribeUrl || `${origin}/?action=unsubscribe`;
 
   let badgeColor = '#06b6d4'; // teal
-  let badgeText = params.badgeTitle || 'THÔNG BÁO TỪ PINE UNIVERSAL MALL';
+  let badgeText = params.badgeTitle || `THÔNG BÁO TỪ ${brandUpper}`;
   if (params.type === 'CODE_DROP') {
     badgeColor = '#10b981'; // emerald
     badgeText = params.badgeTitle || '🎁 GIFTCODE MỚI ĐÃ CẬP NHẬT';
@@ -246,7 +249,7 @@ export function buildCyberpunkEmailHtml(params: EmailTemplateParams): string {
                   <td>
                     <a href="${origin}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
                       <span style="font-size: 20px; font-weight: 900; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #38bdf8; letter-spacing: -0.5px;">
-                        PINE UNIVERSAL MALL
+                        ${brandUpper}
                       </span>
                     </a>
                   </td>
@@ -296,7 +299,7 @@ export function buildCyberpunkEmailHtml(params: EmailTemplateParams): string {
           <tr>
             <td style="padding: 20px 28px; background: rgba(3, 7, 18, 0.8); border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 11px; color: #64748b; line-height: 1.6;">
               <p style="margin: 0 0 8px;">
-                Bạn nhận được email này vì đã đăng ký thông báo tại <strong>Pine Universal Mall</strong>.
+                Bạn nhận được email này vì đã đăng ký thông báo tại <strong>${brandName}</strong>.
               </p>
               <p style="margin: 0;">
                 Nếu không muốn tiếp tục nhận email này, bạn có thể 

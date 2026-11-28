@@ -51,6 +51,7 @@ import { UserAiKeysManager } from './UserAiKeysManager';
 import { formatCore, formatFullDateTime } from '../utils/textUtils';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguage } from '../context/LanguageContext';
+import { getActiveBrandIdentity } from '../utils/brandRuntime';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -1432,7 +1433,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             Liên Kết Telegram Nhận Mã Tức Thì
                           </h4>
                           <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto leading-relaxed">
-                            Kết nối tài khoản của bạn với Bot Telegram Pine Universal Mall để nhận mã giftcode riêng tự động, cảnh báo mã sắp hết hạn và quản lý game yêu thích 24/7.
+                            Kết nối tài khoản của bạn với Bot Telegram {getActiveBrandIdentity().brandName} để nhận mã giftcode riêng tự động, cảnh báo mã sắp hết hạn và quản lý game yêu thích 24/7.
                           </p>
                         </div>
 

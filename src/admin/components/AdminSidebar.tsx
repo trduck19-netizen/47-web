@@ -39,9 +39,11 @@ import {
 import { AdminUser } from '../types/adminTypes';
 import { normalizeVietnamese } from '../../utils/textUtils';
 import { useLanguage } from '../../context/LanguageContext';
+import { useBrand } from '../../context/BrandContext';
 
 export type AdminModuleTab =
   | 'dashboard'
+  | 'brand-identity'
   | 'games'
   | 'news'
   | 'free-codes'
@@ -111,6 +113,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onCloseMobile,
 }) => {
   const { language, t } = useLanguage();
+  const { brand } = useBrand();
   const isEn = language === 'en';
   const [navSearch, setNavSearch] = useState('');
 
@@ -128,6 +131,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     {
       title: t('adminSidebarStrict.k3'),
       items: [
+        {
+          id: 'brand-identity',
+          label: t('brandIdentity.menuLabel'),
+          icon: Sparkles,
+          badge: t('brandIdentity.menuBadge') as any,
+          badgeColor: 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold',
+        },
         {
           id: 'games',
           label: t('adminSidebarStrict.k4'),
@@ -361,22 +371,22 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Brand Header */}
       <div className="flex h-16 items-center justify-between border-b border-slate-100 px-4 dark:border-slate-800">
         {!collapsed ? (
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20 overflow-hidden">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20 overflow-hidden">
+              <img src={brand.logoUrl || '/logo.webp'} alt={brand.brandName} className="w-full h-full object-cover" />
             </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                Pine Universal Mall
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate" title={brand.brandName}>
+                {brand.brandName}
               </h1>
-              <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
+              <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 truncate">
                 PRO PORTAL v2.5
               </p>
             </div>
           </div>
         ) : (
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md overflow-hidden">
-            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+            <img src={brand.logoUrl || '/logo.webp'} alt={brand.brandName} className="w-full h-full object-cover" />
           </div>
         )}
 

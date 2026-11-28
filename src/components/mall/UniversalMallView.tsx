@@ -39,6 +39,7 @@ import { SubmitCodeModal } from '../SubmitCodeModal';
 import { BookmarkDrawer } from '../BookmarkDrawer';
 import { LanguageSelector } from '../LanguageSelector';
 import { useLanguage } from '../../context/LanguageContext';
+import { useBrand } from '../../context/BrandContext';
 import { groupStoreProductsByGame } from '../../utils/productPackageUtils';
 import { PHYSICAL_DEFAULT_IMAGE_URL, resolveProductCoverImage, safeGameIconUrl, sanitizeImageUrl } from '../../utils/safeImageUrl';
 
@@ -372,18 +373,20 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
     );
   };
 
-  // White-Label Customizable Shop Brand from CMS / DataService
-  const [shopBrand, setShopBrand] = useState(() => {
-    const b = dataService.getWebsiteBranding();
-    return {
-      name: b.siteTitle || 'Universal Mall',
-      slogan: b.portalSubtitle || 'Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số',
-      hotline: b.hotline || '0987.654.321',
-      currencyMode: b.currencyMode || 'VND',
-      themeAccent: b.themeAccent || 'orange',
-      logoUrl: b.logoUrl || '',
-    };
-  });
+  // White-Label Customizable Shop Brand from BrandContext SSOT
+  const { brand: activeBrand } = useBrand();
+  const shopBrand = useMemo(() => ({
+    name: activeBrand.brandName,
+    shortName: activeBrand.shortName,
+    badge: activeBrand.brandBadge,
+    slogan: language === 'en' ? activeBrand.taglineEn : activeBrand.taglineVi,
+    hotline: activeBrand.supportHotline,
+    currencyMode: activeBrand.currencyMode,
+    coreUnitName: activeBrand.coreUnitName,
+    themeAccent: activeBrand.themeAccent,
+    logoUrl: activeBrand.logoUrl,
+    copyrightHolder: activeBrand.copyrightHolder,
+  }), [activeBrand, language]);
 
   // Dynamic Product Categories & Industry Presets from DataService
   const [categoriesConfig, setCategoriesConfig] = useState<ProductCategoriesConfig>(() => {
@@ -401,25 +404,16 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
     return THEME_ACCENTS[shopBrand.themeAccent] || THEME_ACCENTS.orange;
   }, [shopBrand.themeAccent]);
 
-  // Format price dynamically according to active currencyMode (VND vs Core) and selected language
+  // Format price dynamically according to active currencyMode (VND vs custom Core unit) and selected language
   const formatPrice = (amount: number) => {
     if (shopBrand.currencyMode === 'VND') {
       return formatCurrency(amount, (language as any) || 'vi');
     }
-    return `${(amount || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')} Core`;
+    return `${(amount || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')} ${shopBrand.coreUnitName || 'Core'}`;
   };
 
   useEffect(() => {
     const handleBrandingSync = () => {
-      const b = dataService.getWebsiteBranding();
-      setShopBrand({
-        name: b.siteTitle || 'Universal Mall',
-        slogan: b.portalSubtitle || 'Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số',
-        hotline: b.hotline || '0987.654.321',
-        currencyMode: b.currencyMode || 'VND',
-        themeAccent: b.themeAccent || 'orange',
-        logoUrl: b.logoUrl || '',
-      });
       const c = dataService.getProductCategoriesConfig();
       setCategoriesConfig(c);
       setCurrentStoreProducts(dataService.getStoreProducts(c?.activePresetId));
@@ -844,7 +838,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
       productName: prod.title,
       priceCore: prod.current_price,
       sellerId: 'admin_store',
-      sellerName: 'Universal Mall',
+      sellerName: shopBrand.name,
       sellerSlug: 'universal-mall',
       gameSlug: prod.game_slug,
       gameName: prod.game_name,
@@ -1396,7 +1390,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                   {heroSlide === 0 && (
                     <>
                       <div className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
-                        {customHeroBadge || t.mall?.hero?.slide0Badge || (language === 'en' ? '🛍️ UNIVERSAL MALL SHOPPING FESTIVAL' : '🛍️ ĐẠI HỘI MUA SẮM UNIVERSAL MALL')}
+                        {customHeroBadge || t.mall?.hero?.slide0Badge || (language === 'en' ? `🛍️ ${shopBrand.name.toUpperCase()} SHOPPING FESTIVAL` : `🛍️ ĐẠI HỘI MUA SẮM ${shopBrand.name.toUpperCase()}`)}
                       </div>
                       <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
                         {customHeroTitle || t.mall?.hero?.slide0Title || (language === 'en' ? 'OFFICIAL MULTI-INDUSTRY MARKETPLACE' : 'SÀN THƯƠNG MẠI ĐA NGÀNH CHÍNH HÃNG')}
@@ -1854,7 +1848,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                     )}
                     <div>
                       <h4 className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
-                        <span>{customVoucherTitle || t.mall?.vouchers?.exclusiveTitle || (language === 'en' ? 'Universal Mall Exclusive Deals' : 'Ưu Đãi Độc Quyền Sàn Universal Mall')}</span>
+                        <span>{customVoucherTitle || t.mall?.vouchers?.exclusiveTitle || (language === 'en' ? `${shopBrand.name} Exclusive Deals` : `Ưu Đãi Độc Quyền Sàn ${shopBrand.name}`)}</span>
                         {customVoucherBadge && (
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950">
                             {customVoucherBadge}
@@ -2190,7 +2184,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                                 <span className="truncate">
                                   {isPhysicalProd
                                     ? shipLocation
-                                    : (prod.brand ? contentTranslationService.translateField('brand', prod.brand, 'name', prod.brand, language) : (prod.game_name || 'Universal Mall'))}
+                                    : (prod.brand ? contentTranslationService.translateField('brand', prod.brand, 'name', prod.brand, language) : (prod.game_name || shopBrand.name))}
                                 </span>
                               </div>
                             )}
@@ -2552,16 +2546,12 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
             <div className="min-w-0">
               <div className="font-extrabold text-sm sm:text-lg tracking-tight leading-none text-white drop-shadow flex items-center gap-1.5">
                 <span className="truncate">{shopBrand.name}</span>
-                <span className={`bg-white ${currentAccent.badgeBg} font-bold text-[9px] px-1.5 py-0.5 rounded uppercase shrink-0`}>{t('mall.topNav.mallBadge')}</span>
+                {shopBrand.badge ? (
+                  <span className={`bg-white ${currentAccent.badgeBg} font-bold text-[9px] px-1.5 py-0.5 rounded uppercase shrink-0`}>{shopBrand.badge}</span>
+                ) : null}
               </div>
               <div className="text-[10px] text-white/95 font-medium leading-none mt-1 hidden md:block whitespace-nowrap">
-                {language === 'en'
-                  ? t('mall.slogan')
-                  : (shopBrand.slogan &&
-                      !shopBrand.slogan.toLowerCase().includes('cổng tra cứu') &&
-                      shopBrand.slogan !== 'Sàn Thương Mại Điện Tử Đa Ngành & Tiện Ích Số'
-                      ? shopBrand.slogan
-                      : t('mall.slogan'))}
+                {shopBrand.slogan || t('mall.slogan')}
               </div>
             </div>
           </div>
@@ -3061,16 +3051,16 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                      {currentUser?.displayName || currentUser?.name || currentUser?.username || (isEn ? 'Universal Mall Member' : 'Thành Viên Universal Mall')}
+                      {currentUser?.displayName || currentUser?.name || currentUser?.username || (isEn ? `${shopBrand.name} Member` : `Thành Viên ${shopBrand.name}`)}
                     </h2>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-[#ee4d2d] border border-[#ee4d2d]/30">
                       {currentUser?.role === 'admin'
                         ? (isEn ? 'Administrator' : 'Quản Trị Viên')
-                        : (isEn ? 'Universal Mall Member' : 'Thành Viên Universal Mall')}
+                        : (isEn ? `${shopBrand.name} Member` : `Thành Viên ${shopBrand.name}`)}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {currentUser?.email || (isEn ? 'Universal Mall Account' : 'Tài khoản mua sắm tại sàn Universal Mall')}
+                    {currentUser?.email || (isEn ? `${shopBrand.name} Account` : `Tài khoản mua sắm tại sàn ${shopBrand.name}`)}
                   </p>
                 </div>
               </div>
@@ -3347,10 +3337,10 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           <div className="rounded-xl overflow-hidden shadow-sm p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <FileText className="w-6 h-6 text-[#ee4d2d]" />
-              <span>{isEn ? 'Universal Mall Terms of Service' : 'Điều Khoản Dịch Vụ Sàn Pine Universal Mall'}</span>
+              <span>{isEn ? `${shopBrand.name} Terms of Service` : `Điều Khoản Dịch Vụ Sàn ${shopBrand.name}`}</span>
             </h3>
             <div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
-              <p><strong>{isEn ? '1. General Provisions:' : '1. Quy định chung:'}</strong> {isEn ? 'All giftcodes and vouchers on Universal Mall are distributed free or from official game publishers holding valid G1/G234 licenses in Vietnam.' : 'Toàn bộ giftcode và mã quà tặng trên sàn Pine Universal Mall được chia sẻ hoàn toàn miễn phí hoặc phân phối từ các nhà phát hành game chính thức có giấy phép phê duyệt nội dung G1/G234 tại Việt Nam.'}</p>
+              <p><strong>{isEn ? '1. General Provisions:' : '1. Quy định chung:'}</strong> {isEn ? `All giftcodes and vouchers on ${shopBrand.name} are distributed free or from official publishers holding valid licenses.` : `Toàn bộ giftcode và mã quà tặng trên sàn ${shopBrand.name} được chia sẻ hoàn toàn miễn phí hoặc phân phối từ các đối tác chính thức.`}</p>
               <p><strong>{isEn ? '2. 168-Hour Escrow Protection:' : '2. Cơ chế bảo chứng 168 giờ:'}</strong> {isEn ? 'For buyer security, all payment funds are safely held in escrow for 168 hours (7 days). Within this window, buyers can request a 100% refund or 1-tap exchange if any issue arises.' : 'Đối với các giao dịch tài khoản, thẻ nạp và tiện ích qua sàn, số tiền thanh toán của người mua được hệ thống tạm giữ an toàn trong 168 giờ (7 ngày). Trong khoảng thời gian này, nếu phát sinh lỗi mã hoặc tranh chấp, người mua có quyền yêu cầu hoàn tiền 100% hoặc đổi mã 1-chạm.'}</p>
               <p><strong>{isEn ? '3. Anti-Fraud & Self-Dealing:' : '3. Chống gian lận và tự mua:'}</strong> {isEn ? 'Self-purchasing, fake orders, and automated bot actions interfering with system resources are strictly prohibited.' : 'Hệ thống nghiêm cấm mọi hành vi tự mua hàng của chính gian hàng mình, spam tạo đơn ảo hoặc dùng công cụ tự động can thiệp vào tài nguyên máy chủ.'}</p>
               <p><strong>{isEn ? '4. Management Rights:' : '4. Quyền của Ban Quản Trị:'}</strong> {isEn ? 'The administration reserves the right to update terms to protect gamers and merchants.' : 'Ban Quản Trị có quyền cập nhật và bổ sung các điều khoản nhằm bảo vệ tối đa quyền lợi chính đáng của cộng đồng game thủ và các gian hàng đối tác.'}</p>
@@ -3367,7 +3357,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
             </h3>
             <div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
               <p><strong>{isEn ? '1. Personal Data Protection:' : '1. Bảo vệ dữ liệu cá nhân:'}</strong> {isEn ? 'We commit to strict confidentiality of account, email, and phone info according to cybersecurity standards.' : 'Chúng tôi cam kết tuyệt đối bảo mật thông tin tài khoản, email và số điện thoại của người dùng theo tiêu chuẩn an toàn thông tin mạng.'}</p>
-              <p><strong>{isEn ? '2. Cryptographic Security:' : '2. Mã hóa giao dịch ví và kho mã:'}</strong> {isEn ? 'All giftcodes and ledger transactions are encrypted with AES-GCM Web Crypto on the Cloudflare Edge Network.' : 'Toàn bộ mã giftcode trong kho và lịch sử biến động số dư ví Core được mã hóa bằng thuật toán AES-GCM Web Crypto trên mạng lưới Cloudflare Edge Network.'}</p>
+              <p><strong>{isEn ? '2. Cryptographic Security:' : '2. Mã hóa giao dịch ví và kho mã:'}</strong> {isEn ? 'All giftcodes and ledger transactions are encrypted with AES-GCM Web Crypto on the Cloudflare Edge Network.' : `Toàn bộ mã giftcode trong kho và lịch sử biến động số dư ví ${shopBrand.coreUnitName} được mã hóa bằng thuật toán AES-GCM Web Crypto trên mạng lưới Cloudflare Edge Network.`}</p>
               <p><strong>{isEn ? '3. Zero Third-Party Sharing:' : '3. Không chia sẻ cho bên thứ ba:'}</strong> {isEn ? 'We never sell, rent, or disclose personal data to third parties for commercial gain.' : 'Chúng tôi không bán, cho thuê hay tiết lộ bất kỳ thông tin cá nhân nào của bạn cho bên thứ ba vì bất kỳ mục đích thương mại nào.'}</p>
             </div>
           </div>
@@ -3447,8 +3437,12 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 {/* Cột 1: Về Universal Mall */}
                 <div className="space-y-2.5">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-[#ee4d2d] flex items-center justify-center text-white font-black text-xs shrink-0">
-                      🛍️
+                    <div className="w-7 h-7 rounded-lg bg-[#ee4d2d] flex items-center justify-center text-white font-black text-xs shrink-0 overflow-hidden">
+                      {shopBrand.logoUrl && shopBrand.logoUrl !== '/logo.png' ? (
+                        <img src={shopBrand.logoUrl} alt={shopBrand.name} className="w-full h-full object-contain bg-white p-0.5" />
+                      ) : (
+                        '🛍️'
+                      )}
                     </div>
                     <h4 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs">
                       {shopBrand.name}
@@ -3606,7 +3600,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               {/* Bottom Legal & Back-to-Top Bar */}
               <div className="pt-5 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 text-center sm:text-left">
-                  {t('mall.footer.copyright', { name: shopBrand.name })}
+                  {t('mall.footer.copyright', { name: shopBrand.copyrightHolder || shopBrand.name })}
                 </div>
                 <button
                   type="button"

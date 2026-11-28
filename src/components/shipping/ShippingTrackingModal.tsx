@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getActiveBrandIdentity } from '../../utils/brandRuntime';
 import {
   X,
   Truck,
@@ -75,7 +76,7 @@ export const ShippingTrackingModal: React.FC<ShippingTrackingModalProps> = ({
         recipientName: 'Khách Hàng',
         recipientPhone: '0987654321',
         recipientAddress: 'Hà Nội, Việt Nam',
-        senderName: 'Pine Universal Mall Logistics Center',
+        senderName: `${getActiveBrandIdentity().brandName} Logistics Center`,
         senderAddress: 'Tổng kho TMĐT Số 1, Cầu Giấy, Hà Nội',
         timeline: [
           {

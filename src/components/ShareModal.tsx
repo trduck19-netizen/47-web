@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getActiveBrandIdentity } from '../utils/brandRuntime';
 import { createPortal } from 'react-dom';
 import { X, Copy, Check, Share2, Globe, Send, MessageCircle, Gift, Sparkles, ShoppingBag, Wrench } from 'lucide-react';
 
@@ -57,7 +58,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   };
 
   const HeaderIcon = headerConfig.icon;
-  const shareTitle = `${title} | Pine Universal Mall 2026`;
+  const activeBrandName = getActiveBrandIdentity().brandName;
+  const shareTitle = `${title} | ${activeBrandName}`;
 
   const fallbackCopyText = (text: string): boolean => {
     try {
@@ -199,7 +201,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                 {title}
               </h4>
               <p className="text-[11px] text-muted-foreground truncate">
-                {subtitle || 'codegame.shop'}
+                {subtitle || activeBrandName}
               </p>
             </div>
           </div>

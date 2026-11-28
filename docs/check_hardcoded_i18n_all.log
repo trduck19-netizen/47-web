@@ -1,11 +1,11 @@
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-28T05:49:50.437Z — Batch: Dot 20 Trang Chu (24/11/2026)
-   [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 125 file giao diện (.tsx)...
+   Timestamp: 2026-11-28T07:05:24.500Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 126 file giao diện (.tsx)...
 
 ================================================================================
 🚨 [I18N SCANNER FAILED] PHÁT HIỆN CHUỖI TIẾNG VIỆT GHI CỨNG NGOÀI TỪ ĐIỂN!
    Quy trình Build / Deploy bị CHẶN ĐỨNG theo tiêu chuẩn đa ngôn ngữ Excel/Word.
-   Tổng số vi phạm: 2895 chuỗi.
+   Tổng số vi phạm: 2896 chuỗi.
 
 📁 File: src/admin/components/LuckyWheelAdminManager.tsx (20 lỗi):
    • Dòng 197 [JSX_TEXT_HARDCODED]: "Trạng Thái Vòng Quay"
@@ -430,75 +430,75 @@
      Snippet: <option value="PENDING">⏳ Giữ Trong Hàng Chờ (PENDING)</option>
 
 📁 File: src/admin/modules/ApiKeysModule.tsx (35 lỗi):
-   • Dòng 2151 [JSX_TEXT_HARDCODED]: "🛍️ Cổng Quản Lý Code Bán & Gói Sản Phẩm (Store & Inventory API)"
+   • Dòng 2167 [JSX_TEXT_HARDCODED]: "🛍️ Cổng Quản Lý Code Bán & Gói Sản Phẩm (Store & Inventory API)"
      Snippet: <span>🛍️ Cổng Quản Lý Code Bán & Gói Sản Phẩm (Store & Inventory API)</span>
-   • Dòng 2154 [JSX_TEXT_HARDCODED]: "cung cấp toàn quyền quản trị danh mục gói sản phẩm bán (tạo, cập nhật, xóa gói, điều chỉnh giá bán / giá gốc, cấu hình hiển thị FOMO) và nạp kho mã code bán thực tế cho website. Mọi thay đổi về tồn kho mã code tự động kích hoạt tính toán lại số lượng tồn kho hiển thị (Quy tắc kho hàng thật = 0 thì hiển thị = 0 "HẾT HÀNG") và đồng bộ nguyên tử 1 - 1 lên Cửa Hàng"
+   • Dòng 2170 [JSX_TEXT_HARDCODED]: "cung cấp toàn quyền quản trị danh mục gói sản phẩm bán (tạo, cập nhật, xóa gói, điều chỉnh giá bán / giá gốc, cấu hình hiển thị FOMO) và nạp kho mã code bán thực tế cho website. Mọi thay đổi về tồn kho mã code tự động kích hoạt tính toán lại số lượng tồn kho hiển thị (Quy tắc kho hàng thật = 0 thì hiển thị = 0 "HẾT HÀNG") và đồng bộ nguyên tử 1 - 1 lên Cửa Hàng"
      Snippet: Endpoint <code>/api/store/manage</code> cung cấp toàn quyền quản trị danh mục gói sản phẩm bán (tạo, cập nhật, xóa gói, điều chỉnh giá bán / giá gốc, cấu hình hiển thị FOMO) và nạp kho mã code bán thực tế cho website. Mọi thay đổi về tồn kho mã code tự động kích hoạt tính toán lại số lượng tồn kho hiển thị (Quy tắc kho hàng thật = 0 thì hiển thị = 0 "HẾT HÀNG") và đồng bộ nguyên tử 1 - 1 lên Cửa Hàng <code>universal-mall-shop.pages.dev/store</code>.
-   • Dòng 2157 [JSX_TEXT_HARDCODED]: "Scope yêu cầu: STORE_FULL"
+   • Dòng 2173 [JSX_TEXT_HARDCODED]: "Scope yêu cầu: STORE_FULL"
      Snippet: <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Scope yêu cầu: STORE_FULL</span>
-   • Dòng 2159 [JSX_TEXT_HARDCODED]: "Edge Cache Auto-Purge: Có"
+   • Dòng 2175 [JSX_TEXT_HARDCODED]: "Edge Cache Auto-Purge: Có"
      Snippet: <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Edge Cache Auto-Purge: Có</span>
-   • Dòng 2727 [JSX_TEXT_HARDCODED]: "mà"
+   • Dòng 2749 [JSX_TEXT_HARDCODED]: "mà"
      Snippet: <span className="font-bold text-cyan-400">🤖 Cổng Điều Hành Nhóm Telegram Cho AI Agent (Muse) & Quản Trị Viên:</span> Endpoint <code>POST /api/telegram/manage</code> cho phép quản lý toàn bộ nhóm chat Telegram (đọc trạng thái nhóm/admin, phân trang tin nhắn webhook, xóa/ghim tin nhắn, cấm/hạn chế thành viên, sửa tên/mô tả nhóm, tạo/thu hồi link mời) bằng Khóa API mang scope <code>TELEGRAM_FULL</code> mà <b>không cần cầm Bot Token</b>.
-   • Dòng 2727 [JSX_TEXT_HARDCODED]: "không cần cầm Bot Token"
+   • Dòng 2749 [JSX_TEXT_HARDCODED]: "không cần cầm Bot Token"
      Snippet: <span className="font-bold text-cyan-400">🤖 Cổng Điều Hành Nhóm Telegram Cho AI Agent (Muse) & Quản Trị Viên:</span> Endpoint <code>POST /api/telegram/manage</code> cho phép quản lý toàn bộ nhóm chat Telegram (đọc trạng thái nhóm/admin, phân trang tin nhắn webhook, xóa/ghim tin nhắn, cấm/hạn chế thành viên, sửa tên/mô tả nhóm, tạo/thu hồi link mời) bằng Khóa API mang scope <code>TELEGRAM_FULL</code> mà <b>không cần cầm Bot Token</b>.
-   • Dòng 2897 [JSX_TEXT_HARDCODED]: "⚡ API Đa Năng:"
+   • Dòng 2919 [JSX_TEXT_HARDCODED]: "⚡ API Đa Năng:"
      Snippet: <span className="font-bold text-purple-400">⚡ API Đa Năng:</span> Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền <code>API_KEYS_FULL</code> / <code>ADMIN_FULL</code>) để gọi endpoint <code>POST /api/api-keys/set-permissions</code> nhằm cấu hình và set bất kỳ tổ hợp quyền nào cho các mã API trên hệ thống.
-   • Dòng 2897 [JSX_TEXT_HARDCODED]: "Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền"
+   • Dòng 2919 [JSX_TEXT_HARDCODED]: "Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền"
      Snippet: <span className="font-bold text-purple-400">⚡ API Đa Năng:</span> Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền <code>API_KEYS_FULL</code> / <code>ADMIN_FULL</code>) để gọi endpoint <code>POST /api/api-keys/set-permissions</code> nhằm cấu hình và set bất kỳ tổ hợp quyền nào cho các mã API trên hệ thống.
-   • Dòng 2897 [JSX_TEXT_HARDCODED]: ") để gọi endpoint"
+   • Dòng 2919 [JSX_TEXT_HARDCODED]: ") để gọi endpoint"
      Snippet: <span className="font-bold text-purple-400">⚡ API Đa Năng:</span> Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền <code>API_KEYS_FULL</code> / <code>ADMIN_FULL</code>) để gọi endpoint <code>POST /api/api-keys/set-permissions</code> nhằm cấu hình và set bất kỳ tổ hợp quyền nào cho các mã API trên hệ thống.
-   • Dòng 3057 [JSX_TEXT_HARDCODED]: "🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:"
+   • Dòng 3079 [JSX_TEXT_HARDCODED]: "🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:"
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3057 [JSX_TEXT_HARDCODED]: "Toàn quyền sửa thông tin game live ("
+   • Dòng 3079 [JSX_TEXT_HARDCODED]: "Toàn quyền sửa thông tin game live ("
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3057 [JSX_TEXT_HARDCODED]: ": chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live ("
+   • Dòng 3079 [JSX_TEXT_HARDCODED]: ": chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live ("
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3057 [JSX_TEXT_HARDCODED]: ": đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live ("
+   • Dòng 3079 [JSX_TEXT_HARDCODED]: ": đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live ("
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3057 [JSX_TEXT_HARDCODED]: ": xác minh file tồn tại và là ảnh thật). Chấp nhận Header"
+   • Dòng 3079 [JSX_TEXT_HARDCODED]: ": xác minh file tồn tại và là ảnh thật). Chấp nhận Header"
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3057 [JSX_TEXT_HARDCODED]: "hoặc"
+   • Dòng 3079 [JSX_TEXT_HARDCODED]: "hoặc"
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3193 [JSX_TEXT_HARDCODED]: "🎁 Quyền Quản Trị GIVEAWAYS_FULL:"
+   • Dòng 3215 [JSX_TEXT_HARDCODED]: "🎁 Quyền Quản Trị GIVEAWAYS_FULL:"
      Snippet: <span className="font-bold text-purple-400">🎁 Quyền Quản Trị GIVEAWAYS_FULL:</span> Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3193 [JSX_TEXT_HARDCODED]: "Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header"
+   • Dòng 3215 [JSX_TEXT_HARDCODED]: "Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header"
      Snippet: <span className="font-bold text-purple-400">🎁 Quyền Quản Trị GIVEAWAYS_FULL:</span> Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3193 [JSX_TEXT_HARDCODED]: "hoặc"
+   • Dòng 3215 [JSX_TEXT_HARDCODED]: "hoặc"
      Snippet: <span className="font-bold text-purple-400">🎁 Quyền Quản Trị GIVEAWAYS_FULL:</span> Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3297 [JSX_TEXT_HARDCODED]: "⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:"
+   • Dòng 3319 [JSX_TEXT_HARDCODED]: "⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:"
      Snippet: <span className="font-bold text-amber-400">⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:</span> Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3297 [JSX_TEXT_HARDCODED]: "Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header"
+   • Dòng 3319 [JSX_TEXT_HARDCODED]: "Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header"
      Snippet: <span className="font-bold text-amber-400">⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:</span> Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3297 [JSX_TEXT_HARDCODED]: "hoặc"
+   • Dòng 3319 [JSX_TEXT_HARDCODED]: "hoặc"
      Snippet: <span className="font-bold text-amber-400">⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:</span> Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3403 [JSX_TEXT_HARDCODED]: "🚀 Bộ 7 API Điều Khiển Web Từ Xa (Remote Control & Headless APIs)"
+   • Dòng 3425 [JSX_TEXT_HARDCODED]: "🚀 Bộ 7 API Điều Khiển Web Từ Xa (Remote Control & Headless APIs)"
      Snippet: <span>🚀 Bộ 7 API Điều Khiển Web Từ Xa (Remote Control & Headless APIs)</span>
-   • Dòng 3406 [JSX_TEXT_HARDCODED]: ") hoặc Header"
+   • Dòng 3428 [JSX_TEXT_HARDCODED]: ") hoặc Header"
      Snippet: Toàn bộ 7 module API dưới đây được thiết kế chuẩn RESTful, hỗ trợ xác thực bằng mã API Bearer (Header <code>Authorization: Bearer &lt;KEY&gt;</code>) hoặc Header <code>X-Api-Key: &lt;KEY&gt;</code>, được bảo vệ theo cơ chế phân quyền hạt nhân độc lập và tự động ghi nhận kiểm toán an ninh.
-   • Dòng 3552 [JSX_TEXT_HARDCODED]: "Chào bạn,"
+   • Dòng 3574 [JSX_TEXT_HARDCODED]: "Chào bạn,"
      Snippet: "content_html": "<h2>Chào bạn,</h2><p>Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!</p>",
-   • Dòng 3552 [JSX_TEXT_HARDCODED]: "Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!"
+   • Dòng 3574 [JSX_TEXT_HARDCODED]: "Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!"
      Snippet: "content_html": "<h2>Chào bạn,</h2><p>Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!</p>",
-   • Dòng 3660 [JSX_TEXT_HARDCODED]: "Mã Khóa:"
+   • Dòng 3682 [JSX_TEXT_HARDCODED]: "Mã Khóa:"
      Snippet: <span className="text-muted-foreground shrink-0 font-medium">Mã Khóa:</span>
-   • Dòng 3678 [JSX_TEXT_HARDCODED]: "Đã Copy"
+   • Dòng 3700 [JSX_TEXT_HARDCODED]: "Đã Copy"
      Snippet: <span className="text-emerald-500">Đã Copy</span>
-   • Dòng 3847 [JSX_TEXT_HARDCODED]: "Tạo Khóa API & Phân Quyền"
+   • Dòng 3869 [JSX_TEXT_HARDCODED]: "Tạo Khóa API & Phân Quyền"
      Snippet: <h3 className="font-bold text-foreground">Tạo Khóa API & Phân Quyền</h3>
-   • Dòng 3848 [JSX_TEXT_HARDCODED]: "Tạo khóa đơn quyền hoặc khóa đa năng tự chọn quyền"
+   • Dòng 3870 [JSX_TEXT_HARDCODED]: "Tạo khóa đơn quyền hoặc khóa đa năng tự chọn quyền"
      Snippet: <p className="text-xs text-muted-foreground">Tạo khóa đơn quyền hoặc khóa đa năng tự chọn quyền</p>
-   • Dòng 3866 [JSX_ATTR_HARDCODED]: "Ví dụ: Khóa Đa Năng Auto Bot, Pine AI Agent..."
+   • Dòng 3888 [JSX_ATTR_HARDCODED]: "Ví dụ: Khóa Đa Năng Auto Bot, Pine AI Agent..."
      Snippet: placeholder="Ví dụ: Khóa Đa Năng Auto Bot, Pine AI Agent..."
-   • Dòng 4070 [JSX_ATTR_HARDCODED]: "Ghi rõ ai đang sử dụng hoặc mục đích tích hợp của khóa này..."
+   • Dòng 4092 [JSX_ATTR_HARDCODED]: "Ghi rõ ai đang sử dụng hoặc mục đích tích hợp của khóa này..."
      Snippet: placeholder="Ghi rõ ai đang sử dụng hoặc mục đích tích hợp của khóa này..."
-   • Dòng 4119 [JSX_TEXT_HARDCODED]: "Gia Hạn Hiệu Lực Khóa API"
+   • Dòng 4141 [JSX_TEXT_HARDCODED]: "Gia Hạn Hiệu Lực Khóa API"
      Snippet: <h3 className="font-bold text-foreground">Gia Hạn Hiệu Lực Khóa API</h3>
-   • Dòng 4133 [JSX_TEXT_HARDCODED]: "Thời hạn hiện tại:"
+   • Dòng 4155 [JSX_TEXT_HARDCODED]: "Thời hạn hiện tại:"
      Snippet: <div className="text-muted-foreground">Thời hạn hiện tại:</div>
-   • Dòng 4210 [JSX_TEXT_HARDCODED]: "Khởi Tạo Khóa API Thành Công!"
+   • Dòng 4232 [JSX_TEXT_HARDCODED]: "Khởi Tạo Khóa API Thành Công!"
      Snippet: <h3 className="text-lg font-bold text-foreground">Khởi Tạo Khóa API Thành Công!</h3>
-   • Dòng 4222 [JSX_TEXT_HARDCODED]: "Sao chép nhanh"
+   • Dòng 4244 [JSX_TEXT_HARDCODED]: "Sao chép nhanh"
      Snippet: Khóa API đã sẵn sàng! Bạn có thể <strong>Sao chép nhanh</strong> ngay bên dưới. Khóa này cũng được lưu trực tiếp vào danh sách Quản lý để bạn có thể xem lại hoặc sao chép bất cứ lúc nào.
 
 📁 File: src/admin/modules/CodeInventoryModule.tsx (128 lỗi):
@@ -760,197 +760,197 @@
      Snippet: <span className="text-[10px] text-slate-400">đã reset</span>
 
 📁 File: src/admin/modules/ContentCMSModule.tsx (96 lỗi):
-   • Dòng 925 [JSX_TEXT_HARDCODED]: "Làm Mới"
+   • Dòng 937 [JSX_TEXT_HARDCODED]: "Làm Mới"
      Snippet: <span>Làm Mới</span>
-   • Dòng 1015 [JSX_TEXT_HARDCODED]: "Thanh phân trang số"
+   • Dòng 1027 [JSX_TEXT_HARDCODED]: "Thanh phân trang số"
      Snippet: <span>Thanh phân trang số</span>
-   • Dòng 1048 [JSX_TEXT_HARDCODED]: "Tự động tải khi cuộn"
+   • Dòng 1060 [JSX_TEXT_HARDCODED]: "Tự động tải khi cuộn"
      Snippet: <span>Tự động tải khi cuộn</span>
-   • Dòng 1075 [JSX_TEXT_HARDCODED]: "(Mặc định)"
+   • Dòng 1087 [JSX_TEXT_HARDCODED]: "(Mặc định)"
      Snippet: {size === 24 && <span className="ml-1 text-[10px] opacity-80">(Mặc định)</span>}
-   • Dòng 1084 [JSX_TEXT_HARDCODED]: "với"
+   • Dòng 1096 [JSX_TEXT_HARDCODED]: "với"
      Snippet: Thiết lập hiện tại: <strong className="text-indigo-600 dark:text-indigo-400">{paginationMode === 'classic' ? 'Đánh số trang (Classic)' : 'Cuộn vô tận (Infinite Scroll)'}</strong> với <strong className="text-slate-900 dark:text-white font-bold">{gamesPerPage} game/trang</strong>.
-   • Dòng 1124 [JSX_ATTR_HARDCODED]: "VD: Kho Giftcode & Mã Quà Tặng Game"
+   • Dòng 1136 [JSX_ATTR_HARDCODED]: "VD: Kho Giftcode & Mã Quà Tặng Game"
      Snippet: placeholder="VD: Kho Giftcode & Mã Quà Tặng Game"
-   • Dòng 1137 [JSX_ATTR_HARDCODED]: "VD: Độc Quyền 2026"
+   • Dòng 1149 [JSX_ATTR_HARDCODED]: "VD: Độc Quyền 2026"
      Snippet: placeholder="VD: Độc Quyền 2026"
-   • Dòng 1151 [JSX_ATTR_HARDCODED]: "VD: 🔥 CẬP NHẬT TỰ ĐỘNG 24/7"
+   • Dòng 1163 [JSX_ATTR_HARDCODED]: "VD: 🔥 CẬP NHẬT TỰ ĐỘNG 24/7"
      Snippet: placeholder="VD: 🔥 CẬP NHẬT TỰ ĐỘNG 24/7"
-   • Dòng 1164 [JSX_ATTR_HARDCODED]: "VD: Tra cứu tức thì hàng nghìn mã code quà tặng mới nhất của hơn 450+ tựa game mobile & PC..."
+   • Dòng 1176 [JSX_ATTR_HARDCODED]: "VD: Tra cứu tức thì hàng nghìn mã code quà tặng mới nhất của hơn 450+ tựa game mobile & PC..."
      Snippet: placeholder="VD: Tra cứu tức thì hàng nghìn mã code quà tặng mới nhất của hơn 450+ tựa game mobile & PC..."
-   • Dòng 1222 [JSX_ATTR_HARDCODED]: "VD: Săn Giftcode Độc Quyền Miễn Phí"
+   • Dòng 1234 [JSX_ATTR_HARDCODED]: "VD: Săn Giftcode Độc Quyền Miễn Phí"
      Snippet: placeholder="VD: Săn Giftcode Độc Quyền Miễn Phí"
-   • Dòng 1235 [JSX_ATTR_HARDCODED]: "VD: Sự Kiện Giật Code Giới Hạn"
+   • Dòng 1247 [JSX_ATTR_HARDCODED]: "VD: Sự Kiện Giật Code Giới Hạn"
      Snippet: placeholder="VD: Sự Kiện Giật Code Giới Hạn"
-   • Dòng 1249 [JSX_ATTR_HARDCODED]: "VD: Các chiến dịch phát code độc quyền số lượng có hạn tài trợ từ NPH..."
+   • Dòng 1261 [JSX_ATTR_HARDCODED]: "VD: Các chiến dịch phát code độc quyền số lượng có hạn tài trợ từ NPH..."
      Snippet: placeholder="VD: Các chiến dịch phát code độc quyền số lượng có hạn tài trợ từ NPH..."
-   • Dòng 1304 [JSX_ATTR_HARDCODED]: "VD: Cửa Hàng Code Chiết Khấu Tới 60%"
+   • Dòng 1316 [JSX_ATTR_HARDCODED]: "VD: Cửa Hàng Code Chiết Khấu Tới 60%"
      Snippet: placeholder="VD: Cửa Hàng Code Chiết Khấu Tới 60%"
-   • Dòng 1317 [JSX_ATTR_HARDCODED]: "VD: Gói Nạp & Giftcode Chiết Khấu Chính Hãng"
+   • Dòng 1329 [JSX_ATTR_HARDCODED]: "VD: Gói Nạp & Giftcode Chiết Khấu Chính Hãng"
      Snippet: placeholder="VD: Gói Nạp & Giftcode Chiết Khấu Chính Hãng"
-   • Dòng 1345 [JSX_ATTR_HARDCODED]: "VD: Bảo Hành 100%"
+   • Dòng 1357 [JSX_ATTR_HARDCODED]: "VD: Bảo Hành 100%"
      Snippet: placeholder="VD: Bảo Hành 100%"
-   • Dòng 1357 [JSX_ATTR_HARDCODED]: "VD: Đổi trả tức thì nếu mã lỗi"
+   • Dòng 1369 [JSX_ATTR_HARDCODED]: "VD: Đổi trả tức thì nếu mã lỗi"
      Snippet: placeholder="VD: Đổi trả tức thì nếu mã lỗi"
-   • Dòng 1421 [JSX_ATTR_HARDCODED]: "VD: Tiện Ích & Dịch Vụ Chính Hãng"
+   • Dòng 1433 [JSX_ATTR_HARDCODED]: "VD: Tiện Ích & Dịch Vụ Chính Hãng"
      Snippet: placeholder="VD: Tiện Ích & Dịch Vụ Chính Hãng"
-   • Dòng 1434 [JSX_ATTR_HARDCODED]: "VD: Dịch Vụ Số & Sản Phẩm Ngoài Lề"
+   • Dòng 1446 [JSX_ATTR_HARDCODED]: "VD: Dịch Vụ Số & Sản Phẩm Ngoài Lề"
      Snippet: placeholder="VD: Dịch Vụ Số & Sản Phẩm Ngoài Lề"
-   • Dòng 1448 [JSX_ATTR_HARDCODED]: "VD: Tài khoản Premium giải trí, key bản quyền phần mềm, Cloud VPS treo game..."
+   • Dòng 1460 [JSX_ATTR_HARDCODED]: "VD: Tài khoản Premium giải trí, key bản quyền phần mềm, Cloud VPS treo game..."
      Snippet: placeholder="VD: Tài khoản Premium giải trí, key bản quyền phần mềm, Cloud VPS treo game..."
-   • Dòng 1462 [JSX_ATTR_HARDCODED]: "VD: Bảo Hành 1 Đổi 1"
+   • Dòng 1474 [JSX_ATTR_HARDCODED]: "VD: Bảo Hành 1 Đổi 1"
      Snippet: placeholder="VD: Bảo Hành 1 Đổi 1"
-   • Dòng 1474 [JSX_ATTR_HARDCODED]: "VD: Hỗ trợ kỹ thuật 24/7 tức thì"
+   • Dòng 1486 [JSX_ATTR_HARDCODED]: "VD: Hỗ trợ kỹ thuật 24/7 tức thì"
      Snippet: placeholder="VD: Hỗ trợ kỹ thuật 24/7 tức thì"
-   • Dòng 1527 [JSX_TEXT_HARDCODED]: "Bật hiển thị thanh này"
+   • Dòng 1539 [JSX_TEXT_HARDCODED]: "Bật hiển thị thanh này"
      Snippet: <span>Bật hiển thị thanh này</span>
-   • Dòng 1577 [JSX_ATTR_HARDCODED]: "VD: 🔥 CHÀO MỪNG BẠN ĐẾN VỚI CODEGAME STORE..."
+   • Dòng 1589 [JSX_ATTR_HARDCODED]: "VD: 🔥 CHÀO MỪNG BẠN ĐẾN VỚI CODEGAME STORE..."
      Snippet: placeholder="VD: 🔥 CHÀO MỪNG BẠN ĐẾN VỚI CODEGAME STORE..."
-   • Dòng 1655 [JSX_TEXT_HARDCODED]: "Khối Thương Hiệu & Giới Thiệu Chân Trang"
+   • Dòng 1667 [JSX_TEXT_HARDCODED]: "Khối Thương Hiệu & Giới Thiệu Chân Trang"
      Snippet: <span>Khối Thương Hiệu & Giới Thiệu Chân Trang</span>
-   • Dòng 1657 [JSX_TEXT_HARDCODED]: "Hiển thị cột trái chân trang (Desktop & Mobile)"
+   • Dòng 1669 [JSX_TEXT_HARDCODED]: "Hiển thị cột trái chân trang (Desktop & Mobile)"
      Snippet: <span className="text-[10px] text-slate-400">Hiển thị cột trái chân trang (Desktop & Mobile)</span>
-   • Dòng 1692 [JSX_ATTR_HARDCODED]: "Dùng chung với Logo chính của Web"
+   • Dòng 1704 [JSX_ATTR_HARDCODED]: "Dùng chung với Logo chính của Web"
      Snippet: title="Dùng chung với Logo chính của Web"
-   • Dòng 1698 [JSX_TEXT_HARDCODED]: "Để trống để tự động lấy Logo chính của website."
+   • Dòng 1710 [JSX_TEXT_HARDCODED]: "Để trống để tự động lấy Logo chính của website."
      Snippet: <p className="mt-1 text-[11px] text-slate-500">Để trống để tự động lấy Logo chính của website.</p>
-   • Dòng 1720 [JSX_TEXT_HARDCODED]: "Huy Hiệu Công Nghệ (Technology Badges)"
+   • Dòng 1732 [JSX_TEXT_HARDCODED]: "Huy Hiệu Công Nghệ (Technology Badges)"
      Snippet: <span>Huy Hiệu Công Nghệ (Technology Badges)</span>
-   • Dòng 1729 [JSX_TEXT_HARDCODED]: "Huy Hiệu 1 (Server / D1)"
+   • Dòng 1741 [JSX_TEXT_HARDCODED]: "Huy Hiệu 1 (Server / D1)"
      Snippet: <span>Huy Hiệu 1 (Server / D1)</span>
-   • Dòng 1738 [JSX_TEXT_HARDCODED]: "Hiển thị"
+   • Dòng 1750 [JSX_TEXT_HARDCODED]: "Hiển thị"
      Snippet: <span>Hiển thị</span>
-   • Dòng 1756 [JSX_TEXT_HARDCODED]: "Huy Hiệu 2 (Sync / Realtime)"
+   • Dòng 1768 [JSX_TEXT_HARDCODED]: "Huy Hiệu 2 (Sync / Realtime)"
      Snippet: <span>Huy Hiệu 2 (Sync / Realtime)</span>
-   • Dòng 1765 [JSX_TEXT_HARDCODED]: "Hiển thị"
+   • Dòng 1777 [JSX_TEXT_HARDCODED]: "Hiển thị"
      Snippet: <span>Hiển thị</span>
-   • Dòng 1786 [JSX_TEXT_HARDCODED]: "Tự động cập nhật trên Web Khách"
+   • Dòng 1798 [JSX_TEXT_HARDCODED]: "Tự động cập nhật trên Web Khách"
      Snippet: <span className="text-[10px] text-slate-500 font-mono">Tự động cập nhật trên Web Khách</span>
-   • Dòng 1849 [JSX_TEXT_HARDCODED]: "Zalo Hỗ Trợ"
+   • Dòng 1861 [JSX_TEXT_HARDCODED]: "Zalo Hỗ Trợ"
      Snippet: <span>Zalo Hỗ Trợ</span>
-   • Dòng 1863 [JSX_TEXT_HARDCODED]: "Hotline Hỗ Trợ"
+   • Dòng 1875 [JSX_TEXT_HARDCODED]: "Hotline Hỗ Trợ"
      Snippet: <span>Hotline Hỗ Trợ</span>
-   • Dòng 1877 [JSX_TEXT_HARDCODED]: "Email Tiếp Nhận"
+   • Dòng 1889 [JSX_TEXT_HARDCODED]: "Email Tiếp Nhận"
      Snippet: <span>Email Tiếp Nhận</span>
-   • Dòng 1923 [JSX_TEXT_HARDCODED]: "Tiêu đề"
+   • Dòng 1935 [JSX_TEXT_HARDCODED]: "Tiêu đề"
      Snippet: <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Tiêu đề</label>
-   • Dòng 1932 [JSX_TEXT_HARDCODED]: "Nội dung chi tiết"
+   • Dòng 1944 [JSX_TEXT_HARDCODED]: "Nội dung chi tiết"
      Snippet: <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Nội dung chi tiết</label>
-   • Dòng 1951 [JSX_TEXT_HARDCODED]: "Tiêu đề"
+   • Dòng 1963 [JSX_TEXT_HARDCODED]: "Tiêu đề"
      Snippet: <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Tiêu đề</label>
-   • Dòng 1960 [JSX_TEXT_HARDCODED]: "Nội dung chi tiết"
+   • Dòng 1972 [JSX_TEXT_HARDCODED]: "Nội dung chi tiết"
      Snippet: <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Nội dung chi tiết</label>
-   • Dòng 2004 [JSX_TEXT_HARDCODED]: "Tên Website & Tiêu Đề Thương Hiệu Chính (Site Title)"
+   • Dòng 2048 [JSX_TEXT_HARDCODED]: "Tên Website & Tiêu Đề Thương Hiệu Chính (Site Title)"
      Snippet: <span>Tên Website & Tiêu Đề Thương Hiệu Chính (Site Title)</span>
-   • Dòng 2032 [JSX_ATTR_HARDCODED]: "Đồng bộ sang Tên Thương Hiệu Chân Trang"
+   • Dòng 2076 [JSX_ATTR_HARDCODED]: "Đồng bộ sang Tên Thương Hiệu Chân Trang"
      Snippet: title="Đồng bộ sang Tên Thương Hiệu Chân Trang"
-   • Dòng 2046 [JSX_TEXT_HARDCODED]: "Khẩu Hiệu / Phụ Đề Header (Cổng tra cứu Giftcode #1)"
+   • Dòng 2090 [JSX_TEXT_HARDCODED]: "Khẩu Hiệu / Phụ Đề Header (Cổng tra cứu Giftcode #1)"
      Snippet: <span>Khẩu Hiệu / Phụ Đề Header (Cổng tra cứu Giftcode #1)</span>
-   • Dòng 2057 [JSX_ATTR_HARDCODED]: "VD: Cổng Tra Cứu Giftcode #1"
+   • Dòng 2101 [JSX_ATTR_HARDCODED]: "VD: Cổng Tra Cứu Giftcode #1"
      Snippet: placeholder="VD: Cổng Tra Cứu Giftcode #1"
-   • Dòng 2067 [JSX_ATTR_HARDCODED]: "Đặt lại khẩu hiệu mặc định"
+   • Dòng 2111 [JSX_ATTR_HARDCODED]: "Đặt lại khẩu hiệu mặc định"
      Snippet: title="Đặt lại khẩu hiệu mặc định"
-   • Dòng 2073 [JSX_TEXT_HARDCODED]: "Cổng Tra Cứu Giftcode #1"
+   • Dòng 2117 [JSX_TEXT_HARDCODED]: "Cổng Tra Cứu Giftcode #1"
      Snippet: Đây chính là dòng chữ hiển thị ngay dưới Tên Website ở thanh Header góc trên bên trái (Mặc định: <em>Cổng Tra Cứu Giftcode #1</em>).
-   • Dòng 2082 [JSX_TEXT_HARDCODED]: "Hotline & Số Zalo Hỗ Trợ Khách Hàng (Support Phone)"
+   • Dòng 2126 [JSX_TEXT_HARDCODED]: "Hotline & Số Zalo Hỗ Trợ Khách Hàng (Support Phone)"
      Snippet: <span>Hotline & Số Zalo Hỗ Trợ Khách Hàng (Support Phone)</span>
-   • Dòng 2116 [JSX_TEXT_HARDCODED]: "Đơn Vị Tiền Tệ Hiển Thị"
+   • Dòng 2160 [JSX_TEXT_HARDCODED]: "Đơn Vị Tiền Tệ Hiển Thị"
      Snippet: <span>Đơn Vị Tiền Tệ Hiển Thị</span>
-   • Dòng 2133 [JSX_TEXT_HARDCODED]: "💵 VNĐ (đ)"
+   • Dòng 2177 [JSX_TEXT_HARDCODED]: "💵 VNĐ (đ)"
      Snippet: <span>💵 VNĐ (đ)</span>
-   • Dòng 2134 [JSX_TEXT_HARDCODED]: "✓ Bật"
+   • Dòng 2178 [JSX_TEXT_HARDCODED]: "✓ Bật"
      Snippet: {currencyMode === 'VND' && <span className="text-[10px] font-mono">✓ Bật</span>}
-   • Dòng 2152 [JSX_TEXT_HARDCODED]: "✓ Bật"
+   • Dòng 2196 [JSX_TEXT_HARDCODED]: "✓ Bật"
      Snippet: {currencyMode === 'CORE' && <span className="text-[10px] font-mono">✓ Bật</span>}
-   • Dòng 2166 [JSX_TEXT_HARDCODED]: "Tông Màu Nhận Diện Sàn"
+   • Dòng 2210 [JSX_TEXT_HARDCODED]: "Tông Màu Nhận Diện Sàn"
      Snippet: <span>Tông Màu Nhận Diện Sàn</span>
-   • Dòng 2209 [JSX_TEXT_HARDCODED]: "0 Giây"
+   • Dòng 2253 [JSX_TEXT_HARDCODED]: "0 Giây"
      Snippet: <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 font-mono font-bold">0 Giây</span>
-   • Dòng 2213 [JSX_TEXT_HARDCODED]: "Nhận tiền qua:"
+   • Dòng 2257 [JSX_TEXT_HARDCODED]: "Nhận tiền qua:"
      Snippet: <span>Nhận tiền qua: <strong className="text-slate-800 dark:text-slate-200 font-mono">{sepaySummary.bankName} - {sepaySummary.accountNumber}</strong> ({sepaySummary.bankAccount})</span>
-   • Dòng 2215 [JSX_TEXT_HARDCODED]: "Chưa cấu hình tài khoản ngân hàng nhận tiền."
+   • Dòng 2259 [JSX_TEXT_HARDCODED]: "Chưa cấu hình tài khoản ngân hàng nhận tiền."
      Snippet: <span>Chưa cấu hình tài khoản ngân hàng nhận tiền.</span>
-   • Dòng 2247 [JSX_TEXT_HARDCODED]: "Cây Danh Mục Hàng Hóa & Ngành Hàng (Tab 10)"
+   • Dòng 2291 [JSX_TEXT_HARDCODED]: "Cây Danh Mục Hàng Hóa & Ngành Hàng (Tab 10)"
      Snippet: <span>Cây Danh Mục Hàng Hóa & Ngành Hàng (Tab 10)</span>
-   • Dòng 2263 [JSX_TEXT_HARDCODED]: "Xem & Đổi Danh Mục"
+   • Dòng 2307 [JSX_TEXT_HARDCODED]: "Xem & Đổi Danh Mục"
      Snippet: <span>Xem & Đổi Danh Mục</span>
-   • Dòng 2278 [JSX_TEXT_HARDCODED]: "Khuyên dùng: PNG trong suốt / SVG / WebP"
+   • Dòng 2322 [JSX_TEXT_HARDCODED]: "Khuyên dùng: PNG trong suốt / SVG / WebP"
      Snippet: <span className="text-[10px] text-slate-400">Khuyên dùng: PNG trong suốt / SVG / WebP</span>
-   • Dòng 2282 [JSX_ATTR_HARDCODED]: "Tải ảnh Logo hoặc dán link"
+   • Dòng 2326 [JSX_ATTR_HARDCODED]: "Tải ảnh Logo hoặc dán link"
      Snippet: label="Tải ảnh Logo hoặc dán link"
-   • Dòng 2293 [JSX_TEXT_HARDCODED]: "Xem trước Header Logo:"
+   • Dòng 2337 [JSX_TEXT_HARDCODED]: "Xem trước Header Logo:"
      Snippet: <span className="text-[11px] text-slate-400 font-mono">Xem trước Header Logo:</span>
-   • Dòng 2315 [JSX_TEXT_HARDCODED]: "Hình Ảnh Đại Diện Web (Avatar / Favicon / App Icon)"
+   • Dòng 2359 [JSX_TEXT_HARDCODED]: "Hình Ảnh Đại Diện Web (Avatar / Favicon / App Icon)"
      Snippet: <span>Hình Ảnh Đại Diện Web (Avatar / Favicon / App Icon)</span>
-   • Dòng 2317 [JSX_TEXT_HARDCODED]: "Tỷ lệ vuông 1:1"
+   • Dòng 2361 [JSX_TEXT_HARDCODED]: "Tỷ lệ vuông 1:1"
      Snippet: <span className="text-[10px] text-slate-400">Tỷ lệ vuông 1:1</span>
-   • Dòng 2321 [JSX_ATTR_HARDCODED]: "Tải ảnh đại diện hoặc dán link"
+   • Dòng 2365 [JSX_ATTR_HARDCODED]: "Tải ảnh đại diện hoặc dán link"
      Snippet: label="Tải ảnh đại diện hoặc dán link"
-   • Dòng 2332 [JSX_TEXT_HARDCODED]: "Xem trước Favicon & Avatar:"
+   • Dòng 2376 [JSX_TEXT_HARDCODED]: "Xem trước Favicon & Avatar:"
      Snippet: <span className="text-[11px] text-slate-400 font-mono">Xem trước Favicon & Avatar:</span>
-   • Dòng 2358 [JSX_TEXT_HARDCODED]: "Hình Nền Web (Website Background Wallpaper / Ambient Theme)"
+   • Dòng 2402 [JSX_TEXT_HARDCODED]: "Hình Nền Web (Website Background Wallpaper / Ambient Theme)"
      Snippet: <span>Hình Nền Web (Website Background Wallpaper / Ambient Theme)</span>
-   • Dòng 2360 [JSX_TEXT_HARDCODED]: "Hỗ trợ ảnh phong cảnh game, wallpaper 1920x1080"
+   • Dòng 2404 [JSX_TEXT_HARDCODED]: "Hỗ trợ ảnh phong cảnh game, wallpaper 1920x1080"
      Snippet: <span className="text-[10px] text-slate-400">Hỗ trợ ảnh phong cảnh game, wallpaper 1920x1080</span>
-   • Dòng 2365 [JSX_ATTR_HARDCODED]: "Tải ảnh nền từ máy tính hoặc dán link"
+   • Dòng 2409 [JSX_ATTR_HARDCODED]: "Tải ảnh nền từ máy tính hoặc dán link"
      Snippet: label="Tải ảnh nền từ máy tính hoặc dán link"
-   • Dòng 2385 [JSX_TEXT_HARDCODED]: "🎮 Nền Mờ Gaming Ambient (Khuyên dùng - Dịu mắt, làm nổi bật thẻ game)"
+   • Dòng 2429 [JSX_TEXT_HARDCODED]: "🎮 Nền Mờ Gaming Ambient (Khuyên dùng - Dịu mắt, làm nổi bật thẻ game)"
      Snippet: <option value="ambient">🎮 Nền Mờ Gaming Ambient (Khuyên dùng - Dịu mắt, làm nổi bật thẻ game)</option>
-   • Dòng 2386 [JSX_TEXT_HARDCODED]: "🖼️ Nền Toàn Trang (Full Cover Wallpaper)"
+   • Dòng 2430 [JSX_TEXT_HARDCODED]: "🖼️ Nền Toàn Trang (Full Cover Wallpaper)"
      Snippet: <option value="cover">🖼️ Nền Toàn Trang (Full Cover Wallpaper)</option>
-   • Dòng 2387 [JSX_TEXT_HARDCODED]: "⚡ Nền Banner Đầu Trang (Hero Only)"
+   • Dòng 2431 [JSX_TEXT_HARDCODED]: "⚡ Nền Banner Đầu Trang (Hero Only)"
      Snippet: <option value="header_only">⚡ Nền Banner Đầu Trang (Hero Only)</option>
-   • Dòng 2388 [JSX_TEXT_HARDCODED]: "🔲 Nền Hoa Văn Lặp Lại (Repeat Pattern)"
+   • Dòng 2432 [JSX_TEXT_HARDCODED]: "🔲 Nền Hoa Văn Lặp Lại (Repeat Pattern)"
      Snippet: <option value="pattern">🔲 Nền Hoa Văn Lặp Lại (Repeat Pattern)</option>
-   • Dòng 2396 [JSX_TEXT_HARDCODED]: "Độ Mờ Ảnh Nền (Opacity)"
+   • Dòng 2440 [JSX_TEXT_HARDCODED]: "Độ Mờ Ảnh Nền (Opacity)"
      Snippet: <span>Độ Mờ Ảnh Nền (Opacity)</span>
-   • Dòng 2412 [JSX_TEXT_HARDCODED]: "5% (Rất nhẹ)"
+   • Dòng 2456 [JSX_TEXT_HARDCODED]: "5% (Rất nhẹ)"
      Snippet: <span>5% (Rất nhẹ)</span>
-   • Dòng 2413 [JSX_TEXT_HARDCODED]: "35% (Chuẩn Gaming)"
+   • Dòng 2457 [JSX_TEXT_HARDCODED]: "35% (Chuẩn Gaming)"
      Snippet: <span>35% (Chuẩn Gaming)</span>
-   • Dòng 2415 [JSX_TEXT_HARDCODED]: "100% (Đậm)"
+   • Dòng 2459 [JSX_TEXT_HARDCODED]: "100% (Đậm)"
      Snippet: <span>100% (Đậm)</span>
-   • Dòng 2464 [JSX_TEXT_HARDCODED]: "Trang web khách sẽ tự động phản ánh ảnh nền này"
+   • Dòng 2508 [JSX_TEXT_HARDCODED]: "Trang web khách sẽ tự động phản ánh ảnh nền này"
      Snippet: <span>Trang web khách sẽ tự động phản ánh ảnh nền này</span>
-   • Dòng 2484 [JSX_TEXT_HARDCODED]: "10. Danh Mục Ngành Hàng & Từ Khóa Tìm Kiếm (Universal Categories)"
+   • Dòng 2528 [JSX_TEXT_HARDCODED]: "10. Danh Mục Ngành Hàng & Từ Khóa Tìm Kiếm (Universal Categories)"
      Snippet: <span>10. Danh Mục Ngành Hàng & Từ Khóa Tìm Kiếm (Universal Categories)</span>
-   • Dòng 2502 [JSX_TEXT_HARDCODED]: "Thêm Danh Mục"
+   • Dòng 2546 [JSX_TEXT_HARDCODED]: "Thêm Danh Mục"
      Snippet: <span>Thêm Danh Mục</span>
-   • Dòng 2511 [JSX_TEXT_HARDCODED]: "Lưu Mục Này"
+   • Dòng 2555 [JSX_TEXT_HARDCODED]: "Lưu Mục Này"
      Snippet: <span>Lưu Mục Này</span>
-   • Dòng 2521 [JSX_TEXT_HARDCODED]: "Chọn Mẫu Ngành Hàng Sẵn Có (1-Click Chuyển Đổi Sàn):"
+   • Dòng 2565 [JSX_TEXT_HARDCODED]: "Chọn Mẫu Ngành Hàng Sẵn Có (1-Click Chuyển Đổi Sàn):"
      Snippet: <span>Chọn Mẫu Ngành Hàng Sẵn Có (1-Click Chuyển Đổi Sàn):</span>
-   • Dòng 2559 [JSX_TEXT_HARDCODED]: "✓ Đang kích hoạt"
+   • Dòng 2603 [JSX_TEXT_HARDCODED]: "✓ Đang kích hoạt"
      Snippet: <span className="text-indigo-600 dark:text-indigo-400">✓ Đang kích hoạt</span>
-   • Dòng 2561 [JSX_TEXT_HARDCODED]: "Bấm để tải mẫu"
+   • Dòng 2605 [JSX_TEXT_HARDCODED]: "Bấm để tải mẫu"
      Snippet: <span className="text-slate-400">Bấm để tải mẫu</span>
-   • Dòng 2581 [JSX_ATTR_HARDCODED]: "VD: Tất Cả Danh Mục Thời Trang"
+   • Dòng 2625 [JSX_ATTR_HARDCODED]: "VD: Tất Cả Danh Mục Thời Trang"
      Snippet: placeholder="VD: Tất Cả Danh Mục Thời Trang"
-   • Dòng 2593 [JSX_ATTR_HARDCODED]: "VD: Chuyên Mục Thời Trang Hot"
+   • Dòng 2637 [JSX_ATTR_HARDCODED]: "VD: Chuyên Mục Thời Trang Hot"
      Snippet: placeholder="VD: Chuyên Mục Thời Trang Hot"
-   • Dòng 2601 [JSX_TEXT_HARDCODED]: "Từ Khóa Gợi Ý Dưới Thanh Tìm Kiếm (Cách nhau bằng dấu phẩy):"
+   • Dòng 2645 [JSX_TEXT_HARDCODED]: "Từ Khóa Gợi Ý Dưới Thanh Tìm Kiếm (Cách nhau bằng dấu phẩy):"
      Snippet: <span>Từ Khóa Gợi Ý Dưới Thanh Tìm Kiếm (Cách nhau bằng dấu phẩy):</span>
-   • Dòng 2608 [JSX_ATTR_HARDCODED]: "VD: Áo polo nam, Quần jeans, Váy đầm, Sneaker trắng, Túi xách da"
+   • Dòng 2652 [JSX_ATTR_HARDCODED]: "VD: Áo polo nam, Quần jeans, Váy đầm, Sneaker trắng, Túi xách da"
      Snippet: placeholder="VD: Áo polo nam, Quần jeans, Váy đầm, Sneaker trắng, Túi xách da"
-   • Dòng 2631 [JSX_TEXT_HARDCODED]: "Tên Danh Mục"
+   • Dòng 2675 [JSX_TEXT_HARDCODED]: "Tên Danh Mục"
      Snippet: <th className="p-2.5 w-[28%]">Tên Danh Mục</th>
-   • Dòng 2632 [JSX_TEXT_HARDCODED]: "Mã ID (Slug)"
+   • Dòng 2676 [JSX_TEXT_HARDCODED]: "Mã ID (Slug)"
      Snippet: <th className="p-2.5 w-[22%]">Mã ID (Slug)</th>
-   • Dòng 2633 [JSX_TEXT_HARDCODED]: "Mô Tả / Từ Khóa Lọc"
+   • Dòng 2677 [JSX_TEXT_HARDCODED]: "Mô Tả / Từ Khóa Lọc"
      Snippet: <th className="p-2.5 w-[24%]">Mô Tả / Từ Khóa Lọc</th>
-   • Dòng 2634 [JSX_TEXT_HARDCODED]: "Thao Tác"
+   • Dòng 2678 [JSX_TEXT_HARDCODED]: "Thao Tác"
      Snippet: <th className="p-2.5 w-[14%] text-right pr-3">Thao Tác</th>
-   • Dòng 2671 [JSX_ATTR_HARDCODED]: "Chỉnh sửa danh mục"
+   • Dòng 2715 [JSX_ATTR_HARDCODED]: "Chỉnh sửa danh mục"
      Snippet: title="Chỉnh sửa danh mục"
-   • Dòng 2680 [JSX_ATTR_HARDCODED]: "Xóa danh mục"
+   • Dòng 2724 [JSX_ATTR_HARDCODED]: "Xóa danh mục"
      Snippet: title="Xóa danh mục"
-   • Dòng 2700 [JSX_TEXT_HARDCODED]: "Mọi thay đổi nội dung giới thiệu sẽ đồng bộ tức thì 0ms tới Web Khách"
+   • Dòng 2744 [JSX_TEXT_HARDCODED]: "Mọi thay đổi nội dung giới thiệu sẽ đồng bộ tức thì 0ms tới Web Khách"
      Snippet: <span>Mọi thay đổi nội dung giới thiệu sẽ đồng bộ tức thì 0ms tới Web Khách</span>
-   • Dòng 2744 [JSX_ATTR_HARDCODED]: "VD: Áo Thun & Polo Nam"
+   • Dòng 2788 [JSX_ATTR_HARDCODED]: "VD: Áo Thun & Polo Nam"
      Snippet: placeholder="VD: Áo Thun & Polo Nam"
-   • Dòng 2786 [JSX_ATTR_HARDCODED]: "VD: Áo thun cổ tròn, polo thể thao, sơ mi cao cấp"
+   • Dòng 2830 [JSX_ATTR_HARDCODED]: "VD: Áo thun cổ tròn, polo thể thao, sơ mi cao cấp"
      Snippet: placeholder="VD: Áo thun cổ tròn, polo thể thao, sơ mi cao cấp"
-   • Dòng 2799 [JSX_ATTR_HARDCODED]: "VD: áo, polo, thun, tee, jacket"
+   • Dòng 2843 [JSX_ATTR_HARDCODED]: "VD: áo, polo, thun, tee, jacket"
      Snippet: placeholder="VD: áo, polo, thun, tee, jacket"
 
 📁 File: src/admin/modules/CrawlerModule.tsx (254 lỗi):
@@ -4745,60 +4745,62 @@
    • Dòng 67 [JSX_TEXT_HARDCODED]: "ĐANG DIỄN RA"
      Snippet: <span>ĐANG DIỄN RA</span>
 
-📁 File: src/components/DownloadAppModal.tsx (27 lỗi):
-   • Dòng 132 [JSX_ATTR_HARDCODED]: "Đóng"
+📁 File: src/components/DownloadAppModal.tsx (28 lỗi):
+   • Dòng 134 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: aria-label="Đóng"
-   • Dòng 142 [JSX_TEXT_HARDCODED]: "Mở 1 Chạm"
+   • Dòng 144 [JSX_TEXT_HARDCODED]: "Mở 1 Chạm"
      Snippet: <span className="font-semibold truncate">Mở 1 Chạm</span>
-   • Dòng 146 [JSX_TEXT_HARDCODED]: "Báo Code Mới"
+   • Dòng 148 [JSX_TEXT_HARDCODED]: "Báo Code Mới"
      Snippet: <span className="font-semibold truncate">Báo Code Mới</span>
-   • Dòng 150 [JSX_TEXT_HARDCODED]: "Bản Quyền G1"
+   • Dòng 152 [JSX_TEXT_HARDCODED]: "Bản Quyền G1"
      Snippet: <span className="font-semibold truncate">Bản Quyền G1</span>
-   • Dòng 166 [JSX_TEXT_HARDCODED]: "Cài Nhanh (PWA)"
+   • Dòng 168 [JSX_TEXT_HARDCODED]: "Cài Nhanh (PWA)"
      Snippet: <span>Cài Nhanh (PWA)</span>
-   • Dòng 180 [JSX_TEXT_HARDCODED]: "Tải File .APK"
+   • Dòng 182 [JSX_TEXT_HARDCODED]: "Tải File .APK"
      Snippet: <span>Tải File .APK</span>
-   • Dòng 194 [JSX_TEXT_HARDCODED]: "Quét Mã QR"
+   • Dòng 196 [JSX_TEXT_HARDCODED]: "Quét Mã QR"
      Snippet: <span>Quét Mã QR</span>
-   • Dòng 207 [JSX_TEXT_HARDCODED]: "Ứng dụng đã được cài đặt!"
+   • Dòng 209 [JSX_TEXT_HARDCODED]: "Ứng dụng đã được cài đặt!"
      Snippet: <p className="font-bold">Ứng dụng đã được cài đặt!</p>
-   • Dòng 217 [JSX_TEXT_HARDCODED]: "Cài đặt thành công!"
+   • Dòng 219 [JSX_TEXT_HARDCODED]: "Cài đặt thành công!"
      Snippet: <p className="font-bold">Cài đặt thành công!</p>
-   • Dòng 229 [JSX_TEXT_HARDCODED]: "Hướng dẫn cài đặt trên iPhone / iPad (Safari)"
+   • Dòng 231 [JSX_TEXT_HARDCODED]: "Hướng dẫn cài đặt trên iPhone / iPad (Safari)"
      Snippet: <span>Hướng dẫn cài đặt trên iPhone / iPad (Safari)</span>
-   • Dòng 256 [JSX_TEXT_HARDCODED]: "Thêm vào MH chính"
+   • Dòng 258 [JSX_TEXT_HARDCODED]: "Thêm vào MH chính"
      Snippet: <strong>Thêm vào MH chính</strong> (Add to Home Screen).
-   • Dòng 292 [JSX_TEXT_HARDCODED]: "(ở góc trên trình duyệt) và chọn"
+   • Dòng 294 [JSX_TEXT_HARDCODED]: "(ở góc trên trình duyệt) và chọn"
      Snippet: Nếu trình duyệt không tự mở hộp thoại, bạn có thể bấm vào menu <strong>⋮</strong> (ở góc trên trình duyệt) và chọn <strong>"Cài đặt ứng dụng"</strong> hoặc <strong>"Thêm vào màn hình chính"</strong>.
-   • Dòng 292 [JSX_TEXT_HARDCODED]: ""Cài đặt ứng dụng""
+   • Dòng 294 [JSX_TEXT_HARDCODED]: ""Cài đặt ứng dụng""
      Snippet: Nếu trình duyệt không tự mở hộp thoại, bạn có thể bấm vào menu <strong>⋮</strong> (ở góc trên trình duyệt) và chọn <strong>"Cài đặt ứng dụng"</strong> hoặc <strong>"Thêm vào màn hình chính"</strong>.
-   • Dòng 292 [JSX_TEXT_HARDCODED]: "hoặc"
+   • Dòng 294 [JSX_TEXT_HARDCODED]: "hoặc"
      Snippet: Nếu trình duyệt không tự mở hộp thoại, bạn có thể bấm vào menu <strong>⋮</strong> (ở góc trên trình duyệt) và chọn <strong>"Cài đặt ứng dụng"</strong> hoặc <strong>"Thêm vào màn hình chính"</strong>.
-   • Dòng 292 [JSX_TEXT_HARDCODED]: ""Thêm vào màn hình chính""
+   • Dòng 294 [JSX_TEXT_HARDCODED]: ""Thêm vào màn hình chính""
      Snippet: Nếu trình duyệt không tự mở hộp thoại, bạn có thể bấm vào menu <strong>⋮</strong> (ở góc trên trình duyệt) và chọn <strong>"Cài đặt ứng dụng"</strong> hoặc <strong>"Thêm vào màn hình chính"</strong>.
-   • Dòng 328 [JSX_TEXT_HARDCODED]: "Tải File PineUniversalMall.apk (2.8 MB)"
+   • Dòng 330 [JSX_TEXT_HARDCODED]: "Tải File PineUniversalMall.apk (2.8 MB)"
      Snippet: <span>Tải File PineUniversalMall.apk (2.8 MB)</span>
-   • Dòng 339 [JSX_TEXT_HARDCODED]: "💡 Khuyên dùng: Cài Nhanh (PWA) — Mở 1 chạm, không cần tải APK"
+   • Dòng 341 [JSX_TEXT_HARDCODED]: "💡 Khuyên dùng: Cài Nhanh (PWA) — Mở 1 chạm, không cần tải APK"
      Snippet: <span>💡 Khuyên dùng: Cài Nhanh (PWA) — Mở 1 chạm, không cần tải APK</span>
-   • Dòng 352 [JSX_TEXT_HARDCODED]: "Tải file APK về máy → Nhấn"
+   • Dòng 354 [JSX_TEXT_HARDCODED]: "Tải file APK về máy → Nhấn"
      Snippet: <span>Tải file APK về máy → Nhấn <strong>"Vẫn tải xuống"</strong> nếu trình duyệt hỏi.</span>
-   • Dòng 352 [JSX_TEXT_HARDCODED]: ""Vẫn tải xuống""
+   • Dòng 354 [JSX_TEXT_HARDCODED]: ""Vẫn tải xuống""
      Snippet: <span>Tải file APK về máy → Nhấn <strong>"Vẫn tải xuống"</strong> nếu trình duyệt hỏi.</span>
-   • Dòng 352 [JSX_TEXT_HARDCODED]: "nếu trình duyệt hỏi."
+   • Dòng 354 [JSX_TEXT_HARDCODED]: "nếu trình duyệt hỏi."
      Snippet: <span>Tải file APK về máy → Nhấn <strong>"Vẫn tải xuống"</strong> nếu trình duyệt hỏi.</span>
-   • Dòng 356 [JSX_TEXT_HARDCODED]: "Mở file vừa tải → Cho phép"
+   • Dòng 358 [JSX_TEXT_HARDCODED]: "Mở file vừa tải → Cho phép"
      Snippet: <span>Mở file vừa tải → Cho phép <strong>"Cài đặt ứng dụng không rõ nguồn"</strong>.</span>
-   • Dòng 356 [JSX_TEXT_HARDCODED]: ""Cài đặt ứng dụng không rõ nguồn""
+   • Dòng 358 [JSX_TEXT_HARDCODED]: ""Cài đặt ứng dụng không rõ nguồn""
      Snippet: <span>Mở file vừa tải → Cho phép <strong>"Cài đặt ứng dụng không rõ nguồn"</strong>.</span>
-   • Dòng 360 [JSX_TEXT_HARDCODED]: "Nhấn"
-     Snippet: <span>Nhấn <strong>Cài đặt</strong> và mở app Pine Universal Mall trải nghiệm!</span>
-   • Dòng 360 [JSX_TEXT_HARDCODED]: "Cài đặt"
-     Snippet: <span>Nhấn <strong>Cài đặt</strong> và mở app Pine Universal Mall trải nghiệm!</span>
-   • Dòng 417 [JSX_TEXT_HARDCODED]: "Đã sao chép liên kết!"
+   • Dòng 362 [JSX_TEXT_HARDCODED]: "Nhấn"
+     Snippet: <span>Nhấn <strong>Cài đặt</strong> và mở app {brand.brandName} trải nghiệm!</span>
+   • Dòng 362 [JSX_TEXT_HARDCODED]: "Cài đặt"
+     Snippet: <span>Nhấn <strong>Cài đặt</strong> và mở app {brand.brandName} trải nghiệm!</span>
+   • Dòng 377 [JSX_TEMPLATE_LITERAL_HARDCODED]: "Mã QR Cài Đặt App ${brand.brandName}"
+     Snippet: alt={`Mã QR Cài Đặt App ${brand.brandName}`}
+   • Dòng 419 [JSX_TEXT_HARDCODED]: "Đã sao chép liên kết!"
      Snippet: <span className="text-emerald-400">Đã sao chép liên kết!</span>
-   • Dòng 422 [JSX_TEXT_HARDCODED]: "Sao chép liên kết cài đặt"
+   • Dòng 424 [JSX_TEXT_HARDCODED]: "Sao chép liên kết cài đặt"
      Snippet: <span>Sao chép liên kết cài đặt</span>
-   • Dòng 435 [JSX_TEXT_HARDCODED]: "An toàn 100% • Không virus"
+   • Dòng 437 [JSX_TEXT_HARDCODED]: "An toàn 100% • Không virus"
      Snippet: <span>An toàn 100% • Không virus</span>
 
 📁 File: src/components/FloatingAnnouncement.tsx (3 lỗi):
@@ -4886,201 +4888,201 @@
      Snippet: <span className="truncate">Sự kiện chính thức</span>
 
 📁 File: src/components/GiveawaysView.tsx (67 lỗi):
-   • Dòng 141 [JSX_TEXT_HARDCODED]: "Phòng chờ trực tuyến:"
+   • Dòng 142 [JSX_TEXT_HARDCODED]: "Phòng chờ trực tuyến:"
      Snippet: <span className="font-semibold text-teal-300">Phòng chờ trực tuyến:</span>
-   • Dòng 189 [JSX_TEXT_HARDCODED]: "Mã tiếp theo:"
+   • Dòng 190 [JSX_TEXT_HARDCODED]: "Mã tiếp theo:"
      Snippet: <span className="text-[11px] opacity-80">Mã tiếp theo:</span>
-   • Dòng 391 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện"
+   • Dòng 392 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện"
      Snippet: aria-label="Chia sẻ sự kiện"
-   • Dòng 392 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện (Copy nhanh link)"
+   • Dòng 393 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện (Copy nhanh link)"
      Snippet: title="Chia sẻ sự kiện (Copy nhanh link)"
-   • Dòng 401 [JSX_ATTR_HARDCODED]: "Đóng"
-     Snippet: aria-label="Đóng"
    • Dòng 402 [JSX_ATTR_HARDCODED]: "Đóng"
-     Snippet: title="Đóng"
-   • Dòng 498 [JSX_TEXT_HARDCODED]: "✓ Đang chọn"
-     Snippet: {isSelected && pkgStock > 0 && <span className="text-[9px] text-accent font-bold">✓ Đang chọn</span>}
-   • Dòng 573 [JSX_TEXT_HARDCODED]: "Mở link"
-     Snippet: <span>Mở link</span>
-   • Dòng 585 [JSX_TEXT_HARDCODED]: "Điều kiện tham gia sự kiện:"
-     Snippet: <span>Điều kiện tham gia sự kiện:</span>
-   • Dòng 748 [JSX_TEXT_HARDCODED]: "Sao chép"
-     Snippet: <span>Sao chép</span>
-   • Dòng 769 [JSX_TEXT_HARDCODED]: "Đăng Nhập Ngay Để Giật Code"
-     Snippet: <span>Đăng Nhập Ngay Để Giật Code</span>
-   • Dòng 776 [JSX_TEXT_HARDCODED]: "Sự Kiện Sắp Diễn Ra — Đếm Ngược Đến Giờ G:"
-     Snippet: <span>Sự Kiện Sắp Diễn Ra — Đếm Ngược Đến Giờ G:</span>
-   • Dòng 781 [JSX_ATTR_HARDCODED]: "Mở sau:"
-     Snippet: label="Mở sau:"
-   • Dòng 805 [JSX_TEXT_HARDCODED]: "Sự Kiện Đã Kết Thúc"
-     Snippet: <span>Sự Kiện Đã Kết Thúc</span>
-   • Dòng 837 [JSX_TEXT_HARDCODED]: "👑 [Admin] Bỏ qua chờ đợt — Giật thử nghiệm ngay"
-     Snippet: <span>👑 [Admin] Bỏ qua chờ đợt — Giật thử nghiệm ngay</span>
-   • Dòng 870 [JSX_TEXT_HARDCODED]: "Sự Kiện Đã Đóng (Tạm Dừng Phát Mã)"
-     Snippet: <span>Sự Kiện Đã Đóng (Tạm Dừng Phát Mã)</span>
-   • Dòng 878 [JSX_TEXT_HARDCODED]: "Chờ Đợt Mã Mới"
-     Snippet: <span>Chờ Đợt Mã Mới</span>
-   • Dòng 972 [JSX_TEXT_HARDCODED]: "Đang Kết Nối Nhận Mã..."
-     Snippet: <span>Đang Kết Nối Nhận Mã...</span>
-   • Dòng 999 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện và copy nhanh liên kết"
-     Snippet: title="Chia sẻ sự kiện và copy nhanh liên kết"
-   • Dòng 1002 [JSX_TEXT_HARDCODED]: "Chia Sẻ & Copy Link"
-     Snippet: <span>Chia Sẻ & Copy Link</span>
-   • Dòng 1550 [JSX_TEXT_HARDCODED]: "Chế độ Admin: Bạn có thể giật thử nghiệm liên tục mã mới từ kho."
-     Snippet: <span>Chế độ Admin: Bạn có thể giật thử nghiệm liên tục mã mới từ kho.</span>
-   • Dòng 1577 [JSX_TEXT_HARDCODED]: "🎡 Vòng Quay May Mắn"
-     Snippet: <span>🎡 Vòng Quay May Mắn</span>
-   • Dòng 1645 [JSX_TEXT_HARDCODED]: "Sự Kiện Hot"
-     Snippet: <span>Sự Kiện Hot</span>
-   • Dòng 1669 [JSX_ATTR_HARDCODED]: "Tìm theo game, quà tặng..."
-     Snippet: placeholder="Tìm theo game, quà tặng..."
-   • Dòng 1847 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện săn mã này"
-     Snippet: title="Chia sẻ sự kiện săn mã này"
-   • Dòng 1848 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện giveaway"
-     Snippet: aria-label="Chia sẻ sự kiện giveaway"
-   • Dòng 1891 [JSX_ATTR_HARDCODED]: "Mở sau:"
-     Snippet: label="Mở sau:"
-   • Dòng 1915 [JSX_TEXT_HARDCODED]: "Phần Thưởng:"
-     Snippet: <span>Phần Thưởng:</span>
-   • Dòng 2018 [JSX_TEXT_HARDCODED]: "Chi Tiết"
-     Snippet: <span>Chi Tiết</span>
-   • Dòng 2031 [JSX_TEXT_HARDCODED]: "Đăng Nhập"
-     Snippet: <span>Đăng Nhập</span>
-   • Dòng 2042 [JSX_TEXT_HARDCODED]: "Chờ Mở"
-     Snippet: <span>Chờ Mở</span>
-   • Dòng 2049 [JSX_TEXT_HARDCODED]: "Đã Hết Hạn"
-     Snippet: <span>Đã Hết Hạn</span>
-   • Dòng 2057 [JSX_TEXT_HARDCODED]: "Sự Kiện Đã Đóng"
-     Snippet: <span>Sự Kiện Đã Đóng</span>
-   • Dòng 2068 [JSX_TEXT_HARDCODED]: "Chờ Đợt Mới"
-     Snippet: <span>Chờ Đợt Mới</span>
-   • Dòng 2089 [JSX_TEXT_HARDCODED]: "Xem Mã"
-     Snippet: <span>Xem Mã</span>
-   • Dòng 2103 [JSX_TEXT_HARDCODED]: "Hồi Chiêu"
-     Snippet: <span>Hồi Chiêu</span>
-   • Dòng 2117 [JSX_TEXT_HARDCODED]: "Tuổi Nick"
-     Snippet: <span>Tuổi Nick</span>
-   • Dòng 2128 [JSX_TEXT_HARDCODED]: "Chờ Đợt Mã"
-     Snippet: <span>Chờ Đợt Mã</span>
-   • Dòng 2224 [JSX_TEXT_HARDCODED]: "Giật & Sao Chép Mã"
-     Snippet: <h4 className="font-bold text-foreground text-sm">Giật & Sao Chép Mã</h4>
-   • Dòng 2226 [JSX_TEXT_HARDCODED]: ""Giật Mã""
-     Snippet: Chọn sự kiện bạn muốn tham gia, nhấn <strong>"Giật Mã"</strong>. Hệ thống sẽ cấp ngay một mã giftcode độc quyền, nhấn <strong>"Sao chép"</strong> để lưu vào bộ nhớ tạm.
-   • Dòng 2226 [JSX_TEXT_HARDCODED]: ". Hệ thống sẽ cấp ngay một mã giftcode độc quyền, nhấn"
-     Snippet: Chọn sự kiện bạn muốn tham gia, nhấn <strong>"Giật Mã"</strong>. Hệ thống sẽ cấp ngay một mã giftcode độc quyền, nhấn <strong>"Sao chép"</strong> để lưu vào bộ nhớ tạm.
-   • Dòng 2226 [JSX_TEXT_HARDCODED]: ""Sao chép""
-     Snippet: Chọn sự kiện bạn muốn tham gia, nhấn <strong>"Giật Mã"</strong>. Hệ thống sẽ cấp ngay một mã giftcode độc quyền, nhấn <strong>"Sao chép"</strong> để lưu vào bộ nhớ tạm.
-   • Dòng 2234 [JSX_TEXT_HARDCODED]: "Vào Game & Trung Tâm Đổi Quà"
-     Snippet: <h4 className="font-bold text-foreground text-sm">Vào Game & Trung Tâm Đổi Quà</h4>
-   • Dòng 2244 [JSX_TEXT_HARDCODED]: "Nhận Quà Hòm Thư Ingame"
-     Snippet: <h4 className="font-bold text-foreground text-sm">Nhận Quà Hòm Thư Ingame</h4>
-   • Dòng 2246 [JSX_TEXT_HARDCODED]: "Xác nhận"
-     Snippet: Dán mã vừa chép và nhấn <strong>Xác nhận</strong>. Quà tặng ingame sẽ được hệ thống gửi tự động về <strong>Hòm Thư</strong> tài khoản của bạn ngay lập tức!
-   • Dòng 2246 [JSX_TEXT_HARDCODED]: ". Quà tặng ingame sẽ được hệ thống gửi tự động về"
-     Snippet: Dán mã vừa chép và nhấn <strong>Xác nhận</strong>. Quà tặng ingame sẽ được hệ thống gửi tự động về <strong>Hòm Thư</strong> tài khoản của bạn ngay lập tức!
-   • Dòng 2246 [JSX_TEXT_HARDCODED]: "Hòm Thư"
-     Snippet: Dán mã vừa chép và nhấn <strong>Xác nhận</strong>. Quà tặng ingame sẽ được hệ thống gửi tự động về <strong>Hòm Thư</strong> tài khoản của bạn ngay lập tức!
-   • Dòng 2278 [JSX_TEXT_HARDCODED]: "Đăng Nhập / Đăng Ký Ngay"
-     Snippet: <span>Đăng Nhập / Đăng Ký Ngay</span>
-   • Dòng 2311 [JSX_ATTR_HARDCODED]: "Sao chép toàn bộ mã"
-     Snippet: title="Sao chép toàn bộ mã"
-   • Dòng 2314 [JSX_TEXT_HARDCODED]: "Sao Chép Tất Cả"
-     Snippet: <span>Sao Chép Tất Cả</span>
-   • Dòng 2319 [JSX_ATTR_HARDCODED]: "Tải về file text"
-     Snippet: title="Tải về file text"
-   • Dòng 2322 [JSX_TEXT_HARDCODED]: "Tải File .TXT"
-     Snippet: <span>Tải File .TXT</span>
-   • Dòng 2376 [JSX_TEXT_HARDCODED]: "Đã chép"
-     Snippet: <span>Đã chép</span>
-   • Dòng 2381 [JSX_TEXT_HARDCODED]: "Chép"
-     Snippet: <span>Chép</span>
-   • Dòng 2398 [JSX_ATTR_HARDCODED]: "ĐANG GIẬT CODE..."
-     Snippet: title="ĐANG GIẬT CODE..."
-   • Dòng 2426 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: aria-label="Đóng"
-   • Dòng 2427 [JSX_ATTR_HARDCODED]: "Đóng"
+   • Dòng 403 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: title="Đóng"
-   • Dòng 2471 [JSX_TEXT_HARDCODED]: "Giật Code Mới Thành Công"
-     Snippet: <span>Giật Code Mới Thành Công</span>
-   • Dòng 2476 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng Đã Nhận Trước Đó"
-     Snippet: <span>Mã Quà Tặng Đã Nhận Trước Đó</span>
-   • Dòng 2506 [JSX_TEXT_HARDCODED]: "[Admin Test Mode] Mã được trích xuất trực tiếp từ kho"
-     Snippet: <span>[Admin Test Mode] Mã được trích xuất trực tiếp từ kho</span>
-   • Dòng 2536 [JSX_TEXT_HARDCODED]: "Mã Giftcode Ingame:"
-     Snippet: <span className="text-xs text-muted-foreground font-bold">Mã Giftcode Ingame:</span>
-   • Dòng 2558 [JSX_TEXT_HARDCODED]: "Đã chép"
+   • Dòng 499 [JSX_TEXT_HARDCODED]: "✓ Đang chọn"
+     Snippet: {isSelected && pkgStock > 0 && <span className="text-[9px] text-accent font-bold">✓ Đang chọn</span>}
+   • Dòng 574 [JSX_TEXT_HARDCODED]: "Mở link"
+     Snippet: <span>Mở link</span>
+   • Dòng 586 [JSX_TEXT_HARDCODED]: "Điều kiện tham gia sự kiện:"
+     Snippet: <span>Điều kiện tham gia sự kiện:</span>
+   • Dòng 749 [JSX_TEXT_HARDCODED]: "Sao chép"
+     Snippet: <span>Sao chép</span>
+   • Dòng 770 [JSX_TEXT_HARDCODED]: "Đăng Nhập Ngay Để Giật Code"
+     Snippet: <span>Đăng Nhập Ngay Để Giật Code</span>
+   • Dòng 777 [JSX_TEXT_HARDCODED]: "Sự Kiện Sắp Diễn Ra — Đếm Ngược Đến Giờ G:"
+     Snippet: <span>Sự Kiện Sắp Diễn Ra — Đếm Ngược Đến Giờ G:</span>
+   • Dòng 782 [JSX_ATTR_HARDCODED]: "Mở sau:"
+     Snippet: label="Mở sau:"
+   • Dòng 806 [JSX_TEXT_HARDCODED]: "Sự Kiện Đã Kết Thúc"
+     Snippet: <span>Sự Kiện Đã Kết Thúc</span>
+   • Dòng 838 [JSX_TEXT_HARDCODED]: "👑 [Admin] Bỏ qua chờ đợt — Giật thử nghiệm ngay"
+     Snippet: <span>👑 [Admin] Bỏ qua chờ đợt — Giật thử nghiệm ngay</span>
+   • Dòng 871 [JSX_TEXT_HARDCODED]: "Sự Kiện Đã Đóng (Tạm Dừng Phát Mã)"
+     Snippet: <span>Sự Kiện Đã Đóng (Tạm Dừng Phát Mã)</span>
+   • Dòng 879 [JSX_TEXT_HARDCODED]: "Chờ Đợt Mã Mới"
+     Snippet: <span>Chờ Đợt Mã Mới</span>
+   • Dòng 973 [JSX_TEXT_HARDCODED]: "Đang Kết Nối Nhận Mã..."
+     Snippet: <span>Đang Kết Nối Nhận Mã...</span>
+   • Dòng 1000 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện và copy nhanh liên kết"
+     Snippet: title="Chia sẻ sự kiện và copy nhanh liên kết"
+   • Dòng 1003 [JSX_TEXT_HARDCODED]: "Chia Sẻ & Copy Link"
+     Snippet: <span>Chia Sẻ & Copy Link</span>
+   • Dòng 1553 [JSX_TEXT_HARDCODED]: "Chế độ Admin: Bạn có thể giật thử nghiệm liên tục mã mới từ kho."
+     Snippet: <span>Chế độ Admin: Bạn có thể giật thử nghiệm liên tục mã mới từ kho.</span>
+   • Dòng 1580 [JSX_TEXT_HARDCODED]: "🎡 Vòng Quay May Mắn"
+     Snippet: <span>🎡 Vòng Quay May Mắn</span>
+   • Dòng 1648 [JSX_TEXT_HARDCODED]: "Sự Kiện Hot"
+     Snippet: <span>Sự Kiện Hot</span>
+   • Dòng 1672 [JSX_ATTR_HARDCODED]: "Tìm theo game, quà tặng..."
+     Snippet: placeholder="Tìm theo game, quà tặng..."
+   • Dòng 1850 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện săn mã này"
+     Snippet: title="Chia sẻ sự kiện săn mã này"
+   • Dòng 1851 [JSX_ATTR_HARDCODED]: "Chia sẻ sự kiện giveaway"
+     Snippet: aria-label="Chia sẻ sự kiện giveaway"
+   • Dòng 1894 [JSX_ATTR_HARDCODED]: "Mở sau:"
+     Snippet: label="Mở sau:"
+   • Dòng 1918 [JSX_TEXT_HARDCODED]: "Phần Thưởng:"
+     Snippet: <span>Phần Thưởng:</span>
+   • Dòng 2021 [JSX_TEXT_HARDCODED]: "Chi Tiết"
+     Snippet: <span>Chi Tiết</span>
+   • Dòng 2034 [JSX_TEXT_HARDCODED]: "Đăng Nhập"
+     Snippet: <span>Đăng Nhập</span>
+   • Dòng 2045 [JSX_TEXT_HARDCODED]: "Chờ Mở"
+     Snippet: <span>Chờ Mở</span>
+   • Dòng 2052 [JSX_TEXT_HARDCODED]: "Đã Hết Hạn"
+     Snippet: <span>Đã Hết Hạn</span>
+   • Dòng 2060 [JSX_TEXT_HARDCODED]: "Sự Kiện Đã Đóng"
+     Snippet: <span>Sự Kiện Đã Đóng</span>
+   • Dòng 2071 [JSX_TEXT_HARDCODED]: "Chờ Đợt Mới"
+     Snippet: <span>Chờ Đợt Mới</span>
+   • Dòng 2092 [JSX_TEXT_HARDCODED]: "Xem Mã"
+     Snippet: <span>Xem Mã</span>
+   • Dòng 2106 [JSX_TEXT_HARDCODED]: "Hồi Chiêu"
+     Snippet: <span>Hồi Chiêu</span>
+   • Dòng 2120 [JSX_TEXT_HARDCODED]: "Tuổi Nick"
+     Snippet: <span>Tuổi Nick</span>
+   • Dòng 2131 [JSX_TEXT_HARDCODED]: "Chờ Đợt Mã"
+     Snippet: <span>Chờ Đợt Mã</span>
+   • Dòng 2227 [JSX_TEXT_HARDCODED]: "Giật & Sao Chép Mã"
+     Snippet: <h4 className="font-bold text-foreground text-sm">Giật & Sao Chép Mã</h4>
+   • Dòng 2229 [JSX_TEXT_HARDCODED]: ""Giật Mã""
+     Snippet: Chọn sự kiện bạn muốn tham gia, nhấn <strong>"Giật Mã"</strong>. Hệ thống sẽ cấp ngay một mã giftcode độc quyền, nhấn <strong>"Sao chép"</strong> để lưu vào bộ nhớ tạm.
+   • Dòng 2229 [JSX_TEXT_HARDCODED]: ". Hệ thống sẽ cấp ngay một mã giftcode độc quyền, nhấn"
+     Snippet: Chọn sự kiện bạn muốn tham gia, nhấn <strong>"Giật Mã"</strong>. Hệ thống sẽ cấp ngay một mã giftcode độc quyền, nhấn <strong>"Sao chép"</strong> để lưu vào bộ nhớ tạm.
+   • Dòng 2229 [JSX_TEXT_HARDCODED]: ""Sao chép""
+     Snippet: Chọn sự kiện bạn muốn tham gia, nhấn <strong>"Giật Mã"</strong>. Hệ thống sẽ cấp ngay một mã giftcode độc quyền, nhấn <strong>"Sao chép"</strong> để lưu vào bộ nhớ tạm.
+   • Dòng 2237 [JSX_TEXT_HARDCODED]: "Vào Game & Trung Tâm Đổi Quà"
+     Snippet: <h4 className="font-bold text-foreground text-sm">Vào Game & Trung Tâm Đổi Quà</h4>
+   • Dòng 2247 [JSX_TEXT_HARDCODED]: "Nhận Quà Hòm Thư Ingame"
+     Snippet: <h4 className="font-bold text-foreground text-sm">Nhận Quà Hòm Thư Ingame</h4>
+   • Dòng 2249 [JSX_TEXT_HARDCODED]: "Xác nhận"
+     Snippet: Dán mã vừa chép và nhấn <strong>Xác nhận</strong>. Quà tặng ingame sẽ được hệ thống gửi tự động về <strong>Hòm Thư</strong> tài khoản của bạn ngay lập tức!
+   • Dòng 2249 [JSX_TEXT_HARDCODED]: ". Quà tặng ingame sẽ được hệ thống gửi tự động về"
+     Snippet: Dán mã vừa chép và nhấn <strong>Xác nhận</strong>. Quà tặng ingame sẽ được hệ thống gửi tự động về <strong>Hòm Thư</strong> tài khoản của bạn ngay lập tức!
+   • Dòng 2249 [JSX_TEXT_HARDCODED]: "Hòm Thư"
+     Snippet: Dán mã vừa chép và nhấn <strong>Xác nhận</strong>. Quà tặng ingame sẽ được hệ thống gửi tự động về <strong>Hòm Thư</strong> tài khoản của bạn ngay lập tức!
+   • Dòng 2281 [JSX_TEXT_HARDCODED]: "Đăng Nhập / Đăng Ký Ngay"
+     Snippet: <span>Đăng Nhập / Đăng Ký Ngay</span>
+   • Dòng 2314 [JSX_ATTR_HARDCODED]: "Sao chép toàn bộ mã"
+     Snippet: title="Sao chép toàn bộ mã"
+   • Dòng 2317 [JSX_TEXT_HARDCODED]: "Sao Chép Tất Cả"
+     Snippet: <span>Sao Chép Tất Cả</span>
+   • Dòng 2322 [JSX_ATTR_HARDCODED]: "Tải về file text"
+     Snippet: title="Tải về file text"
+   • Dòng 2325 [JSX_TEXT_HARDCODED]: "Tải File .TXT"
+     Snippet: <span>Tải File .TXT</span>
+   • Dòng 2379 [JSX_TEXT_HARDCODED]: "Đã chép"
      Snippet: <span>Đã chép</span>
-   • Dòng 2563 [JSX_TEXT_HARDCODED]: "Sao chép"
+   • Dòng 2384 [JSX_TEXT_HARDCODED]: "Chép"
+     Snippet: <span>Chép</span>
+   • Dòng 2401 [JSX_ATTR_HARDCODED]: "ĐANG GIẬT CODE..."
+     Snippet: title="ĐANG GIẬT CODE..."
+   • Dòng 2429 [JSX_ATTR_HARDCODED]: "Đóng"
+     Snippet: aria-label="Đóng"
+   • Dòng 2430 [JSX_ATTR_HARDCODED]: "Đóng"
+     Snippet: title="Đóng"
+   • Dòng 2474 [JSX_TEXT_HARDCODED]: "Giật Code Mới Thành Công"
+     Snippet: <span>Giật Code Mới Thành Công</span>
+   • Dòng 2479 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng Đã Nhận Trước Đó"
+     Snippet: <span>Mã Quà Tặng Đã Nhận Trước Đó</span>
+   • Dòng 2509 [JSX_TEXT_HARDCODED]: "[Admin Test Mode] Mã được trích xuất trực tiếp từ kho"
+     Snippet: <span>[Admin Test Mode] Mã được trích xuất trực tiếp từ kho</span>
+   • Dòng 2539 [JSX_TEXT_HARDCODED]: "Mã Giftcode Ingame:"
+     Snippet: <span className="text-xs text-muted-foreground font-bold">Mã Giftcode Ingame:</span>
+   • Dòng 2561 [JSX_TEXT_HARDCODED]: "Đã chép"
+     Snippet: <span>Đã chép</span>
+   • Dòng 2566 [JSX_TEXT_HARDCODED]: "Sao chép"
      Snippet: <span>Sao chép</span>
-   • Dòng 2606 [JSX_TEXT_HARDCODED]: "Sao Chép Mã & Đóng"
+   • Dòng 2609 [JSX_TEXT_HARDCODED]: "Sao Chép Mã & Đóng"
      Snippet: <span>Sao Chép Mã & Đóng</span>
-   • Dòng 2638 [JSX_TEXT_HARDCODED]: "Chia Sẻ"
+   • Dòng 2641 [JSX_TEXT_HARDCODED]: "Chia Sẻ"
      Snippet: <span className="truncate">Chia Sẻ</span>
-   • Dòng 2758 [JSX_TEXT_HARDCODED]: "Sao chép"
+   • Dòng 2761 [JSX_TEXT_HARDCODED]: "Sao chép"
      Snippet: <span>Sao chép</span>
-   • Dòng 2776 [JSX_TEXT_HARDCODED]: "Xem Kho Mã Đã Giật"
+   • Dòng 2779 [JSX_TEXT_HARDCODED]: "Xem Kho Mã Đã Giật"
      Snippet: <span>Xem Kho Mã Đã Giật</span>
 
 📁 File: src/components/GrowthCenterModal.tsx (30 lỗi):
-   • Dòng 361 [JSX_ATTR_HARDCODED]: "Đóng"
+   • Dòng 363 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: aria-label="Đóng"
-   • Dòng 378 [JSX_TEXT_HARDCODED]: "Vòng Quay"
+   • Dòng 380 [JSX_TEXT_HARDCODED]: "Vòng Quay"
      Snippet: <span>Vòng Quay</span>
-   • Dòng 390 [JSX_TEXT_HARDCODED]: "Quà Tân Thủ"
+   • Dòng 392 [JSX_TEXT_HARDCODED]: "Quà Tân Thủ"
      Snippet: <span>Quà Tân Thủ</span>
-   • Dòng 402 [JSX_TEXT_HARDCODED]: "Mời Bạn & Hoa Hồng"
+   • Dòng 404 [JSX_TEXT_HARDCODED]: "Mời Bạn & Hoa Hồng"
      Snippet: <span>Mời Bạn & Hoa Hồng</span>
-   • Dòng 414 [JSX_TEXT_HARDCODED]: "Điểm Danh"
+   • Dòng 416 [JSX_TEXT_HARDCODED]: "Điểm Danh"
      Snippet: <span>Điểm Danh</span>
-   • Dòng 426 [JSX_TEXT_HARDCODED]: "Đua Top"
+   • Dòng 428 [JSX_TEXT_HARDCODED]: "Đua Top"
      Snippet: <span>Đua Top</span>
-   • Dòng 500 [JSX_TEXT_HARDCODED]: "Mời 1 bạn bè mới"
+   • Dòng 502 [JSX_TEXT_HARDCODED]: "Mời 1 bạn bè mới"
      Snippet: <span className="text-muted-foreground group-hover:text-foreground">Mời 1 bạn bè mới</span>
-   • Dòng 509 [JSX_TEXT_HARDCODED]: "Điểm danh ngày 3 & ngày 7"
+   • Dòng 511 [JSX_TEXT_HARDCODED]: "Điểm danh ngày 3 & ngày 7"
      Snippet: <span className="text-muted-foreground group-hover:text-foreground">Điểm danh ngày 3 & ngày 7</span>
-   • Dòng 520 [JSX_TEXT_HARDCODED]: "Lịch sử trúng thưởng gần đây:"
+   • Dòng 522 [JSX_TEXT_HARDCODED]: "Lịch sử trúng thưởng gần đây:"
      Snippet: <span className="text-muted-foreground font-semibold">Lịch sử trúng thưởng gần đây:</span>
-   • Dòng 546 [JSX_TEXT_HARDCODED]: "Gói Quà Chào Mừng Tân Thủ"
+   • Dòng 548 [JSX_TEXT_HARDCODED]: "Gói Quà Chào Mừng Tân Thủ"
      Snippet: <span>Gói Quà Chào Mừng Tân Thủ</span>
-   • Dòng 560 [JSX_TEXT_HARDCODED]: "Đã Nhận Thành Công"
+   • Dòng 562 [JSX_TEXT_HARDCODED]: "Đã Nhận Thành Công"
      Snippet: <span>Đã Nhận Thành Công</span>
-   • Dòng 569 [JSX_TEXT_HARDCODED]: "Nhận Gói Tân Thủ Ngay"
+   • Dòng 571 [JSX_TEXT_HARDCODED]: "Nhận Gói Tân Thủ Ngay"
      Snippet: <span>Nhận Gói Tân Thủ Ngay</span>
-   • Dòng 584 [JSX_TEXT_HARDCODED]: "Ưu Đãi Nạp Đầu (First Deposit)"
+   • Dòng 586 [JSX_TEXT_HARDCODED]: "Ưu Đãi Nạp Đầu (First Deposit)"
      Snippet: <span>Ưu Đãi Nạp Đầu (First Deposit)</span>
-   • Dòng 620 [JSX_TEXT_HARDCODED]: "Bạn bè đã mời"
+   • Dòng 622 [JSX_TEXT_HARDCODED]: "Bạn bè đã mời"
      Snippet: <span className="text-[10px] text-muted-foreground">Bạn bè đã mời</span>
-   • Dòng 622 [JSX_TEXT_HARDCODED]: "thành viên"
+   • Dòng 624 [JSX_TEXT_HARDCODED]: "thành viên"
      Snippet: <span className="text-[9px] text-slate-400">thành viên</span>
-   • Dòng 625 [JSX_TEXT_HARDCODED]: "Hoa hồng tích lũy"
+   • Dòng 627 [JSX_TEXT_HARDCODED]: "Hoa hồng tích lũy"
      Snippet: <span className="text-[10px] text-muted-foreground">Hoa hồng tích lũy</span>
-   • Dòng 629 [JSX_TEXT_HARDCODED]: "đã cộng vào ví"
+   • Dòng 631 [JSX_TEXT_HARDCODED]: "đã cộng vào ví"
      Snippet: <span className="text-[9px] text-slate-400">đã cộng vào ví</span>
-   • Dòng 632 [JSX_TEXT_HARDCODED]: "Hoa hồng nạp"
+   • Dòng 634 [JSX_TEXT_HARDCODED]: "Hoa hồng nạp"
      Snippet: <span className="text-[10px] text-muted-foreground">Hoa hồng nạp</span>
-   • Dòng 636 [JSX_TEXT_HARDCODED]: "trọn đời vĩnh viễn"
+   • Dòng 638 [JSX_TEXT_HARDCODED]: "trọn đời vĩnh viễn"
      Snippet: <span className="text-[9px] text-slate-400">trọn đời vĩnh viễn</span>
-   • Dòng 643 [JSX_TEXT_HARDCODED]: "Link giới thiệu cá nhân của bạn:"
+   • Dòng 645 [JSX_TEXT_HARDCODED]: "Link giới thiệu cá nhân của bạn:"
      Snippet: <span className="font-bold text-foreground">Link giới thiệu cá nhân của bạn:</span>
-   • Dòng 665 [JSX_TEXT_HARDCODED]: "Mã mời của bạn:"
+   • Dòng 667 [JSX_TEXT_HARDCODED]: "Mã mời của bạn:"
      Snippet: <span className="text-muted-foreground">Mã mời của bạn:</span>
-   • Dòng 673 [JSX_ATTR_HARDCODED]: "Chép mã mời"
+   • Dòng 675 [JSX_ATTR_HARDCODED]: "Chép mã mời"
      Snippet: title="Chép mã mời"
-   • Dòng 680 [JSX_TEXT_HARDCODED]: "Chia sẻ:"
+   • Dòng 682 [JSX_TEXT_HARDCODED]: "Chia sẻ:"
      Snippet: <span className="text-[11px] text-muted-foreground">Chia sẻ:</span>
-   • Dòng 765 [JSX_TEXT_HARDCODED]: "Bạn có mã giới thiệu từ bạn bè?"
+   • Dòng 767 [JSX_TEXT_HARDCODED]: "Bạn có mã giới thiệu từ bạn bè?"
      Snippet: <span className="font-bold text-foreground">Bạn có mã giới thiệu từ bạn bè?</span>
-   • Dòng 808 [JSX_TEXT_HARDCODED]: "/ 7 ngày"
+   • Dòng 810 [JSX_TEXT_HARDCODED]: "/ 7 ngày"
      Snippet: <span className="text-[10px] text-slate-400 block">/ 7 ngày</span>
-   • Dòng 853 [JSX_TEXT_HARDCODED]: "Hôm nay"
+   • Dòng 855 [JSX_TEXT_HARDCODED]: "Hôm nay"
      Snippet: <span className="text-[10px] font-bold text-indigo-400">Hôm nay</span>
-   • Dòng 855 [JSX_TEXT_HARDCODED]: "Chưa mở"
+   • Dòng 857 [JSX_TEXT_HARDCODED]: "Chưa mở"
      Snippet: <span className="text-[10px] text-muted-foreground">Chưa mở</span>
-   • Dòng 871 [JSX_TEXT_HARDCODED]: "Điểm Danh Ngay Hôm Nay"
+   • Dòng 873 [JSX_TEXT_HARDCODED]: "Điểm Danh Ngay Hôm Nay"
      Snippet: <span>Điểm Danh Ngay Hôm Nay</span>
-   • Dòng 919 [JSX_TEXT_HARDCODED]: "Top Đại Sứ Lan Truyền:"
+   • Dòng 921 [JSX_TEXT_HARDCODED]: "Top Đại Sứ Lan Truyền:"
      Snippet: <span className="font-bold text-foreground">Top Đại Sứ Lan Truyền:</span>
-   • Dòng 978 [JSX_TEXT_HARDCODED]: "Vòng quay may mắn vừa mang lại cho bạn phần thưởng:"
+   • Dòng 980 [JSX_TEXT_HARDCODED]: "Vòng quay may mắn vừa mang lại cho bạn phần thưởng:"
      Snippet: <p className="text-xs text-muted-foreground">Vòng quay may mắn vừa mang lại cho bạn phần thưởng:</p>
 
 📁 File: src/components/LuckyWheelSection.tsx (13 lỗi):
@@ -5272,71 +5274,73 @@
      Snippet: placeholder="Mô tả cụ thể thông báo lỗi khi bạn nhập mã vào game/ứng dụng..."
 
 📁 File: src/components/NewsView.tsx (7 lỗi):
-   • Dòng 802 [JSX_TEXT_HARDCODED]: "Hiển thị:"
+   • Dòng 803 [JSX_TEXT_HARDCODED]: "Hiển thị:"
      Snippet: <span className="px-1.5 font-medium">Hiển thị:</span>
-   • Dòng 830 [JSX_ATTR_HARDCODED]: "Trang đầu"
-     Snippet: title="Trang đầu"
    • Dòng 831 [JSX_ATTR_HARDCODED]: "Trang đầu"
+     Snippet: title="Trang đầu"
+   • Dòng 832 [JSX_ATTR_HARDCODED]: "Trang đầu"
      Snippet: aria-label="Trang đầu"
-   • Dòng 842 [JSX_ATTR_HARDCODED]: "Trang trước"
-     Snippet: title="Trang trước"
    • Dòng 843 [JSX_ATTR_HARDCODED]: "Trang trước"
+     Snippet: title="Trang trước"
+   • Dòng 844 [JSX_ATTR_HARDCODED]: "Trang trước"
      Snippet: aria-label="Trang trước"
-   • Dòng 897 [JSX_ATTR_HARDCODED]: "Trang cuối"
-     Snippet: title="Trang cuối"
    • Dòng 898 [JSX_ATTR_HARDCODED]: "Trang cuối"
+     Snippet: title="Trang cuối"
+   • Dòng 899 [JSX_ATTR_HARDCODED]: "Trang cuối"
      Snippet: aria-label="Trang cuối"
 
-📁 File: src/components/notification/EmailSubscriptionModal.tsx (25 lỗi):
-   • Dòng 364 [JSX_TEXT_HARDCODED]: "Trung Tâm Thông Báo Code & Nhận Tin"
+📁 File: src/components/notification/EmailSubscriptionModal.tsx (26 lỗi):
+   • Dòng 366 [JSX_TEXT_HARDCODED]: "Trung Tâm Thông Báo Code & Nhận Tin"
      Snippet: <span>Trung Tâm Thông Báo Code & Nhận Tin</span>
-   • Dòng 379 [JSX_ATTR_HARDCODED]: "Đóng"
+   • Dòng 381 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: aria-label="Đóng"
-   • Dòng 400 [JSX_TEXT_HARDCODED]: "Bảng Thông Báo Giftcode Mới"
+   • Dòng 402 [JSX_TEXT_HARDCODED]: "Bảng Thông Báo Giftcode Mới"
      Snippet: <span>Bảng Thông Báo Giftcode Mới</span>
-   • Dòng 419 [JSX_TEXT_HARDCODED]: "Bảng Đăng Ký Nhận Email"
+   • Dòng 421 [JSX_TEXT_HARDCODED]: "Bảng Đăng Ký Nhận Email"
      Snippet: <span>Bảng Đăng Ký Nhận Email</span>
-   • Dòng 448 [JSX_TEXT_HARDCODED]: "Bảng Thông Báo Giftcode Mới"
+   • Dòng 450 [JSX_TEXT_HARDCODED]: "Bảng Thông Báo Giftcode Mới"
      Snippet: <span>Bảng Thông Báo Giftcode Mới</span>
-   • Dòng 460 [JSX_TEXT_HARDCODED]: "Game Bạn Đang Theo Dõi"
+   • Dòng 462 [JSX_TEXT_HARDCODED]: "Game Bạn Đang Theo Dõi"
      Snippet: <span>Game Bạn Đang Theo Dõi</span>
-   • Dòng 465 [JSX_TEXT_HARDCODED]: "Code HOT Đang Phát"
+   • Dòng 467 [JSX_TEXT_HARDCODED]: "Code HOT Đang Phát"
      Snippet: <span>Code HOT Đang Phát</span>
-   • Dòng 478 [JSX_ATTR_HARDCODED]: "Tìm theo tên game, mã code, phần thưởng..."
+   • Dòng 480 [JSX_ATTR_HARDCODED]: "Tìm theo tên game, mã code, phần thưởng..."
      Snippet: placeholder="Tìm theo tên game, mã code, phần thưởng..."
-   • Dòng 487 [JSX_TEXT_HARDCODED]: "🔖 Lưu"
+   • Dòng 489 [JSX_TEXT_HARDCODED]: "🔖 Lưu"
      Snippet: Bạn chưa ấn theo dõi game nào. Nhấn biểu tượng <strong>🔖 Lưu</strong> trên game để nhận thông báo code tự động!
-   • Dòng 498 [JSX_TEXT_HARDCODED]: "Không tìm thấy mã giftcode nào phù hợp"
+   • Dòng 500 [JSX_TEXT_HARDCODED]: "Không tìm thấy mã giftcode nào phù hợp"
      Snippet: <div className="text-xs font-bold text-foreground">Không tìm thấy mã giftcode nào phù hợp</div>
-   • Dòng 499 [JSX_TEXT_HARDCODED]: "Thử tìm kiếm với từ khóa khác hoặc bấm Lưu game trên trang chủ."
+   • Dòng 501 [JSX_TEXT_HARDCODED]: "Thử tìm kiếm với từ khóa khác hoặc bấm Lưu game trên trang chủ."
      Snippet: <p className="text-[11px] text-muted-foreground">Thử tìm kiếm với từ khóa khác hoặc bấm Lưu game trên trang chủ.</p>
-   • Dòng 584 [JSX_ATTR_HARDCODED]: "Sao chép mã code"
+   • Dòng 586 [JSX_ATTR_HARDCODED]: "Sao chép mã code"
      Snippet: title="Sao chép mã code"
-   • Dòng 589 [JSX_TEXT_HARDCODED]: "Đã Chép"
+   • Dòng 591 [JSX_TEXT_HARDCODED]: "Đã Chép"
      Snippet: <span>Đã Chép</span>
-   • Dòng 594 [JSX_TEXT_HARDCODED]: "Sao Chép"
+   • Dòng 596 [JSX_TEXT_HARDCODED]: "Sao Chép"
      Snippet: <span>Sao Chép</span>
-   • Dòng 609 [JSX_TEXT_HARDCODED]: "Đã Share"
+   • Dòng 606 [JSX_TEMPLATE_LITERAL_HARDCODED]: "Chia sẻ mã code kèm link nguồn ${getActiveBrandIdentity().brandName}"
+     Snippet: title={`Chia sẻ mã code kèm link nguồn ${getActiveBrandIdentity().brandName}`}
+   • Dòng 611 [JSX_TEXT_HARDCODED]: "Đã Share"
      Snippet: <span>Đã Share</span>
-   • Dòng 614 [JSX_TEXT_HARDCODED]: "Chia Sẻ"
+   • Dòng 616 [JSX_TEXT_HARDCODED]: "Chia Sẻ"
      Snippet: <span>Chia Sẻ</span>
-   • Dòng 642 [JSX_TEXT_HARDCODED]: "Cập nhật mã quà tặng tự động 24/7 từ nhà phát hành"
+   • Dòng 644 [JSX_TEXT_HARDCODED]: "Cập nhật mã quà tặng tự động 24/7 từ nhà phát hành"
      Snippet: <span className="truncate">Cập nhật mã quà tặng tự động 24/7 từ nhà phát hành</span>
-   • Dòng 670 [JSX_TEXT_HARDCODED]: "Tự động gửi email khi có mã mới & sự kiện giờ G"
+   • Dòng 672 [JSX_TEXT_HARDCODED]: "Tự động gửi email khi có mã mới & sự kiện giờ G"
      Snippet: <p className="text-[11px] text-muted-foreground">Tự động gửi email khi có mã mới & sự kiện giờ G</p>
-   • Dòng 682 [JSX_TEXT_HARDCODED]: "Đang chọn theo dõi:"
+   • Dòng 684 [JSX_TEXT_HARDCODED]: "Đang chọn theo dõi:"
      Snippet: <span className="text-muted-foreground">Đang chọn theo dõi: </span>
-   • Dòng 706 [JSX_TEXT_HARDCODED]: "Cam kết bảo mật 100%, không spam, có link hủy đăng ký 1 chạm."
+   • Dòng 708 [JSX_TEXT_HARDCODED]: "Cam kết bảo mật 100%, không spam, có link hủy đăng ký 1 chạm."
      Snippet: <span>Cam kết bảo mật 100%, không spam, có link hủy đăng ký 1 chạm.</span>
-   • Dòng 736 [JSX_TEXT_HARDCODED]: "Mã Giftcode Mới Của Game Đang Theo Dõi"
+   • Dòng 738 [JSX_TEXT_HARDCODED]: "Mã Giftcode Mới Của Game Đang Theo Dõi"
      Snippet: <span>Mã Giftcode Mới Của Game Đang Theo Dõi</span>
-   • Dòng 772 [JSX_ATTR_HARDCODED]: "Bỏ theo dõi game này"
+   • Dòng 774 [JSX_ATTR_HARDCODED]: "Bỏ theo dõi game này"
      Snippet: title="Bỏ theo dõi game này"
-   • Dòng 804 [JSX_TEXT_HARDCODED]: "Sự Kiện Phát Code Miễn Phí (Giờ G)"
+   • Dòng 806 [JSX_TEXT_HARDCODED]: "Sự Kiện Phát Code Miễn Phí (Giờ G)"
      Snippet: <span>Sự Kiện Phát Code Miễn Phí (Giờ G)</span>
-   • Dòng 832 [JSX_TEXT_HARDCODED]: "Khuyến Mãi & Flash Sale Giảm Giá Giờ Vàng"
+   • Dòng 834 [JSX_TEXT_HARDCODED]: "Khuyến Mãi & Flash Sale Giảm Giá Giờ Vàng"
      Snippet: <span>Khuyến Mãi & Flash Sale Giảm Giá Giờ Vàng</span>
-   • Dòng 851 [JSX_TEXT_HARDCODED]: "Hủy Đăng Ký"
+   • Dòng 853 [JSX_TEXT_HARDCODED]: "Hủy Đăng Ký"
      Snippet: <span>Hủy Đăng Ký</span>
 
 📁 File: src/components/ProductModal.tsx (2 lỗi):
@@ -5346,154 +5350,152 @@
      Snippet: <span className="font-bold text-gray-700">Số lượng:</span>
 
 📁 File: src/components/seller/PublicStoreView.tsx (20 lỗi):
-   • Dòng 263 [JSX_TEXT_HARDCODED]: "Không Tìm Thấy Gian Hàng"
+   • Dòng 264 [JSX_TEXT_HARDCODED]: "Không Tìm Thấy Gian Hàng"
      Snippet: <h2 className="text-xl font-bold mb-2">Không Tìm Thấy Gian Hàng</h2>
-   • Dòng 330 [JSX_TEXT_HARDCODED]: "Bảo hành:"
+   • Dòng 331 [JSX_TEXT_HARDCODED]: "Bảo hành:"
      Snippet: <span className="font-semibold text-foreground">Bảo hành:</span> {store.warranty_policy || 'Bảo hành 24H 1 đổi 1 hoặc hoàn tiền'}
-   • Dòng 348 [JSX_TEXT_HARDCODED]: "Gian hàng hiện đang tạm thời nghỉ bán!"
+   • Dòng 349 [JSX_TEXT_HARDCODED]: "Gian hàng hiện đang tạm thời nghỉ bán!"
      Snippet: <div className="font-bold text-sm">Gian hàng hiện đang tạm thời nghỉ bán!</div>
-   • Dòng 349 [JSX_TEXT_HARDCODED]: "Người bán đang trong kỳ nghỉ hoặc bảo trì kho. Quý khách vui lòng quay lại sau ít ngày."
+   • Dòng 350 [JSX_TEXT_HARDCODED]: "Người bán đang trong kỳ nghỉ hoặc bảo trì kho. Quý khách vui lòng quay lại sau ít ngày."
      Snippet: <div className="opacity-90 mt-0.5">Người bán đang trong kỳ nghỉ hoặc bảo trì kho. Quý khách vui lòng quay lại sau ít ngày.</div>
-   • Dòng 357 [JSX_TEXT_HARDCODED]: "Danh Mục Gói Sản Phẩm & Giftcode"
+   • Dòng 358 [JSX_TEXT_HARDCODED]: "Danh Mục Gói Sản Phẩm & Giftcode"
      Snippet: <h2 className="text-lg font-bold">Danh Mục Gói Sản Phẩm & Giftcode</h2>
-   • Dòng 368 [JSX_TEXT_HARDCODED]: "Chưa có sản phẩm mở bán"
+   • Dòng 369 [JSX_TEXT_HARDCODED]: "Chưa có sản phẩm mở bán"
      Snippet: <div className="text-sm font-semibold">Chưa có sản phẩm mở bán</div>
-   • Dòng 426 [JSX_TEXT_HARDCODED]: "Tạm hết hàng"
+   • Dòng 427 [JSX_TEXT_HARDCODED]: "Tạm hết hàng"
      Snippet: <span className="text-destructive font-semibold ml-auto">Tạm hết hàng</span>
-   • Dòng 449 [JSX_ATTR_HARDCODED]: "Thêm sản phẩm này vào giỏ hàng"
+   • Dòng 450 [JSX_ATTR_HARDCODED]: "Thêm sản phẩm này vào giỏ hàng"
      Snippet: title="Thêm sản phẩm này vào giỏ hàng"
-   • Dòng 450 [JSX_ATTR_HARDCODED]: "Thêm vào giỏ hàng"
+   • Dòng 451 [JSX_ATTR_HARDCODED]: "Thêm vào giỏ hàng"
      Snippet: aria-label="Thêm vào giỏ hàng"
-   • Dòng 453 [JSX_TEXT_HARDCODED]: "Thêm vào giỏ"
+   • Dòng 454 [JSX_TEXT_HARDCODED]: "Thêm vào giỏ"
      Snippet: <span>Thêm vào giỏ</span>
-   • Dòng 479 [JSX_TEXT_HARDCODED]: "Đánh Giá Của Khách Hàng"
+   • Dòng 480 [JSX_TEXT_HARDCODED]: "Đánh Giá Của Khách Hàng"
      Snippet: <span>Đánh Giá Của Khách Hàng</span>
-   • Dòng 495 [JSX_TEXT_HARDCODED]: "Chưa có đánh giá nào"
+   • Dòng 496 [JSX_TEXT_HARDCODED]: "Chưa có đánh giá nào"
      Snippet: <div className="text-sm font-semibold text-foreground">Chưa có đánh giá nào</div>
-   • Dòng 530 [JSX_TEXT_HARDCODED]: "Người mua:"
+   • Dòng 531 [JSX_TEXT_HARDCODED]: "Người mua:"
      Snippet: <span className="font-semibold text-foreground">Người mua: <strong className="font-mono">{r.buyer_name}</strong></span>
-   • Dòng 572 [JSX_TEXT_HARDCODED]: "Giá sản phẩm:"
+   • Dòng 573 [JSX_TEXT_HARDCODED]: "Giá sản phẩm:"
      Snippet: <span className="text-muted-foreground">Giá sản phẩm:</span>
-   • Dòng 576 [JSX_TEXT_HARDCODED]: "Số dư ví của bạn:"
+   • Dòng 577 [JSX_TEXT_HARDCODED]: "Số dư ví của bạn:"
      Snippet: <span className="text-muted-foreground">Số dư ví của bạn:</span>
-   • Dòng 584 [JSX_TEXT_HARDCODED]: "Thời gian giao:"
+   • Dòng 585 [JSX_TEXT_HARDCODED]: "Thời gian giao:"
      Snippet: <span className="text-muted-foreground">Thời gian giao:</span>
-   • Dòng 585 [JSX_TEXT_HARDCODED]: "Tức thì (0 giây)"
+   • Dòng 586 [JSX_TEXT_HARDCODED]: "Tức thì (0 giây)"
      Snippet: <strong className="text-emerald-500">Tức thì (0 giây)</strong>
-   • Dòng 663 [JSX_TEXT_HARDCODED]: "Giao Dịch Thành Công!"
+   • Dòng 664 [JSX_TEXT_HARDCODED]: "Giao Dịch Thành Công!"
      Snippet: <h4 className="text-base font-bold text-foreground">Giao Dịch Thành Công!</h4>
-   • Dòng 664 [JSX_TEXT_HARDCODED]: "Mã giftcode của bạn đã sẵn sàng sử dụng."
+   • Dòng 665 [JSX_TEXT_HARDCODED]: "Mã giftcode của bạn đã sẵn sàng sử dụng."
      Snippet: <p className="text-xs text-muted-foreground mt-0.5">Mã giftcode của bạn đã sẵn sàng sử dụng.</p>
-   • Dòng 668 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng / Giftcode Của Bạn"
+   • Dòng 669 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng / Giftcode Của Bạn"
      Snippet: <div className="text-[10px] text-muted-foreground font-semibold mb-1 uppercase tracking-wider">Mã Quà Tặng / Giftcode Của Bạn</div>
 
 📁 File: src/components/ShareModal.tsx (6 lỗi):
-   • Dòng 165 [JSX_ATTR_HARDCODED]: "Đóng"
+   • Dòng 167 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: aria-label="Đóng"
-   • Dòng 166 [JSX_ATTR_HARDCODED]: "Đóng"
+   • Dòng 168 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: title="Đóng"
-   • Dòng 186 [JSX_ATTR_HARDCODED]: "Đã gắn ảnh đại diện game chính xác"
+   • Dòng 188 [JSX_ATTR_HARDCODED]: "Đã gắn ảnh đại diện game chính xác"
      Snippet: title="Đã gắn ảnh đại diện game chính xác"
-   • Dòng 215 [JSX_TEXT_HARDCODED]: "Chia Sẻ Lên Ứng Dụng (Zalo, Messenger...)"
+   • Dòng 217 [JSX_TEXT_HARDCODED]: "Chia Sẻ Lên Ứng Dụng (Zalo, Messenger...)"
      Snippet: <span>Chia Sẻ Lên Ứng Dụng (Zalo, Messenger...)</span>
-   • Dòng 282 [JSX_TEXT_HARDCODED]: "Liên Kết Chia Sẻ (Deep Link)"
+   • Dòng 284 [JSX_TEXT_HARDCODED]: "Liên Kết Chia Sẻ (Deep Link)"
      Snippet: <span>Liên Kết Chia Sẻ (Deep Link)</span>
-   • Dòng 311 [JSX_TEXT_HARDCODED]: "Đã copy link ✓"
+   • Dòng 313 [JSX_TEXT_HARDCODED]: "Đã copy link ✓"
      Snippet: <span>Đã copy link ✓</span>
 
 📁 File: src/components/shipping/ShippingTrackingModal.tsx (8 lỗi):
-   • Dòng 175 [JSX_ATTR_HARDCODED]: "Đóng modal"
+   • Dòng 176 [JSX_ATTR_HARDCODED]: "Đóng modal"
      Snippet: title="Đóng modal"
-   • Dòng 186 [JSX_TEXT_HARDCODED]: "Đang kết nối API bưu chính..."
+   • Dòng 187 [JSX_TEXT_HARDCODED]: "Đang kết nối API bưu chính..."
      Snippet: <p className="text-sm">Đang kết nối API bưu chính...</p>
-   • Dòng 191 [JSX_TEXT_HARDCODED]: "Không tìm thấy thông tin vận đơn"
+   • Dòng 192 [JSX_TEXT_HARDCODED]: "Không tìm thấy thông tin vận đơn"
      Snippet: <p className="font-semibold text-slate-700 dark:text-slate-300">Không tìm thấy thông tin vận đơn</p>
-   • Dòng 192 [JSX_TEXT_HARDCODED]: "Vui lòng kiểm tra lại mã vận đơn hoặc liên hệ hỗ trợ."
+   • Dòng 193 [JSX_TEXT_HARDCODED]: "Vui lòng kiểm tra lại mã vận đơn hoặc liên hệ hỗ trợ."
      Snippet: <p className="text-xs text-slate-500 mt-1">Vui lòng kiểm tra lại mã vận đơn hoặc liên hệ hỗ trợ.</p>
-   • Dòng 209 [JSX_ATTR_HARDCODED]: "Sao chép mã"
+   • Dòng 210 [JSX_ATTR_HARDCODED]: "Sao chép mã"
      Snippet: title="Sao chép mã"
-   • Dòng 215 [JSX_TEXT_HARDCODED]: "Mã đơn:"
+   • Dòng 216 [JSX_TEXT_HARDCODED]: "Mã đơn:"
      Snippet: <span>Mã đơn: <strong className="text-slate-700 dark:text-slate-300">{shippingOrder.orderId}</strong></span>
-   • Dòng 253 [JSX_TEXT_HARDCODED]: "Dự kiến giao:"
+   • Dòng 254 [JSX_TEXT_HARDCODED]: "Dự kiến giao:"
      Snippet: <div className="text-xs text-slate-500 dark:text-slate-400">Dự kiến giao:</div>
-   • Dòng 341 [JSX_TEXT_HARDCODED]: "(Miễn phí)"
+   • Dòng 342 [JSX_TEXT_HARDCODED]: "(Miễn phí)"
      Snippet: <span>Tổng đài hỗ trợ {carrierInfo.shortName}: <strong>{carrierInfo.hotline}</strong> (Miễn phí)</span>
 
-📁 File: src/components/showcase/PlatformSolutionsView.tsx (37 lỗi):
-   • Dòng 255 [JSX_ATTR_HARDCODED]: "Quay lại trang mua hàng"
+📁 File: src/components/showcase/PlatformSolutionsView.tsx (36 lỗi):
+   • Dòng 256 [JSX_ATTR_HARDCODED]: "Quay lại trang mua hàng"
      Snippet: title="Quay lại trang mua hàng"
-   • Dòng 258 [JSX_TEXT_HARDCODED]: "Quay Lại Sàn"
+   • Dòng 259 [JSX_TEXT_HARDCODED]: "Quay Lại Sàn"
      Snippet: <span className="hidden sm:inline">Quay Lại Sàn</span>
-   • Dòng 402 [JSX_TEXT_HARDCODED]: "1. Siêu Tốc Độ Cloudflare Edge &lt;100ms"
+   • Dòng 403 [JSX_TEXT_HARDCODED]: "1. Siêu Tốc Độ Cloudflare Edge &lt;100ms"
      Snippet: <h3 className="text-lg font-bold text-white mb-2">1. Siêu Tốc Độ Cloudflare Edge &lt;100ms</h3>
-   • Dòng 424 [JSX_TEXT_HARDCODED]: "3. Bán Đa Ngành • Hàng Số & Hàng Vật Lý"
+   • Dòng 425 [JSX_TEXT_HARDCODED]: "3. Bán Đa Ngành • Hàng Số & Hàng Vật Lý"
      Snippet: <h3 className="text-lg font-bold text-white mb-2">3. Bán Đa Ngành • Hàng Số & Hàng Vật Lý</h3>
-   • Dòng 435 [JSX_TEXT_HARDCODED]: "4. White-Label Đổi Thương Hiệu Trong 30s"
+   • Dòng 436 [JSX_TEXT_HARDCODED]: "4. White-Label Đổi Thương Hiệu Trong 30s"
      Snippet: <h3 className="text-lg font-bold text-white mb-2">4. White-Label Đổi Thương Hiệu Trong 30s</h3>
-   • Dòng 446 [JSX_TEXT_HARDCODED]: "5. Quản Trị Chuẩn Single-Screen First"
+   • Dòng 447 [JSX_TEXT_HARDCODED]: "5. Quản Trị Chuẩn Single-Screen First"
      Snippet: <h3 className="text-lg font-bold text-white mb-2">5. Quản Trị Chuẩn Single-Screen First</h3>
-   • Dòng 457 [JSX_TEXT_HARDCODED]: "6. CSDL Cloudflare D1 Phân Tán An Toàn"
+   • Dòng 458 [JSX_TEXT_HARDCODED]: "6. CSDL Cloudflare D1 Phân Tán An Toàn"
      Snippet: <h3 className="text-lg font-bold text-white mb-2">6. CSDL Cloudflare D1 Phân Tán An Toàn</h3>
-   • Dòng 524 [JSX_TEXT_HARDCODED]: "Mở Ngay Demo Sàn Này"
+   • Dòng 525 [JSX_TEXT_HARDCODED]: "Mở Ngay Demo Sàn Này"
      Snippet: <span>Mở Ngay Demo Sàn Này</span>
-   • Dòng 536 [JSX_TEXT_HARDCODED]: "Danh mục cấu hình sẵn"
+   • Dòng 537 [JSX_TEXT_HARDCODED]: "Danh mục cấu hình sẵn"
      Snippet: <span className="text-xs text-neutral-200 font-medium">Danh mục cấu hình sẵn</span>
-   • Dòng 540 [JSX_TEXT_HARDCODED]: "Bảng giá & Thuộc tính chuẩn"
+   • Dòng 541 [JSX_TEXT_HARDCODED]: "Bảng giá & Thuộc tính chuẩn"
      Snippet: <span className="text-xs text-neutral-200 font-medium">Bảng giá & Thuộc tính chuẩn</span>
-   • Dòng 558 [JSX_TEXT_HARDCODED]: "BẢNG GIÁ MINH BẠCH • CAM KẾT KHÔNG PHÍ ẨN"
+   • Dòng 559 [JSX_TEXT_HARDCODED]: "BẢNG GIÁ MINH BẠCH • CAM KẾT KHÔNG PHÍ ẨN"
      Snippet: <span>BẢNG GIÁ MINH BẠCH • CAM KẾT KHÔNG PHÍ ẨN</span>
-   • Dòng 645 [JSX_TEXT_HARDCODED]: "Đăng Ký Tư Vấn Thành Công!"
+   • Dòng 646 [JSX_TEXT_HARDCODED]: "Đăng Ký Tư Vấn Thành Công!"
      Snippet: <h3 className="text-lg font-bold text-white mb-2">Đăng Ký Tư Vấn Thành Công!</h3>
-   • Dòng 647 [JSX_TEXT_HARDCODED]: "đã quan tâm đến giải pháp sàn"
+   • Dòng 648 [JSX_TEXT_HARDCODED]: "đã quan tâm đến giải pháp sàn"
      Snippet: Cảm ơn bạn <strong className="text-white">{submittedLead.full_name}</strong> đã quan tâm đến giải pháp sàn <strong className="text-amber-400">{submittedLead.shop_name}</strong>.
-   • Dòng 669 [JSX_TEXT_HARDCODED]: "Nhắn Zalo Trực Tiếp"
+   • Dòng 670 [JSX_TEXT_HARDCODED]: "Nhắn Zalo Trực Tiếp"
      Snippet: <span>Nhắn Zalo Trực Tiếp</span>
-   • Dòng 690 [JSX_ATTR_HARDCODED]: "Ví dụ: Nguyễn Văn Minh"
+   • Dòng 691 [JSX_ATTR_HARDCODED]: "Ví dụ: Nguyễn Văn Minh"
      Snippet: placeholder="Ví dụ: Nguyễn Văn Minh"
-   • Dòng 704 [JSX_ATTR_HARDCODED]: "Ví dụ: 0988123456"
+   • Dòng 705 [JSX_ATTR_HARDCODED]: "Ví dụ: 0988123456"
      Snippet: placeholder="Ví dụ: 0988123456"
-   • Dòng 720 [JSX_ATTR_HARDCODED]: "Ví dụ: Vintage Store, CyberGear..."
+   • Dòng 721 [JSX_ATTR_HARDCODED]: "Ví dụ: Vintage Store, CyberGear..."
      Snippet: placeholder="Ví dụ: Vintage Store, CyberGear..."
-   • Dòng 750 [JSX_TEXT_HARDCODED]: "Gaming & Thẻ Code (Phát 0s)"
+   • Dòng 751 [JSX_TEXT_HARDCODED]: "Gaming & Thẻ Code (Phát 0s)"
      Snippet: <option value="gaming">Gaming & Thẻ Code (Phát 0s)</option>
-   • Dòng 751 [JSX_TEXT_HARDCODED]: "Thời Trang & Streetwear (Size/Màu)"
+   • Dòng 752 [JSX_TEXT_HARDCODED]: "Thời Trang & Streetwear (Size/Màu)"
      Snippet: <option value="fashion">Thời Trang & Streetwear (Size/Màu)</option>
-   • Dòng 752 [JSX_TEXT_HARDCODED]: "Mỹ Phẩm & Chăm Sóc Da"
+   • Dòng 753 [JSX_TEXT_HARDCODED]: "Mỹ Phẩm & Chăm Sóc Da"
      Snippet: <option value="beauty">Mỹ Phẩm & Chăm Sóc Da</option>
-   • Dòng 753 [JSX_TEXT_HARDCODED]: "Công Nghệ & Phụ Kiện Điện Tử"
+   • Dòng 754 [JSX_TEXT_HARDCODED]: "Công Nghệ & Phụ Kiện Điện Tử"
      Snippet: <option value="tech">Công Nghệ & Phụ Kiện Điện Tử</option>
-   • Dòng 754 [JSX_TEXT_HARDCODED]: "Dịch Vụ Số & Khóa Học Online"
+   • Dòng 755 [JSX_TEXT_HARDCODED]: "Dịch Vụ Số & Khóa Học Online"
      Snippet: <option value="services">Dịch Vụ Số & Khóa Học Online</option>
-   • Dòng 755 [JSX_TEXT_HARDCODED]: "Ngành Hàng Khác"
+   • Dòng 756 [JSX_TEXT_HARDCODED]: "Ngành Hàng Khác"
      Snippet: <option value="other">Ngành Hàng Khác</option>
-   • Dòng 768 [JSX_TEXT_HARDCODED]: "Thuê Khởi Nghiệp (390.000đ/tháng)"
+   • Dòng 769 [JSX_TEXT_HARDCODED]: "Thuê Khởi Nghiệp (390.000đ/tháng)"
      Snippet: <option value="rental_starter">Thuê Khởi Nghiệp (390.000đ/tháng)</option>
-   • Dòng 769 [JSX_TEXT_HARDCODED]: "Thuê Chuyên Nghiệp (790.000đ/tháng - Khuyên Dùng)"
+   • Dòng 770 [JSX_TEXT_HARDCODED]: "Thuê Chuyên Nghiệp (790.000đ/tháng - Khuyên Dùng)"
      Snippet: <option value="rental_business">Thuê Chuyên Nghiệp (790.000đ/tháng - Khuyên Dùng)</option>
-   • Dòng 770 [JSX_TEXT_HARDCODED]: "Mua Đứt Trọn Gói Mã Nguồn (15.000.000đ 1 Lần)"
+   • Dòng 771 [JSX_TEXT_HARDCODED]: "Mua Đứt Trọn Gói Mã Nguồn (15.000.000đ 1 Lần)"
      Snippet: <option value="buyout_full">Mua Đứt Trọn Gói Mã Nguồn (15.000.000đ 1 Lần)</option>
-   • Dòng 771 [JSX_TEXT_HARDCODED]: "Yêu Cầu Tùy Biến Riêng (Enterprise)"
+   • Dòng 772 [JSX_TEXT_HARDCODED]: "Yêu Cầu Tùy Biến Riêng (Enterprise)"
      Snippet: <option value="enterprise_custom">Yêu Cầu Tùy Biến Riêng (Enterprise)</option>
-   • Dòng 785 [JSX_ATTR_HARDCODED]: "Ví dụ: tenshop.vn hoặc tenshop.com"
+   • Dòng 786 [JSX_ATTR_HARDCODED]: "Ví dụ: tenshop.vn hoặc tenshop.com"
      Snippet: placeholder="Ví dụ: tenshop.vn hoặc tenshop.com"
-   • Dòng 799 [JSX_TEXT_HARDCODED]: "Dưới 5 triệu VNĐ"
+   • Dòng 800 [JSX_TEXT_HARDCODED]: "Dưới 5 triệu VNĐ"
      Snippet: <option value="Dưới 5 triệu">Dưới 5 triệu VNĐ</option>
-   • Dòng 800 [JSX_TEXT_HARDCODED]: "5 - 10 triệu VNĐ"
+   • Dòng 801 [JSX_TEXT_HARDCODED]: "5 - 10 triệu VNĐ"
      Snippet: <option value="Dưới 10 triệu">5 - 10 triệu VNĐ</option>
-   • Dòng 801 [JSX_TEXT_HARDCODED]: "15 - 25 triệu VNĐ (Mua đứt source code)"
+   • Dòng 802 [JSX_TEXT_HARDCODED]: "15 - 25 triệu VNĐ (Mua đứt source code)"
      Snippet: <option value="15 - 25 triệu">15 - 25 triệu VNĐ (Mua đứt source code)</option>
-   • Dòng 802 [JSX_TEXT_HARDCODED]: "Trên 25 triệu VNĐ (Mở hệ thống sàn lớn)"
+   • Dòng 803 [JSX_TEXT_HARDCODED]: "Trên 25 triệu VNĐ (Mở hệ thống sàn lớn)"
      Snippet: <option value="Trên 25 triệu">Trên 25 triệu VNĐ (Mở hệ thống sàn lớn)</option>
-   • Dòng 815 [JSX_ATTR_HARDCODED]: "Mô tả thêm về sản phẩm hoặc mong muốn tính năng của bạn..."
+   • Dòng 816 [JSX_ATTR_HARDCODED]: "Mô tả thêm về sản phẩm hoặc mong muốn tính năng của bạn..."
      Snippet: placeholder="Mô tả thêm về sản phẩm hoặc mong muốn tính năng của bạn..."
-   • Dòng 826 [JSX_TEXT_HARDCODED]: "Đang gửi hồ sơ đăng ký..."
+   • Dòng 827 [JSX_TEXT_HARDCODED]: "Đang gửi hồ sơ đăng ký..."
      Snippet: <span>Đang gửi hồ sơ đăng ký...</span>
-   • Dòng 830 [JSX_TEXT_HARDCODED]: "Gửi Đăng Ký Tư Vấn & Nhận Sàn Dùng Thử Ngay"
+   • Dòng 831 [JSX_TEXT_HARDCODED]: "Gửi Đăng Ký Tư Vấn & Nhận Sàn Dùng Thử Ngay"
      Snippet: <span>Gửi Đăng Ký Tư Vấn & Nhận Sàn Dùng Thử Ngay</span>
-   • Dòng 845 [JSX_TEXT_HARDCODED]: "GIẢI ĐÁP THẮC MẮC"
+   • Dòng 846 [JSX_TEXT_HARDCODED]: "GIẢI ĐÁP THẮC MẮC"
      Snippet: <span>GIẢI ĐÁP THẮC MẮC</span>
-   • Dòng 891 [JSX_TEXT_HARDCODED]: "Hotline Kỹ Thuật: 0988.123.456"
-     Snippet: <span>Hotline Kỹ Thuật: 0988.123.456</span>
 
 📁 File: src/components/solutions/PlatformSolutionsView.tsx (38 lỗi):
    • Dòng 61 [JSX_TEXT_HARDCODED]: "GIẢI PHÁP SÀN THƯƠNG MẠI ĐA NGÀNH TOÀN DIỆN"
@@ -5600,41 +5602,41 @@
      Snippet: placeholder="Ví dụ: Minh Tuấn"
 
 📁 File: src/components/TelegramHomeBanner.tsx (2 lỗi):
-   • Dòng 85 [JSX_TEXT_HARDCODED]: "Tham Gia Nhóm"
+   • Dòng 87 [JSX_TEXT_HARDCODED]: "Tham Gia Nhóm"
      Snippet: <span>Tham Gia Nhóm</span>
-   • Dòng 94 [JSX_TEXT_HARDCODED]: "Liên Kết Bot"
+   • Dòng 96 [JSX_TEXT_HARDCODED]: "Liên Kết Bot"
      Snippet: <span>Liên Kết Bot</span>
 
 📁 File: src/components/TelegramView.tsx (15 lỗi):
-   • Dòng 105 [JSX_TEXT_HARDCODED]: "KÊNH THÔNG BÁO & NHÓM THẢO LUẬN TELEGRAM"
+   • Dòng 107 [JSX_TEXT_HARDCODED]: "KÊNH THÔNG BÁO & NHÓM THẢO LUẬN TELEGRAM"
      Snippet: <span>KÊNH THÔNG BÁO & NHÓM THẢO LUẬN TELEGRAM</span>
-   • Dòng 147 [JSX_TEXT_HARDCODED]: "1. Nhóm Thảo Luận & Thông Báo Chung"
+   • Dòng 149 [JSX_TEXT_HARDCODED]: "1. Nhóm Thảo Luận & Thông Báo Chung"
      Snippet: <h3 className="text-xl font-bold text-slate-900 dark:text-white">1. Nhóm Thảo Luận & Thông Báo Chung</h3>
-   • Dòng 154 [JSX_TEXT_HARDCODED]: "Cập nhật mã quà tặng công khai đã kiểm chứng thực tế."
+   • Dòng 156 [JSX_TEXT_HARDCODED]: "Cập nhật mã quà tặng công khai đã kiểm chứng thực tế."
      Snippet: <span>Cập nhật mã quà tặng công khai đã kiểm chứng thực tế.</span>
-   • Dòng 162 [JSX_TEXT_HARDCODED]: "Thảo luận kinh nghiệm chơi game cùng cộng đồng."
+   • Dòng 164 [JSX_TEXT_HARDCODED]: "Thảo luận kinh nghiệm chơi game cùng cộng đồng."
      Snippet: <span>Thảo luận kinh nghiệm chơi game cùng cộng đồng.</span>
-   • Dòng 172 [JSX_TEXT_HARDCODED]: "2. Bot Nhắn Tin Riêng (Direct Message)"
+   • Dòng 174 [JSX_TEXT_HARDCODED]: "2. Bot Nhắn Tin Riêng (Direct Message)"
      Snippet: <h3 className="text-xl font-bold text-slate-900 dark:text-white">2. Bot Nhắn Tin Riêng (Direct Message)</h3>
-   • Dòng 179 [JSX_TEXT_HARDCODED]: "Nhận thông báo riêng khi tựa game bạn theo dõi có mã mới."
+   • Dòng 181 [JSX_TEXT_HARDCODED]: "Nhận thông báo riêng khi tựa game bạn theo dõi có mã mới."
      Snippet: <span>Nhận thông báo riêng khi tựa game bạn theo dõi có mã mới.</span>
-   • Dòng 183 [JSX_TEXT_HARDCODED]: "Khung giờ văn minh (09:00 - 22:00), không quấy rầy ban đêm."
+   • Dòng 185 [JSX_TEXT_HARDCODED]: "Khung giờ văn minh (09:00 - 22:00), không quấy rầy ban đêm."
      Snippet: <span>Khung giờ văn minh (09:00 - 22:00), không quấy rầy ban đêm.</span>
-   • Dòng 187 [JSX_TEXT_HARDCODED]: "Tùy chỉnh bật/tắt nhận mã, sự kiện hoặc dừng nhận bất kỳ lúc nào."
+   • Dòng 189 [JSX_TEXT_HARDCODED]: "Tùy chỉnh bật/tắt nhận mã, sự kiện hoặc dừng nhận bất kỳ lúc nào."
      Snippet: <span>Tùy chỉnh bật/tắt nhận mã, sự kiện hoặc dừng nhận bất kỳ lúc nào.</span>
-   • Dòng 200 [JSX_TEXT_HARDCODED]: "3. Bảng Lệnh Thao Tác Với Bot"
+   • Dòng 202 [JSX_TEXT_HARDCODED]: "3. Bảng Lệnh Thao Tác Với Bot"
      Snippet: <h3 className="text-lg font-bold text-slate-900 dark:text-white">3. Bảng Lệnh Thao Tác Với Bot</h3>
-   • Dòng 208 [JSX_TEXT_HARDCODED]: "Đăng ký nhận thông báo riêng cho 1 tựa game."
+   • Dòng 210 [JSX_TEXT_HARDCODED]: "Đăng ký nhận thông báo riêng cho 1 tựa game."
      Snippet: <div className="text-xs text-slate-700 dark:text-slate-300">Đăng ký nhận thông báo riêng cho 1 tựa game.</div>
-   • Dòng 209 [JSX_TEXT_HARDCODED]: "Ví dụ: /theodoi genshin-impact"
+   • Dòng 211 [JSX_TEXT_HARDCODED]: "Ví dụ: /theodoi genshin-impact"
      Snippet: <div className="text-[11px] text-slate-500 font-mono">Ví dụ: /theodoi genshin-impact</div>
-   • Dòng 214 [JSX_TEXT_HARDCODED]: "Bỏ theo dõi và ngừng nhận tin về tựa game đó."
+   • Dòng 216 [JSX_TEXT_HARDCODED]: "Bỏ theo dõi và ngừng nhận tin về tựa game đó."
      Snippet: <div className="text-xs text-slate-700 dark:text-slate-300">Bỏ theo dõi và ngừng nhận tin về tựa game đó.</div>
-   • Dòng 215 [JSX_TEXT_HARDCODED]: "Ví dụ: /huytheodoi genshin-impact"
+   • Dòng 217 [JSX_TEXT_HARDCODED]: "Ví dụ: /huytheodoi genshin-impact"
      Snippet: <div className="text-[11px] text-slate-500 font-mono">Ví dụ: /huytheodoi genshin-impact</div>
-   • Dòng 220 [JSX_TEXT_HARDCODED]: "Xem toàn bộ danh sách các tựa game bạn đang theo dõi."
+   • Dòng 222 [JSX_TEXT_HARDCODED]: "Xem toàn bộ danh sách các tựa game bạn đang theo dõi."
      Snippet: <div className="text-xs text-slate-700 dark:text-slate-300">Xem toàn bộ danh sách các tựa game bạn đang theo dõi.</div>
-   • Dòng 225 [JSX_TEXT_HARDCODED]: "Dừng toàn bộ thông báo riêng từ bot ngay lập tức."
+   • Dòng 227 [JSX_TEXT_HARDCODED]: "Dừng toàn bộ thông báo riêng từ bot ngay lập tức."
      Snippet: <div className="text-xs text-slate-700 dark:text-slate-300">Dừng toàn bộ thông báo riêng từ bot ngay lập tức.</div>
 
 📁 File: src/components/TodayCodesView.tsx (15 lỗi):
@@ -5676,195 +5678,195 @@
      Snippet: <span className="text-xs text-slate-400 font-bold block">Khóa API của bạn (Secret Token):</span>
 
 📁 File: src/components/UserProfileModal.tsx (68 lỗi):
-   • Dòng 540 [JSX_TEXT_HARDCODED]: "Hồ Sơ & Thông Tin Nhân Vật"
+   • Dòng 541 [JSX_TEXT_HARDCODED]: "Hồ Sơ & Thông Tin Nhân Vật"
      Snippet: <span>Hồ Sơ & Thông Tin Nhân Vật</span>
-   • Dòng 551 [JSX_ATTR_HARDCODED]: "Đóng"
+   • Dòng 552 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: aria-label="Đóng"
-   • Dòng 569 [JSX_TEXT_HARDCODED]: "Thông Tin Nhân Vật"
+   • Dòng 570 [JSX_TEXT_HARDCODED]: "Thông Tin Nhân Vật"
      Snippet: <span>Thông Tin Nhân Vật</span>
-   • Dòng 581 [JSX_TEXT_HARDCODED]: "Nhiệm Vụ Nhận Quà"
+   • Dòng 582 [JSX_TEXT_HARDCODED]: "Nhiệm Vụ Nhận Quà"
      Snippet: <span>Nhiệm Vụ Nhận Quà</span>
-   • Dòng 605 [JSX_TEXT_HARDCODED]: "Bảo Mật"
+   • Dòng 606 [JSX_TEXT_HARDCODED]: "Bảo Mật"
      Snippet: <span>Bảo Mật</span>
-   • Dòng 633 [JSX_ATTR_HARDCODED]: "Avatar nhân vật"
+   • Dòng 634 [JSX_ATTR_HARDCODED]: "Avatar nhân vật"
      Snippet: alt="Avatar nhân vật"
-   • Dòng 659 [JSX_TEXT_HARDCODED]: "Mã Nhân Vật:"
+   • Dòng 660 [JSX_TEXT_HARDCODED]: "Mã Nhân Vật:"
      Snippet: <span className="text-[11px] text-muted-foreground">Mã Nhân Vật:</span>
-   • Dòng 664 [JSX_ATTR_HARDCODED]: "Sao chép UID"
+   • Dòng 665 [JSX_ATTR_HARDCODED]: "Sao chép UID"
      Snippet: title="Sao chép UID"
-   • Dòng 679 [JSX_TEXT_HARDCODED]: "Số dư:"
+   • Dòng 680 [JSX_TEXT_HARDCODED]: "Số dư:"
      Snippet: <span>Số dư:</span>
-   • Dòng 709 [JSX_TEXT_HARDCODED]: "Kho Mã Của Tôi"
+   • Dòng 710 [JSX_TEXT_HARDCODED]: "Kho Mã Của Tôi"
      Snippet: <span>Kho Mã Của Tôi</span>
-   • Dòng 728 [JSX_TEXT_HARDCODED]: "Kênh Người Bán"
+   • Dòng 729 [JSX_TEXT_HARDCODED]: "Kênh Người Bán"
      Snippet: <span>Kênh Người Bán</span>
-   • Dòng 749 [JSX_TEXT_HARDCODED]: "Kênh Người Bán"
+   • Dòng 750 [JSX_TEXT_HARDCODED]: "Kênh Người Bán"
      Snippet: <span className="text-center font-bold">Kênh Người Bán</span>
-   • Dòng 750 [JSX_TEXT_HARDCODED]: "Quản lý gian hàng"
+   • Dòng 751 [JSX_TEXT_HARDCODED]: "Quản lý gian hàng"
      Snippet: <span className="text-[9px] font-normal text-purple-400/80">Quản lý gian hàng</span>
-   • Dòng 759 [JSX_TEXT_HARDCODED]: "Nhiệm Vụ Nhận Quà"
+   • Dòng 760 [JSX_TEXT_HARDCODED]: "Nhiệm Vụ Nhận Quà"
      Snippet: <span className="text-center font-bold">Nhiệm Vụ Nhận Quà</span>
-   • Dòng 770 [JSX_TEXT_HARDCODED]: "Nhận code tức thì"
+   • Dòng 771 [JSX_TEXT_HARDCODED]: "Nhận code tức thì"
      Snippet: <span className="text-[9px] font-normal text-[#229ED9]/80">Nhận code tức thì</span>
-   • Dòng 789 [JSX_TEXT_HARDCODED]: "Bảo Mật Mật Khẩu"
+   • Dòng 790 [JSX_TEXT_HARDCODED]: "Bảo Mật Mật Khẩu"
      Snippet: <span className="text-center font-bold">Bảo Mật Mật Khẩu</span>
-   • Dòng 790 [JSX_TEXT_HARDCODED]: "Đổi mật khẩu"
+   • Dòng 791 [JSX_TEXT_HARDCODED]: "Đổi mật khẩu"
      Snippet: <span className="text-[9px] font-normal text-muted-foreground">Đổi mật khẩu</span>
-   • Dòng 809 [JSX_TEXT_HARDCODED]: "Bộ Sưu Tập Avatar Nhân Vật Game:"
+   • Dòng 810 [JSX_TEXT_HARDCODED]: "Bộ Sưu Tập Avatar Nhân Vật Game:"
      Snippet: <span>Bộ Sưu Tập Avatar Nhân Vật Game:</span>
-   • Dòng 811 [JSX_TEXT_HARDCODED]: "Nhấp để chọn ngay"
+   • Dòng 812 [JSX_TEXT_HARDCODED]: "Nhấp để chọn ngay"
      Snippet: <span className="text-[11px] text-muted-foreground">Nhấp để chọn ngay</span>
-   • Dòng 853 [JSX_ATTR_HARDCODED]: "Hoặc dán đường dẫn link ảnh Avatar tùy chỉnh (URL)..."
+   • Dòng 854 [JSX_ATTR_HARDCODED]: "Hoặc dán đường dẫn link ảnh Avatar tùy chỉnh (URL)..."
      Snippet: placeholder="Hoặc dán đường dẫn link ảnh Avatar tùy chỉnh (URL)..."
-   • Dòng 865 [JSX_TEXT_HARDCODED]: "Tên Nhân Vật / Tên Hiển Thị:"
+   • Dòng 866 [JSX_TEXT_HARDCODED]: "Tên Nhân Vật / Tên Hiển Thị:"
      Snippet: <span>Tên Nhân Vật / Tên Hiển Thị:</span>
-   • Dòng 874 [JSX_ATTR_HARDCODED]: "Nhập tên nhân vật hiển thị (VD: VuaHảiTặc_99)..."
+   • Dòng 875 [JSX_ATTR_HARDCODED]: "Nhập tên nhân vật hiển thị (VD: VuaHảiTặc_99)..."
      Snippet: placeholder="Nhập tên nhân vật hiển thị (VD: VuaHảiTặc_99)..."
-   • Dòng 887 [JSX_TEXT_HARDCODED]: "Tên Đăng Nhập (Cố định):"
+   • Dòng 888 [JSX_TEXT_HARDCODED]: "Tên Đăng Nhập (Cố định):"
      Snippet: <span>Tên Đăng Nhập (Cố định):</span>
-   • Dòng 901 [JSX_TEXT_HARDCODED]: "Email Đăng Ký:"
+   • Dòng 902 [JSX_TEXT_HARDCODED]: "Email Đăng Ký:"
      Snippet: <span>Email Đăng Ký:</span>
-   • Dòng 906 [JSX_TEXT_HARDCODED]: "Đã xác minh"
+   • Dòng 907 [JSX_TEXT_HARDCODED]: "Đã xác minh"
      Snippet: <span>Đã xác minh</span>
-   • Dòng 984 [JSX_TEXT_HARDCODED]: "Số Điện Thoại Nhận Quà / Zalo (Tùy chọn):"
+   • Dòng 985 [JSX_TEXT_HARDCODED]: "Số Điện Thoại Nhận Quà / Zalo (Tùy chọn):"
      Snippet: <span>Số Điện Thoại Nhận Quà / Zalo (Tùy chọn):</span>
-   • Dòng 990 [JSX_ATTR_HARDCODED]: "0987.xxx.xxx (để NPH gửi quà sự kiện hoặc CSKH)..."
+   • Dòng 991 [JSX_ATTR_HARDCODED]: "0987.xxx.xxx (để NPH gửi quà sự kiện hoặc CSKH)..."
      Snippet: placeholder="0987.xxx.xxx (để NPH gửi quà sự kiện hoặc CSKH)..."
-   • Dòng 1005 [JSX_TEXT_HARDCODED]: "Tùy biến trải nghiệm cá nhân"
+   • Dòng 1006 [JSX_TEXT_HARDCODED]: "Tùy biến trải nghiệm cá nhân"
      Snippet: <span className="text-[10px] text-muted-foreground">Tùy biến trải nghiệm cá nhân</span>
-   • Dòng 1042 [JSX_TEXT_HARDCODED]: "Ngôn Ngữ"
+   • Dòng 1043 [JSX_TEXT_HARDCODED]: "Ngôn Ngữ"
      Snippet: <div className="font-bold text-foreground text-xs">Ngôn Ngữ</div>
-   • Dòng 1043 [JSX_TEXT_HARDCODED]: "Tiếng Việt / English"
+   • Dòng 1044 [JSX_TEXT_HARDCODED]: "Tiếng Việt / English"
      Snippet: <div className="text-[10px] text-muted-foreground">Tiếng Việt / English</div>
-   • Dòng 1067 [JSX_TEXT_HARDCODED]: "Đăng Xuất"
+   • Dòng 1068 [JSX_TEXT_HARDCODED]: "Đăng Xuất"
      Snippet: <span>Đăng Xuất</span>
-   • Dòng 1086 [JSX_TEXT_HARDCODED]: "Đang Lưu..."
+   • Dòng 1087 [JSX_TEXT_HARDCODED]: "Đang Lưu..."
      Snippet: <span>Đang Lưu...</span>
-   • Dòng 1091 [JSX_TEXT_HARDCODED]: "Lưu Thay Đổi"
+   • Dòng 1092 [JSX_TEXT_HARDCODED]: "Lưu Thay Đổi"
      Snippet: <span>Lưu Thay Đổi</span>
-   • Dòng 1125 [JSX_TEXT_HARDCODED]: "Mã Đã Nhận ↗"
+   • Dòng 1126 [JSX_TEXT_HARDCODED]: "Mã Đã Nhận ↗"
      Snippet: <span>Mã Đã Nhận ↗</span>
-   • Dòng 1138 [JSX_ATTR_HARDCODED]: "Tìm kiếm nhiệm vụ..."
+   • Dòng 1139 [JSX_ATTR_HARDCODED]: "Tìm kiếm nhiệm vụ..."
      Snippet: placeholder="Tìm kiếm nhiệm vụ..."
-   • Dòng 1209 [JSX_TEXT_HARDCODED]: "Chưa có nhiệm vụ nào phù hợp"
+   • Dòng 1210 [JSX_TEXT_HARDCODED]: "Chưa có nhiệm vụ nào phù hợp"
      Snippet: <p className="font-bold text-foreground text-xs sm:text-sm">Chưa có nhiệm vụ nào phù hợp</p>
-   • Dòng 1271 [JSX_TEXT_HARDCODED]: "Làm Nhiệm Vụ"
+   • Dòng 1272 [JSX_TEXT_HARDCODED]: "Làm Nhiệm Vụ"
      Snippet: <span>Làm Nhiệm Vụ</span>
-   • Dòng 1308 [JSX_TEXT_HARDCODED]: "Tham Gia Kênh"
+   • Dòng 1309 [JSX_TEXT_HARDCODED]: "Tham Gia Kênh"
      Snippet: <span>Tham Gia Kênh</span>
-   • Dòng 1362 [JSX_TEXT_HARDCODED]: "Tùy Chọn Thông Báo Riêng (DM Bot)"
+   • Dòng 1363 [JSX_TEXT_HARDCODED]: "Tùy Chọn Thông Báo Riêng (DM Bot)"
      Snippet: <h4 className="font-bold text-foreground text-xs sm:text-sm">Tùy Chọn Thông Báo Riêng (DM Bot)</h4>
-   • Dòng 1364 [JSX_TEXT_HARDCODED]: "Khung giờ 09:00 - 22:00"
+   • Dòng 1365 [JSX_TEXT_HARDCODED]: "Khung giờ 09:00 - 22:00"
      Snippet: <span className="text-[10px] text-muted-foreground">Khung giờ 09:00 - 22:00</span>
-   • Dòng 1376 [JSX_TEXT_HARDCODED]: "Mã Giftcode Mới"
+   • Dòng 1377 [JSX_TEXT_HARDCODED]: "Mã Giftcode Mới"
      Snippet: <p className="font-bold text-foreground">Mã Giftcode Mới</p>
-   • Dòng 1377 [JSX_TEXT_HARDCODED]: "Nhận tin nhắn riêng khi có mã mới cho game bạn theo dõi"
+   • Dòng 1378 [JSX_TEXT_HARDCODED]: "Nhận tin nhắn riêng khi có mã mới cho game bạn theo dõi"
      Snippet: <p className="text-[11px] text-muted-foreground">Nhận tin nhắn riêng khi có mã mới cho game bạn theo dõi</p>
-   • Dòng 1389 [JSX_TEXT_HARDCODED]: "Mã Sắp Hết Hạn"
+   • Dòng 1390 [JSX_TEXT_HARDCODED]: "Mã Sắp Hết Hạn"
      Snippet: <p className="font-bold text-foreground">Mã Sắp Hết Hạn</p>
-   • Dòng 1390 [JSX_TEXT_HARDCODED]: "Cảnh báo trước 24 giờ để không bỏ lỡ mã quà tặng quý"
+   • Dòng 1391 [JSX_TEXT_HARDCODED]: "Cảnh báo trước 24 giờ để không bỏ lỡ mã quà tặng quý"
      Snippet: <p className="text-[11px] text-muted-foreground">Cảnh báo trước 24 giờ để không bỏ lỡ mã quà tặng quý</p>
-   • Dòng 1402 [JSX_TEXT_HARDCODED]: "Sự Kiện & Giveaway Đặc Biệt"
+   • Dòng 1403 [JSX_TEXT_HARDCODED]: "Sự Kiện & Giveaway Đặc Biệt"
      Snippet: <p className="font-bold text-foreground">Sự Kiện & Giveaway Đặc Biệt</p>
-   • Dòng 1403 [JSX_TEXT_HARDCODED]: "Nhận tin sự kiện lớn, phát mã giới hạn từ NPH"
+   • Dòng 1404 [JSX_TEXT_HARDCODED]: "Nhận tin sự kiện lớn, phát mã giới hạn từ NPH"
      Snippet: <p className="text-[11px] text-muted-foreground">Nhận tin sự kiện lớn, phát mã giới hạn từ NPH</p>
-   • Dòng 1441 [JSX_TEXT_HARDCODED]: "⚡ Nhận Mã Tức Thì"
+   • Dòng 1442 [JSX_TEXT_HARDCODED]: "⚡ Nhận Mã Tức Thì"
      Snippet: <p className="font-bold text-foreground">⚡ Nhận Mã Tức Thì</p>
-   • Dòng 1445 [JSX_TEXT_HARDCODED]: "⏰ Báo Hạn Chính Xác"
+   • Dòng 1446 [JSX_TEXT_HARDCODED]: "⏰ Báo Hạn Chính Xác"
      Snippet: <p className="font-bold text-foreground">⏰ Báo Hạn Chính Xác</p>
-   • Dòng 1446 [JSX_TEXT_HARDCODED]: "Nhắc nhở trước khi giftcode hết hạn 24 giờ."
+   • Dòng 1447 [JSX_TEXT_HARDCODED]: "Nhắc nhở trước khi giftcode hết hạn 24 giờ."
      Snippet: <p className="text-muted-foreground">Nhắc nhở trước khi giftcode hết hạn 24 giờ.</p>
-   • Dòng 1449 [JSX_TEXT_HARDCODED]: "🎯 Tùy Chọn Linh Hoạt"
+   • Dòng 1450 [JSX_TEXT_HARDCODED]: "🎯 Tùy Chọn Linh Hoạt"
      Snippet: <p className="font-bold text-foreground">🎯 Tùy Chọn Linh Hoạt</p>
-   • Dòng 1450 [JSX_TEXT_HARDCODED]: "Chỉ nhận mã của game bạn quan tâm, không spam."
+   • Dòng 1451 [JSX_TEXT_HARDCODED]: "Chỉ nhận mã của game bạn quan tâm, không spam."
      Snippet: <p className="text-muted-foreground">Chỉ nhận mã của game bạn quan tâm, không spam.</p>
-   • Dòng 1470 [JSX_TEXT_HARDCODED]: "Mã liên kết 1 lần (15 phút)"
+   • Dòng 1471 [JSX_TEXT_HARDCODED]: "Mã liên kết 1 lần (15 phút)"
      Snippet: <span className="font-bold text-foreground text-xs">Mã liên kết 1 lần (15 phút)</span>
-   • Dòng 1471 [JSX_TEXT_HARDCODED]: "Hết hạn sau 15 phút"
+   • Dòng 1472 [JSX_TEXT_HARDCODED]: "Hết hạn sau 15 phút"
      Snippet: <span className="text-[10px] font-mono text-amber-400">Hết hạn sau 15 phút</span>
-   • Dòng 1509 [JSX_TEXT_HARDCODED]: "Game Bạn Đang Theo Dõi"
+   • Dòng 1510 [JSX_TEXT_HARDCODED]: "Game Bạn Đang Theo Dõi"
      Snippet: <h4 className="font-bold text-foreground text-xs sm:text-sm">Game Bạn Đang Theo Dõi</h4>
-   • Dòng 1603 [JSX_ATTR_HARDCODED]: "Bỏ theo dõi game này"
+   • Dòng 1604 [JSX_ATTR_HARDCODED]: "Bỏ theo dõi game này"
      Snippet: title="Bỏ theo dõi game này"
-   • Dòng 1618 [JSX_TEXT_HARDCODED]: "&quot;Báo code mới&quot;"
+   • Dòng 1619 [JSX_TEXT_HARDCODED]: "&quot;Báo code mới&quot;"
      Snippet: Hãy mở trang chi tiết game và bấm <strong>&quot;Báo code mới&quot;</strong> hoặc gõ lệnh <code>/theodoi &lt;slug&gt;</code> với Bot.
-   • Dòng 1618 [JSX_TEXT_HARDCODED]: "hoặc gõ lệnh"
+   • Dòng 1619 [JSX_TEXT_HARDCODED]: "hoặc gõ lệnh"
      Snippet: Hãy mở trang chi tiết game và bấm <strong>&quot;Báo code mới&quot;</strong> hoặc gõ lệnh <code>/theodoi &lt;slug&gt;</code> với Bot.
-   • Dòng 1633 [JSX_TEXT_HARDCODED]: "Kênh trực tiếp trên Web"
+   • Dòng 1634 [JSX_TEXT_HARDCODED]: "Kênh trực tiếp trên Web"
      Snippet: <span className="text-[10px] text-muted-foreground">Kênh trực tiếp trên Web</span>
-   • Dòng 1720 [JSX_ATTR_HARDCODED]: "Sao chép mã"
+   • Dòng 1721 [JSX_ATTR_HARDCODED]: "Sao chép mã"
      Snippet: title="Sao chép mã"
-   • Dòng 1757 [JSX_TEXT_HARDCODED]: "Bảo Mật Tài Khoản Cấp Cao"
+   • Dòng 1758 [JSX_TEXT_HARDCODED]: "Bảo Mật Tài Khoản Cấp Cao"
      Snippet: <p className="font-bold">Bảo Mật Tài Khoản Cấp Cao</p>
-   • Dòng 1768 [JSX_TEXT_HARDCODED]: "Mật Khẩu Hiện Tại:"
+   • Dòng 1769 [JSX_TEXT_HARDCODED]: "Mật Khẩu Hiện Tại:"
      Snippet: <span>Mật Khẩu Hiện Tại:</span>
-   • Dòng 1775 [JSX_ATTR_HARDCODED]: "Nhập mật khẩu hiện tại của bạn..."
+   • Dòng 1776 [JSX_ATTR_HARDCODED]: "Nhập mật khẩu hiện tại của bạn..."
      Snippet: placeholder="Nhập mật khẩu hiện tại của bạn..."
-   • Dòng 1793 [JSX_TEXT_HARDCODED]: "Mật Khẩu Mới (Tối thiểu 6 ký tự):"
+   • Dòng 1794 [JSX_TEXT_HARDCODED]: "Mật Khẩu Mới (Tối thiểu 6 ký tự):"
      Snippet: <span>Mật Khẩu Mới (Tối thiểu 6 ký tự):</span>
-   • Dòng 1800 [JSX_ATTR_HARDCODED]: "Nhập mật khẩu mới..."
+   • Dòng 1801 [JSX_ATTR_HARDCODED]: "Nhập mật khẩu mới..."
      Snippet: placeholder="Nhập mật khẩu mới..."
-   • Dòng 1818 [JSX_TEXT_HARDCODED]: "Xác Nhận Mật Khẩu Mới:"
+   • Dòng 1819 [JSX_TEXT_HARDCODED]: "Xác Nhận Mật Khẩu Mới:"
      Snippet: <span>Xác Nhận Mật Khẩu Mới:</span>
-   • Dòng 1824 [JSX_ATTR_HARDCODED]: "Nhập lại mật khẩu mới..."
+   • Dòng 1825 [JSX_ATTR_HARDCODED]: "Nhập lại mật khẩu mới..."
      Snippet: placeholder="Nhập lại mật khẩu mới..."
-   • Dòng 1847 [JSX_TEXT_HARDCODED]: "Đang Đổi Mật Khẩu..."
+   • Dòng 1848 [JSX_TEXT_HARDCODED]: "Đang Đổi Mật Khẩu..."
      Snippet: <span>Đang Đổi Mật Khẩu...</span>
-   • Dòng 1852 [JSX_TEXT_HARDCODED]: "Cập Nhật Mật Khẩu"
+   • Dòng 1853 [JSX_TEXT_HARDCODED]: "Cập Nhật Mật Khẩu"
      Snippet: <span>Cập Nhật Mật Khẩu</span>
 
 📁 File: src/components/UserWalletModal.tsx (26 lỗi):
-   • Dòng 309 [JSX_ATTR_HARDCODED]: "Đóng"
-     Snippet: aria-label="Đóng"
    • Dòng 310 [JSX_ATTR_HARDCODED]: "Đóng"
+     Snippet: aria-label="Đóng"
+   • Dòng 311 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: title="Đóng"
-   • Dòng 342 [JSX_TEXT_HARDCODED]: "Số dư khả dụng mới:"
+   • Dòng 343 [JSX_TEXT_HARDCODED]: "Số dư khả dụng mới:"
      Snippet: <span className="text-muted-foreground">Số dư khả dụng mới:</span>
-   • Dòng 348 [JSX_TEXT_HARDCODED]: "Tài khoản nhận:"
+   • Dòng 349 [JSX_TEXT_HARDCODED]: "Tài khoản nhận:"
      Snippet: <span className="text-muted-foreground">Tài khoản nhận:</span>
-   • Dòng 354 [JSX_TEXT_HARDCODED]: "Thời gian ghi nhận:"
+   • Dòng 355 [JSX_TEXT_HARDCODED]: "Thời gian ghi nhận:"
      Snippet: <span className="text-muted-foreground">Thời gian ghi nhận:</span>
-   • Dòng 367 [JSX_TEXT_HARDCODED]: "Xác Nhận & Tiếp Tục Mua Sắm"
+   • Dòng 368 [JSX_TEXT_HARDCODED]: "Xác Nhận & Tiếp Tục Mua Sắm"
      Snippet: <span>Xác Nhận & Tiếp Tục Mua Sắm</span>
-   • Dòng 378 [JSX_ATTR_HARDCODED]: "Đóng"
-     Snippet: aria-label="Đóng"
    • Dòng 379 [JSX_ATTR_HARDCODED]: "Đóng"
-     Snippet: title="Đóng"
-   • Dòng 447 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: aria-label="Đóng"
-   • Dòng 448 [JSX_ATTR_HARDCODED]: "Đóng"
+   • Dòng 380 [JSX_ATTR_HARDCODED]: "Đóng"
      Snippet: title="Đóng"
-   • Dòng 481 [JSX_TEXT_HARDCODED]: "Lịch Sử Nạp"
+   • Dòng 448 [JSX_ATTR_HARDCODED]: "Đóng"
+     Snippet: aria-label="Đóng"
+   • Dòng 449 [JSX_ATTR_HARDCODED]: "Đóng"
+     Snippet: title="Đóng"
+   • Dòng 482 [JSX_TEXT_HARDCODED]: "Lịch Sử Nạp"
      Snippet: <span>Lịch Sử Nạp</span>
-   • Dòng 524 [JSX_TEXT_HARDCODED]: "Số tiền mẫu tham khảo:"
+   • Dòng 525 [JSX_TEXT_HARDCODED]: "Số tiền mẫu tham khảo:"
      Snippet: <span>Số tiền mẫu tham khảo:</span>
-   • Dòng 632 [JSX_TEXT_HARDCODED]: "Nhập số tiền:"
+   • Dòng 633 [JSX_TEXT_HARDCODED]: "Nhập số tiền:"
      Snippet: <span>Nhập số tiền:</span>
-   • Dòng 633 [JSX_ATTR_HARDCODED]: "Bấm để nhập số tiền"
+   • Dòng 634 [JSX_ATTR_HARDCODED]: "Bấm để nhập số tiền"
      Snippet: <SlidersHorizontal className="w-3 h-3 text-amber-400/80" title="Bấm để nhập số tiền" />
-   • Dòng 667 [JSX_ATTR_HARDCODED]: "Nhập số tiền"
+   • Dòng 668 [JSX_ATTR_HARDCODED]: "Nhập số tiền"
      Snippet: placeholder="Nhập số tiền"
-   • Dòng 673 [JSX_ATTR_HARDCODED]: "Bấm để nhập số tiền"
+   • Dòng 674 [JSX_ATTR_HARDCODED]: "Bấm để nhập số tiền"
      Snippet: title="Bấm để nhập số tiền"
-   • Dòng 688 [JSX_ATTR_HARDCODED]: "Xóa số tiền để nhập lại"
+   • Dòng 689 [JSX_ATTR_HARDCODED]: "Xóa số tiền để nhập lại"
      Snippet: title="Xóa số tiền để nhập lại"
-   • Dòng 706 [JSX_ATTR_HARDCODED]: "Sao chép số tiền"
+   • Dòng 707 [JSX_ATTR_HARDCODED]: "Sao chép số tiền"
      Snippet: title="Sao chép số tiền"
-   • Dòng 715 [JSX_TEXT_HARDCODED]: "Nội dung CK:"
+   • Dòng 716 [JSX_TEXT_HARDCODED]: "Nội dung CK:"
      Snippet: <span className="text-indigo-300 font-semibold text-[11px]">Nội dung CK:</span>
-   • Dòng 724 [JSX_ATTR_HARDCODED]: "Sao chép nội dung chuyển khoản"
+   • Dòng 725 [JSX_ATTR_HARDCODED]: "Sao chép nội dung chuyển khoản"
      Snippet: title="Sao chép nội dung chuyển khoản"
-   • Dòng 734 [JSX_TEXT_HARDCODED]: "Số tài khoản:"
+   • Dòng 735 [JSX_TEXT_HARDCODED]: "Số tài khoản:"
      Snippet: <span className="text-muted-foreground text-[11px]">Số tài khoản:</span>
-   • Dòng 741 [JSX_ATTR_HARDCODED]: "Sao chép STK"
+   • Dòng 742 [JSX_ATTR_HARDCODED]: "Sao chép STK"
      Snippet: title="Sao chép STK"
-   • Dòng 750 [JSX_TEXT_HARDCODED]: "Ngân hàng:"
+   • Dòng 751 [JSX_TEXT_HARDCODED]: "Ngân hàng:"
      Snippet: <span className="text-muted-foreground text-[11px]">Ngân hàng:</span>
-   • Dòng 772 [JSX_TEXT_HARDCODED]: "Đóng và chờ hệ thống xác minh (15s - 2 phút)"
+   • Dòng 773 [JSX_TEXT_HARDCODED]: "Đóng và chờ hệ thống xác minh (15s - 2 phút)"
      Snippet: <span>Đóng và chờ hệ thống xác minh (15s - 2 phút)</span>
-   • Dòng 781 [JSX_TEXT_HARDCODED]: "Tổng số lần nạp"
+   • Dòng 782 [JSX_TEXT_HARDCODED]: "Tổng số lần nạp"
      Snippet: <span className="text-[11px] text-muted-foreground block">Tổng số lần nạp</span>
-   • Dòng 825 [JSX_TEXT_HARDCODED]: "Làm mới"
+   • Dòng 826 [JSX_TEXT_HARDCODED]: "Làm mới"
      Snippet: <span>Làm mới</span>
 
 📁 File: src/components/UtilitiesView.tsx (30 lỗi):
