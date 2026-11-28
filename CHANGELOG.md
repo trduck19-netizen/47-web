@@ -7,6 +7,27 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-28]
 
+### 492. Tách Cổng Quản Trị Gian Hàng Độc Lập Toàn Màn Hình (`/seller` & `/en/seller`), Sidebar RBAC, Đồng Bộ Đa Tab, Tùy Chỉnh Giao Diện Admin & Giảm `-204 KB` Chunk Trang Chủ (28/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Triển khai trọn vẹn 4 mảnh theo kế hoạch đã duyệt ([`ke_hoach_tach_cong_quan_tri_gian_hang_seller_portal_28_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_tach_cong_quan_tri_gian_hang_seller_portal_28_11.md)): tách hoàn toàn Kênh Người Bán ra khỏi vỏ Sàn Mua Sắm (`UniversalMallView`) thành bàn làm việc toàn màn hình độc lập trên cùng domain (`/seller` & `/en/seller`, mở tab mới `_blank` giống Shopee Seller Centre), đồng bộ đăng nhập/Ví Core/Sáng-Tối tức thì giữa các tab, phân quyền Sidebar theo `sub_role`, và cho phép Admin tùy chỉnh bộ màu chủ đạo & thông báo ghim đầu trang `/seller`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Mảnh 1 — Cấu hình giao diện Admin, API Portal Config & Edge `301` Redirect (`marketplace_service.ts`, `admin/seller-config.ts`, `seller/portal-config.ts`, `seller/index.ts`, `_worker.ts`)*:
+     - Mở rộng `wcg_marketplace_config_v1` thêm `seller_portal_theme_preset` (`'shopee_orange'` mặc định `#ee4d2d` | `'enterprise_indigo'` | `'emerald_fintech'` | `'royal_violet'`), `seller_portal_allow_dark_mode`, `seller_portal_banner_vi/en`.
+     - Tạo endpoint công khai nhẹ `GET /api/seller/portal-config` và bổ sung `portal_config` + `sepay_summary` (`configured`, `is_enabled`, `admin_locked`, `fee_debt_core`, `open_exceptions`) vào `GET /api/seller`.
+     - Thêm chuyển hướng HTTP `301` (`GET` & `HEAD`) cho `/ban-hang*`, `/seller-center*` → `/seller` và `/en/ban-hang*`, `/en/seller-center*` → `/en/seller`.
+  2. *Mảnh 2 — Bàn làm việc toàn màn hình & Đồng bộ đa tab (`SellerPortalApp.tsx`, `SellerPortalSidebar.tsx`, `SellerPortalTopbar.tsx`, `SellerOnboardingLanding.tsx`, `sellerPortalTheme.ts`, `crossTabSync.ts`)*:
+     - Xây dựng `SellerPortalApp` độc lập hỗ trợ hash từng phân hệ (`#/dashboard` .. `#/settings`), Sidebar dọc 4 nhóm thu gọn được (semantic `<nav>`, `aria-current="page"` kèm thanh chỉ báo không phụ thuộc màu WCAG 1.4.1), tự động lọc ẩn các mục nhạy cảm (`sepay`, `finance`, `api_keys`, `settings`) cho `MANAGE_STOCK` & `VIEW_ORDERS`.
+     - Topbar gọn `56px` gồm tên shop, huy hiệu vai trò, chấm trạng thái SePay (`ONLINE`/`CORE ONLY`/`LOCKED`), số dư Ví Core + nút Nạp Ví tại chỗ, Xem Shop công khai, VI/EN (giữ nguyên `#/hash`), Sáng/Tối (cập nhật `<meta name="color-scheme">` + đồng bộ `storage`/`BroadcastChannel`), Về Sàn Mua Sắm & Đăng xuất.
+     - Trang Landing & Form Mở Gian Hàng ngay trong `/seller` cho khách chưa đăng nhập / chưa tạo shop.
+  3. *Mảnh 3 & 4 — Tách Chunk Lazy-Load Khỏi `UniversalMallView`, Chặn Va Chạm Hash Admin, Tùy Chỉnh Admin & Kiểm Thử (`App.tsx`, `UniversalMallView.tsx`, `SellerCenterView.tsx`, `UserProfileModal.tsx`, `homepageSections.ts`, `SellerModerationModule.tsx`, `vi.json`, `en.json`, `check-hardcoded-i18n.cjs`, `test_seller_portal_standalone.ts`)*:
+     - Kiểm tra `isSellerPortalPathname(path)` **trước** `ADMIN_HASH_PREFIXES` trong `App.tsx` (chặn tuyệt đối `/seller#/dashboard`, `/seller#/orders`, `/seller#/sepay` mở nhầm `AdminApp`), tải lười `SellerPortalApp`, gắn `AuthModal` & `UserWalletModal` tại chỗ, và **gỡ bỏ hoàn toàn import tĩnh `SellerCenterView`** khỏi `UniversalMallView.tsx`.
+     - Đổi toàn bộ nút *"Kênh Người Bán"* / *"Mở Gian Hàng"* trên Sàn sang mở tab mới `target="_blank"`. Thêm bộ chọn 4 bộ màu & thông báo song ngữ `/seller` vào tab Cấu Hình Sàn trong `SellerModerationModule.tsx`.
+- **Kiểm thử & Đo lường thực tế**:
+  - **Cải thiện hiệu năng trang chủ khách mua (`docs/build_success.log`)**: Chunk `UniversalMallView` giảm từ **`619.10 kB` (`135.87 kB` gzip)** xuống **`414.81 kB` (`97.72 kB` gzip)** (**`-204.29 kB` / `-33.0%`**); `SellerPortalApp` tách thành chunk lazy **`231.21 kB` (`45.33 kB` gzip)**. Lean Guard Pre `5/5` + Post `4/4 PASS` (`AdminApp 567.82 KB < 600 KB`, `_worker.js 6.88 MB <= 10 MB`, `dist/ 68.99 MB <= 85 MB`).
+  - `npm test`: **`296/296 PASS`** (`7` bộ test, thêm `22/22` ở `test_seller_portal_standalone.ts` — `docs/test_full_check.log`).
+  - `vi.json` / `en.json`: **`2.704 / 2.704`** khóa lá (`0` lệch). `npm run check:i18n`: **`29/29 PASSED`** (`0` vi phạm — `docs/i18n_full_check.log`); quét toàn sàn `--all` (`125` `.tsx`): `2.895` (`+0` so với `8130471` — `docs/check_hardcoded_i18n_all.log`).
+  - `tsc`: `homepage_exit=0` (`HOMEPAGE_TSC_OK`), `tsconfig.json` `full_tsc_exit=2`, tổng `1.690` lỗi (`0` lỗi mới so với `8130471`, `TS6133=467` — `docs/tsc_full_check.log`). Rule 10: `TOTAL_VIOLATIONS=0` (`docs/rule10_scan.log`).
+
 ### 491. Cổng Thanh Toán SePay & VietQR Riêng Cho Từng Gian Hàng (`DIRECT_SEPAY`), Gom QR Theo Shop, Tạm Giữ Vốn Sỉ Affiliate, Chống Gian Lận Hoàn Core & Giám Sát Admin Lazy-Load (28/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai trọn vẹn 4 mảnh theo kế hoạch đã duyệt ([`ke_hoach_cong_sepay_rieng_tung_gian_hang_28_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_cong_sepay_rieng_tung_gian_hang_28_11.md)): cho phép mọi chủ gian hàng (`TRIAL` & `ACTIVE`) tự cấu hình tài khoản ngân hàng + Webhook SePay riêng để nhận tiền VietQR trực tiếp; tách biệt hoàn toàn với VietQR Sàn (`wcg_admin_sepay_v4`); ẩn VietQR (chỉ nhận Ví Core) với gian hàng chưa bật/bị khóa/vượt nợ phí; chống tuyệt đối kịch bản gian lận tạo Core ảo từ sàn; hỗ trợ bán lại Liên Shop (Affiliate) kèm tạm giữ vốn sỉ Core nguyên tử; đồng bộ 100% song ngữ VI/EN & Rule 8/9/10/12.
@@ -312,18 +333,3 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
      - Bỏ hẳn nhánh fallback `/game_icons/${gameSlug}.webp` trong `onError` của `ProductDetailModal` & `ProductCheckoutModal`, bỏ nhảy sang `/og-image.jpg` trong `PackageShareModal`, bổ sung `console.warn` chẩn đoán tạm và tự nâng cấp `product` trong `ProductDetailModal` khi `pine_store_products_updated` về.
   3. *Nhánh SELECT chính `/api/products` (`functions/api/products/index.ts`)*:
      - Bổ sung `weight_grams`, `warehouse_address` vào SELECT từ bảng `products` và dẫn xuất đầy đủ 10 trường đồng nhất (`game_slug`, `cover_image_url`, `game_icon_url`, `product_images`, `weight_grams`, `warehouse_address`, `warranty_hours`, `seller_name`, `brand`, `origin`).
-
-### 472. Gỡ Fallback `: 2000` Ở `PackageShareModal`, Sửa 13 Lỗi `setErrorMessaget` Trong `AuthModal` & Triệt Tiêu Race Condition `/api/products` Gây Mất Ảnh/Thông Số Vật Lý + `/game_icons/undefined.webp` (26/11/2026)
-- **Bối cảnh & Yêu cầu**:
-  - Xử lý nốt 3 vấn đề xác minh sau commit `6b8c654`: (1) `PackageShareModal.tsx:232` còn sót fallback ternary `: 2000` trong badge *"Mua lần đầu"*; (2) `AuthModal.tsx` còn 13 chỗ gọi lỗi chính tả `setErrorMessaget('authStrict.kX')` sẽ gây lỗi runtime khi bật lại `GUEST_TURNSTILE_ENABLED=true`; (3) Trên live, ảnh bìa `/game_icons/physical-default.webp` không hiện ổn định ở 4 vị trí, xuất hiện `/game_icons/undefined.webp`, và modal khi chưa đăng nhập bị mất `500g`, `24 giờ`, kho gửi thật.
-- **Nguyên nhân gốc rễ (Root Cause)**:
-  - `ShopeeTestView.tsx:388–398` gọi song song `GET /api/products?limit=100&_t=...` (không cache, về sau `/api/sync-lite`), nhưng `/api/products` trả schema rút gọn (`thumbnail_url`, `images`, thiếu `cover_image_url`, `product_images`, `game_slug`, `weight_grams`, `warehouse_address`, `warranty_hours`) rồi ghi đè trực tiếp `currentStoreProducts` và `localStorage['pine_admin_store_products_v4']`. Sau đó `dataService.getStoreProducts()` (dòng `3083–3084`) đọc cache bẩn và nối `` `/game_icons/${p.game_slug}.webp` `` thành `/game_icons/undefined.webp`.
-- **Giải pháp áp dụng (Solution)**:
-  1. *Nhóm 1 — Gỡ fallback `: 2000` (`src/components/PackageShareModal.tsx`)*:
-     - Chỉ render badge *"Mua lần đầu"* khi `firstPurchaseOfferPrice > 0 && firstPurchaseOfferPrice < currentPrice` (không còn fallback `: 2000`). Chuyển `gameAvatar` sang `resolveProductCoverImage`.
-  2. *Nhóm 2 — Sửa 13 chỗ `setErrorMessaget` (`src/components/AuthModal.tsx`)*:
-     - Đổi toàn bộ 13 lời gọi `setErrorMessaget('authStrict.kX')` sang `setErrorMessage(t('authStrict.kX'))` (cả 13 khóa đều có đủ VI/EN).
-  3. *Nhóm 3 — Triệt tiêu race condition & chuẩn hóa ảnh an toàn (`src/utils/safeImageUrl.ts`, `ShopeeTestView.tsx`, `dataService.ts`, `ProductDetailModal.tsx`, `ProductCheckoutModal.tsx`, `App.tsx`, `functions/api/products/index.ts`)*:
-     - Gỡ đoạn `fetch('/api/products?limit=100')` ghi đè trong `ShopeeTestView.tsx`, đồng bộ thống nhất từ nguồn `/api/sync-lite` cho cả Kệ chính và Flash Sale.
-     - Tạo helper `src/utils/safeImageUrl.ts` (`sanitizeImageUrl`, `safeGameIconUrl`, `resolveProductCoverImage`) chặn tuyệt đối URL chứa `undefined`/`null`, tự chữa lành cache `localStorage` bẩn cũ và ưu tiên `/game_icons/physical-default.webp` cho hàng vật lý.
-     - Bổ sung đầy đủ `game_slug`, `cover_image_url`, `game_icon_url`, `weight_grams`, `warehouse_address`, `warranty_hours`, `seller_name`, `brand`, `origin`, `product_images` vào nhánh fallback `seller_products` của `functions/api/products/index.ts`.

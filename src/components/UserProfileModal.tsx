@@ -720,7 +720,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       onClick={() => {
                         onClose();
                         if (onNavigateToSellerCenter) onNavigateToSellerCenter();
-                        else window.location.href = window.location.pathname.startsWith('/en') ? '/en/ban-hang' : '/ban-hang';
+                        else window.open(window.location.pathname.startsWith('/en') ? '/en/seller' : '/seller', '_blank', 'noopener,noreferrer');
                       }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/20 to-indigo-500/20 hover:from-purple-500/30 hover:to-indigo-500/30 text-purple-200 border border-purple-500/40 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
                     >
@@ -741,7 +741,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   onClick={() => {
                     onClose();
                     if (onNavigateToSellerCenter) onNavigateToSellerCenter();
-                    else window.location.href = window.location.pathname.startsWith('/en') ? '/en/ban-hang' : '/ban-hang';
+                    else window.open(window.location.pathname.startsWith('/en') ? '/en/seller' : '/seller', '_blank', 'noopener,noreferrer');
                   }}
                   className="p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 group shadow-sm col-span-2 sm:col-span-1"
                 >

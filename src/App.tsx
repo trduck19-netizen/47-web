@@ -7,11 +7,14 @@ import { LanguageSeoHead } from './components/seo/LanguageSeoHead';
 import { useLanguage } from './context/LanguageContext';
 import { homepageSectionsService } from './services/homepageSectionsService';
 import type { MallSubView } from './components/mall/UniversalMallView';
+import { isSellerPortalPathname } from './components/seller/sellerPortalTheme';
+import { broadcastCrossTabEvent, subscribeCrossTabEvents } from './utils/crossTabSync';
 
 // P4: Code Splitting & Lazy Loaded Views / Modals with auto-recovery on stale deployment chunks
 const FloatingAnnouncement = lazyWithRetry(() => import('./components/FloatingAnnouncement').then((m) => ({ default: m.FloatingAnnouncement })));
 const MarketingNotificationToast = lazyWithRetry(() => import('./components/MarketingNotificationToast').then((m) => ({ default: m.MarketingNotificationToast })));
 const AdminApp = lazyWithRetry(() => import('./admin/AdminApp'));
+const SellerPortalApp = lazyWithRetry(() => import('./components/seller/SellerPortalApp'));
 const UniversalMallView = lazyWithRetry(() => import('./components/mall/UniversalMallView').then((m) => ({ default: m.UniversalMallView })));
 const SubmitCodeModal = lazyWithRetry(() => import('./components/SubmitCodeModal').then((m) => ({ default: m.SubmitCodeModal })));
 const BookmarkDrawer = lazyWithRetry(() => import('./components/BookmarkDrawer').then((m) => ({ default: m.BookmarkDrawer })));
@@ -111,16 +114,21 @@ export const App: React.FC = () => {
   const { language, t } = useLanguage();
   const isEn = language === 'en';
 
-  // Navigation Tab State (Unified Admin vs Single Universal Mall Client Shell)
-  const [currentTab, setCurrentTab] = useState<'admin' | 'mall'>(() => {
+  // Navigation Tab State (Dedicated Admin vs Dedicated Seller Portal vs Universal Mall Client Shell)
+  const [currentTab, setCurrentTab] = useState<'admin' | 'seller' | 'mall'>(() => {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       const path = window.location.pathname.toLowerCase();
 
       const isAdminDomain = host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.includes('admin-test-code-game-shop') || host.startsWith('admin.');
-      const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hash.startsWith(p));
       const isAdminPath = path.startsWith('/admin') || path.startsWith('/en/admin');
+      // Kiểm tra đường dẫn Cổng Người Bán TRƯỚC isAdminHash để /seller#/dashboard, /seller#/orders, /seller#/sepay không va chạm AdminApp!
+      const isSellerPath = !isAdminDomain && isSellerPortalPathname(path);
+      if (isSellerPath) {
+        return 'seller';
+      }
+      const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hash.startsWith(p));
       if (isAdminDomain || isAdminPath || isAdminHash) {
         return 'admin';
       }
@@ -326,6 +334,7 @@ export const App: React.FC = () => {
       if (prev && usr) {
         if (
           prev.wallet_balance !== usr.wallet_balance ||
+          (prev as any).balance !== (usr as any).balance ||
           prev.id !== usr.id ||
           prev.role !== usr.role ||
           prev.displayName !== usr.displayName ||
@@ -337,6 +346,10 @@ export const App: React.FC = () => {
       }
       return usr;
     });
+    if (usr) {
+      const bal = Number((usr as any).balance ?? usr.wallet_balance ?? 0);
+      broadcastCrossTabEvent('WALLET_UPDATED', { balance: bal });
+    }
   }, []);
 
   const dismissToast = (id: string) => {
@@ -354,7 +367,24 @@ export const App: React.FC = () => {
       }
     };
     window.addEventListener('pine_user_updated', handleUserUpdate);
-    return () => window.removeEventListener('pine_user_updated', handleUserUpdate);
+    const unsubscribeCrossTab = subscribeCrossTabEvents((ev) => {
+      if (ev.type === 'AUTH_LOGOUT') {
+        setCurrentUser(null);
+        return;
+      }
+      if (ev.type === 'AUTH_UPDATED' || ev.type === 'WALLET_UPDATED') {
+        dataService.refreshCurrentUserBalance().then(() => {
+          const fresh = dataService.getCurrentUser();
+          if (fresh) {
+            setCurrentUser(fresh);
+          }
+        }).catch(() => {});
+      }
+    });
+    return () => {
+      window.removeEventListener('pine_user_updated', handleUserUpdate);
+      unsubscribeCrossTab();
+    };
   }, [handleUpdateUser]);
 
   // Global listener for floating toast events (from components/cards)
@@ -592,7 +622,7 @@ export const App: React.FC = () => {
       case 'store':
         return withLangPrefix('/store', isEnMode);
       case 'seller':
-        return withLangPrefix('/ban-hang', isEnMode);
+        return withLangPrefix('/seller', isEnMode);
       case 'store-detail':
         return withLangPrefix(`/gian-hang/${storeSlugOverride || currentStoreSlug}`, isEnMode);
       case 'missions':
@@ -627,6 +657,16 @@ export const App: React.FC = () => {
     sub: MallSubView,
     extra?: { storeSlug?: string; storeCategory?: string; newsSlug?: string | null; utilityId?: string | null; giveawayId?: string | null; missionId?: string | null }
   ) => {
+    // Kênh Người Bán mở sang tab trình duyệt riêng (Shopee Seller Centre UX)
+    if (sub === 'seller') {
+      const targetUrl = withLangPrefix('/seller', language === 'en');
+      const opened = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        window.location.href = targetUrl;
+      }
+      return;
+    }
+
     setSelectedProduct(null);
     if (extra?.storeSlug !== undefined) setCurrentStoreSlug(extra.storeSlug);
     if (extra?.storeCategory !== undefined) setStoreCategoryFilter(extra.storeCategory || 'all');
@@ -681,7 +721,7 @@ export const App: React.FC = () => {
 
   // Sync Dynamic Document Title & Clean URL bar (Preserves equivalent VI <-> EN route on language switch)
   useEffect(() => {
-    if (currentTab === 'admin') return;
+    if (currentTab === 'admin' || currentTab === 'seller') return;
     if (!isInitialLoadDone) return;
 
     const isEnMode = language === 'en';
@@ -802,10 +842,14 @@ export const App: React.FC = () => {
       const host = window.location.hostname.toLowerCase();
       const popIsEn = path === '/en' || path.startsWith('/en/') || localStorage.getItem('pine_language') === 'en';
 
-      // 0. Dedicated Admin domain or Admin route/hash -> Always stay in Admin!
+      // 0. Dedicated Seller Portal or Admin domain/route
       const isAdminDomain = host.includes('admin-universal-mall') || host.includes('admin-code-game-shop') || host.includes('admin-test-code-game-shop') || host.startsWith('admin.');
-      const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hash.startsWith(p));
       const isAdminPath = path.startsWith('/admin') || path.startsWith('/en/admin');
+      if (!isAdminDomain && isSellerPortalPathname(path)) {
+        setCurrentTab('seller');
+        return;
+      }
+      const isAdminHash = ADMIN_HASH_PREFIXES.some((p) => hash.startsWith(p));
       if (isAdminDomain || isAdminPath || isAdminHash) {
         setCurrentTab('admin');
         return;
@@ -1162,8 +1206,54 @@ export const App: React.FC = () => {
   const handleLogout = () => {
     authService.logout();
     setCurrentUser(null);
-    showToast('Đã đăng xuất tài khoản an toàn', undefined, 'info');
+    broadcastCrossTabEvent('AUTH_LOGOUT');
+    showToast(t('sellerPortal.toast.loggedOut'), undefined, 'info');
   };
+
+  if (currentTab === 'seller') {
+    return (
+      <>
+        <React.Suspense
+          fallback={
+            <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-3 text-slate-800 dark:text-slate-100">
+              <div className="w-9 h-9 rounded-full border-4 border-[#ee4d2d] border-t-transparent animate-spin" />
+              <p className="text-sm font-semibold">{t('sellerPortal.loadingPortal')}</p>
+            </div>
+          }
+        >
+          <SellerPortalApp
+            currentUser={currentUser}
+            games={allGamesList}
+            onOpenLogin={() => setIsAuthModalOpen(true)}
+            onOpenWallet={() => setIsWalletModalOpen(true)}
+            onLogout={handleLogout}
+            onShowToast={showToast}
+          />
+
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            onSuccess={(u: UserProfile) => {
+              handleUpdateUser(u);
+              broadcastCrossTabEvent('AUTH_UPDATED');
+            }}
+            onShowToast={showToast}
+          />
+
+          <UserWalletModal
+            isOpen={isWalletModalOpen}
+            onClose={() => setIsWalletModalOpen(false)}
+            user={currentUser}
+            onUpdateUser={handleUpdateUser}
+            onShowToast={showToast}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+          />
+        </React.Suspense>
+
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} maxVisible={3} />
+      </>
+    );
+  }
 
   if (currentTab === 'admin') {
     return (

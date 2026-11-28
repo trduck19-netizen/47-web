@@ -113,6 +113,7 @@ import * as codesTodayApi from './api/codes/today';
 
 // Marketplace Phase 1 (11/11/2026): Seller Center, Stores, Orders, Admin Moderation
 import * as sellerIndexApi from './api/seller/index';
+import * as sellerPortalConfigApi from './api/seller/portal-config';
 import * as sellerProductsIndexApi from './api/seller/products/index';
 import * as sellerProductsIdApi from './api/seller/products/[id]';
 import * as sellerProductsCodesApi from './api/seller/products/[id]/codes';
@@ -2207,7 +2208,13 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
       // 20. Marketplace Phase 1 (Sàn TMĐT Số) APIs
       // ==========================================
 
-      // 20.1. Seller Center Profile & Registration
+      // 20.1. Seller Center Profile, Registration & Public Portal Config
+      if (pathname === '/api/seller/portal-config') {
+        if (method === 'OPTIONS') return await sellerPortalConfigApi.onRequestOptions(context);
+        if (method === 'GET') return await sellerPortalConfigApi.onRequestGet(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
       if (pathname === '/api/seller') {
         if (method === 'OPTIONS') return await sellerIndexApi.onRequestOptions();
         if (method === 'GET') return await sellerIndexApi.onRequestGet(context);
@@ -3065,6 +3072,31 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
           return new Response(bodyText, { status: 200, headers: clientHeaders });
         }
         return assetResponse;
+      }
+
+      // Chuyển hướng 301 đường dẫn Kênh Người Bán cũ (/ban-hang*, /seller-center*) sang Cổng Quản Trị Gian Hàng độc lập (/seller & /en/seller)
+      if (request.method === 'GET' || request.method === 'HEAD') {
+        const lp = pathname.toLowerCase();
+        if (
+          lp === '/ban-hang' ||
+          lp.startsWith('/ban-hang/') ||
+          lp === '/seller-center' ||
+          lp.startsWith('/seller-center/') ||
+          lp === '/vi/ban-hang' ||
+          lp.startsWith('/vi/ban-hang/') ||
+          lp === '/vi/seller-center' ||
+          lp.startsWith('/vi/seller-center/')
+        ) {
+          return Response.redirect(`${url.origin}/seller${url.search}`, 301);
+        }
+        if (
+          lp === '/en/ban-hang' ||
+          lp.startsWith('/en/ban-hang/') ||
+          lp === '/en/seller-center' ||
+          lp.startsWith('/en/seller-center/')
+        ) {
+          return Response.redirect(`${url.origin}/en/seller${url.search}`, 301);
+        }
       }
 
       // Chuyển hướng 301 mọi URL legacy (/test1*, /game/*, /g/*) về Trang Chủ Sàn Universal Mall (phủ cả GET & HEAD)

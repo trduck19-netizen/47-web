@@ -113,6 +113,10 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
   const [withdrawThreshold, setWithdrawThreshold] = useState<number>(500);
   const [testSellerIds, setTestSellerIds] = useState<string>('sel_1794399949383_052f1');
   const [maxRejectedDisputes30d, setMaxRejectedDisputes30d] = useState<number>(3);
+  const [sellerPortalThemePreset, setSellerPortalThemePreset] = useState<'shopee_orange' | 'enterprise_indigo' | 'emerald_fintech' | 'royal_violet'>('shopee_orange');
+  const [sellerPortalAllowDarkMode, setSellerPortalAllowDarkMode] = useState<boolean>(true);
+  const [sellerPortalBannerVi, setSellerPortalBannerVi] = useState<string>('');
+  const [sellerPortalBannerEn, setSellerPortalBannerEn] = useState<string>('');
   const [savingConfig, setSavingConfig] = useState<boolean>(false);
 
   const getAdminHeaders = () => {
@@ -253,6 +257,10 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
           ? data.config.test_seller_ids.join(', ')
           : (data.config.test_seller_ids || 'sel_1794399949383_052f1');
         setTestSellerIds(testList);
+        setSellerPortalThemePreset(data.config.seller_portal_theme_preset || 'shopee_orange');
+        setSellerPortalAllowDarkMode(data.config.seller_portal_allow_dark_mode !== false);
+        setSellerPortalBannerVi(data.config.seller_portal_banner_vi || '');
+        setSellerPortalBannerEn(data.config.seller_portal_banner_en || '');
       }
     } catch (err) {
       console.warn('Fetch config error:', err);
@@ -675,6 +683,10 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
           withdraw_approval_threshold_core: withdrawThreshold,
           test_seller_ids: testSellerIds.split(',').map((s) => s.trim()).filter(Boolean),
           max_rejected_disputes_30d: maxRejectedDisputes30d,
+          seller_portal_theme_preset: sellerPortalThemePreset,
+          seller_portal_allow_dark_mode: sellerPortalAllowDarkMode,
+          seller_portal_banner_vi: sellerPortalBannerVi,
+          seller_portal_banner_en: sellerPortalBannerEn,
         }),
       });
       const data = await res.json();
@@ -2138,6 +2150,81 @@ export const SellerModerationModule: React.FC<SellerModerationModuleProps> = ({ 
                 <span className="text-[10px] text-muted-foreground mt-1 block">
                   Người mua có từ {maxRejectedDisputes30d} khiếu nại bị từ chối trong 30 ngày sẽ tự động bị gắn cờ lạm dụng và xem xét đặc biệt.
                 </span>
+              </div>
+            </div>
+
+            {/* Khối Tùy Chỉnh Giao Diện & Thông Báo Cổng Người Bán (/seller) */}
+            <div className="mt-5 pt-5 border-t border-border space-y-4">
+              <div>
+                <h4 className="text-sm font-bold text-foreground">{t('sellerPortal.adminTheme.sectionTitle')}</h4>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{t('sellerPortal.adminTheme.sectionDesc')}</p>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-2">{t('sellerPortal.adminTheme.presetLabel')}</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  {([
+                    { id: 'shopee_orange', hex: '#ee4d2d', labelKey: 'sellerPortal.adminTheme.presetShopeeOrange' },
+                    { id: 'enterprise_indigo', hex: '#2563eb', labelKey: 'sellerPortal.adminTheme.presetEnterpriseIndigo' },
+                    { id: 'emerald_fintech', hex: '#059669', labelKey: 'sellerPortal.adminTheme.presetEmeraldFintech' },
+                    { id: 'royal_violet', hex: '#7c3aed', labelKey: 'sellerPortal.adminTheme.presetRoyalViolet' },
+                  ] as const).map((preset) => {
+                    const selected = sellerPortalThemePreset === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setSellerPortalThemePreset(preset.id)}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition cursor-pointer ${
+                          selected
+                            ? 'border-primary bg-primary/10 ring-1 ring-primary font-bold text-foreground'
+                            : 'border-border bg-background hover:bg-muted/60 text-muted-foreground font-medium'
+                        }`}
+                      >
+                        <span
+                          className="w-5 h-5 rounded-full shrink-0 border border-black/15 shadow-sm"
+                          style={{ backgroundColor: preset.hex }}
+                        />
+                        <span className="text-xs truncate">{t(preset.labelKey)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={sellerPortalAllowDarkMode}
+                  onChange={(e) => setSellerPortalAllowDarkMode(e.target.checked)}
+                  className="w-4 h-4 rounded border-border accent-primary"
+                />
+                <span className="font-semibold text-foreground">{t('sellerPortal.adminTheme.allowDarkModeLabel')}</span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-1">{t('sellerPortal.adminTheme.bannerViLabel')}</label>
+                  <input
+                    type="text"
+                    maxLength={300}
+                    value={sellerPortalBannerVi}
+                    onChange={(e) => setSellerPortalBannerVi(e.target.value)}
+                    placeholder={t('sellerPortal.adminTheme.bannerPlaceholderVi')}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">{t('sellerPortal.adminTheme.bannerEnLabel')}</label>
+                  <input
+                    type="text"
+                    maxLength={300}
+                    value={sellerPortalBannerEn}
+                    onChange={(e) => setSellerPortalBannerEn(e.target.value)}
+                    placeholder={t('sellerPortal.adminTheme.bannerPlaceholderEn')}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                  />
+                </div>
               </div>
             </div>
 

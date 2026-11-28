@@ -1,6 +1,6 @@
 import { verifyMemberAuth } from '../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../services/d1_service';
-import { SellerRecord } from '../../services/marketplace_service';
+import { getMarketplaceConfig, SellerRecord } from '../../services/marketplace_service';
 import { verifyStoreApiAccess } from '../../services/store_api_service';
 
 interface Env {
@@ -25,12 +25,20 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
+    const mConfig = await getMarketplaceConfig(env.DB);
+    const portalConfig = {
+      theme_preset: mConfig.seller_portal_theme_preset || 'shopee_orange',
+      allow_dark_mode: mConfig.seller_portal_allow_dark_mode !== false,
+      banner_vi: mConfig.seller_portal_banner_vi || '',
+      banner_en: mConfig.seller_portal_banner_en || '',
+    };
+
     const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'ANY' });
     if (!storeAuth.authorized || !storeAuth.seller) {
       // Nếu là phiên web nhưng chưa có gian hàng -> trả has_seller: false để web hiển thị form mở gian hàng
       if (storeAuth.authType === 'MEMBER_SESSION' && storeAuth.status === 404) {
         return new Response(
-          JSON.stringify({ success: true, has_seller: false }),
+          JSON.stringify({ success: true, has_seller: false, portal_config: portalConfig }),
           { status: 200, headers: CORS_HEADERS }
         );
       }
@@ -88,19 +96,44 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       .bind(seller.id)
       .first<{ count: number }>();
 
-    // 5. Tổng số sản phẩm đang có
-    const totalProducts = await env.DB
-      .prepare("SELECT COUNT(*) as count FROM seller_products WHERE seller_id = ? AND deleted_at IS NULL")
-      .bind(seller.id)
-      .first<{ count: number }>();
+    // 5. Tổng số sản phẩm đang có + tóm tắt trạng thái Cổng SePay riêng
+    const [totalProducts, sepayCfgRow, sepayExRow] = await Promise.all([
+      env.DB
+        .prepare("SELECT COUNT(*) as count FROM seller_products WHERE seller_id = ? AND deleted_at IS NULL")
+        .bind(seller.id)
+        .first<{ count: number }>(),
+      env.DB
+        .prepare('SELECT is_enabled, admin_locked, fee_debt_core FROM seller_sepay_configs WHERE seller_id = ? LIMIT 1')
+        .bind(seller.id)
+        .first<{ is_enabled: number; admin_locked: number; fee_debt_core: number }>()
+        .catch(() => null),
+      env.DB
+        .prepare(`
+          SELECT COUNT(*) as count
+          FROM seller_sepay_transactions
+          WHERE seller_id = ?
+            AND status IN ('UNDERPAID', 'EXPIRED_PAYMENT', 'DUPLICATE_PAYMENT', 'UNMATCHED', 'PENDING_MANUAL_CODE')
+        `)
+        .bind(seller.id)
+        .first<{ count: number }>()
+        .catch(() => ({ count: 0 })),
+    ]);
 
     return new Response(
       JSON.stringify({
         success: true,
         has_seller: true,
         seller,
-        is_subaccount: Boolean(subRole),
+        is_subaccount: subRole !== 'OWNER',
         sub_role: subRole,
+        portal_config: portalConfig,
+        sepay_summary: {
+          configured: Boolean(sepayCfgRow),
+          is_enabled: Number(sepayCfgRow?.is_enabled || 0) === 1,
+          admin_locked: Number(sepayCfgRow?.admin_locked || 0) === 1,
+          fee_debt_core: Number(sepayCfgRow?.fee_debt_core || 0),
+          open_exceptions: Number(sepayExRow?.count || 0),
+        },
         stats: {
           today_revenue_core: todayRevenue?.total || 0,
           month_revenue_core: monthRevenue?.total || 0,

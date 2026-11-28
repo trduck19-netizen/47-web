@@ -14,6 +14,8 @@
     - `https://admin-universal-mall.pages.dev/admin` (Cloudflare Pages Project: `admin-universal-mall`)
   - **Trang Khách Hàng (Client Portal)**:
     - `https://universal-mall-shop.pages.dev/` (Cloudflare Pages Project: `universal-mall-shop`)
+  - **Cổng Quản Trị Gian Hàng (Dedicated Seller Portal — Lazy-Loaded Same-Domain)**:
+    - `https://universal-mall-shop.pages.dev/seller` & `/en/seller` (Hỗ trợ deep-link `#/dashboard`..`#/settings`, chuyển hướng `301` từ `/ban-hang*` & `/seller-center*`, mở tab mới từ Sàn Mua Sắm, dùng chung phiên đăng nhập & Ví Core qua `crossTabSync`).
 - **Cơ Sở Dữ Liệu D1**:
   - Tên Database: `47webdanganh`
   - UUID: `f1c32d22-9ad3-41a7-93a4-e9025240c6b2`

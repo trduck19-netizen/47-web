@@ -10,6 +10,12 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-344: Bẫy Va Chạm `ADMIN_HASH_PREFIXES` Với Hash `/seller#/dashboard`, `/seller#/orders`, `/seller#/sepay` & Phình Bundle Trang Chủ Khi Import Tĩnh `SellerCenterView` (28/11/2026)
+- **Nguyên tắc & Bẫy cần tránh (Mục 492)**:
+  1. *Va chạm hash giữa Cổng Người Bán (`/seller`) và `AdminApp`*: Trong `src/App.tsx`, `ADMIN_HASH_PREFIXES` chứa `#/dashboard`, `#/orders`, `#/sepay`, `#/profile`. Nếu kiểm tra `isAdminHash` trước `isSellerPortalPathname(path)`, mọi đường dẫn bookmark kiểu `/seller#/sepay` hay `/seller#/orders` sẽ bị định tuyến nhầm sang màn hình đăng nhập `AdminApp`. **Bắt buộc** luôn kiểm tra `!isAdminDomain && isSellerPortalPathname(path)` TRƯỚC `ADMIN_HASH_PREFIXES.some(...)` ở cả khởi tạo state lẫn `handlePopState` (đã khóa hồi quy bởi `test_seller_portal_standalone.ts`).
+  2. *Cấm import tĩnh `SellerCenterView` / `SellerPortalApp` vào `UniversalMallView.tsx`*: Import tĩnh khiến gói JS trang chủ khách mua phình lên `619.10 KB` (sát trần `650 KB` Lean Guard). Tách qua `React.lazy(() => import('./components/seller/SellerPortalApp'))` trong `src/App.tsx` giúp giảm tức thì `-204.29 KB` (`619.10 KB -> 414.81 KB`) cho trang chủ khách mua.
+  3. *Đồng bộ đa tab khi mở `/seller` ở tab mới (`target="_blank"`)*: Mọi thay đổi đăng nhập, đăng xuất, nạp Ví Core hoặc đổi Sáng/Tối phải gọi `broadcastCrossTabEvent` (`src/utils/crossTabSync.ts`) để đồng bộ tức thì giữa tab `/` và tab `/seller` trên cùng origin mà không vi phạm Single-Domain Auth.
+
 ### ISSUE-343: Cách Ly Tài Chính `DIRECT_SEPAY` (Cấm Phát Hành Core Sàn), Fail-Closed AES-256-GCM Token SePay, Tạm Giữ Vốn Sỉ Affiliate & Bẫy Chữ Ký `invalidateCatalogEdgeCache` (28/11/2026)
 - **Nguyên tắc & Bẫy cần tránh (Mục 491)**:
   1. *Nguy cơ phát hành Core ảo trên đơn chuyển thẳng về STK Gian hàng (`payment_channel = 'DIRECT_SEPAY'`)*: Vì khách chuyển tiền thẳng vào tài khoản ngân hàng của chủ gian hàng (không đi qua STK Sàn), sàn **TUYỆT ĐỐI KHÔNG** cộng `pending_balance_core`/`available_balance_core` cho shop bán (chỉ cộng giá sỉ cho Shop B khi đã trích trước `affiliate_wholesale_reserved_core` từ Ví Core thật của chủ Shop A), đồng thời khóa cứng `resolve-report.ts` và `admin/seller-disputes/[id]/resolve.ts` chỉ cho `REFUND_CORE`/`REFUND` khi trừ nguyên tử thành công từ Ví Core thật của chủ shop (`WHERE balance >= ?`, `changes === 1`); nếu không đủ phải trả HTTP `400 SELLER_CORE_INSUFFICIENT_FOR_DIRECT_REFUND`.

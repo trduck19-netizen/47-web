@@ -1,6 +1,6 @@
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-28T04:56:41.591Z — Batch: Dot 20 Trang Chu (24/11/2026)
-   [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 121 file giao diện (.tsx)...
+   Timestamp: 2026-11-28T05:49:50.437Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 125 file giao diện (.tsx)...
 
 ================================================================================
 🚨 [I18N SCANNER FAILED] PHÁT HIỆN CHUỖI TIẾNG VIỆT GHI CỨNG NGOÀI TỪ ĐIỂN!
@@ -3650,225 +3650,225 @@
      Snippet: <span className="text-slate-400">Địa chỉ IP & Mức độ:</span>
 
 📁 File: src/admin/modules/SellerModerationModule.tsx (110 lỗi):
-   • Dòng 1209 [JSX_TEXT_HARDCODED]: "(Không có bình luận chữ)"
+   • Dòng 1221 [JSX_TEXT_HARDCODED]: "(Không có bình luận chữ)"
      Snippet: <span className="text-[11px] text-muted-foreground italic">(Không có bình luận chữ)</span>
-   • Dòng 1237 [JSX_ATTR_HARDCODED]: "Duyệt cho phép hiển thị công khai"
+   • Dòng 1249 [JSX_ATTR_HARDCODED]: "Duyệt cho phép hiển thị công khai"
      Snippet: title="Duyệt cho phép hiển thị công khai"
-   • Dòng 1250 [JSX_ATTR_HARDCODED]: "Từ chối hiển thị"
+   • Dòng 1262 [JSX_ATTR_HARDCODED]: "Từ chối hiển thị"
      Snippet: title="Từ chối hiển thị"
-   • Dòng 1287 [JSX_TEXT_HARDCODED]: "Chỉ hiện cờ lạm dụng"
+   • Dòng 1299 [JSX_TEXT_HARDCODED]: "Chỉ hiện cờ lạm dụng"
      Snippet: <span>Chỉ hiện cờ lạm dụng</span>
-   • Dòng 1295 [JSX_TEXT_HARDCODED]: "Tất cả trạng thái"
+   • Dòng 1307 [JSX_TEXT_HARDCODED]: "Tất cả trạng thái"
      Snippet: <option value="">Tất cả trạng thái</option>
-   • Dòng 1296 [JSX_TEXT_HARDCODED]: "Mới mở (OPEN)"
+   • Dòng 1308 [JSX_TEXT_HARDCODED]: "Mới mở (OPEN)"
      Snippet: <option value="OPEN">Mới mở (OPEN)</option>
-   • Dòng 1297 [JSX_TEXT_HARDCODED]: "Shop đã phản hồi (WAITING)"
+   • Dòng 1309 [JSX_TEXT_HARDCODED]: "Shop đã phản hồi (WAITING)"
      Snippet: <option value="WAITING_SELLER">Shop đã phản hồi (WAITING)</option>
-   • Dòng 1298 [JSX_TEXT_HARDCODED]: "Đã hoàn tiền (REFUNDED)"
+   • Dòng 1310 [JSX_TEXT_HARDCODED]: "Đã hoàn tiền (REFUNDED)"
      Snippet: <option value="RESOLVED_REFUNDED">Đã hoàn tiền (REFUNDED)</option>
-   • Dòng 1299 [JSX_TEXT_HARDCODED]: "Đã đổi mã (REPLACED)"
+   • Dòng 1311 [JSX_TEXT_HARDCODED]: "Đã đổi mã (REPLACED)"
      Snippet: <option value="RESOLVED_REPLACED">Đã đổi mã (REPLACED)</option>
-   • Dòng 1300 [JSX_TEXT_HARDCODED]: "Đã từ chối (REJECTED)"
+   • Dòng 1312 [JSX_TEXT_HARDCODED]: "Đã từ chối (REJECTED)"
      Snippet: <option value="REJECTED">Đã từ chối (REJECTED)</option>
-   • Dòng 1307 [JSX_ATTR_HARDCODED]: "Làm mới danh sách"
+   • Dòng 1319 [JSX_ATTR_HARDCODED]: "Làm mới danh sách"
      Snippet: title="Làm mới danh sách"
-   • Dòng 1317 [JSX_TEXT_HARDCODED]: "Tổng Khiếu Nại"
+   • Dòng 1329 [JSX_TEXT_HARDCODED]: "Tổng Khiếu Nại"
      Snippet: <span className="text-[11px] text-muted-foreground font-semibold">Tổng Khiếu Nại</span>
-   • Dòng 1321 [JSX_TEXT_HARDCODED]: "Chờ Xử Lý"
+   • Dòng 1333 [JSX_TEXT_HARDCODED]: "Chờ Xử Lý"
      Snippet: <span className="text-[11px] text-amber-400 font-semibold">Chờ Xử Lý</span>
-   • Dòng 1331 [JSX_TEXT_HARDCODED]: "Đã Đổi Mã"
+   • Dòng 1343 [JSX_TEXT_HARDCODED]: "Đã Đổi Mã"
      Snippet: <span className="text-[11px] text-emerald-400 font-semibold">Đã Đổi Mã</span>
-   • Dòng 1335 [JSX_TEXT_HARDCODED]: "Cảnh Báo Lạm Dụng"
+   • Dòng 1347 [JSX_TEXT_HARDCODED]: "Cảnh Báo Lạm Dụng"
      Snippet: <span className="text-[11px] text-destructive font-semibold">Cảnh Báo Lạm Dụng</span>
-   • Dòng 1345 [JSX_TEXT_HARDCODED]: "Đơn Hàng & Shop"
+   • Dòng 1357 [JSX_TEXT_HARDCODED]: "Đơn Hàng & Shop"
      Snippet: <th className="w-[22%] p-3 text-left">Đơn Hàng & Shop</th>
-   • Dòng 1346 [JSX_TEXT_HARDCODED]: "Người Mua & Lý Do"
+   • Dòng 1358 [JSX_TEXT_HARDCODED]: "Người Mua & Lý Do"
      Snippet: <th className="w-[20%] p-3 text-left">Người Mua & Lý Do</th>
-   • Dòng 1347 [JSX_TEXT_HARDCODED]: "Chi Tiết & Xem Mã"
+   • Dòng 1359 [JSX_TEXT_HARDCODED]: "Chi Tiết & Xem Mã"
      Snippet: <th className="w-[26%] p-3 text-left">Chi Tiết & Xem Mã</th>
-   • Dòng 1348 [JSX_TEXT_HARDCODED]: "Trạng Thái"
+   • Dòng 1360 [JSX_TEXT_HARDCODED]: "Trạng Thái"
      Snippet: <th className="w-[17%] p-3 text-center">Trạng Thái</th>
-   • Dòng 1349 [JSX_TEXT_HARDCODED]: "Thao Tác"
+   • Dòng 1361 [JSX_TEXT_HARDCODED]: "Thao Tác"
      Snippet: <th className="w-[15%] p-3 text-center">Thao Tác</th>
-   • Dòng 1413 [JSX_ATTR_HARDCODED]: "Người mua có >= 3 khiếu nại bị từ chối trong 30 ngày"
+   • Dòng 1425 [JSX_ATTR_HARDCODED]: "Người mua có >= 3 khiếu nại bị từ chối trong 30 ngày"
      Snippet: <span className="px-1.5 py-0.5 rounded-md bg-destructive text-white text-[9px] font-black uppercase tracking-wider" title="Người mua có >= 3 khiếu nại bị từ chối trong 30 ngày">
-   • Dòng 1497 [JSX_TEXT_HARDCODED]: "Đã đóng"
+   • Dòng 1509 [JSX_TEXT_HARDCODED]: "Đã đóng"
      Snippet: <span className="text-[11px] text-muted-foreground font-mono">Đã đóng</span>
-   • Dòng 1515 [JSX_TEXT_HARDCODED]: "Đang Giữ (Hold)"
+   • Dòng 1527 [JSX_TEXT_HARDCODED]: "Đang Giữ (Hold)"
      Snippet: <span className="text-[11px] text-muted-foreground font-semibold">Đang Giữ (Hold)</span>
-   • Dòng 1521 [JSX_TEXT_HARDCODED]: "Khả Dụng (Available)"
+   • Dòng 1533 [JSX_TEXT_HARDCODED]: "Khả Dụng (Available)"
      Snippet: <span className="text-[11px] text-muted-foreground font-semibold">Khả Dụng (Available)</span>
-   • Dòng 1527 [JSX_TEXT_HARDCODED]: "Đã Chi Trả (Withdrawn)"
+   • Dòng 1539 [JSX_TEXT_HARDCODED]: "Đã Chi Trả (Withdrawn)"
      Snippet: <span className="text-[11px] text-muted-foreground font-semibold">Đã Chi Trả (Withdrawn)</span>
-   • Dòng 1533 [JSX_TEXT_HARDCODED]: "Tổng Doanh Thu Sàn"
+   • Dòng 1545 [JSX_TEXT_HARDCODED]: "Tổng Doanh Thu Sàn"
      Snippet: <span className="text-[11px] text-muted-foreground font-semibold">Tổng Doanh Thu Sàn</span>
-   • Dòng 1548 [JSX_TEXT_HARDCODED]: "Tất cả gian hàng"
+   • Dòng 1560 [JSX_TEXT_HARDCODED]: "Tất cả gian hàng"
      Snippet: <option value="">Tất cả gian hàng</option>
-   • Dòng 1559 [JSX_TEXT_HARDCODED]: "Tất cả nghiệp vụ"
+   • Dòng 1571 [JSX_TEXT_HARDCODED]: "Tất cả nghiệp vụ"
      Snippet: <option value="">Tất cả nghiệp vụ</option>
-   • Dòng 1560 [JSX_TEXT_HARDCODED]: "HOLD (Giữ tiền)"
+   • Dòng 1572 [JSX_TEXT_HARDCODED]: "HOLD (Giữ tiền)"
      Snippet: <option value="HOLD">HOLD (Giữ tiền)</option>
-   • Dòng 1561 [JSX_TEXT_HARDCODED]: "RELEASE (Giải ngân)"
+   • Dòng 1573 [JSX_TEXT_HARDCODED]: "RELEASE (Giải ngân)"
      Snippet: <option value="RELEASE">RELEASE (Giải ngân)</option>
-   • Dòng 1562 [JSX_TEXT_HARDCODED]: "FEE (Phí sàn)"
+   • Dòng 1574 [JSX_TEXT_HARDCODED]: "FEE (Phí sàn)"
      Snippet: <option value="FEE">FEE (Phí sàn)</option>
-   • Dòng 1563 [JSX_TEXT_HARDCODED]: "WITHDRAW (Rút tiền)"
+   • Dòng 1575 [JSX_TEXT_HARDCODED]: "WITHDRAW (Rút tiền)"
      Snippet: <option value="WITHDRAW">WITHDRAW (Rút tiền)</option>
-   • Dòng 1564 [JSX_TEXT_HARDCODED]: "REFUND (Hoàn tiền)"
+   • Dòng 1576 [JSX_TEXT_HARDCODED]: "REFUND (Hoàn tiền)"
      Snippet: <option value="REFUND">REFUND (Hoàn tiền)</option>
-   • Dòng 1565 [JSX_TEXT_HARDCODED]: "ADJUST (Điều chỉnh)"
+   • Dòng 1577 [JSX_TEXT_HARDCODED]: "ADJUST (Điều chỉnh)"
      Snippet: <option value="ADJUST">ADJUST (Điều chỉnh)</option>
-   • Dòng 1581 [JSX_ATTR_HARDCODED]: "Quét và giải ngân ngay các đơn đã qua 168h giữ tiền"
+   • Dòng 1593 [JSX_ATTR_HARDCODED]: "Quét và giải ngân ngay các đơn đã qua 168h giữ tiền"
      Snippet: title="Quét và giải ngân ngay các đơn đã qua 168h giữ tiền"
-   • Dòng 1599 [JSX_TEXT_HARDCODED]: "Thời Gian & Tác Nhân"
+   • Dòng 1611 [JSX_TEXT_HARDCODED]: "Thời Gian & Tác Nhân"
      Snippet: <th style={{ width: '22%' }} className="p-3">Thời Gian & Tác Nhân</th>
-   • Dòng 1600 [JSX_TEXT_HARDCODED]: "Gian Hàng"
+   • Dòng 1612 [JSX_TEXT_HARDCODED]: "Gian Hàng"
      Snippet: <th style={{ width: '18%' }} className="p-3">Gian Hàng</th>
-   • Dòng 1601 [JSX_TEXT_HARDCODED]: "Nghiệp Vụ & Mã Đơn"
+   • Dòng 1613 [JSX_TEXT_HARDCODED]: "Nghiệp Vụ & Mã Đơn"
      Snippet: <th style={{ width: '16%' }} className="p-3">Nghiệp Vụ & Mã Đơn</th>
-   • Dòng 1603 [JSX_TEXT_HARDCODED]: "3 Ngăn Số Dư Sau Giao Dịch"
+   • Dòng 1615 [JSX_TEXT_HARDCODED]: "3 Ngăn Số Dư Sau Giao Dịch"
      Snippet: <th style={{ width: '28%' }} className="p-3 text-right">3 Ngăn Số Dư Sau Giao Dịch</th>
-   • Dòng 1652 [JSX_TEXT_HARDCODED]: "Giữ:"
+   • Dòng 1664 [JSX_TEXT_HARDCODED]: "Giữ:"
      Snippet: <div>Giữ: <span className="text-amber-500 font-bold">{Number(l.balance_held_after).toLocaleString('vi-VN')}</span></div>
-   • Dòng 1672 [JSX_TEXT_HARDCODED]: "Kiểm tra tính nhất quán tuyệt đối giữa tiền nhận từ ngân hàng và số dư ghi sổ."
+   • Dòng 1684 [JSX_TEXT_HARDCODED]: "Kiểm tra tính nhất quán tuyệt đối giữa tiền nhận từ ngân hàng và số dư ghi sổ."
      Snippet: <p className="text-[11px] text-muted-foreground">Kiểm tra tính nhất quán tuyệt đối giữa tiền nhận từ ngân hàng và số dư ghi sổ.</p>
-   • Dòng 1689 [JSX_TEXT_HARDCODED]: "Lịch Sử Các Phiên Đối Soát Gần Nhất"
+   • Dòng 1701 [JSX_TEXT_HARDCODED]: "Lịch Sử Các Phiên Đối Soát Gần Nhất"
      Snippet: <span>Lịch Sử Các Phiên Đối Soát Gần Nhất</span>
-   • Dòng 1690 [JSX_TEXT_HARDCODED]: "Tự động mỗi ngày lúc 00:30 VN"
+   • Dòng 1702 [JSX_TEXT_HARDCODED]: "Tự động mỗi ngày lúc 00:30 VN"
      Snippet: <span className="text-[11px] text-muted-foreground">Tự động mỗi ngày lúc 00:30 VN</span>
-   • Dòng 1695 [JSX_TEXT_HARDCODED]: "Ngày Đối Soát"
+   • Dòng 1707 [JSX_TEXT_HARDCODED]: "Ngày Đối Soát"
      Snippet: <th style={{ width: '22%' }} className="p-3">Ngày Đối Soát</th>
-   • Dòng 1697 [JSX_TEXT_HARDCODED]: "Khớp Dữ Liệu"
+   • Dòng 1709 [JSX_TEXT_HARDCODED]: "Khớp Dữ Liệu"
      Snippet: <th style={{ width: '18%' }} className="p-3">Khớp Dữ Liệu</th>
-   • Dòng 1698 [JSX_TEXT_HARDCODED]: "Số Ngoại Lệ"
+   • Dòng 1710 [JSX_TEXT_HARDCODED]: "Số Ngoại Lệ"
      Snippet: <th style={{ width: '18%' }} className="p-3">Số Ngoại Lệ</th>
-   • Dòng 1699 [JSX_TEXT_HARDCODED]: "Trạng Thái"
+   • Dòng 1711 [JSX_TEXT_HARDCODED]: "Trạng Thái"
      Snippet: <th style={{ width: '22%' }} className="p-3 text-right">Trạng Thái</th>
-   • Dòng 1705 [JSX_TEXT_HARDCODED]: "Chưa có phiên đối soát nào được chạy."
+   • Dòng 1717 [JSX_TEXT_HARDCODED]: "Chưa có phiên đối soát nào được chạy."
      Snippet: <td colSpan={5} className="p-6 text-center text-muted-foreground">Chưa có phiên đối soát nào được chạy.</td>
-   • Dòng 1758 [JSX_TEXT_HARDCODED]: "Nguồn & Thời Gian"
+   • Dòng 1770 [JSX_TEXT_HARDCODED]: "Nguồn & Thời Gian"
      Snippet: <th style={{ width: '18%' }} className="p-3">Nguồn & Thời Gian</th>
-   • Dòng 1759 [JSX_TEXT_HARDCODED]: "Mã Tham Chiếu / Đơn"
+   • Dòng 1771 [JSX_TEXT_HARDCODED]: "Mã Tham Chiếu / Đơn"
      Snippet: <th style={{ width: '22%' }} className="p-3">Mã Tham Chiếu / Đơn</th>
-   • Dòng 1760 [JSX_TEXT_HARDCODED]: "Kỳ Vọng / Thực Tế"
+   • Dòng 1772 [JSX_TEXT_HARDCODED]: "Kỳ Vọng / Thực Tế"
      Snippet: <th style={{ width: '18%' }} className="p-3">Kỳ Vọng / Thực Tế</th>
-   • Dòng 1761 [JSX_TEXT_HARDCODED]: "Nguyên Nhân Gợi Ý"
+   • Dòng 1773 [JSX_TEXT_HARDCODED]: "Nguyên Nhân Gợi Ý"
      Snippet: <th style={{ width: '28%' }} className="p-3">Nguyên Nhân Gợi Ý</th>
-   • Dòng 1762 [JSX_TEXT_HARDCODED]: "Thao Tác"
+   • Dòng 1774 [JSX_TEXT_HARDCODED]: "Thao Tác"
      Snippet: <th style={{ width: '14%' }} className="p-3 text-right">Thao Tác</th>
-   • Dòng 1768 [JSX_TEXT_HARDCODED]: "Không có ngoại lệ nào."
+   • Dòng 1780 [JSX_TEXT_HARDCODED]: "Không có ngoại lệ nào."
      Snippet: <td colSpan={5} className="p-6 text-center text-muted-foreground">Không có ngoại lệ nào.</td>
-   • Dòng 1795 [JSX_TEXT_HARDCODED]: "Đã xử lý"
+   • Dòng 1807 [JSX_TEXT_HARDCODED]: "Đã xử lý"
      Snippet: <span className="text-[10px] font-bold text-muted-foreground">Đã xử lý</span>
-   • Dòng 1812 [JSX_TEXT_HARDCODED]: "Lọc Trạng Thái:"
+   • Dòng 1824 [JSX_TEXT_HARDCODED]: "Lọc Trạng Thái:"
      Snippet: <label className="font-semibold text-muted-foreground">Lọc Trạng Thái:</label>
-   • Dòng 1821 [JSX_TEXT_HARDCODED]: "Đã Chi Trả (PAID)"
+   • Dòng 1833 [JSX_TEXT_HARDCODED]: "Đã Chi Trả (PAID)"
      Snippet: <option value="PAID">Đã Chi Trả (PAID)</option>
-   • Dòng 1822 [JSX_TEXT_HARDCODED]: "Từ Chối (REJECTED)"
+   • Dòng 1834 [JSX_TEXT_HARDCODED]: "Từ Chối (REJECTED)"
      Snippet: <option value="REJECTED">Từ Chối (REJECTED)</option>
-   • Dòng 1837 [JSX_TEXT_HARDCODED]: "Thời Gian & Người Yêu Cầu"
+   • Dòng 1849 [JSX_TEXT_HARDCODED]: "Thời Gian & Người Yêu Cầu"
      Snippet: <th style={{ width: '20%' }} className="p-3">Thời Gian & Người Yêu Cầu</th>
-   • Dòng 1838 [JSX_TEXT_HARDCODED]: "Gian Hàng"
+   • Dòng 1850 [JSX_TEXT_HARDCODED]: "Gian Hàng"
      Snippet: <th style={{ width: '20%' }} className="p-3">Gian Hàng</th>
-   • Dòng 1839 [JSX_TEXT_HARDCODED]: "Tài Khoản Nhận"
+   • Dòng 1851 [JSX_TEXT_HARDCODED]: "Tài Khoản Nhận"
      Snippet: <th style={{ width: '24%' }} className="p-3">Tài Khoản Nhận</th>
-   • Dòng 1840 [JSX_TEXT_HARDCODED]: "Số Tiền & Trạng Thái"
+   • Dòng 1852 [JSX_TEXT_HARDCODED]: "Số Tiền & Trạng Thái"
      Snippet: <th style={{ width: '16%' }} className="p-3">Số Tiền & Trạng Thái</th>
-   • Dòng 1841 [JSX_TEXT_HARDCODED]: "Thao Tác"
+   • Dòng 1853 [JSX_TEXT_HARDCODED]: "Thao Tác"
      Snippet: <th style={{ width: '20%' }} className="p-3 text-right">Thao Tác</th>
-   • Dòng 1871 [JSX_TEXT_HARDCODED]: "Chờ duyệt"
+   • Dòng 1883 [JSX_TEXT_HARDCODED]: "Chờ duyệt"
      Snippet: {w.status === 'PENDING' && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold text-[10px] border border-amber-500/20">Chờ duyệt</span>}
-   • Dòng 1872 [JSX_TEXT_HARDCODED]: "Chờ chuyển"
+   • Dòng 1884 [JSX_TEXT_HARDCODED]: "Chờ chuyển"
      Snippet: {w.status === 'APPROVED' && <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold text-[10px] border border-blue-500/20">Chờ chuyển</span>}
-   • Dòng 1873 [JSX_TEXT_HARDCODED]: "Đã chi trả"
+   • Dòng 1885 [JSX_TEXT_HARDCODED]: "Đã chi trả"
      Snippet: {w.status === 'PAID' && <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[10px] border border-emerald-500/20">Đã chi trả</span>}
-   • Dòng 1874 [JSX_TEXT_HARDCODED]: "Đã từ chối"
+   • Dòng 1886 [JSX_TEXT_HARDCODED]: "Đã từ chối"
      Snippet: {w.status === 'REJECTED' && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold text-[10px] border border-destructive/20">Đã từ chối</span>}
-   • Dòng 1900 [JSX_ATTR_HARDCODED]: "Xác nhận đã chuyển khoản thành công"
+   • Dòng 1912 [JSX_ATTR_HARDCODED]: "Xác nhận đã chuyển khoản thành công"
      Snippet: title="Xác nhận đã chuyển khoản thành công"
-   • Dòng 1913 [JSX_TEXT_HARDCODED]: "✓ Đã chuyển"
+   • Dòng 1925 [JSX_TEXT_HARDCODED]: "✓ Đã chuyển"
      Snippet: <span className="text-[10px] text-emerald-500 font-bold">✓ Đã chuyển</span>
-   • Dòng 1942 [JSX_TEXT_HARDCODED]: "Thời Gian & Mã Giao Dịch"
+   • Dòng 1954 [JSX_TEXT_HARDCODED]: "Thời Gian & Mã Giao Dịch"
      Snippet: <th style={{ width: '20%' }} className="p-3">Thời Gian & Mã Giao Dịch</th>
-   • Dòng 1943 [JSX_TEXT_HARDCODED]: "Mã Tham Chiếu / Đơn"
+   • Dòng 1955 [JSX_TEXT_HARDCODED]: "Mã Tham Chiếu / Đơn"
      Snippet: <th style={{ width: '22%' }} className="p-3">Mã Tham Chiếu / Đơn</th>
-   • Dòng 1944 [JSX_TEXT_HARDCODED]: "Số Tiền (KV / Nhận)"
+   • Dòng 1956 [JSX_TEXT_HARDCODED]: "Số Tiền (KV / Nhận)"
      Snippet: <th style={{ width: '18%' }} className="p-3">Số Tiền (KV / Nhận)</th>
-   • Dòng 1945 [JSX_TEXT_HARDCODED]: "Chi Tiết Ngoại Lệ"
+   • Dòng 1957 [JSX_TEXT_HARDCODED]: "Chi Tiết Ngoại Lệ"
      Snippet: <th style={{ width: '28%' }} className="p-3">Chi Tiết Ngoại Lệ</th>
-   • Dòng 1946 [JSX_TEXT_HARDCODED]: "Thao Tác"
+   • Dòng 1958 [JSX_TEXT_HARDCODED]: "Thao Tác"
      Snippet: <th style={{ width: '12%' }} className="p-3 text-right">Thao Tác</th>
-   • Dòng 1965 [JSX_TEXT_HARDCODED]: "Nhận:"
+   • Dòng 1977 [JSX_TEXT_HARDCODED]: "Nhận:"
      Snippet: <div>Nhận: <span className="font-bold text-primary">{ex.actual_amount?.toLocaleString('vi-VN')}đ</span></div>
-   • Dòng 1981 [JSX_TEXT_HARDCODED]: "Đã xong"
+   • Dòng 1993 [JSX_TEXT_HARDCODED]: "Đã xong"
      Snippet: <span className="text-[10px] text-muted-foreground font-bold">Đã xong</span>
-   • Dòng 2008 [JSX_TEXT_HARDCODED]: "Giới Hạn Sản Phẩm Thử Việc (TRIAL)"
+   • Dòng 2020 [JSX_TEXT_HARDCODED]: "Giới Hạn Sản Phẩm Thử Việc (TRIAL)"
      Snippet: <label className="block font-semibold mb-1">Giới Hạn Sản Phẩm Thử Việc (TRIAL)</label>
-   • Dòng 2038 [JSX_TEXT_HARDCODED]: "Tỷ Lệ Lỗi Tối Đa Của Lô Mã Code"
+   • Dòng 2050 [JSX_TEXT_HARDCODED]: "Tỷ Lệ Lỗi Tối Đa Của Lô Mã Code"
      Snippet: <label className="block font-semibold mb-1">Tỷ Lệ Lỗi Tối Đa Của Lô Mã Code</label>
-   • Dòng 2054 [JSX_TEXT_HARDCODED]: "Quy Mô Lô Tối Thiểu Để Xét Đóng Băng"
+   • Dòng 2066 [JSX_TEXT_HARDCODED]: "Quy Mô Lô Tối Thiểu Để Xét Đóng Băng"
      Snippet: <label className="block font-semibold mb-1">Quy Mô Lô Tối Thiểu Để Xét Đóng Băng</label>
-   • Dòng 2069 [JSX_TEXT_HARDCODED]: "Thời Gian Giữ Tiền Chung (Giờ) (§6.1)"
+   • Dòng 2081 [JSX_TEXT_HARDCODED]: "Thời Gian Giữ Tiền Chung (Giờ) (§6.1)"
      Snippet: <label className="block font-semibold mb-1">Thời Gian Giữ Tiền Chung (Giờ) (§6.1)</label>
-   • Dòng 2084 [JSX_TEXT_HARDCODED]: "Tỷ Lệ Phí Sàn Chế Độ A (§6.3)"
+   • Dòng 2096 [JSX_TEXT_HARDCODED]: "Tỷ Lệ Phí Sàn Chế Độ A (§6.3)"
      Snippet: <label className="block font-semibold mb-1">Tỷ Lệ Phí Sàn Chế Độ A (§6.3)</label>
-   • Dòng 2129 [JSX_TEXT_HARDCODED]: "Ngưỡng Khiếu Nại Bị Từ Chối Để Gắn Cờ Lạm Dụng (30 Ngày) (§B)"
+   • Dòng 2141 [JSX_TEXT_HARDCODED]: "Ngưỡng Khiếu Nại Bị Từ Chối Để Gắn Cờ Lạm Dụng (30 Ngày) (§B)"
      Snippet: <label className="block font-semibold mb-1">Ngưỡng Khiếu Nại Bị Từ Chối Để Gắn Cờ Lạm Dụng (30 Ngày) (§B)</label>
-   • Dòng 2167 [JSX_TEXT_HARDCODED]: "Lý do từ chối (Bắt buộc) *"
+   • Dòng 2254 [JSX_TEXT_HARDCODED]: "Lý do từ chối (Bắt buộc) *"
      Snippet: <label className="block font-semibold mb-1">Lý do từ chối (Bắt buộc) *</label>
-   • Dòng 2173 [JSX_ATTR_HARDCODED]: "Nêu rõ lý do không đạt yêu cầu..."
+   • Dòng 2260 [JSX_ATTR_HARDCODED]: "Nêu rõ lý do không đạt yêu cầu..."
      Snippet: placeholder="Nêu rõ lý do không đạt yêu cầu..."
-   • Dòng 2207 [JSX_TEXT_HARDCODED]: "Nội dung yêu cầu người bán bổ sung *"
+   • Dòng 2294 [JSX_TEXT_HARDCODED]: "Nội dung yêu cầu người bán bổ sung *"
      Snippet: <label className="block font-semibold mb-1">Nội dung yêu cầu người bán bổ sung *</label>
-   • Dòng 2213 [JSX_ATTR_HARDCODED]: "Ví dụ: Vui lòng bổ sung số tài khoản ngân hàng chính xác..."
+   • Dòng 2300 [JSX_ATTR_HARDCODED]: "Ví dụ: Vui lòng bổ sung số tài khoản ngân hàng chính xác..."
      Snippet: placeholder="Ví dụ: Vui lòng bổ sung số tài khoản ngân hàng chính xác..."
-   • Dòng 2247 [JSX_TEXT_HARDCODED]: "Lý do từ chối *"
+   • Dòng 2334 [JSX_TEXT_HARDCODED]: "Lý do từ chối *"
      Snippet: <label className="block font-semibold mb-1">Lý do từ chối *</label>
-   • Dòng 2253 [JSX_ATTR_HARDCODED]: "Giá bán quá cao / Mô tả không rõ ràng..."
+   • Dòng 2340 [JSX_ATTR_HARDCODED]: "Giá bán quá cao / Mô tả không rõ ràng..."
      Snippet: placeholder="Giá bán quá cao / Mô tả không rõ ràng..."
-   • Dòng 2290 [JSX_TEXT_HARDCODED]: "Ghi chú xử lý / Biên bản *"
+   • Dòng 2377 [JSX_TEXT_HARDCODED]: "Ghi chú xử lý / Biên bản *"
      Snippet: <label className="block font-semibold mb-1">Ghi chú xử lý / Biên bản *</label>
-   • Dòng 2330 [JSX_TEXT_HARDCODED]: "Lý do từ chối (Bắt buộc) *"
+   • Dòng 2417 [JSX_TEXT_HARDCODED]: "Lý do từ chối (Bắt buộc) *"
      Snippet: <label className="block font-semibold mb-1">Lý do từ chối (Bắt buộc) *</label>
-   • Dòng 2336 [JSX_ATTR_HARDCODED]: "Thông tin tài khoản ngân hàng không chính xác / Gian hàng đang có tranh chấp..."
+   • Dòng 2423 [JSX_ATTR_HARDCODED]: "Thông tin tài khoản ngân hàng không chính xác / Gian hàng đang có tranh chấp..."
      Snippet: placeholder="Thông tin tài khoản ngân hàng không chính xác / Gian hàng đang có tranh chấp..."
-   • Dòng 2365 [JSX_TEXT_HARDCODED]: "Xác Nhận Đã Chuyển Khoản"
+   • Dòng 2452 [JSX_TEXT_HARDCODED]: "Xác Nhận Đã Chuyển Khoản"
      Snippet: <h4 className="text-sm font-bold">Xác Nhận Đã Chuyển Khoản</h4>
-   • Dòng 2369 [JSX_TEXT_HARDCODED]: "Số tiền:"
+   • Dòng 2456 [JSX_TEXT_HARDCODED]: "Số tiền:"
      Snippet: <div>Số tiền: <span className="font-bold text-primary">{payingWithdrawal.amount_core?.toLocaleString('vi-VN')} Core</span></div>
-   • Dòng 2370 [JSX_TEXT_HARDCODED]: "Ngân hàng:"
+   • Dòng 2457 [JSX_TEXT_HARDCODED]: "Ngân hàng:"
      Snippet: <div>Ngân hàng: <span className="font-bold">{payingWithdrawal.bank_name}</span></div>
-   • Dòng 2372 [JSX_TEXT_HARDCODED]: "Tên người nhận:"
+   • Dòng 2459 [JSX_TEXT_HARDCODED]: "Tên người nhận:"
      Snippet: <div>Tên người nhận: <span className="font-bold">{payingWithdrawal.bank_account_name}</span></div>
-   • Dòng 2376 [JSX_TEXT_HARDCODED]: "Mã tham chiếu ngân hàng / Ghi chú"
+   • Dòng 2463 [JSX_TEXT_HARDCODED]: "Mã tham chiếu ngân hàng / Ghi chú"
      Snippet: <label className="block font-semibold mb-1">Mã tham chiếu ngân hàng / Ghi chú</label>
-   • Dòng 2381 [JSX_ATTR_HARDCODED]: "Mã giao dịch FT... / Đã chuyển qua Internet Banking"
+   • Dòng 2468 [JSX_ATTR_HARDCODED]: "Mã giao dịch FT... / Đã chuyển qua Internet Banking"
      Snippet: placeholder="Mã giao dịch FT... / Đã chuyển qua Internet Banking"
-   • Dòng 2420 [JSX_TEXT_HARDCODED]: "Người mua:"
+   • Dòng 2507 [JSX_TEXT_HARDCODED]: "Người mua:"
      Snippet: <div>Người mua: <strong>{rejectingRating.buyer_username || rejectingRating.buyer_email}</strong></div>
-   • Dòng 2432 [JSX_TEXT_HARDCODED]: "Lý do từ chối (Bắt buộc) *"
+   • Dòng 2519 [JSX_TEXT_HARDCODED]: "Lý do từ chối (Bắt buộc) *"
      Snippet: <label className="block font-semibold mb-1">Lý do từ chối (Bắt buộc) *</label>
-   • Dòng 2438 [JSX_ATTR_HARDCODED]: "Spam / Ngôn từ không phù hợp / Trùng lặp..."
+   • Dòng 2525 [JSX_ATTR_HARDCODED]: "Spam / Ngôn từ không phù hợp / Trùng lặp..."
      Snippet: placeholder="Spam / Ngôn từ không phù hợp / Trùng lặp..."
-   • Dòng 2480 [JSX_TEXT_HARDCODED]: "Mã khiếu nại:"
+   • Dòng 2567 [JSX_TEXT_HARDCODED]: "Mã khiếu nại:"
      Snippet: <span>Mã khiếu nại: <strong className="font-mono text-primary-light">{resolvingDispute.id}</strong></span>
-   • Dòng 2484 [JSX_TEXT_HARDCODED]: "Đơn hàng:"
+   • Dòng 2571 [JSX_TEXT_HARDCODED]: "Đơn hàng:"
      Snippet: <span>Đơn hàng: <strong className="font-mono text-foreground">{resolvingDispute.order_code}</strong></span>
-   • Dòng 2485 [JSX_TEXT_HARDCODED]: "Mã code:"
+   • Dòng 2572 [JSX_TEXT_HARDCODED]: "Mã code:"
      Snippet: <span className="text-muted-foreground">Mã code: <strong className="font-mono">{resolvingDispute.delivered_code || '(Chưa cấp)'}</strong></span>
-   • Dòng 2489 [JSX_TEXT_HARDCODED]: "Khách:"
+   • Dòng 2576 [JSX_TEXT_HARDCODED]: "Khách:"
      Snippet: <span>Khách: <strong className="text-foreground">{resolvingDispute.buyer_username || resolvingDispute.buyer_email}</strong></span>
-   • Dòng 2515 [JSX_TEXT_HARDCODED]: "Phản hồi từ shop:"
+   • Dòng 2602 [JSX_TEXT_HARDCODED]: "Phản hồi từ shop:"
      Snippet: <span className="text-primary-light font-semibold block">Phản hồi từ shop:</span>
-   • Dòng 2528 [JSX_TEXT_HARDCODED]: "Lựa Chọn Quyết Định (1 trong 3) *"
+   • Dòng 2615 [JSX_TEXT_HARDCODED]: "Lựa Chọn Quyết Định (1 trong 3) *"
      Snippet: <label className="block font-semibold mb-1.5">Lựa Chọn Quyết Định (1 trong 3) *</label>
-   • Dòng 2574 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng Thay Thế Bàn Giao Cho Khách *"
+   • Dòng 2661 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng Thay Thế Bàn Giao Cho Khách *"
      Snippet: <label className="block font-semibold mb-1">Mã Quà Tặng Thay Thế Bàn Giao Cho Khách *</label>
-   • Dòng 2580 [JSX_ATTR_HARDCODED]: "Nhập mã thay thế..."
+   • Dòng 2667 [JSX_ATTR_HARDCODED]: "Nhập mã thay thế..."
      Snippet: placeholder="Nhập mã thay thế..."
-   • Dòng 2596 [JSX_TEXT_HARDCODED]: "Lý Do / Ghi Chú Giải Quyết Bắt Buộc *"
+   • Dòng 2683 [JSX_TEXT_HARDCODED]: "Lý Do / Ghi Chú Giải Quyết Bắt Buộc *"
      Snippet: <label className="block font-semibold mb-1">Lý Do / Ghi Chú Giải Quyết Bắt Buộc *</label>
-   • Dòng 2602 [JSX_ATTR_HARDCODED]: "Nhập lý do ra quyết định để lưu biên bản kiểm toán và gửi thông báo..."
+   • Dòng 2689 [JSX_ATTR_HARDCODED]: "Nhập lý do ra quyết định để lưu biên bản kiểm toán và gửi thông báo..."
      Snippet: placeholder="Nhập lý do ra quyết định để lưu biên bản kiểm toán và gửi thông báo..."
 
 📁 File: src/admin/modules/SePayModule.tsx (26 lỗi):

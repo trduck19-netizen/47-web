@@ -2848,5 +2848,93 @@
     "unlockBtn": "Unlock",
     "colTxSeller": "Store / Tx ID",
     "colTxTime": "Timestamp"
+  },
+  "sellerPortal": {
+    "pageTitle": "Seller Portal & Store Operations | Pine Seller Center",
+    "brandTitle": "Pine Seller Center",
+    "brandSubtitle": "Dedicated Store Management Portal",
+    "loadingPortal": "Loading Seller Portal...",
+    "toast": {
+      "loggedOut": "Signed out safely"
+    },
+    "roles": {
+      "owner": "Store Owner",
+      "manageStock": "Inventory Staff",
+      "viewOrders": "Orders Staff"
+    },
+    "rbac": {
+      "deniedTitle": "Access Restricted",
+      "deniedDesc": "Staff sub-accounts cannot access sensitive Store Owner sections."
+    },
+    "sidebar": {
+      "navAriaLabel": "Seller Portal Navigation",
+      "openMenu": "Open store navigation menu",
+      "closeMenu": "Close navigation menu",
+      "expand": "Expand sidebar",
+      "collapse": "Collapse sidebar",
+      "groupOverview": "Overview",
+      "groupCatalog": "Catalog & Inventory",
+      "groupOrders": "Orders & Support",
+      "groupFinanceIntegrations": "Finance & Integrations",
+      "dashboard": "Store Overview",
+      "products": "Products",
+      "codes": "Code Vault & Stock",
+      "orders": "Store Orders",
+      "disputes": "Disputes & Warranty",
+      "sepay": "Direct SePay Gateway",
+      "finance": "Finance & Payouts",
+      "affiliate": "Inter-Shop Affiliate",
+      "apiKeys": "Store API Keys",
+      "settings": "Settings & Staff",
+      "subRoleRestrictedHint": "Sensitive modules (Direct SePay, Payouts, API Keys, Staff) are restricted to the Store Owner."
+    },
+    "topbar": {
+      "sepayOnline": "SePay VietQR: ONLINE",
+      "sepayCoreOnly": "Core Wallet Only",
+      "sepayLocked": "SePay Locked",
+      "sepayTooltip": "Open Direct SePay & VietQR gateway configuration",
+      "topupWallet": "Top up Core Wallet right inside Seller Portal",
+      "topupBtn": "Top Up",
+      "viewPublicStore": "View Store",
+      "switchLang": "Switch Vietnamese / English",
+      "switchToLight": "Switch to Light theme",
+      "switchToDark": "Switch to Dark theme",
+      "backToMall": "Back to Mall",
+      "logout": "Sign out"
+    },
+    "dashboardStrip": {
+      "reputation": "Reputation",
+      "supportHours": "Support hours",
+      "onVacation": "On Vacation",
+      "resumeSelling": "Resume Selling",
+      "vacationMode": "Vacation Mode"
+    },
+    "landing": {
+      "badge": "Official Merchant Operations Portal",
+      "heroTitle": "Launch Your Own Store & Receive VietQR Payments Directly",
+      "heroDesc": "A dedicated full-screen merchant workspace modeled after Shopee Seller Centre — seamlessly sharing your Universal Mall account and Core Wallet.",
+      "loginOrRegisterCta": "Sign In / Register Your Store Now",
+      "sharedAccountHint": "Uses the same account & Core Wallet as the Marketplace",
+      "benefitSepayTitle": "Direct SePay VietQR Gateway — {fee}% Fee",
+      "benefitSepayDesc": "Buyers pay straight into your own bank account via VietQR with automated SePay webhook reconciliation & 24/7 fulfillment.",
+      "benefitAffiliateTitle": "Automated Inter-Shop Affiliate Reselling",
+      "benefitAffiliateDesc": "Source products from verified platform suppliers with automated stock sync and transparent 3-way split payouts.",
+      "benefitInstantTitle": "AES-256 Code Vault & Nationwide Shipping",
+      "benefitInstantDesc": "Deliver encrypted digital codes in 0 seconds, or ship physical goods via GHTK, GHN, and Viettel Post."
+    },
+    "adminTheme": {
+      "sectionTitle": "Seller Portal Appearance & Banner (/seller)",
+      "sectionDesc": "Customize the primary accent theme, Dark Mode availability, and pinned announcement banner for all merchants on /seller.",
+      "presetLabel": "Seller Portal Accent Theme",
+      "presetShopeeOrange": "Shopee Orange (Default)",
+      "presetEnterpriseIndigo": "Enterprise Indigo",
+      "presetEmeraldFintech": "Emerald Fintech",
+      "presetRoyalViolet": "Royal Violet",
+      "allowDarkModeLabel": "Allow merchants to toggle Dark Mode on /seller",
+      "bannerViLabel": "Pinned Top Banner on /seller (Vietnamese — leave empty to hide)",
+      "bannerEnLabel": "Pinned Top Banner on /en/seller (English — leave empty to hide)",
+      "bannerPlaceholderVi": "E.g. 0% fee on Direct SePay gateways for all stores this month!",
+      "bannerPlaceholderEn": "E.g. 0% fee on Direct SePay VietQR gateways for all stores this month!"
+    }
   }
 }

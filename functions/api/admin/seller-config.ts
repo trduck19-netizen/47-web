@@ -1,6 +1,7 @@
 import { verifyAdminAuth } from '../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../services/d1_service';
-import { getMarketplaceConfig } from '../../services/marketplace_service';
+import { getMarketplaceConfig, sanitizeSellerPortalThemePreset } from '../../services/marketplace_service';
+import { invalidateCatalogEdgeCache } from '../../services/cache_service';
 
 interface Env {
   DB: D1Database;
@@ -120,6 +121,27 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       affiliate_rate_limit_rpm: typeof body.affiliate_rate_limit_rpm !== 'undefined' && Number.isFinite(Number(body.affiliate_rate_limit_rpm))
         ? Math.min(6000, Math.max(10, Math.round(Number(body.affiliate_rate_limit_rpm))))
         : currentConfig.affiliate_rate_limit_rpm,
+      direct_sepay_global_enabled: typeof body.direct_sepay_global_enabled === 'boolean'
+        ? body.direct_sepay_global_enabled
+        : currentConfig.direct_sepay_global_enabled,
+      direct_sepay_fee_pct: typeof body.direct_sepay_fee_pct !== 'undefined' && Number.isFinite(Number(body.direct_sepay_fee_pct))
+        ? Math.min(20, Math.max(0, Number(body.direct_sepay_fee_pct)))
+        : currentConfig.direct_sepay_fee_pct,
+      direct_sepay_debt_limit_core: typeof body.direct_sepay_debt_limit_core !== 'undefined' && Number.isFinite(Number(body.direct_sepay_debt_limit_core))
+        ? Math.min(50000000, Math.max(0, Math.round(Number(body.direct_sepay_debt_limit_core))))
+        : currentConfig.direct_sepay_debt_limit_core,
+      seller_portal_theme_preset: typeof body.seller_portal_theme_preset !== 'undefined'
+        ? sanitizeSellerPortalThemePreset(body.seller_portal_theme_preset)
+        : currentConfig.seller_portal_theme_preset,
+      seller_portal_allow_dark_mode: typeof body.seller_portal_allow_dark_mode === 'boolean'
+        ? body.seller_portal_allow_dark_mode
+        : currentConfig.seller_portal_allow_dark_mode,
+      seller_portal_banner_vi: typeof body.seller_portal_banner_vi === 'string'
+        ? body.seller_portal_banner_vi.trim().slice(0, 300)
+        : currentConfig.seller_portal_banner_vi,
+      seller_portal_banner_en: typeof body.seller_portal_banner_en === 'string'
+        ? body.seller_portal_banner_en.trim().slice(0, 300)
+        : currentConfig.seller_portal_banner_en,
     };
 
     const nowIso = new Date().toISOString();
@@ -131,6 +153,11 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       `)
       .bind(JSON.stringify(newConfig), nowIso)
       .run();
+
+    await invalidateCatalogEdgeCache(context as any, request, env as any, [
+      new URL('/api/seller/portal-config', request.url).toString(),
+      'https://universal-mall-shop.pages.dev/api/seller/portal-config',
+    ]).catch(() => {});
 
     await logAdminAudit(env.DB, {
       actorName: auth.adminName || 'Admin',

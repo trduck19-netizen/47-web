@@ -217,6 +217,16 @@ export async function verifySellerAccess(
 }
 
 // Cấu hình sàn TMĐT & Hạn mức thử việc (TRIAL) & Giai đoạn 2 (Tiền thật, Phí, Giữ tiền, Rút tiền)
+export type SellerPortalThemePreset = 'shopee_orange' | 'enterprise_indigo' | 'emerald_fintech' | 'royal_violet';
+
+export function sanitizeSellerPortalThemePreset(raw: unknown): SellerPortalThemePreset {
+  const v = String(raw || '').trim().toLowerCase();
+  if (v === 'enterprise_indigo' || v === 'emerald_fintech' || v === 'royal_violet' || v === 'shopee_orange') {
+    return v;
+  }
+  return 'shopee_orange';
+}
+
 export interface MarketplaceConfig {
   default_trial_product_limit: number;
   default_trial_order_max: number;
@@ -240,6 +250,11 @@ export interface MarketplaceConfig {
   direct_sepay_global_enabled: boolean; // Mặc định true
   direct_sepay_fee_pct: number; // Mặc định 0 (%) — miễn phí hoa hồng trên đơn SePay riêng
   direct_sepay_debt_limit_core: number; // Mặc định 500000 Core khi bật % phí > 0
+  // Cổng Quản Trị Gian Hàng độc lập (/seller & /en/seller) — Admin tùy chỉnh giao diện
+  seller_portal_theme_preset: SellerPortalThemePreset; // Mặc định 'shopee_orange' (#ee4d2d)
+  seller_portal_allow_dark_mode: boolean; // Mặc định true
+  seller_portal_banner_vi: string; // Thông báo ghim đầu trang /seller (VI)
+  seller_portal_banner_en: string; // Thông báo ghim đầu trang /en/seller (EN)
 }
 
 export const DEFAULT_MARKETPLACE_CONFIG: MarketplaceConfig = {
@@ -262,6 +277,10 @@ export const DEFAULT_MARKETPLACE_CONFIG: MarketplaceConfig = {
   direct_sepay_global_enabled: true,
   direct_sepay_fee_pct: 0,
   direct_sepay_debt_limit_core: 500000,
+  seller_portal_theme_preset: 'shopee_orange',
+  seller_portal_allow_dark_mode: true,
+  seller_portal_banner_vi: '',
+  seller_portal_banner_en: '',
 };
 
 // Interface các thực thể Giai đoạn 2
@@ -393,6 +412,16 @@ export async function getMarketplaceConfig(db: D1Database): Promise<MarketplaceC
         direct_sepay_debt_limit_core: parsed.direct_sepay_debt_limit_core !== undefined && Number.isFinite(Number(parsed.direct_sepay_debt_limit_core))
           ? Math.max(0, Math.round(Number(parsed.direct_sepay_debt_limit_core)))
           : DEFAULT_MARKETPLACE_CONFIG.direct_sepay_debt_limit_core,
+        seller_portal_theme_preset: sanitizeSellerPortalThemePreset(parsed.seller_portal_theme_preset),
+        seller_portal_allow_dark_mode: typeof parsed.seller_portal_allow_dark_mode === 'boolean'
+          ? parsed.seller_portal_allow_dark_mode
+          : DEFAULT_MARKETPLACE_CONFIG.seller_portal_allow_dark_mode,
+        seller_portal_banner_vi: typeof parsed.seller_portal_banner_vi === 'string'
+          ? parsed.seller_portal_banner_vi.trim().slice(0, 300)
+          : DEFAULT_MARKETPLACE_CONFIG.seller_portal_banner_vi,
+        seller_portal_banner_en: typeof parsed.seller_portal_banner_en === 'string'
+          ? parsed.seller_portal_banner_en.trim().slice(0, 300)
+          : DEFAULT_MARKETPLACE_CONFIG.seller_portal_banner_en,
       };
     }
   } catch (err) {

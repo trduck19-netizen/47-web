@@ -30,7 +30,6 @@ import { NewsView } from '../NewsView';
 import { StoreView } from '../StoreView';
 import { GiveawaysView } from '../GiveawaysView';
 import { UtilitiesView } from '../UtilitiesView';
-import { SellerCenterView } from '../seller/SellerCenterView';
 import { PublicStoreView } from '../seller/PublicStoreView';
 import { MissionsView } from '../MissionsView';
 import { TelegramView } from '../TelegramView';
@@ -934,8 +933,9 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
     } else if (url === '/store') {
       setSubView('store');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (url === '/seller-center') {
-      setSubView('seller');
+    } else if (url === '/seller-center' || url === '/seller' || url === '/ban-hang') {
+      const target = language === 'en' ? '/en/seller' : '/seller';
+      window.open(target, '_blank', 'noopener,noreferrer');
     } else if (url === '/news') {
       setSubView('news');
     } else if (url === '/giveaways') {
@@ -1204,19 +1204,17 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         );
       case 'nav_seller':
         return (
-          <button
+          <a
             key={navId}
-            onClick={() => handleNavClick(() => setSubView('seller'))}
-            className={`px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
-              subView === 'seller'
-                ? `bg-white ${currentAccent.textColor} font-bold shadow-sm`
-                : 'hover:bg-white/15 text-white/95'
-            }`}
+            href={language === 'en' ? '/en/seller' : '/seller'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-2 py-1 rounded transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer hover:bg-white/15 text-white/95"
           >
             <Store className="w-3.5 h-3.5 shrink-0" />
             <span>{customTitle || sub.internal_name || t.mall?.subnav?.sellerCenter || (language === 'en' ? 'Seller Center' : 'Kênh Người Bán')}</span>
             {customBadge && <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">{customBadge}</span>}
-          </button>
+          </a>
         );
       case 'nav_account':
         return (
@@ -2432,21 +2430,25 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
       {/* 1. UNIVERSAL MALL TOPBAR */}
       <div className="bg-[#ee4d2d] text-white text-[11px] sm:text-[12px] py-1 px-2.5 sm:px-4 border-b border-white/10">
         <div className="max-w-6xl mx-auto flex justify-between items-center gap-2 min-w-0">
-          {/* Left Topbar Links: Kênh Người Bán & Mở Gian Hàng */}
+          {/* Left Topbar Links: Kênh Người Bán & Mở Gian Hàng (Mở tab mới giống Shopee Seller Centre) */}
           <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 overflow-hidden">
-            <button 
-              onClick={() => setSubView('seller')}
-              className={`hover:opacity-80 transition cursor-pointer font-medium whitespace-nowrap ${subView === 'seller' ? 'underline font-bold text-amber-200' : ''}`}
+            <a
+              href={language === 'en' ? '/en/seller' : '/seller'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-80 transition cursor-pointer font-medium whitespace-nowrap"
             >
               {t('mall.topNav.sellerCenter')}
-            </button>
+            </a>
             <span className="opacity-40 hidden xs:inline sm:inline">|</span>
-            <button 
-              onClick={() => setSubView('seller')}
-              className={`hover:opacity-80 transition cursor-pointer font-medium hidden sm:inline whitespace-nowrap ${subView === 'seller' ? 'underline font-bold text-amber-200' : ''}`}
+            <a
+              href={language === 'en' ? '/en/seller' : '/seller'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-80 transition cursor-pointer font-medium hidden sm:inline whitespace-nowrap"
             >
               {t('mall.topNav.openStore')}
-            </button>
+            </a>
             <span className="opacity-40 hidden sm:inline">|</span>
             <button 
               onClick={onOpenDownloadApp}
@@ -3041,17 +3043,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           </div>
         )}
 
-        {/* SUBVIEW 6: SÀN GIAO DỊCH & KÊNH NGƯỜI BÁN */}
-        {subView === 'seller' && (
-          <div className="rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-            <SellerCenterView
-              currentUser={currentUser}
-              onOpenLogin={onOpenAuth}
-              games={allGames as any}
-              onNavigateHome={() => setSubView('home')}
-            />
-          </div>
-        )}
+        {/* SUBVIEW 6: KÊNH NGƯỜI BÁN ĐÃ TÁCH THÀNH CỔNG ĐỘC LẬP /seller (React.lazy trong App.tsx) */}
 
         {/* SUBVIEW 6.5: TRANG TÀI KHOẢN & VÍ CORE */}
         {subView === 'account' && (
@@ -3700,7 +3692,8 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         onOpenReceivedCodes={onOpenReceivedCodes}
         onNavigateToSellerCenter={() => {
           setIsProfileOpen(false);
-          setSubView('seller');
+          const target = language === 'en' ? '/en/seller' : '/seller';
+          window.open(target, '_blank', 'noopener,noreferrer');
         }}
         onLogout={onLogout}
         onUpdateUser={onUpdateUser}

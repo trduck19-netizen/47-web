@@ -716,7 +716,7 @@ export interface SystemPageOption {
 export const SYSTEM_PAGE_OPTIONS: readonly SystemPageOption[] = [
   { value: '/', labelVi: 'Trang Chủ Sàn (Universal Mall)', labelEn: 'Mall Homepage', category: 'core' },
   { value: '/store', labelVi: 'Cửa Hàng Đa Ngành Chính Hãng', labelEn: 'Multi-Industry Store', category: 'core' },
-  { value: '/seller-center', labelVi: 'Kênh Người Bán (Seller Center)', labelEn: 'Seller Center Portal', category: 'core' },
+  { value: '/seller', labelVi: 'Kênh Người Bán (Seller Portal /seller)', labelEn: 'Seller Portal (/seller)', category: 'core' },
   { value: '/game', labelVi: 'Game Zone (593 Game Bản Quyền)', labelEn: 'Game Zone Portal', category: 'catalog' },
   { value: '/news', labelVi: 'Tin Tức & Bài Viết', labelEn: 'News & Articles', category: 'catalog' },
   { value: '/giveaways', labelVi: 'Giveaways & Quà Tặng VIP', labelEn: 'VIP Giveaways', category: 'catalog' },
@@ -735,6 +735,7 @@ export const SYSTEM_PAGE_OPTIONS: readonly SystemPageOption[] = [
 const VALID_INTERNAL_PREFIXES = [
   '/',
   '/store',
+  '/seller',
   '/seller-center',
   '/game',
   '/news',

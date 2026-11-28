@@ -1,4 +1,19 @@
-# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 471)
+# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 472)
+
+### 472. Gỡ Fallback `: 2000` Ở `PackageShareModal`, Sửa 13 Lỗi `setErrorMessaget` Trong `AuthModal` & Triệt Tiêu Race Condition `/api/products` Gây Mất Ảnh/Thông Số Vật Lý + `/game_icons/undefined.webp` (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý nốt 3 vấn đề xác minh sau commit `6b8c654`: (1) `PackageShareModal.tsx:232` còn sót fallback ternary `: 2000` trong badge *"Mua lần đầu"*; (2) `AuthModal.tsx` còn 13 chỗ gọi lỗi chính tả `setErrorMessaget('authStrict.kX')` sẽ gây lỗi runtime khi bật lại `GUEST_TURNSTILE_ENABLED=true`; (3) Trên live, ảnh bìa `/game_icons/physical-default.webp` không hiện ổn định ở 4 vị trí, xuất hiện `/game_icons/undefined.webp`, và modal khi chưa đăng nhập bị mất `500g`, `24 giờ`, kho gửi thật.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  - `ShopeeTestView.tsx:388–398` gọi song song `GET /api/products?limit=100&_t=...` (không cache, về sau `/api/sync-lite`), nhưng `/api/products` trả schema rút gọn (`thumbnail_url`, `images`, thiếu `cover_image_url`, `product_images`, `game_slug`, `weight_grams`, `warehouse_address`, `warranty_hours`) rồi ghi đè trực tiếp `currentStoreProducts` và `localStorage['pine_admin_store_products_v4']`. Sau đó `dataService.getStoreProducts()` (dòng `3083–3084`) đọc cache bẩn và nối `` `/game_icons/${p.game_slug}.webp` `` thành `/game_icons/undefined.webp`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Gỡ fallback `: 2000` (`src/components/PackageShareModal.tsx`)*:
+     - Chỉ render badge *"Mua lần đầu"* khi `firstPurchaseOfferPrice > 0 && firstPurchaseOfferPrice < currentPrice` (không còn fallback `: 2000`). Chuyển `gameAvatar` sang `resolveProductCoverImage`.
+  2. *Nhóm 2 — Sửa 13 chỗ `setErrorMessaget` (`src/components/AuthModal.tsx`)*:
+     - Đổi toàn bộ 13 lời gọi `setErrorMessaget('authStrict.kX')` sang `setErrorMessage(t('authStrict.kX'))` (cả 13 khóa đều có đủ VI/EN).
+  3. *Nhóm 3 — Triệt tiêu race condition & chuẩn hóa ảnh an toàn (`src/utils/safeImageUrl.ts`, `ShopeeTestView.tsx`, `dataService.ts`, `ProductDetailModal.tsx`, `ProductCheckoutModal.tsx`, `App.tsx`, `functions/api/products/index.ts`)*:
+     - Gỡ đoạn `fetch('/api/products?limit=100')` ghi đè trong `ShopeeTestView.tsx`, đồng bộ thống nhất từ nguồn `/api/sync-lite` cho cả Kệ chính và Flash Sale.
+     - Tạo helper `src/utils/safeImageUrl.ts` (`sanitizeImageUrl`, `safeGameIconUrl`, `resolveProductCoverImage`) chặn tuyệt đối URL chứa `undefined`/`null`, tự chữa lành cache `localStorage` bẩn cũ và ưu tiên `/game_icons/physical-default.webp` cho hàng vật lý.
+     - Bổ sung đầy đủ `game_slug`, `cover_image_url`, `game_icon_url`, `weight_grams`, `warehouse_address`, `warranty_hours`, `seller_name`, `brand`, `origin`, `product_images` vào nhánh fallback `seller_products` của `functions/api/products/index.ts`.
 
 ### 471. Chặn Thổi Giá Ưu Đãi Mua Lần Đầu (`2.000đ` > `100đ`), Bổ Sung Ảnh Mặc Định Hàng Vật Lý `.webp` & Tạm Tắt Turnstile Riêng Cho Đăng Nhập Khách (`GUEST_TURNSTILE_ENABLED`) (26/11/2026)
 - **Bối cảnh & Yêu cầu**:

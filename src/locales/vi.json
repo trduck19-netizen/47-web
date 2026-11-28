@@ -2848,5 +2848,93 @@
     "unlockBtn": "Mở khóa",
     "colTxSeller": "Gian hàng / Mã GD",
     "colTxTime": "Thời gian"
+  },
+  "sellerPortal": {
+    "pageTitle": "Kênh Người Bán & Quản Lý Gian Hàng | Pine Seller Center",
+    "brandTitle": "Pine Seller Center",
+    "brandSubtitle": "Cổng Quản Trị Gian Hàng Độc Lập",
+    "loadingPortal": "Đang tải Cổng Quản Trị Gian Hàng...",
+    "toast": {
+      "loggedOut": "Đã đăng xuất tài khoản an toàn"
+    },
+    "roles": {
+      "owner": "Chủ Gian Hàng",
+      "manageStock": "Nhân Viên Kho",
+      "viewOrders": "Nhân Viên Đơn Hàng"
+    },
+    "rbac": {
+      "deniedTitle": "Giới hạn phân quyền",
+      "deniedDesc": "Tài khoản nhân viên phụ không có quyền truy cập mục nhạy cảm của Chủ Gian Hàng."
+    },
+    "sidebar": {
+      "navAriaLabel": "Điều hướng Cổng Quản Trị Gian Hàng",
+      "openMenu": "Mở menu điều hướng gian hàng",
+      "closeMenu": "Đóng menu điều hướng",
+      "expand": "Mở rộng thanh điều hướng",
+      "collapse": "Thu gọn thanh điều hướng",
+      "groupOverview": "Tổng Quan",
+      "groupCatalog": "Hàng Hóa & Kho Mã",
+      "groupOrders": "Đơn Hàng & Chăm Sóc",
+      "groupFinanceIntegrations": "Tài Chính & Tích Hợp",
+      "dashboard": "Tổng Quan Gian Hàng",
+      "products": "Quản Lý Sản Phẩm",
+      "codes": "Kho Mã & Tồn Kho",
+      "orders": "Đơn Hàng Gian Hàng",
+      "disputes": "Khiếu Nại & Bảo Hành",
+      "sepay": "Cổng SePay Riêng",
+      "finance": "Tài Chính & Rút Tiền",
+      "affiliate": "Bán Chéo Liên Shop",
+      "apiKeys": "Khóa API Gian Hàng",
+      "settings": "Cài Đặt & Nhân Sự",
+      "subRoleRestrictedHint": "Một số mục nhạy cảm (Cổng SePay, Rút tiền, Khóa API, Nhân sự) chỉ dành cho Chủ Gian Hàng."
+    },
+    "topbar": {
+      "sepayOnline": "SePay VietQR: ONLINE",
+      "sepayCoreOnly": "Chỉ Ví Core",
+      "sepayLocked": "SePay Tạm Khóa",
+      "sepayTooltip": "Mở cấu hình Cổng SePay & VietQR riêng của gian hàng",
+      "topupWallet": "Nạp thêm Core vào Ví ngay tại đây",
+      "topupBtn": "Nạp Ví",
+      "viewPublicStore": "Xem Shop",
+      "switchLang": "Đổi ngôn ngữ Việt / Anh",
+      "switchToLight": "Chuyển sang giao diện Sáng",
+      "switchToDark": "Chuyển sang giao diện Tối",
+      "backToMall": "Về Sàn Mua Sắm",
+      "logout": "Đăng xuất tài khoản"
+    },
+    "dashboardStrip": {
+      "reputation": "Điểm uy tín",
+      "supportHours": "Giờ hỗ trợ",
+      "onVacation": "Đang Nghỉ Bán",
+      "resumeSelling": "Mở Bán Lại",
+      "vacationMode": "Nghỉ Bán 1 Chạm"
+    },
+    "landing": {
+      "badge": "Cổng Đối Tác Bán Hàng Chính Thức",
+      "heroTitle": "Mở Gian Hàng Riêng & Nhận Tiền Thẳng Về Tài Khoản Của Bạn",
+      "heroDesc": "Không gian quản trị tách biệt, vận hành chuyên nghiệp như Shopee Seller Centre — dùng chung tài khoản & Ví Core trên toàn sàn Universal Mall.",
+      "loginOrRegisterCta": "Đăng Nhập / Đăng Ký Mở Shop Ngay",
+      "sharedAccountHint": "Dùng chung 1 tài khoản & Ví Core với Sàn Mua Sắm",
+      "benefitSepayTitle": "Cổng VietQR SePay Riêng — Phí {fee}%",
+      "benefitSepayDesc": "Khách quét VietQR chuyển tiền trực tiếp vào STK ngân hàng của bạn, tự động đối soát Webhook & giao mã 24/7.",
+      "benefitAffiliateTitle": "Bán Chéo Liên Shop Tự Động (Affiliate)",
+      "benefitAffiliateDesc": "Kết nối nguồn hàng từ các nhà cung cấp uy tín trên sàn, tự đồng bộ tồn kho & chia lợi nhuận minh bạch từng đơn.",
+      "benefitInstantTitle": "Kho Mã AES-256 & Giao Hàng Toàn Quốc",
+      "benefitInstantDesc": "Mã hóa kho mã số chuẩn AES-256 giao tức thì 0 giây, đồng thời hỗ trợ bán sản phẩm vật lý kết nối GHTK/GHN/Viettel Post."
+    },
+    "adminTheme": {
+      "sectionTitle": "Tùy Chỉnh Giao Diện Cổng Người Bán (/seller)",
+      "sectionDesc": "Chủ sàn tùy biến bộ màu chủ đạo, chế độ Sáng/Tối và thông báo ghim đầu trang cho toàn bộ gian hàng truy cập /seller.",
+      "presetLabel": "Bộ Màu Chủ Đạo Cổng Người Bán",
+      "presetShopeeOrange": "Cam Shopee (Mặc định)",
+      "presetEnterpriseIndigo": "Xanh Doanh Nghiệp Indigo",
+      "presetEmeraldFintech": "Xanh Ngọc Fintech",
+      "presetRoyalViolet": "Tím Hoàng Gia",
+      "allowDarkModeLabel": "Cho phép chủ gian hàng tự bật chế độ Tối (Dark Mode)",
+      "bannerViLabel": "Thông báo ghim đầu trang /seller (Tiếng Việt — để trống nếu ẩn)",
+      "bannerEnLabel": "Thông báo ghim đầu trang /en/seller (Tiếng Anh — để trống nếu ẩn)",
+      "bannerPlaceholderVi": "Ví dụ: Miễn phí 0% giao dịch Cổng SePay riêng cho mọi gian hàng trong tháng 11!",
+      "bannerPlaceholderEn": "E.g. 0% fee on Direct SePay VietQR gateways for all stores this month!"
+    }
   }
 }
