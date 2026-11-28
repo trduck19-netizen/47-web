@@ -180,6 +180,28 @@ export async function confirmReceivedAndRelease(
       return { success: false, message: 'Đơn hàng này đã được giải ngân hoặc hoàn tiền trước đó.' };
     }
 
+    // Cô lập tuyệt đối với Ví Sàn cho đơn thu trực tiếp qua SePay riêng của Chủ Shop (DIRECT_SEPAY):
+    // Shop bán đã nhận 100% tiền VNĐ ngoài ngân hàng -> KHÔNG cộng Core vào Ví Sàn của Shop bán.
+    if (String(order.payment_channel || '').toUpperCase() === 'DIRECT_SEPAY') {
+      const isAff = Number(order.is_affiliate_order || 0) === 1 && Boolean(order.supplier_seller_id);
+      const wholesaleCore = Math.max(0, Number(order.affiliate_wholesale_reserved_core || 0));
+      if (isAff && wholesaleCore > 0 && order.supplier_seller_id) {
+        await recordLedgerTransaction(db, {
+          sellerId: String(order.supplier_seller_id),
+          orderId: order.id,
+          type: 'RELEASE',
+          amountCore: wholesaleCore,
+          actor,
+          reason: `Giải ngân vốn sỉ đơn Liên Shop DIRECT_SEPAY ${order.order_code || order.id} (đã đối ứng 100% từ Ví Core chủ shop bán lại)`,
+        }).catch(() => {});
+      }
+      return {
+        success: true,
+        message: `Đã hoàn tất xác nhận nhận hàng đơn DIRECT_SEPAY ${order.order_code || order.id} (0 Core cộng thêm vào Ví Sàn).`,
+        releasedAmount: isAff ? wholesaleCore : 0,
+      };
+    }
+
     // Nhóm 4: Động cơ chia tiền 3 bên cho đơn liên shop (Affiliate / Reseller)
     if (order.is_affiliate_order === 1 && order.affiliate_breakdown) {
       let breakdown: any = {};

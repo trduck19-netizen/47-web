@@ -1,4 +1,6 @@
 import { ensureMarketplaceSchema } from '../../../services/d1_service';
+import { getMarketplaceConfig } from '../../../services/marketplace_service';
+import { ensureSellerSepaySchema, evaluateSellerQrEligibility, SellerSepayConfigRow } from '../../../services/seller_sepay_service';
 
 interface Env {
   DB: D1Database;
@@ -49,19 +51,29 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Đếm sản phẩm approved còn hàng
-    const availableProdCount = await env.DB
-      .prepare(`
+    await ensureSellerSepaySchema(env.DB);
+    const [availableProdCount, sepayCfg, mConfig] = await Promise.all([
+      env.DB.prepare(`
         SELECT COUNT(DISTINCT sp.id) as count
         FROM seller_products sp
-        JOIN seller_codes sc ON sp.id = sc.product_id
+        LEFT JOIN seller_codes sc ON sp.id = sc.product_id AND sc.status = 'IN_STOCK' AND sc.deleted_at IS NULL
         WHERE sp.seller_id = ? AND sp.status = 'APPROVED' AND sp.deleted_at IS NULL
-          AND sc.status = 'IN_STOCK' AND sc.deleted_at IS NULL
+          AND (sp.product_type = 'physical' AND COALESCE(sp.stock_quantity, 0) > 0 OR sc.id IS NOT NULL)
       `)
-      .bind(seller.id)
-      .first<{ count: number }>();
+        .bind(seller.id)
+        .first<{ count: number }>(),
+      env.DB.prepare('SELECT * FROM seller_sepay_configs WHERE seller_id = ? LIMIT 1')
+        .bind(seller.id)
+        .first<SellerSepayConfigRow>()
+        .catch(() => null),
+      getMarketplaceConfig(env.DB),
+    ]);
 
     const hasAvailableProducts = (availableProdCount?.count || 0) > 0;
+    const qrEligibility = evaluateSellerQrEligibility({
+      sepayConfig: sepayCfg || null,
+      marketplaceConfig: mConfig,
+    });
 
     return new Response(
       JSON.stringify({
@@ -79,6 +91,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           reputation_score: seller.reputation_score,
           is_vacation: Boolean(seller.is_vacation),
           has_available_products: hasAvailableProducts,
+          sepay_qr_available: qrEligibility.eligible,
           created_at: seller.created_at,
         },
       }),

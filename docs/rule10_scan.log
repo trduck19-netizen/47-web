@@ -1,7 +1,7 @@
-RULE10_WCG_EXIT=1
-
-RULE10_TG_EXIT=1
-
-RULE10_PK_EXIT=1
-
-ZERO_RULE10_VIOLATIONS
+=== wcg_key ===
+0 matches
+=== telegram_tok ===
+0 matches
+=== priv_key ===
+0 matches
+TOTAL_VIOLATIONS=0

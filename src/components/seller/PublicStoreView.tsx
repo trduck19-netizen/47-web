@@ -17,9 +17,13 @@ import {
   Info,
   ShoppingCart,
   Star,
+  QrCode,
+  RefreshCw,
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { dataService } from '../../services/dataService';
 import { cartService } from '../../services/cartService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface PublicStoreViewProps {
   slug: string;
@@ -38,6 +42,7 @@ export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
   onOpenProfile,
   onOpenCart,
 }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState<boolean>(true);
   const [store, setStore] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -58,6 +63,67 @@ export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
   const [purchasedOrder, setPurchasedOrder] = useState<any>(null);
   const [purchaseError, setPurchaseError] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
+  const [directQrOrder, setDirectQrOrder] = useState<any>(null);
+  const [directQrImg, setDirectQrImg] = useState<string>('');
+  const [creatingQr, setCreatingQr] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!directQrOrder?.parentId) return;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/seller-orders/multi/${encodeURIComponent(directQrOrder.parentId)}`, {
+          headers: getHeaders(),
+        });
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        if (data?.parent_order?.status === 'PAID' || data?.parent_order?.status === 'COMPLETED') {
+          clearInterval(timer);
+          const firstChild = (data.child_orders || [])[0];
+          setPurchasedOrder(firstChild || { delivered_code: '' });
+          setDirectQrOrder(null);
+          setDirectQrImg('');
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [directQrOrder?.parentId]);
+
+  const handleCreateDirectQr = async () => {
+    if (!currentUser) {
+      onOpenLogin();
+      return;
+    }
+    if (!selectedProduct) return;
+    setCreatingQr(true);
+    setPurchaseError('');
+    try {
+      const res = await fetch('/api/seller-orders/multi', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ items: [{ product_id: selectedProduct.id, quantity: 1 }] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      const grp = Array.isArray(data?.shop_groups) ? data.shop_groups[0] : null;
+      if (!res.ok || !data.success || !grp?.qr_allowed || !grp?.qr_payload) {
+        setPurchaseError(data.error || t('checkoutModal.sellerCoreOnlyNote'));
+        return;
+      }
+      const imgUrl = await QRCode.toDataURL(grp.qr_payload, { margin: 1.5, width: 220 });
+      setDirectQrImg(imgUrl);
+      setDirectQrOrder({
+        parentId: data.parent_order.id,
+        bankName: grp.bank_name,
+        accountNumber: grp.account_number,
+        bankAccount: grp.bank_account,
+        amount: grp.total_amount,
+        content: grp.qr_content,
+      });
+    } catch {
+      setPurchaseError(t('sellerSepay.connectionError'));
+    } finally {
+      setCreatingQr(false);
+    }
+  };
 
   const getAuthToken = () => {
     return localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
@@ -527,7 +593,7 @@ export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
                   </div>
                 )}
 
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
                   {!currentUser ? (
                     <button
                       onClick={onOpenLogin}
@@ -535,14 +601,55 @@ export const PublicStoreView: React.FC<PublicStoreViewProps> = ({
                     >
                       Đăng Nhập Để Mua
                     </button>
+                  ) : directQrOrder ? (
+                    <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 space-y-2.5 text-center">
+                      {directQrImg && (
+                        <img src={directQrImg} alt="VietQR" className="w-44 h-44 mx-auto rounded-xl bg-white p-1.5 border border-border" />
+                      )}
+                      <div className="text-xs text-left space-y-1 bg-background p-2.5 rounded-lg border border-border">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('checkoutModal.bankLabel')}</span>
+                          <strong>{directQrOrder.bankName}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('checkoutModal.accountNumberLabel')}</span>
+                          <strong className="font-mono">{directQrOrder.accountNumber}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('checkoutModal.accountHolderLabel')}</span>
+                          <strong>{directQrOrder.bankAccount}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('checkoutModal.transferMemoLabel')}</span>
+                          <strong className="font-mono text-primary select-all">{directQrOrder.content}</strong>
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center justify-center gap-1.5">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>{t('checkoutModal.qrWaitingDigital')}</span>
+                      </div>
+                    </div>
                   ) : (
-                    <button
-                      disabled={purchasing}
-                      onClick={handlePurchase}
-                      className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-md shadow-primary/20 disabled:opacity-50"
-                    >
-                      {purchasing ? 'Đang giao dịch...' : `Xác Nhận Thanh Toán (${selectedProduct.price_core.toLocaleString()} Core)`}
-                    </button>
+                    <>
+                      <button
+                        disabled={purchasing}
+                        onClick={handlePurchase}
+                        className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-md shadow-primary/20 disabled:opacity-50"
+                      >
+                        {purchasing ? 'Đang giao dịch...' : `Xác Nhận Thanh Toán (${selectedProduct.price_core.toLocaleString()} Core)`}
+                      </button>
+                      {store?.sepay_qr_available && (
+                        <button
+                          type="button"
+                          disabled={creatingQr}
+                          onClick={handleCreateDirectQr}
+                          className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                        >
+                          <QrCode className="w-4 h-4" />
+                          <span>{creatingQr ? t('checkoutModal.qrCreatingTitle') : t('sellerSepay.payWithShopQrBtn')}</span>
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

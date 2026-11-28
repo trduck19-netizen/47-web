@@ -107,6 +107,7 @@ export type ApiKeyScope =
   | 'SUPPLIER_CONNECTORS_FULL'
   | 'SUPPLIER_FULFILLMENT_MANAGE'
   | 'INTERSHOP_AFFILIATE_MANAGE'
+  | 'SELLER_SEPAY_MANAGE'
   | 'SYNC_FULL' 
   | 'API_KEYS_FULL'
   | 'HISTORY_FULL'
@@ -126,6 +127,17 @@ export interface ScopeOption {
 }
 
 export const ALL_API_SCOPES: ScopeOption[] = [
+  {
+    id: 'SELLER_SEPAY_MANAGE',
+    name: 'Cổng SePay Riêng Gian Hàng (Seller Direct SePay API)',
+    category: 'Sàn TMĐT',
+    description: 'Quản trị cổng thanh toán SePay & VietQR riêng của từng gian hàng: giám sát đối soát DIRECT_SEPAY, cấu hình % phí/trần công nợ và khóa khẩn cấp shop vi phạm (/api/admin/seller-sepay/*).',
+    color: 'emerald',
+    badgeBg: 'bg-emerald-500/10',
+    badgeText: 'text-emerald-500',
+    badgeBorder: 'border-emerald-500/20',
+    icon: ShieldAlert,
+  },
   {
     id: 'AUTOMATION_CENTER_FULL',
     name: 'Trung Tâm Tự Động Hóa (Automation Center API)',

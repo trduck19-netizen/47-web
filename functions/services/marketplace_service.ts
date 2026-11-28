@@ -236,6 +236,10 @@ export interface MarketplaceConfig {
   affiliate_require_admin_approval: boolean; // Mặc định true (bắt buộc Admin duyệt ngay từ đầu)
   affiliate_max_markup_pct: number; // Mặc định 500 (%)
   affiliate_rate_limit_rpm: number; // Mặc định 600 req/phút/khóa cặp
+  // Cổng SePay riêng từng Gian hàng (DIRECT_SEPAY — mặc định 0% phí + hỗ trợ công nợ trả sau)
+  direct_sepay_global_enabled: boolean; // Mặc định true
+  direct_sepay_fee_pct: number; // Mặc định 0 (%) — miễn phí hoa hồng trên đơn SePay riêng
+  direct_sepay_debt_limit_core: number; // Mặc định 500000 Core khi bật % phí > 0
 }
 
 export const DEFAULT_MARKETPLACE_CONFIG: MarketplaceConfig = {
@@ -255,6 +259,9 @@ export const DEFAULT_MARKETPLACE_CONFIG: MarketplaceConfig = {
   affiliate_require_admin_approval: true,
   affiliate_max_markup_pct: 500,
   affiliate_rate_limit_rpm: 600,
+  direct_sepay_global_enabled: true,
+  direct_sepay_fee_pct: 0,
+  direct_sepay_debt_limit_core: 500000,
 };
 
 // Interface các thực thể Giai đoạn 2
@@ -377,6 +384,15 @@ export async function getMarketplaceConfig(db: D1Database): Promise<MarketplaceC
         affiliate_rate_limit_rpm: parsed.affiliate_rate_limit_rpm !== undefined && Number.isFinite(Number(parsed.affiliate_rate_limit_rpm))
           ? Math.min(6000, Math.max(10, Math.round(Number(parsed.affiliate_rate_limit_rpm))))
           : DEFAULT_MARKETPLACE_CONFIG.affiliate_rate_limit_rpm,
+        direct_sepay_global_enabled: typeof parsed.direct_sepay_global_enabled === 'boolean'
+          ? parsed.direct_sepay_global_enabled
+          : DEFAULT_MARKETPLACE_CONFIG.direct_sepay_global_enabled,
+        direct_sepay_fee_pct: parsed.direct_sepay_fee_pct !== undefined && Number.isFinite(Number(parsed.direct_sepay_fee_pct))
+          ? Math.min(50, Math.max(0, Number(parsed.direct_sepay_fee_pct)))
+          : DEFAULT_MARKETPLACE_CONFIG.direct_sepay_fee_pct,
+        direct_sepay_debt_limit_core: parsed.direct_sepay_debt_limit_core !== undefined && Number.isFinite(Number(parsed.direct_sepay_debt_limit_core))
+          ? Math.max(0, Math.round(Number(parsed.direct_sepay_debt_limit_core)))
+          : DEFAULT_MARKETPLACE_CONFIG.direct_sepay_debt_limit_core,
       };
     }
   } catch (err) {
@@ -566,6 +582,28 @@ export async function releaseDueSellerOrders(
   for (const order of dueOrders) {
     try {
       const priceCore = Number(order.price_core) || 0;
+
+      // Cô lập tuyệt đối với Ví Sàn cho đơn DIRECT_SEPAY (chủ shop đã nhận 100% tiền thật ngoài ngân hàng)
+      if (String((order as any).payment_channel || '').toUpperCase() === 'DIRECT_SEPAY') {
+        await db
+          .prepare("UPDATE seller_orders SET status = 'COMPLETED', released_at = ?, updated_at = ? WHERE id = ? AND status = 'PAID'")
+          .bind(nowIso, nowIso, order.id)
+          .run();
+        const isAff = Number((order as any).is_affiliate_order || 0) === 1 && Boolean((order as any).supplier_seller_id);
+        const wholesaleCore = Math.max(0, Number((order as any).affiliate_wholesale_reserved_core || 0));
+        if (isAff && wholesaleCore > 0 && (order as any).supplier_seller_id) {
+          await recordLedgerTransaction(db, {
+            sellerId: String((order as any).supplier_seller_id),
+            orderId: order.id,
+            type: 'RELEASE',
+            amountCore: wholesaleCore,
+            actor,
+            reason: `Giải ngân tự động vốn sỉ đơn Liên Shop DIRECT_SEPAY ${order.order_code || order.id}`,
+          }).catch(() => {});
+        }
+        successCount++;
+        continue;
+      }
 
       // Xử lý đơn liên shop (Affiliate / Reseller) theo breakdown 3 bên
       if (order.is_affiliate_order === 1 && order.affiliate_breakdown) {

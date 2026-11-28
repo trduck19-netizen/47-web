@@ -1,4 +1,20 @@
-# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 470)
+# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 471)
+
+### 471. Chặn Thổi Giá Ưu Đãi Mua Lần Đầu (`2.000đ` > `100đ`), Bổ Sung Ảnh Mặc Định Hàng Vật Lý `.webp` & Tạm Tắt Turnstile Riêng Cho Đăng Nhập Khách (`GUEST_TURNSTILE_ENABLED`) (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý 3 lỗi thực tế sau kiểm chứng nhánh hàng vật lý (`29de768`): (1) Mở modal sản phẩm vật lý 100đ (`sprod_1795666952733_tj8pd`) bị nhảy giá lên `2.000đ` do fallback ưu đãi mua lần đầu ghi đè giá thấp hơn; (2) Ảnh mặc định `/game_icons/physical-default.webp` trả về 404 khiến card/modal hàng vật lý không có ảnh; (3) Tạm tắt Cloudflare Turnstile riêng cho form **đăng nhập** trang khách (cờ môi trường `GUEST_TURNSTILE_ENABLED`, mặc định `false`) để dễ test đăng nhập, **giữ nguyên** Turnstile trên form **đăng ký** (`register.ts`) và giữ nguyên cờ `ADMIN_TURNSTILE_ENABLED` cho trang quản trị.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Chặn giá ưu đãi cao hơn giá bán & bỏ cứng `2000` (`ProductDetailModal.tsx`, `ProductCheckoutModal.tsx`, `ShopeeTestView.tsx`)*:
+     - Chặn điều kiện bắt buộc `candidateOfferPrice > 0 && candidateOfferPrice < currentPrice` (không bao giờ để ưu đãi mua lần đầu đẩy giá lên cao hơn giá bán) và chỉ tính đủ điều kiện khi có nguồn ưu đãi thực sự (offer từ `/api/store/my-offer` với `eligible: true`, `first_purchase_price > 0`, hoặc chiến dịch `offerData.campaign.enabled === true`).
+     - Gỡ toàn bộ fallback `?? 2000` / `|| 2000` trong logic tính giá ưu đãi của 3 file (giữ nguyên `minQrAmount || 2000` tại `ProductCheckoutModal.tsx:137`), đồng thời thêm điều kiện `Number(offerData.campaign?.offer_price) > 0` cho 2 banner gợi ý trong `ProductDetailModal.tsx` để không hiện `"0 Core"`.
+  2. *Nhóm 2 — Bổ sung ảnh bìa mặc định hàng vật lý (`public/game_icons/physical-default.webp`)*:
+     - Tạo ảnh vuông `512×512` chuẩn WebP (`3.198 bytes`, không trùng `.png`/`.jpg`) tại `public/game_icons/physical-default.webp`, khớp đường dẫn mặc định trong `functions/api/seller/products/index.ts`.
+  3. *Nhóm 3 — Tạm tắt Turnstile riêng cho đăng nhập khách (`turnstile_service.ts`, `turnstile-config.ts`, `login.ts`, `AuthModal.tsx`)*:
+     - Thêm `GUEST_TURNSTILE_ENABLED` và hàm `isGuestLoginTurnstileEnabled(env)` (mặc định `false`; bật khi `'true'|'1'|'on'`).
+     - Mở rộng `GET /api/auth/turnstile-config` trả thêm `guestLoginEnabled` và hỗ trợ `?scope=guest_login` (giữ `enabled` là cờ tổng của trang khách/đăng ký để tương thích ngược).
+     - Cập nhật `login.ts`: nhánh đăng nhập khách chỉ kiểm tra Turnstile khi `isGuestLoginTurnstileEnabled(env) === true`, nhánh `isAdminLogin` tiếp tục dùng `isAdminTurnstileEnabled(env)` kèm chặn giả mạo `isAdminLogin: true` khi `GUEST_TURNSTILE_ENABLED` được bật lại.
+     - Tách trạng thái `isLoginTurnstileEnabled` (khởi tạo `false`, fail-closed sang `true` khi fetch config lỗi) và `isRegisterTurnstileEnabled` trong `AuthModal.tsx` để ẩn widget chỉ ở tab Đăng nhập, giữ nguyên widget + chặn submit ở tab Đăng ký.
+     - **Cách bật lại trước khi go-live**: Vào **Cloudflare Dashboard → Pages → `universal-mall-shop` → Settings → Environment variables** → thêm biến `GUEST_TURNSTILE_ENABLED = true` (cho Production & Preview) và Redeploy, sau đó kiểm chứng live rằng `GET /api/auth/turnstile-config` trả `guestLoginEnabled: true` và `POST /api/auth/login` không token trả `400`.
 
 ### 470. Nối Dây `product_type` & Metadata Vật Lý Trong `sync-lite.ts`, Gate 5 Chỗ VietQR/Ví Theo `isPhysical` & Đưa `ProductCheckoutModal.tsx` Vào I18N Guard (26/11/2026)
 - **Bối cảnh & Yêu cầu**:

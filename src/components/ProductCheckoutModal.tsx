@@ -766,7 +766,12 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     };
   }, []);
 
-  const isQrAvailable = isPriceValid && (totalPrice >= minQrAmount);
+  const isSellerProduct = Boolean((liveProduct as any)?.seller_id || (product as any)?.seller_id);
+  const sellerQrEligible = isSellerProduct
+    ? Boolean((liveProduct as any)?.seller_qr_available ?? (product as any)?.seller_qr_available)
+    : true;
+  const isQrAvailable = isPriceValid && (totalPrice >= minQrAmount) && sellerQrEligible;
+  const [verifyingSellerQr, setVerifyingSellerQr] = useState<boolean>(false);
 
   useEffect(() => {
     if (!isQrAvailable && paymentMethod === 'vietqr') {
@@ -792,7 +797,7 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  const startQrPolling = (orderId: string, expiresAtMs: number) => {
+  const startQrPolling = (orderId: string, expiresAtMs: number, isSellerDirectQr = false) => {
     if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
 
@@ -808,9 +813,54 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
 
     pollTimerRef.current = setInterval(async () => {
       try {
-        const token = authService.getToken();
+        const token = user?.session_token || localStorage.getItem('pine_auth_token') || '';
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        if (isSellerDirectQr) {
+          const res = await fetch(`/api/seller-orders/multi/${encodeURIComponent(orderId)}?t=${Date.now()}`, { headers });
+          if (!res.ok) return;
+          const data = await res.json().catch(() => ({}));
+          const pStatus = data?.parent_order?.status;
+          if (pStatus === 'PAID' || pStatus === 'COMPLETED') {
+            clearInterval(pollTimerRef.current);
+            clearInterval(countdownTimerRef.current);
+            setQrStatus('paid');
+            confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+            onShowToast(
+              t('checkoutModal.qrSuccessTitle'),
+              isPhysical ? t('checkoutModal.qrSuccessPhysicalDesc') : t('checkoutModal.qrSuccessDigitalDesc'),
+              'success'
+            );
+            const children = Array.isArray(data.child_orders) ? data.child_orders : [];
+            const codeList = children.map((c: any) => c.delivered_code).filter(Boolean);
+            setCompletedOrder({
+              id: data.parent_order.parent_order_code || data.parent_order.id,
+              orderCode: data.parent_order.parent_order_code || data.parent_order.id,
+              productId: effectiveTargetId,
+              product_id: effectiveTargetId,
+              productTitle: liveProduct?.title,
+              product_title: liveProduct?.title,
+              game_name: liveProduct?.game_name || 'Game',
+              amount: Number(data.parent_order.total_amount || totalPrice),
+              quantity: safeQty,
+              unit_price: Math.round(Number(data.parent_order.total_amount || totalPrice) / Math.max(1, safeQty)),
+              code_content: codeList.join('\n'),
+              code_items: codeList,
+              deliveredCodes: codeList,
+              status: 'completed',
+              created_at: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              payment_method: 'vietqr',
+            } as any);
+          } else if (pStatus === 'EXPIRED' || pStatus === 'CANCELLED') {
+            clearInterval(pollTimerRef.current);
+            clearInterval(countdownTimerRef.current);
+            setQrStatus('expired');
+          }
+          return;
+        }
+
         const res = await fetch(`/api/orders/status?order_id=${encodeURIComponent(orderId)}&t=${Date.now()}`, { headers });
         if (!res.ok) return;
         const data = await res.json().catch(() => ({}));
@@ -974,6 +1024,55 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
     setQrStatus('creating');
     try {
       const token = user.session_token || localStorage.getItem('pine_auth_token') || '';
+
+      if (isSellerProduct) {
+        const res = await fetch('/api/seller-orders/multi', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'Idempotency-Key': idempotencyKey,
+          },
+          body: JSON.stringify({
+            items: [{ product_id: effectiveTargetId, quantity: safeQty }],
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        const grp = Array.isArray(data?.shop_groups) ? data.shop_groups[0] : null;
+        if (!res.ok || !data.success || !grp?.qr_allowed || !grp?.qr_payload) {
+          setQrStatus('idle');
+          onShowToast(
+            t('checkoutModal.toastQrCreateErrorTitle'),
+            data.error || t('checkoutModal.sellerCoreOnlyNote'),
+            'error'
+          );
+          return;
+        }
+        const expiresAtMs = data.parent_order?.expires_at
+          ? new Date(data.parent_order.expires_at).getTime()
+          : Date.now() + 15 * 60 * 1000;
+        setQrOrder({
+          id: data.parent_order.id,
+          parentOrderCode: data.parent_order.parent_order_code,
+          isSellerDirectQr: true,
+          hasApiToken: Boolean(grp.has_api_token),
+          qrPayload: grp.qr_payload,
+          expiresAt: data.parent_order.expires_at,
+          bankInfo: {
+            bankName: grp.bank_name,
+            accountNumber: grp.account_number,
+            bankAccount: grp.bank_account,
+            amount: grp.total_amount,
+            content: grp.qr_content,
+          },
+          qrUrls: {},
+        });
+        setQrStatus('waiting');
+        setQrSecondsLeft(Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000)));
+        startQrPolling(data.parent_order.id, expiresAtMs, true);
+        return;
+      }
+
       const res = await fetch('/api/orders/create-qr', {
         method: 'POST',
         headers: {
@@ -2210,7 +2309,14 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                 </div>
               </button>
 
-              {/* Payment Method Selector (Chỉ hiện khi đơn hàng >= ngưỡng minQrAmount, mặc định 2.000) */}
+              {/* Payment Method Selector */}
+              {isSellerProduct && !sellerQrEligible && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 text-[11px] text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{t('checkoutModal.sellerCoreOnlyNote')}</span>
+                </div>
+              )}
+
               {isQrAvailable && (
                 <fieldset className="space-y-1.5">
                   <legend className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
@@ -2579,6 +2685,37 @@ export const ProductCheckoutModal: React.FC<ProductCheckoutModalProps> = ({
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         <span>{isPhysical ? t('checkoutModal.qrWaitingPhysical') : t('checkoutModal.qrWaitingDigital')}</span>
                       </div>
+
+                      {qrOrder?.isSellerDirectQr && qrOrder?.hasApiToken && (
+                        <button
+                          type="button"
+                          disabled={verifyingSellerQr}
+                          onClick={async () => {
+                            setVerifyingSellerQr(true);
+                            try {
+                              const token = user?.session_token || localStorage.getItem('pine_auth_token') || '';
+                              const res = await fetch(`/api/seller-orders/multi/${encodeURIComponent(qrOrder.id)}/verify-sepay`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                              });
+                              const d = await res.json().catch(() => ({}));
+                              onShowToast(
+                                d.matched ? t('checkoutModal.qrSuccessTitle') : t('checkoutModal.verifySepayPendingTitle'),
+                                d.message || t('checkoutModal.verifySepayPendingDesc'),
+                                d.matched ? 'success' : 'info'
+                              );
+                            } catch {
+                              onShowToast(t('checkoutModal.toastConnectionErrorTitle'), t('checkoutModal.toastConnectionErrorDesc'), 'error');
+                            } finally {
+                              setVerifyingSellerQr(false);
+                            }
+                          }}
+                          className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${verifyingSellerQr ? 'animate-spin' : ''}`} />
+                          <span>{verifyingSellerQr ? t('cart.verifyingSepayBtn') : t('cart.verifySepayNowBtn')}</span>
+                        </button>
+                      )}
 
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
                         <span>{t('checkoutModal.orderCodeLabel')} <strong className="font-mono text-foreground">{qrOrder.id}</strong></span>

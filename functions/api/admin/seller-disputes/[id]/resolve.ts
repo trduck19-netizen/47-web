@@ -69,10 +69,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           so.delivered_code,
           so.code_id,
           so.status as order_status,
+          so.payment_channel,
           so.released_at,
-          so.hold_until
+          so.hold_until,
+          s.owner_member_id as seller_owner_member_id
         FROM seller_disputes sd
         JOIN seller_orders so ON sd.order_id = so.id
+        LEFT JOIN sellers s ON so.seller_id = s.id
         WHERE sd.id = ?
         LIMIT 1
       `)
@@ -148,28 +151,69 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       // Hoàn tiền Core vào ví của khách hàng
       const priceCore = Number(dispute.price_core) || 0;
-      await env.DB
-        .prepare('UPDATE members SET balance = balance + ? WHERE id = ?')
-        .bind(priceCore, dispute.buyer_member_id)
-        .run();
+      const isDirectSepay = String(dispute.payment_channel || '').toUpperCase() === 'DIRECT_SEPAY';
 
-      // Ghi dòng sổ cái REFUND (trừ ngăn đang giữ nếu chưa giải ngân, trừ ngăn khả dụng nếu đã giải ngân)
-      const isOrderAlreadyReleased = Boolean(dispute.released_at || dispute.order_status === 'COMPLETED');
-      const ledgerResult = await recordLedgerTransaction(env.DB, {
-        sellerId: dispute.seller_id,
-        orderId: dispute.order_id,
-        type: 'REFUND',
-        amountCore: priceCore,
-        actor: adminActor,
-        reason: `Hoàn tiền khiếu nại ${dispute.id} (Đơn ${dispute.order_code}): ${finalResolutionNote}`,
-        isOrderAlreadyReleased,
-      });
+      if (isDirectSepay) {
+        // CHỐNG RÚT RUỘT QUỸ SÀN (DIRECT_SEPAY): Chỉ cho phép hoàn khi trừ thành công từ Ví Core thật của Chủ Shop.
+        const sellerOwnerId = String(dispute.seller_owner_member_id || '');
+        if (!sellerOwnerId) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              code: 'SELLER_CORE_INSUFFICIENT_FOR_DIRECT_REFUND',
+              error: 'Đơn thu qua SePay riêng không thể trích từ quỹ Sàn. Không xác định được Ví Core của chủ gian hàng.',
+            }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+        const deductRes: any = await env.DB.prepare(`
+          UPDATE members
+          SET balance = balance - ?, updated_at = ?
+          WHERE id = ? AND balance >= ?
+        `)
+          .bind(priceCore, nowIso, sellerOwnerId, priceCore)
+          .run();
 
-      if (!ledgerResult.success) {
-        return new Response(
-          JSON.stringify({ success: false, error: ledgerResult.error || 'Lỗi khi ghi nhận sổ cái tài chính.' }),
-          { status: 500, headers: CORS_HEADERS }
-        );
+        const deducted = Number(deductRes?.meta?.changes ?? deductRes?.changes ?? 0);
+        if (deducted !== 1) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              code: 'SELLER_CORE_INSUFFICIENT_FOR_DIRECT_REFUND',
+              error: `Đơn DIRECT_SEPAY không có tiền giữ trên Sàn và Ví Core của chủ gian hàng không đủ ${priceCore.toLocaleString('vi-VN')} Core. Vui lòng chọn Đổi mã mới (REPLACE) hoặc khóa cổng SePay của shop vi phạm.`,
+            }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+
+        await env.DB
+          .prepare('UPDATE members SET balance = balance + ?, updated_at = ? WHERE id = ?')
+          .bind(priceCore, nowIso, dispute.buyer_member_id)
+          .run();
+      } else {
+        await env.DB
+          .prepare('UPDATE members SET balance = balance + ? WHERE id = ?')
+          .bind(priceCore, dispute.buyer_member_id)
+          .run();
+
+        // Ghi dòng sổ cái REFUND (trừ ngăn đang giữ nếu chưa giải ngân, trừ ngăn khả dụng nếu đã giải ngân)
+        const isOrderAlreadyReleased = Boolean(dispute.released_at || dispute.order_status === 'COMPLETED');
+        const ledgerResult = await recordLedgerTransaction(env.DB, {
+          sellerId: dispute.seller_id,
+          orderId: dispute.order_id,
+          type: 'REFUND',
+          amountCore: priceCore,
+          actor: adminActor,
+          reason: `Hoàn tiền khiếu nại ${dispute.id} (Đơn ${dispute.order_code}): ${finalResolutionNote}`,
+          isOrderAlreadyReleased,
+        });
+
+        if (!ledgerResult.success) {
+          return new Response(
+            JSON.stringify({ success: false, error: ledgerResult.error || 'Lỗi khi ghi nhận sổ cái tài chính.' }),
+            { status: 500, headers: CORS_HEADERS }
+          );
+        }
       }
 
       // Cập nhật đơn con sang REFUNDED

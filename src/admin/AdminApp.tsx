@@ -36,6 +36,7 @@ const ApiKeysModule = React.lazy(() => import('./modules/ApiKeysModule').then((m
 const TelegramModule = React.lazy(() => import('./modules/TelegramModule').then((m) => ({ default: m.TelegramModule })));
 const SellerModerationModule = React.lazy(() => import('./modules/SellerModerationModule').then((m) => ({ default: m.SellerModerationModule })));
 const InterShopAffiliateModule = React.lazy(() => import('./modules/InterShopAffiliateModule').then((m) => ({ default: m.InterShopAffiliateModule })));
+const SellerSepayGatewayModule = React.lazy(() => import('./modules/SellerSepayGatewayModule').then((m) => ({ default: m.SellerSepayGatewayModule })));
 const PlatformLeadsModule = React.lazy(() => import('./modules/PlatformLeadsModule').then((m) => ({ default: m.PlatformLeadsModule })));
 const TranslationsModule = React.lazy(() => import('./modules/TranslationsModule').then((m) => ({ default: m.TranslationsModule })));
 const VouchersModule = React.lazy(() => import('./modules/VouchersModule').then((m) => ({ default: m.VouchersModule })));
@@ -72,6 +73,7 @@ const tabTitlesVi: Record<AdminModuleTab, string> = {
   orders: 'Quản Lý Đơn Hàng & Vận Chuyển',
   marketplace: 'Sàn TMĐT & Gian Hàng Người Bán',
   'intershop-affiliate': 'Liên Kết Gian Hàng Nội Bộ',
+  'seller-sepay': 'Cổng SePay Riêng Gian Hàng',
   'platform-leads': 'Khách Thuê / Mua Sàn',
   translations: 'Quản Lý Bản Dịch (i18n)',
   vouchers: 'Quản Lý Voucher & Freeship',
@@ -108,6 +110,7 @@ const tabTitlesEn: Record<AdminModuleTab, string> = {
   orders: 'Orders & Fulfillment',
   marketplace: 'E-Commerce Marketplace',
   'intershop-affiliate': 'Inter-Shop Affiliate',
+  'seller-sepay': 'Seller Direct SePay Gateways',
   'platform-leads': 'Platform SaaS Leads',
   translations: 'Translations & i18n Management',
   vouchers: 'Vouchers & Shipping Discounts',
@@ -153,6 +156,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
       'orders',
       'marketplace',
       'intershop-affiliate',
+      'seller-sepay',
       'platform-leads',
       'translations',
       'vouchers',
@@ -436,6 +440,7 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
         'orders',
       'marketplace',
       'intershop-affiliate',
+      'seller-sepay',
       'platform-leads',
       'translations',
       'vouchers',
@@ -767,6 +772,10 @@ const AdminAppInner: React.FC<AdminAppProps> = ({ onBackToClient }) => {
 
         {currentTab === 'intershop-affiliate' && (
           <InterShopAffiliateModule onShowToast={showToast} />
+        )}
+
+        {currentTab === 'seller-sepay' && (
+          <SellerSepayGatewayModule onShowToast={showToast} />
         )}
 
         {currentTab === 'security-logs' && (

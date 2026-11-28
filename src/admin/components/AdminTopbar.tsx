@@ -57,6 +57,7 @@ const tabTitles: Record<AdminModuleTab, { title: string; subtitle: string }> = {
   profile: { title: 'Thông Tin Tài Khoản & Bảo Mật', subtitle: 'Cập nhật hồ sơ cá nhân, đổi mật khẩu và xác thực 2 lớp (2FA)' },
   marketplace: { title: 'Sàn TMĐT & Gian Hàng Người Bán', subtitle: 'Quản lý người bán, sản phẩm đa ngành và xét duyệt đối tác' },
   'intershop-affiliate': { title: 'Liên Kết Gian Hàng Nội Bộ', subtitle: 'Quản trị chính sách, duyệt cặp liên kết và giám sát sản phẩm bán lại liên shop' },
+  'seller-sepay': { title: 'Cổng SePay Riêng Gian Hàng', subtitle: 'Giám sát cổng thanh toán trực tiếp từng shop, chính sách phí 0%/công nợ và khóa khẩn cấp' },
   'platform-leads': { title: 'Khách Thuê / Mua Sàn (Leads)', subtitle: 'Quản lý hồ sơ đối tác đăng ký thuê sàn SaaS hoặc mua đứt mã nguồn trọn gói' },
 };
 
@@ -78,6 +79,7 @@ const tabTitlesEn: Record<string, { title: string; subtitle: string }> = {
   orders: { title: 'Orders & Fulfillment', subtitle: 'Track automated digital delivery & nationwide courier shipping' },
   marketplace: { title: 'E-Commerce Marketplace', subtitle: 'Merchant moderation, multi-industry products, and vendor payouts' },
   'intershop-affiliate': { title: 'Inter-Shop Affiliate', subtitle: 'Manage global policies, approve shop partnerships, and oversee reseller listings' },
+  'seller-sepay': { title: 'Seller Direct SePay Gateways', subtitle: 'Oversee per-shop direct VietQR gateways, 0% fee/debt policy, and emergency locks' },
   'platform-leads': { title: 'Platform SaaS Leads & Inquiries', subtitle: 'Manage tenant leads interested in renting SaaS or buying full source code' },
   sepay: { title: 'SePay Automated Gateway', subtitle: 'Webhook configuration, bank reconciliation, and API testing' },
   content: { title: 'Website Content CMS', subtitle: 'Popup banners, hero carousels, terms of service, and privacy policies' },
@@ -119,6 +121,7 @@ const shortTabTitles: Record<AdminModuleTab, string> = {
   'security-logs': 'Nhật Ký Bảo Mật',
   profile: 'Hồ Sơ Admin',
   'intershop-affiliate': 'Liên Kết Nội Bộ',
+  'seller-sepay': 'SePay Gian Hàng',
 };
 
 export const AdminTopbar: React.FC<AdminTopbarProps> = ({

@@ -1,6 +1,7 @@
-import { ensureMarketplaceSchema, checkAndExpireSellerOrdersD1 } from '../../../services/d1_service';
-import { generateVietQrPayload, getMarketplaceConfig, isTestSellerAllowed } from '../../../services/marketplace_service';
+import { checkAndExpireSellerOrdersD1 } from '../../../services/d1_service';
+import { generateVietQrPayload } from '../../../services/marketplace_service';
 import { authenticateCaller, authenticateAdmin } from '../../../services/auth_service';
+import { ensureSellerSepaySchema, SellerSepayConfigRow } from '../../../services/seller_sepay_service';
 
 interface Env {
   DB: D1Database;
@@ -20,7 +21,7 @@ export const onRequestOptions: PagesFunction = async () => {
 };
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
-  const { params, env } = context;
+  const { params, request, env } = context;
   const orderId = String(params.id || '').trim();
 
   try {
@@ -38,15 +39,16 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    await ensureMarketplaceSchema(env.DB);
+    await ensureSellerSepaySchema(env.DB);
     await checkAndExpireSellerOrdersD1(env.DB, orderId);
 
-    // 1. Tìm đơn cha
     const parentOrder = await env.DB.prepare(`
       SELECT * FROM seller_parent_orders
       WHERE (id = ? OR parent_order_code = ?) AND deleted_at IS NULL
       LIMIT 1
-    `).bind(orderId, orderId).first<any>();
+    `)
+      .bind(orderId, orderId)
+      .first<any>();
 
     if (!parentOrder) {
       return new Response(
@@ -70,47 +72,74 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // 2. Tìm cấu hình SePay
-    let bankName = 'TPBank';
-    let accountNumber = '10004681879';
-    let bankAccount = 'CODE GAME SHOP';
-    let paymentPrefix = 'WCG';
-    try {
-      const sepaySetting = await env.DB.prepare(
-        "SELECT value FROM system_settings WHERE key = 'wcg_admin_sepay_v4' LIMIT 1"
-      ).first<any>();
-      if (sepaySetting?.value) {
-        const parsed = typeof sepaySetting.value === 'string' ? JSON.parse(sepaySetting.value) : sepaySetting.value;
-        if (parsed?.bankName) bankName = parsed.bankName.trim();
-        if (parsed?.accountNumber) accountNumber = parsed.accountNumber.trim();
-        if (parsed?.bankAccount) bankAccount = parsed.bankAccount.trim();
-        if (parsed?.paymentPrefix) paymentPrefix = parsed.paymentPrefix.trim().toUpperCase() || 'WCG';
-      }
-    } catch {}
-
-    const config = await getMarketplaceConfig(env.DB);
-
-    // 3. Tìm các đơn con
     const childOrdersRes = await env.DB.prepare(`
       SELECT so.*, s.name as seller_name, s.avatar_url as seller_avatar
       FROM seller_orders so
       LEFT JOIN sellers s ON so.seller_id = s.id
       WHERE so.parent_order_id = ? AND so.deleted_at IS NULL
       ORDER BY so.created_at ASC
-    `).bind(parentOrder.id).all<any>();
+    `)
+      .bind(parentOrder.id)
+      .all<any>();
 
-    const childOrders = (childOrdersRes?.results || []).map((co: any) => {
-      const isRealMoneyAllowed = isTestSellerAllowed(config, co.seller_id);
-      const transferContent = `${paymentPrefix} ${co.order_code}`;
-      const qrPayload = isRealMoneyAllowed
-        ? generateVietQrPayload({
-            bankName,
-            accountNumber,
-            amount: co.price_core,
-            content: transferContent,
-          })
-        : null;
+    const rawChildren = childOrdersRes?.results || [];
+    const sellerIds = Array.from(new Set(rawChildren.map((c: any) => String(c.seller_id)).filter(Boolean)));
+    const sepayMap = new Map<string, SellerSepayConfigRow>();
+    for (const sId of sellerIds) {
+      const cfg = await env.DB.prepare('SELECT * FROM seller_sepay_configs WHERE seller_id = ? LIMIT 1')
+        .bind(sId)
+        .first<SellerSepayConfigRow>();
+      if (cfg) sepayMap.set(sId, cfg);
+    }
 
+    // Gom nhóm theo seller_id để tái dựng đúng mã VietQR riêng từng shop
+    const shopGroupsMap = new Map<string, any>();
+    for (const co of rawChildren) {
+      const cfg = sepayMap.get(String(co.seller_id));
+      const isDirectQr =
+        co.payment_channel === 'DIRECT_SEPAY' &&
+        Boolean(co.shop_qr_group_code) &&
+        Boolean(cfg && Number(cfg.is_enabled) === 1 && Number(cfg.admin_locked) !== 1 && cfg.account_number);
+
+      if (!shopGroupsMap.has(co.seller_id)) {
+        const prefix = cfg?.payment_prefix || 'SHP';
+        shopGroupsMap.set(co.seller_id, {
+          seller_id: co.seller_id,
+          seller_name: co.seller_name,
+          shop_qr_group_code: isDirectQr ? co.shop_qr_group_code : null,
+          total_amount: 0,
+          qr_allowed: isDirectQr,
+          bank_name: isDirectQr ? cfg?.bank_name || '' : '',
+          account_number: isDirectQr ? cfg?.account_number || '' : '',
+          bank_account: isDirectQr ? cfg?.account_holder || '' : '',
+          qr_content: isDirectQr ? `${prefix} ${co.shop_qr_group_code}` : null,
+          qr_payload: null as string | null,
+          has_api_token: Boolean(cfg?.api_token_encrypted),
+          status: co.status,
+          order_ids: [] as string[],
+        });
+      }
+      const grp = shopGroupsMap.get(co.seller_id);
+      grp.total_amount += Number(co.price_core) || 0;
+      grp.order_ids.push(co.id);
+      if (co.status === 'PENDING_PAYMENT') {
+        grp.status = 'PENDING_PAYMENT';
+      }
+    }
+
+    for (const grp of shopGroupsMap.values()) {
+      if (grp.qr_allowed && grp.bank_name && grp.account_number && grp.qr_content) {
+        grp.qr_payload = generateVietQrPayload({
+          bankName: grp.bank_name,
+          accountNumber: grp.account_number,
+          amount: grp.total_amount,
+          content: grp.qr_content,
+        });
+      }
+    }
+
+    const childOrders = rawChildren.map((co: any) => {
+      const grp = shopGroupsMap.get(co.seller_id);
       return {
         id: co.id,
         order_code: co.order_code,
@@ -122,34 +151,36 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         product_type: co.product_type || 'digital',
         price_core: co.price_core,
         status: co.status,
-        delivered_code: co.delivered_code,
-        hold_until: co.hold_until,
+        payment_method: co.payment_method,
+        payment_channel: co.payment_channel || 'CORE',
+        shop_qr_group_code: co.shop_qr_group_code || null,
+        delivered_code:
+          co.status === 'PAID' || co.status === 'COMPLETED' || co.status === 'DELIVERED'
+            ? co.delivered_code
+            : null,
+        pending_manual_code: Boolean(co.pending_manual_code),
         expires_at: co.expires_at,
-        qr_allowed: isRealMoneyAllowed,
-        qr_payload: qrPayload,
-        qr_content: isRealMoneyAllowed ? transferContent : null,
-        bank_name: bankName,
-        account_number: accountNumber,
-        bank_account: bankAccount,
+        qr_allowed: Boolean(grp?.qr_allowed),
+        qr_payload: grp?.qr_payload || null,
+        qr_content: grp?.qr_content || null,
+        bank_name: grp?.bank_name || '',
+        account_number: grp?.account_number || '',
+        bank_account: grp?.bank_account || '',
+        has_api_token: Boolean(grp?.has_api_token),
       };
     });
 
-    const now = Date.now();
-    const expiresAtMs = parentOrder.expires_at ? new Date(parentOrder.expires_at).getTime() : now;
-    const secondsLeft = Math.max(0, Math.floor((expiresAtMs - now) / 1000));
+    const expiresMs = parentOrder.expires_at ? new Date(parentOrder.expires_at).getTime() : 0;
+    const secondsLeft = Math.max(0, Math.floor((expiresMs - Date.now()) / 1000));
 
     return new Response(
       JSON.stringify({
         success: true,
         parent_order: {
-          id: parentOrder.id,
-          parent_order_code: parentOrder.parent_order_code,
-          total_amount: parentOrder.total_amount,
-          payment_method: parentOrder.payment_method,
-          status: parentOrder.status,
-          expires_at: parentOrder.expires_at,
+          ...parentOrder,
           seconds_left: secondsLeft,
         },
+        shop_groups: Array.from(shopGroupsMap.values()),
         child_orders: childOrders,
       }),
       { status: 200, headers: CORS_HEADERS }
@@ -157,7 +188,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   } catch (err: any) {
     console.error('[getSellerMultiOrder error]', err);
     return new Response(
-      JSON.stringify({ success: false, error: err?.message || 'Lỗi khi tra cứu đơn hàng.' }),
+      JSON.stringify({ success: false, error: err?.message || 'Lỗi khi tra cứu đơn hàng đa gian hàng.' }),
       { status: 500, headers: CORS_HEADERS }
     );
   }

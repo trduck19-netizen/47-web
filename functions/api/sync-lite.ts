@@ -393,6 +393,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
             ? { warranty_hours: Number(p.warranty_hours) }
             : (meta.warranty_hours !== undefined && meta.warranty_hours !== null ? { warranty_hours: Number(meta.warranty_hours) } : {})),
           ...(p.seller_name || meta.seller_name ? { seller_name: p.seller_name || meta.seller_name } : {}),
+          ...(p.seller_id
+            ? {
+                seller_id: p.seller_id,
+                seller_slug: p.seller_slug || '',
+                is_affiliate: Boolean(p.is_affiliate),
+                seller_qr_available: Boolean(p.seller_qr_available),
+              }
+            : {}),
           brand: p.brand || p.seller_name || meta.seller_name || '',
           origin: p.origin || p.warehouse_address || meta.warehouse_address || '',
         };

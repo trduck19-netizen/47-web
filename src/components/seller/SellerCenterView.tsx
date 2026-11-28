@@ -37,10 +37,12 @@ import {
   Lock,
   Check,
   Share2,
+  QrCode,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Game } from '../../types/game';
 import { SellerAffiliateManager, ResellSettingsModal } from './SellerAffiliateManager';
+import { SellerSepayManager } from './SellerSepayManager';
 
 interface SellerCenterViewProps {
   currentUser: any;
@@ -60,7 +62,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [sellerData, setSellerData] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders' | 'disputes' | 'finance' | 'settings' | 'api_keys' | 'affiliate'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders' | 'disputes' | 'finance' | 'sepay' | 'settings' | 'api_keys' | 'affiliate'>('dashboard');
   const [resellModalProduct, setResellModalProduct] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
@@ -1334,6 +1336,14 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           <Coins className="w-3.5 h-3.5 shrink-0" /> {isEn ? 'Finance & Payouts' : 'Tài Chính & Rút Tiền'}
         </button>
         <button
+          onClick={() => setActiveTab('sepay')}
+          className={`px-2 sm:px-2.5 2xl:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'sepay' ? 'bg-emerald-600 text-white shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
+          }`}
+        >
+          <QrCode className="w-3.5 h-3.5 shrink-0" /> {t('sellerSepay.tabTitle')}
+        </button>
+        <button
           onClick={() => setActiveTab('settings')}
           className={`px-2 sm:px-2.5 2xl:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'settings' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
@@ -2534,6 +2544,13 @@ const data = await res.json();`}
       )}
 
       {/* Tab 8: Resell & Cross-Shop (§Affiliate) */}
+      {activeTab === 'sepay' && (
+        <SellerSepayManager
+          getHeaders={getHeaders}
+          onRefreshSeller={fetchSellerInfo}
+        />
+      )}
+
       {activeTab === 'affiliate' && (
         <SellerAffiliateManager
           getHeaders={getHeaders}

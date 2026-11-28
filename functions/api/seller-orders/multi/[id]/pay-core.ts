@@ -160,6 +160,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             UPDATE seller_orders
             SET status = 'PROCESSING',
                 payment_method = 'CORE',
+                payment_channel = 'CORE',
+                affiliate_wholesale_reserved_core = 0,
                 hold_until = ?,
                 updated_at = ?
             WHERE id = ?
@@ -211,7 +213,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           batchStatements.push(
             env.DB.prepare(`
               UPDATE seller_orders
-              SET payment_method = 'CORE', pending_manual_code = 1, updated_at = ?
+              SET payment_method = 'CORE', payment_channel = 'CORE', affiliate_wholesale_reserved_core = 0, pending_manual_code = 1, updated_at = ?
               WHERE id = ?
             `).bind(nowIso, co.id)
           );
@@ -223,6 +225,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
                   code_id = ?,
                   delivered_code = ?,
                   payment_method = 'CORE',
+                  payment_channel = 'CORE',
+                  affiliate_wholesale_reserved_core = 0,
                   hold_until = ?,
                   updated_at = ?
               WHERE id = ?
@@ -263,11 +267,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
+    // Hoàn trả tạm ứng vốn sỉ (nếu trước đó đơn Liên Shop đã khóa vốn từ Ví Core chủ Shop A cho QR)
+    for (const co of childOrders) {
+      const preReserved = Math.max(0, Number(co.affiliate_wholesale_reserved_core || 0));
+      if (preReserved > 0 && co.owner_member_id) {
+        batchStatements.push(
+          env.DB.prepare(`
+            UPDATE members
+            SET balance = balance + ?, updated_at = ?
+            WHERE id = ?
+          `).bind(preReserved, nowIso, co.owner_member_id)
+        );
+      }
+    }
+
     // Cập nhật đơn cha
     batchStatements.push(
       env.DB.prepare(`
         UPDATE seller_parent_orders
-        SET status = 'PAID', payment_method = 'CORE', updated_at = ?
+        SET status = 'PAID', payment_method = 'CORE', payment_channel = 'CORE', updated_at = ?
         WHERE id = ?
       `).bind(nowIso, parentOrder.id)
     );

@@ -151,40 +151,85 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         { status: 200, headers: CORS_HEADERS }
       );
     } else {
-      // 2b. Hoàn tiền Core: Trừ pending_balance_core của shop, hoàn ví Core cho khách
-      const priceCore = order.price_core;
+      // 2b. Hoàn tiền Core
+      const priceCore = Number(order.price_core) || 0;
+      const isDirectSepay = String(order.payment_channel || '').toUpperCase() === 'DIRECT_SEPAY';
 
-      await env.DB.batch([
-        // Trừ Core chờ rút của shop
-        env.DB.prepare(`
-          UPDATE sellers
-          SET pending_balance_core = MAX(0, pending_balance_core - ?), updated_at = ?
-          WHERE id = ?
-        `).bind(priceCore, nowIso, order.seller_id),
-
-        // Hoàn Core vào số dư của khách
-        env.DB.prepare(`
+      if (isDirectSepay) {
+        // CHỐNG GIAN LẬN (DIRECT_SEPAY): Tiền đơn đã vào STK riêng chủ shop (pending_balance_core = 0).
+        // Chỉ cho phép hoàn Ví Core khi Ví Core thật của Chủ Shop đủ số dư để khấu trừ nguyên tử.
+        const deductRes: any = await env.DB.prepare(`
           UPDATE members
-          SET balance = balance + ?, updated_at = ?
-          WHERE id = ?
-        `).bind(priceCore, nowIso, order.buyer_member_id),
+          SET balance = balance - ?, updated_at = ?
+          WHERE id = ? AND balance >= ?
+        `)
+          .bind(priceCore, nowIso, order.owner_member_id, priceCore)
+          .run();
 
-        // Đơn hàng sang REFUNDED
-        env.DB.prepare(`
-          UPDATE seller_orders
-          SET status = 'REFUNDED',
-              resolution_type = 'REFUND_CORE',
-              resolution_note = ?,
-              resolved_at = ?,
-              updated_at = ?
-          WHERE id = ?
-        `).bind(
-          note?.trim() || 'Người bán đã hoàn lại số dư Core cho khách',
-          nowIso,
-          nowIso,
-          order.id
-        ),
-      ]);
+        const deductedChanges = Number(deductRes?.meta?.changes ?? deductRes?.changes ?? 0);
+        if (deductedChanges !== 1) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              code: 'SELLER_CORE_INSUFFICIENT_FOR_DIRECT_REFUND',
+              error: `Đơn thu qua SePay riêng không có tiền giữ trên Sàn. Ví Core của chủ gian hàng không đủ ${priceCore.toLocaleString('vi-VN')} Core để hoàn tiền cho khách — vui lòng chọn Đổi mã mới (REPLACE_CODE) hoặc nạp thêm Ví Core.`,
+            }),
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+
+        await env.DB.batch([
+          env.DB.prepare(`
+            UPDATE members
+            SET balance = balance + ?, updated_at = ?
+            WHERE id = ?
+          `).bind(priceCore, nowIso, order.buyer_member_id),
+          env.DB.prepare(`
+            UPDATE seller_orders
+            SET status = 'REFUNDED',
+                resolution_type = 'REFUND_CORE',
+                resolution_note = ?,
+                resolved_at = ?,
+                updated_at = ?
+            WHERE id = ?
+          `).bind(
+            note?.trim() || 'Chủ gian hàng đã hoàn Core trực tiếp từ Ví Core của shop (đơn DIRECT_SEPAY)',
+            nowIso,
+            nowIso,
+            order.id
+          ),
+        ]);
+      } else {
+        // Đơn qua Ví Sàn / Escrow truyền thống: Trừ pending_balance_core của shop, hoàn ví Core cho khách
+        await env.DB.batch([
+          env.DB.prepare(`
+            UPDATE sellers
+            SET pending_balance_core = MAX(0, pending_balance_core - ?), updated_at = ?
+            WHERE id = ?
+          `).bind(priceCore, nowIso, order.seller_id),
+
+          env.DB.prepare(`
+            UPDATE members
+            SET balance = balance + ?, updated_at = ?
+            WHERE id = ?
+          `).bind(priceCore, nowIso, order.buyer_member_id),
+
+          env.DB.prepare(`
+            UPDATE seller_orders
+            SET status = 'REFUNDED',
+                resolution_type = 'REFUND_CORE',
+                resolution_note = ?,
+                resolved_at = ?,
+                updated_at = ?
+            WHERE id = ?
+          `).bind(
+            note?.trim() || 'Người bán đã hoàn lại số dư Core cho khách',
+            nowIso,
+            nowIso,
+            order.id
+          ),
+        ]);
+      }
 
       // Tự động kiểm tra tỷ lệ lỗi lô của mã cũ và đóng băng nếu cần
       if (order.original_batch_id) {

@@ -1,6 +1,6 @@
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-27T18:15:54.295Z — Batch: Dot 20 Trang Chu (24/11/2026)
-   [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 119 file giao diện (.tsx)...
+   Timestamp: 2026-11-28T04:56:41.591Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 121 file giao diện (.tsx)...
 
 ================================================================================
 🚨 [I18N SCANNER FAILED] PHÁT HIỆN CHUỖI TIẾNG VIỆT GHI CỨNG NGOÀI TỪ ĐIỂN!
@@ -430,75 +430,75 @@
      Snippet: <option value="PENDING">⏳ Giữ Trong Hàng Chờ (PENDING)</option>
 
 📁 File: src/admin/modules/ApiKeysModule.tsx (35 lỗi):
-   • Dòng 2139 [JSX_TEXT_HARDCODED]: "🛍️ Cổng Quản Lý Code Bán & Gói Sản Phẩm (Store & Inventory API)"
+   • Dòng 2151 [JSX_TEXT_HARDCODED]: "🛍️ Cổng Quản Lý Code Bán & Gói Sản Phẩm (Store & Inventory API)"
      Snippet: <span>🛍️ Cổng Quản Lý Code Bán & Gói Sản Phẩm (Store & Inventory API)</span>
-   • Dòng 2142 [JSX_TEXT_HARDCODED]: "cung cấp toàn quyền quản trị danh mục gói sản phẩm bán (tạo, cập nhật, xóa gói, điều chỉnh giá bán / giá gốc, cấu hình hiển thị FOMO) và nạp kho mã code bán thực tế cho website. Mọi thay đổi về tồn kho mã code tự động kích hoạt tính toán lại số lượng tồn kho hiển thị (Quy tắc kho hàng thật = 0 thì hiển thị = 0 "HẾT HÀNG") và đồng bộ nguyên tử 1 - 1 lên Cửa Hàng"
+   • Dòng 2154 [JSX_TEXT_HARDCODED]: "cung cấp toàn quyền quản trị danh mục gói sản phẩm bán (tạo, cập nhật, xóa gói, điều chỉnh giá bán / giá gốc, cấu hình hiển thị FOMO) và nạp kho mã code bán thực tế cho website. Mọi thay đổi về tồn kho mã code tự động kích hoạt tính toán lại số lượng tồn kho hiển thị (Quy tắc kho hàng thật = 0 thì hiển thị = 0 "HẾT HÀNG") và đồng bộ nguyên tử 1 - 1 lên Cửa Hàng"
      Snippet: Endpoint <code>/api/store/manage</code> cung cấp toàn quyền quản trị danh mục gói sản phẩm bán (tạo, cập nhật, xóa gói, điều chỉnh giá bán / giá gốc, cấu hình hiển thị FOMO) và nạp kho mã code bán thực tế cho website. Mọi thay đổi về tồn kho mã code tự động kích hoạt tính toán lại số lượng tồn kho hiển thị (Quy tắc kho hàng thật = 0 thì hiển thị = 0 "HẾT HÀNG") và đồng bộ nguyên tử 1 - 1 lên Cửa Hàng <code>universal-mall-shop.pages.dev/store</code>.
-   • Dòng 2145 [JSX_TEXT_HARDCODED]: "Scope yêu cầu: STORE_FULL"
+   • Dòng 2157 [JSX_TEXT_HARDCODED]: "Scope yêu cầu: STORE_FULL"
      Snippet: <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Scope yêu cầu: STORE_FULL</span>
-   • Dòng 2147 [JSX_TEXT_HARDCODED]: "Edge Cache Auto-Purge: Có"
+   • Dòng 2159 [JSX_TEXT_HARDCODED]: "Edge Cache Auto-Purge: Có"
      Snippet: <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Edge Cache Auto-Purge: Có</span>
-   • Dòng 2715 [JSX_TEXT_HARDCODED]: "mà"
+   • Dòng 2727 [JSX_TEXT_HARDCODED]: "mà"
      Snippet: <span className="font-bold text-cyan-400">🤖 Cổng Điều Hành Nhóm Telegram Cho AI Agent (Muse) & Quản Trị Viên:</span> Endpoint <code>POST /api/telegram/manage</code> cho phép quản lý toàn bộ nhóm chat Telegram (đọc trạng thái nhóm/admin, phân trang tin nhắn webhook, xóa/ghim tin nhắn, cấm/hạn chế thành viên, sửa tên/mô tả nhóm, tạo/thu hồi link mời) bằng Khóa API mang scope <code>TELEGRAM_FULL</code> mà <b>không cần cầm Bot Token</b>.
-   • Dòng 2715 [JSX_TEXT_HARDCODED]: "không cần cầm Bot Token"
+   • Dòng 2727 [JSX_TEXT_HARDCODED]: "không cần cầm Bot Token"
      Snippet: <span className="font-bold text-cyan-400">🤖 Cổng Điều Hành Nhóm Telegram Cho AI Agent (Muse) & Quản Trị Viên:</span> Endpoint <code>POST /api/telegram/manage</code> cho phép quản lý toàn bộ nhóm chat Telegram (đọc trạng thái nhóm/admin, phân trang tin nhắn webhook, xóa/ghim tin nhắn, cấm/hạn chế thành viên, sửa tên/mô tả nhóm, tạo/thu hồi link mời) bằng Khóa API mang scope <code>TELEGRAM_FULL</code> mà <b>không cần cầm Bot Token</b>.
-   • Dòng 2885 [JSX_TEXT_HARDCODED]: "⚡ API Đa Năng:"
+   • Dòng 2897 [JSX_TEXT_HARDCODED]: "⚡ API Đa Năng:"
      Snippet: <span className="font-bold text-purple-400">⚡ API Đa Năng:</span> Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền <code>API_KEYS_FULL</code> / <code>ADMIN_FULL</code>) để gọi endpoint <code>POST /api/api-keys/set-permissions</code> nhằm cấu hình và set bất kỳ tổ hợp quyền nào cho các mã API trên hệ thống.
-   • Dòng 2885 [JSX_TEXT_HARDCODED]: "Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền"
+   • Dòng 2897 [JSX_TEXT_HARDCODED]: "Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền"
      Snippet: <span className="font-bold text-purple-400">⚡ API Đa Năng:</span> Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền <code>API_KEYS_FULL</code> / <code>ADMIN_FULL</code>) để gọi endpoint <code>POST /api/api-keys/set-permissions</code> nhằm cấu hình và set bất kỳ tổ hợp quyền nào cho các mã API trên hệ thống.
-   • Dòng 2885 [JSX_TEXT_HARDCODED]: ") để gọi endpoint"
+   • Dòng 2897 [JSX_TEXT_HARDCODED]: ") để gọi endpoint"
      Snippet: <span className="font-bold text-purple-400">⚡ API Đa Năng:</span> Sử dụng 1 mã API Quản trị (hoặc khóa Đa Năng có quyền <code>API_KEYS_FULL</code> / <code>ADMIN_FULL</code>) để gọi endpoint <code>POST /api/api-keys/set-permissions</code> nhằm cấu hình và set bất kỳ tổ hợp quyền nào cho các mã API trên hệ thống.
-   • Dòng 3045 [JSX_TEXT_HARDCODED]: "🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:"
+   • Dòng 3057 [JSX_TEXT_HARDCODED]: "🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:"
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3045 [JSX_TEXT_HARDCODED]: "Toàn quyền sửa thông tin game live ("
+   • Dòng 3057 [JSX_TEXT_HARDCODED]: "Toàn quyền sửa thông tin game live ("
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3045 [JSX_TEXT_HARDCODED]: ": chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live ("
+   • Dòng 3057 [JSX_TEXT_HARDCODED]: ": chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live ("
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3045 [JSX_TEXT_HARDCODED]: ": đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live ("
+   • Dòng 3057 [JSX_TEXT_HARDCODED]: ": đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live ("
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3045 [JSX_TEXT_HARDCODED]: ": xác minh file tồn tại và là ảnh thật). Chấp nhận Header"
+   • Dòng 3057 [JSX_TEXT_HARDCODED]: ": xác minh file tồn tại và là ảnh thật). Chấp nhận Header"
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3045 [JSX_TEXT_HARDCODED]: "hoặc"
+   • Dòng 3057 [JSX_TEXT_HARDCODED]: "hoặc"
      Snippet: <span className="font-bold text-teal-400">🎮 Quyền Quản Trị GAMES_MANAGE & GAMES_FULL:</span> Toàn quyền sửa thông tin game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_game</code>: chỉ đổi trường được gửi, giữ nguyên mã), xóa lẻ từng mã khỏi game live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">delete_codes</code>: đúng phạm vi slug, phân biệt hoa/thường, không ảnh hưởng game khác), và đặt icon live (<code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">update_icon_live</code>: xác minh file tồn tại và là ảnh thật). Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-200 font-mono">X-Api-Key: &lt;KEY&gt;</code>.
-   • Dòng 3181 [JSX_TEXT_HARDCODED]: "🎁 Quyền Quản Trị GIVEAWAYS_FULL:"
+   • Dòng 3193 [JSX_TEXT_HARDCODED]: "🎁 Quyền Quản Trị GIVEAWAYS_FULL:"
      Snippet: <span className="font-bold text-purple-400">🎁 Quyền Quản Trị GIVEAWAYS_FULL:</span> Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3181 [JSX_TEXT_HARDCODED]: "Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header"
+   • Dòng 3193 [JSX_TEXT_HARDCODED]: "Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header"
      Snippet: <span className="font-bold text-purple-400">🎁 Quyền Quản Trị GIVEAWAYS_FULL:</span> Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3181 [JSX_TEXT_HARDCODED]: "hoặc"
+   • Dòng 3193 [JSX_TEXT_HARDCODED]: "hoặc"
      Snippet: <span className="font-bold text-purple-400">🎁 Quyền Quản Trị GIVEAWAYS_FULL:</span> Cho phép bot và hệ thống bên ngoài toàn quyền tra cứu chiến dịch giveaway, lấy danh sách mã kho, nạp hàng loạt giftcode, bật/tắt đợt phát và reset hồi chiêu. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3285 [JSX_TEXT_HARDCODED]: "⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:"
+   • Dòng 3297 [JSX_TEXT_HARDCODED]: "⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:"
      Snippet: <span className="font-bold text-amber-400">⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:</span> Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3285 [JSX_TEXT_HARDCODED]: "Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header"
+   • Dòng 3297 [JSX_TEXT_HARDCODED]: "Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header"
      Snippet: <span className="font-bold text-amber-400">⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:</span> Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3285 [JSX_TEXT_HARDCODED]: "hoặc"
+   • Dòng 3297 [JSX_TEXT_HARDCODED]: "hoặc"
      Snippet: <span className="font-bold text-amber-400">⏰ Quyền Quản Trị EVENT_SCHEDULER_FULL:</span> Toàn quyền quản trị lịch sự kiện, đồng hồ đếm ngược tự động, lên lịch phát code/flash sale sản phẩm, kích hoạt Giờ G ngay lập tức và ghim banner trang chủ. Chấp nhận Header <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">X-Api-Key: &lt;KEY&gt;</code> hoặc <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-200 font-mono">Authorization: Bearer &lt;KEY&gt;</code>.
-   • Dòng 3391 [JSX_TEXT_HARDCODED]: "🚀 Bộ 7 API Điều Khiển Web Từ Xa (Remote Control & Headless APIs)"
+   • Dòng 3403 [JSX_TEXT_HARDCODED]: "🚀 Bộ 7 API Điều Khiển Web Từ Xa (Remote Control & Headless APIs)"
      Snippet: <span>🚀 Bộ 7 API Điều Khiển Web Từ Xa (Remote Control & Headless APIs)</span>
-   • Dòng 3394 [JSX_TEXT_HARDCODED]: ") hoặc Header"
+   • Dòng 3406 [JSX_TEXT_HARDCODED]: ") hoặc Header"
      Snippet: Toàn bộ 7 module API dưới đây được thiết kế chuẩn RESTful, hỗ trợ xác thực bằng mã API Bearer (Header <code>Authorization: Bearer &lt;KEY&gt;</code>) hoặc Header <code>X-Api-Key: &lt;KEY&gt;</code>, được bảo vệ theo cơ chế phân quyền hạt nhân độc lập và tự động ghi nhận kiểm toán an ninh.
-   • Dòng 3540 [JSX_TEXT_HARDCODED]: "Chào bạn,"
+   • Dòng 3552 [JSX_TEXT_HARDCODED]: "Chào bạn,"
      Snippet: "content_html": "<h2>Chào bạn,</h2><p>Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!</p>",
-   • Dòng 3540 [JSX_TEXT_HARDCODED]: "Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!"
+   • Dòng 3552 [JSX_TEXT_HARDCODED]: "Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!"
      Snippet: "content_html": "<h2>Chào bạn,</h2><p>Bộ giftcode VIP đã có sẵn, vào nhận ngay nhé!</p>",
-   • Dòng 3648 [JSX_TEXT_HARDCODED]: "Mã Khóa:"
+   • Dòng 3660 [JSX_TEXT_HARDCODED]: "Mã Khóa:"
      Snippet: <span className="text-muted-foreground shrink-0 font-medium">Mã Khóa:</span>
-   • Dòng 3666 [JSX_TEXT_HARDCODED]: "Đã Copy"
+   • Dòng 3678 [JSX_TEXT_HARDCODED]: "Đã Copy"
      Snippet: <span className="text-emerald-500">Đã Copy</span>
-   • Dòng 3835 [JSX_TEXT_HARDCODED]: "Tạo Khóa API & Phân Quyền"
+   • Dòng 3847 [JSX_TEXT_HARDCODED]: "Tạo Khóa API & Phân Quyền"
      Snippet: <h3 className="font-bold text-foreground">Tạo Khóa API & Phân Quyền</h3>
-   • Dòng 3836 [JSX_TEXT_HARDCODED]: "Tạo khóa đơn quyền hoặc khóa đa năng tự chọn quyền"
+   • Dòng 3848 [JSX_TEXT_HARDCODED]: "Tạo khóa đơn quyền hoặc khóa đa năng tự chọn quyền"
      Snippet: <p className="text-xs text-muted-foreground">Tạo khóa đơn quyền hoặc khóa đa năng tự chọn quyền</p>
-   • Dòng 3854 [JSX_ATTR_HARDCODED]: "Ví dụ: Khóa Đa Năng Auto Bot, Pine AI Agent..."
+   • Dòng 3866 [JSX_ATTR_HARDCODED]: "Ví dụ: Khóa Đa Năng Auto Bot, Pine AI Agent..."
      Snippet: placeholder="Ví dụ: Khóa Đa Năng Auto Bot, Pine AI Agent..."
-   • Dòng 4058 [JSX_ATTR_HARDCODED]: "Ghi rõ ai đang sử dụng hoặc mục đích tích hợp của khóa này..."
+   • Dòng 4070 [JSX_ATTR_HARDCODED]: "Ghi rõ ai đang sử dụng hoặc mục đích tích hợp của khóa này..."
      Snippet: placeholder="Ghi rõ ai đang sử dụng hoặc mục đích tích hợp của khóa này..."
-   • Dòng 4107 [JSX_TEXT_HARDCODED]: "Gia Hạn Hiệu Lực Khóa API"
+   • Dòng 4119 [JSX_TEXT_HARDCODED]: "Gia Hạn Hiệu Lực Khóa API"
      Snippet: <h3 className="font-bold text-foreground">Gia Hạn Hiệu Lực Khóa API</h3>
-   • Dòng 4121 [JSX_TEXT_HARDCODED]: "Thời hạn hiện tại:"
+   • Dòng 4133 [JSX_TEXT_HARDCODED]: "Thời hạn hiện tại:"
      Snippet: <div className="text-muted-foreground">Thời hạn hiện tại:</div>
-   • Dòng 4198 [JSX_TEXT_HARDCODED]: "Khởi Tạo Khóa API Thành Công!"
+   • Dòng 4210 [JSX_TEXT_HARDCODED]: "Khởi Tạo Khóa API Thành Công!"
      Snippet: <h3 className="text-lg font-bold text-foreground">Khởi Tạo Khóa API Thành Công!</h3>
-   • Dòng 4210 [JSX_TEXT_HARDCODED]: "Sao chép nhanh"
+   • Dòng 4222 [JSX_TEXT_HARDCODED]: "Sao chép nhanh"
      Snippet: Khóa API đã sẵn sàng! Bạn có thể <strong>Sao chép nhanh</strong> ngay bên dưới. Khóa này cũng được lưu trực tiếp vào danh sách Quản lý để bạn có thể xem lại hoặc sao chép bất cứ lúc nào.
 
 📁 File: src/admin/modules/CodeInventoryModule.tsx (128 lỗi):
@@ -5346,45 +5346,45 @@
      Snippet: <span className="font-bold text-gray-700">Số lượng:</span>
 
 📁 File: src/components/seller/PublicStoreView.tsx (20 lỗi):
-   • Dòng 197 [JSX_TEXT_HARDCODED]: "Không Tìm Thấy Gian Hàng"
+   • Dòng 263 [JSX_TEXT_HARDCODED]: "Không Tìm Thấy Gian Hàng"
      Snippet: <h2 className="text-xl font-bold mb-2">Không Tìm Thấy Gian Hàng</h2>
-   • Dòng 264 [JSX_TEXT_HARDCODED]: "Bảo hành:"
+   • Dòng 330 [JSX_TEXT_HARDCODED]: "Bảo hành:"
      Snippet: <span className="font-semibold text-foreground">Bảo hành:</span> {store.warranty_policy || 'Bảo hành 24H 1 đổi 1 hoặc hoàn tiền'}
-   • Dòng 282 [JSX_TEXT_HARDCODED]: "Gian hàng hiện đang tạm thời nghỉ bán!"
+   • Dòng 348 [JSX_TEXT_HARDCODED]: "Gian hàng hiện đang tạm thời nghỉ bán!"
      Snippet: <div className="font-bold text-sm">Gian hàng hiện đang tạm thời nghỉ bán!</div>
-   • Dòng 283 [JSX_TEXT_HARDCODED]: "Người bán đang trong kỳ nghỉ hoặc bảo trì kho. Quý khách vui lòng quay lại sau ít ngày."
+   • Dòng 349 [JSX_TEXT_HARDCODED]: "Người bán đang trong kỳ nghỉ hoặc bảo trì kho. Quý khách vui lòng quay lại sau ít ngày."
      Snippet: <div className="opacity-90 mt-0.5">Người bán đang trong kỳ nghỉ hoặc bảo trì kho. Quý khách vui lòng quay lại sau ít ngày.</div>
-   • Dòng 291 [JSX_TEXT_HARDCODED]: "Danh Mục Gói Sản Phẩm & Giftcode"
+   • Dòng 357 [JSX_TEXT_HARDCODED]: "Danh Mục Gói Sản Phẩm & Giftcode"
      Snippet: <h2 className="text-lg font-bold">Danh Mục Gói Sản Phẩm & Giftcode</h2>
-   • Dòng 302 [JSX_TEXT_HARDCODED]: "Chưa có sản phẩm mở bán"
+   • Dòng 368 [JSX_TEXT_HARDCODED]: "Chưa có sản phẩm mở bán"
      Snippet: <div className="text-sm font-semibold">Chưa có sản phẩm mở bán</div>
-   • Dòng 360 [JSX_TEXT_HARDCODED]: "Tạm hết hàng"
+   • Dòng 426 [JSX_TEXT_HARDCODED]: "Tạm hết hàng"
      Snippet: <span className="text-destructive font-semibold ml-auto">Tạm hết hàng</span>
-   • Dòng 383 [JSX_ATTR_HARDCODED]: "Thêm sản phẩm này vào giỏ hàng"
+   • Dòng 449 [JSX_ATTR_HARDCODED]: "Thêm sản phẩm này vào giỏ hàng"
      Snippet: title="Thêm sản phẩm này vào giỏ hàng"
-   • Dòng 384 [JSX_ATTR_HARDCODED]: "Thêm vào giỏ hàng"
+   • Dòng 450 [JSX_ATTR_HARDCODED]: "Thêm vào giỏ hàng"
      Snippet: aria-label="Thêm vào giỏ hàng"
-   • Dòng 387 [JSX_TEXT_HARDCODED]: "Thêm vào giỏ"
+   • Dòng 453 [JSX_TEXT_HARDCODED]: "Thêm vào giỏ"
      Snippet: <span>Thêm vào giỏ</span>
-   • Dòng 413 [JSX_TEXT_HARDCODED]: "Đánh Giá Của Khách Hàng"
+   • Dòng 479 [JSX_TEXT_HARDCODED]: "Đánh Giá Của Khách Hàng"
      Snippet: <span>Đánh Giá Của Khách Hàng</span>
-   • Dòng 429 [JSX_TEXT_HARDCODED]: "Chưa có đánh giá nào"
+   • Dòng 495 [JSX_TEXT_HARDCODED]: "Chưa có đánh giá nào"
      Snippet: <div className="text-sm font-semibold text-foreground">Chưa có đánh giá nào</div>
-   • Dòng 464 [JSX_TEXT_HARDCODED]: "Người mua:"
+   • Dòng 530 [JSX_TEXT_HARDCODED]: "Người mua:"
      Snippet: <span className="font-semibold text-foreground">Người mua: <strong className="font-mono">{r.buyer_name}</strong></span>
-   • Dòng 506 [JSX_TEXT_HARDCODED]: "Giá sản phẩm:"
+   • Dòng 572 [JSX_TEXT_HARDCODED]: "Giá sản phẩm:"
      Snippet: <span className="text-muted-foreground">Giá sản phẩm:</span>
-   • Dòng 510 [JSX_TEXT_HARDCODED]: "Số dư ví của bạn:"
+   • Dòng 576 [JSX_TEXT_HARDCODED]: "Số dư ví của bạn:"
      Snippet: <span className="text-muted-foreground">Số dư ví của bạn:</span>
-   • Dòng 518 [JSX_TEXT_HARDCODED]: "Thời gian giao:"
+   • Dòng 584 [JSX_TEXT_HARDCODED]: "Thời gian giao:"
      Snippet: <span className="text-muted-foreground">Thời gian giao:</span>
-   • Dòng 519 [JSX_TEXT_HARDCODED]: "Tức thì (0 giây)"
+   • Dòng 585 [JSX_TEXT_HARDCODED]: "Tức thì (0 giây)"
      Snippet: <strong className="text-emerald-500">Tức thì (0 giây)</strong>
-   • Dòng 556 [JSX_TEXT_HARDCODED]: "Giao Dịch Thành Công!"
+   • Dòng 663 [JSX_TEXT_HARDCODED]: "Giao Dịch Thành Công!"
      Snippet: <h4 className="text-base font-bold text-foreground">Giao Dịch Thành Công!</h4>
-   • Dòng 557 [JSX_TEXT_HARDCODED]: "Mã giftcode của bạn đã sẵn sàng sử dụng."
+   • Dòng 664 [JSX_TEXT_HARDCODED]: "Mã giftcode của bạn đã sẵn sàng sử dụng."
      Snippet: <p className="text-xs text-muted-foreground mt-0.5">Mã giftcode của bạn đã sẵn sàng sử dụng.</p>
-   • Dòng 561 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng / Giftcode Của Bạn"
+   • Dòng 668 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng / Giftcode Của Bạn"
      Snippet: <div className="text-[10px] text-muted-foreground font-semibold mb-1 uppercase tracking-wider">Mã Quà Tặng / Giftcode Của Bạn</div>
 
 📁 File: src/components/ShareModal.tsx (6 lỗi):

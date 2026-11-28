@@ -162,6 +162,14 @@ import * as adminSellerConfigApi from './api/admin/seller-config';
 import * as sellerOrdersMultiApi from './api/seller-orders/multi';
 import * as sellerOrdersMultiIdApi from './api/seller-orders/multi/[id]';
 import * as sellerOrdersMultiPayCoreApi from './api/seller-orders/multi/[id]/pay-core';
+import * as sellerOrdersMultiVerifySepayApi from './api/seller-orders/multi/[id]/verify-sepay';
+import * as sellerSepayIndexApi from './api/seller/sepay/index';
+import * as sellerSepayRotateKeyApi from './api/seller/sepay/rotate-key';
+import * as sellerSepayTestConnApi from './api/seller/sepay/test-connection';
+import * as sellerSepayTxApi from './api/seller/sepay/transactions';
+import * as sellerSepayPayDebtApi from './api/seller/sepay/pay-debt';
+import * as sellerSepayWebhookApi from './api/webhooks/sepay/seller/[sellerId]';
+import * as adminSellerSepayApi from './api/admin/seller-sepay/index';
 import * as sellerFinanceIndexApi from './api/seller/finance/index';
 import * as sellerFinanceWithdrawApi from './api/seller/finance/withdraw';
 import * as sellerFinanceWithdrawalsApi from './api/seller/finance/withdrawals';
@@ -1266,6 +1274,16 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
           });
         }
+      }
+
+      // 6a. /api/webhooks/sepay/seller/:sellerId (Per-Seller Direct SePay Webhook — DIRECT_SEPAY)
+      const matchSellerSepayWebhook = pathname.match(/^\/api\/webhooks\/sepay\/seller\/([^/]+)$/);
+      if (matchSellerSepayWebhook) {
+        context.params = { ...(context.params || {}), sellerId: matchSellerSepayWebhook[1] };
+        if (method === 'OPTIONS') return await sellerSepayWebhookApi.onRequestOptions(context);
+        if (method === 'GET') return await sellerSepayWebhookApi.onRequestGet(context);
+        if (method === 'POST') return await sellerSepayWebhookApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
       }
 
       // 6. /api/webhooks/sepay
@@ -2611,6 +2629,14 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return new Response('Method Not Allowed', { status: 405 });
       }
 
+      const matchSellerOrderMultiVerify = pathname.match(/^\/api\/seller-orders\/multi\/([^/]+)\/verify-sepay$/);
+      if (matchSellerOrderMultiVerify) {
+        context.params = { ...(context.params || {}), id: matchSellerOrderMultiVerify[1] };
+        if (method === 'OPTIONS') return await sellerOrdersMultiVerifySepayApi.onRequestOptions(context);
+        if (method === 'POST') return await sellerOrdersMultiVerifySepayApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
       const matchSellerOrderMultiId = pathname.match(/^\/api\/seller-orders\/multi\/([^/]+)$/);
       if (matchSellerOrderMultiId) {
         context.params = { ...(context.params || {}), id: matchSellerOrderMultiId[1] };
@@ -2638,6 +2664,56 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         if (method === 'OPTIONS') return await sellerFinanceWithdrawalsApi.onRequestOptions();
         if (method === 'GET') return await sellerFinanceWithdrawalsApi.onRequestGet(context);
         return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      // =========================================================================
+      // 20.11b. Seller Direct SePay Gateway (Store Owner Self-Managed SePay)
+      // =========================================================================
+      if (pathname === '/api/seller/sepay') {
+        if (method === 'OPTIONS') return await sellerSepayIndexApi.onRequestOptions(context);
+        if (method === 'GET') return await sellerSepayIndexApi.onRequestGet(context);
+        if (method === 'PUT') return await sellerSepayIndexApi.onRequestPut(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/sepay/rotate-key') {
+        if (method === 'OPTIONS') return await sellerSepayRotateKeyApi.onRequestOptions(context);
+        if (method === 'POST') return await sellerSepayRotateKeyApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/sepay/test-connection') {
+        if (method === 'OPTIONS') return await sellerSepayTestConnApi.onRequestOptions(context);
+        if (method === 'POST') return await sellerSepayTestConnApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/sepay/pay-debt') {
+        if (method === 'OPTIONS') return await sellerSepayPayDebtApi.onRequestOptions(context);
+        if (method === 'POST') return await sellerSepayPayDebtApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchSellerSepayResolve = pathname.match(/^\/api\/seller\/sepay\/transactions\/([^/]+)\/resolve$/);
+      if (matchSellerSepayResolve) {
+        if (method === 'OPTIONS') return await sellerSepayTxApi.onRequestOptions(context);
+        if (method === 'POST') return await sellerSepayTxApi.handleResolveSellerSepayTx(context as any, matchSellerSepayResolve[1]);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/sepay/transactions') {
+        if (method === 'OPTIONS') return await sellerSepayTxApi.onRequestOptions(context);
+        if (method === 'GET') return await sellerSepayTxApi.onRequestGet(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      // Admin Seller Direct SePay Oversight (/api/admin/seller-sepay/*)
+      if (pathname === '/api/admin/seller-sepay' || pathname.startsWith('/api/admin/seller-sepay/')) {
+        const segs = pathname
+          .replace(/^\/api\/admin\/seller-sepay\/?/, '')
+          .split('/')
+          .filter(Boolean);
+        return await adminSellerSepayApi.handleAdminSellerSepayRequest(context as any, segs);
       }
 
       // =========================================================================

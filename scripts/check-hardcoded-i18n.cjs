@@ -34,7 +34,9 @@ const IN_SCOPE_UI_FILES = [
   'src/components/AuthModal.tsx',
   'src/admin/modules/SupplierConnectorsModule.tsx',
   'src/admin/modules/InterShopAffiliateModule.tsx',
+  'src/admin/modules/SellerSepayGatewayModule.tsx',
   'src/components/seller/SellerAffiliateManager.tsx',
+  'src/components/seller/SellerSepayManager.tsx',
   'src/components/cart/CartDrawerModal.tsx',
 ];
 

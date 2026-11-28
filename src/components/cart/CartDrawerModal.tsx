@@ -89,9 +89,12 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
   const [checkoutError, setCheckoutError] = useState<string>('');
   const [activeParentOrder, setActiveParentOrder] = useState<any | null>(null);
   const [activeChildOrders, setActiveChildOrders] = useState<any[]>([]);
+  const [activeShopGroups, setActiveShopGroups] = useState<any[]>([]);
   const [paymentMode, setPaymentMode] = useState<'CORE' | 'QR'>('CORE');
   const [isPayingCore, setIsPayingCore] = useState(false);
   const [corePayError, setCorePayError] = useState<string>('');
+  const [isVerifyingSepay, setIsVerifyingSepay] = useState(false);
+  const [verifySepayMsg, setVerifySepayMsg] = useState<string>('');
   const [qrImages, setQrImages] = useState<Record<string, string>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(900);
@@ -172,26 +175,37 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
     });
   };
 
-  // Generate QR code data URLs for child orders
+  // Generate QR code data URLs for shop groups & child orders
   useEffect(() => {
-    if (!activeChildOrders || activeChildOrders.length === 0) return;
+    const entries: Array<{ key: string; payload: string }> = [];
+    (activeShopGroups || []).forEach((grp) => {
+      if (grp?.qr_payload && grp?.seller_id) {
+        entries.push({ key: `shop_${grp.seller_id}`, payload: grp.qr_payload });
+      }
+    });
+    (activeChildOrders || []).forEach((co) => {
+      if (co?.qr_payload && co?.id) {
+        entries.push({ key: co.id, payload: co.qr_payload });
+      }
+    });
+    if (entries.length === 0) return;
 
-    activeChildOrders.forEach(async (co) => {
-      if (co.qr_payload && !qrImages[co.id]) {
+    entries.forEach(async ({ key, payload }) => {
+      if (!qrImages[key]) {
         try {
-          const url = await QRCode.toDataURL(co.qr_payload, {
+          const url = await QRCode.toDataURL(payload, {
             errorCorrectionLevel: 'M',
             margin: 1.5,
             width: 220,
             color: { dark: '#0b0d19', light: '#ffffff' },
           });
-          setQrImages((prev) => ({ ...prev, [co.id]: url }));
+          setQrImages((prev) => ({ ...prev, [key]: url }));
         } catch (err) {
           console.error('[QR generation error]', err);
         }
       }
     });
-  }, [activeChildOrders]);
+  }, [activeShopGroups, activeChildOrders]);
 
   // Polling for Parent Order status updates
   useEffect(() => {
@@ -210,6 +224,9 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
         if (data.success && data.parent_order) {
           setActiveParentOrder(data.parent_order);
           setActiveChildOrders(data.child_orders || []);
+          if (Array.isArray(data.shop_groups)) {
+            setActiveShopGroups(data.shop_groups);
+          }
           if (typeof data.parent_order.seconds_left === 'number') {
             setSecondsLeft(data.parent_order.seconds_left);
           }
@@ -298,7 +315,10 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-      const itemsPayload = cartItems.map((i) => ({ product_id: i.productId }));
+      const itemsPayload = cartItems.map((i) => ({
+        product_id: i.productId,
+        quantity: Math.max(1, Number(i.quantity) || 1),
+      }));
       const res = await fetch('/api/seller-orders/multi', {
         method: 'POST',
         headers: getHeaders(),
@@ -323,6 +343,12 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
       // Success: active parent order created!
       setActiveParentOrder(data.parent_order);
       setActiveChildOrders(data.child_orders || []);
+      setActiveShopGroups(Array.isArray(data.shop_groups) ? data.shop_groups : []);
+      setVerifySepayMsg('');
+      const hasAnyQrGroup = Array.isArray(data.shop_groups)
+        ? data.shop_groups.some((g: any) => g.qr_allowed)
+        : (data.child_orders || []).some((c: any) => c.qr_allowed);
+      setPaymentMode(hasAnyQrGroup ? 'QR' : 'CORE');
       setSecondsLeft(data.parent_order.seconds_left || 900);
       // Clear cart once order is confirmed
       cartService.clearCart();
@@ -397,6 +423,36 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
     } finally {
       clearTimeout(timeoutId);
       setIsPayingCore(false);
+    }
+  };
+
+  // 3. On-demand SePay API Token check for Seller Direct QR orders
+  const handleVerifyDirectSepay = async () => {
+    if (!activeParentOrder) return;
+    setIsVerifyingSepay(true);
+    setVerifySepayMsg('');
+    try {
+      const res = await fetch(`/api/seller-orders/multi/${activeParentOrder.id}/verify-sepay`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.matched) {
+        const pollRes = await fetch(`/api/seller-orders/multi/${activeParentOrder.id}`, { headers: getHeaders() });
+        const pollData = await pollRes.json().catch(() => ({}));
+        if (pollData.success && pollData.parent_order) {
+          setActiveParentOrder(pollData.parent_order);
+          setActiveChildOrders(pollData.child_orders || []);
+          if (Array.isArray(pollData.shop_groups)) setActiveShopGroups(pollData.shop_groups);
+        }
+        setVerifySepayMsg(t('cart.verifySepayMatched'));
+      } else {
+        setVerifySepayMsg(data.message || t('cart.verifySepayPending'));
+      }
+    } catch {
+      setVerifySepayMsg(t('cart.errors.createOrderConnection'));
+    } finally {
+      setIsVerifyingSepay(false);
     }
   };
 
@@ -612,15 +668,175 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                     </div>
                   )}
 
-                  {/* Mode 2: VietQR Banking Payment for Child Orders */}
+                  {/* Mode 2: VietQR Direct Seller Banking Payment (Grouped per Shop) */}
                   {paymentMode === 'QR' && (
                     <div className="space-y-3">
                       <div className="p-3 rounded-xl bg-white dark:bg-muted/60 border border-slate-200 dark:border-border text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
                         {t('cart.qrTransferHint')}
                       </div>
 
+                      {verifySepayMsg && (
+                        <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300 font-medium">
+                          {verifySepayMsg}
+                        </div>
+                      )}
+
                       <div className="space-y-3">
-                        {activeChildOrders.map((co) => (
+                        {activeShopGroups.length > 0
+                          ? activeShopGroups.map((grp) => {
+                              const grpChildren = activeChildOrders.filter((c) => c.seller_id === grp.seller_id);
+                              const grpAllPaid =
+                                grpChildren.length > 0 &&
+                                grpChildren.every((c) => c.status === 'PAID' || c.status === 'COMPLETED' || c.status === 'PROCESSING');
+                              const qrKey = `shop_${grp.seller_id}`;
+                              return (
+                                <div
+                                  key={grp.seller_id}
+                                  className="p-4 rounded-xl bg-white dark:bg-card border border-slate-200 dark:border-border space-y-3"
+                                >
+                                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-border/60 pb-2 gap-2">
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-900 dark:text-foreground truncate">
+                                        {t('cart.shopPrefix')} {grp.seller_name} ({grpChildren.length})
+                                      </div>
+                                      <div className="text-[10px] text-slate-500 dark:text-muted-foreground truncate">
+                                        {grpChildren.map((c) => c.product_name).join(' • ')}
+                                      </div>
+                                    </div>
+                                    <span
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                                        grpAllPaid
+                                          ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                                          : 'bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400'
+                                      }`}
+                                    >
+                                      {grpAllPaid ? t('cart.statusPaid') : t('cart.statusAwaitingTransfer')}
+                                    </span>
+                                  </div>
+
+                                  {!grpAllPaid ? (
+                                    !grp.qr_allowed || !grp.qr_payload ? (
+                                      <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs space-y-1.5">
+                                        <div className="font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                                          <AlertCircle className="w-4 h-4 shrink-0" />
+                                          {t('cart.onlyCoreSupportedTitle')}
+                                        </div>
+                                        <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                                          {t('cart.onlyCoreSupportedDesc', { shop: grp.seller_name })}
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-3">
+                                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                                          <div className="p-2 rounded-xl bg-white shadow-sm border border-slate-200 dark:border-border shrink-0">
+                                            {qrImages[qrKey] ? (
+                                              <img
+                                                src={qrImages[qrKey]}
+                                                alt="VietQR Code"
+                                                className="w-36 h-36 object-contain"
+                                              />
+                                            ) : (
+                                              <div className="w-36 h-36 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                                                <RefreshCw className="w-6 h-6 animate-spin" />
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          <div className="flex-1 space-y-2 text-xs w-full">
+                                            <div>
+                                              <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{t('cart.bankAndAccount')}</div>
+                                              <div className="font-bold text-slate-900 dark:text-foreground">
+                                                {grp.bank_name} • <span className="font-mono">{grp.account_number}</span>
+                                              </div>
+                                              <div className="text-[10px] text-slate-500 dark:text-muted-foreground uppercase">{grp.bank_account}</div>
+                                            </div>
+
+                                            <div>
+                                              <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{t('cart.transferAmount')}</div>
+                                              <div className="font-mono text-sm font-black text-[#ee4d2d]">
+                                                {formatCurrency(Number(grp.total_amount))}
+                                              </div>
+                                            </div>
+
+                                            <div>
+                                              <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{t('cart.transferMemoRequired')}</div>
+                                              <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="font-mono font-black text-xs px-2.5 py-1 rounded-lg bg-[#ee4d2d]/10 text-[#ee4d2d] border border-[#ee4d2d]/25 select-all">
+                                                  {grp.qr_content}
+                                                </span>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleCopy(grp.qr_content, `qr_${grp.seller_id}`)}
+                                                  className="p-1.5 rounded text-slate-500 hover:text-slate-900 dark:hover:text-foreground cursor-pointer"
+                                                  title={t('cart.copyMemo')}
+                                                  aria-label={t('cart.copyMemo')}
+                                                >
+                                                  {copiedKey === `qr_${grp.seller_id}` ? (
+                                                    <Check className="w-4 h-4 text-emerald-600" />
+                                                  ) : (
+                                                    <Copy className="w-4 h-4" />
+                                                  )}
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {grp.has_api_token && (
+                                          <button
+                                            type="button"
+                                            disabled={isVerifyingSepay}
+                                            onClick={handleVerifyDirectSepay}
+                                            className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                          >
+                                            <RefreshCw className={`w-3.5 h-3.5 ${isVerifyingSepay ? 'animate-spin' : ''}`} />
+                                            {isVerifyingSepay ? t('cart.verifyingSepayBtn') : t('cart.verifySepayNowBtn')}
+                                          </button>
+                                        )}
+                                      </div>
+                                    )
+                                  ) : (
+                                    <div className="space-y-2">
+                                      {grpChildren.map((co) =>
+                                        co.product_type === 'physical' ? (
+                                          <div key={co.id} className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 space-y-1">
+                                            <div className="text-[10px] font-semibold text-amber-800 dark:text-amber-400 uppercase flex items-center gap-1.5">
+                                              <Truck className="w-3.5 h-3.5" />
+                                              <span>{co.product_name}</span>
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-900 dark:text-foreground">
+                                              {t('cart.awaitingPickupEscrow')}
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div key={co.id} className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 space-y-1">
+                                            <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">
+                                              {co.product_name}
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                              <span className="font-mono font-bold text-sm text-slate-900 dark:text-foreground select-all">
+                                                {co.delivered_code || t('cart.codeReadyFallback')}
+                                              </span>
+                                              {co.delivered_code && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleCopy(co.delivered_code, `code_${co.id}`)}
+                                                  className="px-2 py-1 rounded bg-white dark:bg-card text-[11px] font-semibold border border-slate-200 dark:border-border flex items-center gap-1 cursor-pointer"
+                                                >
+                                                  {copiedKey === `code_${co.id}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                                                  {copiedKey === `code_${co.id}` ? t('cart.copiedShort') : t('cart.copyShort')}
+                                                </button>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          : activeChildOrders.map((co) => (
                           <div
                             key={co.id}
                             className="p-4 rounded-xl bg-white dark:bg-card border border-slate-200 dark:border-border space-y-3"
@@ -677,10 +893,10 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                   <div>
                                     <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{t('cart.bankAndAccount')}</div>
                                     <div className="font-bold text-slate-900 dark:text-foreground">
-                                      {co.bank_name || 'TPBank'} •{' '}
-                                      <span className="font-mono">{co.account_number || '10004681879'}</span>
+                                      {co.bank_name} •{' '}
+                                      <span className="font-mono">{co.account_number}</span>
                                     </div>
-                                    <div className="text-[10px] text-slate-500 dark:text-muted-foreground uppercase">{co.bank_account || 'UNIVERSAL MALL'}</div>
+                                    <div className="text-[10px] text-slate-500 dark:text-muted-foreground uppercase">{co.bank_account}</div>
                                   </div>
 
                                   <div>
@@ -694,11 +910,11 @@ export const CartDrawerModal: React.FC<CartDrawerModalProps> = ({
                                     <div className="text-[10px] text-slate-500 dark:text-muted-foreground">{t('cart.transferMemoRequired')}</div>
                                     <div className="flex items-center gap-2 mt-0.5">
                                       <span className="font-mono font-black text-xs px-2.5 py-1 rounded-lg bg-[#ee4d2d]/10 text-[#ee4d2d] border border-[#ee4d2d]/25 select-all">
-                                        {co.qr_content || `WCG ${co.order_code}`}
+                                        {co.qr_content}
                                       </span>
                                       <button
                                         type="button"
-                                        onClick={() => handleCopy(co.qr_content || `WCG ${co.order_code}`, `qr_${co.id}`)}
+                                        onClick={() => handleCopy(co.qr_content, `qr_${co.id}`)}
                                         className="p-1.5 rounded text-slate-500 hover:text-slate-900 dark:hover:text-foreground cursor-pointer"
                                         title={t('cart.copyMemo')}
                                         aria-label={t('cart.copyMemo')}

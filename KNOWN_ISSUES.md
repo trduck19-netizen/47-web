@@ -10,6 +10,13 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-343: Cách Ly Tài Chính `DIRECT_SEPAY` (Cấm Phát Hành Core Sàn), Fail-Closed AES-256-GCM Token SePay, Tạm Giữ Vốn Sỉ Affiliate & Bẫy Chữ Ký `invalidateCatalogEdgeCache` (28/11/2026)
+- **Nguyên tắc & Bẫy cần tránh (Mục 491)**:
+  1. *Nguy cơ phát hành Core ảo trên đơn chuyển thẳng về STK Gian hàng (`payment_channel = 'DIRECT_SEPAY'`)*: Vì khách chuyển tiền thẳng vào tài khoản ngân hàng của chủ gian hàng (không đi qua STK Sàn), sàn **TUYỆT ĐỐI KHÔNG** cộng `pending_balance_core`/`available_balance_core` cho shop bán (chỉ cộng giá sỉ cho Shop B khi đã trích trước `affiliate_wholesale_reserved_core` từ Ví Core thật của chủ Shop A), đồng thời khóa cứng `resolve-report.ts` và `admin/seller-disputes/[id]/resolve.ts` chỉ cho `REFUND_CORE`/`REFUND` khi trừ nguyên tử thành công từ Ví Core thật của chủ shop (`WHERE balance >= ?`, `changes === 1`); nếu không đủ phải trả HTTP `400 SELLER_CORE_INSUFFICIENT_FOR_DIRECT_REFUND`.
+  2. *Fail-Closed cho `api_token_encrypted` (Rule 10.2)*: `encryptSellerSepayToken` / `decryptSellerSepayToken` trong `functions/services/seller_sepay_service.ts` bắt buộc dùng `env.MARKETPLACE_CODE_KEY` (`>= 16` ký tự), ném `SellerSepayConfigError(503)` nếu thiếu hoặc quá ngắn, tuyệt đối không fallback chuỗi tĩnh.
+  3. *Hoàn trả nguyên tử `affiliate_wholesale_reserved_core`*: Khi tạo đơn Liên Shop `DIRECT_SEPAY` trong `multi.ts`, vốn sỉ được trừ nguyên tử khỏi Ví Core chủ Shop A. Bắt buộc hoàn lại đầy đủ tại cả 3 điểm thoát: `rollbackReservedItems()` (khi `STOCK_RACE_CONFLICT` / lỗi batch), `checkAndExpireSellerOrdersD1` (khi đơn quá hạn 15 phút), và `pay-core.ts` (khi khách chuyển sang trả bằng Ví Core).
+  4. *Chữ ký tham số thứ 4 của `invalidateCatalogEdgeCache` & phá hủy `request` ở `multi/[id].ts`*: `invalidateCatalogEdgeCache(ctx, request, env, extraUrls: string[] = [])` nhận mảng `string[]` (không phải chuỗi nhãn lý do); đồng thời `multi/[id].ts` trước Mục 491 từng bỏ sót `request` khi destructure `context`, đã sửa triệt để và khóa bằng `tsc` (`0` lỗi mới).
+
 ### ISSUE-342: Giới Hạn Phân Trang 100 Game/Trang Ở `/api/games`, Lệch Tổng Số Lượng vs Số Dòng Giỏ Hàng Ở `CartDrawerModal`, Thiếu `ETag`/Clone RAM Cache Ở `/api/sync?nocache=1` & Mã Lỗi Chi Tiết `reserveSupplierCreditAtomic` (27/11/2026)
 - **Triệu chứng & Nguyên nhân**:
   1. *Giới hạn 100 bản ghi mỗi trang trên `/api/games`*: `GET /api/games` giới hạn cứng tối đa `100` game/trang ở phía server, nên nếu `SellerCenterView.tsx` chỉ gọi 1 lần `/api/games?limit=1000` thì danh mục chọn game khi đăng sản phẩm số vẫn bị cắt ở 100 game đầu thay vì nạp đủ toàn bộ `593` game.

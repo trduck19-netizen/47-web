@@ -744,19 +744,40 @@ function createMockDb(seed?: Partial<MockState>) {
     }
     if (sql.startsWith('INSERT INTO seller_orders')) {
       if (sql.includes('parent_order_id')) {
-        state.orders.set(args[0], {
-          id: args[0],
-          order_code: args[1],
-          parent_order_id: args[2],
-          seller_id: args[6],
-          product_id: args[7],
-          product_type: args[12],
-          status: 'PENDING_PAYMENT',
-          expires_at: args[13],
-          is_affiliate_order: args[16],
-          affiliate_breakdown: args[17],
-          supplier_seller_id: args[18],
-        });
+        if (sql.includes('shop_qr_group_code')) {
+          state.orders.set(args[0], {
+            id: args[0],
+            order_code: args[1],
+            parent_order_id: args[2],
+            seller_id: args[6],
+            product_id: args[7],
+            price_core: args[11],
+            payment_method: args[12],
+            payment_channel: args[13],
+            shop_qr_group_code: args[14],
+            product_type: args[15],
+            status: 'PENDING_PAYMENT',
+            expires_at: args[16],
+            is_affiliate_order: args[19],
+            affiliate_breakdown: args[20],
+            supplier_seller_id: args[21],
+            affiliate_wholesale_reserved_core: args[22] || 0,
+          });
+        } else {
+          state.orders.set(args[0], {
+            id: args[0],
+            order_code: args[1],
+            parent_order_id: args[2],
+            seller_id: args[6],
+            product_id: args[7],
+            product_type: args[12],
+            status: 'PENDING_PAYMENT',
+            expires_at: args[13],
+            is_affiliate_order: args[16],
+            affiliate_breakdown: args[17],
+            supplier_seller_id: args[18],
+          });
+        }
       } else {
         state.orders.set(args[0], {
           id: args[0],

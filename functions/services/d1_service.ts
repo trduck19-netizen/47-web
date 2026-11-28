@@ -3942,6 +3942,88 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<SchemaTiming
     console.warn('[Migration 0052_seller_products_stock_quantity_v1 error]', err?.message);
   }
 
+  // 21. Migration 0053: Cổng Thanh Toán SePay & VietQR Riêng Cho Từng Chủ Gian Hàng (DIRECT_SEPAY)
+  try {
+    const s53Check = appliedMigSet.has('0053_seller_direct_sepay_gateway_v1');
+    if (!s53Check) {
+      await db
+        .prepare(`
+          CREATE TABLE IF NOT EXISTS seller_sepay_configs (
+            seller_id TEXT PRIMARY KEY,
+            is_enabled INTEGER NOT NULL DEFAULT 0,
+            admin_locked INTEGER NOT NULL DEFAULT 0,
+            admin_lock_reason TEXT DEFAULT NULL,
+            bank_name TEXT NOT NULL DEFAULT '',
+            account_number TEXT NOT NULL DEFAULT '',
+            account_holder TEXT NOT NULL DEFAULT '',
+            payment_prefix TEXT NOT NULL DEFAULT 'SHP',
+            webhook_key_hash TEXT DEFAULT NULL,
+            webhook_key_prefix TEXT DEFAULT NULL,
+            api_token_encrypted TEXT DEFAULT NULL,
+            api_token_prefix TEXT DEFAULT NULL,
+            connection_verified INTEGER NOT NULL DEFAULT 0,
+            last_verified_at TEXT DEFAULT NULL,
+            last_webhook_at TEXT DEFAULT NULL,
+            unauth_fail_count_1h INTEGER NOT NULL DEFAULT 0,
+            fee_debt_core REAL NOT NULL DEFAULT 0,
+            total_direct_orders INTEGER NOT NULL DEFAULT 0,
+            total_direct_volume_vnd REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `)
+        .run()
+        .catch(() => {});
+      await db
+        .prepare(`
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_seller_sepay_bank_acc
+          ON seller_sepay_configs(bank_name, account_number)
+          WHERE account_number != '';
+        `)
+        .run()
+        .catch(() => {});
+      await db
+        .prepare(`
+          CREATE TABLE IF NOT EXISTS seller_sepay_transactions (
+            id TEXT PRIMARY KEY,
+            seller_id TEXT NOT NULL,
+            sepay_tx_id TEXT NOT NULL,
+            gateway TEXT NOT NULL DEFAULT '',
+            account_number TEXT NOT NULL DEFAULT '',
+            amount_in REAL NOT NULL DEFAULT 0,
+            transaction_content TEXT NOT NULL DEFAULT '',
+            matched_parent_order_id TEXT DEFAULT NULL,
+            matched_order_id TEXT DEFAULT NULL,
+            buyer_member_id TEXT DEFAULT NULL,
+            status TEXT NOT NULL DEFAULT 'SUCCESS',
+            exception_code TEXT DEFAULT NULL,
+            fee_charged_core REAL NOT NULL DEFAULT 0,
+            seller_resolution_note TEXT DEFAULT NULL,
+            resolved_at TEXT DEFAULT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(seller_id, sepay_tx_id)
+          );
+        `)
+        .run()
+        .catch(() => {});
+      await db
+        .prepare(`
+          CREATE INDEX IF NOT EXISTS idx_seller_sepay_tx_seller_status
+          ON seller_sepay_transactions(seller_id, status, created_at DESC);
+        `)
+        .run()
+        .catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN payment_channel TEXT DEFAULT 'CORE';").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN shop_qr_group_code TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN affiliate_wholesale_reserved_core REAL DEFAULT 0;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN direct_fee_core REAL DEFAULT 0;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_parent_orders ADD COLUMN payment_channel TEXT DEFAULT 'DIRECT_SEPAY';").run().catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0053_seller_direct_sepay_gateway_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0053_seller_direct_sepay_gateway_v1 error]', err?.message);
+  }
+
   lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };
   const finishedTiming: SchemaTiming = { ...lastSchemaTiming };
   schemaUpgradesDone = true;
@@ -5641,12 +5723,16 @@ export async function loadAllStoreProductsD1(
           sp.warranty_type,
           sp.warranty_hours,
           sp.delivery_type,
+          COALESCE(sp.is_affiliate, 0) AS is_affiliate,
+          sp.origin_product_id,
+          sp.origin_seller_id,
+          s.owner_member_id AS seller_owner_member_id,
           CASE 
-            WHEN sp.product_type = 'physical' THEN 999
+            WHEN sp.product_type = 'physical' THEN COALESCE(sp.stock_quantity, 0)
             ELSE COALESCE(sc_agg.available_codes, 0)
           END AS stock_quantity,
           CASE 
-            WHEN sp.product_type = 'physical' THEN 999
+            WHEN sp.product_type = 'physical' THEN COALESCE(sp.stock_quantity, 0)
             ELSE COALESCE(sc_agg.available_codes, 0)
           END AS in_stock_count,
           COALESCE(sc_agg.sold_codes, 0) AS sold_count,
@@ -5681,7 +5767,58 @@ export async function loadAllStoreProductsD1(
         ORDER BY sp.created_at DESC
       `).all().catch((e: any) => { console.warn('[loadAllStoreProductsD1 seller_products error]', e); return null; });
 
-    const [metaSetting, legacyRes, sellerRes] = await Promise.all([metaPromise, legacyPromise, sellerPromise]);
+    const sepayConfigsPromise = db.prepare(`
+        SELECT ssc.seller_id, ssc.is_enabled, ssc.admin_locked, ssc.bank_name, ssc.account_number,
+               ssc.webhook_key_hash, ssc.fee_debt_core,
+               COALESCE(m.balance, 0) AS owner_core_balance
+        FROM seller_sepay_configs ssc
+        LEFT JOIN sellers s ON s.id = ssc.seller_id
+        LEFT JOIN members m ON m.id = s.owner_member_id
+        WHERE ssc.is_enabled = 1
+      `).all().catch(() => null);
+
+    const mConfigSettingPromise = db
+      .prepare("SELECT value FROM system_settings WHERE key = 'wcg_marketplace_config_v1' LIMIT 1")
+      .first<{ value: string }>()
+      .catch(() => null);
+
+    const origAffProductsPromise = db.prepare(`
+        SELECT id, price_core, resell_discount_pct, resell_commission_pct
+        FROM seller_products
+        WHERE resell_enabled = 1 AND deleted_at IS NULL
+      `).all().catch(() => null);
+
+    const [metaSetting, legacyRes, sellerRes, sepayConfigsRes, mConfigRow, origAffRes] = await Promise.all([
+      metaPromise,
+      legacyPromise,
+      sellerPromise,
+      sepayConfigsPromise,
+      mConfigSettingPromise,
+      origAffProductsPromise,
+    ]);
+    let directSepayGlobalEnabled = true;
+    let directSepayDebtLimitCore = 500000;
+    try {
+      if (mConfigRow?.value) {
+        const parsedCfg = typeof mConfigRow.value === 'string' ? JSON.parse(mConfigRow.value) : mConfigRow.value;
+        if (typeof parsedCfg?.direct_sepay_global_enabled === 'boolean') {
+          directSepayGlobalEnabled = parsedCfg.direct_sepay_global_enabled;
+        }
+        if (parsedCfg?.direct_sepay_debt_limit_core !== undefined && Number.isFinite(Number(parsedCfg.direct_sepay_debt_limit_core))) {
+          directSepayDebtLimitCore = Math.max(0, Number(parsedCfg.direct_sepay_debt_limit_core));
+        }
+      }
+    } catch {}
+
+    const sepayMap = new Map<string, any>();
+    for (const row of ((sepayConfigsRes as any)?.results || [])) {
+      if (row?.seller_id) sepayMap.set(String(row.seller_id), row);
+    }
+    const origAffMap = new Map<string, any>();
+    for (const row of ((origAffRes as any)?.results || [])) {
+      if (row?.id) origAffMap.set(String(row.id), row);
+    }
+
     const metaMap = new Map<string, any>();
     if (Array.isArray(metaSetting)) {
       metaSetting.forEach((m: any) => {
@@ -5700,7 +5837,37 @@ export async function loadAllStoreProductsD1(
         show_sold_count: r.show_sold_count !== undefined ? Boolean(r.show_sold_count) : (meta.show_sold_count !== undefined ? Boolean(meta.show_sold_count) : true),
       };
     });
-    const sellerProductsList: any[] = (sellerRes && (sellerRes as any).results) || [];
+    const sellerProductsList: any[] = ((sellerRes && (sellerRes as any).results) || []).map((sp: any) => {
+      const cfg = sepayMap.get(String(sp.seller_id || ''));
+      const baseQrOk = Boolean(
+        directSepayGlobalEnabled &&
+        cfg &&
+        Number(cfg.is_enabled) === 1 &&
+        Number(cfg.admin_locked) !== 1 &&
+        cfg.webhook_key_hash &&
+        String(cfg.bank_name || '').trim() &&
+        String(cfg.account_number || '').trim() &&
+        (directSepayDebtLimitCore <= 0 || Number(cfg.fee_debt_core || 0) < directSepayDebtLimitCore)
+      );
+      let sellerQrAvailable = baseQrOk;
+      if (sellerQrAvailable && Number(sp.is_affiliate || 0) === 1 && sp.origin_product_id) {
+        const orig = origAffMap.get(String(sp.origin_product_id));
+        const basePrice = Number(orig?.price_core || sp.price_core || 0);
+        const discPct = Math.min(90, Math.max(0, Number(orig?.resell_discount_pct || 0)));
+        const commPct = Math.min(90, Math.max(0, Number(orig?.resell_commission_pct || 0)));
+        const wholesaleNeeded = Math.max(0, Math.round(basePrice * (1 - discPct / 100) * (1 - commPct / 100)));
+        const ownerBal = Number(cfg?.owner_core_balance || 0);
+        if (ownerBal < wholesaleNeeded) {
+          sellerQrAvailable = false;
+        }
+      }
+      const { seller_owner_member_id: _omitOwner, ...cleanSp } = sp;
+      return {
+        ...cleanSp,
+        is_affiliate: Number(sp.is_affiliate || 0) === 1,
+        seller_qr_available: sellerQrAvailable,
+      };
+    });
 
     // Khử trùng lặp theo id: ưu tiên giữ đầy đủ metadata từ mappedLegacy + dữ liệu live từ sellerProductsList
     const dedupMap = new Map<string, any>();
@@ -7233,10 +7400,13 @@ export async function checkAndExpireSellerOrdersD1(
   let query = `
     SELECT so.id, so.order_code, so.product_id, so.seller_id, so.parent_order_id, so.code_id, so.expires_at,
            COALESCE(so.product_type, 'digital') as product_type,
+           COALESCE(so.affiliate_wholesale_reserved_core, 0) as affiliate_wholesale_reserved_core,
            COALESCE(sp.is_affiliate, 0) as listing_is_affiliate,
-           sp.origin_product_id as listing_origin_product_id
+           sp.origin_product_id as listing_origin_product_id,
+           s.owner_member_id as seller_owner_member_id
     FROM seller_orders so
     LEFT JOIN seller_products sp ON sp.id = so.product_id
+    LEFT JOIN sellers s ON s.id = so.seller_id
     WHERE so.status = 'PENDING_PAYMENT'
       AND (datetime(so.expires_at) <= datetime('now') OR so.expires_at <= ?)
   `;
@@ -7295,6 +7465,23 @@ export async function checkAndExpireSellerOrdersD1(
             WHERE id = ?
           `).bind(stockTargetProductId).run().catch(() => {});
         }
+      }
+
+      // 2c. Nếu đơn Liên Shop DIRECT_SEPAY đã tạm giữ giá sỉ từ Ví Core chủ Shop bán lại -> hoàn trả nguyên tử
+      const reservedWholesale = Math.max(0, Number(ord.affiliate_wholesale_reserved_core || 0));
+      if (orderExpiredChanges === 1 && reservedWholesale > 0 && ord.seller_owner_member_id) {
+        await db.batch([
+          db.prepare(`
+            UPDATE members
+            SET balance = balance + ?, updated_at = datetime('now')
+            WHERE id = ?
+          `).bind(reservedWholesale, String(ord.seller_owner_member_id)),
+          db.prepare(`
+            UPDATE seller_orders
+            SET affiliate_wholesale_reserved_core = 0, updated_at = datetime('now')
+            WHERE id = ? AND status = 'EXPIRED'
+          `).bind(oId),
+        ]).catch(() => {});
       }
 
       if (orderExpiredChanges === 1) {

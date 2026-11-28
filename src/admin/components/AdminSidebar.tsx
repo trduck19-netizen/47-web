@@ -34,6 +34,7 @@ import {
   Cpu,
   PlugZap,
   Link2,
+  QrCode,
 } from 'lucide-react';
 import { AdminUser } from '../types/adminTypes';
 import { normalizeVietnamese } from '../../utils/textUtils';
@@ -62,6 +63,7 @@ export type AdminModuleTab =
   | 'orders'
   | 'marketplace'
   | 'intershop-affiliate'
+  | 'seller-sepay'
   | 'platform-leads'
   | 'translations'
   | 'vouchers'
@@ -253,6 +255,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           id: 'intershop-affiliate',
           label: t('intershopAffiliate.menuLabel'),
           icon: Link2,
+        },
+        {
+          id: 'seller-sepay',
+          label: t('adminSellerSepay.menuLabel'),
+          icon: QrCode,
         },
         {
           id: 'platform-leads',
