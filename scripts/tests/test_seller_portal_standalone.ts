@@ -7,6 +7,7 @@ import {
   DEFAULT_MARKETPLACE_CONFIG,
   sanitizeSellerPortalThemePreset,
 } from '../../functions/services/marketplace_service';
+import { shouldBumpCatalogEpoch } from '../../functions/services/cache_service';
 import {
   getAllowedSellerPortalTabs,
   isSellerTabAllowedForRole,
@@ -256,6 +257,15 @@ async function main() {
   const viLeaves = flattenLeaves(viDict.sellerPortal || {});
   const enLeaves = flattenLeaves(enDict.sellerPortal || {});
   check('rule12_seller_portal_dict_symmetry', viLeaves.length >= 45 && JSON.stringify(viLeaves.sort()) === JSON.stringify(enLeaves.sort()), true);
+
+  // =========================================================================
+  // PART 7: Regression Guards for 3 E2E-Discovered Backend Bugs
+  // =========================================================================
+  check('e2e_fix_patch_seller_vacation_bumps_epoch', shouldBumpCatalogEpoch('/api/seller', 'PATCH') && shouldBumpCatalogEpoch('/api/seller', 'PUT'), true);
+  const subSrc = fs.readFileSync(path.resolve(root, 'functions/api/seller/subaccounts/index.ts'), 'utf8');
+  check('e2e_fix_subaccount_uses_owner_member_id', subSrc.includes('storeAuth.seller.owner_member_id') && !subSrc.includes('storeAuth.seller.member_id'), true);
+  const repSrc = fs.readFileSync(path.resolve(root, 'functions/api/seller-orders/[id]/report.ts'), 'utf8');
+  check('e2e_fix_report_allows_paid_and_delivered', repSrc.includes("order.status !== 'DELIVERED' && order.status !== 'PAID'"), true);
 
   const passed = results.filter((r) => r.pass).length;
   const failed = results.filter((r) => !r.pass);

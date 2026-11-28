@@ -307,7 +307,6 @@ functions/api/seller/subaccounts/[id].ts(1,1): error TS6133: 'verifyMemberAuth' 
 functions/api/seller/subaccounts/[id].ts(2,35): error TS6133: 'logAdminAudit' is declared but its value is never read.
 functions/api/seller/subaccounts/index.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
 functions/api/seller/subaccounts/index.ts(106,39): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
-functions/api/seller/subaccounts/index.ts(106,70): error TS2339: Property 'member_id' does not exist on type 'SellerRecord'.
 functions/api/seller/subaccounts/index.ts(158,20): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
 functions/api/seller/subaccounts/index.ts(159,34): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
 functions/api/shipping/index.ts(1,29): error TS6133: 'verifyAdminAuth' is declared but its value is never read.
@@ -1851,9 +1850,9 @@ src/utils/productPackageUtils.ts(498,82): error TS2367: This comparison appears 
 src/utils/productPackageUtils.ts(498,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
 src/utils/productPackageUtils.ts(507,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'GiveawayCampaign'.
 full_tsc_exit=2
-total_tsc_errors=1690
-prev_8130471_tsc_errors=1690
-delta_vs_8130471=0
+total_tsc_errors=1689
+prev_94dacc4_tsc_errors=1690
+delta_vs_94dacc4=-1
 baseline_75fa59b_ts6133_count=529
 current_ts6133_count=467
 new_ts6133_vs_75fa59b=0

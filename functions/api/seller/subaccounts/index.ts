@@ -103,8 +103,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const currentMemberId = storeAuth.member?.id || storeAuth.seller.member_id;
-    if (targetMember.id === currentMemberId) {
+    const currentMemberId = storeAuth.member?.id || storeAuth.memberId || storeAuth.seller.owner_member_id || null;
+    if (currentMemberId && targetMember.id === currentMemberId) {
       return new Response(
         JSON.stringify({ success: false, error: 'Bạn đã là chủ gian hàng này, không thể thêm chính mình làm tài khoản phụ.' }),
         { status: 400, headers: CORS_HEADERS }

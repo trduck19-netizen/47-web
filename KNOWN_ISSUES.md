@@ -10,6 +10,16 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-345: Lỗi `D1_TYPE_ERROR` Ở `POST /api/seller/subaccounts`, Chặn Báo Lỗi Đơn `PAID` Ở `/report` & Thiếu `PATCH /api/seller` Trong `shouldBumpCatalogEpoch` (28/11/2026)
+- **Triệu chứng & Nguyên nhân (Bắt được qua E2E Worker + SQLite D1 thật — Mục 493)**:
+  1. `functions/api/seller/subaccounts/index.ts:106` đọc `storeAuth.seller.member_id` (thuộc tính không tồn tại, cột thật là `owner_member_id`) nên `currentMemberId` bị `undefined` khi `storeAuth.member` vắng mặt → `INSERT INTO seller_subaccounts` ném `HTTP 500 D1_TYPE_ERROR: Type 'undefined'`.
+  2. `functions/api/seller-orders/[id]/report.ts:69` chỉ cho phép `order.status === 'DELIVERED'`, trong khi đơn mua qua Ví Core giao mã tức thì (`POST /api/seller-orders`) có trạng thái `'PAID'` → khách hàng không thể gửi báo lỗi (`HTTP 400`).
+  3. `functions/services/cache_service.ts` chưa nhận diện `PUT/PATCH /api/seller` trong `shouldBumpCatalogEpoch`, khiến thao tác bật/tắt **Nghỉ Bán 1 Chạm (`is_vacation`)** không làm mới `X-Catalog-Epoch` cho `/api/sync-lite`.
+- **Giải pháp chuẩn (Đã khóa hồi quy trong `test_seller_portal_standalone.ts`)**:
+  - Dùng `storeAuth.member?.id || storeAuth.memberId || storeAuth.seller.owner_member_id || null` tại `subaccounts/index.ts`.
+  - Cho phép cả `'PAID'` và `'DELIVERED'` trong `seller-orders/[id]/report.ts`.
+  - Bật `shouldBumpCatalogEpoch` cho `PUT`/`PATCH` trên `/api/seller`.
+
 ### ISSUE-344: Bẫy Va Chạm `ADMIN_HASH_PREFIXES` Với Hash `/seller#/dashboard`, `/seller#/orders`, `/seller#/sepay` & Phình Bundle Trang Chủ Khi Import Tĩnh `SellerCenterView` (28/11/2026)
 - **Nguyên tắc & Bẫy cần tránh (Mục 492)**:
   1. *Va chạm hash giữa Cổng Người Bán (`/seller`) và `AdminApp`*: Trong `src/App.tsx`, `ADMIN_HASH_PREFIXES` chứa `#/dashboard`, `#/orders`, `#/sepay`, `#/profile` tại **3 vị trí độc lập** (khởi tạo `useState`, `loadInitialData -> parseHash`, và `handlePopState`). Nếu bỏ sót bất kỳ vị trí nào trong 3 chỗ này, `/seller#/sepay` sẽ bị định tuyến nhầm sang `AdminApp` và `/seller` sẽ bị `parseHash` đẩy về `/` hoặc `/en/`. **Bắt buộc** luôn kiểm tra `!isAdminDomain && isSellerPortalPathname(path)` TRƯỚC mọi lần gọi `ADMIN_HASH_PREFIXES.some(...)` ở cả 3 vị trí (đã khóa hồi quy bởi kiểm tra vết quét toàn bộ file `app_guards_all_admin_hash_sites_with_seller_path` trong `test_seller_portal_standalone.ts`).

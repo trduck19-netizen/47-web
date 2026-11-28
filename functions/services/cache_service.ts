@@ -179,6 +179,10 @@ export function shouldBumpCatalogEpoch(pathname: string, method: string): boolea
     '/api/giveaways',
   ];
 
+  if (p === '/api/seller' && (m === 'PUT' || m === 'PATCH')) {
+    return true;
+  }
+
   return prefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
 }
 

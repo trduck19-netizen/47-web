@@ -7,6 +7,17 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-28]
 
+### 493. Kiểm Thử E2E Toàn Trình Gian Hàng Trên Edge Worker + D1 Thật, Đo Thời Gian Đồng Bộ & Vá 3 Lỗi Backend (`subaccounts`, `report`, `is_vacation` Epoch) (28/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Thực thi kế hoạch kiểm thử toàn trình gian hàng ([`ke_hoach_test_gian_hang_va_do_dong_bo_28_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_test_gian_hang_va_do_dong_bo_28_11.md), Phương án A trên Local Cloudflare Pages Edge Worker + SQLite D1 thật, bỏ qua gán API SePay): tạo shop, duyệt `PENDING → TRIAL → ACTIVE`, nạp Core, tạo sản phẩm số & vật lý, mua bán, xử lý khiếu nại, kiểm tra nhân viên phụ, đo thời gian đồng bộ (ms) và kiểm tra ma trận lỗi.
+- **3 Lỗi Thật Bắt Được & Đã Vá Triệt Để**:
+  1. [`functions/api/seller/subaccounts/index.ts:106`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/functions/api/seller/subaccounts/index.ts#L106): Sửa lỗi `HTTP 500 D1_TYPE_ERROR: Type 'undefined'` do đọc nhầm `storeAuth.seller.member_id` thành `storeAuth.member?.id || storeAuth.memberId || storeAuth.seller.owner_member_id || null`.
+  2. [`functions/api/seller-orders/[id]/report.ts:69`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/functions/api/seller-orders/%5Bid%5D/report.ts#L69): Mở rộng điều kiện báo lỗi cho phép cả đơn trạng thái `'PAID'` (vì đơn mua bằng Ví Core giao mã tức thì mang trạng thái `'PAID'`, trước đây bị chặn `400`).
+  3. [`functions/services/cache_service.ts:182-184`](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/functions/services/cache_service.ts#L182-L184): Bổ sung `p === '/api/seller' && (m === 'PUT' || m === 'PATCH')` vào `shouldBumpCatalogEpoch` để thao tác bật/tắt **Nghỉ Bán 1 Chạm (`is_vacation`)** tự tăng `X-Catalog-Epoch` và làm mới `/api/sync-lite` tức thì.
+- **Kiểm thử & Đo lường thực tế**:
+  - Đo độ trễ đồng bộ trên Edge Worker + SQLite D1 (`http://127.0.0.1:8788`): Duyệt sản phẩm → `/api/sync-lite` thấy hàng mới **`21.26 ms`**, Mua hàng → `/api/sync-lite` cập nhật tồn kho **`19.62 ms`**, Bật Nghỉ Bán → cập nhật `X-Catalog-Epoch` **`27.58 ms`**.
+  - Khóa hồi quy 3 lỗi trên vào `scripts/tests/test_seller_portal_standalone.ts` (`25/25 PASS`). Tổng `npm test`: **`299/299 PASS`** (`docs/test_full_check.log`), `npm run check:i18n`: **`29/29 PASSED`** (`docs/i18n_full_check.log`), `tsc`: `homepage_exit=0` & tổng `1.689` lỗi (giảm `1` lỗi so với `94dacc4`, `0` lỗi mới — `docs/tsc_full_check.log`), Lean Guard: Pre `5/5` + Post `4/4 PASS` (`docs/build_success.log`).
+
 ### 492. Tách Cổng Quản Trị Gian Hàng Độc Lập Toàn Màn Hình (`/seller` & `/en/seller`), Sidebar RBAC, Đồng Bộ Đa Tab, Tùy Chỉnh Giao Diện Admin & Giảm `-204 KB` Chunk Trang Chủ (28/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai trọn vẹn 4 mảnh theo kế hoạch đã duyệt ([`ke_hoach_tach_cong_quan_tri_gian_hang_seller_portal_28_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_tach_cong_quan_tri_gian_hang_seller_portal_28_11.md)): tách hoàn toàn Kênh Người Bán ra khỏi vỏ Sàn Mua Sắm (`UniversalMallView`) thành bàn làm việc toàn màn hình độc lập trên cùng domain (`/seller` & `/en/seller`, mở tab mới `_blank` giống Shopee Seller Centre), đồng bộ đăng nhập/Ví Core/Sáng-Tối tức thì giữa các tab, phân quyền Sidebar theo `sub_role`, và cho phép Admin tùy chỉnh bộ màu chủ đạo & thông báo ghim đầu trang `/seller`.

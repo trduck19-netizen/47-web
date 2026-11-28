@@ -66,7 +66,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (order.status !== 'DELIVERED') {
+    if (order.status !== 'DELIVERED' && order.status !== 'PAID') {
       return new Response(
         JSON.stringify({ success: false, error: `Không thể báo lỗi cho đơn hàng đang ở trạng thái ${order.status}.` }),
         { status: 400, headers: CORS_HEADERS }
