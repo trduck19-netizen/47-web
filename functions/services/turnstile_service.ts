@@ -2,6 +2,7 @@ export interface TurnstileEnv {
   TURNSTILE_SECRET_KEY?: string;
   CF_TURNSTILE_SECRET?: string;
   TURNSTILE_ENABLED?: string;
+  REGISTER_TURNSTILE_ENABLED?: string;
   ADMIN_TURNSTILE_ENABLED?: string;
   GUEST_TURNSTILE_ENABLED?: string;
   ENVIRONMENT?: string;
@@ -11,7 +12,8 @@ export function isTurnstileCheckEnabled(env: TurnstileEnv): boolean {
   if (env.ENVIRONMENT === 'development' && !(env.TURNSTILE_SECRET_KEY || env.CF_TURNSTILE_SECRET)) {
     return false;
   }
-  return true;
+  const flag = String(env.REGISTER_TURNSTILE_ENABLED ?? env.TURNSTILE_ENABLED ?? '').trim().toLowerCase();
+  return flag === 'true' || flag === '1' || flag === 'on';
 }
 
 export function isAdminTurnstileEnabled(env: TurnstileEnv): boolean {

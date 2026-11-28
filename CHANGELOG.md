@@ -7,6 +7,18 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-28]
 
+### 498. Tạm Tắt Cloudflare Turnstile Qua Cờ Môi Trường Để Phục Vụ Bot Kiểm Thử Toàn Diện (28/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Theo yêu cầu trực tiếp từ chủ sở hữu (kèm ảnh chụp modal Đăng Ký bị chặn Turnstile): tạm thời tắt Cloudflare Turnstile để bot có thể tự động kiểm thử luồng đăng ký / đăng nhập, và dễ dàng bật lại khi chủ sở hữu yêu cầu.
+- **Nguyên nhân gốc rễ (Root Cause)**:
+  - `isTurnstileCheckEnabled()` trong `functions/services/turnstile_service.ts` luôn trả `true` trên production mà không đọc biến `TURNSTILE_ENABLED`/`REGISTER_TURNSTILE_ENABLED`; `functions/api/auth/register.ts` gọi `verifyTurnstileRequest()` vô điều kiện; đồng thời `AuthModal.tsx` khởi tạo `isRegisterTurnstileEnabled = Boolean(turnstileSiteKey)` và nhánh `.catch()` bật lại Turnstile khi có lỗi tải config.
+- **Giải pháp áp dụng (Solution)**:
+  1. `functions/services/turnstile_service.ts` & `functions/api/auth/turnstile-config.ts`: Cho phép `isTurnstileCheckEnabled(env)` kiểm tra cờ `REGISTER_TURNSTILE_ENABLED ?? TURNSTILE_ENABLED` (`'true' | '1' | 'on'`, mặc định `false` khi chưa bật) đồng nhất với `ADMIN_TURNSTILE_ENABLED` và `GUEST_TURNSTILE_ENABLED`; trả thêm `registerEnabled` trong `/api/auth/turnstile-config`.
+  2. `functions/api/auth/register.ts`: Chỉ gọi `verifyTurnstileRequest` khi `isTurnstileCheckEnabled(env)` trả `true`.
+  3. `src/components/AuthModal.tsx`, `src/admin/components/AdminLoginGuard.tsx`, `src/components/TurnstileWidget.tsx`: Khởi tạo `isRegisterTurnstileEnabled = false`, đọc từ `/api/auth/turnstile-config` và giữ nguyên trạng thái tắt (`false`) ở nhánh fallback `.catch()`. Khi cần bật lại chỉ cần thiết lập `TURNSTILE_ENABLED=true`, `GUEST_TURNSTILE_ENABLED=true`, `ADMIN_TURNSTILE_ENABLED=true` trên Cloudflare Pages.
+- **Kiểm thử & Đo lường thực tế**:
+  - `npm test` (`docs/test_full_check.log`): **`342/342 PASS`**, `npm run check:i18n` (`docs/i18n_full_check.log`): **`35/35 PASSED`**, `npm run build` & `check:lean`: Pre `5/5` + Post `4/4 PASS`, `tsc -p tsconfig.homepage.json --noEmit` exit `0`.
+
 ### 497. Tinh Gọn Giao Diện Toàn Sàn, Chuyển Đổi Seller Center Đa Ngành (Không Ràng Buộc Game), Kho Ảnh Sản Phẩm Tối Đa 10 Ảnh CDN WebP, Voucher Riêng Shop & Bộ Sưu Tập Danh Mục (28/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai trọn vẹn 5 mảnh theo kế hoạch đã duyệt ([`ke_hoach_tinh_gon_toan_san_va_seller_center_da_nganh_10_anh_28_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_tinh_gon_toan_san_va_seller_center_da_nganh_10_anh_28_11.md)): (1) loại bỏ toàn bộ nút/modal/thanh trôi lặp trên sàn khách & Admin; (2) cho phép Seller đăng bán đa ngành hoàn toàn không phụ thuộc `game_slug`, hỗ trợ tối đa **10 ảnh WebP/sản phẩm** trên D1 + Edge CDN Cache; (3) hỗ trợ Biến thể (size/màu/gói), Bảng thông số tùy chỉnh, 3 phương thức giao hàng (Vật lý/Dịch vụ/Kho mã tự động), tạm dừng bán, ghim nổi bật, nhân bản sản phẩm, danh mục riêng của Shop và **Voucher riêng từng Shop**; (4) nâng cấp Gallery 10 ảnh tương tác `<dialog>` + bộ lọc Voucher trên `PublicStoreView.tsx`.
@@ -332,19 +344,3 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
   2. *Nhóm 2 — Sửa số liệu bằng chứng & CHANGELOG 478*:
      - Đính chính mục 478 từ "52 assertions" sang đúng số thực tế ("56 assertions tại `4404751`, 58 assertions tại `dc0c297`, và 69 assertions sau mục 479").
      - Đo lại kích thước body live bằng `Buffer.byteLength(..., 'utf8')` và `curl.exe -w %{size_download}` (UTF-8 byte thật, khớp 100% kiểm chứng độc lập), ghi rõ colo và thời gian UTC.
-
-### 478. Triển Khai PA1 — Đồng Bộ Tức Thì Admin → Trang Khách Qua `Catalog Epoch` (D1) & `ETag / 304 Not Modified` (26/11/2026)
-- **Bối cảnh & Yêu cầu**:
-  - Xử lý triệt để độ trễ đồng bộ ~2–5 phút khi Admin đăng/sửa/duyệt sản phẩm trên `admin-universal-mall.pages.dev` rồi kiểm tra bên `universal-mall-shop.pages.dev` (do 2 project tách biệt RAM isolate & `caches.default`, TTL `max-age=60 / s-maxage=300`, và nhiều tuyến ghi sản phẩm/banner/đơn chưa gọi xóa cache).
-- **Giải pháp áp dụng (Solution)**:
-  1. *Dịch vụ Catalog Epoch dùng chung trên SQL D1 (`functions/services/cache_service.ts`)*:
-     - Lưu khóa nhẹ `wcg_catalog_epoch_v1` trong bảng `system_settings` (không tạo bảng mới), cung cấp `getCatalogEpoch` (1 row PK lookup), `bumpCatalogEpoch`, `matchesIfNoneMatch` (RFC 7232), `shouldBumpCatalogEpoch`, và chống bump trùng trong cùng request bằng `WeakSet<Request>`.
-     - Gắn `await bumpCatalogEpoch(env?.DB)` trực tiếp vào `invalidateCatalogEdgeCache` và dọn sạch các URL trùng lặp.
-  2. *Nâng cấp `/api/sync-lite`, `/api/sync` (public) & `/api/homepage-sections` (`sync-lite.ts`, `homepage-sections.ts`, `sync.ts`, `_worker.ts`)*:
-     - Đổi `Cache-Control` thành `public, max-age=0, must-revalidate`, `CDN-Cache-Control: no-store`, kèm `ETag` & `X-Catalog-Epoch`.
-     - Khi `If-None-Match` khớp epoch hiện tại → trả `304 Not Modified` tức thì (`0 KB`, `0` query bảng sản phẩm/settings).
-     - Gắn khóa `?_epoch=<currentEpoch>` cho cả RAM isolate cache (`sync-lite`, `/api/sync`) lẫn `caches.default` (với lưới an toàn 5 phút) để mọi thay đổi trên Admin lập tức làm mới toàn bộ 300+ PoP và cả 2 domain.
-  3. *Hook tự động tăng epoch cho toàn bộ tuyến ghi danh mục (`functions/_worker.ts`)*:
-     - Trong `export default.fetch`, mọi request `POST/PUT/PATCH/DELETE` trả `2xx` khớp `shouldBumpCatalogEpoch` tự động gọi `await invalidateCatalogEdgeCache(ctx, request, env)` trước khi trả response.
-  4. *Kiểm thử tự động trong repo (`scripts/tests/test_catalog_epoch_sync.ts`, `package.json`)*:
-     - Thêm `npm run test:sync-epoch` (56 assertions tại `4404751`, 58 assertions tại `dc0c297`, 69 assertions sau mục 479) kiểm chứng trực tiếp `getCatalogEpoch`, `bumpCatalogEpoch`, `matchesIfNoneMatch`, luồng `sync-lite` (`200 → 304 → cross-domain bump → 200 mới`), `homepage-sections` (`200 → 304`) và `shouldBumpCatalogEpoch`.

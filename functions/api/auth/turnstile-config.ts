@@ -33,6 +33,7 @@ export const onRequestGet: PagesFunction<TurnstileEnv> = async (context) => {
     JSON.stringify({
       success: true,
       enabled,
+      registerEnabled: clientEnabled,
       adminEnabled,
       guestLoginEnabled,
     }),

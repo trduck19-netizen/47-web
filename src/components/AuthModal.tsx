@@ -63,7 +63,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Turnstile configuration & states
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
   const [isLoginTurnstileEnabled, setIsLoginTurnstileEnabled] = useState<boolean>(false);
-  const [isRegisterTurnstileEnabled, setIsRegisterTurnstileEnabled] = useState<boolean>(Boolean(turnstileSiteKey));
+  const [isRegisterTurnstileEnabled, setIsRegisterTurnstileEnabled] = useState<boolean>(false);
   const [loginTurnstileToken, setLoginTurnstileToken] = useState('');
   const [regTurnstileToken, setRegTurnstileToken] = useState('');
   const loginWidgetIdRef = useRef<string | null>(null);
@@ -80,13 +80,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (typeof data.guestLoginEnabled === 'boolean') {
           setIsLoginTurnstileEnabled(data.guestLoginEnabled);
         }
-        if (typeof data.enabled === 'boolean') {
-          setIsRegisterTurnstileEnabled(data.enabled);
-        }
+        const regEnabled =
+          typeof data.registerEnabled === 'boolean'
+            ? data.registerEnabled
+            : typeof data.enabled === 'boolean'
+              ? data.enabled
+              : false;
+        setIsRegisterTurnstileEnabled(regEnabled);
       })
       .catch(() => {
         if (active) {
-          setIsLoginTurnstileEnabled(true);
+          setIsLoginTurnstileEnabled(false);
+          setIsRegisterTurnstileEnabled(false);
         }
       });
     return () => {

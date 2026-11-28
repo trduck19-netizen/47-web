@@ -53,9 +53,8 @@ export const TurnstileWidget: React.FC<TurnstileWidgetProps> = ({
       })
       .catch(() => {
         if (!active) return;
-        const fallbackEnabled = Boolean(siteKey);
-        setServerEnabled(fallbackEnabled);
-        onEnabledChangeRef.current?.(fallbackEnabled);
+        setServerEnabled(false);
+        onEnabledChangeRef.current?.(false);
       })
       .finally(() => clearTimeout(timer));
 

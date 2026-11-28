@@ -4,7 +4,7 @@
 
 🛡️ 0. Scanning UI code for hardcoded Vietnamese strings (i18n Guard)...
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-28T10:27:40.611Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   Timestamp: 2026-11-28T11:55:34.584Z — Batch: Dot 20 Trang Chu (24/11/2026)
    [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét 35 file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...
    [DANH SÁCH FILE QUÉT]: src/App.tsx, src/components/MarketingNotificationToast.tsx, src/components/mall/UniversalMallView.tsx, src/components/seller/SellerCenterView.tsx, src/admin/AdminApp.tsx, src/admin/components/AdminSidebar.tsx, src/admin/components/AdminTopbar.tsx, src/admin/components/MultiLineAnalyticsChart.tsx, src/admin/components/RecentBalanceChangesWidget.tsx, src/admin/components/ui/DataTable.tsx, src/admin/modules/DashboardModule.tsx, src/admin/modules/OrdersModule.tsx, src/admin/modules/MembersModule.tsx, src/admin/modules/HomepageSectionsModule.tsx, src/components/ProductDetailModal.tsx, src/components/ProductCheckoutModal.tsx, src/components/PackageShareModal.tsx, src/components/ProductReviewsSection.tsx, src/components/AuthModal.tsx, src/admin/modules/SupplierConnectorsModule.tsx, src/admin/modules/InterShopAffiliateModule.tsx, src/admin/modules/SellerSepayGatewayModule.tsx, src/admin/modules/BrandIdentityModule.tsx, src/components/seller/SellerAffiliateManager.tsx, src/components/seller/SellerSepayManager.tsx, src/components/seller/SellerPortalApp.tsx, src/components/seller/SellerPortalSidebar.tsx, src/components/seller/SellerPortalTopbar.tsx, src/components/seller/SellerOnboardingLanding.tsx, src/components/seller/PublicStoreView.tsx, src/components/seller/SellerStorefrontStudio.tsx, src/components/seller/SellerProductGalleryUploader.tsx, src/components/seller/SellerProductEditorModal.tsx, src/components/seller/SellerVouchersManager.tsx, src/components/cart/CartDrawerModal.tsx
 ✅ [I18N SCANNER PASSED] Đã quét sạch 35 file giao diện.
@@ -55,15 +55,15 @@ computing gzip size...
 [2mdist/[22m[36massets/GuideLinksBanner-DfNYtL75.js            [39m[1m[2m  4.28 kB[22m[1m[22m[2m │ gzip:   1.81 kB[22m
 [2mdist/[22m[36massets/BookmarkDrawer-CkLXIk1V.js              [39m[1m[2m  4.55 kB[22m[1m[22m[2m │ gzip:   1.78 kB[22m
 [2mdist/[22m[36massets/vietQrUtils-CdQwUN5B.js                 [39m[1m[2m  4.56 kB[22m[1m[22m[2m │ gzip:   1.87 kB[22m
-[2mdist/[22m[36massets/LanguageSelector-CnsW_Ud_.js            [39m[1m[2m  5.37 kB[22m[1m[22m[2m │ gzip:   1.62 kB[22m
+[2mdist/[22m[36massets/LanguageSelector-DF1zJtSQ.js            [39m[1m[2m  5.37 kB[22m[1m[22m[2m │ gzip:   1.63 kB[22m
 [2mdist/[22m[36massets/CodePlaygroundModal-C9GoWiDl.js         [39m[1m[2m  5.45 kB[22m[1m[22m[2m │ gzip:   2.22 kB[22m
-[2mdist/[22m[36massets/ImageUploadInput-cFaKtQLR.js            [39m[1m[2m  5.80 kB[22m[1m[22m[2m │ gzip:   2.35 kB[22m
+[2mdist/[22m[36massets/ImageUploadInput-BK3adxLn.js            [39m[1m[2m  5.80 kB[22m[1m[22m[2m │ gzip:   2.35 kB[22m
 [2mdist/[22m[36massets/SubmitCodeModal-BndS4jLG.js             [39m[1m[2m  6.06 kB[22m[1m[22m[2m │ gzip:   2.25 kB[22m
-[2mdist/[22m[36massets/SecurityLogsModule-CWK6PMvN.js          [39m[1m[2m  6.22 kB[22m[1m[22m[2m │ gzip:   2.66 kB[22m
+[2mdist/[22m[36massets/SecurityLogsModule-CsXgvyfN.js          [39m[1m[2m  6.22 kB[22m[1m[22m[2m │ gzip:   2.66 kB[22m
 [2mdist/[22m[36massets/voucherService-BCZkgwLR.js              [39m[1m[2m  6.65 kB[22m[1m[22m[2m │ gzip:   2.28 kB[22m
-[2mdist/[22m[36massets/StatusBadge-v-7wZPMO.js                 [39m[1m[2m  6.90 kB[22m[1m[22m[2m │ gzip:   1.66 kB[22m
+[2mdist/[22m[36massets/StatusBadge-ztAWWIrO.js                 [39m[1m[2m  6.90 kB[22m[1m[22m[2m │ gzip:   1.66 kB[22m
 [2mdist/[22m[36massets/contentTranslationService-BVzAv6AV.js   [39m[1m[2m  6.93 kB[22m[1m[22m[2m │ gzip:   1.95 kB[22m
-[2mdist/[22m[36massets/WishlistDrawerModal-3GFifR0W.js         [39m[1m[2m  7.19 kB[22m[1m[22m[2m │ gzip:   2.37 kB[22m
+[2mdist/[22m[36massets/WishlistDrawerModal-CeNU_QCn.js         [39m[1m[2m  7.19 kB[22m[1m[22m[2m │ gzip:   2.38 kB[22m
 [2mdist/[22m[36massets/Step2VerificationModal-DgwwaW7H.js      [39m[1m[2m  7.96 kB[22m[1m[22m[2m │ gzip:   3.61 kB[22m
 [2mdist/[22m[36massets/storefrontThemes-DVU3-x0i.js            [39m[1m[2m  8.41 kB[22m[1m[22m[2m │ gzip:   3.17 kB[22m
 [2mdist/[22m[36massets/ShareModal-D9VwNPp9.js                  [39m[1m[2m  9.14 kB[22m[1m[22m[2m │ gzip:   2.84 kB[22m
@@ -71,88 +71,88 @@ computing gzip size...
 [2mdist/[22m[36massets/missionService-DLv0O5k5.js              [39m[1m[2m 10.30 kB[22m[1m[22m[2m │ gzip:   1.90 kB[22m
 [2mdist/[22m[36massets/confetti-vendor-B5JVzsfH.js             [39m[1m[2m 10.66 kB[22m[1m[22m[2m │ gzip:   4.28 kB[22m
 [2mdist/[22m[36massets/SearchableGameSelect-CC4VNVNL.js        [39m[1m[2m 11.10 kB[22m[1m[22m[2m │ gzip:   3.54 kB[22m
-[2mdist/[22m[36massets/ShopeeCouponModal-BD0HUMf4.js           [39m[1m[2m 11.30 kB[22m[1m[22m[2m │ gzip:   3.12 kB[22m
-[2mdist/[22m[36massets/RecentBalanceChangesWidget-C6aFDSK-.js  [39m[1m[2m 11.75 kB[22m[1m[22m[2m │ gzip:   3.77 kB[22m
+[2mdist/[22m[36massets/ShopeeCouponModal-A9xekFno.js           [39m[1m[2m 11.30 kB[22m[1m[22m[2m │ gzip:   3.12 kB[22m
+[2mdist/[22m[36massets/RecentBalanceChangesWidget-CJcoH4wZ.js  [39m[1m[2m 11.75 kB[22m[1m[22m[2m │ gzip:   3.77 kB[22m
 [2mdist/[22m[36massets/auth-service-DMqCaaJt.js                [39m[1m[2m 11.85 kB[22m[1m[22m[2m │ gzip:   4.12 kB[22m
-[2mdist/[22m[36massets/ProfileModule-gURLZJXU.js               [39m[1m[2m 12.41 kB[22m[1m[22m[2m │ gzip:   3.61 kB[22m
-[2mdist/[22m[36massets/DataTable-ZqURI0in.js                   [39m[1m[2m 12.49 kB[22m[1m[22m[2m │ gzip:   3.85 kB[22m
-[2mdist/[22m[36massets/TemporaryAuditTokenManager-lCpHirSJ.js  [39m[1m[2m 12.73 kB[22m[1m[22m[2m │ gzip:   4.34 kB[22m
+[2mdist/[22m[36massets/ProfileModule-Co_dKwga.js               [39m[1m[2m 12.41 kB[22m[1m[22m[2m │ gzip:   3.62 kB[22m
+[2mdist/[22m[36massets/DataTable-DJki-gL9.js                   [39m[1m[2m 12.49 kB[22m[1m[22m[2m │ gzip:   3.85 kB[22m
+[2mdist/[22m[36massets/TemporaryAuditTokenManager-DtxN1s6U.js  [39m[1m[2m 12.73 kB[22m[1m[22m[2m │ gzip:   4.34 kB[22m
 [2mdist/[22m[36massets/TranslationsModule-BLgL4yi3.js          [39m[1m[2m 13.45 kB[22m[1m[22m[2m │ gzip:   3.72 kB[22m
-[2mdist/[22m[36massets/AutomationCenterModule-BXQSpniu.js      [39m[1m[2m 13.65 kB[22m[1m[22m[2m │ gzip:   3.71 kB[22m
-[2mdist/[22m[36massets/SellerSepayGatewayModule-DXnD5X61.js    [39m[1m[2m 15.43 kB[22m[1m[22m[2m │ gzip:   3.63 kB[22m
+[2mdist/[22m[36massets/AutomationCenterModule-T5uw8cme.js      [39m[1m[2m 13.65 kB[22m[1m[22m[2m │ gzip:   3.71 kB[22m
+[2mdist/[22m[36massets/SellerSepayGatewayModule-P_gptBwP.js    [39m[1m[2m 15.43 kB[22m[1m[22m[2m │ gzip:   3.64 kB[22m
 [2mdist/[22m[36massets/LuckyWheelAdminManager-C2GhQHfE.js      [39m[1m[2m 15.81 kB[22m[1m[22m[2m │ gzip:   4.64 kB[22m
 [2mdist/[22m[36massets/templateService-kbyvXi2a.js             [39m[1m[2m 15.85 kB[22m[1m[22m[2m │ gzip:   4.66 kB[22m
 [2mdist/[22m[36massets/AllUpcomingGamesModal-C46CsLm3.js       [39m[1m[2m 16.08 kB[22m[1m[22m[2m │ gzip:   4.66 kB[22m
 [2mdist/[22m[36massets/ProductGalleryUpload-ove3cr9Q.js        [39m[1m[2m 16.08 kB[22m[1m[22m[2m │ gzip:   4.82 kB[22m
-[2mdist/[22m[36massets/DownloadAppModal-BpQB8U-b.js            [39m[1m[2m 16.19 kB[22m[1m[22m[2m │ gzip:   4.54 kB[22m
-[2mdist/[22m[36massets/FloatingAnnouncement-l_g1MSMc.js        [39m[1m[2m 16.85 kB[22m[1m[22m[2m │ gzip:   4.81 kB[22m
-[2mdist/[22m[36massets/ShippingTrackingModal-CowLFD4W.js       [39m[1m[2m 17.53 kB[22m[1m[22m[2m │ gzip:   5.86 kB[22m
-[2mdist/[22m[36massets/QuickFomoAdjustModal-JXI3I3PW.js        [39m[1m[2m 18.27 kB[22m[1m[22m[2m │ gzip:   4.37 kB[22m
-[2mdist/[22m[36massets/FreeCodesModule-Cxc3G9mw.js             [39m[1m[2m 19.34 kB[22m[1m[22m[2m │ gzip:   6.03 kB[22m
-[2mdist/[22m[36massets/DashboardModule-BZHny-5S.js             [39m[1m[2m 19.90 kB[22m[1m[22m[2m │ gzip:   6.79 kB[22m
+[2mdist/[22m[36massets/DownloadAppModal-CnoQlpAG.js            [39m[1m[2m 16.19 kB[22m[1m[22m[2m │ gzip:   4.54 kB[22m
+[2mdist/[22m[36massets/FloatingAnnouncement-Dt772XWZ.js        [39m[1m[2m 16.85 kB[22m[1m[22m[2m │ gzip:   4.81 kB[22m
+[2mdist/[22m[36massets/ShippingTrackingModal-DqA48AWO.js       [39m[1m[2m 17.53 kB[22m[1m[22m[2m │ gzip:   5.86 kB[22m
+[2mdist/[22m[36massets/QuickFomoAdjustModal-B-seiMWL.js        [39m[1m[2m 18.27 kB[22m[1m[22m[2m │ gzip:   4.37 kB[22m
+[2mdist/[22m[36massets/FreeCodesModule-CruihzEq.js             [39m[1m[2m 19.34 kB[22m[1m[22m[2m │ gzip:   6.04 kB[22m
+[2mdist/[22m[36massets/DashboardModule-C6snjlVl.js             [39m[1m[2m 19.90 kB[22m[1m[22m[2m │ gzip:   6.79 kB[22m
 [2mdist/[22m[36massets/telegramService-DpgsZkw8.js             [39m[1m[2m 20.88 kB[22m[1m[22m[2m │ gzip:   6.21 kB[22m
-[2mdist/[22m[36massets/VouchersModule-DhZADhHy.js              [39m[1m[2m 20.90 kB[22m[1m[22m[2m │ gzip:   5.25 kB[22m
-[2mdist/[22m[36massets/PlatformLeadsModule-Bip8SC3s.js         [39m[1m[2m 21.95 kB[22m[1m[22m[2m │ gzip:   5.29 kB[22m
-[2mdist/[22m[36massets/MembersModule-BSQsOWpb.js               [39m[1m[2m 22.11 kB[22m[1m[22m[2m │ gzip:   7.17 kB[22m
+[2mdist/[22m[36massets/VouchersModule-BrHmdfaa.js              [39m[1m[2m 20.90 kB[22m[1m[22m[2m │ gzip:   5.26 kB[22m
+[2mdist/[22m[36massets/PlatformLeadsModule-DoALsWo4.js         [39m[1m[2m 21.95 kB[22m[1m[22m[2m │ gzip:   5.29 kB[22m
+[2mdist/[22m[36massets/MembersModule-BrnP-JON.js               [39m[1m[2m 22.11 kB[22m[1m[22m[2m │ gzip:   7.17 kB[22m
 [2mdist/[22m[36massets/FirstPurchaseModule-mGGbGG33.js         [39m[1m[2m 22.70 kB[22m[1m[22m[2m │ gzip:   6.01 kB[22m
-[2mdist/[22m[36massets/MarketingNotificationToast-DkzxV8eZ.js  [39m[1m[2m 23.75 kB[22m[1m[22m[2m │ gzip:   7.28 kB[22m
-[2mdist/[22m[36massets/GiftcodesModerationModule-BZL1qf4P.js   [39m[1m[2m 23.91 kB[22m[1m[22m[2m │ gzip:   5.16 kB[22m
+[2mdist/[22m[36massets/MarketingNotificationToast-Cb7BdU0O.js  [39m[1m[2m 23.75 kB[22m[1m[22m[2m │ gzip:   7.28 kB[22m
+[2mdist/[22m[36massets/GiftcodesModerationModule-DfzsWP5c.js   [39m[1m[2m 23.91 kB[22m[1m[22m[2m │ gzip:   5.16 kB[22m
 [2mdist/[22m[36massets/qrcode-vendor-CjSdxGTc.js               [39m[1m[2m 24.08 kB[22m[1m[22m[2m │ gzip:   9.47 kB[22m
-[2mdist/[22m[36massets/AuthModal-ChTDg4ze.js                   [39m[1m[2m 24.21 kB[22m[1m[22m[2m │ gzip:   5.10 kB[22m
-[2mdist/[22m[36massets/WalletModule-DthMo9CP.js                [39m[1m[2m 24.65 kB[22m[1m[22m[2m │ gzip:   7.88 kB[22m
+[2mdist/[22m[36massets/AuthModal-BBv5sSuX.js                   [39m[1m[2m 24.30 kB[22m[1m[22m[2m │ gzip:   5.11 kB[22m
+[2mdist/[22m[36massets/WalletModule-DHDF4ZkO.js                [39m[1m[2m 24.65 kB[22m[1m[22m[2m │ gzip:   7.88 kB[22m
 [2mdist/[22m[36massets/giveaways-data-fallback-B9OxCa2v.js     [39m[1m[2m 25.34 kB[22m[1m[22m[2m │ gzip:   3.42 kB[22m
 [2mdist/[22m[36massets/EmailSubscriptionModal-BFow3T1l.js      [39m[1m[2m 26.34 kB[22m[1m[22m[2m │ gzip:   7.59 kB[22m
-[2mdist/[22m[36massets/UserWalletModal-BI6GQ31P.js             [39m[1m[2m 26.71 kB[22m[1m[22m[2m │ gzip:   7.47 kB[22m
+[2mdist/[22m[36massets/UserWalletModal-BTM8Yvah.js             [39m[1m[2m 26.71 kB[22m[1m[22m[2m │ gzip:   7.46 kB[22m
 [2mdist/[22m[36massets/GrowthModule-CmdV2PL0.js                [39m[1m[2m 27.38 kB[22m[1m[22m[2m │ gzip:   4.98 kB[22m
 [2mdist/[22m[36massets/upcoming-games-fallback-Ba4XTYeE.js     [39m[1m[2m 29.28 kB[22m[1m[22m[2m │ gzip:   5.52 kB[22m
 [2mdist/[22m[36massets/GrowthCenterModal-DPsunmgn.js           [39m[1m[2m 29.62 kB[22m[1m[22m[2m │ gzip:   7.70 kB[22m
-[2mdist/[22m[36massets/OrdersModule-Cc9n0eqY.js                [39m[1m[2m 30.61 kB[22m[1m[22m[2m │ gzip:   8.85 kB[22m
-[2mdist/[22m[36massets/BrandIdentityModule-DxJzdN1t.js         [39m[1m[2m 31.00 kB[22m[1m[22m[2m │ gzip:   5.90 kB[22m
+[2mdist/[22m[36massets/OrdersModule-K_u9U2ti.js                [39m[1m[2m 30.61 kB[22m[1m[22m[2m │ gzip:   8.85 kB[22m
+[2mdist/[22m[36massets/BrandIdentityModule-DRnkKeio.js         [39m[1m[2m 31.00 kB[22m[1m[22m[2m │ gzip:   5.90 kB[22m
 [2mdist/[22m[36massets/TelegramModule-7SxxxegR.js              [39m[1m[2m 32.60 kB[22m[1m[22m[2m │ gzip:   7.43 kB[22m
-[2mdist/[22m[36massets/SePayModule-CohdZNwK.js                 [39m[1m[2m 35.22 kB[22m[1m[22m[2m │ gzip:   8.90 kB[22m
+[2mdist/[22m[36massets/SePayModule-Cn5gsby8.js                 [39m[1m[2m 35.22 kB[22m[1m[22m[2m │ gzip:   8.90 kB[22m
 [2mdist/[22m[36massets/EmailNotificationModule-jT7YkAE2.js     [39m[1m[2m 35.39 kB[22m[1m[22m[2m │ gzip:   8.96 kB[22m
-[2mdist/[22m[36massets/MyReceivedCodesModal-yfxoGNLc.js        [39m[1m[2m 38.37 kB[22m[1m[22m[2m │ gzip:   8.61 kB[22m
-[2mdist/[22m[36massets/NewsDetailModal-KR5caIBw.js             [39m[1m[2m 39.62 kB[22m[1m[22m[2m │ gzip:  10.01 kB[22m
-[2mdist/[22m[36massets/CartDrawerModal-WHYXa1BI.js             [39m[1m[2m 39.87 kB[22m[1m[22m[2m │ gzip:   8.25 kB[22m
+[2mdist/[22m[36massets/MyReceivedCodesModal-ChvscKsX.js        [39m[1m[2m 38.37 kB[22m[1m[22m[2m │ gzip:   8.61 kB[22m
+[2mdist/[22m[36massets/NewsDetailModal-BPlZegrV.js             [39m[1m[2m 39.62 kB[22m[1m[22m[2m │ gzip:  10.01 kB[22m
+[2mdist/[22m[36massets/CartDrawerModal-BXelp1Mh.js             [39m[1m[2m 39.87 kB[22m[1m[22m[2m │ gzip:   8.25 kB[22m
 [2mdist/[22m[36massets/news-service-BH5tUuCL.js                [39m[1m[2m 45.46 kB[22m[1m[22m[2m │ gzip:  15.97 kB[22m
-[2mdist/[22m[36massets/SupplierConnectorsModule-qaWBdZuO.js    [39m[1m[2m 46.33 kB[22m[1m[22m[2m │ gzip:   7.83 kB[22m
+[2mdist/[22m[36massets/SupplierConnectorsModule-BC6RixAn.js    [39m[1m[2m 46.33 kB[22m[1m[22m[2m │ gzip:   7.83 kB[22m
 [2mdist/[22m[36massets/utilities-data-fallback-BMJSuZrY.js     [39m[1m[2m 46.76 kB[22m[1m[22m[2m │ gzip:   3.07 kB[22m
-[2mdist/[22m[36massets/FloatingNotificationModule-DY3H508Z.js  [39m[1m[2m 49.41 kB[22m[1m[22m[2m │ gzip:  11.82 kB[22m
+[2mdist/[22m[36massets/FloatingNotificationModule-CnelnpRu.js  [39m[1m[2m 49.41 kB[22m[1m[22m[2m │ gzip:  11.82 kB[22m
 [2mdist/[22m[36massets/MissionsModule-h2FV9f5o.js              [39m[1m[2m 53.84 kB[22m[1m[22m[2m │ gzip:  12.27 kB[22m
-[2mdist/[22m[36massets/InterShopAffiliateModule-Cj9Mzu25.js    [39m[1m[2m 54.28 kB[22m[1m[22m[2m │ gzip:   8.73 kB[22m
-[2mdist/[22m[36massets/EventSchedulerModule-C8vIK___.js        [39m[1m[2m 59.69 kB[22m[1m[22m[2m │ gzip:  13.16 kB[22m
-[2mdist/[22m[36massets/UtilitiesModule-BctPrVkd.js             [39m[1m[2m 70.23 kB[22m[1m[22m[2m │ gzip:  15.86 kB[22m
-[2mdist/[22m[36massets/ProductDetailModal-L155NKCI.js          [39m[1m[2m 76.96 kB[22m[1m[22m[2m │ gzip:  16.93 kB[22m
-[2mdist/[22m[36massets/UserProfileModal-Orm5XaMp.js            [39m[1m[2m 86.83 kB[22m[1m[22m[2m │ gzip:  18.84 kB[22m
-[2mdist/[22m[36massets/HomepageSectionsModule-Bmnm-5lS.js      [39m[1m[2m 86.89 kB[22m[1m[22m[2m │ gzip:  15.70 kB[22m
-[2mdist/[22m[36massets/SellerModerationModule-Ci1yXyKT.js      [39m[1m[2m 91.92 kB[22m[1m[22m[2m │ gzip:  16.93 kB[22m
-[2mdist/[22m[36massets/CodeInventoryModule-BVPxmH6N.js         [39m[1m[2m 92.56 kB[22m[1m[22m[2m │ gzip:  19.62 kB[22m
+[2mdist/[22m[36massets/InterShopAffiliateModule-w5fJ-nfg.js    [39m[1m[2m 54.28 kB[22m[1m[22m[2m │ gzip:   8.73 kB[22m
+[2mdist/[22m[36massets/EventSchedulerModule-DC3271-A.js        [39m[1m[2m 59.69 kB[22m[1m[22m[2m │ gzip:  13.16 kB[22m
+[2mdist/[22m[36massets/UtilitiesModule-UrxtwnJc.js             [39m[1m[2m 70.23 kB[22m[1m[22m[2m │ gzip:  15.86 kB[22m
+[2mdist/[22m[36massets/ProductDetailModal-QM95HVFp.js          [39m[1m[2m 76.96 kB[22m[1m[22m[2m │ gzip:  16.93 kB[22m
+[2mdist/[22m[36massets/UserProfileModal-CWBWWfKp.js            [39m[1m[2m 86.83 kB[22m[1m[22m[2m │ gzip:  18.84 kB[22m
+[2mdist/[22m[36massets/HomepageSectionsModule-D9vL1jtr.js      [39m[1m[2m 86.89 kB[22m[1m[22m[2m │ gzip:  15.70 kB[22m
+[2mdist/[22m[36massets/SellerModerationModule-CuAtea7F.js      [39m[1m[2m 91.92 kB[22m[1m[22m[2m │ gzip:  16.93 kB[22m
+[2mdist/[22m[36massets/CodeInventoryModule-C3-tt7jU.js         [39m[1m[2m 92.56 kB[22m[1m[22m[2m │ gzip:  19.62 kB[22m
 [2mdist/[22m[36massets/lucide-icons-Cz_yEQFR.js                [39m[1m[2m 93.04 kB[22m[1m[22m[2m │ gzip:  18.59 kB[22m
-[2mdist/[22m[36massets/ProductCheckoutModal-CDaFMRh_.js        [39m[1m[2m 98.53 kB[22m[1m[22m[2m │ gzip:  21.03 kB[22m
-[2mdist/[22m[36massets/ContentCMSModule-LKlj8JLg.js            [39m[1m[2m 98.88 kB[22m[1m[22m[2m │ gzip:  19.13 kB[22m
+[2mdist/[22m[36massets/ProductCheckoutModal-DOSkziYe.js        [39m[1m[2m 98.53 kB[22m[1m[22m[2m │ gzip:  21.04 kB[22m
+[2mdist/[22m[36massets/ContentCMSModule-Cxy-JSuv.js            [39m[1m[2m 98.88 kB[22m[1m[22m[2m │ gzip:  19.13 kB[22m
 [2mdist/[22m[36massets/marketing-service-DxYG6iDN.js           [39m[1m[2m102.60 kB[22m[1m[22m[2m │ gzip:  23.71 kB[22m
-[2mdist/[22m[36massets/MarketingModule-C_nafA2P.js             [39m[1m[2m124.15 kB[22m[1m[22m[2m │ gzip:  26.40 kB[22m
-[2mdist/[22m[36massets/GamesModule-CdG1obiO.js                 [39m[1m[2m141.38 kB[22m[1m[22m[2m │ gzip:  32.86 kB[22m
+[2mdist/[22m[36massets/MarketingModule-CRKVRlGW.js             [39m[1m[2m124.15 kB[22m[1m[22m[2m │ gzip:  26.41 kB[22m
+[2mdist/[22m[36massets/GamesModule-Dzj72sDF.js                 [39m[1m[2m141.38 kB[22m[1m[22m[2m │ gzip:  32.86 kB[22m
 [2mdist/[22m[36massets/react-vendor-ebxS2RN4.js                [39m[1m[2m141.83 kB[22m[1m[22m[2m │ gzip:  45.44 kB[22m
-[2mdist/[22m[36massets/ApiKeysModule-DHVw65nn.js               [39m[1m[2m143.17 kB[22m[1m[22m[2m │ gzip:  31.15 kB[22m
-[2mdist/[22m[36massets/NewsModule-B7LFef3D.js                  [39m[1m[2m149.82 kB[22m[1m[22m[2m │ gzip:  34.87 kB[22m
+[2mdist/[22m[36massets/ApiKeysModule-CBhsZZP0.js               [39m[1m[2m143.17 kB[22m[1m[22m[2m │ gzip:  31.15 kB[22m
+[2mdist/[22m[36massets/NewsModule-Cp-40Apt.js                  [39m[1m[2m149.82 kB[22m[1m[22m[2m │ gzip:  34.88 kB[22m
 [2mdist/[22m[36massets/growth-service-DnUUFYY_.js              [39m[1m[2m151.49 kB[22m[1m[22m[2m │ gzip:  43.37 kB[22m
-[2mdist/[22m[36massets/PrivateCodesModule-D9oOxemU.js          [39m[1m[2m185.68 kB[22m[1m[22m[2m │ gzip:  37.15 kB[22m
-[2mdist/[22m[36massets/SellerPortalApp-DnIrwgAw.js             [39m[1m[2m295.36 kB[22m[1m[22m[2m │ gzip:  57.53 kB[22m
-[2mdist/[22m[36massets/index-C3mr0-6b.js                       [39m[1m[2m387.29 kB[22m[1m[22m[2m │ gzip: 134.69 kB[22m
-[2mdist/[22m[36massets/UniversalMallView-mci0ZKAD.js           [39m[1m[2m442.90 kB[22m[1m[22m[2m │ gzip: 103.62 kB[22m
-[2mdist/[22m[36massets/AdminApp-CfyqIX0N.js                    [39m[1m[2m558.37 kB[22m[1m[22m[2m │ gzip: 104.00 kB[22m
+[2mdist/[22m[36massets/PrivateCodesModule-D2adKeF1.js          [39m[1m[2m185.68 kB[22m[1m[22m[2m │ gzip:  37.15 kB[22m
+[2mdist/[22m[36massets/SellerPortalApp-YJ6dbbEh.js             [39m[1m[2m295.36 kB[22m[1m[22m[2m │ gzip:  57.54 kB[22m
+[2mdist/[22m[36massets/index-BRJNRFXQ.js                       [39m[1m[2m387.29 kB[22m[1m[22m[2m │ gzip: 134.69 kB[22m
+[2mdist/[22m[36massets/UniversalMallView-BpU9509G.js           [39m[1m[2m442.90 kB[22m[1m[22m[2m │ gzip: 103.62 kB[22m
+[2mdist/[22m[36massets/AdminApp-B8yYcFZT.js                    [39m[1m[2m558.35 kB[22m[1m[22m[2m │ gzip: 103.98 kB[22m
 [2mdist/[22m[36massets/games-catalog-fallback-DcEoXQue.js      [39m[1m[2m790.41 kB[22m[1m[22m[2m │ gzip: 123.00 kB[22m
 [2mdist/[22m[36massets/seed-news-fallback-CyezkEkv.js          [39m[1m[2m884.33 kB[22m[1m[22m[2m │ gzip: 185.96 kB[22m
-[2mdist/[22m[36massets/CrawlerModule-Dw6yrlyj.js               [39m[1m[2m972.18 kB[22m[1m[22m[2m │ gzip: 180.05 kB[22m
-[32m✓ built in 9.22s[39m
+[2mdist/[22m[36massets/CrawlerModule-Bu_kuI3k.js               [39m[1m[2m972.18 kB[22m[1m[22m[2m │ gzip: 180.05 kB[22m
+[32m✓ built in 11.53s[39m
 ⚡ 2. Compiling Cloudflare Pages Edge Worker bundle...
-⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is e147eaa. If this is a release build, commit first before deploying.
-   🏷️ Injected Build ID: e147eaa (2026-11-28T10:27:54.956Z)
+⚠️ [Build Warning] Git working tree has uncommitted changes! Active HEAD is d68c338. If this is a release build, commit first before deploying.
+   🏷️ Injected Build ID: d68c338 (2026-11-28T11:55:51.536Z)
 
   dist\_worker.js  7.0mb
 
-Done in 133ms
+Done in 124ms
 📄 3. Ensuring _routes.json in dist/ ...
    _routes.json copied to dist/_routes.json
 🛡️ 4. Running Post-build Chunk & Worker Budget Check (Lean Guard)...
@@ -162,7 +162,7 @@ Done in 133ms
 ================================================================================
 
 🔍 [STAGE: POST-BUILD] Đang quét đầu ra Vite & Cloudflare Edge Worker bundle...
-   ✅ [Check 6.1 PASS] Chunk AdminApp (569.82 KB) duy trì mức tối ưu (< 600 KB).
+   ✅ [Check 6.1 PASS] Chunk AdminApp (569.81 KB) duy trì mức tối ưu (< 600 KB).
    ✅ [Check 6.2 PASS] Tất cả các component chunks khác đều nằm trong ngân sách (< 650 KB).
    ⚡ Edge Worker Bundle (dist/_worker.js): 7.04 MB
    ✅ [Check 7 PASS] Edge Worker Bundle (7.04 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).

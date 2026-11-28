@@ -1,5 +1,5 @@
 import { ensureSchemaUpgrades } from '../../services/d1_service';
-import { verifyTurnstileRequest } from '../../services/turnstile_service';
+import { verifyTurnstileRequest, isTurnstileCheckEnabled } from '../../services/turnstile_service';
 import { createSignedToken, getSigningSecret, computeHash, hashPasswordPBKDF2 } from '../../services/auth_service';
 
 interface Env {
@@ -10,6 +10,7 @@ interface Env {
   TURNSTILE_SECRET_KEY?: string;
   CF_TURNSTILE_SECRET?: string;
   TURNSTILE_ENABLED?: string;
+  REGISTER_TURNSTILE_ENABLED?: string;
   ENVIRONMENT?: string;
 }
 
@@ -79,10 +80,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
     const country = request.headers.get('cf-ipcountry') || 'VN';
 
-    // 2. Turnstile Anti-bot Token check
-    const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
-    if (!turnstileCheck.ok) {
-      return turnstileCheck.response;
+    // 2. Turnstile Anti-bot Token check (controlled by REGISTER_TURNSTILE_ENABLED / TURNSTILE_ENABLED)
+    if (isTurnstileCheckEnabled(env)) {
+      const turnstileCheck = await verifyTurnstileRequest(env, turnstileToken, clientIp, CORS_HEADERS);
+      if (!turnstileCheck.ok) {
+        return turnstileCheck.response;
+      }
     }
 
     // 3. Check for duplicates in D1 (SSOT)

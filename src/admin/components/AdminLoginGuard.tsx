@@ -49,7 +49,7 @@ export const AdminLoginGuard: React.FC<AdminLoginGuardProps> = ({
         }
       })
       .catch(() => {
-        setIsTurnstileEnabled(true);
+        setIsTurnstileEnabled(false);
       });
   }, []);
 

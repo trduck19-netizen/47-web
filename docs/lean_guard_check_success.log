@@ -16,7 +16,7 @@
    ✅ [Check 5 PASS] Không có tệp dữ liệu tĩnh nặng trái phép trong src/data/.
 
 🔍 [STAGE: POST-BUILD] Đang quét đầu ra Vite & Cloudflare Edge Worker bundle...
-   ✅ [Check 6.1 PASS] Chunk AdminApp (569.82 KB) duy trì mức tối ưu (< 600 KB).
+   ✅ [Check 6.1 PASS] Chunk AdminApp (569.81 KB) duy trì mức tối ưu (< 600 KB).
    ✅ [Check 6.2 PASS] Tất cả các component chunks khác đều nằm trong ngân sách (< 650 KB).
    ⚡ Edge Worker Bundle (dist/_worker.js): 7.04 MB
    ✅ [Check 7 PASS] Edge Worker Bundle (7.04 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).
