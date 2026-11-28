@@ -224,5 +224,6 @@ ALL 10/10 PRIMARY /api/products FIELDS VERIFIED VIA REAL HANDLER
   PASS | vi.json & en.json have 0 key mismatch, use brand/core/ai tokens, and preserve "6 Core Pillars"
   PASS | Core UI shells, Admin Sidebar, CMS Tab 9 shortcut & ApiKeysModule BRAND_MANAGE are properly wired
   PASS | extractBrandFromSettingsMap ignores stale legacy CodeGame.Shop title & /logo.png when wcg_brand_identity_v1 absent
+  PASS | brand.ts & sync-lite.ts scope ETag and Edge Cache keys by __BUILD_ID__
 
-Brand Identity Sync Suite: 11/11 PASSED, 0 FAILED
+Brand Identity Sync Suite: 12/12 PASSED, 0 FAILED

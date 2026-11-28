@@ -431,6 +431,16 @@ test('extractBrandFromSettingsMap ignores stale legacy CodeGame.Shop title & /lo
   assert.equal(brand.faviconUrl, '/logo.webp');
 });
 
+// 12. Build-scoped ETag isolation on /api/brand & /api/sync-lite (anti cross-deploy stale 304)
+test('brand.ts & sync-lite.ts scope ETag and Edge Cache keys by __BUILD_ID__', () => {
+  const root = process.cwd();
+  const brandApi = fs.readFileSync(path.join(root, 'functions/api/brand.ts'), 'utf8');
+  const syncLiteApi = fs.readFileSync(path.join(root, 'functions/api/sync-lite.ts'), 'utf8');
+  assert.ok(brandApi.includes('__BUILD_ID__') && brandApi.includes('brand-${buildTag}-${epoch}'), 'brand.ts must include __BUILD_ID__ in ETag');
+  assert.ok(syncLiteApi.includes('__BUILD_ID__') && syncLiteApi.includes('sync-lite-${buildTag}-${currentEpoch}'), 'sync-lite.ts must include __BUILD_ID__ in ETag');
+  assert.ok(syncLiteApi.includes('&_b=${encodeURIComponent(buildTag)}'), 'sync-lite.ts must include __BUILD_ID__ in epochCacheKey');
+});
+
 (async () => {
   let passed = 0;
   let failed = 0;

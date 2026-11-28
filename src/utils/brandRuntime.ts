@@ -69,7 +69,27 @@ function sanitizeText(val: unknown, maxLen: number): string {
 function isLegacyTitle(title?: string | null): boolean {
   if (!title) return true;
   const u = title.trim().toUpperCase();
-  return !u || u === 'WEB CODE GAME' || u === 'WEB CODE' || u === 'WEB CODE GAME 2026';
+  return (
+    !u ||
+    u === 'WEB CODE GAME' ||
+    u === 'WEB CODE' ||
+    u === 'WEB CODE GAME 2026' ||
+    u === 'CODEGAME.SHOP' ||
+    u === 'CODEGAME' ||
+    u === 'CODEGAME MALL' ||
+    u === 'SHOP CODE GAME' ||
+    u === 'WEBCODEGAME' ||
+    u === 'WEBCODEGAME.VN'
+  );
+}
+
+function normalizeLegacyLogoPath(url?: string | null): string {
+  if (typeof url !== 'string') return DEFAULT_BRAND_IDENTITY.logoUrl;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === '/logo.png' || trimmed === '/favicon.png') {
+    return DEFAULT_BRAND_IDENTITY.logoUrl;
+  }
+  return trimmed;
 }
 
 export function extractPrimaryBrandWord(name: string): string {
@@ -132,12 +152,12 @@ export function normalizeBrandIdentityClient(
 
   const logoUrl =
     typeof src.logoUrl === 'string' && src.logoUrl.trim() && !/^javascript:/i.test(src.logoUrl.trim())
-      ? src.logoUrl.trim()
+      ? normalizeLegacyLogoPath(src.logoUrl)
       : base.logoUrl || DEFAULT_BRAND_IDENTITY.logoUrl;
 
   const faviconUrl =
     typeof src.faviconUrl === 'string' && src.faviconUrl.trim() && !/^javascript:/i.test(src.faviconUrl.trim())
-      ? src.faviconUrl.trim()
+      ? normalizeLegacyLogoPath(src.faviconUrl)
       : base.faviconUrl || logoUrl || DEFAULT_BRAND_IDENTITY.faviconUrl;
 
   const supportHotline = sanitizeText(src.supportHotline, 32) || base.supportHotline || DEFAULT_BRAND_IDENTITY.supportHotline;

@@ -1,6 +1,8 @@
 import { getBrandIdentity } from '../services/brand_service';
 import { getCatalogEpoch, matchesIfNoneMatch } from '../services/cache_service';
 
+declare const __BUILD_ID__: string | undefined;
+
 interface Env {
   DB?: D1Database;
 }
@@ -28,7 +30,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   try {
     const epoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
-    const etag = `W/"brand-${epoch}"`;
+    const buildTag = typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ ? __BUILD_ID__ : '';
+    const etag = buildTag ? `W/"brand-${buildTag}-${epoch}"` : `W/"brand-${epoch}"`;
 
     if (!bypass && matchesIfNoneMatch(request.headers.get('If-None-Match'), etag)) {
       return new Response(null, {

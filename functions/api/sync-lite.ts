@@ -10,6 +10,8 @@ import { DEFAULT_MARKETING_CONFIG } from '../../src/services/marketingService';
 import canonicalBackupState from '../data/compact_canonical_state.json';
 import { getActiveTombstonesMap, filterOutTombstones } from '../services/soft_delete_service';
 
+declare const __BUILD_ID__: string | undefined;
+
 interface Env {
   DB: D1Database;
   ADMIN_SYNC_SECRET?: string;
@@ -82,10 +84,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const epochStart = Date.now();
   const currentEpoch = env.DB ? await getCatalogEpoch(env.DB) : '0';
   const epochMs = Date.now() - epochStart;
-  const etag = `W/"sync-lite-${currentEpoch}"`;
-  const epochCacheKey = new Request(`${url.origin}${url.pathname}?_epoch=${encodeURIComponent(currentEpoch)}`, {
-    method: 'GET',
-  });
+  const buildTag = typeof __BUILD_ID__ !== 'undefined' && __BUILD_ID__ ? __BUILD_ID__ : '';
+  const etag = buildTag ? `W/"sync-lite-${buildTag}-${currentEpoch}"` : `W/"sync-lite-${currentEpoch}"`;
+  const epochCacheKey = new Request(
+    `${url.origin}${url.pathname}?_epoch=${encodeURIComponent(currentEpoch)}${buildTag ? `&_b=${encodeURIComponent(buildTag)}` : ''}`,
+    {
+      method: 'GET',
+    }
+  );
 
   // 0b. ETag / If-None-Match -> Trả 304 Not Modified tức thì (0 KB body, 0 query bảng sản phẩm)
   if (!isNoCache && matchesIfNoneMatch(request.headers.get('If-None-Match'), etag)) {
