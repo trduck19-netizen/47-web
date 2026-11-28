@@ -2363,63 +2363,6 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
 
   return (
     <div className={`min-h-screen transition-colors duration-200 font-sans ${isShopeeDark ? 'bg-[#0a0f1d] text-slate-100' : 'bg-[#f5f5f5] text-slate-800'}`}>
-      
-      {/* 0. TOP BAR THÔNG BÁO SÀN UNIVERSAL MALL (Non-sticky so Shopee sticky header anchors cleanly at top-0) */}
-      {isSectionEnabled('top_announcement') && (() => {
-        const topSec = orderedSections.find((s) => s.id === 'top_announcement');
-        const customTopTitle = cleanCmsDebugSuffix(isEn ? topSec?.title_en : topSec?.title_vi);
-        const customTopDesc = cleanCmsDebugSuffix(isEn ? topSec?.description_en : topSec?.description_vi);
-        const customTopBadge = cleanCmsDebugSuffix(isEn ? topSec?.badge_en : topSec?.badge_vi);
-        const topLinkUrl = topSec?.link_url;
-        const topLinkTarget = topSec?.link_target || '_self';
-        const topLinkType = topSec?.link_type || 'internal';
-
-        return (
-          <div className="bg-amber-400 text-slate-950 px-2.5 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold flex items-center justify-between gap-2 shadow-xs relative z-20 w-full max-w-full overflow-hidden">
-            <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-              {topSec?.image_url && (
-                <img 
-                  src={topSec.image_url} 
-                  alt="" 
-                  width={16} 
-                  height={16} 
-                  className="w-4 h-4 rounded object-cover shrink-0" 
-                />
-              )}
-              <span className="bg-slate-950 text-amber-400 px-2 py-0.5 rounded uppercase text-[10px] tracking-wider font-mono whitespace-nowrap shrink-0">
-                {customTopBadge || t('mall.topNav.marketplace')}
-              </span>
-              <span className="truncate min-w-0">
-                {customTopTitle ? (
-                  <span>{customTopTitle}{customTopDesc ? ` - ${customTopDesc}` : ''}</span>
-                ) : (
-                  <>
-                    {t('mall.topNav.editionDesc')}
-                    {' '}
-                    {t('mall.topNav.mainSiteUnaffected')}
-                  </>
-                )}
-              </span>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 shrink-0">
-              <button 
-                onClick={() => {
-                  if (topLinkUrl) {
-                    handleNavigation(topLinkUrl, topLinkTarget, topLinkType);
-                  } else {
-                    setSubView('home');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                }}
-                className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 text-white px-3 py-1 rounded text-xs transition active:scale-95 cursor-pointer font-bold whitespace-nowrap"
-              >
-                <Store className="w-3.5 h-3.5 shrink-0" />
-                <span>{customTopBadge || t('mall.topNav.mallHomepage')}</span>
-              </button>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* 1. UNIVERSAL MALL TOPBAR */}
       <div className="bg-[#ee4d2d] text-white text-[11px] sm:text-[12px] py-1 px-2.5 sm:px-4 border-b border-white/10">

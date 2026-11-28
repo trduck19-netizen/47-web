@@ -7,6 +7,15 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-28]
 
+### 496. Gỡ Bỏ Thanh Thông Báo Nền Vàng Đỉnh Trang (`Bản Sàn Toàn Diện`) Trên Giao Diện Khách `UniversalMallView` (28/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Theo yêu cầu trực tiếp từ chủ sở hữu kèm ảnh chụp thực tế: xóa khung thanh thông báo nền vàng trên cùng (`BẢN SÀN TOÀN DIỆN | Pine Universal Mall — Sàn Thương Mại Điện Tử Đa Ngành Chính Hãng (Giao mã 0s & Bảo chứng 168h) | Trang Chủ Pine Universal Mall`) để thanh đầu trang màu cam của sàn ghim gọn ngay mép trên màn hình.
+- **Giải pháp áp dụng (Solution)**:
+  - Xóa khối render `bg-amber-400` (`top_announcement` top ribbon) trong `src/components/mall/UniversalMallView.tsx` (`-57` dòng). Giữ nguyên nhánh render thanh điều hướng chính bên dưới (`Trang Chủ Sàn`, `Cửa Hàng Đa Ngành`, `Kênh Người Bán`, `Tài Khoản & Ví`, `Nhiệm Vụ`, `Telegram`, `Mục Lục A-Z`, `+ Gửi Mã Mới`) cùng cấu hình `top_announcement` trong `homepageSections.ts`.
+- **Kiểm thử & Đo lường thực tế**:
+  - Post-grep `mall.topNav.(marketplace|editionDesc|mainSiteUnaffected|mallHomepage)` trong `src/`: **`0` vị trí còn sót**.
+  - `npm test` (`docs/test_full_check.log`): **`325/325 PASS`**, `npm run check:i18n` (`docs/i18n_full_check.log`): **`32/32 PASSED`**, `tsc` (`docs/tsc_full_check.log`): `homepage_exit=0` & tổng `1.675` lỗi (`0` lỗi mới), Rule 10 (`docs/rule10_scan.log`): `TOTAL_VIOLATIONS=0`, `npm run build` (`docs/build_success.log`): Lean Guard Pre `5/5` + Post `4/4 PASS`.
+
 ### 495. Vá Triệt Để Lỗi Đơ Trình Duyệt Kênh Người Bán (`/seller`), Sửa Lỗi `{COUNT}`/Ảnh 404/SW v11/SSR `/gian-hang/*`, Xây Dựng Storefront Studio (`0054`) & Nâng Cấp Giao Diện Gian Hàng Chuẩn Shopee Mall (`PublicStoreView`) (28/11/2026)
 - **Bối cảnh & Yêu cầu**:
   - Triển khai trọn vẹn 4 lát cắt theo kế hoạch đã duyệt ([`ke_hoach_sua_treo_seller_va_nang_cap_gian_hang_28_11.md`](file:///C:/Users/farm2/.gemini/antigravity/brain/c58a85f1-825d-41a8-9289-bc4c2394c6f8/ke_hoach_sua_treo_seller_va_nang_cap_gian_hang_28_11.md)): khắc phục dứt điểm lỗi bấm vào `/seller` không tải được dữ liệu & gây đơ trình duyệt, xử lý toàn bộ lỗi trên trang `/gian-hang/:slug` (`{COUNT}`, thương hiệu cũ `CodeGame.Shop`, icon 404), bổ sung Studio trang trí gian hàng trong `/seller#/settings` và nâng cấp toàn diện giao diện `PublicStoreView.tsx` chuẩn flagship Shopee Mall song ngữ 100% VI/EN.
@@ -328,20 +337,3 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
      - Bổ sung 4 assertion kiểm thử idempotency (gọi 2 lần cùng đơn khi còn dư hạn mức → chỉ trừ 1 lần, 1 dòng sổ cái) nâng tổng suite `test_supplier_connectors` từ 108 lên **112/112 PASS** (`npm test`: **134/134 PASS**).
   3. *Nhóm 2a — Chuẩn hóa `docs/build_success.log` có dòng `exit=0`*:
      - Pipe trực tiếp output `npm run build` kèm dòng `exit=0` ở cuối vào `docs/build_success.log` khớp `Injected Build ID` live.
-
-### 476. Hoàn Tất Đợt 1 (Mảnh 2–5): Admin API Nguồn Hàng & Webhook, PA2 Non-Blocking Webhook + Inventory Push, PA1 Sync/Postback/Credit Guard/Atomic Refund & Giao Diện Quản Trị Song Ngữ `SupplierConnectorsModule` (26/11/2026)
-- **Bối cảnh & Yêu cầu**:
-  - Tiếp nối Mảnh 1 (`f981376`), hoàn thiện toàn bộ phần còn lại của Đợt 1 theo kế hoạch v2 đã duyệt (giữ Đợt 2 nối dây checkout live ở trạng thái BLOCKED chờ đối tác NCC thật), đồng thời chạy kiểm thử E2E thực tế trên môi trường live với tài khoản test và dọn sạch dữ liệu test (Rule 7).
-- **Giải pháp áp dụng (Solution)**:
-  1. *Mảnh 2 — Admin API & Đăng ký Scopes (`functions/api/admin/suppliers/index.ts`, `[id].ts`, `functions/_worker.ts`, `src/admin/modules/ApiKeysModule.tsx`)*:
-     - Triển khai CRUD `/api/admin/suppliers` và `/api/admin/suppliers/:id` (selective projection `EXTERNAL_SUPPLIER_SAFE_SELECT`, tuyệt đối không lộ `encrypted_api_key`/`encrypted_webhook_secret`), kèm sub-route `test`, `sync`, `products`, `ledger`, `settle` (tất toán nguyên tử qua `db.batch`).
-     - Đăng ký 2 scope `SUPPLIER_CONNECTORS_FULL` và `SUPPLIER_FULFILLMENT_MANAGE` vào `ALL_API_SCOPES` (Rule 8), giữ tách bạch Admin UI session (`verifyAdminAuth`) với AI-key scope.
-  2. *Mảnh 3 — PA2 Webhook Thông Báo HMAC + Inventory Push + Dọn `revoked_at` (`functions/api/admin/suppliers/webhooks.ts`, `functions/api/seller/affiliate/inventory-push.ts`, `functions/api/seller-orders/index.ts`, `functions/services/d1_service.ts`)*:
-     - Triển khai `/api/admin/suppliers/webhooks*` (CRUD, ping `test`, xem `deliveries`, `retry`), nối `dispatchSupplierFulfillmentWebhook` vào `seller-orders/index.ts` theo mẫu `backgroundPromises` + `context.waitUntil` non-blocking.
-     - Triển khai `POST /api/seller/affiliate/inventory-push` (xác thực Pair Key `wcg_shop_*` hoặc Store API Key/Session, tự đồng bộ giá & khóa `ANTI_LOSS_PAUSED` trên listing liên shop).
-     - Bổ sung migration `0051_fix_approved_partnership_revoked_at_v1` làm sạch `revoked_at = NULL` cho `sap_mwug5g1i_7cixz` (không xóa khóa).
-  3. *Mảnh 4 — PA1 Catalog Sync, Credit Guard Nguyên Tử, `refundSupplierOrder` Nguyên Tử & Affiliate Postback (`functions/services/supplier_connector_service.ts`, `functions/api/webhooks/affiliate-postback.ts`)*:
-     - Viết `syncExternalSupplierCatalog`, `reserveSupplierCreditAtomic` (`credit_used_core + ? <= credit_limit_core` trong `db.batch`), `refundSupplierOrder` (state-guard `REFUNDED_SUPPLIER_ERROR` trong 1 `db.batch` chống hoàn trùng 2 lần và ghi `REFUND_CREDIT` cùng `external_order_ref` với `ORDER_DEBIT` nhờ Sửa nhỏ 1), và `POST /api/webhooks/affiliate-postback` (HMAC ±300s + idempotency).
-  4. *Mảnh 5 — Giao diện Quản Trị Song Ngữ (`src/admin/modules/SupplierConnectorsModule.tsx`, `AdminApp.tsx`, `AdminSidebar.tsx`, `vi.json`, `en.json`, `scripts/check-hardcoded-i18n.cjs`)*:
-     - Xây dựng module lazy-loaded 5 sub-tab, chuẩn Rule 9 `table-fixed w-full` (tổng cột = 100%, 0 tràn ngang), 100% song ngữ VI/EN (119 khóa đối xứng `supplierConnectors.*`), đưa vào `IN_SCOPE_UI_FILES` (21/21 file, 0 vi phạm).
-     - Mở rộng `scripts/tests/test_supplier_connectors.ts` lên **108 assertions** bao phủ đầy đủ Mảnh 1–5 (bao gồm test đua hạn mức công nợ, hoàn tiền nguyên tử chống hoàn trùng, Sửa nhỏ 1 `ORDER_DEBIT` + `REFUND_CREDIT` cùng ref, và postback idempotency).

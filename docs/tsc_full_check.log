@@ -1084,23 +1084,23 @@ src/components/mall/UniversalMallView.tsx(2176,50): error TS2339: Property 'revi
 src/components/mall/UniversalMallView.tsx(2176,71): error TS2339: Property 'review_count' does not exist on type 'StoreProduct'.
 src/components/mall/UniversalMallView.tsx(2179,74): error TS2339: Property 'rating' does not exist on type 'StoreProduct'.
 src/components/mall/UniversalMallView.tsx(2350,32): error TS2339: Property 'category' does not exist on type 'NewsArticle'.
-src/components/mall/UniversalMallView.tsx(2510,59): error TS2339: Property 'name' does not exist on type 'UserProfile'.
-src/components/mall/UniversalMallView.tsx(2906,46): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "LAUNCHED" | "CANCELLED"' and '"RELEASED"' have no overlap.
-src/components/mall/UniversalMallView.tsx(2906,145): error TS2769: No overload matches this call.
+src/components/mall/UniversalMallView.tsx(2453,59): error TS2339: Property 'name' does not exist on type 'UserProfile'.
+src/components/mall/UniversalMallView.tsx(2849,46): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "LAUNCHED" | "CANCELLED"' and '"RELEASED"' have no overlap.
+src/components/mall/UniversalMallView.tsx(2849,145): error TS2769: No overload matches this call.
   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number | Date'.
       Type 'undefined' is not assignable to type 'string | number | Date'.
   Overload 2 of 4, '(value: string | number): Date', gave the following error.
     Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | number'.
       Type 'undefined' is not assignable to type 'string | number'.
-src/components/mall/UniversalMallView.tsx(3045,33): error TS2339: Property 'avatar' does not exist on type 'UserProfile'.
-src/components/mall/UniversalMallView.tsx(3046,43): error TS2339: Property 'avatar' does not exist on type 'UserProfile'.
-src/components/mall/UniversalMallView.tsx(3054,65): error TS2339: Property 'name' does not exist on type 'UserProfile'.
-src/components/mall/UniversalMallView.tsx(3701,9): error TS2322: Type '{ isOpen: boolean; onClose: () => void; games: GameItem[]; currentUser: UserProfile | null; onShowToast: (t: any, m: any, type: any) => void; }' is not assignable to type 'IntrinsicAttributes & SubmitCodeModalProps'.
+src/components/mall/UniversalMallView.tsx(2988,33): error TS2339: Property 'avatar' does not exist on type 'UserProfile'.
+src/components/mall/UniversalMallView.tsx(2989,43): error TS2339: Property 'avatar' does not exist on type 'UserProfile'.
+src/components/mall/UniversalMallView.tsx(2997,65): error TS2339: Property 'name' does not exist on type 'UserProfile'.
+src/components/mall/UniversalMallView.tsx(3644,9): error TS2322: Type '{ isOpen: boolean; onClose: () => void; games: GameItem[]; currentUser: UserProfile | null; onShowToast: (t: any, m: any, type: any) => void; }' is not assignable to type 'IntrinsicAttributes & SubmitCodeModalProps'.
   Property 'currentUser' does not exist on type 'IntrinsicAttributes & SubmitCodeModalProps'.
-src/components/mall/UniversalMallView.tsx(3702,23): error TS7006: Parameter 't' implicitly has an 'any' type.
-src/components/mall/UniversalMallView.tsx(3702,26): error TS7006: Parameter 'm' implicitly has an 'any' type.
-src/components/mall/UniversalMallView.tsx(3702,29): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/components/mall/UniversalMallView.tsx(3645,23): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/components/mall/UniversalMallView.tsx(3645,26): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/components/mall/UniversalMallView.tsx(3645,29): error TS7006: Parameter 'type' implicitly has an 'any' type.
 src/components/MarketingNotificationToast.tsx(329,13): error TS6133: 'slotHideTimeMs' is declared but its value is never read.
 src/components/MissionsView.tsx(12,3): error TS6133: 'ShieldCheck' is declared but its value is never read.
 src/components/MyReceivedCodesModal.tsx(14,3): error TS6133: 'BookOpen' is declared but its value is never read.

@@ -1,4 +1,21 @@
-# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 475)
+# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 476)
+
+### 476. Hoàn Tất Đợt 1 (Mảnh 2–5): Admin API Nguồn Hàng & Webhook, PA2 Non-Blocking Webhook + Inventory Push, PA1 Sync/Postback/Credit Guard/Atomic Refund & Giao Diện Quản Trị Song Ngữ `SupplierConnectorsModule` (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Tiếp nối Mảnh 1 (`f981376`), hoàn thiện toàn bộ phần còn lại của Đợt 1 theo kế hoạch v2 đã duyệt (giữ Đợt 2 nối dây checkout live ở trạng thái BLOCKED chờ đối tác NCC thật), đồng thời chạy kiểm thử E2E thực tế trên môi trường live với tài khoản test và dọn sạch dữ liệu test (Rule 7).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Mảnh 2 — Admin API & Đăng ký Scopes (`functions/api/admin/suppliers/index.ts`, `[id].ts`, `functions/_worker.ts`, `src/admin/modules/ApiKeysModule.tsx`)*:
+     - Triển khai CRUD `/api/admin/suppliers` và `/api/admin/suppliers/:id` (selective projection `EXTERNAL_SUPPLIER_SAFE_SELECT`, tuyệt đối không lộ `encrypted_api_key`/`encrypted_webhook_secret`), kèm sub-route `test`, `sync`, `products`, `ledger`, `settle` (tất toán nguyên tử qua `db.batch`).
+     - Đăng ký 2 scope `SUPPLIER_CONNECTORS_FULL` và `SUPPLIER_FULFILLMENT_MANAGE` vào `ALL_API_SCOPES` (Rule 8), giữ tách bạch Admin UI session (`verifyAdminAuth`) với AI-key scope.
+  2. *Mảnh 3 — PA2 Webhook Thông Báo HMAC + Inventory Push + Dọn `revoked_at` (`functions/api/admin/suppliers/webhooks.ts`, `functions/api/seller/affiliate/inventory-push.ts`, `functions/api/seller-orders/index.ts`, `functions/services/d1_service.ts`)*:
+     - Triển khai `/api/admin/suppliers/webhooks*` (CRUD, ping `test`, xem `deliveries`, `retry`), nối `dispatchSupplierFulfillmentWebhook` vào `seller-orders/index.ts` theo mẫu `backgroundPromises` + `context.waitUntil` non-blocking.
+     - Triển khai `POST /api/seller/affiliate/inventory-push` (xác thực Pair Key `wcg_shop_*` hoặc Store API Key/Session, tự đồng bộ giá & khóa `ANTI_LOSS_PAUSED` trên listing liên shop).
+     - Bổ sung migration `0051_fix_approved_partnership_revoked_at_v1` làm sạch `revoked_at = NULL` cho `sap_mwug5g1i_7cixz` (không xóa khóa).
+  3. *Mảnh 4 — PA1 Catalog Sync, Credit Guard Nguyên Tử, `refundSupplierOrder` Nguyên Tử & Affiliate Postback (`functions/services/supplier_connector_service.ts`, `functions/api/webhooks/affiliate-postback.ts`)*:
+     - Viết `syncExternalSupplierCatalog`, `reserveSupplierCreditAtomic` (`credit_used_core + ? <= credit_limit_core` trong `db.batch`), `refundSupplierOrder` (state-guard `REFUNDED_SUPPLIER_ERROR` trong 1 `db.batch` chống hoàn trùng 2 lần và ghi `REFUND_CREDIT` cùng `external_order_ref` với `ORDER_DEBIT` nhờ Sửa nhỏ 1), và `POST /api/webhooks/affiliate-postback` (HMAC ±300s + idempotency).
+  4. *Mảnh 5 — Giao diện Quản Trị Song Ngữ (`src/admin/modules/SupplierConnectorsModule.tsx`, `AdminApp.tsx`, `AdminSidebar.tsx`, `vi.json`, `en.json`, `scripts/check-hardcoded-i18n.cjs`)*:
+     - Xây dựng module lazy-loaded 5 sub-tab, chuẩn Rule 9 `table-fixed w-full` (tổng cột = 100%, 0 tràn ngang), 100% song ngữ VI/EN (119 khóa đối xứng `supplierConnectors.*`), đưa vào `IN_SCOPE_UI_FILES` (21/21 file, 0 vi phạm).
+     - Mở rộng `scripts/tests/test_supplier_connectors.ts` lên **108 assertions** bao phủ đầy đủ Mảnh 1–5 (bao gồm test đua hạn mức công nợ, hoàn tiền nguyên tử chống hoàn trùng, Sửa nhỏ 1 `ORDER_DEBIT` + `REFUND_CREDIT` cùng ref, và postback idempotency).
 
 ### 475. Đợt 1 — Mảnh 1: 5 Bảng D1 External Supplier & Webhook (`0050_supplier_connectors_v1`), Lõi Bảo Mật `supplier_connector_service.ts` & Bộ Unit Test `test_supplier_connectors.ts` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:
