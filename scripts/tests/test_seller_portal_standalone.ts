@@ -413,6 +413,14 @@ async function main() {
     true
   );
 
+  check(
+    'app_guards_bookmark_sync_effect_on_seller_pathname',
+    /useEffect\(\(\)\s*=>\s*\{[\s\S]{0,350}isSellerPortalPathname[\s\S]{0,350}getBookmarkedGames\(bookmarks\)/.test(
+      appSrc
+    ),
+    true
+  );
+
   const passed = results.filter((r) => r.pass).length;
   const failed = results.filter((r) => !r.pass);
   console.log(

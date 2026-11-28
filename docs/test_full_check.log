@@ -203,8 +203,8 @@ ALL 10/10 PRIMARY /api/products FIELDS VERIFIED VIA REAL HANDLER
 
 {
   "suite": "test_seller_portal_standalone",
-  "total": 39,
-  "passed": 39,
+  "total": 40,
+  "passed": 40,
   "failedCount": 0,
   "failed": []
 }

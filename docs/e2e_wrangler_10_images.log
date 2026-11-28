@@ -2,7 +2,7 @@
 > universal-commerce-platform@1.0.0 test:e2e-wrangler
 > node scripts/tests/e2e_wrangler_10_images.mjs
 
-[E2E-WRANGLER] Started at 2026-11-28T16:43:24.838Z | Base: http://127.0.0.1:8789
+[E2E-WRANGLER] Started at 2026-11-28T17:52:27.668Z | Base: http://127.0.0.1:8789
 PASS | initialized_isolated_local_sqlite_d1
 PASS | wrangler_pages_dev_ready_on_127.0.0.1_8789
 PASS | get_api_vouchers_returns_200

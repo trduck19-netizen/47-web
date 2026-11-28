@@ -5,6 +5,30 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ---
 
+## [2026-11-29]
+
+### 501. Sửa Nốt Đợt 5 Nhóm — Vòng 3 (`0f83887`): Chặn Bookmark Gọi `/api/games` Ở `/seller`, Song Ngữ Hóa `FloatingAnnouncement.tsx`, Đính Chính 4 Điểm + Bằng Chứng E2E SePay `429` & Đưa Báo Cáo Brand Vào Repo (29/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý triệt để 5 nhóm từ kiểm chứng độc lập trên commit `0f83887` theo kế hoạch Vòng 3 đã được duyệt (`ke_hoach_sua_not_5_nhom_vong3_0f83887_29_11.md`), xoay vòng `#481` sang `docs/archive/CHANGELOG_ARCHIVE_2026.md` để duy trì đúng 20 mục hiện hành (`#482–#501`).
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Guard effect bookmark & rà soát `App.tsx` (`src/App.tsx`, `scripts/tests/test_seller_portal_standalone.ts`)*:
+     - Bổ sung `isSellerPortalPathname(window.location.pathname.toLowerCase())` ngay đầu `useEffect` `[bookmarks]` (`src/App.tsx:975-983`) để trên route `/seller` luôn `setBookmarkedGamesList([])` và không gọi `dataService.getBookmarkedGames(bookmarks)` → `/api/games?slugs=...` dù trình duyệt đã lưu bookmark. Khóa hồi quy tại `test_seller_portal_standalone.ts` (`40/40 PASS`).
+  2. *Nhóm 2 — Đính chính 4 điểm & Bằng chứng E2E SePay `429` (`scripts/tests/e2e_wrangler_sepay_429.mjs`, `package.json`, `docs/e2e_wrangler_sepay_429.log`, `CHANGELOG.md`, báo cáo)*:
+     - Thêm script chạy 1 lệnh `npm run test:e2e-wrangler-sepay` dựng `wrangler pages dev` + SQLite D1 cô lập kiểm chứng `401×10 -> 429 (Retry-After: 3600, RATE_LIMITED) -> rotate-key 200 -> 401/200` trên `dist/_worker.js`, lưu log thô tại `docs/e2e_wrangler_sepay_429.log` (`1.366` B).
+     - Đính chính lại `#500` kiểu chính xác `StoreAuthResult.member?: { id: string; username?: string; email?: string; role?: string; }` (`store_api_service.ts:53-58` & `:547-552`) và dung lượng thuần LF của `docs/tsc_full_check.log` (`252.439` B).
+  3. *Nhóm 3 — Ghi chú giới hạn thu hồi JWT (docs-only)*:
+     - Bổ sung đúng 1 dòng ghi chú chuẩn xác dưới Nhóm 5 trong mục `#500` về giới hạn token stateless 30 ngày trừ tài khoản `BANNED`.
+  4. *Nhóm 4 — Song ngữ hóa nhãn UI trong `src/components/FloatingAnnouncement.tsx` (`vi.json`, `en.json`, `scripts/check-hardcoded-i18n.cjs`)*:
+     - Thêm 13 khóa đối xứng nhóm `floatingAnnouncement.*` trong `vi.json` & `en.json`, chuyển toàn bộ nhãn UI cố định & fallback (modal giữa, top/bottom bar, thẻ góc nổi, spotlight) sang `t(...)` và đăng ký `FloatingAnnouncement.tsx` vào `IN_SCOPE_UI_FILES` (`36/36 PASSED`, `0` chuỗi cứng ở cả mặc định lẫn `--all`); giữ nguyên 100% nội dung động đọc từ D1 `wcg_admin_content_v4`.
+  5. *Nhóm 5 — Ảnh §3.4 & Báo cáo Brand trong Repo (`docs/browser_evidence/bf678b3-admin-brand-identity-1366x768.png`, `docs/bao_cao_doi_ten_san_dong_bo_nhan_hieu_28_11.md`)*:
+     - Lưu ảnh `bf678b3-admin-brand-identity-1366x768.png` (`237.908` B) vào `docs/browser_evidence/` và commit báo cáo brand đã bỏ hoàn toàn đường dẫn `C:/` / local URI vào `docs/bao_cao_doi_ten_san_dong_bo_nhan_hieu_28_11.md` (`18.846` B, giữ nguyên toàn bộ số liệu và câu Nhóm 3b).
+- **Kiểm thử & Đo lường thực tế**:
+  - `npm test` (`docs/test_full_check.log`, `9.343` B): **`354/354 PASS`** trên toàn bộ 9 bộ (`test:seller-portal`: `40/40 PASS`).
+  - `npm run check:i18n` (`docs/i18n_full_check.log`, `2.136` B): **`36/36 PASSED`** (`0` vi phạm); `--all` (`docs/check_hardcoded_i18n_all.log`, `488.899` B): `0` dòng lỗi trong `FloatingAnnouncement.tsx`.
+  - `npm run test:e2e-wrangler` (`docs/e2e_wrangler_10_images.log`, `1.451` B): **`26/26 PASS`**; `npm run test:e2e-wrangler-sepay` (`docs/e2e_wrangler_sepay_429.log`, `1.366` B): **`22/22 PASS`**.
+  - `tsc` (`docs/tsc_full_check.log`, `252.439` B pure LF): `homepage_exit=0` (`HOMEPAGE_TSC_OK`), `full_tsc_exit=2` (`1.652` tổng lỗi, `TS6133 = 455`).
+  - `npm run check:lean` (`docs/lean_guard_check_success.log`, `2.059` B): Pre `5/5` + Post `4/4 PASS`; `docs/rule10_scan.log` (`130` B): `TOTAL_VIOLATIONS=0`.
+
 ## [2026-11-28]
 
 ### 500. Khắc Phục Toàn Diện 5 Nhóm: Đính Chính Tài Liệu `0fe1469`, Rate Limit `429` SePay 1 Giờ, Dọn 3 Chuỗi Kế Thừa & Lỗi `tsc`, Bổ Sung 5 Tuyến PA1 Epoch, Tối Ưu Tải Lạnh `/seller#/affiliate` & Modal Xóa Webhook Song Ngữ (28/11/2026)
@@ -17,18 +41,19 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
      - Thêm Migration `0057_seller_sepay_webhook_window_v1` (`unauth_fail_window_started_at TEXT`), giới hạn cửa sổ trượt 1 giờ (`SEPAY_WEBHOOK_FAIL_LIMIT_1H = 10`, `3.600s`) trả `HTTP 429` kèm header `Retry-After` khi vượt ngưỡng sai auth, tự reset về `0` khi hết cửa sổ, xác thực thành công hoặc xoay khóa SePay (`rotate-key.ts`); nâng `test:seller-sepay` từ `28` lên **`30/30 PASS`**.
   3. *Nhóm 3 — Dọn D1 `wcg_admin_content_v4` & Sửa 3 Lỗi `tsc` (`functions/services/d1_service.ts`, `src/utils/imageCompressor.ts`, `functions/services/store_api_service.ts`, `functions/api/seller/subaccounts/index.ts`, `docs/tsc_full_check.log`)*:
      - Migration `0058_clean_legacy_content_and_auth_indexes_v1`: chuyển 3 chuỗi `CodeGame.Shop`/`Web Code Game` sang `Pine Universal Mall` theo Option 3a-A (bảo toàn `t.me/webcodegame_vn` và `hotro@webcodegame.vn`) và tạo index `idx_members_session_token`.
-     - Thêm `originalSizeFormatted`/`compressedSizeFormatted` vào `CompressionResult` (`ImageUploadInput.tsx:152` hết `TS2339`); thêm `member?: any` vào `StoreAuthResult` (`subaccounts/index.ts:106,158,159` hết `TS2551`); khôi phục block tóm tắt cuối `docs/tsc_full_check.log`.
+     - Thêm `originalSizeFormatted`/`compressedSizeFormatted` vào `CompressionResult` (`ImageUploadInput.tsx:152` hết `TS2339`); thêm `member?: { id: string; username?: string; email?: string; role?: string }` vào `StoreAuthResult` (`store_api_service.ts:53-58` & `:547-552`, `subaccounts/index.ts:106,158,159` hết `TS2551`); khôi phục block tóm tắt cuối `docs/tsc_full_check.log`.
   4. *Nhóm 4 — PA1 Catalog Epoch (`functions/services/cache_service.ts`, `scripts/tests/test_catalog_epoch_sync.ts`)*:
      - Bổ sung 5 tuyến ghi còn thiếu vào `shouldBumpCatalogEpoch`: `POST /api/seller`, `POST /api/seller/orders/:id/resolve-report`, `POST /api/admin/orders/:id/refund`, `DELETE /api/seller/codes/:id`, `DELETE /api/seller/affiliate/partners/:id`; nâng `test:sync-epoch` từ `85` lên **`93/93 PASS`**.
   5. *Nhóm 5 — Tăng Tốc `/seller#/affiliate` & Modal Xóa Webhook Song Ngữ (`d1_service.ts`, `auth_service.ts`, `store_api_service.ts`, `seller/index.ts`, `affiliate/requests.ts`, `App.tsx`, `dataService.ts`, `SellerPortalApp.tsx`, `SellerAffiliateManager.tsx`, `vi.json`, `en.json`)*:
      - Tối ưu D1 RTT không đụng `functions/api/seller/webhooks/*`: `ensureMarketplaceSchema` single-flight + 1-RTT `db.batch` + đánh dấu hoàn tất sau `ensureSchemaUpgrades`; `authenticateCaller` ưu tiên kiểm tra chữ ký HMAC-SHA256 trước; `verifyStoreApiAccess` gộp 3 `SELECT` qua `db.batch` (kèm chốt kiểm tra `Array.isArray(memEntry?.results)` tương thích mock SQLite); `GET /api/seller` và `requests.ts` song song hóa bằng `db.batch`/`Promise.all`.
      - `App.tsx` và `dataService.ts` (`syncWithCloudflareKV`) bỏ qua tải `/api/sync-lite` (`~260 KB`) và `queryGames` trên route `/seller` (trừ khi `forceFresh`); `SellerPortalApp.tsx` & `SellerAffiliateManager.tsx` dùng `prefetchSellerAffiliateData` chạy song song 4 endpoint Affiliate với `GET /api/seller`.
      - Thay `window.confirm` ở `handleDeleteWebhook` bằng modal xác nhận trong ứng dụng (`role="dialog"`, khóa nút khi đang xóa, hỗ trợ `Escape`), bổ sung đối xứng `sellerAffiliate.whDeleteModalTitle` ở `vi.json` & `en.json`.
+     - Không có endpoint logout phía server; sau khi đăng xuất hoặc đổi mật khẩu, JWT đã ký hợp lệ vẫn xác thực được tối đa 30 ngày (chỉ tài khoản `BANNED` mới bị chặn ngay). Revoke thật đưa vào Backlog.
 - **Kiểm thử & Đo lường thực tế**:
   - `npm test` (`docs/test_full_check.log`, `9.343` B): **`353/353 PASS`** trên toàn bộ 9 bộ (`12` icons + `10` products + `118` suppliers + `93` sync-epoch + `21` intershop + `30` seller-sepay + `39` seller-portal + `12` brand + `18` seller-10img).
   - `npm run test:e2e-wrangler` (`docs/e2e_wrangler_10_images.log`, `1.451` B): **`26/26 PASS`** trên Worker + SQLite D1 cô lập.
   - `npm run check:i18n` (`docs/i18n_full_check.log`, `2.095` B): **`35/35 PASSED`** (`0` chuỗi cứng); `docs/rule10_scan.log` (`130` B): `TOTAL_VIOLATIONS=0`.
-  - `tsc` (`docs/tsc_full_check.log`, `254.426` B): `tsconfig.homepage.json` `homepage_exit=0` (`HOMEPAGE_TSC_OK`); `tsconfig.json` `full_tsc_exit=2` tổng **`1.652` lỗi** (giảm `11` lỗi so với `1.663` ở `0fe1469`, `TS6133 = 455`).
+  - `tsc` (`docs/tsc_full_check.log`, `252.439` B pure LF): `tsconfig.homepage.json` `homepage_exit=0` (`HOMEPAGE_TSC_OK`); `tsconfig.json` `full_tsc_exit=2` tổng **`1.652` lỗi** (giảm `11` lỗi so với `1.663` ở `0fe1469`, `TS6133 = 455`).
   - `npm run check:lean` (`docs/lean_guard_check_success.log`, `2.059` B): Pre `5/5` + Post `4/4 PASS` (`AdminApp 569.88 KB`, `_worker.js 7.05 MB`, `dist/ 69.36 MB`).
 
 ### 499. Vá Lỗi Thật S1 (`total_products = 0` Ở `GET /api/stores/:slug`), Chuẩn Hóa Bằng Chứng E2E Wrangler, Gộp Log `tsc`, Đính Chính Báo Cáo & 2 Điểm UI Nhóm 4 — Commit `0fe1469` (`0fe1469301e465521847475d438e77c8e7e6f147`) (28/11/2026)
@@ -339,21 +364,3 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
      - Đấu nối cả 3 nhóm tuyến mới vào `_worker.ts`, thêm `/api/admin/affiliate` vào `shouldBumpCatalogEpoch` (loại trừ `/api/seller/webhooks`), đăng ký scope `INTERSHOP_AFFILIATE_MANAGE` vào `hasScope` và `ALL_API_SCOPES`.
   5. *Kiểm thử mở rộng (`scripts/tests/test_intershop_affiliate.ts`, `scripts/tests/test_catalog_epoch_sync.ts`)*:
      - Thêm 6 test case mới (Test 13–18) nâng `test:intershop` lên **`18/18 PASS`** và 2 assertion mới nâng `test:sync-epoch` lên **`71/71 PASS`** → tổng `npm test` đạt **`223/223 PASS`** (`exit 0`).
-
-### 481. Sửa Nốt Mảnh 1 (`84e5cc1` → Bản Hoàn Thiện): Reserve-First Có Hoàn Tác Khi Đua Tranh Kho/Ví, Đường Ghi `stock_quantity`, Hoàn Kho Đơn QR Hết Hạn Đúng Nguồn Gốc, Phí Động `escrow_service.ts`, Chặn Hồi Sinh Trạng Thái `approve.ts` & Log Thô `docs/rule10_scan.log` (26/11/2026)
-- **Bối cảnh & Yêu cầu**:
-  - Xử lý dứt điểm 3 nhóm từ kiểm chứng độc lập Mảnh 1 (`build 84e5cc1` / `HEAD 317b631`) theo đúng kế hoạch đã duyệt (`ke_hoach_sua_not_manh1_84e5cc1_26_11.md` — Bản Đã Sửa), giữ chặt phạm vi Mảnh 1 (chưa mở Mảnh 2/3/4, Đợt 2 vẫn `BLOCKED`, không tạo bảng D1 mới).
-- **Giải pháp áp dụng (Solution)**:
-  1. *Nhóm 1 — Reserve-First Có Hoàn Tác + Đường Ghi Tồn Kho Chính Thức (`seller-orders/index.ts`, `seller-orders/multi.ts`, `d1_service.ts`, `seller/products/index.ts`, `seller/products/[id].ts`)*:
-     - Tách `seller-orders/index.ts` thành **3 pha có hoàn tác**: Pha 1 giữ kho vật lý (`stock_quantity - 1 WHERE stock_quantity >= 1`) hoặc giữ mã số (`IN_STOCK -> RESERVED`) trước khi chạm tiền/đơn → `changes !== 1` trả `409 Conflict` (`STOCK_RACE_CONFLICT`, 0 thay đổi số dư/pending/ledger/đơn); Pha 2 trừ ví buyer → `changes !== 1` lập tức hoàn tác Pha 1 và trả `409` (`BALANCE_RACE_CONFLICT`); Pha 3 chốt batch (`SOLD WHERE status = 'RESERVED' AND order_id = ?`, cộng pending, ghi HOLD, chèn `seller_orders`), lỗi bất ngờ hoàn tác cả tiền lẫn kho/mã.
-     - Tách `seller-orders/multi.ts` sang Reserve-First từng món, bắt buộc kiểm `meta.changes === 1`, hoàn tác toàn bộ `reservedItems` và trả `409 Conflict` khi bất kỳ món nào no-op (tuyệt đối không tạo đơn cha/con hay trả `success: true`).
-     - Nâng cấp `checkAndExpireSellerOrdersD1` (`d1_service.ts`): `LEFT JOIN seller_products` lấy `product_type`, `is_affiliate`, `origin_product_id`; giữ kết quả batch và chỉ hoàn kho `stock_quantity + 1` khi đơn vật lý thật sự chuyển `PENDING_PAYMENT -> EXPIRED` (`changes === 1`), cộng đúng vào `origin_product_id` (sản phẩm gốc NCC) nếu đơn liên shop (tuyệt đối không cộng vào listing).
-     - Bổ sung đường ghi `stock_quantity` chính thức (nguyên `>= 0`, mặc định `0`) trên `POST /api/seller/products` và `PUT /api/seller/products/:id` (tự động gọi `syncAffiliatePriceAndStock(..., 'STOCK_CHANGE', ...)` khi hàng vật lý đổi tồn kho).
-  2. *Nhóm 2 — Sửa `escrow_service.ts` & Guard Trạng Thái `approve.ts`*:
-     - `escrow_service.ts`: chuẩn hóa `String(...).toLowerCase() === 'physical'` tại cả `recordEscrowHold` lẫn `confirmReceivedAndRelease`, gỡ sạch phí cứng `0.02`/`0.05` và nhãn cứng `2%`/`5%`, đọc phí động từ `getMarketplaceConfig(db)` (`git grep` cả 2 mẫu đều = `0`).
-     - `approve.ts`: chỉ cho duyệt bản ghi `PENDING` (giữ idempotent cho `APPROVED`), từ chối `HTTP 400` với `REJECTED`/`REVOKED`/`SUSPENDED` (`INVALID_PARTNERSHIP_STATUS`) và `PENDING_ADMIN` (`AWAITING_ADMIN_APPROVAL`).
-  3. *Nhóm 3 — Đính chính bằng chứng D1 key & Commit `docs/rule10_scan.log`*:
-     - Đính chính rõ Mục 480: tại thời điểm deploy `84e5cc1`, key `wcg_marketplace_config_v1` chưa được tạo dòng trong D1 (hệ thống vận hành bằng fallback `DEFAULT_MARKETPLACE_CONFIG`), và key đã được vật chất hóa trong D1 trong phiên kiểm chứng live (`2026-11-26T13:37:29Z`) với đủ 7 trường đúng giá trị.
-     - Commit log thô `docs/rule10_scan.log` (`RULE10_WCG=0 RULE10_TG=0 RULE10_PK=0`, `exit=0`).
-  4. *Kiểm thử mở rộng (`scripts/tests/test_intershop_affiliate.ts`)*:
-     - Bổ sung 5 test case mới (Test 8–12), nâng `test:intershop` từ `7/7` lên **`12/12 PASS`**, tổng `npm test` lên **`215/215 PASS`**; `docs/tsc_full_check.log` giữ nguyên **`1.827` lỗi** (`0` lỗi mới).

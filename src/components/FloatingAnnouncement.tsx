@@ -20,12 +20,14 @@ import {
 } from '../types/floatingNotification';
 import { RichTextRenderer } from './RichTextRenderer';
 import { homepageSectionsService } from '../services/homepageSectionsService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface FloatingAnnouncementProps {
   onNavigateTab?: (tab: string) => void;
 }
 
 export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNavigateTab }) => {
+  const { t } = useLanguage();
   const [config, setConfig] = useState<FloatingNotificationConfig>(() =>
     dataService.getFloatingNotificationConfig()
   );
@@ -335,8 +337,12 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
   const renderEventSpotlightCard = (spotlight?: typeof config.eventSpotlight, isCompact = false) => {
     if (!spotlight || !spotlight.enabled || !spotlight.title) return null;
 
-    const eventBadge = spotlight.badgeText || (spotlight.type === 'giveaway' ? '🔴 ĐANG DIỄN RA' : '⚡ FLASH SALE');
-    const eventCtaText = spotlight.ctaText || 'Đến Ngay ➔';
+    const eventBadge =
+      spotlight.badgeText ||
+      (spotlight.type === 'giveaway'
+        ? t('floatingAnnouncement.liveBadge')
+        : t('floatingAnnouncement.flashSaleBadge'));
+    const eventCtaText = spotlight.ctaText || t('floatingAnnouncement.eventCtaDefault');
     const targetLink = spotlight.ctaLink || (spotlight.type === 'giveaway' ? '#giveaways' : '#utilities');
 
     return (
@@ -381,7 +387,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
               </span>
               {typeof spotlight.remainingCodes === 'number' && spotlight.remainingCodes > 0 && (
                 <span className="text-[10px] text-amber-300 font-mono font-bold">
-                  • Còn {spotlight.remainingCodes} suất
+                  {t('floatingAnnouncement.remainingSlots', { count: spotlight.remainingCodes })}
                 </span>
               )}
             </div>
@@ -421,7 +427,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
             type="button"
             onClick={handleDismiss}
             className="absolute top-4 right-4 p-1.5 rounded-xl text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors z-10"
-            title="Đóng thông báo"
+            title={t('floatingAnnouncement.closeTitle')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -443,7 +449,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
             </div>
             <div className="pr-6">
               <span className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full border mb-1.5 ${themeStyles.badge}`}>
-                Thông Báo Nổi Bật
+                {t('floatingAnnouncement.featuredBadge')}
               </span>
               <h3 className={`text-base sm:text-lg font-bold leading-snug ${themeStyles.title}`}>
                 {config.title}
@@ -467,7 +473,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
                 onClick={handleCtaClick}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm text-center transition-transform active:scale-95 ${themeStyles.cta}`}
               >
-                <span>{config.ctaText || 'Khám Phá Ngay'}</span>
+                <span>{config.ctaText || t('floatingAnnouncement.exploreNow')}</span>
                 <ChevronRight className="w-4 h-4" />
               </a>
             )}
@@ -477,7 +483,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
                 onClick={handleDismiss}
                 className="py-2.5 px-4 rounded-xl text-xs sm:text-sm text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 transition-colors"
               >
-                {config.secondaryButtonText || 'Để sau'}
+                {config.secondaryButtonText || t('floatingAnnouncement.laterBtn')}
               </button>
             )}
           </div>
@@ -495,7 +501,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
                 htmlFor="floating_modal_dismiss_today"
                 className="text-[11px] text-zinc-400 hover:text-zinc-300 cursor-pointer select-none"
               >
-                Không hiển thị lại trong ngày hôm nay
+                {t('floatingAnnouncement.dismissTodayLabel')}
               </label>
             </div>
           )}
@@ -537,7 +543,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
                 onClick={handleCtaClick}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition-transform active:scale-95 ${themeStyles.cta}`}
               >
-                {config.ctaText || 'Xem Ngay'}
+                {config.ctaText || t('floatingAnnouncement.viewNow')}
               </a>
             )}
 
@@ -547,7 +553,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
                 onClick={handleDismiss}
                 className="px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-white bg-black/30 border border-white/10"
               >
-                {config.secondaryButtonText || 'Đóng'}
+                {config.secondaryButtonText || t('floatingAnnouncement.closeBtn')}
               </button>
             )}
 
@@ -555,7 +561,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
               type="button"
               onClick={handleDismiss}
               className="p-1 rounded-md text-zinc-400 hover:text-white"
-              title="Đóng"
+              title={t('floatingAnnouncement.closeBtn')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -580,7 +586,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
           type="button"
           onClick={handleDismiss}
           className="absolute top-3 right-3 p-1 rounded-lg text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors z-10"
-          title="Đóng thông báo"
+          title={t('floatingAnnouncement.closeTitle')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -602,7 +608,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
           </div>
           <div className="pr-5">
             <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border mb-1 ${themeStyles.badge}`}>
-              Thông Báo Mới
+              {t('floatingAnnouncement.newNoticeBadge')}
             </span>
             <h4 className={`text-xs sm:text-sm font-bold leading-tight ${themeStyles.title}`}>
               {config.title}
@@ -627,7 +633,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
               onClick={handleCtaClick}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs text-center transition-transform active:scale-95 ${themeStyles.cta}`}
             >
-              <span>{config.ctaText || 'Xem Ngay'}</span>
+              <span>{config.ctaText || t('floatingAnnouncement.viewNow')}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </a>
           )}
@@ -637,7 +643,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
               onClick={handleDismiss}
               className="py-2 px-3 rounded-xl text-xs text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 transition-colors"
             >
-              {config.secondaryButtonText || 'Đóng'}
+              {config.secondaryButtonText || t('floatingAnnouncement.closeBtn')}
             </button>
           )}
         </div>
@@ -652,7 +658,7 @@ export const FloatingAnnouncement: React.FC<FloatingAnnouncementProps> = ({ onNa
               }}
               className="text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors"
             >
-              ✕ Không hiển thị lại hôm nay
+              {t('floatingAnnouncement.dismissTodayCompact')}
             </button>
           </div>
         )}

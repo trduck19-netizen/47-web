@@ -14,6 +14,7 @@ const VIETNAMESE_ACCENT_REGEX = /[àáạảãâầấậẩẫăằắặẳẵ
 // Danh mục các file giao diện cốt lõi của Web Khách & Bảng Quản Trị (In-scope files)
 const IN_SCOPE_UI_FILES = [
   'src/App.tsx',
+  'src/components/FloatingAnnouncement.tsx',
   'src/components/MarketingNotificationToast.tsx',
   'src/components/mall/UniversalMallView.tsx',
   'src/components/seller/SellerCenterView.tsx',

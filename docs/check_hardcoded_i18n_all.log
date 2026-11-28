@@ -1,11 +1,15 @@
+
+> universal-commerce-platform@1.0.0 check:i18n
+> node scripts/check-hardcoded-i18n.cjs --all
+
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-28T10:04:47.767Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   Timestamp: 2026-11-28T17:51:01.482Z — Batch: Dot 20 Trang Chu (24/11/2026)
    [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 130 file giao diện (.tsx)...
 
 ================================================================================
 🚨 [I18N SCANNER FAILED] PHÁT HIỆN CHUỖI TIẾNG VIỆT GHI CỨNG NGOÀI TỪ ĐIỂN!
    Quy trình Build / Deploy bị CHẶN ĐỨNG theo tiêu chuẩn đa ngôn ngữ Excel/Word.
-   Tổng số vi phạm: 2872 chuỗi.
+   Tổng số vi phạm: 2869 chuỗi.
 
 📁 File: src/admin/components/LuckyWheelAdminManager.tsx (20 lỗi):
    • Dòng 197 [JSX_TEXT_HARDCODED]: "Trạng Thái Vòng Quay"
@@ -4792,14 +4796,6 @@
      Snippet: <span>Sao chép liên kết cài đặt</span>
    • Dòng 437 [JSX_TEXT_HARDCODED]: "An toàn 100% • Không virus"
      Snippet: <span>An toàn 100% • Không virus</span>
-
-📁 File: src/components/FloatingAnnouncement.tsx (3 lỗi):
-   • Dòng 424 [JSX_ATTR_HARDCODED]: "Đóng thông báo"
-     Snippet: title="Đóng thông báo"
-   • Dòng 558 [JSX_ATTR_HARDCODED]: "Đóng"
-     Snippet: title="Đóng"
-   • Dòng 583 [JSX_ATTR_HARDCODED]: "Đóng thông báo"
-     Snippet: title="Đóng thông báo"
 
 📁 File: src/components/game/GameDownloadSection.tsx (18 lỗi):
    • Dòng 277 [JSX_TEXT_HARDCODED]: "Tải Game Chính Thức"

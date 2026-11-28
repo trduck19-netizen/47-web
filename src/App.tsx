@@ -973,7 +973,10 @@ export const App: React.FC = () => {
 
   // Keep bookmarkedGamesList synced with bookmarks
   useEffect(() => {
-    if (bookmarks.length === 0) {
+    const isSellerRoute =
+      typeof window !== 'undefined' &&
+      isSellerPortalPathname(window.location.pathname.toLowerCase());
+    if (isSellerRoute || bookmarks.length === 0) {
       setBookmarkedGamesList([]);
       return;
     }

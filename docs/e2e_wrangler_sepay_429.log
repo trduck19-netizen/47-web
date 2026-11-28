@@ -1,0 +1,37 @@
+
+> universal-commerce-platform@1.0.0 test:e2e-wrangler-sepay
+> node scripts/tests/e2e_wrangler_sepay_429.mjs
+
+[E2E-WRANGLER-SEPAY] Started at 2026-11-28T17:53:50.740Z | Base: http://127.0.0.1:8790
+PASS | initialized_isolated_local_sqlite_d1
+PASS | wrangler_pages_dev_ready_on_127.0.0.1_8790
+PASS | get_api_vouchers_runs_migrations_0057_0058
+PASS | register_seller_owner_201
+PASS | post_api_seller_201
+PASS | approved_local_shop_via_d1_execute_local
+PASS | put_api_seller_sepay_200
+PASS | initial_rotate_key_200
+PASS | wrong_auth_attempt_1_returns_401
+PASS | wrong_auth_attempt_2_returns_401
+PASS | wrong_auth_attempt_3_returns_401
+PASS | wrong_auth_attempt_4_returns_401
+PASS | wrong_auth_attempt_5_returns_401
+PASS | wrong_auth_attempt_6_returns_401
+PASS | wrong_auth_attempt_7_returns_401
+PASS | wrong_auth_attempt_8_returns_401
+PASS | wrong_auth_attempt_9_returns_401
+PASS | wrong_auth_attempt_10_returns_401
+PASS | attempt_11_returns_429_with_Retry_After_and_RATE_LIMITED
+PASS | post_rotate_key_resets_window_200
+PASS | wrong_auth_after_rotate_returns_401_not_429
+PASS | valid_auth_with_new_key_returns_200
+{
+  "suite": "e2e_wrangler_sepay_429",
+  "baseUrl": "http://127.0.0.1:8790",
+  "passed": true,
+  "sellerId": "sel_1795888448534_fgt5z",
+  "blockedStatus": 429,
+  "retryAfterHeader": "3600",
+  "postRotateWrongStatus": 401,
+  "postRotateValidStatus": 200
+}

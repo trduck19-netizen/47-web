@@ -17,6 +17,7 @@
     "test:brand": "tsx scripts/tests/test_brand_identity_sync.ts",
     "test:seller-10img": "tsx scripts/tests/test_multi_industry_seller_10_images.ts",
     "test:e2e-wrangler": "node scripts/tests/e2e_wrangler_10_images.mjs",
+    "test:e2e-wrangler-sepay": "node scripts/tests/e2e_wrangler_sepay_429.mjs",
     "test": "npm run test:icons && npm run test:products && npm run test:suppliers && npm run test:sync-epoch && npm run test:intershop && npm run test:seller-sepay && npm run test:seller-portal && npm run test:brand && npm run test:seller-10img",
     "build": "node scripts/build.cjs",
     "preview": "vite preview",

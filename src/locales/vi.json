@@ -3334,5 +3334,20 @@
     "enableBtn": "Kích hoạt",
     "createSuccess": "Đã tạo mã giảm giá mới cho gian hàng!",
     "actionFailed": "Không thể thực hiện thao tác. Vui lòng kiểm tra lại."
+  },
+  "floatingAnnouncement": {
+    "closeTitle": "Đóng thông báo",
+    "featuredBadge": "Thông Báo Nổi Bật",
+    "newNoticeBadge": "Thông Báo Mới",
+    "exploreNow": "Khám Phá Ngay",
+    "laterBtn": "Để sau",
+    "dismissTodayLabel": "Không hiển thị lại trong ngày hôm nay",
+    "dismissTodayCompact": "✕ Không hiển thị lại hôm nay",
+    "viewNow": "Xem Ngay",
+    "closeBtn": "Đóng",
+    "liveBadge": "🔴 ĐANG DIỄN RA",
+    "flashSaleBadge": "⚡ FLASH SALE",
+    "eventCtaDefault": "Đến Ngay ➔",
+    "remainingSlots": "• Còn {count} suất"
   }
 }

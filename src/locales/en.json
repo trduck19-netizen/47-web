@@ -3334,5 +3334,20 @@
     "enableBtn": "Enable",
     "createSuccess": "Shop voucher created successfully!",
     "actionFailed": "Action failed. Please verify your inputs."
+  },
+  "floatingAnnouncement": {
+    "closeTitle": "Close announcement",
+    "featuredBadge": "Featured Notice",
+    "newNoticeBadge": "New Notice",
+    "exploreNow": "Explore Now",
+    "laterBtn": "Later",
+    "dismissTodayLabel": "Don't show again today",
+    "dismissTodayCompact": "✕ Don't show again today",
+    "viewNow": "View Now",
+    "closeBtn": "Close",
+    "liveBadge": "🔴 LIVE NOW",
+    "flashSaleBadge": "⚡ FLASH SALE",
+    "eventCtaDefault": "Go Now ➔",
+    "remainingSlots": "• {count} left"
   }
 }
