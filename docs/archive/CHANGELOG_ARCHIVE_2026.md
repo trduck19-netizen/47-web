@@ -1,4 +1,15 @@
-# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 478)
+# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 479)
+
+### 479. Sửa Nốt Sau Kiểm Báo Cáo PA1 (`dc0c297`): Bổ Sung 10+ Tuyến Ghi Công Khai Vào `shouldBumpCatalogEpoch`, Thêm 11 Unit Test (`69/69`) & Chuẩn Hóa Số Đo UTF-8 Byte Length (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý dứt điểm 2 nhóm từ kiểm chứng độc lập sau build `dc0c297`: (1) còn 10 tuyến ghi thay đổi dữ liệu trong 3 payload công khai nhưng chưa nằm trong `shouldBumpCatalogEpoch`; (2) bảng §3.2 báo cáo trước dùng `String.length` (số ký tự UTF-16) thay vì số byte UTF-8 thật (`Buffer.byteLength` / `curl size_download`), và CHANGELOG mục 478 ghi nhầm "52 assertions" thay vì 58.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Bổ sung 10+ prefix tuyến ghi vào `shouldBumpCatalogEpoch` (`functions/services/cache_service.ts`, `scripts/tests/test_catalog_epoch_sync.ts`)*:
+     - Thêm đủ 10 nhóm bắt buộc + `/api/admin/marketing/config`: `/api/admin/content`, `/api/admin/growth`, `/api/admin/marketing/config`, `/api/admin/utilities`, `/api/admin/store/products`, `/api/admin/escalating`, `/api/event-scheduler`, `/api/crawler/ingest-codes`, `/api/crawler/ingest-upcoming-games`, `/api/admin/crawler/sources`, `/api/admin/sellers`.
+     - Thêm 11 assertion kiểm chứng vào `test_catalog_epoch_sync.ts`, nâng tổng suite lên **69/69 PASS** (`npm test`: **203/203 PASS**).
+  2. *Nhóm 2 — Sửa số liệu bằng chứng & CHANGELOG 478*:
+     - Đính chính mục 478 từ "52 assertions" sang đúng số thực tế ("56 assertions tại `4404751`, 58 assertions tại `dc0c297`, và 69 assertions sau mục 479").
+     - Đo lại kích thước body live bằng `Buffer.byteLength(..., 'utf8')` và `curl.exe -w %{size_download}` (UTF-8 byte thật, khớp 100% kiểm chứng độc lập), ghi rõ colo và thời gian UTC.
 
 ### 478. Triển Khai PA1 — Đồng Bộ Tức Thì Admin → Trang Khách Qua `Catalog Epoch` (D1) & `ETag / 304 Not Modified` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:

@@ -461,12 +461,68 @@ async function main() {
   } as any);
   const pubStoreJson: any = await pubStoreRes.json();
   check(
-    'public_store_exposes_active_vouchers_and_shop_collections',
-    pubStoreJson.store?.vouchers?.length === 1 &&
+    'public_store_exposes_active_vouchers_shop_collections_and_total_products',
+    pubStoreJson.store?.total_products === 1 &&
+      pubStoreJson.store?.vouchers?.length === 1 &&
       pubStoreJson.store?.vouchers[0].code === 'SHOP30K' &&
       pubStoreJson.store?.shop_categories?.includes('Hàng Mới Về'),
     true
   );
+
+  // Add 1 additional active product + 1 paused product -> verify total_products counts only unpaused APPROVED (S1 regression)
+  await createSellerProduct({
+    request: new Request('https://universal-mall-shop.pages.dev/api/seller/products', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sellerToken}`,
+      },
+      body: JSON.stringify({
+        name: 'Áo Sơ Mi Bamboo Trắng',
+        industry_id: 'fashion',
+        images: [uploadedUrls[0]],
+        price_core: 220,
+        fulfillment_mode: 'SHIPPING',
+        stock_quantity: 10,
+        weight_grams: 300,
+        warehouse_address: 'Kho Cầu Giấy, Hà Nội',
+      }),
+    }),
+    env,
+    waitUntil() {},
+  } as any);
+  const pausedProdRes = await createSellerProduct({
+    request: new Request('https://universal-mall-shop.pages.dev/api/seller/products', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sellerToken}`,
+      },
+      body: JSON.stringify({
+        name: 'Sản Phẩm Tạm Dừng (Ẩn)',
+        industry_id: 'fashion',
+        images: [uploadedUrls[0]],
+        price_core: 150,
+        fulfillment_mode: 'SHIPPING',
+        stock_quantity: 10,
+        weight_grams: 300,
+        warehouse_address: 'Kho Cầu Giấy, Hà Nội',
+      }),
+    }),
+    env,
+    waitUntil() {},
+  } as any);
+  const pausedProdJson: any = await pausedProdRes.json();
+  if (pausedProdJson.product_id) {
+    sqlite.prepare('UPDATE seller_products SET is_paused = 1 WHERE id = ?').run(pausedProdJson.product_id);
+  }
+  const pubStoreRes2 = await getPublicStore({
+    request: new Request('https://universal-mall-shop.pages.dev/api/stores/nova-lifestyle'),
+    env,
+    params: { slug: 'nova-lifestyle' },
+  } as any);
+  const pubStoreJson2: any = await pubStoreRes2.json();
+  check('public_store_s1_counts_unpaused_approved_products_accurately', pubStoreJson2.store?.total_products, 2);
 
   // Buyer purchases Variant 'var_l' ('Đen - Size L', 180 Core) with SHOP30K (-30 Core) => pays 150 Core!
   const buyRes = await createBuyerOrder({

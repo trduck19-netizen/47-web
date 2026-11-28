@@ -618,7 +618,7 @@
 ---
 
 > [!NOTE] Lưu trữ lỗi lịch sử (Historical Archive)
-> Các mục lỗi và bẫy đã thất bại từ ISSUE-01 đến ISSUE-299 (hơn 5.700 dòng) đã được lưu trữ an toàn tại [docs/archive/KNOWN_ISSUES_ARCHIVE_2026.md](file:///c:/4%20Antigravity%20all/47%20web%20da%20nganh/docs/archive/KNOWN_ISSUES_ARCHIVE_2026.md) theo chuẩn **Lean Framework**.
+> Các mục lỗi và bẫy đã thất bại từ ISSUE-01 đến ISSUE-299 (hơn 5.700 dòng) đã được lưu trữ an toàn tại docs/archive/KNOWN_ISSUES_ARCHIVE_2026.md theo chuẩn **Lean Framework**.
 
 ---
 

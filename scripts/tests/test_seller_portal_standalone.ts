@@ -9,6 +9,7 @@ import {
 } from '../../functions/services/marketplace_service';
 import { shouldBumpCatalogEpoch } from '../../functions/services/cache_service';
 import {
+  ALL_SELLER_TABS,
   getAllowedSellerPortalTabs,
   isSellerTabAllowedForRole,
   isSellerPortalPathname,
@@ -142,8 +143,19 @@ async function main() {
   // PART 2: Pathname & Hash Parsing + Zero Collision with AdminApp Hashes
   // =========================================================================
   check('pathname_matches_seller_vi_en', isSellerPortalPathname('/seller') && isSellerPortalPathname('/en/seller') && !isSellerPortalPathname('/admin') && !isSellerPortalPathname('/store'), true);
-  check('hash_parse_all_tabs', parseSellerPortalHash('#/sepay') === 'sepay' && parseSellerPortalHash('#/api-keys') === 'api_keys' && parseSellerPortalHash('#/api_keys') === 'api_keys' && parseSellerPortalHash('#/orders') === 'orders' && parseSellerPortalHash('') === 'dashboard', true);
-  check('hash_format_roundtrip', formatSellerPortalHash('api_keys') === '#/api-keys' && formatSellerPortalHash('sepay') === '#/sepay', true);
+  check('hash_parse_all_tabs', parseSellerPortalHash('#/sepay') === 'sepay' && parseSellerPortalHash('#/vouchers') === 'vouchers' && parseSellerPortalHash('#/api-keys') === 'api_keys' && parseSellerPortalHash('#/api_keys') === 'api_keys' && parseSellerPortalHash('#/orders') === 'orders' && parseSellerPortalHash('') === 'dashboard', true);
+  check(
+    'hash_format_roundtrip_all_11_tabs',
+    ALL_SELLER_TABS.length === 11 &&
+      ALL_SELLER_TABS.every((tab) => {
+        const hash = formatSellerPortalHash(tab);
+        const nonDashboardHasOwnHash = tab === 'dashboard' ? hash === '#/dashboard' : hash !== '#/dashboard';
+        return nonDashboardHasOwnHash && parseSellerPortalHash(hash) === tab;
+      }) &&
+      formatSellerPortalHash('vouchers') === '#/vouchers' &&
+      formatSellerPortalHash('api_keys') === '#/api-keys',
+    true
+  );
 
   const appSrc = fs.readFileSync(path.resolve(root, 'src/App.tsx'), 'utf8');
   const sellerCheckMatches = [...appSrc.matchAll(/isSellerPortalPathname\(/g)].map((m) => m.index || 0);

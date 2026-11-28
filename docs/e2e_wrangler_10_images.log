@@ -1,0 +1,42 @@
+
+> universal-commerce-platform@1.0.0 test:e2e-wrangler
+> node scripts/tests/e2e_wrangler_10_images.mjs
+
+[E2E-WRANGLER] Started at 2026-11-28T13:13:06.687Z | Base: http://127.0.0.1:8789
+PASS | initialized_isolated_local_sqlite_d1
+PASS | wrangler_pages_dev_ready_on_127.0.0.1_8789
+PASS | get_api_vouchers_returns_200
+PASS | register_e2e_seller_201
+PASS | register_e2e_buyer_201
+PASS | get_api_auth_me_200
+PASS | post_api_seller_registers_shop
+PASS | approved_local_shop_and_funded_buyer_via_d1_execute_local
+PASS | upload_photo_1_succeeds
+PASS | upload_photo_2_succeeds
+PASS | upload_photo_3_succeeds
+PASS | upload_photo_4_succeeds
+PASS | upload_photo_5_succeeds
+PASS | upload_photo_6_succeeds
+PASS | upload_photo_7_succeeds
+PASS | upload_photo_8_succeeds
+PASS | upload_photo_9_succeeds
+PASS | upload_photo_10_succeeds
+PASS | uploaded_exact_10_webp_urls
+PASS | get_product_media_200_webp_immutable
+PASS | reject_11th_image_max_10_exceeded
+PASS | create_game_free_10_photo_product
+PASS | create_shop_voucher_SHOP30K
+PASS | public_store_s1_total_products_equals_1_and_exposes_SHOP30K
+PASS | public_store_products_returns_all_10_images
+PASS | checkout_applies_SHOP30K_180_minus_30_equals_150
+{
+  "suite": "e2e_wrangler_10_images",
+  "baseUrl": "http://127.0.0.1:8789",
+  "passed": true,
+  "uploadedImages": 10,
+  "voucherCode": "SHOP30K",
+  "variantPriceCore": 180,
+  "voucherDiscountCore": 30,
+  "finalPriceCore": 150,
+  "totalProductsOnPublicStore": 1
+}

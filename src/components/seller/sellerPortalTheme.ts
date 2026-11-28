@@ -111,7 +111,7 @@ export function getSellerPortalPalette(preset?: string | null): ThemePresetPalet
   return SELLER_PORTAL_THEME_PALETTES.shopee_orange;
 }
 
-const ALL_SELLER_TABS: SellerPortalTabId[] = [
+export const ALL_SELLER_TABS: SellerPortalTabId[] = [
   'dashboard',
   'products',
   'vouchers',
@@ -165,6 +165,7 @@ const HASH_TO_TAB: Record<string, SellerPortalTabId> = {
 const TAB_TO_HASH: Record<SellerPortalTabId, string> = {
   dashboard: '#/dashboard',
   products: '#/products',
+  vouchers: '#/vouchers',
   codes: '#/codes',
   orders: '#/orders',
   disputes: '#/disputes',

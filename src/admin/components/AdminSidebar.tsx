@@ -126,9 +126,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     }
   });
 
-  const toggleGroupCollapse = (idx: number) => {
+  const toggleGroupCollapse = (idx: number, hasActiveItem: boolean) => {
     setCollapsedGroups((prev) => {
-      const next = { ...prev, [idx]: !prev[idx] };
+      const stored = prev[idx];
+      const curEffective = hasActiveItem ? false : typeof stored === 'boolean' ? stored : true;
+      const next = { ...prev, [idx]: !curEffective };
       try {
         localStorage.setItem('pine_admin_sidebar_groups_v1', JSON.stringify(next));
       } catch {}
@@ -459,15 +461,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
         {filteredSections.map((section, sIdx) => {
           const hasActiveItem = section.items.some((it) => it.id === currentTab);
+          const storedCollapsed = collapsedGroups[sIdx];
+          const effectiveCollapsedPref = typeof storedCollapsed === 'boolean' ? storedCollapsed : true;
           const isGroupCollapsed =
-            !collapsed && !navSearch.trim() && !hasActiveItem && Boolean(collapsedGroups[sIdx]);
+            !collapsed && !navSearch.trim() && !hasActiveItem && effectiveCollapsedPref;
 
           return (
           <div key={sIdx} className="space-y-1">
             {!collapsed && (
               <button
                 type="button"
-                onClick={() => toggleGroupCollapse(sIdx)}
+                onClick={() => toggleGroupCollapse(sIdx, hasActiveItem)}
                 aria-expanded={!isGroupCollapsed}
                 className="w-full px-3 py-1 flex items-center justify-between text-[10px] font-bold tracking-wider text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 uppercase rounded-lg transition cursor-pointer"
               >

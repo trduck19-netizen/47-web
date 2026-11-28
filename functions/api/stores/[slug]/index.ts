@@ -67,8 +67,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         .first<{ count: number }>(),
       env.DB.prepare(`
         SELECT COUNT(*) as count
-        FROM seller_products
-        WHERE seller_id = ? AND status = 'APPROVED' AND COALESCE(sp.is_paused, 0) = 0 AND deleted_at IS NULL
+        FROM seller_products sp
+        WHERE sp.seller_id = ? AND sp.status = 'APPROVED' AND COALESCE(sp.is_paused, 0) = 0 AND sp.deleted_at IS NULL
       `)
         .bind(seller.id)
         .first<{ count: number }>()
