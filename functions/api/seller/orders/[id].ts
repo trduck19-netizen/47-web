@@ -118,10 +118,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (action === 'SHIPPING') {
+    if (action === 'SHIPPING' || action === 'DELIVER_MANUAL') {
       const trackingCode = String(body.tracking_code || '').trim();
-      const carrier = String(body.carrier || '').trim();
-      const shippingNote = String(body.note || '').trim();
+      const carrier = String(body.carrier || body.shipping_carrier || '').trim();
+      const shippingNote = String(body.note || body.fulfillment_note || '').trim();
+      const deliveredPayload = body.delivered_content ? String(body.delivered_content).trim() : null;
 
       const detailsJson = JSON.stringify({
         tracking_code: trackingCode,
@@ -130,15 +131,45 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         updated_at: nowIso,
       });
 
+      const nextOrderStatus =
+        action === 'DELIVER_MANUAL'
+          ? 'DELIVERED'
+          : action === 'SHIPPING'
+            ? 'SHIPPING'
+            : order.status;
+
       await env.DB
-        .prepare("UPDATE seller_orders SET resolution_note = ?, updated_at = ? WHERE id = ?")
-        .bind(detailsJson, nowIso, orderId)
+        .prepare(`
+          UPDATE seller_orders
+          SET status = ?,
+              tracking_code = COALESCE(?, tracking_code),
+              shipping_carrier = COALESCE(?, shipping_carrier),
+              fulfillment_note = COALESCE(?, fulfillment_note),
+              delivered_code = COALESCE(?, delivered_code),
+              resolution_note = ?,
+              updated_at = ?
+          WHERE id = ?
+        `)
+        .bind(
+          nextOrderStatus,
+          trackingCode || null,
+          carrier || null,
+          shippingNote || null,
+          deliveredPayload,
+          detailsJson,
+          nowIso,
+          orderId
+        )
         .run();
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'Đã cập nhật thông tin vận chuyển cho đơn hàng thành công.',
+          message:
+            action === 'DELIVER_MANUAL'
+              ? 'Đã bàn giao dịch vụ / kết quả đơn hàng cho khách thành công!'
+              : 'Đã cập nhật thông tin vận chuyển & mã vận đơn thành công!',
+          status: nextOrderStatus,
           tracking_code: trackingCode,
           carrier,
         }),

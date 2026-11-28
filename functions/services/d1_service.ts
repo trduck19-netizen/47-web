@@ -846,14 +846,69 @@ export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
       .first<any>();
 
     if (quickCheck) {
-      // Đảm bảo 2 cột trang trí gian hàng (Migration 0054) luôn sẵn sàng kể cả khi isolate lạnh đi thẳng vào /api/stores/:slug
-      const hasBannerPreset = await db
-        .prepare("SELECT 1 FROM pragma_table_info('sellers') WHERE name = 'banner_preset' LIMIT 1")
-        .first<any>()
-        .catch(() => null);
+      // Đảm bảo các cột trang trí (0054) & đa ngành 10 ảnh + voucher gian hàng (0055) luôn sẵn sàng trên isolate lạnh
+      const [hasBannerPreset, hasImagesJson, hasMediaTbl] = await Promise.all([
+        db.prepare("SELECT 1 FROM pragma_table_info('sellers') WHERE name = 'banner_preset' LIMIT 1").first<any>().catch(() => null),
+        db.prepare("SELECT 1 FROM pragma_table_info('seller_products') WHERE name = 'images_json' LIMIT 1").first<any>().catch(() => null),
+        db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_media_assets' LIMIT 1").first<any>().catch(() => null),
+      ]);
       if (!hasBannerPreset) {
         await db.prepare("ALTER TABLE sellers ADD COLUMN banner_preset TEXT DEFAULT 'aurora_indigo';").run().catch(() => {});
         await db.prepare("ALTER TABLE sellers ADD COLUMN pinned_notice TEXT DEFAULT NULL;").run().catch(() => {});
+      }
+      if (!hasImagesJson || !hasMediaTbl) {
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_media_assets (
+            id TEXT PRIMARY KEY,
+            seller_id TEXT NOT NULL,
+            sha256_hash TEXT NOT NULL,
+            content_type TEXT NOT NULL DEFAULT 'image/webp',
+            size_bytes INTEGER NOT NULL,
+            width INTEGER,
+            height INTEGER,
+            image_base64 TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `).run().catch(() => {});
+        await db.prepare('CREATE INDEX IF NOT EXISTS idx_seller_media_seller_hash ON seller_media_assets(seller_id, sha256_hash);').run().catch(() => {});
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS seller_vouchers (
+            id TEXT PRIMARY KEY,
+            seller_id TEXT NOT NULL,
+            code TEXT NOT NULL,
+            title TEXT NOT NULL,
+            discount_type TEXT NOT NULL DEFAULT 'FIXED',
+            discount_value INTEGER NOT NULL,
+            max_discount_core INTEGER,
+            min_order_core INTEGER NOT NULL DEFAULT 0,
+            usage_limit INTEGER NOT NULL DEFAULT 100,
+            used_count INTEGER NOT NULL DEFAULT 0,
+            expires_at TEXT,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(seller_id, code)
+          );
+        `).run().catch(() => {});
+        await db.prepare("ALTER TABLE sellers ADD COLUMN shop_categories_json TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN industry_id TEXT DEFAULT 'other';").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN category_name TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN shop_category TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN sku TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN images_json TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN specs_json TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN variants_json TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN fulfillment_mode TEXT DEFAULT 'AUTO_VAULT';").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN buyer_note_prompt TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_products ADD COLUMN is_featured INTEGER NOT NULL DEFAULT 0;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN selected_variant_json TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN buyer_note TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN tracking_code TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN shipping_carrier TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN fulfillment_note TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN shipping_address TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN voucher_code TEXT DEFAULT NULL;").run().catch(() => {});
+        await db.prepare("ALTER TABLE seller_orders ADD COLUMN discount_core INTEGER NOT NULL DEFAULT 0;").run().catch(() => {});
       }
       _marketplaceSchemaEnsured = true;
       return;
@@ -4051,6 +4106,109 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<SchemaTiming
     console.warn('[Migration 0054_seller_storefront_branding_v1 error]', err?.message);
   }
 
+  // 23. Migration 0055: Hệ Thống Kênh Người Bán Đa Ngành Chuyên Nghiệp, Kho 10 Ảnh CDN Edge & Voucher Gian Hàng
+  try {
+    const s55Check = appliedMigSet.has('0055_multi_industry_seller_products_v1');
+    if (!s55Check) {
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS seller_media_assets (
+          id TEXT PRIMARY KEY,
+          seller_id TEXT NOT NULL,
+          sha256_hash TEXT NOT NULL,
+          content_type TEXT NOT NULL DEFAULT 'image/webp',
+          size_bytes INTEGER NOT NULL,
+          width INTEGER,
+          height INTEGER,
+          image_base64 TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `).run().catch(() => {});
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_seller_media_seller_hash ON seller_media_assets(seller_id, sha256_hash);').run().catch(() => {});
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS seller_vouchers (
+          id TEXT PRIMARY KEY,
+          seller_id TEXT NOT NULL,
+          code TEXT NOT NULL,
+          title TEXT NOT NULL,
+          discount_type TEXT NOT NULL DEFAULT 'FIXED',
+          discount_value INTEGER NOT NULL,
+          max_discount_core INTEGER,
+          min_order_core INTEGER NOT NULL DEFAULT 0,
+          usage_limit INTEGER NOT NULL DEFAULT 100,
+          used_count INTEGER NOT NULL DEFAULT 0,
+          expires_at TEXT,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(seller_id, code)
+        );
+      `).run().catch(() => {});
+      await db.prepare("ALTER TABLE sellers ADD COLUMN shop_categories_json TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN industry_id TEXT DEFAULT 'other';").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN category_name TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN shop_category TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN sku TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN images_json TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN specs_json TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN variants_json TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN fulfillment_mode TEXT DEFAULT 'AUTO_VAULT';").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN buyer_note_prompt TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_products ADD COLUMN is_featured INTEGER NOT NULL DEFAULT 0;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN selected_variant_json TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN buyer_note TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN tracking_code TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN shipping_carrier TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN fulfillment_note TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN shipping_address TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN voucher_code TEXT DEFAULT NULL;").run().catch(() => {});
+      await db.prepare("ALTER TABLE seller_orders ADD COLUMN discount_core INTEGER NOT NULL DEFAULT 0;").run().catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0055_multi_industry_seller_products_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0055_multi_industry_seller_products_v1 error]', err?.message);
+  }
+
+  // Migration 0056: Idempotent guard for platform vouchers & uploaded_game_icons tables on local/fresh D1
+  try {
+    const mig56Check = appliedMigSet.has('0056_vouchers_and_icons_guard_v1');
+    if (!mig56Check) {
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS vouchers (
+          id TEXT PRIMARY KEY,
+          code TEXT UNIQUE NOT NULL,
+          voucher_type TEXT NOT NULL,
+          discount_type TEXT NOT NULL,
+          discount_value INTEGER NOT NULL,
+          min_order_amount INTEGER NOT NULL DEFAULT 0,
+          max_discount_amount INTEGER,
+          usage_limit INTEGER NOT NULL DEFAULT 1000,
+          usage_count INTEGER NOT NULL DEFAULT 0,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          start_date TEXT,
+          end_date TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `).run();
+
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS uploaded_game_icons (
+          slug TEXT PRIMARY KEY,
+          content_type TEXT NOT NULL DEFAULT 'image/webp',
+          image_base64 TEXT NOT NULL,
+          size_bytes INTEGER NOT NULL,
+          width INTEGER NOT NULL DEFAULT 512,
+          height INTEGER NOT NULL DEFAULT 512,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      `).run();
+
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0056_vouchers_and_icons_guard_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0056_vouchers_and_icons_guard_v1 error]', err?.message);
+  }
+
   lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };
   const finishedTiming: SchemaTiming = { ...lastSchemaTiming };
   schemaUpgradesDone = true;
@@ -5735,6 +5893,16 @@ export async function loadAllStoreProductsD1(
           s.slug AS seller_slug,
           sp.game_slug,
           sp.game_name,
+          sp.industry_id,
+          sp.category_name,
+          sp.shop_category,
+          sp.sku,
+          sp.images_json,
+          sp.specs_json,
+          sp.variants_json,
+          sp.fulfillment_mode,
+          sp.buyer_note_prompt,
+          COALESCE(sp.is_featured, 0) AS is_featured,
           sp.name AS title,
           sp.name,
           sp.cover_url AS cover_image_url,
@@ -5755,27 +5923,23 @@ export async function loadAllStoreProductsD1(
           sp.origin_seller_id,
           s.owner_member_id AS seller_owner_member_id,
           CASE 
-            WHEN sp.product_type = 'physical' THEN COALESCE(sp.stock_quantity, 0)
+            WHEN LOWER(COALESCE(sp.product_type, '')) = 'physical' OR UPPER(COALESCE(sp.fulfillment_mode, '')) = 'MANUAL_SERVICE'
+              THEN COALESCE(sp.stock_quantity, 0)
             ELSE COALESCE(sc_agg.available_codes, 0)
           END AS stock_quantity,
           CASE 
-            WHEN sp.product_type = 'physical' THEN COALESCE(sp.stock_quantity, 0)
+            WHEN LOWER(COALESCE(sp.product_type, '')) = 'physical' OR UPPER(COALESCE(sp.fulfillment_mode, '')) = 'MANUAL_SERVICE'
+              THEN COALESCE(sp.stock_quantity, 0)
             ELSE COALESCE(sc_agg.available_codes, 0)
           END AS in_stock_count,
           COALESCE(sc_agg.sold_codes, 0) AS sold_count,
           1 AS is_active,
           CASE 
-            WHEN sp.product_type = 'physical' THEN 'Hàng Vật Lý'
+            WHEN LOWER(COALESCE(sp.product_type, '')) = 'physical' THEN 'Hàng Vật Lý'
             ELSE 'Hàng Số'
           END AS badge,
-          CASE 
-            WHEN sp.product_type = 'physical' THEN 'physical'
-            ELSE 'digital'
-          END AS category,
-          CASE 
-            WHEN sp.product_type = 'physical' THEN 'Hàng Vật Lý'
-            ELSE 'Hàng Số'
-          END AS category_label,
+          COALESCE(NULLIF(sp.industry_id, ''), CASE WHEN LOWER(COALESCE(sp.product_type, '')) = 'physical' THEN 'physical' ELSE 'digital' END) AS category,
+          COALESCE(NULLIF(sp.category_name, ''), CASE WHEN LOWER(COALESCE(sp.product_type, '')) = 'physical' THEN 'Hàng Vật Lý' ELSE 'Hàng Số' END) AS category_label,
           sp.created_at
         FROM seller_products sp
         INNER JOIN sellers s ON sp.seller_id = s.id
@@ -5788,10 +5952,11 @@ export async function loadAllStoreProductsD1(
           GROUP BY product_id
         ) sc_agg ON sp.id = sc_agg.product_id
         WHERE sp.status = 'APPROVED'
+          AND COALESCE(sp.is_paused, 0) = 0
           AND sp.deleted_at IS NULL
           AND s.deleted_at IS NULL
           AND s.status IN ('ACTIVE', 'TRIAL')
-        ORDER BY sp.created_at DESC
+        ORDER BY COALESCE(sp.is_featured, 0) DESC, sp.created_at DESC
       `).all().catch((e: any) => { console.warn('[loadAllStoreProductsD1 seller_products error]', e); return null; });
 
     const sepayConfigsPromise = db.prepare(`
@@ -5889,8 +6054,38 @@ export async function loadAllStoreProductsD1(
         }
       }
       const { seller_owner_member_id: _omitOwner, ...cleanSp } = sp;
+      let parsedImages: string[] = [];
+      let parsedSpecs: any[] = [];
+      let parsedVariants: any[] = [];
+      try {
+        if (sp.images_json) {
+          const arr = JSON.parse(sp.images_json);
+          if (Array.isArray(arr)) parsedImages = arr.filter((u: any) => typeof u === 'string' && u.trim()).slice(0, 10);
+        }
+      } catch {}
+      if (parsedImages.length === 0 && sp.cover_image_url) {
+        parsedImages = [sp.cover_image_url];
+      }
+      try {
+        if (sp.specs_json) {
+          const arr = JSON.parse(sp.specs_json);
+          if (Array.isArray(arr)) parsedSpecs = arr;
+        }
+      } catch {}
+      try {
+        if (sp.variants_json) {
+          const arr = JSON.parse(sp.variants_json);
+          if (Array.isArray(arr)) parsedVariants = arr;
+        }
+      } catch {}
+
       return {
         ...cleanSp,
+        industry: sp.industry_id || cleanSp.category,
+        images: parsedImages,
+        product_images: parsedImages,
+        specifications: parsedSpecs,
+        variants: parsedVariants,
         is_affiliate: Number(sp.is_affiliate || 0) === 1,
         seller_qr_available: sellerQrAvailable,
       };

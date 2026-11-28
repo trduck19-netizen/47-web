@@ -8,9 +8,10 @@ import {
   ShoppingBag, Package, User, Plus, 
   Layers, Clock, Send, Rocket,
   Calendar, Newspaper, Store, List, FileText, ArrowUpDown, 
-  Bookmark, Wallet, Settings, Lock, Heart, Truck, MapPin, Star
+  Bookmark, Wallet, Settings, Lock, Heart, Truck, MapPin, Star, Sun, Moon
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { broadcastCrossTabEvent } from '../../utils/crossTabSync';
 import { cartService } from '../../services/cartService';
 import { wishlistService } from '../../services/wishlistService';
 import { dataService } from '../../services/dataService';
@@ -34,9 +35,6 @@ import { PublicStoreView } from '../seller/PublicStoreView';
 import { MissionsView } from '../MissionsView';
 import { TelegramView } from '../TelegramView';
 import { PlatformSolutionsView } from '../showcase/PlatformSolutionsView';
-import { UserProfileModal } from '../UserProfileModal';
-import { SubmitCodeModal } from '../SubmitCodeModal';
-import { BookmarkDrawer } from '../BookmarkDrawer';
 import { LanguageSelector } from '../LanguageSelector';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBrand } from '../../context/BrandContext';
@@ -95,6 +93,8 @@ interface UniversalMallViewProps {
   onOpenEmailModal?: () => void;
   onOpenReceivedCodes?: (tab?: 'giveaways' | 'orders' | 'privates' | 'missions' | 'marketplace') => void;
   onOpenProfile?: () => void;
+  onOpenSubmitCode?: () => void;
+  onOpenBookmarks?: () => void;
   currentUser: UserProfile | null;
   onShowToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   onLogout?: () => void;
@@ -105,7 +105,7 @@ interface UniversalMallViewProps {
 const getResponsiveSrcSet = (url?: string, widths: number[] = [480, 800, 1200]): string => {
   if (!url) return '';
   const cleanUrl = url.trim();
-  if (cleanUrl.startsWith('/api/homepage-images/')) {
+  if (cleanUrl.startsWith('/api/homepage-images/') || cleanUrl.startsWith('/api/product-media/')) {
     return widths.map((w) => `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}w=${w} ${w}w`).join(', ');
   }
   return `${cleanUrl} 1200w`;
@@ -219,9 +219,10 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
   onOpenEmailModal,
   onOpenReceivedCodes,
   onOpenProfile,
+  onOpenSubmitCode,
+  onOpenBookmarks,
   currentUser,
   onShowToast,
-  onLogout,
   onUpdateUser,
 }) => {
   const { t, language } = useLanguage();
@@ -343,10 +344,6 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
       }
     }, 120);
   };
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isSubmitCodeOpen, setIsSubmitCodeOpen] = useState(false);
-  const [isBookmarkDrawerOpen, setIsBookmarkDrawerOpen] = useState(false);
-
   // Bookmarked games sync from dataService (chống trùng lặp theo ID/Slug)
   const [bookmarkedGamesList, setBookmarkedGamesList] = useState<GameItem[]>([]);
   const syncBookmarks = () => {
@@ -361,7 +358,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
 
   useEffect(() => {
     syncBookmarks();
-  }, [allGames, isBookmarkDrawerOpen, subView]);
+  }, [allGames, subView]);
 
   const handleToggleBookmark = (gameId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -1151,6 +1148,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
   const renderNavButton = (navInput: any) => {
     const sub = typeof navInput === 'object' && navInput ? navInput : (getOrderedSubsections('top_announcement', 'navigation').find((s) => s.id === navInput) || { id: String(navInput) });
     if (sub.id === 'nav_game_zone' || sub.id === 'shortcut_game_zone') return null;
+    if ((sub.id === 'nav_seller' || sub.id === 'nav_account' || sub.id === 'nav_telegram') && !sub.link_url) return null;
     const navId = sub.id;
     const customTitle = isEn ? sub.title_en : sub.title_vi;
     const customBadge = isEn ? sub.badge_en : sub.badge_vi;
@@ -1278,7 +1276,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         return (
           <button
             key={navId}
-            onClick={() => handleNavClick(() => setIsSubmitCodeOpen(true))}
+            onClick={() => handleNavClick(() => onOpenSubmitCode?.())}
             className="px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold transition flex items-center gap-1 shadow-sm shrink-0 whitespace-nowrap cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 shrink-0" />
@@ -2367,7 +2365,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
       {/* 1. UNIVERSAL MALL TOPBAR */}
       <div className="bg-[#ee4d2d] text-white text-[11px] sm:text-[12px] py-1 px-2.5 sm:px-4 border-b border-white/10">
         <div className="max-w-6xl mx-auto flex justify-between items-center gap-2 min-w-0">
-          {/* Left Topbar Links: Kênh Người Bán & Mở Gian Hàng (Mở tab mới giống Shopee Seller Centre) */}
+          {/* Left Topbar Links: Kênh Người Bán (Mở tab mới giống Shopee Seller Centre) */}
           <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 overflow-hidden">
             <a
               href={language === 'en' ? '/en/seller' : '/seller'}
@@ -2376,15 +2374,6 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               className="hover:opacity-80 transition cursor-pointer font-medium whitespace-nowrap"
             >
               {t('mall.topNav.sellerCenter')}
-            </a>
-            <span className="opacity-40 hidden xs:inline sm:inline">|</span>
-            <a
-              href={language === 'en' ? '/en/seller' : '/seller'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:opacity-80 transition cursor-pointer font-medium hidden sm:inline whitespace-nowrap"
-            >
-              {t('mall.topNav.openStore')}
             </a>
             <span className="opacity-40 hidden sm:inline">|</span>
             <button 
@@ -2437,10 +2426,23 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               <span className="hidden sm:inline">{t('nav.support')}</span>
             </button>
 
-            {/* Bộ chuyển đổi ngôn ngữ VI / EN */}
+            {/* Bộ chuyển đổi ngôn ngữ VI / EN & Sáng / Tối */}
             <div className="hidden sm:block">
               <LanguageSelector variant="compact" />
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !isShopeeDark;
+                setIsShopeeDark(next);
+                broadcastCrossTabEvent('THEME_UPDATED', { theme: next ? 'dark' : 'light' });
+              }}
+              title={isShopeeDark ? t('mall.footer.themeLight') : t('mall.footer.themeDark')}
+              aria-label={isShopeeDark ? t('mall.footer.themeLight') : t('mall.footer.themeDark')}
+              className="p-1 rounded bg-white/15 hover:bg-white/25 text-white transition cursor-pointer shrink-0 flex items-center justify-center"
+            >
+              {isShopeeDark ? <Sun className="w-3.5 h-3.5 text-amber-200" /> : <Moon className="w-3.5 h-3.5 text-white" />}
+            </button>
 
             {/* Người dùng & Số Dư Ví Thực */}
             {currentUser ? (
@@ -2660,7 +2662,11 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
       {/* 2.1. SUB-NAVIGATION BAR */}
       {isSectionEnabled('top_announcement') && (() => {
         const activeNavSubsections = getOrderedSubsections('top_announcement', 'navigation').filter(
-          (sub) => sub.enabled && sub.id !== 'nav_game_zone' && sub.id !== 'shortcut_game_zone'
+          (sub) =>
+            sub.enabled &&
+            sub.id !== 'nav_game_zone' &&
+            sub.id !== 'shortcut_game_zone' &&
+            !((sub.id === 'nav_seller' || sub.id === 'nav_account' || sub.id === 'nav_telegram') && !sub.link_url)
         );
         if (activeNavSubsections.length === 0) return null;
 
@@ -2744,12 +2750,6 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 {subView === 'privacy' && (t.mall?.breadcrumb?.privacy || (language === 'en' ? 'Mall Privacy Policy' : 'Chính Sách Bảo Mật Sàn'))}
               </span>
             </div>
-            <button 
-              onClick={() => setSubView('home')}
-              className="text-xs font-semibold px-3 py-1 rounded bg-orange-50 dark:bg-orange-950/40 text-[#ee4d2d] border border-[#ee4d2d]/30 hover:bg-[#ee4d2d] hover:text-white transition cursor-pointer"
-            >
-              {t.mall?.breadcrumb?.backToShelves || (language === 'en' ? '← Back to Product Shelves' : '← Quay Lại Kệ Hàng Sàn')}
-            </button>
           </div>
         </div>
       )}
@@ -2929,7 +2929,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               currentUser={currentUser}
               onOpenLogin={onOpenAuth}
               onNavigateHome={() => setSubView('home')}
-              onOpenProfile={() => (onOpenProfile ? onOpenProfile() : setIsProfileOpen(true))}
+              onOpenProfile={() => onOpenProfile?.()}
               onOpenCart={onOpenCart}
             />
           </div>
@@ -3011,7 +3011,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 {currentUser ? (
                   <button
-                    onClick={() => setIsProfileOpen(true)}
+                    onClick={() => onOpenProfile?.()}
                     className="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Settings className="w-3.5 h-3.5" />
@@ -3057,7 +3057,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                     <span>{isEn ? 'Deposit 24/7' : 'Nạp VietQR 24/7'}</span>
                   </button>
                   <button
-                    onClick={() => setIsProfileOpen(true)}
+                    onClick={() => onOpenProfile?.()}
                     className="py-2 px-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:border-[#ee4d2d] flex items-center justify-center gap-1 cursor-pointer transition"
                   >
                     <Clock className="w-3.5 h-3.5" />
@@ -3119,7 +3119,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                 </div>
 
                 <button
-                  onClick={() => setIsBookmarkDrawerOpen(true)}
+                  onClick={() => onOpenBookmarks?.()}
                   className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition"
                 >
                   <Bookmark className="w-3.5 h-3.5 fill-current" />
@@ -3182,7 +3182,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           <div className="rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <TelegramView
               onOpenAuth={onOpenAuth}
-              onOpenProfile={() => setIsProfileOpen(true)}
+              onOpenProfile={() => onOpenProfile?.()}
               onBackToHome={() => setSubView('home')}
               onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
             />
@@ -3562,27 +3562,6 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
         );
       })()}
 
-      {/* 5. MODE SWITCHER NỔI GÓC PHẢI DƯỚI (Compact, z-30 below all modals) */}
-      <div className="fixed bottom-3 right-3 z-30 flex items-center gap-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-lg border border-slate-300/80 dark:border-slate-700 px-2.5 py-1.5 rounded-full text-[11px] font-semibold opacity-90 hover:opacity-100 transition">
-        <span className="hidden sm:inline text-slate-600 dark:text-slate-300">
-          {t('mall.footer.themeLabel')}
-        </span>
-        <button 
-          type="button"
-          onClick={() => setIsShopeeDark(false)}
-          className={`px-2 py-0.5 rounded-full transition cursor-pointer ${!isShopeeDark ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
-        >
-          {t('mall.footer.themeLight')}
-        </button>
-        <button 
-          type="button"
-          onClick={() => setIsShopeeDark(true)}
-          className={`px-2 py-0.5 rounded-full transition cursor-pointer ${isShopeeDark ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
-        >
-          {t('mall.footer.themeDark')}
-        </button>
-      </div>
-
       {/* 6. MODALS TÍCH HỢP */}
       <MallGuaranteeModal
         isOpen={isGuaranteeOpen}
@@ -3617,50 +3596,6 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
           }}
         />
       )}
-
-      {/* User Profile Modal */}
-      <UserProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        currentUser={currentUser}
-        onOpenAuth={onOpenAuth}
-        onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
-        onOpenWallet={onOpenWallet}
-        onOpenReceivedCodes={onOpenReceivedCodes}
-        onNavigateToSellerCenter={() => {
-          setIsProfileOpen(false);
-          const target = language === 'en' ? '/en/seller' : '/seller';
-          window.open(target, '_blank', 'noopener,noreferrer');
-        }}
-        onLogout={onLogout}
-        onUpdateUser={onUpdateUser}
-      />
-
-      {/* Submit Code Modal */}
-      <SubmitCodeModal
-        isOpen={isSubmitCodeOpen}
-        onClose={() => setIsSubmitCodeOpen(false)}
-        games={allGames}
-        currentUser={currentUser}
-        onShowToast={(t, m, type) => onShowToast(m ? `${t}: ${m}` : t, type as any)}
-      />
-
-      {/* Bookmark Drawer (Tủ Game Theo Dõi - Chống Trùng Lặp) */}
-      <BookmarkDrawer
-        isOpen={isBookmarkDrawerOpen}
-        onClose={() => setIsBookmarkDrawerOpen(false)}
-        bookmarkedGames={bookmarkedGamesList}
-        onRemoveBookmark={(id) => handleToggleBookmark(id)}
-        onSelectGame={(game) => {
-          setIsBookmarkDrawerOpen(false);
-          handleFilterGameToStore(game.slug || game.id);
-        }}
-        onClearAll={() => {
-          localStorage.removeItem('pine_bookmarks');
-          syncBookmarks();
-          onShowToast(t('mall.toasts.clearedBookmarks'), 'info');
-        }}
-      />
 
     </div>
   );

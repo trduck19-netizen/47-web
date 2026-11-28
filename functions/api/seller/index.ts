@@ -387,6 +387,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       contact_phone,
       banner_preset,
       pinned_notice,
+      shop_categories,
     } = body;
 
     let cleanName: string | null = null;
@@ -421,6 +422,15 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       pinned_notice !== undefined
         ? String(pinned_notice || '').replace(/[<>]/g, '').trim().slice(0, 240)
         : null;
+    const cleanShopCategoriesJson =
+      Array.isArray(shop_categories)
+        ? JSON.stringify(
+            shop_categories
+              .map((c: any) => String(c || '').replace(/[<>]/g, '').trim().slice(0, 60))
+              .filter(Boolean)
+              .slice(0, 15)
+          )
+        : null;
 
     const nowIso = new Date().toISOString();
 
@@ -437,6 +447,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
             contact_phone = COALESCE(?, contact_phone),
             banner_preset = COALESCE(?, banner_preset),
             pinned_notice = CASE WHEN ? IS NOT NULL THEN ? ELSE pinned_notice END,
+            shop_categories_json = COALESCE(?, shop_categories_json),
             updated_at = ?
         WHERE id = ?
       `)
@@ -454,6 +465,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
         cleanBannerPreset,
         pinned_notice !== undefined ? cleanPinnedNotice : null,
         pinned_notice !== undefined ? (cleanPinnedNotice || null) : null,
+        cleanShopCategoriesJson,
         nowIso,
         seller.id
       )

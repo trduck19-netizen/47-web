@@ -1,23 +1,27 @@
+
+> universal-commerce-platform@1.0.0 check:lean
+> node scripts/check-lean-budgets.cjs
+
 ================================================================================
 🛡️  LEAN GUARD SCANNER — HỆ THỐNG GIÁM SÁT NGÂN SÁCH KÍCH THƯỚC DỰ ÁN
    Chế độ kiểm tra: [ALL] | Thư mục gốc: C:\4 Antigravity all\47 web da nganh
 ================================================================================
 
 🔍 [STAGE: PRE-BUILD] Đang quét tài nguyên Media & Dữ liệu tĩnh...
-   📁 Kho ảnh Game Icons: 2385 files, dung lượng: 28.42 MB
+   📁 Kho ảnh Game Icons: 2386 files, dung lượng: 28.42 MB
    ✅ [Check 1 PASS] Kho ảnh game_icons đạt chuẩn ngân sách (< 32.00 MB).
    ✅ [Check 2 PASS] Không có ảnh trùng lặp phần mở rộng (Zero extension collisions).
    ✅ [Check 3 PASS] 100% icon game đạt chuẩn dung lượng (<= 200 KB).
-   ✅ [Check 4 PASS] Tất cả 2416 ảnh trong public/ đều nằm trong ngân sách cho phép.
+   ✅ [Check 4 PASS] Tất cả 2417 ảnh trong public/ đều nằm trong ngân sách cho phép.
    ✅ [Check 5 PASS] Không có tệp dữ liệu tĩnh nặng trái phép trong src/data/.
 
 🔍 [STAGE: POST-BUILD] Đang quét đầu ra Vite & Cloudflare Edge Worker bundle...
-   ✅ [Check 6.1 PASS] Chunk AdminApp (562.85 KB) duy trì mức tối ưu (< 600 KB).
+   ✅ [Check 6.1 PASS] Chunk AdminApp (569.82 KB) duy trì mức tối ưu (< 600 KB).
    ✅ [Check 6.2 PASS] Tất cả các component chunks khác đều nằm trong ngân sách (< 650 KB).
-   ⚡ Edge Worker Bundle (dist/_worker.js): 6.33 MB
-   ✅ [Check 7 PASS] Edge Worker Bundle (6.33 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).
-   📦 Tổng dung lượng thư mục phân phối dist/: 68.24 MB
-   ✅ [Check 8 PASS] Thư mục dist/ (68.24 MB) đạt chuẩn phân phối tối ưu (<= 85.00 MB).
+   ⚡ Edge Worker Bundle (dist/_worker.js): 7.04 MB
+   ✅ [Check 7 PASS] Edge Worker Bundle (7.04 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).
+   📦 Tổng dung lượng thư mục phân phối dist/: 69.34 MB
+   ✅ [Check 8 PASS] Thư mục dist/ (69.34 MB) đạt chuẩn phân phối tối ưu (<= 85.00 MB).
 
 --------------------------------------------------------------------------------
 📊 BÁO CÁO KẾT QUẢ KIỂM TRA LEAN GUARD:

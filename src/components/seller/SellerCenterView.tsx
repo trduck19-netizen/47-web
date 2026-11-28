@@ -39,15 +39,21 @@ import {
   Share2,
   QrCode,
   Palette,
+  Star,
+  Truck,
+  Ticket,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getActiveBrandIdentity } from '../../utils/brandRuntime';
 import { formatCore } from '../../utils/textUtils';
 import { resolveProductCoverImage, PHYSICAL_DEFAULT_IMAGE_URL } from '../../utils/safeImageUrl';
 import { Game } from '../../types/game';
+import { parseSafeJsonArray } from '../../config/sellerIndustries';
 import { SellerAffiliateManager, ResellSettingsModal } from './SellerAffiliateManager';
 import { SellerSepayManager } from './SellerSepayManager';
 import { SellerStorefrontStudio } from './SellerStorefrontStudio';
+import { SellerProductEditorModal } from './SellerProductEditorModal';
+import { SellerVouchersManager } from './SellerVouchersManager';
 import type { SellerPortalConfigData, SellerPortalTabId, SellerSubRole } from './sellerPortalTheme';
 import type { SellerSepayTopbarSummary } from './SellerPortalTopbar';
 
@@ -138,8 +144,17 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [showAddProductModal, setShowAddProductModal] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
-  const [catalogGames, setCatalogGames] = useState<Game[]>([]);
-  const [gameSearchQuery, setGameSearchQuery] = useState<string>('');
+  const [productSearch, setProductSearch] = useState<string>('');
+  const [productStatusFilter, setProductStatusFilter] = useState<'ALL' | 'SELLING' | 'PAUSED' | 'OUT_OF_STOCK'>('ALL');
+  const [productCollectionFilter, setProductCollectionFilter] = useState<string>('');
+
+  // Order Shipping / Manual Service Fulfillment Modal State
+  const [fulfillingOrder, setFulfillingOrder] = useState<any | null>(null);
+  const [shipCarrier, setShipCarrier] = useState<string>('GHN');
+  const [shipTrackingCode, setShipTrackingCode] = useState<string>('');
+  const [shipFulfillmentNote, setShipFulfillmentNote] = useState<string>('');
+  const [deliveredContentText, setDeliveredContentText] = useState<string>('');
+  const [submittingFulfill, setSubmittingFulfill] = useState<boolean>(false);
 
   // Codes State
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -182,38 +197,33 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   const [regBankAccountName, setRegBankAccountName] = useState<string>('');
   const [regDescription, setRegDescription] = useState<string>('');
   const [regSupportHours, setRegSupportHours] = useState<string>('08:00 - 22:00');
-  const [regWarranty, setRegWarranty] = useState<string>(isEn ? '24H warranty 1-to-1 replacement or refund if code is invalid' : 'Bảo hành 24H 1 đổi 1 hoặc hoàn tiền nếu mã lỗi');
-  const [regRefund, setRegRefund] = useState<string>(isEn ? '100% Core refund if code fails and store is out of stock' : 'Hoàn 100% Core nếu mã lỗi và shop hết mã đổi');
+  const [regWarranty, setRegWarranty] = useState<string>(isEn ? '7-day official warranty & 1-to-1 replacement if item is defective' : 'Bảo hành chính hãng & hỗ trợ đổi mới 1 đổi 1 nếu sản phẩm lỗi');
+  const [regRefund, setRegRefund] = useState<string>(isEn ? '100% refund under 168h buyer protection if item does not match description' : 'Hoàn tiền 100% qua bảo chứng sàn 168h nếu không đúng mô tả');
   const [isSubmittingReg, setIsSubmittingReg] = useState<boolean>(false);
-
-  // New Product Form State
-  const [prodType, setProdType] = useState<'digital' | 'physical'>('digital');
-  const [prodGameSlug, setProdGameSlug] = useState<string>('');
-  const [prodName, setProdName] = useState<string>('');
-  const [prodPriceCore, setProdPriceCore] = useState<string>('');
-  const [prodOriginalPriceCore, setProdOriginalPriceCore] = useState<string>('');
-  const [prodWarrantyType, setProdWarrantyType] = useState<string>('24H');
-  const [prodWarrantyHours, setProdWarrantyHours] = useState<number>(24);
-  const [prodDeliveryType, setProdDeliveryType] = useState<'AUTO' | 'MANUAL'>('AUTO');
-  const [prodDeliveryMode, setProdDeliveryMode] = useState<'INVENTORY' | 'WEBHOOK'>('INVENTORY');
-  const [prodWebhookUrl, setProdWebhookUrl] = useState<string>('');
-  const [prodStockQuantity, setProdStockQuantity] = useState<string>('10');
-  const [prodWeightGrams, setProdWeightGrams] = useState<string>('500');
-  const [prodLengthCm, setProdLengthCm] = useState<string>('10');
-  const [prodWidthCm, setProdWidthCm] = useState<string>('10');
-  const [prodHeightCm, setProdHeightCm] = useState<string>('10');
-  const [prodWarehouseAddress, setProdWarehouseAddress] = useState<string>(isEn ? 'Universal Mall Central Hub, Cau Giay, Hanoi' : 'Kho Tổng Universal Mall, 188 Cầu Giấy, Hà Nội');
-  const [prodVariantsJson, setProdVariantsJson] = useState<string>('');
-  const [prodCodAllowed, setProdCodAllowed] = useState<boolean>(false);
-  const [prodDescription, setProdDescription] = useState<string>('');
-  const [prodLowStock, setProdLowStock] = useState<number>(2);
 
   // Add Codes Input
   const [rawCodesText, setRawCodesText] = useState<string>('');
 
-  const getAuthToken = () => {
-    return localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
-  };
+  const getAuthToken = useCallback(() => {
+    try {
+      let tok =
+        localStorage.getItem('pine_auth_token') ||
+        sessionStorage.getItem('pine_auth_token') ||
+        currentUser?.session_token ||
+        '';
+      if (!tok && typeof document !== 'undefined') {
+        const m = document.cookie.match(/(?:^|;\s*)pine_auth_token=([^;]+)/);
+        if (m) {
+          try {
+            tok = decodeURIComponent(m[1]);
+          } catch {}
+        }
+      }
+      return tok;
+    } catch {
+      return currentUser?.session_token || '';
+    }
+  }, [currentUser?.session_token]);
 
   const getHeaders = useCallback(() => {
     const token = getAuthToken();
@@ -221,7 +231,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     };
-  }, []);
+  }, [getAuthToken]);
 
   // Fetch Seller Info
   const fetchSellerInfo = async () => {
@@ -314,74 +324,41 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
     }
   }, [portalMode, activeTab, sellerData?.id]);
 
-  // Fetch Full Games Catalog across paginated /api/games (limit capped at 100 per page, sort=name_asc)
-  const catalogFetchedRef = React.useRef<boolean>(false);
-  const fetchFullCatalogGames = useCallback(async () => {
-    if (catalogFetchedRef.current) return;
-    catalogFetchedRef.current = true;
-    try {
-      const res = await fetch('/api/games?page=1&limit=100&sort=name_asc');
-      const data = await res.json();
-      if (!data?.success || !Array.isArray(data.games)) {
-        catalogFetchedRef.current = false;
-        return;
-      }
-      const combined: Game[] = [...data.games];
-      const totalPages = Math.min(Math.max(Number(data?.totalPages) || 1, 1), 15);
-      if (totalPages > 1) {
-        const pagePromises: Promise<any>[] = [];
-        for (let p = 2; p <= totalPages; p++) {
-          pagePromises.push(
-            fetch(`/api/games?page=${p}&limit=100&sort=name_asc`)
-              .then((r) => r.json())
-              .catch(() => null)
-          );
-        }
-        const extraPages = await Promise.all(pagePromises);
-        for (const pageData of extraPages) {
-          if (pageData?.success && Array.isArray(pageData.games)) {
-            combined.push(...pageData.games);
-          }
-        }
-      }
-      if (combined.length > 0) {
-        setCatalogGames(combined);
-      }
-    } catch {
-      catalogFetchedRef.current = false;
-      // Fallback to `games` prop silently if offline
-    }
-  }, []);
-
-  const availableGames = useMemo(() => {
-    const bySlug = new Map<string, Game>();
-    for (const g of catalogGames) {
-      if (g?.slug) bySlug.set(g.slug, g);
-    }
-    for (const g of games || []) {
-      if (g?.slug && !bySlug.has(g.slug)) bySlug.set(g.slug, g);
-    }
-    return Array.from(bySlug.values()).sort((a, b) =>
-      String(a.name || '').localeCompare(String(b.name || ''), isEn ? 'en' : 'vi')
+  const shopCategories = useMemo(() => {
+    const fromSeller = parseSafeJsonArray<string>(sellerData?.shop_categories_json).filter(
+      (c) => typeof c === 'string' && c.trim()
     );
-  }, [catalogGames, games, isEn]);
+    const fromProds = products
+      .map((p) => String(p.shop_category || '').trim())
+      .filter(Boolean);
+    return Array.from(new Set([...fromSeller, ...fromProds]));
+  }, [sellerData?.shop_categories_json, products]);
 
-  const filteredCatalogGames = useMemo(() => {
-    const q = gameSearchQuery.trim().toLowerCase();
-    if (!q) return availableGames;
-    return availableGames.filter(
-      (g) =>
-        g.slug === prodGameSlug ||
-        String(g.name || '').toLowerCase().includes(q) ||
-        String(g.slug || '').toLowerCase().includes(q)
-    );
-  }, [availableGames, gameSearchQuery, prodGameSlug]);
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    return products.filter((p) => {
+      if (productCollectionFilter && String(p.shop_category || '') !== productCollectionFilter) {
+        return false;
+      }
+      const isStockQtyMode =
+        String(p.product_type || '').toLowerCase() === 'physical' ||
+        String(p.fulfillment_mode || '').toUpperCase() === 'MANUAL_SERVICE';
+      const stockNum = isStockQtyMode ? Number(p.stock_quantity || 0) : Number(p.in_stock_count || 0);
+      const isPaused = Number(p.is_paused || 0) === 1;
 
-  useEffect(() => {
-    if (showAddProductModal && catalogGames.length === 0) {
-      fetchFullCatalogGames();
-    }
-  }, [showAddProductModal, catalogGames.length, fetchFullCatalogGames]);
+      if (productStatusFilter === 'SELLING' && (isPaused || stockNum <= 0)) return false;
+      if (productStatusFilter === 'PAUSED' && !isPaused) return false;
+      if (productStatusFilter === 'OUT_OF_STOCK' && stockNum > 0) return false;
+
+      if (!q) return true;
+      return (
+        String(p.name || '').toLowerCase().includes(q) ||
+        String(p.sku || '').toLowerCase().includes(q) ||
+        String(p.category_name || p.game_name || '').toLowerCase().includes(q) ||
+        String(p.shop_category || '').toLowerCase().includes(q)
+      );
+    });
+  }, [products, productSearch, productCollectionFilter, productStatusFilter]);
 
   // Fetch Products
   const fetchProducts = async () => {
@@ -597,138 +574,98 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
     }
   };
 
-  const resetProductForm = () => {
-    setEditingProduct(null);
-    setProdType('digital');
-    setProdGameSlug('');
-    setGameSearchQuery('');
-    setProdName('');
-    setProdPriceCore('');
-    setProdOriginalPriceCore('');
-    setProdWarrantyType('24H');
-    setProdWarrantyHours(24);
-    setProdDeliveryType('AUTO');
-    setProdDeliveryMode('INVENTORY');
-    setProdWebhookUrl('');
-    setProdStockQuantity('10');
-    setProdWeightGrams('500');
-    setProdLengthCm('10');
-    setProdWidthCm('10');
-    setProdHeightCm('10');
-    setProdWarehouseAddress(
-      isEn
-        ? 'Universal Mall Central Hub, Cau Giay, Hanoi'
-        : 'Kho Tổng Universal Mall, 188 Cầu Giấy, Hà Nội'
-    );
-    setProdVariantsJson('');
-    setProdCodAllowed(false);
-    setProdDescription('');
-    setProdLowStock(2);
-  };
-
   const handleOpenCreateProductModal = () => {
     setErrorMsg('');
-    resetProductForm();
+    setEditingProduct(null);
     setShowAddProductModal(true);
   };
 
   const handleOpenEditProductModal = (p: any) => {
     setErrorMsg('');
     setEditingProduct(p);
-    setProdType(p.product_type === 'physical' ? 'physical' : 'digital');
-    setProdGameSlug(p.game_slug || '');
-    setGameSearchQuery('');
-    setProdName(p.name || '');
-    setProdPriceCore(String(p.price_core ?? ''));
-    setProdOriginalPriceCore(p.original_price_core ? String(p.original_price_core) : '');
-    const wHours = Number(p.digital_warranty_hours || p.warranty_hours || 24);
-    setProdWarrantyHours(wHours);
-    setProdWarrantyType(p.warranty_type || `${wHours}H`);
-    setProdDeliveryType(p.delivery_type === 'MANUAL' ? 'MANUAL' : 'AUTO');
-    setProdDeliveryMode(p.delivery_mode === 'WEBHOOK' ? 'WEBHOOK' : 'INVENTORY');
-    setProdWebhookUrl(p.webhook_url || '');
-    setProdStockQuantity(String(Math.max(0, Number(p.stock_quantity ?? 0))));
-    setProdWeightGrams(String(p.weight_grams || 500));
-    setProdLengthCm(String(p.length_cm || 10));
-    setProdWidthCm(String(p.width_cm || 10));
-    setProdHeightCm(String(p.height_cm || 10));
-    setProdWarehouseAddress(
-      p.warehouse_address ||
-        (isEn
-          ? 'Universal Mall Central Hub, Cau Giay, Hanoi'
-          : 'Kho Tổng Universal Mall, 188 Cầu Giấy, Hà Nội')
-    );
-    setProdVariantsJson(p.variants_json || '');
-    setProdCodAllowed(Boolean(p.cod_allowed));
-    setProdDescription(p.description || '');
-    setProdLowStock(Number(p.low_stock_threshold ?? 2));
     setShowAddProductModal(true);
   };
 
-  // Handle Create or Update Product
-  const handleCreateProduct = async (e: React.FormEvent) => {
+  const handleTogglePauseProduct = async (p: any) => {
+    try {
+      const nextPaused = Number(p.is_paused || 0) === 1 ? 0 : 1;
+      const res = await fetch(`/api/seller/products/${p.id}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ is_paused: nextPaused }),
+      });
+      if (res.ok) {
+        setProducts((prev) => prev.map((it) => (it.id === p.id ? { ...it, is_paused: nextPaused } : it)));
+      }
+    } catch {}
+  };
+
+  const handleToggleFeaturedProduct = async (p: any) => {
+    try {
+      const nextFeatured = Number(p.is_featured || 0) === 1 ? 0 : 1;
+      const res = await fetch(`/api/seller/products/${p.id}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ is_featured: nextFeatured }),
+      });
+      if (res.ok) {
+        setProducts((prev) => prev.map((it) => (it.id === p.id ? { ...it, is_featured: nextFeatured } : it)));
+      }
+    } catch {}
+  };
+
+  const handleDuplicateProduct = (p: any) => {
+    const clone = {
+      ...p,
+      id: undefined,
+      name: `${p.name} (Copy)`,
+      sku: p.sku ? `${p.sku}-COPY` : '',
+    };
+    setEditingProduct(null);
+    setShowAddProductModal(true);
+    setTimeout(() => setEditingProduct({ ...clone, _isCloneDraft: true }), 0);
+  };
+
+  const handleFulfillOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fulfillingOrder) return;
+    setSubmittingFulfill(true);
     setErrorMsg('');
     try {
-      const parsedStock = Math.max(0, parseInt(prodStockQuantity || '0', 10) || 0);
-      const payload: any = {
-        product_type: prodType,
-        game_slug: prodType === 'digital' ? prodGameSlug : (prodGameSlug || 'physical_goods'),
-        name: prodName,
-        description: prodDescription,
-        price_core: parseInt(prodPriceCore, 10),
-        original_price_core: prodOriginalPriceCore ? parseInt(prodOriginalPriceCore, 10) : undefined,
-        warranty_type: prodWarrantyType,
-        warranty_hours: prodWarrantyHours,
-        delivery_type: prodDeliveryType,
-        low_stock_threshold: prodLowStock,
-      };
-
-      if (prodType === 'digital') {
-        payload.delivery_mode = prodDeliveryMode;
-        if (prodDeliveryMode === 'WEBHOOK') {
-          payload.webhook_url = prodWebhookUrl;
-        }
+      const isPhys = String(fulfillingOrder.product_type || '').toLowerCase() === 'physical';
+      const res = await fetch(`/api/seller/orders/${fulfillingOrder.id}`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(
+          isPhys
+            ? {
+                action: 'SHIPPING',
+                carrier: shipCarrier,
+                tracking_code: shipTrackingCode.trim(),
+                note: shipFulfillmentNote.trim(),
+              }
+            : {
+                action: 'DELIVER_MANUAL',
+                delivered_content: deliveredContentText.trim(),
+                note: shipFulfillmentNote.trim(),
+              }
+        ),
+      });
+      const data: any = await res.json().catch(() => ({}));
+      if (res.ok && data?.success) {
+        setFulfillingOrder(null);
+        setShipTrackingCode('');
+        setShipFulfillmentNote('');
+        setDeliveredContentText('');
+        setSuccessMsg(data.message || t('sellerProductEditor.fulfillSuccess'));
+        fetchOrders();
       } else {
-        payload.stock_quantity = parsedStock;
-        payload.weight_grams = parseInt(prodWeightGrams, 10);
-        payload.length_cm = parseInt(prodLengthCm, 10);
-        payload.width_cm = parseInt(prodWidthCm, 10);
-        payload.height_cm = parseInt(prodHeightCm, 10);
-        payload.warehouse_address = prodWarehouseAddress;
-        payload.variants_json = prodVariantsJson;
-        payload.cod_allowed = prodCodAllowed;
-      }
-
-      const isEditing = Boolean(editingProduct?.id);
-      const res = await fetch(
-        isEditing ? `/api/seller/products/${editingProduct.id}` : '/api/seller/products',
-        {
-          method: isEditing ? 'PUT' : 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify(payload),
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        setShowAddProductModal(false);
-        resetProductForm();
-        setSuccessMsg(
-          isEditing
-            ? t('sellerCenter.updateProductSuccess')
-            : (isEn ? 'Product created successfully!' : (data.message || 'Tạo sản phẩm thành công!'))
-        );
-        fetchProducts();
-        fetchSellerInfo();
-      } else {
-        setErrorMsg(
-          isEditing
-            ? (isEn ? t('sellerCenter.updateProductFailed') : (data.error || t('sellerCenter.updateProductFailed')))
-            : (data.error || (isEn ? 'Failed to create product.' : 'Tạo sản phẩm thất bại.'))
-        );
+        setErrorMsg(data?.error || t('sellerProductEditor.saveFailed'));
       }
     } catch {
-      setErrorMsg(isEn ? 'Cannot connect to server.' : 'Lỗi kết nối máy chủ.');
+      setErrorMsg(t('sellerProductEditor.saveFailed'));
+    } finally {
+      setSubmittingFulfill(false);
     }
   };
 
@@ -1083,11 +1020,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       <div className="max-w-3xl mx-auto py-10 px-4">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-semibold mb-3 border border-amber-500/20">
-            <Sparkles className="w-4 h-4" /> {isEn ? 'Stage 1: Digital Store Platform (MVP)' : 'Giai Đoạn 1: Nền Gian Hàng Số (MVP)'}
+            <Sparkles className="w-4 h-4" /> {t('sellerProductEditor.regBadge')}
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">{isEn ? 'Register Store & Start Selling' : 'Đăng Ký Mở Gian Hàng Kinh Doanh'}</h1>
           <p className="text-muted-foreground text-sm mt-2 max-w-xl mx-auto">
-            {isEn ? 'Sell giftcodes, vouchers, and game services automatically. Instant Core wallet settlements, 24/7 automated delivery.' : 'Bán mã quà tặng, giftcode và dịch vụ game tự động. Nhận thanh toán ngay bằng ví Core nội bộ, giao mã tức thì 24/7.'}
+            {t('sellerProductEditor.regSubtitle')}
           </p>
         </div>
 
@@ -1126,7 +1063,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                     );
                   }
                 }}
-                placeholder={isEn ? "E.g. VIP Gamer Shop" : "Ví dụ: Shop Code Uy Tín VN"}
+                placeholder={isEn ? "E.g. Nova Lifestyle Official Store" : "Ví dụ: Gian Hàng Chính Hãng Nova Lifestyle"}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
               />
             </div>
@@ -1141,7 +1078,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                   required
                   value={regSlug}
                   onChange={(e) => setRegSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-                  placeholder="shop-code-uy-tin"
+                  placeholder="nova-lifestyle-store"
                   className="w-full px-3.5 py-2.5 rounded-r-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
                 />
               </div>
@@ -1198,7 +1135,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               rows={3}
               value={regDescription}
               onChange={(e) => setRegDescription(e.target.value)}
-              placeholder={isEn ? "Specialized in authentic giftcodes and instant fulfillment..." : "Chuyên cung cấp mã giftcode chính hãng, kích hoạt nhanh..."}
+              placeholder={isEn ? "Official multi-category store offering authentic products, fast fulfillment & dedicated support..." : "Gian hàng phân phối sản phẩm chính hãng đa ngành, đóng gói chuẩn mực và hỗ trợ tận tâm..."}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
             />
           </div>
@@ -1210,7 +1147,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 rows={3}
                 value={regWarranty}
                 onChange={(e) => setRegWarranty(e.target.value)}
-                placeholder={isEn ? "E.g. 15-minute replacement if code fails, full refund if out of stock..." : "Ví dụ: Đổi mã mới trong 15 phút nếu mã lỗi, hoàn tiền nếu hết mã..."}
+                placeholder={isEn ? "E.g. 7-day 1-to-1 replacement if defective, official manufacturer warranty..." : "Ví dụ: Bảo hành chính hãng, hỗ trợ đổi mới 1 đổi 1 trong 7 ngày nếu lỗi nhà sản xuất..."}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
               />
             </div>
@@ -1220,7 +1157,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 rows={3}
                 value={regRefund}
                 onChange={(e) => setRegRefund(e.target.value)}
-                placeholder={isEn ? "E.g. 100% Core refund if item does not match description..." : "Ví dụ: Hoàn 100% Core nếu mã không đúng mô tả hoặc không sử dụng được..."}
+                placeholder={isEn ? "E.g. 100% refund under 168h buyer protection if item does not match description..." : "Ví dụ: Hoàn tiền 100% qua bảo chứng sàn 168h nếu sản phẩm không đúng mô tả..."}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
               />
             </div>
@@ -1426,6 +1363,14 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
           <Package className="w-3.5 h-3.5 shrink-0" /> {isEn ? `Products (${stats?.total_products || products.length})` : `Sản Phẩm (${stats?.total_products || products.length})`}
         </button>
         <button
+          onClick={() => setActiveTab('vouchers')}
+          className={`px-2 sm:px-2.5 2xl:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'vouchers' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
+          }`}
+        >
+          <Ticket className="w-3.5 h-3.5 shrink-0" /> {t('sellerPortal.sidebar.vouchers')}
+        </button>
+        <button
           onClick={() => setActiveTab('codes')}
           className={`px-2 sm:px-2.5 2xl:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all shrink-0 ${
             activeTab === 'codes' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/60'
@@ -1522,7 +1467,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 </span>
               </div>
               <div className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
-                {formatCore(stats.today_revenue_core, isEn)}
+                {formatCore(stats.today_revenue_core, language)}
               </div>
             </div>
 
@@ -1534,7 +1479,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 </span>
               </div>
               <div className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
-                {formatCore(stats.month_revenue_core, isEn)}
+                {formatCore(stats.month_revenue_core, language)}
               </div>
             </div>
 
@@ -1546,7 +1491,7 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 </span>
               </div>
               <div className="text-xl sm:text-2xl font-black text-emerald-500 tracking-tight">
-                {formatCore(stats.pending_balance_core, isEn)}
+                {formatCore(stats.pending_balance_core, language)}
               </div>
             </div>
 
@@ -1706,151 +1651,288 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </div>
       )}
 
-      {/* Tab 2: Products (§5.1, §5.3) */}
+      {/* Tab 2: Multi-Industry Products & 10-Photo Catalog */}
       {activeTab === 'products' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold">{isEn ? 'Store Product Catalog' : 'Danh Sách Sản Phẩm Của Gian Hàng'}</h2>
-            <button
-              onClick={handleOpenCreateProductModal}
-              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1.5 shadow-sm"
-            >
-              <Plus className="w-4 h-4" /> {isEn ? 'Add New Product' : 'Thêm Sản Phẩm Mới'}
-            </button>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div>
+              <h2 id="seller-products-heading" className="text-base font-extrabold flex items-center gap-2">
+                <Package className="w-4 h-4 text-primary" />
+                <span>{t('sellerProductEditor.catalogHeading', { count: products.length })}</span>
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {t('sellerProductEditor.catalogSubheading')}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('vouchers')}
+                className="px-3 py-2 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Ticket className="w-3.5 h-3.5 text-primary" />
+                <span>{t('sellerPortal.sidebar.vouchers')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenCreateProductModal}
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-extrabold flex items-center gap-1.5 shadow-sm hover:opacity-95 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('sellerProductEditor.addNewProductBtn')}</span>
+              </button>
+            </div>
           </div>
+
+          {/* Search, Collection & Status Filter Toolbar */}
+          {products.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 bg-card border border-border rounded-2xl p-3">
+              <div className="sm:col-span-5 relative">
+                <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="search"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder={t('sellerProductEditor.searchProductsPlaceholder')}
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-border bg-background text-xs focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="sm:col-span-4">
+                <select
+                  value={productCollectionFilter}
+                  onChange={(e) => setProductCollectionFilter(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-medium focus:outline-none focus:border-primary"
+                >
+                  <option value="">{t('sellerProductEditor.allCollectionsOption')}</option>
+                  {shopCategories.map((col) => (
+                    <option key={col} value={col}>{col}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="sm:col-span-3">
+                <select
+                  value={productStatusFilter}
+                  onChange={(e) => setProductStatusFilter(e.target.value as any)}
+                  className="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-medium focus:outline-none focus:border-primary"
+                >
+                  <option value="ALL">{t('sellerProductEditor.filterAllStatuses')}</option>
+                  <option value="SELLING">{t('sellerProductEditor.filterSelling')}</option>
+                  <option value="PAUSED">{t('sellerProductEditor.filterPaused')}</option>
+                  <option value="OUT_OF_STOCK">{t('sellerProductEditor.filterOutOfStock')}</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {loadingProducts ? (
             <div className="py-12 text-center text-muted-foreground">{isEn ? 'Loading products...' : 'Đang tải sản phẩm...'}</div>
           ) : products.length === 0 ? (
-            <div className="py-12 text-center bg-card border border-border rounded-2xl">
+            <div className="py-12 text-center bg-card border border-border rounded-2xl px-4">
               <Package className="w-12 h-12 text-muted-foreground/40 mx-auto mb-2" />
-              <div className="text-sm font-semibold">{isEn ? 'No products available' : 'Chưa có sản phẩm nào'}</div>
-              <p className="text-xs text-muted-foreground mt-1 mb-4">{isEn ? 'Click the button below to create your first product.' : 'Nhấn nút bên dưới để tạo sản phẩm đầu tiên.'}</p>
+              <div className="text-sm font-bold">{t('sellerProductEditor.emptyCatalogTitle')}</div>
+              <p className="text-xs text-muted-foreground mt-1 mb-4 max-w-md mx-auto">
+                {t('sellerProductEditor.emptyCatalogDesc')}
+              </p>
               <button
+                type="button"
                 onClick={handleOpenCreateProductModal}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold"
+                className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold cursor-pointer"
               >
-                {isEn ? 'Create Product' : 'Tạo Sản Phẩm'}
+                {t('sellerProductEditor.addNewProductBtn')}
               </button>
             </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="py-10 text-center bg-card border border-border rounded-2xl text-xs text-muted-foreground">
+              {t('sellerProductEditor.noFilterMatch')}
+            </div>
           ) : (
-            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+            <div
+              role="region"
+              aria-labelledby="seller-products-heading"
+              tabIndex={0}
+              className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm"
+            >
               {/* Rule 9 Single-Screen Table: 34 + 14 + 13 + 13 + 26 = 100% */}
               <table className="table-fixed w-full text-xs text-left">
                 <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                   <tr>
-                    <th className="p-3 w-[34%]">{isEn ? 'Product & Game' : 'Sản Phẩm & Game'}</th>
-                    <th className="p-3 w-[14%] text-right">{isEn ? 'Price' : 'Giá Bán'}</th>
-                    <th className="p-3 w-[13%] text-center">{isEn ? 'Stock' : 'Tồn Kho'}</th>
-                    <th className="p-3 w-[13%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
-                    <th className="p-3 w-[26%] text-center">{isEn ? 'Actions' : 'Thao Tác'}</th>
+                    <th className="p-3 w-[34%]">{t('sellerProductEditor.colProductIndustry')}</th>
+                    <th className="p-3 w-[14%] text-right">{t('sellerProductEditor.colPrice')}</th>
+                    <th className="p-3 w-[13%] text-center">{t('sellerProductEditor.colStock')}</th>
+                    <th className="p-3 w-[13%] text-center">{t('sellerProductEditor.colStatus')}</th>
+                    <th className="p-3 w-[26%] text-center">{t('sellerProductEditor.colActions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
-                  {products.map((p) => {
-                    const physStock = Math.max(0, Number(p.stock_quantity ?? 0));
+                  {filteredProducts.map((p) => {
+                    const imgList = Array.isArray(p.images) ? p.images : parseSafeJsonArray<string>(p.images_json);
+                    const photoCount = Math.max(imgList.length, p.cover_url ? 1 : 0);
+                    const varList = Array.isArray(p.variants) ? p.variants : parseSafeJsonArray<any>(p.variants_json);
+                    const fMode = String(
+                      p.fulfillment_mode || (String(p.product_type).toLowerCase() === 'physical' ? 'SHIPPING' : 'AUTO_VAULT')
+                    ).toUpperCase();
+                    const usesDirectQty = fMode === 'SHIPPING' || fMode === 'MANUAL_SERVICE';
+                    const displayStock = usesDirectQty
+                      ? Math.max(0, Number(p.stock_quantity ?? 0))
+                      : Math.max(0, Number(p.in_stock_count ?? 0));
+                    const isPaused = Number(p.is_paused || 0) === 1;
+                    const isFeatured = Number(p.is_featured || 0) === 1;
+
                     return (
-                      <tr key={p.id} className="hover:bg-muted/30">
+                      <tr key={p.id} className={`hover:bg-muted/30 ${isPaused ? 'opacity-70' : ''}`}>
                         <td className="p-3">
-                          <div className="flex items-center gap-2.5">
-                            <img
-                              src={resolveProductCoverImage(p)}
-                              alt={p.name || ''}
-                              onError={(e) => {
-                                const el = e.currentTarget;
-                                if (!el.dataset.fb) {
-                                  el.dataset.fb = '1';
-                                  el.src = PHYSICAL_DEFAULT_IMAGE_URL;
-                                }
-                              }}
-                              className="w-9 h-9 rounded-xl object-cover shrink-0 border border-border bg-muted"
-                            />
-                            <div className="truncate">
-                              <div className="flex items-center gap-1.5 truncate">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-border bg-muted">
+                              <img
+                                src={resolveProductCoverImage(p)}
+                                alt={p.name || ''}
+                                onError={(e) => {
+                                  const el = e.currentTarget;
+                                  if (!el.dataset.fb) {
+                                    el.dataset.fb = '1';
+                                    el.src = PHYSICAL_DEFAULT_IMAGE_URL;
+                                  }
+                                }}
+                                className="w-full h-full object-cover"
+                              />
+                              <span
+                                className="absolute bottom-0 right-0 px-1 py-0.2 bg-black/75 text-white text-[8px] font-bold rounded-tl"
+                                title={t('sellerProductEditor.photoCountTooltip', { count: photoCount })}
+                              >
+                                {photoCount}/10
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1 min-w-0">
+                                {isFeatured && (
+                                  <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" aria-hidden="true" />
+                                )}
                                 <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 ${
-                                  p.product_type === 'physical'
+                                  fMode === 'SHIPPING'
                                     ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                    : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                    : fMode === 'MANUAL_SERVICE'
+                                      ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30'
+                                      : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
                                 }`}>
-                                  {p.product_type === 'physical' ? (isEn ? 'Physical' : 'Hàng Vật Lý') : (isEn ? 'Digital' : 'Hàng Số')}
+                                  {fMode === 'SHIPPING'
+                                    ? t('sellerProductEditor.modeBadgeShipping')
+                                    : fMode === 'MANUAL_SERVICE'
+                                      ? t('sellerProductEditor.modeBadgeService')
+                                      : t('sellerProductEditor.modeBadgeAuto')}
                                 </span>
                                 {p.is_affiliate === 1 && (
-                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30" title={p.supplier_name ? `NCC: ${p.supplier_name}` : ''}>
+                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
                                     {isEn ? 'Reseller' : 'Gán Shop'}
-                                  </span>
-                                )}
-                                {p.resell_enabled === 1 && (
-                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                    {isEn ? 'Resell' : 'Mở Bán Lại'}
                                   </span>
                                 )}
                                 <span className="font-bold truncate" title={p.name}>{p.name}</span>
                               </div>
-                              <div className="text-[11px] text-muted-foreground truncate">
-                                {p.product_type === 'physical'
-                                  ? `${p.weight_grams ? `${p.weight_grams}g` : ''} • ${p.warehouse_address ? p.warehouse_address.split(',')[0] : (isEn ? 'Warehouse' : 'Kho hàng')}`
-                                  : `${p.game_name || p.game_slug} • BH: ${p.warranty_type}`}
+                              <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+                                <span className="truncate">{p.category_name || p.game_name || t('sellerProductEditor.generalCategory')}</span>
+                                {p.shop_category && (
+                                  <span className="px-1.5 py-0.2 rounded bg-primary/10 text-primary text-[9px] font-semibold shrink-0">
+                                    {p.shop_category}
+                                  </span>
+                                )}
+                                {p.sku && (
+                                  <span className="font-mono text-[10px] opacity-80 shrink-0">SKU:{p.sku}</span>
+                                )}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="p-3 text-right font-bold text-foreground">
-                          {formatCore(p.price_core, isEn)}
+                          <div>{formatCore(p.price_core, language)}</div>
                           {p.original_price_core && (
                             <div className="text-[10px] text-muted-foreground line-through">
-                              {formatCore(p.original_price_core, isEn)}
+                              {formatCore(p.original_price_core, language)}
+                            </div>
+                          )}
+                          {varList.length > 0 && (
+                            <div className="text-[10px] text-primary font-semibold">
+                              {t('sellerProductEditor.variantCountBadge', { count: varList.length })}
                             </div>
                           )}
                         </td>
                         <td className="p-3 text-center">
-                          {p.product_type === 'physical' ? (
-                            <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
-                              physStock > (p.low_stock_threshold || 2)
-                                ? 'bg-emerald-500/10 text-emerald-500'
-                                : physStock > 0
-                                ? 'bg-amber-500/10 text-amber-500'
-                                : 'bg-destructive/10 text-destructive'
-                            }`}>
-                              {physStock > 0
-                                ? t('sellerCenter.physicalStockBadge', { count: physStock })
-                                : t('sellerCenter.physicalOutOfStockBadge')}
-                            </span>
-                          ) : (
-                            <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
-                              p.in_stock_count > (p.low_stock_threshold || 2)
-                                ? 'bg-emerald-500/10 text-emerald-500'
-                                : p.in_stock_count > 0
-                                ? 'bg-amber-500/10 text-amber-500'
-                                : 'bg-destructive/10 text-destructive'
-                            }`}>
-                              {isEn ? `Stock: ${p.in_stock_count}` : `Còn ${p.in_stock_count}`}
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            p.status === 'APPROVED'
-                              ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                              : p.status === 'PENDING_REVIEW'
-                              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                              : 'bg-destructive/10 text-destructive border border-destructive/20'
+                          <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                            displayStock > (p.low_stock_threshold || 2)
+                              ? 'bg-emerald-500/10 text-emerald-500'
+                              : displayStock > 0
+                              ? 'bg-amber-500/10 text-amber-500'
+                              : 'bg-destructive/10 text-destructive'
                           }`}>
-                            {p.status === 'APPROVED' ? (isEn ? 'Approved' : 'Đã Duyệt') : p.status === 'PENDING_REVIEW' ? (isEn ? 'Pending' : 'Chờ Duyệt') : (isEn ? 'Rejected' : 'Từ Chối')}
+                            {displayStock > 0
+                              ? t('sellerCenter.physicalStockBadge', { count: displayStock })
+                              : t('sellerCenter.physicalOutOfStockBadge')}
                           </span>
                         </td>
                         <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1 flex-wrap">
-                            {p.product_type === 'physical' ? (
-                              <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-semibold whitespace-nowrap">
-                                {isEn ? 'Parcel' : 'Bưu phẩm'}
+                          <div className="flex flex-col items-center gap-1">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              p.status === 'APPROVED'
+                                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                                : p.status === 'PENDING_REVIEW'
+                                ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                                : 'bg-destructive/10 text-destructive border border-destructive/20'
+                            }`}>
+                              {p.status === 'APPROVED' ? (isEn ? 'Approved' : 'Đã Duyệt') : p.status === 'PENDING_REVIEW' ? (isEn ? 'Pending' : 'Chờ Duyệt') : (isEn ? 'Rejected' : 'Từ Chối')}
+                            </span>
+                            {isPaused && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-500/15 text-slate-500">
+                                {t('sellerProductEditor.pausedBadge')}
                               </span>
-                            ) : (
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1 flex-wrap">
+                            {p.is_affiliate !== 1 && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleFeaturedProduct(p)}
+                                  className={`p-1 rounded-lg border text-[10px] cursor-pointer ${
+                                    isFeatured
+                                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
+                                      : 'border-border hover:bg-muted text-muted-foreground'
+                                  }`}
+                                  title={t('sellerProductEditor.pinFeaturedLabel')}
+                                  aria-label={t('sellerProductEditor.pinFeaturedLabel')}
+                                >
+                                  <Star className={`w-3 h-3 ${isFeatured ? 'fill-current' : ''}`} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePauseProduct(p)}
+                                  className="p-1 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                                  title={isPaused ? t('sellerProductEditor.resumeProductBtn') : t('sellerProductEditor.pauseProductBtn')}
+                                  aria-label={isPaused ? t('sellerProductEditor.resumeProductBtn') : t('sellerProductEditor.pauseProductBtn')}
+                                >
+                                  {isPaused ? <PlayCircle className="w-3 h-3 text-emerald-500" /> : <PauseCircle className="w-3 h-3" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDuplicateProduct(p)}
+                                  className="p-1 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                                  title={t('sellerProductEditor.duplicateBtn')}
+                                  aria-label={t('sellerProductEditor.duplicateBtn')}
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
+                            {fMode === 'AUTO_VAULT' && (
                               <button
+                                type="button"
                                 onClick={() => {
                                   setSelectedProductId(p.id);
                                   setActiveTab('codes');
                                 }}
-                                className="px-2 py-0.5 rounded-lg bg-muted hover:bg-muted/80 text-[10px] font-semibold whitespace-nowrap"
+                                className="px-2 py-0.5 rounded-lg bg-muted hover:bg-muted/80 text-[10px] font-semibold whitespace-nowrap cursor-pointer"
                               >
                                 {isEn ? 'Vault' : 'Kho Mã'}
                               </button>
@@ -1858,16 +1940,18 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                             {p.is_affiliate !== 1 && (
                               <>
                                 <button
+                                  type="button"
                                   onClick={() => setResellModalProduct(p)}
-                                  className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1 whitespace-nowrap"
+                                  className="px-1.5 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-0.5 whitespace-nowrap cursor-pointer"
                                   title={t('sellerAffiliate.resellSettingsTitle', 'Cài đặt bán lại')}
                                 >
                                   <Share2 className="w-2.5 h-2.5 shrink-0" />
                                   <span>{isEn ? 'Resell' : 'Bán Lại'}</span>
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => handleOpenEditProductModal(p)}
-                                  className="px-2 py-0.5 rounded-lg border border-border hover:bg-muted text-foreground text-[10px] font-semibold flex items-center gap-1 whitespace-nowrap"
+                                  className="px-1.5 py-0.5 rounded-lg border border-border hover:bg-muted text-foreground text-[10px] font-semibold flex items-center gap-0.5 whitespace-nowrap cursor-pointer"
                                   title={t('sellerCenter.editProductTitle')}
                                 >
                                   <Edit2 className="w-2.5 h-2.5 shrink-0" />
@@ -1876,14 +1960,14 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                               </>
                             )}
                             <button
+                              type="button"
                               onClick={() => handleDeleteProduct(p)}
                               disabled={deletingProductId === p.id}
-                              className="px-2 py-0.5 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 text-[10px] font-semibold flex items-center gap-1 whitespace-nowrap disabled:opacity-50"
+                              className="px-1.5 py-0.5 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 text-[10px] font-semibold flex items-center gap-0.5 whitespace-nowrap disabled:opacity-50 cursor-pointer"
                               title={t('sellerCenter.deleteProductBtn')}
                               aria-label={t('sellerCenter.deleteProductBtn')}
                             >
                               <Trash2 className="w-2.5 h-2.5 shrink-0" />
-                              <span>{t('sellerCenter.deleteProductBtn')}</span>
                             </button>
                           </div>
                         </td>
@@ -1895,6 +1979,16 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Tab 2b: Shop Vouchers & Custom Storefront Collections */}
+      {activeTab === 'vouchers' && (
+        <SellerVouchersManager
+          seller={sellerData}
+          getHeaders={getHeaders}
+          onSellerUpdated={(nextSeller) => setSellerData(nextSeller)}
+          onNotify={(msg) => setSuccessMsg(msg)}
+        />
       )}
 
       {/* Tab 3: Codes & Restock (§5.2) */}
@@ -2005,11 +2099,11 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </div>
       )}
 
-      {/* Tab 4: Orders & Dispute Resolution (§6.2, §6.3) */}
+      {/* Tab 4: Orders, Shipping Tracking & Dispute Resolution (§6.2, §6.3) */}
       {activeTab === 'orders' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold">{isEn ? 'Sales Orders List' : 'Danh Sách Đơn Hàng Bán Ra'}</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="seller-orders-heading" className="text-base font-bold">{isEn ? 'Sales Orders List' : 'Danh Sách Đơn Hàng Bán Ra'}</h2>
             <div className="flex items-center gap-2">
               <select
                 value={orderFilter}
@@ -2017,6 +2111,8 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                 className="px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-medium focus:outline-none focus:border-primary"
               >
                 <option value="">{isEn ? 'All Statuses' : 'Tất cả trạng thái'}</option>
+                <option value="PAID">{isEn ? 'Paid / Processing (PAID)' : 'Đã Thanh Toán (PAID)'}</option>
+                <option value="SHIPPING">{t('sellerProductEditor.orderStatusShipping')}</option>
                 <option value="DELIVERED">{isEn ? 'Delivered (DELIVERED)' : 'Đã Giao (DELIVERED)'}</option>
                 <option value="REPORTED">{isEn ? 'Reported / Disputed (REPORTED)' : 'Báo Lỗi / Khiếu Nại (REPORTED)'}</option>
                 <option value="REFUNDED">{isEn ? 'Refunded (REFUNDED)' : 'Đã Hoàn Tiền (REFUNDED)'}</option>
@@ -2033,58 +2129,116 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
               <p className="text-xs text-muted-foreground mt-1">{isEn ? 'Customer orders from the storefront will appear here.' : 'Các đơn hàng phát sinh từ web khách sẽ hiển thị tại đây.'}</p>
             </div>
           ) : (
-            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+            <div
+              role="region"
+              aria-labelledby="seller-orders-heading"
+              tabIndex={0}
+              className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm"
+            >
+              {/* Rule 9: 22 + 32 + 15 + 14 + 17 = 100% */}
               <table className="table-fixed w-full text-xs text-left">
                 <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                   <tr>
-                    <th className="p-3 w-[25%]">{isEn ? 'Order Code & Date' : 'Mã Đơn & Ngày Mua'}</th>
-                    <th className="p-3 w-[30%]">{isEn ? 'Product & Customer' : 'Sản Phẩm & Khách'}</th>
-                    <th className="p-3 w-[15%] text-right">{isEn ? 'Price (Core)' : 'Giá Core'}</th>
-                    <th className="p-3 w-[15%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
-                    <th className="p-3 w-[15%] text-center">{isEn ? 'Actions' : 'Xử Lý'}</th>
+                    <th className="p-3 w-[22%]">{isEn ? 'Order Code & Date' : 'Mã Đơn & Ngày Mua'}</th>
+                    <th className="p-3 w-[32%]">{isEn ? 'Product, Variant & Customer' : 'Sản Phẩm, Phân Loại & Khách'}</th>
+                    <th className="p-3 w-[15%] text-right">{t('sellerProductEditor.colPrice')}</th>
+                    <th className="p-3 w-[14%] text-center">{isEn ? 'Status' : 'Trạng Thái'}</th>
+                    <th className="p-3 w-[17%] text-center">{isEn ? 'Actions' : 'Xử Lý'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {orders.map((o) => (
                     <tr key={o.id} className="hover:bg-muted/30">
                       <td className="p-3">
-                        <div className="font-mono font-bold">{o.order_code}</div>
-                        <div className="text-[10px] text-muted-foreground">{new Date(o.created_at).toLocaleString('vi-VN')}</div>
+                        <div className="font-mono font-bold truncate" title={o.order_code}>{o.order_code}</div>
+                        <div className="text-[10px] text-muted-foreground">{new Date(o.created_at).toLocaleString(isEn ? 'en-US' : 'vi-VN')}</div>
+                        {o.tracking_code && (
+                          <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 font-mono text-[10px] font-bold max-w-full truncate">
+                            <Truck className="w-2.5 h-2.5 shrink-0" />
+                            <span className="truncate">{o.shipping_carrier ? `${o.shipping_carrier}: ` : ''}{o.tracking_code}</span>
+                          </div>
+                        )}
                       </td>
-                      <td className="p-3 truncate">
-                        <div className="font-bold truncate">{o.product_name}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">{isEn ? 'Customer:' : 'Khách:'} {o.buyer_name || o.buyer_member_id}</div>
+                      <td className="p-3 min-w-0">
+                        <div className="font-bold truncate" title={o.product_name}>{o.product_name}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                          {o.selected_variant && (
+                            <span className="px-1.5 py-0.2 rounded bg-primary/10 text-primary text-[10px] font-semibold">
+                              {o.selected_variant}
+                            </span>
+                          )}
+                          <span className="text-[11px] text-muted-foreground truncate">
+                            {isEn ? 'Buyer:' : 'Khách:'} {o.buyer_name || o.buyer_member_id}
+                          </span>
+                        </div>
+                        {o.buyer_note && (
+                          <div className="text-[10px] text-amber-600 dark:text-amber-400 truncate mt-0.5" title={o.buyer_note}>
+                            {t('sellerProductEditor.buyerNotePrefix')}: {o.buyer_note}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3 text-right font-bold text-foreground">
-                        {o.price_core.toLocaleString()} Core
+                        <div>{formatCore(Number(o.price_core || 0), language)}</div>
+                        {Number(o.voucher_discount_core || 0) > 0 && (
+                          <div className="text-[10px] text-emerald-500 font-semibold">
+                            -{formatCore(Number(o.voucher_discount_core), language)} ({o.voucher_code})
+                          </div>
+                        )}
                       </td>
                       <td className="p-3 text-center">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          o.status === 'DELIVERED'
+                          o.status === 'DELIVERED' || o.status === 'PAID'
                             ? 'bg-emerald-500/10 text-emerald-500'
+                            : o.status === 'SHIPPING'
+                            ? 'bg-sky-500/10 text-sky-500'
                             : o.status === 'REPORTED'
                             ? 'bg-destructive/10 text-destructive animate-pulse'
                             : o.status === 'REFUNDED'
                             ? 'bg-purple-500/10 text-purple-400'
                             : 'bg-muted text-muted-foreground'
                         }`}>
-                          {o.status === 'DELIVERED' ? (isEn ? 'Delivered' : 'Đã Giao') : o.status === 'REPORTED' ? (isEn ? 'Reported' : 'Báo Lỗi') : o.status === 'REFUNDED' ? (isEn ? 'Refunded' : 'Đã Hoàn Tiền') : o.status}
+                          {o.status === 'DELIVERED'
+                            ? (isEn ? 'Delivered' : 'Đã Giao')
+                            : o.status === 'SHIPPING'
+                              ? t('sellerProductEditor.orderStatusShippingShort')
+                              : o.status === 'REPORTED'
+                                ? (isEn ? 'Reported' : 'Báo Lỗi')
+                                : o.status === 'REFUNDED'
+                                  ? (isEn ? 'Refunded' : 'Đã Hoàn Tiền')
+                                  : o.status}
                         </span>
                       </td>
                       <td className="p-3 text-center">
-                        {o.status === 'REPORTED' ? (
-                          <button
-                            onClick={() => {
-                              setResolvingOrder(o);
-                              setResolveType('REPLACE_CODE');
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-destructive text-white text-[11px] font-bold shadow-sm"
-                          >
-                            {isEn ? 'Resolve' : 'Xử Lý'}
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground">—</span>
-                        )}
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                          {o.status === 'REPORTED' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setResolvingOrder(o);
+                                setResolveType('REPLACE_CODE');
+                              }}
+                              className="px-2 py-1 rounded-lg bg-destructive text-white text-[10px] font-bold shadow-sm cursor-pointer"
+                            >
+                              {isEn ? 'Resolve' : 'Xử Lý'}
+                            </button>
+                          )}
+                          {o.status !== 'REFUNDED' && o.status !== 'EXPIRED' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFulfillingOrder(o);
+                                setShipCarrier(o.shipping_carrier || 'GHN');
+                                setShipTrackingCode(o.tracking_code || '');
+                                setShipFulfillmentNote(o.fulfillment_note || '');
+                                setDeliveredContentText('');
+                              }}
+                              className="px-2 py-1 rounded-lg border border-border hover:bg-muted text-foreground text-[10px] font-semibold inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <Truck className="w-3 h-3 text-primary" />
+                              <span>{t('sellerProductEditor.fulfillBtn')}</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -2833,340 +2987,118 @@ const data = await res.json();`}
         />
       )}
 
-      {/* Modal: Thêm / Chỉnh Sửa Sản Phẩm */}
-      {showAddProductModal && (
+      {/* Modal: Thêm / Chỉnh Sửa Sản Phẩm Đa Ngành (Tối đa 10 Ảnh, Phân loại, Thông số) */}
+      <SellerProductEditorModal
+        isOpen={showAddProductModal}
+        editingProduct={editingProduct}
+        sellerData={sellerData}
+        shopCategories={shopCategories}
+        getHeaders={getHeaders}
+        onClose={() => {
+          setShowAddProductModal(false);
+          setEditingProduct(null);
+        }}
+        onSaved={(msg) => {
+          setSuccessMsg(msg);
+          fetchProducts();
+          fetchSellerInfo();
+        }}
+      />
+
+      {/* Modal: Cập Nhật Mã Vận Đơn / Bàn Giao Dịch Vụ Thủ Công */}
+      {fulfillingOrder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 shadow-xl space-y-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold">
-                {editingProduct
-                  ? t('sellerCenter.editProductTitle')
-                  : (isEn ? 'Add New Product' : 'Thêm Sản Phẩm Bán Mới')}
+              <h3 className="text-base font-bold flex items-center gap-2">
+                <Truck className="w-5 h-5 text-primary" />
+                <span>{t('sellerProductEditor.fulfillModalTitle')}</span>
               </h3>
-              <button
-                onClick={() => {
-                  setErrorMsg('');
-                  resetProductForm();
-                  setShowAddProductModal(false);
-                }}
-              >
+              <button type="button" onClick={() => setFulfillingOrder(null)}>
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {errorMsg && (
-              <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
+            <div className="text-xs bg-muted/60 p-3 rounded-xl space-y-1">
+              <div>{isEn ? 'Order:' : 'Đơn hàng:'} <strong className="font-mono">{fulfillingOrder.order_code}</strong></div>
+              <div>{isEn ? 'Product:' : 'Sản phẩm:'} <strong>{fulfillingOrder.product_name}</strong></div>
+              {fulfillingOrder.selected_variant && (
+                <div>{t('sellerProductEditor.variantLabel')}: <strong>{fulfillingOrder.selected_variant}</strong></div>
+              )}
+              {fulfillingOrder.buyer_note && (
+                <div>{t('sellerProductEditor.buyerNotePrefix')}: <strong>{fulfillingOrder.buyer_note}</strong></div>
+              )}
+            </div>
 
-            <form onSubmit={handleCreateProduct} className="space-y-4 text-xs max-h-[80vh] overflow-y-auto pr-1">
-              {/* Bộ chọn loại sản phẩm bắt buộc ngay từ đầu */}
-              <div>
-                <label className="block font-semibold mb-1.5">{isEn ? 'Product Type *' : 'Phân Loại Sản Phẩm *'}</label>
-                <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-xl">
-                  <button
-                    type="button"
-                    disabled={Boolean(editingProduct)}
-                    onClick={() => setProdType('digital')}
-                    className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-60 ${
-                      prodType === 'digital'
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <span>⚡</span>
-                    <span>{isEn ? 'Digital Goods' : 'Hàng Số (Giftcode / API)'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={Boolean(editingProduct)}
-                    onClick={() => setProdType('physical')}
-                    className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-60 ${
-                      prodType === 'physical'
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <span>📦</span>
-                    <span>{isEn ? 'Physical Goods' : 'Hàng Vật Lý (Bưu Cục)'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Nhánh Hàng Số (Digital) */}
-              {prodType === 'digital' ? (
+            <form onSubmit={handleFulfillOrder} className="space-y-3.5 text-xs">
+              {String(fulfillingOrder.product_type || '').toLowerCase() === 'physical' ? (
                 <>
-                  <div className="space-y-1.5">
-                    <label className="block font-semibold">{isEn ? 'Select Game *' : 'Chọn Tựa Game *'}</label>
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="text"
-                        disabled={Boolean(editingProduct)}
-                        value={gameSearchQuery}
-                        onChange={(e) => setGameSearchQuery(e.target.value)}
-                        placeholder={t('sellerCenter.searchGamePlaceholder', { count: availableGames.length })}
-                        className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-border bg-background focus:outline-none focus:border-primary disabled:opacity-60"
-                      />
-                    </div>
-                    <select
-                      required
-                      disabled={Boolean(editingProduct)}
-                      value={prodGameSlug}
-                      onChange={(e) => {
-                        setProdGameSlug(e.target.value);
-                        const selectedGame = availableGames.find((g) => g.slug === e.target.value);
-                        if (selectedGame && !prodName) {
-                          setProdName(isEn ? `VIP Giftcode Pack ${selectedGame.name}` : `Bộ Giftcode ${selectedGame.name} VIP`);
-                        }
-                      }}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary disabled:opacity-60"
-                    >
-                      <option value="">
-                        {t('sellerCenter.selectGamePlaceholder', { count: filteredCatalogGames.length })}
-                      </option>
-                      {filteredCatalogGames.map((g) => (
-                        <option key={g.slug} value={g.slug}>{g.name}</option>
-                      ))}
-                    </select>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {isEn ? 'Product cover will automatically use official logo of this game (§5.1).' : 'Ảnh bìa gói sản phẩm sẽ tự động lấy từ Logo chính thức của tựa game này (§5.1).'}
-                    </p>
-                  </div>
-
                   <div>
-                    <label className="block font-semibold mb-1">{isEn ? 'Product Package Name *' : 'Tên Gói Sản Phẩm *'}</label>
+                    <label className="block font-semibold mb-1">{t('sellerProductEditor.carrierLabel')}</label>
+                    <select
+                      value={shipCarrier}
+                      onChange={(e) => setShipCarrier(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background"
+                    >
+                      <option value="GHN">Giao Hàng Nhanh (GHN)</option>
+                      <option value="GHTK">Giao Hàng Tiết Kiệm (GHTK)</option>
+                      <option value="VIETTEL_POST">Viettel Post</option>
+                      <option value="JT_EXPRESS">J&T Express</option>
+                      <option value="SPX">SPX Express</option>
+                      <option value="SELF_SHIP">{t('sellerProductEditor.selfDeliveryOption')}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">{t('sellerProductEditor.trackingCodeLabel')} *</label>
                     <input
                       type="text"
                       required
-                      value={prodName}
-                      onChange={(e) => setProdName(e.target.value)}
-                      placeholder={isEn ? 'E.g. Pack of 5 Starter Giftcodes' : 'Ví dụ: Gói 5 Mã Giftcode Khởi Đầu'}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                      value={shipTrackingCode}
+                      onChange={(e) => setShipTrackingCode(e.target.value)}
+                      placeholder="GHN892341290"
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background font-mono"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-semibold mb-1">{isEn ? 'Delivery Mode' : 'Cơ Chế Giao Hàng'}</label>
-                      <select
-                        value={prodDeliveryMode}
-                        onChange={(e: any) => setProdDeliveryMode(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                      >
-                        <option value="INVENTORY">{isEn ? 'From Vault Codes' : 'Tự động từ Kho Mã'}</option>
-                        <option value="WEBHOOK">{isEn ? 'Third-party Webhook API' : 'Kết nối Webhook API Đối Tác'}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">{isEn ? 'Warranty Hours' : 'Thời Gian Bảo Hành'}</label>
-                      <select
-                        value={prodWarrantyHours}
-                        onChange={(e) => {
-                          const h = parseInt(e.target.value, 10);
-                          setProdWarrantyHours(h);
-                          setProdWarrantyType(`${h}H`);
-                        }}
-                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                      >
-                        <option value={24}>{isEn ? '24 Hours Hold' : '24 Giờ (Giữ tiền 24h)'}</option>
-                        <option value={48}>{isEn ? '48 Hours Hold' : '48 Giờ (Giữ tiền 48h)'}</option>
-                        <option value={72}>{isEn ? '72 Hours Hold' : '72 Giờ (Giữ tiền 72h)'}</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {prodDeliveryMode === 'WEBHOOK' && (
-                    <div>
-                      <label className="block font-semibold mb-1">{isEn ? 'Partner Webhook URL *' : 'Đường Dẫn Webhook API Đối Tác *'}</label>
-                      <input
-                        type="url"
-                        required
-                        value={prodWebhookUrl}
-                        onChange={(e) => setProdWebhookUrl(e.target.value)}
-                        placeholder="https://api.partner.com/deliver-code"
-                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary font-mono text-[11px]"
-                      />
-                    </div>
-                  )}
                 </>
               ) : (
-                /* Nhánh Hàng Vật Lý (Physical) */
-                <>
-                  <div>
-                    <label className="block font-semibold mb-1">{isEn ? 'Product Name *' : 'Tên Sản Phẩm Vật Lý *'}</label>
-                    <input
-                      type="text"
-                      required
-                      value={prodName}
-                      onChange={(e) => setProdName(e.target.value)}
-                      placeholder={isEn ? 'E.g. Gaming Mechanical Keyboard RGB' : 'Ví dụ: Bàn Phím Cơ Gaming RGB Hot-swap'}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block font-semibold mb-1">{t('sellerCenter.stockQuantityLabel')}</label>
-                      <input
-                        type="number"
-                        required
-                        min={0}
-                        step={1}
-                        value={prodStockQuantity}
-                        onChange={(e) => setProdStockQuantity(e.target.value)}
-                        placeholder="10"
-                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                      />
-                      <span className="text-[10px] text-muted-foreground">{t('sellerCenter.stockQuantityHint')}</span>
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">{isEn ? 'Weight (grams) *' : 'Cân Nặng (gram) *'}</label>
-                      <input
-                        type="number"
-                        required
-                        min={1}
-                        value={prodWeightGrams}
-                        onChange={(e) => setProdWeightGrams(e.target.value)}
-                        placeholder="500"
-                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                      />
-                      <span className="text-[10px] text-muted-foreground">{isEn ? 'For courier shipping fee' : 'Dùng tính cước phí vận chuyển bưu điện'}</span>
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">{isEn ? 'Dimensions DxRxC (cm)' : 'Kích Thước Dài x Rộng x Cao (cm)'}</label>
-                      <div className="grid grid-cols-3 gap-1">
-                        <input
-                          type="number"
-                          min={1}
-                          value={prodLengthCm}
-                          onChange={(e) => setProdLengthCm(e.target.value)}
-                          placeholder="D"
-                          className="px-2 py-2 rounded-xl border border-border bg-background text-center"
-                        />
-                        <input
-                          type="number"
-                          min={1}
-                          value={prodWidthCm}
-                          onChange={(e) => setProdWidthCm(e.target.value)}
-                          placeholder="R"
-                          className="px-2 py-2 rounded-xl border border-border bg-background text-center"
-                        />
-                        <input
-                          type="number"
-                          min={1}
-                          value={prodHeightCm}
-                          onChange={(e) => setProdHeightCm(e.target.value)}
-                          placeholder="C"
-                          className="px-2 py-2 rounded-xl border border-border bg-background text-center"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold mb-1">{isEn ? 'Warehouse Address (For Pick-up) *' : 'Địa Chỉ Kho Lấy Hàng *'}</label>
-                    <input
-                      type="text"
-                      required
-                      value={prodWarehouseAddress}
-                      onChange={(e) => setProdWarehouseAddress(e.target.value)}
-                      placeholder={isEn ? 'E.g. Warehouse 1, Cau Giay, Hanoi' : 'Ví dụ: Kho Tổng Universal Mall, Cầu Giấy, Hà Nội'}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 items-center">
-                    <div>
-                      <label className="block font-semibold mb-1">{isEn ? 'Variants (Optional)' : 'Biến Thể (Màu sắc, Size)'}</label>
-                      <input
-                        type="text"
-                        value={prodVariantsJson}
-                        onChange={(e) => setProdVariantsJson(e.target.value)}
-                        placeholder={isEn ? 'E.g. Red Switch, Blue Switch' : 'Ví dụ: Bản Red Switch, Bản Blue Switch'}
-                        className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div className="pt-4">
-                      <label className="flex items-center gap-2 cursor-pointer font-semibold">
-                        <input
-                          type="checkbox"
-                          checked={prodCodAllowed}
-                          onChange={(e) => setProdCodAllowed(e.target.checked)}
-                          className="w-4 h-4 rounded text-primary focus:ring-primary"
-                        />
-                        <span>{isEn ? 'Allow Cash on Delivery (COD)' : 'Cho phép nhận hàng trả tiền (COD)'}</span>
-                      </label>
-                    </div>
-                  </div>
-                </>
+                <div>
+                  <label className="block font-semibold mb-1">{t('sellerProductEditor.manualDeliveryContentLabel')} *</label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={deliveredContentText}
+                    onChange={(e) => setDeliveredContentText(e.target.value)}
+                    placeholder={t('sellerProductEditor.manualDeliveryPlaceholder')}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background font-mono"
+                  />
+                </div>
               )}
 
-              {/* Phần chung: Giá bán và Mô tả */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold mb-1">{isEn ? 'Selling Price (Core) *' : 'Giá Bán Core *'}</label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    max={sellerData.status === 'TRIAL' ? sellerData.trial_order_max || 200 : 100000}
-                    value={prodPriceCore}
-                    onChange={(e) => setProdPriceCore(e.target.value)}
-                    placeholder={isEn ? 'E.g. 50' : 'Ví dụ: 50'}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                  />
-                  {sellerData.status === 'TRIAL' && (
-                    <span className="text-[10px] text-amber-500">
-                      {isEn ? `Max ${sellerData.trial_order_max || 200} Core (TRIAL)` : `Tối đa ${sellerData.trial_order_max || 200} Core (TRIAL)`}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">{isEn ? 'Original Price (Optional)' : 'Giá Gốc Gạch Ngang (Tùy chọn)'}</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={prodOriginalPriceCore}
-                    onChange={(e) => setProdOriginalPriceCore(e.target.value)}
-                    placeholder={isEn ? 'E.g. 100' : 'Ví dụ: 100'}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-
               <div>
-                <label className="block font-semibold mb-1">{isEn ? 'Product Description' : 'Mô Tả Sản Phẩm'}</label>
-                <textarea
-                  rows={2}
-                  value={prodDescription}
-                  onChange={(e) => setProdDescription(e.target.value)}
-                  placeholder={isEn ? 'Detailed description...' : 'Mô tả chi tiết sản phẩm...'}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary"
+                <label className="block font-semibold mb-1">{t('sellerProductEditor.fulfillNoteLabel')}</label>
+                <input
+                  type="text"
+                  value={shipFulfillmentNote}
+                  onChange={(e) => setShipFulfillmentNote(e.target.value)}
+                  placeholder={t('sellerProductEditor.fulfillNotePlaceholder')}
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-background"
                 />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setErrorMsg('');
-                    resetProductForm();
-                    setShowAddProductModal(false);
-                  }}
-                  className="px-4 py-2 rounded-xl border border-border hover:bg-muted font-semibold"
+                  onClick={() => setFulfillingOrder(null)}
+                  className="px-4 py-2 rounded-xl border border-border hover:bg-muted font-semibold cursor-pointer"
                 >
-                  {isEn ? 'Cancel' : 'Hủy'}
+                  {isEn ? 'Close' : 'Đóng'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold shadow-sm"
+                  disabled={submittingFulfill}
+                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold shadow-sm disabled:opacity-50 cursor-pointer"
                 >
-                  {editingProduct
-                    ? t('sellerCenter.saveProductBtn')
-                    : (isEn ? 'Confirm Create' : 'Xác Nhận Tạo')}
+                  {submittingFulfill ? t('sellerProductEditor.savingBtn') : t('sellerProductEditor.confirmFulfillBtn')}
                 </button>
               </div>
             </form>

@@ -48,11 +48,23 @@ function syncDocumentColorScheme(isDark: boolean) {
   meta.content = isDark ? 'dark' : 'light';
 }
 
-function getAuthTokenSafe(): string {
+function getAuthTokenSafe(fallbackToken?: string): string {
   try {
-    return localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
+    let tok = localStorage.getItem('pine_auth_token') || sessionStorage.getItem('pine_auth_token') || '';
+    if (!tok && typeof document !== 'undefined') {
+      const m = document.cookie.match(/(?:^|;\s*)pine_auth_token=([^;]+)/);
+      if (m) {
+        try {
+          tok = decodeURIComponent(m[1]);
+        } catch {}
+      }
+    }
+    if (!tok && fallbackToken) {
+      tok = fallbackToken;
+    }
+    return tok;
   } catch {
-    return '';
+    return fallbackToken || '';
   }
 }
 
@@ -191,7 +203,7 @@ export const SellerPortalApp: React.FC<SellerPortalAppProps> = ({
     setBootstrapError('');
 
     try {
-      const token = getAuthTokenSafe();
+      const token = getAuthTokenSafe(currentUser?.session_token);
       const res = await fetch('/api/seller', {
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +293,7 @@ export const SellerPortalApp: React.FC<SellerPortalAppProps> = ({
     } finally {
       clearTimeout(timeoutId);
     }
-  }, [currentUserId, isEn]);
+  }, [currentUserId, currentUser?.session_token, isEn]);
 
   useEffect(() => {
     fetchPortalBootstrap(false);
@@ -290,7 +302,18 @@ export const SellerPortalApp: React.FC<SellerPortalAppProps> = ({
         bootstrapAbortRef.current.abort();
       }
     };
-  }, [currentUserId, bootstrapVersion]);
+  }, [currentUserId, currentUser?.session_token, bootstrapVersion]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleAuthState = (ev: any) => {
+      if (ev?.detail?.loggedIn) {
+        setBootstrapVersion((v) => v + 1);
+      }
+    };
+    window.addEventListener('pine_auth_state_changed', handleAuthState);
+    return () => window.removeEventListener('pine_auth_state_changed', handleAuthState);
+  }, []);
 
   const handleRequestBootstrapRefresh = useCallback(() => {
     setBootstrapVersion((v) => v + 1);

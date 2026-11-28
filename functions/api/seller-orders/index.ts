@@ -197,20 +197,102 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     const effectiveProductType = String((isAffiliate ? origProd?.product_type : product.product_type) || product.product_type || 'digital').toLowerCase();
+    const effectiveFulfillmentMode = String(product.fulfillment_mode || '').toUpperCase();
     const isPhysical = effectiveProductType === 'physical';
+    const isManualService = !isPhysical && effectiveFulfillmentMode === 'MANUAL_SERVICE';
+    const usesStockQuantity = isPhysical || isManualService;
+
+    // Xác thực phân loại biến thể (nếu sản phẩm có variants_json)
+    let selectedVariantObj: any = null;
+    let unitPriceCore = Number(product.price_core) || 0;
+    if (!isAffiliate && product.variants_json) {
+      try {
+        const parsedVars = JSON.parse(product.variants_json);
+        if (Array.isArray(parsedVars) && parsedVars.length > 0) {
+          const reqVarId = String(body.variant_id || '').trim();
+          const matched = reqVarId
+            ? parsedVars.find((v: any) => String(v.id) === reqVarId || String(v.name) === reqVarId)
+            : parsedVars[0];
+          if (matched) {
+            selectedVariantObj = matched;
+            if (Number(matched.price_core) > 0) {
+              unitPriceCore = Number(matched.price_core);
+            }
+          }
+        }
+      } catch {}
+    }
+
+    const buyerNoteClean = body.buyer_note ? String(body.buyer_note).trim().slice(0, 400) : null;
+
+    // Kiểm tra và tính giảm giá Voucher riêng của Shop (nếu khách truyền voucher_code)
+    let appliedVoucher: any = null;
+    let discountCore = 0;
+    const reqVoucherCode = String(body.voucher_code || '').toUpperCase().trim();
+    if (reqVoucherCode && !isAffiliate) {
+      const vRow = await env.DB
+        .prepare(`
+          SELECT * FROM seller_vouchers
+          WHERE seller_id = ? AND code = ? AND is_active = 1
+          LIMIT 1
+        `)
+        .bind(product.seller_id, reqVoucherCode)
+        .first<any>()
+        .catch(() => null);
+
+      if (!vRow) {
+        return new Response(
+          JSON.stringify({ success: false, error: `Mã giảm giá "${reqVoucherCode}" không tồn tại hoặc đã ngừng áp dụng.` }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      if (Number(vRow.used_count || 0) >= Number(vRow.usage_limit || 0)) {
+        return new Response(
+          JSON.stringify({ success: false, error: `Mã giảm giá "${reqVoucherCode}" đã hết lượt sử dụng.` }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      if (vRow.expires_at && new Date(vRow.expires_at).getTime() < Date.now()) {
+        return new Response(
+          JSON.stringify({ success: false, error: `Mã giảm giá "${reqVoucherCode}" đã hết hạn.` }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      if (unitPriceCore < Number(vRow.min_order_core || 0)) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Đơn tối thiểu ${vRow.min_order_core} mới áp dụng được mã "${reqVoucherCode}".`,
+          }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+
+      if (String(vRow.discount_type).toUpperCase() === 'PERCENT') {
+        const rawDisc = Math.floor((unitPriceCore * Number(vRow.discount_value || 0)) / 100);
+        discountCore =
+          vRow.max_discount_core && Number(vRow.max_discount_core) > 0
+            ? Math.min(rawDisc, Number(vRow.max_discount_core))
+            : rawDisc;
+      } else {
+        discountCore = Number(vRow.discount_value || 0);
+      }
+      discountCore = Math.max(0, Math.min(unitPriceCore - 1, discountCore));
+      appliedVoucher = vRow;
+    }
 
     let availableCode: any = null;
     let plainDeliveredCode: string | null = null;
     let currentPhysicalStock = 0;
 
-    if (isPhysical) {
+    if (usesStockQuantity) {
       const stockRow = isAffiliate
         ? origProd
         : product;
       currentPhysicalStock = Number(stockRow?.stock_quantity || 0);
       if (currentPhysicalStock < 1) {
         return new Response(
-          JSON.stringify({ success: false, error: 'Sản phẩm vật lý tạm thời hết hàng trong kho. Vui lòng quay lại sau.', code: 'OUT_OF_STOCK' }),
+          JSON.stringify({ success: false, error: 'Sản phẩm tạm thời hết hàng trong kho. Vui lòng quay lại sau.', code: 'OUT_OF_STOCK' }),
           { status: 400, headers: CORS_HEADERS }
         );
       }
@@ -240,7 +322,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       .first<any>();
 
     const userCore = Number(memberRow?.balance ?? buyer.balance) || 0;
-    const priceCore = product.price_core;
+    const priceCore = Math.max(1, unitPriceCore - discountCore);
 
     if (userCore < priceCore) {
       return new Response(
@@ -254,7 +336,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    if (!isPhysical) {
+    if (!usesStockQuantity) {
       if (!env.MARKETPLACE_CODE_KEY || !env.MARKETPLACE_CODE_KEY.trim()) {
         return new Response(
           JSON.stringify({ success: false, error: 'Chưa cấu hình biến môi trường MARKETPLACE_CODE_KEY trên máy chủ.' }),
@@ -283,7 +365,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     // - Pha 2: Trừ ví Core người mua (balance >= priceCore); nếu thất bại -> hoàn tác Pha 1 ngay lập tức
     // - Pha 3: Batch chốt đơn (SOLD nếu hàng số + cộng pending + ghi HOLD ledger + INSERT seller_orders PAID); nếu lỗi -> hoàn tác cả Pha 2 & Pha 1
     const rollbackStockOrCode = async () => {
-      if (isPhysical) {
+      if (usesStockQuantity) {
         await env.DB.prepare(`
           UPDATE seller_products
           SET stock_quantity = stock_quantity + 1, updated_at = ?
@@ -299,7 +381,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     };
 
     // Pha 1: Giữ kho / mã trước
-    const reserveRes: any = isPhysical
+    const reserveRes: any = usesStockQuantity
       ? await env.DB.prepare(`
           UPDATE seller_products
           SET stock_quantity = stock_quantity - 1, updated_at = ?
@@ -347,13 +429,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Pha 3: Batch chốt đơn nguyên tử (nếu lỗi bất ngờ -> hoàn tác cả tiền lẫn kho/mã)
     const finalizeStatements: any[] = [];
-    if (!isPhysical && availableCode?.id) {
+    if (!usesStockQuantity && availableCode?.id) {
       finalizeStatements.push(
         env.DB.prepare(`
           UPDATE seller_codes
           SET status = 'SOLD', order_id = ?, sold_at = ?, updated_at = ?
           WHERE id = ? AND status = 'RESERVED' AND order_id = ?
         `).bind(orderId, nowIso, nowIso, availableCode.id, orderId)
+      );
+    }
+    if (appliedVoucher?.id) {
+      finalizeStatements.push(
+        env.DB.prepare(`
+          UPDATE seller_vouchers
+          SET used_count = used_count + 1
+          WHERE id = ? AND is_active = 1 AND used_count < usage_limit
+        `).bind(appliedVoucher.id)
       );
     }
 
@@ -385,15 +476,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         nowIso
       ),
 
-      // Thêm đơn hàng trạng thái PAID trong 168h giữ tiền (lưu phân rã tài chính 3 bên nếu là liên shop)
+      // Thêm đơn hàng trạng thái PAID trong 168h giữ tiền (lưu phân rã tài chính 3 bên + biến thể + voucher shop)
       env.DB.prepare(`
         INSERT INTO seller_orders (
           id, order_code, buyer_member_id, buyer_name, buyer_email,
           seller_id, product_id, product_name, game_slug, code_id,
-          delivered_code, price_core, payment_method, product_type, hold_until,
+          delivered_code, price_core, discount_core, voucher_code, payment_method, product_type, hold_until,
+          selected_variant_json, buyer_note,
           status, supplier_seller_id, is_affiliate_order, affiliate_breakdown,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CORE', ?, ?, 'PAID', ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CORE', ?, ?, ?, ?, 'PAID', ?, ?, ?, ?, ?)
       `).bind(
         orderId,
         orderCode,
@@ -402,13 +494,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         buyer.email,
         product.seller_id,
         product.id,
-        product.name,
+        selectedVariantObj ? `${product.name} (${selectedVariantObj.name})` : product.name,
         product.game_slug,
         availableCode ? availableCode.id : null,
         plainDeliveredCode,
         priceCore,
+        discountCore,
+        appliedVoucher ? appliedVoucher.code : null,
         isPhysical ? 'physical' : 'digital',
         holdUntil,
+        selectedVariantObj ? JSON.stringify(selectedVariantObj) : null,
+        buyerNoteClean,
         supplierSellerId,
         isAffiliate ? 1 : 0,
         affiliateBreakdownJson,
@@ -494,6 +590,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           product_type: isPhysical ? 'physical' : 'digital',
           game_slug: product.game_slug,
           price_core: priceCore,
+          discount_core: discountCore,
+          voucher_discount_core: discountCore,
+          voucher_code: appliedVoucher ? appliedVoucher.code : null,
+          selected_variant: selectedVariantObj ? selectedVariantObj.name : null,
+          buyer_note: buyerNoteClean,
           delivered_code: plainDeliveredCode,
           status: 'PAID',
           hold_until: holdUntil,

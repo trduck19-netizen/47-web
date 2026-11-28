@@ -660,6 +660,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     key={images[activeImageIdx]}
                     src={images[activeImageIdx]}
                     alt={product.title}
+                    fetchPriority="high"
                     className={`w-full h-full transition-transform duration-300 ${
                       isActiveImgPlaceholder
                         ? 'object-contain p-8 bg-slate-50 dark:bg-slate-800'
@@ -867,7 +868,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               
               {/* Thông Số & Cam Kết Bán Hàng Đa Ngành */}
-              {(isPhysicalProduct || (product as any).brand || (product as any).origin || (product as any).warranty_period || (product as any).shipping_fee !== undefined) && (
+              {(isPhysicalProduct ||
+                (product as any).brand ||
+                (product as any).origin ||
+                (product as any).warranty_period ||
+                (product as any).shipping_fee !== undefined ||
+                (Array.isArray((product as any).specifications) && (product as any).specifications.length > 0) ||
+                (Array.isArray((product as any).specs) && (product as any).specs.length > 0)) && (
                 <div className="p-3.5 rounded-2xl bg-card border border-border space-y-2 text-xs">
                   <div className="font-bold text-foreground flex items-center gap-1.5 pb-1.5 border-b border-border/60">
                     <BadgeCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
@@ -893,6 +900,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <span className="text-muted-foreground">{t('productDetailModal.origin')} </span>
                         <span className="font-bold text-foreground">{(product as any).origin}</span>
                       </div>
+                    )}
+                    {(Array.isArray((product as any).specifications)
+                      ? (product as any).specifications
+                      : Array.isArray((product as any).specs)
+                        ? (product as any).specs
+                        : []
+                    ).map((sp: any, sIdx: number) =>
+                      sp?.label && sp?.value ? (
+                        <div key={`${sp.label}-${sIdx}`}>
+                          <span className="text-muted-foreground">{sp.label}: </span>
+                          <span className="font-bold text-foreground">{sp.value}</span>
+                        </div>
+                      ) : null
                     )}
                     {isPhysicalProduct && (
                       <div>

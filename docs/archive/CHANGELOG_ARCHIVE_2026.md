@@ -1,4 +1,16 @@
-# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 476)
+# CHANGELOG ARCHIVE 2026 (Đợt 1 - Đợt 477)
+
+### 477. Sửa Nốt Sau Kiểm Báo Cáo Đợt 1 (`6a28fd6`): Gỡ Lỗi TS2322 Mới Ở `AdminSidebar.tsx`, Guard Idempotency Nguyên Tử Cho `reserveSupplierCreditAtomic` & Bổ Sung Dòng `exit=0` Vào `docs/build_success.log` (26/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Xử lý dứt điểm 3 điểm từ báo cáo kiểm chứng sau build `6a28fd6`: (1) lỗi TS2322 mới ở `AdminSidebar.tsx:308` (`badge: 'API'` kiểu `string` gán cho `badge?: number`, khiến tổng lỗi full `tsc` tăng 1.828 → 1.829); (2) `docs/build_success.log` thiếu dòng `exit=0` ở cuối log theo Chốt Chặn 3; (3) `reserveSupplierCreditAtomic` thiếu guard idempotency nội bộ theo `(supplier_id, external_order_ref)` nếu bị gọi 2 lần cùng đơn.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Sửa lỗi TS2322 mới (`src/admin/components/AdminSidebar.tsx`)*:
+     - Gỡ 2 dòng `badge: 'API'` và `badgeColor` khỏi mục tab `'supplier-connectors'` (do dòng 457 dùng `item.badge > 0` nên `'API'` vốn không hiển thị ở runtime — không đổi hành vi hiển thị, giữ nguyên mục tab), đưa `AdminSidebar.tsx` từ 12 về đúng **11 lỗi** và tổng lỗi toàn repo từ 1.829 về đúng **1.828** (khớp tuyệt đối baseline `d68ae38`).
+  2. *Nhóm 2b — Guard idempotency nguyên tử trong `db.batch` (`functions/services/supplier_connector_service.ts`, `scripts/tests/test_supplier_connectors.ts`)*:
+     - Đảo thứ tự nguyên tử trong `db.batch` của `reserveSupplierCreditAtomic`: Bước 0 chạy `INSERT OR IGNORE INTO external_supplier_ledger` (với `UNIQUE(supplier_id, external_order_ref, entry_type)` và điều kiện `credit_used_core + ? <= credit_limit_core`), Bước 1 chỉ cộng `credit_used_core` khi `EXISTS` đúng `ledgerId` vừa chèn ở Bước 0. Gọi lần 2 cùng đơn sẽ không trừ thêm hạn mức và trả `{ ok: true, alreadyReserved: true, reason: 'ALREADY_RESERVED', ledgerId }`.
+     - Bổ sung 4 assertion kiểm thử idempotency (gọi 2 lần cùng đơn khi còn dư hạn mức → chỉ trừ 1 lần, 1 dòng sổ cái) nâng tổng suite `test_supplier_connectors` từ 108 lên **112/112 PASS** (`npm test`: **134/134 PASS**).
+  3. *Nhóm 2a — Chuẩn hóa `docs/build_success.log` có dòng `exit=0`*:
+     - Pipe trực tiếp output `npm run build` kèm dòng `exit=0` ở cuối vào `docs/build_success.log` khớp `Injected Build ID` live.
 
 ### 476. Hoàn Tất Đợt 1 (Mảnh 2–5): Admin API Nguồn Hàng & Webhook, PA2 Non-Blocking Webhook + Inventory Push, PA1 Sync/Postback/Credit Guard/Atomic Refund & Giao Diện Quản Trị Song Ngữ `SupplierConnectorsModule` (26/11/2026)
 - **Bối cảnh & Yêu cầu**:

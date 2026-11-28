@@ -1,6 +1,6 @@
 
 > universal-commerce-platform@1.0.0 test
-> npm run test:icons && npm run test:products && npm run test:suppliers && npm run test:sync-epoch && npm run test:intershop && npm run test:seller-sepay && npm run test:seller-portal && npm run test:brand
+> npm run test:icons && npm run test:products && npm run test:suppliers && npm run test:sync-epoch && npm run test:intershop && npm run test:seller-sepay && npm run test:seller-portal && npm run test:brand && npm run test:seller-10img
 
 
 > universal-commerce-platform@1.0.0 test:icons
@@ -227,3 +227,15 @@ ALL 10/10 PRIMARY /api/products FIELDS VERIFIED VIA REAL HANDLER
   PASS | brand.ts & sync-lite.ts scope ETag and Edge Cache keys by __BUILD_ID__
 
 Brand Identity Sync Suite: 12/12 PASSED, 0 FAILED
+
+> universal-commerce-platform@1.0.0 test:seller-10img
+> tsx scripts/tests/test_multi_industry_seller_10_images.ts
+
+[Migration 0044] Rebuild seller_disputes thành công: 0 -> 0 dòng.
+{
+  "suite": "test_multi_industry_seller_10_images",
+  "total": 17,
+  "passed": 17,
+  "failedCount": 0,
+  "failed": []
+}

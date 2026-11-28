@@ -49,7 +49,11 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const products = await env.DB
       .prepare(`
         SELECT 
-          sp.id, sp.seller_id, sp.game_slug, sp.game_name, sp.name, sp.cover_url,
+          sp.id, sp.seller_id, sp.game_slug, sp.game_name,
+          sp.industry_id, sp.category_name, sp.shop_category, sp.sku,
+          sp.images_json, sp.specs_json, sp.variants_json,
+          sp.fulfillment_mode, sp.buyer_note_prompt, COALESCE(sp.is_featured, 0) as is_featured,
+          sp.name, sp.cover_url,
           sp.description, sp.price_core, sp.original_price_core, sp.warranty_type,
           sp.warranty_hours, sp.delivery_type, COALESCE(sp.product_type, 'digital') as product_type,
           COALESCE(sp.stock_quantity, 0) as stock_quantity,
@@ -70,39 +74,80 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           ) as sold_count
         FROM seller_products sp
         LEFT JOIN sellers s_orig ON sp.origin_seller_id = s_orig.id
-        WHERE sp.seller_id = ? AND sp.status = 'APPROVED' AND sp.deleted_at IS NULL
-        ORDER BY sp.created_at DESC
+        WHERE sp.seller_id = ? AND sp.status = 'APPROVED' AND COALESCE(sp.is_paused, 0) = 0 AND sp.deleted_at IS NULL
+        ORDER BY COALESCE(sp.is_featured, 0) DESC, sp.created_at DESC
       `)
       .bind(seller.id)
       .all<any>();
 
-    const safeProducts = (products.results || []).map((p) => ({
-      id: p.id,
-      seller_id: p.seller_id,
-      seller_name: seller.name,
-      game_slug: p.game_slug,
-      game_name: p.game_name,
-      name: p.name,
-      cover_url: p.cover_url,
-      description: p.description,
-      price_core: p.price_core,
-      original_price_core: p.original_price_core,
-      warranty_type: p.warranty_type,
-      warranty_hours: p.warranty_hours,
-      delivery_type: p.delivery_type,
-      product_type: p.product_type || 'digital',
-      weight_grams: p.weight_grams,
-      warehouse_address: p.warehouse_address,
-      sold_count: Number(p.sold_count || 0),
-      created_at: p.created_at,
-      has_stock:
-        String(p.product_type || '').toLowerCase() === 'physical'
+    const safeProducts = (products.results || []).map((p) => {
+      let images: string[] = [];
+      let specs: any[] = [];
+      let variants: any[] = [];
+      try {
+        if (p.images_json) {
+          const arr = JSON.parse(p.images_json);
+          if (Array.isArray(arr)) images = arr.filter((u: any) => typeof u === 'string' && u.trim()).slice(0, 10);
+        }
+      } catch {}
+      if (images.length === 0 && p.cover_url) {
+        images = [p.cover_url];
+      }
+      try {
+        if (p.specs_json) {
+          const arr = JSON.parse(p.specs_json);
+          if (Array.isArray(arr)) specs = arr;
+        }
+      } catch {}
+      try {
+        if (p.variants_json) {
+          const arr = JSON.parse(p.variants_json);
+          if (Array.isArray(arr)) variants = arr;
+        }
+      } catch {}
+
+      const isStockQtyMode =
+        String(p.product_type || '').toLowerCase() === 'physical' ||
+        String(p.fulfillment_mode || '').toUpperCase() === 'MANUAL_SERVICE';
+
+      return {
+        id: p.id,
+        seller_id: p.seller_id,
+        seller_name: seller.name,
+        game_slug: p.game_slug,
+        game_name: p.category_name || p.game_name,
+        industry_id: p.industry_id || 'other',
+        category_name: p.category_name || p.game_name || '',
+        shop_category: p.shop_category || '',
+        sku: p.sku || '',
+        name: p.name,
+        cover_url: images[0] || p.cover_url,
+        images,
+        specs,
+        variants,
+        fulfillment_mode: p.fulfillment_mode || (String(p.product_type || '').toLowerCase() === 'physical' ? 'SHIPPING' : 'AUTO_VAULT'),
+        buyer_note_prompt: p.buyer_note_prompt || '',
+        is_featured: Number(p.is_featured || 0) === 1,
+        description: p.description,
+        price_core: p.price_core,
+        original_price_core: p.original_price_core,
+        warranty_type: p.warranty_type,
+        warranty_hours: p.warranty_hours,
+        delivery_type: p.delivery_type,
+        product_type: p.product_type || 'digital',
+        stock_quantity: isStockQtyMode ? Number(p.stock_quantity || 0) : undefined,
+        weight_grams: p.weight_grams,
+        warehouse_address: p.warehouse_address,
+        sold_count: Number(p.sold_count || 0),
+        created_at: p.created_at,
+        has_stock: isStockQtyMode
           ? Number(p.stock_quantity || 0) > 0
-          : (p.stock_count || 0) > 0, // Không lộ số lượng kho mã thật (§6.1)
-      is_affiliate: p.is_affiliate === 1,
-      supplier_name: (p.is_affiliate === 1 && p.show_supplier !== 0) ? p.supplier_name : null,
-      show_supplier: p.show_supplier !== 0,
-    }));
+          : (p.stock_count || 0) > 0,
+        is_affiliate: p.is_affiliate === 1,
+        supplier_name: (p.is_affiliate === 1 && p.show_supplier !== 0) ? p.supplier_name : null,
+        show_supplier: p.show_supplier !== 0,
+      };
+    });
 
     return new Response(
       JSON.stringify({

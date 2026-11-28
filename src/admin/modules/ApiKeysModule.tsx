@@ -110,6 +110,8 @@ export type ApiKeyScope =
   | 'SUPPLIER_FULFILLMENT_MANAGE'
   | 'INTERSHOP_AFFILIATE_MANAGE'
   | 'SELLER_SEPAY_MANAGE'
+  | 'SELLER_MEDIA_MANAGE'
+  | 'SELLER_VOUCHERS_MANAGE'
   | 'SYNC_FULL' 
   | 'API_KEYS_FULL'
   | 'HISTORY_FULL'
@@ -667,6 +669,28 @@ export const ALL_API_SCOPES: ScopeOption[] = [
     badgeText: 'text-purple-500',
     badgeBorder: 'border-purple-500/20',
     icon: Sparkles,
+  },
+  {
+    id: 'SELLER_MEDIA_MANAGE',
+    name: 'Tải Lên & Phục Vụ Tối Đa 10 Ảnh Sản Phẩm Gian Hàng (Seller Media CDN API)',
+    category: 'Gian Hàng & Đối Tác',
+    description: 'Tải ảnh WebP (<= 350 KB, khử trùng SHA-256) qua POST /api/seller/media/upload và phân phối qua Edge Cache GET /api/product-media/:file.',
+    color: 'sky',
+    badgeBg: 'bg-sky-500/10',
+    badgeText: 'text-sky-500',
+    badgeBorder: 'border-sky-500/20',
+    icon: ShoppingBag,
+  },
+  {
+    id: 'SELLER_VOUCHERS_MANAGE',
+    name: 'Quản Lý Mã Giảm Giá Riêng Từng Gian Hàng (Seller Shop Vouchers API)',
+    category: 'Khuyến Mãi',
+    description: 'Tạo, bật/tắt và xóa mã giảm giá riêng của từng gian hàng đối tác qua GET/POST/PATCH/DELETE /api/seller/vouchers.',
+    color: 'orange',
+    badgeBg: 'bg-orange-500/10',
+    badgeText: 'text-orange-500',
+    badgeBorder: 'border-orange-500/20',
+    icon: Ticket,
   },
   {
     id: 'UNIVERSAL_MALL_FULL',
@@ -3635,6 +3659,37 @@ curl -X PUT "https://universal-mall-shop.pages.dev/api/admin/settings" \
     "deposit_bonus_percent": 10,
     "site_announcement": "🔥 Khuyến mãi nạp ví tặng 10% giá trị nạp trong tuần này!",
     "site_announcement_enabled": true
+  }'`}
+                </pre>
+              </div>
+
+              {/* Module 8: Seller 10-Image CDN & Shop Vouchers */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Ticket className="w-4 h-4 text-orange-500" />
+                  8. Ảnh Sản Phẩm Đa Ngành (Tối Đa 10 Ảnh) & Mã Giảm Giá Gian Hàng (Scopes: SELLER_MEDIA_MANAGE, SELLER_VOUCHERS_MANAGE)
+                </h4>
+                <div className="text-xs text-muted-foreground">
+                  Tải ảnh WebP khử trùng SHA-256 lên CDN Edge và quản lý mã giảm giá riêng của từng gian hàng đối tác.
+                </div>
+                <pre className="p-4 rounded-xl bg-slate-950 text-slate-100 font-mono text-xs overflow-x-auto">
+{`# 1. Tải ảnh sản phẩm WebP (<= 350 KB) lên Edge CDN
+curl -X POST "https://universal-mall-shop.pages.dev/api/seller/media/upload" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_SELLER_OR_API_TOKEN" \\
+  -d '{ "image_url": "https://example.com/product-photo-1.webp" }'
+
+# 2. Tạo mã giảm giá riêng cho Gian hàng
+curl -X POST "https://universal-mall-shop.pages.dev/api/seller/vouchers" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_SELLER_OR_API_TOKEN" \\
+  -d '{
+    "code": "SHOP30K",
+    "title": "Ưu đãi khách mới giảm 30K",
+    "discount_type": "FIXED",
+    "discount_value": 30,
+    "min_order_core": 100,
+    "usage_limit": 200
   }'`}
                 </pre>
               </div>

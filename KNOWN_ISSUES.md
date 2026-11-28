@@ -10,6 +10,14 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-348: Bẫy `validateImageMagicBytes().mime`, Clone Draft Có `id: undefined`, `GET /api/vouchers` Trên D1 Lạnh & Khôi Phục Bootstrap `/seller` Khi Đăng Nhập Lại (28/11/2026)
+- **Nguyên nhân gốc rễ & Bài học (Mục 497)**:
+  1. *Lỗi gán object `{ mime, ext }` ở `upload.ts` & `[file].ts`*: `validateImageMagicBytes()` trả `{ mime, ext }` thay vì chuỗi `string`; gán trực tiếp vào `verifiedMime` gây crash `.split('/')`. Phải dùng `magic.mime` và `magic.ext`.
+  2. *Thiếu `CREATE TABLE IF NOT EXISTS vouchers` & `uploaded_game_icons` trong `ensureSchemaUpgrades`*: `functions/api/vouchers/index.ts` không gọi `ensureSchemaUpgrades`, và `d1_service.ts` chưa tự tạo bảng `vouchers` (chỉ nằm trong `/api/migrate`), khiến `GET /api/vouchers` ném `HTTP 500 D1_ERROR: no such table: vouchers` trên D1 mới. Đã bổ sung Migration `0056_vouchers_and_icons_guard_v1` và gọi `ensureSchemaUpgrades(env.DB)` ngay trong `vouchers/index.ts`.
+  3. *Phân biệt Clone Draft vs Edit trong `SellerProductEditorModal.tsx`*: Khi nhân bản sản phẩm (`{ ...p, id: undefined }`), tuyệt đối dùng `Boolean(editingProduct?.id)` cho `isEditMode` (không dùng `Boolean(editingProduct)`) để submit tạo mới (`POST`) thay vì gọi nhầm `PUT /api/seller/products/undefined`.
+  4. *Phục hồi Token & Bootstrap ở `/seller`*: `App.tsx` `handleUpdateUser` phải so khớp cả `prev.session_token !== usr.session_token`, và `SellerPortalApp.tsx` cần lắng nghe `pine_auth_state_changed` (`loggedIn: true`) cùng fallback token đa nguồn (`localStorage`/`sessionStorage`/cookie/`currentUser.session_token`) để tái đồng bộ ngay sau khi đăng nhập lại.
+- **Giải pháp chuẩn (Đã khóa hồi quy trong `test_multi_industry_seller_10_images.ts` — `17/17 PASS` & E2E trình duyệt 10 ảnh `0` lỗi)**:
+
 ### ISSUE-347: Vòng Lặp Tử Thần Mount–Unmount Gây Đơ Trình Duyệt Tại `/seller`, Dội Vòng Đa Tab `WALLET_UPDATED`, Nhãn `{COUNT}` Trên `/gian-hang/*`, Thiếu Xử Lý HTTP `404` & Cold-Isolate D1 Column Guard (28/11/2026)
 - **Nguyên nhân gốc rễ (Root Cause — Mục 495)**:
   1. *Vòng lặp Mount–Unmount gây đơ trình duyệt trên `/seller`*: Trước Mục 495, `SellerPortalApp.tsx` gắn `<SellerCenterView>` bên trong nhánh `<SellerOnboardingLanding>` khi `isApprovedWorkspace === false`. Khi `GET /api/seller` trả `has_seller: true`, `SellerPortalApp` đổi nhánh JSX sang không gian làm việc toàn màn hình → React gỡ bỏ bản thể #1 và gắn mới bản thể #2 với state mặc định `sellerData = null, loading = true`. Ngay tại commit `0ms`, `useEffect` của bản thể #2 gọi `onPortalContextChange({ hasSeller: false, seller: null })` → `isApprovedWorkspace` sập lại về `false` → lặp vô hạn 20–30 FPS kèm bão request `GET /api/seller` làm treo cứng trình duyệt.

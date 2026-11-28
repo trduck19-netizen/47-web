@@ -78,22 +78,25 @@ export function getProductPackages(product: StoreProduct | UtilityProduct): Prod
 
   // Tương thích đa ngành: Chuyển đổi các biến thể (variants: Size, Màu sắc, Dung lượng...) thành packages
   if (Array.isArray((product as any).variants) && (product as any).variants.length > 0) {
-    return (product as any).variants.map((v: any) => ({
-      id: v.id,
-      name: v.name,
-      price: v.price,
-      original_price: v.original_price || v.price,
-      stock_quantity: v.stock_quantity ?? 0,
-      sold_count: v.sold_count || 0,
-      badge: v.attributes ? Object.values(v.attributes).join(' / ') : undefined,
-      note: v.sku ? `SKU: ${v.sku}` : pkgText('official'),
-      description: product.description,
-      is_active: v.is_active !== false,
-      sale_mode: 'normal',
-      first_purchase_enabled: (product as any).first_purchase_enabled,
-      first_purchase_price: (product as any).first_purchase_price,
-      first_purchase_max_price: (product as any).first_purchase_max_price,
-    }));
+    return (product as any).variants.map((v: any, idx: number) => {
+      const resolvedPrice = Number(v.price ?? v.price_core ?? product.current_price ?? 0);
+      return {
+        id: v.id || `${product.id}_var_${idx + 1}`,
+        name: v.name,
+        price: resolvedPrice,
+        original_price: Number(v.original_price ?? v.original_price_core ?? resolvedPrice),
+        stock_quantity: v.stock_quantity ?? product.stock_quantity ?? 0,
+        sold_count: v.sold_count || 0,
+        badge: v.attributes ? Object.values(v.attributes).join(' / ') : undefined,
+        note: v.sku ? `SKU: ${v.sku}` : pkgText('official'),
+        description: product.description,
+        is_active: v.is_active !== false,
+        sale_mode: 'normal',
+        first_purchase_enabled: (product as any).first_purchase_enabled,
+        first_purchase_price: (product as any).first_purchase_price,
+        first_purchase_max_price: (product as any).first_purchase_max_price,
+      };
+    });
   }
 
   // Fallback 100% cho sản phẩm cũ đơn gói

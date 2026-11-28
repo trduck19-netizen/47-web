@@ -159,10 +159,11 @@ async function main() {
   // =========================================================================
   // PART 3: RBAC Sidebar Filtering (OWNER vs MANAGE_STOCK vs VIEW_ORDERS)
   // =========================================================================
-  check('rbac_owner_gets_all_10_tabs', getAllowedSellerPortalTabs('OWNER').length, 10);
+  check('rbac_owner_gets_all_11_tabs', getAllowedSellerPortalTabs('OWNER').length, 11);
   check(
     'rbac_manage_stock_hides_sensitive_tabs',
     isSellerTabAllowedForRole('products', 'MANAGE_STOCK') &&
+      isSellerTabAllowedForRole('vouchers', 'MANAGE_STOCK') &&
       isSellerTabAllowedForRole('codes', 'MANAGE_STOCK') &&
       !isSellerTabAllowedForRole('sepay', 'MANAGE_STOCK') &&
       !isSellerTabAllowedForRole('finance', 'MANAGE_STOCK') &&
@@ -175,6 +176,7 @@ async function main() {
     isSellerTabAllowedForRole('orders', 'VIEW_ORDERS') &&
       isSellerTabAllowedForRole('disputes', 'VIEW_ORDERS') &&
       !isSellerTabAllowedForRole('products', 'VIEW_ORDERS') &&
+      !isSellerTabAllowedForRole('vouchers', 'VIEW_ORDERS') &&
       !isSellerTabAllowedForRole('codes', 'VIEW_ORDERS') &&
       !isSellerTabAllowedForRole('sepay', 'VIEW_ORDERS') &&
       !isSellerTabAllowedForRole('finance', 'VIEW_ORDERS'),

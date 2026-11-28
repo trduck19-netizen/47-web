@@ -308,6 +308,27 @@ function createMockDb(seed?: Partial<MockState>) {
       return { rows: [], changes: 1 };
     }
     if (sql.startsWith('INSERT INTO seller_products (')) {
+      if (sql.includes('industry_id')) {
+        const [
+          id, seller_id, game_slug, game_name, industry_id, category_name, shop_category, sku,
+          name, cover_url, images_json, specs_json, variants_json,
+          fulfillment_mode, buyer_note_prompt, is_paused, is_featured,
+          description, price_core, original_price_core, warranty_type, warranty_hours,
+          delivery_type, low_stock_threshold, product_type, stock_quantity,
+          weight_grams, warehouse_address, status, created_at, updated_at,
+        ] = args;
+        state.products.set(id, {
+          id, seller_id, game_slug, game_name, industry_id, category_name, shop_category, sku,
+          name, cover_url, images_json, specs_json, variants_json,
+          fulfillment_mode, buyer_note_prompt, is_paused, is_featured,
+          description, price_core, original_price_core, warranty_type, warranty_hours,
+          delivery_type, low_stock_threshold, product_type, stock_quantity,
+          weight_grams, warehouse_address, status, created_at, updated_at,
+          resell_enabled: 0, resell_discount_pct: 0, resell_commission_pct: 0, resell_map_price: 0,
+          is_affiliate: 0, origin_seller_id: null, origin_product_id: null, deleted_at: null,
+        });
+        return { rows: [], changes: 1 };
+      }
       const [
         id, seller_id, game_slug, game_name, name, cover_url, description,
         price_core, original_price_core, warranty_type, warranty_hours,
@@ -325,6 +346,46 @@ function createMockDb(seed?: Partial<MockState>) {
       return { rows: [], changes: 1 };
     }
     if (sql.startsWith('UPDATE seller_products SET name = COALESCE(?, name)')) {
+      if (sql.includes('industry_id = ?')) {
+        const [
+          name, nextIndustryId, nextGameName, nextCategoryName, nextShopCategory, nextSku,
+          nextCoverUrl, nextImagesJson, nextSpecsJson, nextVariantsJson,
+          resolvedFulfillmentMode, nextBuyerPrompt, nextPaused, nextFeatured,
+          description, newPrice, original_price_core, warranty_type, warranty_hours,
+          delivery_type, low_stock_threshold, resolvedProductType, parsedStockQty,
+          parsedWeight, cleanWarehouse, newStatus, nowIso, productId,
+        ] = args;
+        const p = state.products.get(productId);
+        if (!p) return { rows: [], changes: 0 };
+        if (name !== null) p.name = name;
+        p.industry_id = nextIndustryId;
+        p.game_name = nextGameName;
+        p.category_name = nextCategoryName;
+        p.shop_category = nextShopCategory;
+        p.sku = nextSku;
+        p.cover_url = nextCoverUrl;
+        p.images_json = nextImagesJson;
+        p.specs_json = nextSpecsJson;
+        p.variants_json = nextVariantsJson;
+        p.fulfillment_mode = resolvedFulfillmentMode;
+        p.buyer_note_prompt = nextBuyerPrompt;
+        p.is_paused = nextPaused;
+        p.is_featured = nextFeatured;
+        if (description !== null) p.description = description;
+        p.price_core = newPrice;
+        if (original_price_core !== null) p.original_price_core = original_price_core;
+        if (warranty_type !== null) p.warranty_type = warranty_type;
+        if (warranty_hours !== null) p.warranty_hours = warranty_hours;
+        if (delivery_type !== null) p.delivery_type = delivery_type;
+        if (low_stock_threshold !== null) p.low_stock_threshold = low_stock_threshold;
+        if (resolvedProductType !== null) p.product_type = resolvedProductType;
+        if (parsedStockQty !== null) p.stock_quantity = parsedStockQty;
+        if (parsedWeight !== null) p.weight_grams = parsedWeight;
+        if (cleanWarehouse !== null) p.warehouse_address = cleanWarehouse;
+        p.status = newStatus;
+        p.updated_at = nowIso;
+        return { rows: [], changes: 1 };
+      }
       const [
         name, description, newPrice, original_price_core, warranty_type, warranty_hours,
         delivery_type, low_stock_threshold, resolvedProductType, parsedStockQty,
@@ -778,6 +839,25 @@ function createMockDb(seed?: Partial<MockState>) {
             supplier_seller_id: args[18],
           });
         }
+      } else if (sql.includes('discount_core')) {
+        state.orders.set(args[0], {
+          id: args[0],
+          order_code: args[1],
+          seller_id: args[5],
+          product_id: args[6],
+          code_id: args[9],
+          delivered_code: args[10],
+          price_core: args[11],
+          discount_core: args[12],
+          voucher_code: args[13],
+          product_type: args[14],
+          status: 'PAID',
+          selected_variant_json: args[16],
+          buyer_note: args[17],
+          supplier_seller_id: args[18],
+          is_affiliate_order: args[19],
+          affiliate_breakdown: args[20],
+        });
       } else {
         state.orders.set(args[0], {
           id: args[0],

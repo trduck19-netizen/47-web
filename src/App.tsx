@@ -340,7 +340,8 @@ export const App: React.FC = () => {
           prev.id !== usr.id ||
           prev.role !== usr.role ||
           prev.displayName !== usr.displayName ||
-          prev.avatar_url !== usr.avatar_url
+          prev.avatar_url !== usr.avatar_url ||
+          prev.session_token !== usr.session_token
         ) {
           return usr;
         }
@@ -1434,6 +1435,8 @@ export const App: React.FC = () => {
               onOpenEmailModal={() => setIsEmailModalOpen(true)}
               onOpenReceivedCodes={(initialTab = 'marketplace') => handleOpenReceivedCodes(initialTab as any)}
               onOpenProfile={() => setIsProfileModalOpen(true)}
+              onOpenSubmitCode={() => setIsSubmitModalOpen(true)}
+              onOpenBookmarks={() => setIsBookmarkDrawerOpen(true)}
               currentUser={currentUser}
               onShowToast={showToast}
               onLogout={handleLogout}
@@ -1601,7 +1604,7 @@ export const App: React.FC = () => {
           onOpenReceivedCodes={handleOpenReceivedCodes}
           onNavigateToSellerCenter={() => {
             setIsProfileModalOpen(false);
-            handleSelectMallView('seller');
+            window.open(isEn ? '/en/seller' : '/seller', '_blank', 'noopener,noreferrer');
           }}
           onLogout={handleLogout}
           onShowToast={showToast}

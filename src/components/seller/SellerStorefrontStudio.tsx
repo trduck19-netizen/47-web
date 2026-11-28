@@ -10,7 +10,6 @@ import {
   Megaphone,
   Store,
   Sparkles,
-  CheckCircle2,
   AlertCircle,
   Eye,
   QrCode,
@@ -173,19 +172,9 @@ export const SellerStorefrontStudio: React.FC<SellerStorefrontStudioProps> = ({
         </div>
       </div>
 
-      {feedback && (
-        <div
-          className={`mx-4 sm:mx-5 mt-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border ${
-            feedback.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-              : 'bg-destructive/10 border-destructive/30 text-destructive'
-          }`}
-        >
-          {feedback.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-          ) : (
-            <AlertCircle className="w-4 h-4 shrink-0" />
-          )}
+      {feedback && feedback.type === 'error' && (
+        <div className="mx-4 sm:mx-5 mt-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border bg-destructive/10 border-destructive/30 text-destructive">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{feedback.text}</span>
         </div>
       )}

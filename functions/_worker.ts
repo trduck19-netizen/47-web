@@ -244,6 +244,10 @@ import * as homepageSectionsAiSuggestApi from './api/admin/homepage-sections/ai-
 import * as homepageSectionsAiGenerateImageApi from './api/admin/homepage-sections/ai-generate-image';
 import * as homepageImagesApi from './api/homepage-images/[file]';
 import * as homepageImagesProbeApi from './api/homepage-images/probe';
+import * as productMediaApi from './api/product-media/[file]';
+import * as sellerMediaUploadApi from './api/seller/media/upload';
+import * as sellerVouchersIndexApi from './api/seller/vouchers/index';
+import * as sellerVouchersIdApi from './api/seller/vouchers/[id]';
 import * as homepageSectionsPublicApi from './api/homepage-sections';
 // Universal Commerce Platform RESTful APIs
 import * as productsIndexApi from './api/products/index';
@@ -2284,6 +2288,29 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return new Response('Method Not Allowed', { status: 405 });
       }
 
+      // 20.1b. Seller Product Media Upload & Shop Vouchers
+      if (pathname === '/api/seller/media/upload') {
+        if (method === 'OPTIONS') return await sellerMediaUploadApi.onRequestOptions(context);
+        if (method === 'POST') return await sellerMediaUploadApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      if (pathname === '/api/seller/vouchers') {
+        if (method === 'OPTIONS') return await sellerVouchersIndexApi.onRequestOptions(context);
+        if (method === 'GET') return await sellerVouchersIndexApi.onRequestGet(context);
+        if (method === 'POST') return await sellerVouchersIndexApi.onRequestPost(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const matchSellerVoucherId = pathname.match(/^\/api\/seller\/vouchers\/([^/]+)$/);
+      if (matchSellerVoucherId) {
+        context.params = { ...(context.params || {}), id: matchSellerVoucherId[1] };
+        if (method === 'OPTIONS') return await sellerVouchersIdApi.onRequestOptions(context);
+        if (method === 'PATCH') return await sellerVouchersIdApi.onRequestPatch(context);
+        if (method === 'DELETE') return await sellerVouchersIdApi.onRequestDelete(context);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
       // 20.2. Seller Products Management
       if (pathname === '/api/seller/products') {
         if (method === 'OPTIONS') return await sellerProductsIndexApi.onRequestOptions();
@@ -2950,6 +2977,18 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         };
         if (method === 'OPTIONS') return await homepageImagesApi.onRequestOptions();
         if (method === 'GET' || method === 'HEAD') return await homepageImagesApi.onRequestGet(imageContext);
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      // Phục vụ ảnh sản phẩm gian hàng (tối đa 10 ảnh WebP/SP) tại /api/product-media/<file>
+      if (pathname.startsWith('/api/product-media/')) {
+        const fileParam = pathname.replace(/^\/api\/product-media\//, '');
+        const mediaContext = {
+          ...context,
+          params: { file: fileParam },
+        };
+        if (method === 'OPTIONS') return await productMediaApi.onRequestOptions();
+        if (method === 'GET' || method === 'HEAD') return await productMediaApi.onRequestGet(mediaContext);
         return new Response('Method Not Allowed', { status: 405 });
       }
 

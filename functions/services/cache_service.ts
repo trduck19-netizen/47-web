@@ -149,6 +149,8 @@ export function shouldBumpCatalogEpoch(pathname: string, method: string): boolea
     '/api/products',
     '/api/categories',
     '/api/seller/products',
+    '/api/seller/media',
+    '/api/seller/vouchers',
     '/api/seller/sepay',
     '/api/admin/seller-products',
     '/api/admin/sellers',

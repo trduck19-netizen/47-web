@@ -213,8 +213,8 @@ export async function verifyStoreApiAccess(
       };
     }
 
-    // Scope check: PRODUCTS only allows products & categories endpoints
-    if (apiKey.scope === 'PRODUCTS' && !pathname.includes('/products') && !pathname.includes('/categories') && !pathname.includes('/stats')) {
+    // Scope check: PRODUCTS only allows products, media, vouchers & categories endpoints
+    if (apiKey.scope === 'PRODUCTS' && !pathname.includes('/products') && !pathname.includes('/media') && !pathname.includes('/vouchers') && !pathname.includes('/categories') && !pathname.includes('/stats')) {
       await logStoreApiCall(env.DB, apiKey.seller_id, apiKey.id, 'STORE_API_KEY', pathname, method, 403, clientIp);
       return {
         authorized: false,
@@ -352,7 +352,7 @@ export async function verifyStoreApiAccess(
       };
     }
 
-    if (appAuth.scope === 'PRODUCTS_ONLY' && !pathname.includes('/products') && !pathname.includes('/codes')) {
+    if (appAuth.scope === 'PRODUCTS_ONLY' && !pathname.includes('/products') && !pathname.includes('/media') && !pathname.includes('/vouchers') && !pathname.includes('/codes')) {
       await logStoreApiCall(env.DB, appAuth.seller_id, appAuth.id, 'THIRD_PARTY_TOKEN', pathname, method, 403, clientIp);
       return {
         authorized: false,

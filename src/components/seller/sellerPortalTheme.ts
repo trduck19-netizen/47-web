@@ -9,6 +9,7 @@ export type SellerPortalThemePreset = 'shopee_orange' | 'enterprise_indigo' | 'e
 export type SellerPortalTabId =
   | 'dashboard'
   | 'products'
+  | 'vouchers'
   | 'codes'
   | 'orders'
   | 'disputes'
@@ -113,6 +114,7 @@ export function getSellerPortalPalette(preset?: string | null): ThemePresetPalet
 const ALL_SELLER_TABS: SellerPortalTabId[] = [
   'dashboard',
   'products',
+  'vouchers',
   'codes',
   'orders',
   'disputes',
@@ -125,7 +127,7 @@ const ALL_SELLER_TABS: SellerPortalTabId[] = [
 
 const RBAC_ALLOWED_TABS: Record<SellerSubRole, SellerPortalTabId[]> = {
   OWNER: ALL_SELLER_TABS,
-  MANAGE_STOCK: ['dashboard', 'products', 'codes', 'orders'],
+  MANAGE_STOCK: ['dashboard', 'products', 'vouchers', 'codes', 'orders'],
   VIEW_ORDERS: ['dashboard', 'orders', 'disputes'],
 };
 
@@ -148,6 +150,7 @@ export function isSellerTabAllowedForRole(tab: SellerPortalTabId, role?: string 
 const HASH_TO_TAB: Record<string, SellerPortalTabId> = {
   dashboard: 'dashboard',
   products: 'products',
+  vouchers: 'vouchers',
   codes: 'codes',
   orders: 'orders',
   disputes: 'disputes',

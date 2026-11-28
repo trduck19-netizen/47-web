@@ -16,6 +16,7 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Wrench,
   Megaphone,
   BellRing,
@@ -116,6 +117,24 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const { brand } = useBrand();
   const isEn = language === 'en';
   const [navSearch, setNavSearch] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<number, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem('pine_admin_sidebar_groups_v1');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleGroupCollapse = (idx: number) => {
+    setCollapsedGroups((prev) => {
+      const next = { ...prev, [idx]: !prev[idx] };
+      try {
+        localStorage.setItem('pine_admin_sidebar_groups_v1', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const sections: NavSection[] = [
     {
@@ -438,13 +457,36 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </div>
         )}
 
-        {filteredSections.map((section, sIdx) => (
+        {filteredSections.map((section, sIdx) => {
+          const hasActiveItem = section.items.some((it) => it.id === currentTab);
+          const isGroupCollapsed =
+            !collapsed && !navSearch.trim() && !hasActiveItem && Boolean(collapsedGroups[sIdx]);
+
+          return (
           <div key={sIdx} className="space-y-1">
             {!collapsed && (
-              <div className="px-3 text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
-                {section.title}
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleGroupCollapse(sIdx)}
+                aria-expanded={!isGroupCollapsed}
+                className="w-full px-3 py-1 flex items-center justify-between text-[10px] font-bold tracking-wider text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 uppercase rounded-lg transition cursor-pointer"
+              >
+                <span className="truncate">{section.title}</span>
+                <span className="flex items-center gap-1 shrink-0">
+                  {isGroupCollapsed && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] text-slate-500 font-semibold">
+                      {section.items.length}
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-150 ${
+                      isGroupCollapsed ? '-rotate-90' : 'rotate-0'
+                    }`}
+                  />
+                </span>
+              </button>
             )}
+            {!isGroupCollapsed && (
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon;
@@ -550,8 +592,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 );
               })}
             </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Footer Info & Client Link */}

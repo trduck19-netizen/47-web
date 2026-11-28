@@ -42,7 +42,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     let query = `
       SELECT id, order_code, parent_order_id, buyer_member_id, buyer_name, product_id, product_name, game_slug,
-             price_core, payment_method, status, hold_until, released_at, fee_core, refund_core,
+             product_type, price_core, discount_core, voucher_code, payment_method, status, hold_until, released_at, fee_core, refund_core,
+             selected_variant_json, buyer_note, tracking_code, shipping_carrier, fulfillment_note, shipping_address,
              sepay_transaction_id, report_reason, report_note, reported_at,
              resolution_type, resolution_note, resolved_at,
              supplier_seller_id, is_affiliate_order, affiliate_breakdown,
@@ -70,10 +71,22 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
     const countResult = await env.DB.prepare(countQuery).bind(...countBinds).first<{ total: number }>();
 
+    const mappedOrders = (ordersResult.results || []).map((o: any) => {
+      let parsedVar: any = null;
+      try {
+        if (o.selected_variant_json) parsedVar = JSON.parse(o.selected_variant_json);
+      } catch {}
+      return {
+        ...o,
+        selected_variant: parsedVar?.name || o.selected_variant || null,
+        voucher_discount_core: Number(o.discount_core || 0),
+      };
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
-        orders: ordersResult.results || [],
+        orders: mappedOrders,
         pagination: {
           page,
           limit,

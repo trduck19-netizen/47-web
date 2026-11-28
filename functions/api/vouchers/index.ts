@@ -1,4 +1,5 @@
 import { CORS_HEADERS, Env, verifyAdminAuth, verifyAiKeyAuth } from '../../services/mission_service';
+import { ensureSchemaUpgrades } from '../../services/d1_service';
 
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -18,6 +19,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         { status: 500, headers: CORS_HEADERS }
       );
     }
+
+    await ensureSchemaUpgrades(env.DB);
 
     const url = new URL(request.url);
     const voucherType = url.searchParams.get('type') || ''; // 'freeship' | 'discount'
@@ -70,6 +73,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         { status: 500, headers: CORS_HEADERS }
       );
     }
+
+    await ensureSchemaUpgrades(env.DB);
 
     const adminCheck = await verifyAdminAuth(request, env);
     let isAuthorized = adminCheck.authorized;

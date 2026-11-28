@@ -15,6 +15,7 @@ import {
   X,
   Store,
   Lock,
+  Ticket,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBrand } from '../../context/BrandContext';
@@ -96,6 +97,11 @@ export const SellerPortalSidebar: React.FC<SellerPortalSidebarProps> = ({
           id: 'products',
           labelKey: 'sellerPortal.sidebar.products',
           icon: Package,
+        },
+        {
+          id: 'vouchers',
+          labelKey: 'sellerPortal.sidebar.vouchers',
+          icon: Ticket,
         },
         {
           id: 'codes',
