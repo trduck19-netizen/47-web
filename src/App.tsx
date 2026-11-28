@@ -328,7 +328,7 @@ export const App: React.FC = () => {
     []
   );
 
-  const handleUpdateUser = useCallback((usr: UserProfile) => {
+  const handleUpdateUser = useCallback((usr: UserProfile, options?: { broadcast?: boolean }) => {
     setCurrentUser((prev) => {
       if (!prev && !usr) return null;
       if (!prev && usr) return usr;
@@ -348,7 +348,8 @@ export const App: React.FC = () => {
       }
       return usr;
     });
-    if (usr) {
+    // Chỉ phát sự kiện đa tab khi được kích hoạt chủ động (tránh dội ngược ping-pong giữa 2 tab đang mở song song)
+    if (usr && options?.broadcast === true) {
       const bal = Number((usr as any).balance ?? usr.wallet_balance ?? 0);
       broadcastCrossTabEvent('WALLET_UPDATED', { balance: bal });
     }
@@ -363,7 +364,7 @@ export const App: React.FC = () => {
     const handleUserUpdate = (e: any) => {
       const u = e?.detail !== undefined ? e.detail : dataService.getCurrentUser();
       if (u) {
-        handleUpdateUser(u);
+        handleUpdateUser(u, { broadcast: false });
       } else {
         setCurrentUser(null);
       }
@@ -378,7 +379,7 @@ export const App: React.FC = () => {
         dataService.refreshCurrentUserBalance().then(() => {
           const fresh = dataService.getCurrentUser();
           if (fresh) {
-            setCurrentUser(fresh);
+            handleUpdateUser(fresh, { broadcast: false });
           }
         }).catch(() => {});
       }
@@ -1244,7 +1245,7 @@ export const App: React.FC = () => {
             isOpen={isAuthModalOpen}
             onClose={() => setIsAuthModalOpen(false)}
             onSuccess={(u: UserProfile) => {
-              handleUpdateUser(u);
+              handleUpdateUser(u, { broadcast: true });
               broadcastCrossTabEvent('AUTH_UPDATED');
             }}
             onShowToast={showToast}
@@ -1254,7 +1255,7 @@ export const App: React.FC = () => {
             isOpen={isWalletModalOpen}
             onClose={() => setIsWalletModalOpen(false)}
             user={currentUser}
-            onUpdateUser={handleUpdateUser}
+            onUpdateUser={(u: UserProfile) => handleUpdateUser(u, { broadcast: true })}
             onShowToast={showToast}
             onOpenAuth={() => setIsAuthModalOpen(true)}
           />

@@ -1,5 +1,5 @@
-=== RULE 10 PRE-PUSH SECURITY SCAN (2026-11-28T07:17:53.807Z) ===
-wcg_secret_key: 0
-telegram_bot_token: 0
-private_key_block: 0
+Rule 10 Pre-Push Security Scan
+1) wcg keys: 0 matches
+2) telegram tokens: 0 matches
+3) private keys: 0 matches
 TOTAL_VIOLATIONS=0

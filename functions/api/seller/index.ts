@@ -1,7 +1,35 @@
 import { verifyMemberAuth } from '../../services/mission_service';
 import { ensureMarketplaceSchema, logAdminAudit } from '../../services/d1_service';
-import { getMarketplaceConfig, SellerRecord } from '../../services/marketplace_service';
+import { getMarketplaceConfig } from '../../services/marketplace_service';
 import { verifyStoreApiAccess } from '../../services/store_api_service';
+import { bumpCatalogEpoch } from '../../services/cache_service';
+
+const ALLOWED_BANNER_PRESETS = new Set([
+  'shopee_flame',
+  'aurora_indigo',
+  'cyber_emerald',
+  'royal_violet',
+  'crimson_gaming',
+  'gold_luxury',
+]);
+
+function sanitizeMediaUrl(raw: unknown): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return '';
+  if (typeof raw !== 'string') return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  if (/^(javascript|vbscript):/i.test(trimmed)) return '';
+  if (
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('data:image/')
+  ) {
+    return trimmed.slice(0, 180000);
+  }
+  return '';
+}
 
 interface Env {
   DB: D1Database;
@@ -332,7 +360,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 };
 
-// PUT: Cập nhật thông tin gian hàng (giờ hỗ trợ, chính sách, mô tả, avatar, cover)
+// PUT: Cập nhật thông tin & trang trí gian hàng (tên shop, giờ hỗ trợ, chính sách, mô tả, avatar, cover, chủ đề bìa, thông báo ghim)
 export const onRequestPut: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
@@ -349,6 +377,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     const body = (await request.json().catch(() => ({}))) as any;
 
     const {
+      name,
       description,
       support_hours,
       warranty_policy,
@@ -356,38 +385,94 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       avatar_url,
       cover_url,
       contact_phone,
+      banner_preset,
+      pinned_notice,
     } = body;
+
+    let cleanName: string | null = null;
+    if (name !== undefined && typeof name === 'string') {
+      const trimmedName = name.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
+      if (trimmedName.length < 3 || trimmedName.length > 50) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Tên gian hàng phải từ 3 đến 50 ký tự.' }),
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      const dupName = await env.DB
+        .prepare('SELECT id FROM sellers WHERE LOWER(TRIM(name)) = LOWER(?) AND id != ? AND deleted_at IS NULL LIMIT 1')
+        .bind(trimmedName, seller.id)
+        .first<any>();
+      if (dupName) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Tên gian hàng này đã được người khác sử dụng.' }),
+          { status: 409, headers: CORS_HEADERS }
+        );
+      }
+      cleanName = trimmedName;
+    }
+
+    const cleanAvatar = sanitizeMediaUrl(avatar_url);
+    const cleanCover = sanitizeMediaUrl(cover_url);
+    const cleanBannerPreset =
+      typeof banner_preset === 'string' && ALLOWED_BANNER_PRESETS.has(banner_preset.trim())
+        ? banner_preset.trim()
+        : null;
+    const cleanPinnedNotice =
+      pinned_notice !== undefined
+        ? String(pinned_notice || '').replace(/[<>]/g, '').trim().slice(0, 240)
+        : null;
 
     const nowIso = new Date().toISOString();
 
     await env.DB
       .prepare(`
         UPDATE sellers
-        SET description = COALESCE(?, description),
+        SET name = COALESCE(?, name),
+            description = COALESCE(?, description),
             support_hours = COALESCE(?, support_hours),
             warranty_policy = COALESCE(?, warranty_policy),
             refund_policy = COALESCE(?, refund_policy),
-            avatar_url = COALESCE(?, avatar_url),
-            cover_url = COALESCE(?, cover_url),
+            avatar_url = CASE WHEN ? IS NOT NULL THEN ? ELSE avatar_url END,
+            cover_url = CASE WHEN ? IS NOT NULL THEN ? ELSE cover_url END,
             contact_phone = COALESCE(?, contact_phone),
+            banner_preset = COALESCE(?, banner_preset),
+            pinned_notice = CASE WHEN ? IS NOT NULL THEN ? ELSE pinned_notice END,
             updated_at = ?
         WHERE id = ?
       `)
       .bind(
-        description !== undefined ? description : null,
-        support_hours !== undefined ? support_hours : null,
-        warranty_policy !== undefined ? warranty_policy : null,
-        refund_policy !== undefined ? refund_policy : null,
-        avatar_url !== undefined ? avatar_url : null,
-        cover_url !== undefined ? cover_url : null,
-        contact_phone !== undefined ? contact_phone : null,
+        cleanName,
+        description !== undefined ? String(description || '').slice(0, 600) : null,
+        support_hours !== undefined ? String(support_hours || '').slice(0, 80) : null,
+        warranty_policy !== undefined ? String(warranty_policy || '').slice(0, 400) : null,
+        refund_policy !== undefined ? String(refund_policy || '').slice(0, 400) : null,
+        cleanAvatar !== undefined ? cleanAvatar : null,
+        cleanAvatar !== undefined ? (cleanAvatar || null) : null,
+        cleanCover !== undefined ? cleanCover : null,
+        cleanCover !== undefined ? (cleanCover || null) : null,
+        contact_phone !== undefined ? String(contact_phone || '').slice(0, 40) : null,
+        cleanBannerPreset,
+        pinned_notice !== undefined ? cleanPinnedNotice : null,
+        pinned_notice !== undefined ? (cleanPinnedNotice || null) : null,
         nowIso,
         seller.id
       )
       .run();
 
+    await bumpCatalogEpoch(env.DB).catch(() => {});
+
+    const updatedSeller = await env.DB
+      .prepare('SELECT * FROM sellers WHERE id = ? LIMIT 1')
+      .bind(seller.id)
+      .first<any>()
+      .catch(() => null);
+
     return new Response(
-      JSON.stringify({ success: true, message: 'Đã cập nhật thông tin gian hàng.' }),
+      JSON.stringify({
+        success: true,
+        message: 'Đã cập nhật thông tin và giao diện gian hàng thành công.',
+        seller: updatedSeller || seller,
+      }),
       { status: 200, headers: CORS_HEADERS }
     );
   } catch (err: any) {

@@ -2788,7 +2788,7 @@ export const UniversalMallView: React.FC<UniversalMallViewProps> = ({
                     ? t('mall.breadcrumb.store_singular')
                     : t('mall.breadcrumb.store_plural', { count: effectiveStoreBreadcrumbCount })
                 )}
-                {subView === 'store-detail' && (t.mall?.breadcrumb?.store || (language === 'en' ? 'Official Store' : 'Gian Hàng Chính Hãng'))}
+                {subView === 'store-detail' && t('mall.breadcrumb.partnerStore')}
                 {subView === 'giveaways' && (language === 'en' ? 'Giveaways & Free Gifts' : 'Săn Quà Giveaway')}
                 {subView === 'utilities' && (language === 'en' ? 'Digital Utilities & Top-up' : 'Kho Tiện Ích Số & Thẻ Nạp')}
                 {subView === 'platform-solutions' && (language === 'en' ? 'Platform Solutions' : 'Giải Pháp Sàn & Mở Web')}

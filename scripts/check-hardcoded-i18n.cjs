@@ -42,6 +42,8 @@ const IN_SCOPE_UI_FILES = [
   'src/components/seller/SellerPortalSidebar.tsx',
   'src/components/seller/SellerPortalTopbar.tsx',
   'src/components/seller/SellerOnboardingLanding.tsx',
+  'src/components/seller/PublicStoreView.tsx',
+  'src/components/seller/SellerStorefrontStudio.tsx',
   'src/components/cart/CartDrawerModal.tsx',
 ];
 

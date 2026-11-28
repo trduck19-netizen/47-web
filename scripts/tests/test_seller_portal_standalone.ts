@@ -42,7 +42,7 @@ function createMockDb() {
         return val !== undefined ? { value: val } : null;
       }
       if (u.includes('FROM SCHEMA_MIGRATIONS')) {
-        return { name: '0053_seller_direct_sepay_gateway_v1' };
+        return { name: '0054_seller_storefront_branding_v1' };
       }
       return null;
     };
@@ -58,6 +58,7 @@ function createMockDb() {
             { name: '0051_seller_affiliate_system_v1' },
             { name: '0052_seller_products_stock_quantity_v1' },
             { name: '0053_seller_direct_sepay_gateway_v1' },
+            { name: '0054_seller_storefront_branding_v1' },
           ],
         };
       }
@@ -266,6 +267,137 @@ async function main() {
   check('e2e_fix_subaccount_uses_owner_member_id', subSrc.includes('storeAuth.seller.owner_member_id') && !subSrc.includes('storeAuth.seller.member_id'), true);
   const repSrc = fs.readFileSync(path.resolve(root, 'functions/api/seller-orders/[id]/report.ts'), 'utf8');
   check('e2e_fix_report_allows_paid_and_delivered', repSrc.includes("order.status !== 'DELIVERED' && order.status !== 'PAID'"), true);
+
+  // =========================================================================
+  // PART 8: Anti-Freeze Single-Source Bootstrap, Echo Loop Guard & Storefront Upgrade
+  // =========================================================================
+  const portalAppSrc = fs.readFileSync(path.resolve(root, 'src/components/seller/SellerPortalApp.tsx'), 'utf8');
+  check(
+    'anti_freeze_portal_single_source_bootstrap',
+    portalAppSrc.includes('fetchPortalBootstrap') &&
+      portalAppSrc.includes('initialBootstrap={sellerSnapshot}') &&
+      portalAppSrc.includes("const currentUserId = currentUser?.id ? String(currentUser.id) : '';") &&
+      portalAppSrc.includes('else if (res.status === 404)') &&
+      portalAppSrc.includes('AbortController'),
+    true
+  );
+  check(
+    'anti_freeze_portal_guards_transient_loading_wipe',
+    portalAppSrc.includes('if (snapshot.loading && !snapshot.hasSeller && prev.hasSeller)'),
+    true
+  );
+
+  const centerSrc = fs.readFileSync(path.resolve(root, 'src/components/seller/SellerCenterView.tsx'), 'utf8');
+  check(
+    'anti_freeze_center_consumes_initial_bootstrap_and_guards_emit',
+    centerSrc.includes('initialBootstrap?:') &&
+      centerSrc.includes('bootstrappedRef') &&
+      centerSrc.includes("const currentUserId = currentUser?.id ? String(currentUser.id) : '';") &&
+      centerSrc.includes('if (loading && !sellerData) return;'),
+    true
+  );
+
+  check(
+    'anti_echo_app_wallet_broadcast_opt_in_only',
+    appSrc.includes('options?: { broadcast?: boolean }') &&
+      appSrc.includes('if (usr && options?.broadcast === true)') &&
+      appSrc.includes('{ broadcast: false }'),
+    true
+  );
+
+  check(
+    'storefront_breadcrumb_eliminates_raw_count_token',
+    mallSrc.includes("t('mall.breadcrumb.partnerStore')") && !mallSrc.includes('t.mall?.breadcrumb?.store'),
+    true
+  );
+
+  const swSrc = fs.readFileSync(path.resolve(root, 'public/sw.js'), 'utf8');
+  check(
+    'sw_v11_drops_stale_root_and_logo_png_precache',
+    swSrc.includes("const CACHE_NAME = 'codegame-pwa-v11'") && !swSrc.includes("'/logo.png'") && !swSrc.includes("'/',"),
+    true
+  );
+
+  const workerSrc = fs.readFileSync(path.resolve(root, 'functions/_worker.ts'), 'utf8');
+  check(
+    'worker_ssr_handles_gian_hang_storefront_paths',
+    workerSrc.includes("pathname.startsWith('/gian-hang/')") &&
+      workerSrc.includes("pathname.startsWith('/en/gian-hang/')") &&
+      workerSrc.includes('canonicalStorePath'),
+    true
+  );
+
+  const d1Src = fs.readFileSync(path.resolve(root, 'functions/services/d1_service.ts'), 'utf8');
+  check(
+    'd1_migration_0054_storefront_branding_and_cold_guard',
+    d1Src.includes('0054_seller_storefront_branding_v1') &&
+      d1Src.includes("pragma_table_info('sellers')") &&
+      d1Src.includes('banner_preset'),
+    true
+  );
+
+  const sellerApiSrc = fs.readFileSync(path.resolve(root, 'functions/api/seller/index.ts'), 'utf8');
+  const storeApiSrc = fs.readFileSync(path.resolve(root, 'functions/api/stores/[slug]/index.ts'), 'utf8');
+  const storeProductsApiSrc = fs.readFileSync(path.resolve(root, 'functions/api/stores/[slug]/products.ts'), 'utf8');
+  check(
+    'api_seller_put_supports_storefront_branding_fields',
+    sellerApiSrc.includes('ALLOWED_BANNER_PRESETS') &&
+      sellerApiSrc.includes('sanitizeMediaUrl') &&
+      sellerApiSrc.includes('pinned_notice') &&
+      sellerApiSrc.includes('bumpCatalogEpoch'),
+    true
+  );
+  check(
+    'api_stores_returns_live_metrics_and_branding',
+    storeApiSrc.includes('banner_preset') &&
+      storeApiSrc.includes('pinned_notice') &&
+      storeApiSrc.includes('completed_orders_count') &&
+      storeApiSrc.includes('total_products'),
+    true
+  );
+  check(
+    'api_store_products_returns_sold_count_and_physical_stock',
+    storeProductsApiSrc.includes('sold_count') && storeProductsApiSrc.includes('stock_quantity'),
+    true
+  );
+
+  const pubStoreSrc = fs.readFileSync(path.resolve(root, 'src/components/seller/PublicStoreView.tsx'), 'utf8');
+  const studioSrc = fs.readFileSync(path.resolve(root, 'src/components/seller/SellerStorefrontStudio.tsx'), 'utf8');
+  const themesSrc = fs.readFileSync(path.resolve(root, 'src/components/seller/storefrontThemes.ts'), 'utf8');
+  check(
+    'public_store_view_flagship_mwg_patterns_and_404_fallback',
+    pubStoreSrc.includes('role="tablist"') &&
+      pubStoreSrc.includes('<article') &&
+      pubStoreSrc.includes("contentVisibility: 'auto'") &&
+      pubStoreSrc.includes('resolveProductCoverImage') &&
+      pubStoreSrc.includes('onError'),
+    true
+  );
+  check(
+    'seller_storefront_studio_embeds_6_themes_and_live_preview',
+    studioSrc.includes('STOREFRONT_BANNER_PRESETS') &&
+      studioSrc.includes('ImageUploadInput') &&
+      studioSrc.includes('PUT') &&
+      themesSrc.includes('aurora_indigo') &&
+      themesSrc.includes('shopee_flame') &&
+      themesSrc.includes('gold_luxury'),
+    true
+  );
+
+  const viPubLeaves = flattenLeaves(viDict.publicStore || {});
+  const enPubLeaves = flattenLeaves(enDict.publicStore || {});
+  const viStudioLeaves = flattenLeaves(viDict.sellerStoreStudio || {});
+  const enStudioLeaves = flattenLeaves(enDict.sellerStoreStudio || {});
+  check(
+    'rule12_storefront_and_studio_dict_symmetry',
+    viPubLeaves.length >= 60 &&
+      JSON.stringify(viPubLeaves.sort()) === JSON.stringify(enPubLeaves.sort()) &&
+      viStudioLeaves.length >= 30 &&
+      JSON.stringify(viStudioLeaves.sort()) === JSON.stringify(enStudioLeaves.sort()) &&
+      Boolean(viDict.mall?.breadcrumb?.partnerStore) &&
+      Boolean(enDict.mall?.breadcrumb?.partnerStore),
+    true
+  );
 
   const passed = results.filter((r) => r.pass).length;
   const failed = results.filter((r) => !r.pass);

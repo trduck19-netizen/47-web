@@ -38,12 +38,16 @@ import {
   Check,
   Share2,
   QrCode,
+  Palette,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getActiveBrandIdentity } from '../../utils/brandRuntime';
+import { formatCore } from '../../utils/textUtils';
+import { resolveProductCoverImage, PHYSICAL_DEFAULT_IMAGE_URL } from '../../utils/safeImageUrl';
 import { Game } from '../../types/game';
 import { SellerAffiliateManager, ResellSettingsModal } from './SellerAffiliateManager';
 import { SellerSepayManager } from './SellerSepayManager';
+import { SellerStorefrontStudio } from './SellerStorefrontStudio';
 import type { SellerPortalConfigData, SellerPortalTabId, SellerSubRole } from './sellerPortalTheme';
 import type { SellerSepayTopbarSummary } from './SellerPortalTopbar';
 
@@ -64,6 +68,7 @@ interface SellerCenterViewProps {
   games: Game[];
   onNavigateHome: () => void;
   portalMode?: boolean;
+  initialBootstrap?: SellerPortalContextSnapshot;
   controlledTab?: SellerPortalTabId;
   onControlledTabChange?: (tab: SellerPortalTabId) => void;
   onPortalContextChange?: (snapshot: SellerPortalContextSnapshot) => void;
@@ -75,18 +80,25 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
   games,
   onNavigateHome,
   portalMode = false,
+  initialBootstrap,
   controlledTab,
   onControlledTabChange,
   onPortalContextChange,
 }) => {
   const { t, language } = useLanguage();
   const isEn = language === 'en';
-  const [loading, setLoading] = useState<boolean>(true);
-  const [sellerData, setSellerData] = useState<any>(null);
-  const [subRole, setSubRole] = useState<SellerSubRole>('OWNER');
-  const [sepaySummary, setSepaySummary] = useState<SellerSepayTopbarSummary | null>(null);
-  const [portalConfigState, setPortalConfigState] = useState<SellerPortalConfigData | undefined>(undefined);
-  const [stats, setStats] = useState<any>(null);
+  const currentUserId = currentUser?.id ? String(currentUser.id) : '';
+  const hasBootstrap = Boolean(initialBootstrap && !initialBootstrap.loading);
+  const [loading, setLoading] = useState<boolean>(() => (hasBootstrap ? false : true));
+  const [sellerData, setSellerData] = useState<any>(() => (hasBootstrap ? initialBootstrap?.seller || null : null));
+  const [subRole, setSubRole] = useState<SellerSubRole>(() => (hasBootstrap ? initialBootstrap?.subRole || 'OWNER' : 'OWNER'));
+  const [sepaySummary, setSepaySummary] = useState<SellerSepayTopbarSummary | null>(() =>
+    hasBootstrap ? initialBootstrap?.sepaySummary || null : null
+  );
+  const [portalConfigState, setPortalConfigState] = useState<SellerPortalConfigData | undefined>(() =>
+    hasBootstrap ? initialBootstrap?.portalConfig : undefined
+  );
+  const [stats, setStats] = useState<any>(() => (hasBootstrap ? initialBootstrap?.stats || null : null));
   const [internalActiveTab, setInternalActiveTab] = useState<SellerPortalTabId>('dashboard');
   const activeTab: SellerPortalTabId = portalMode && controlledTab ? controlledTab : internalActiveTab;
   const setActiveTab = useCallback(
@@ -249,17 +261,27 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (currentUser) {
-      fetchSellerInfo();
-    } else {
-      setLoading(false);
-    }
-  }, [currentUser]);
+  const bootstrappedRef = React.useRef<boolean>(hasBootstrap);
 
-  // Đồng bộ snapshot trạng thái gian hàng lên SellerPortalApp (Sidebar RBAC + Topbar badges)
+  useEffect(() => {
+    if (!currentUserId) {
+      setLoading(false);
+      return;
+    }
+    if (bootstrappedRef.current) {
+      bootstrappedRef.current = false;
+      if (sellerData) {
+        fetchDisputes();
+      }
+      return;
+    }
+    fetchSellerInfo();
+  }, [currentUserId]);
+
+  // Đồng bộ snapshot trạng thái gian hàng lên SellerPortalApp (CHỈ phát khi đã xong loading để tuyệt đối không gây vòng lặp remount!)
   useEffect(() => {
     if (!portalMode || !onPortalContextChange) return;
+    if (loading && !sellerData) return;
     onPortalContextChange({
       loading,
       hasSeller: Boolean(sellerData),
@@ -1487,33 +1509,146 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
       </div>
       )}
 
-      {/* Tab 1: Dashboard (§4) */}
+      {/* Tab 1: Dashboard (§4) — Executive Merchant Overview */}
       {activeTab === 'dashboard' && stats && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? "Today's Revenue" : 'Doanh Thu Hôm Nay'}</div>
-              <div className="text-2xl font-black text-foreground flex items-center gap-1.5">
-                {stats.today_revenue_core.toLocaleString()} <span className="text-xs font-semibold text-amber-500">Core</span>
+        <div className="space-y-5">
+          {/* 4 KPI Cards (Dynamic formatCore) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div className="p-4 rounded-2xl bg-card border border-border shadow-xs hover:border-primary/40 transition">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-xs text-muted-foreground font-semibold">{t('sellerStoreStudio.kpiTodayRevenue')}</span>
+                <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <Coins className="w-4 h-4" />
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                {formatCore(stats.today_revenue_core, isEn)}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? '30-Day Revenue' : 'Doanh Thu 30 Ngày'}</div>
-              <div className="text-2xl font-black text-foreground flex items-center gap-1.5">
-                {stats.month_revenue_core.toLocaleString()} <span className="text-xs font-semibold text-amber-500">Core</span>
+
+            <div className="p-4 rounded-2xl bg-card border border-border shadow-xs hover:border-primary/40 transition">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-xs text-muted-foreground font-semibold">{t('sellerStoreStudio.kpi30DayRevenue')}</span>
+                <span className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                  <ShoppingBag className="w-4 h-4" />
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                {formatCore(stats.month_revenue_core, isEn)}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? 'Pending Balance' : 'Số Dư Chờ Rút'}</div>
-              <div className="text-2xl font-black text-emerald-500 flex items-center gap-1.5">
-                {stats.pending_balance_core.toLocaleString()} <span className="text-xs font-semibold">Core</span>
+
+            <div className="p-4 rounded-2xl bg-card border border-border shadow-xs hover:border-primary/40 transition">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-xs text-muted-foreground font-semibold">{t('sellerStoreStudio.kpiPendingBalance')}</span>
+                <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                  <Clock className="w-4 h-4" />
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-500 tracking-tight">
+                {formatCore(stats.pending_balance_core, isEn)}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-card border border-border">
-              <div className="text-xs text-muted-foreground font-medium mb-1">{isEn ? 'Store Reputation Score' : 'Điểm Uy Tín Gian Hàng'}</div>
-              <div className="text-2xl font-black text-primary">
-                {stats.reputation_score} <span className="text-xs font-normal text-muted-foreground">/ 100</span>
+
+            <div className="p-4 rounded-2xl bg-card border border-border shadow-xs hover:border-primary/40 transition">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-xs text-muted-foreground font-semibold">{t('sellerStoreStudio.kpiReputation')}</span>
+                <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Shield className="w-4 h-4" />
+                </span>
               </div>
+              <div className="text-xl sm:text-2xl font-black text-primary tracking-tight">
+                {stats.reputation_score} <span className="text-xs font-medium text-muted-foreground">/ 100</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Store Readiness Checklist & 1-Click Quick Actions */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span>{t('sellerStoreStudio.readinessTitle')}</span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('sellerStoreStudio.readinessSubtitle')}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('products');
+                    handleOpenCreateProductModal();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm hover:opacity-95 transition cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{t('sellerStoreStudio.quickAddProduct')}</span>
+                </button>
+                {subRole === 'OWNER' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('settings')}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-background hover:bg-muted text-foreground text-xs font-bold transition cursor-pointer"
+                  >
+                    <Palette className="w-3.5 h-3.5 text-primary" />
+                    <span>{t('sellerStoreStudio.quickDecorateStore')}</span>
+                  </button>
+                )}
+                <a
+                  href={isEn ? `/en/gian-hang/${sellerData.slug}` : `/gian-hang/${sellerData.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold transition"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>{t('sellerStoreStudio.openPublicStore')}</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+              {[
+                {
+                  done: Boolean(sellerData.avatar_url || sellerData.cover_url || sellerData.description),
+                  label: t('sellerStoreStudio.checkBranding'),
+                  tab: 'settings' as SellerPortalTabId,
+                },
+                {
+                  done: Number(stats.total_products || 0) > 0,
+                  label: t('sellerStoreStudio.checkProducts', { count: Number(stats.total_products || 0) }),
+                  tab: 'products' as SellerPortalTabId,
+                },
+                {
+                  done: Number(stats.low_stock_products_count || 0) === 0 && Number(stats.total_products || 0) > 0,
+                  label: t('sellerStoreStudio.checkStock'),
+                  tab: 'codes' as SellerPortalTabId,
+                },
+                {
+                  done: Boolean(sepaySummary?.is_enabled && !sepaySummary?.admin_locked),
+                  label: t('sellerStoreStudio.checkSepay'),
+                  tab: 'sepay' as SellerPortalTabId,
+                },
+              ].map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveTab(item.tab)}
+                  className={`p-3 rounded-xl border text-left flex items-center justify-between gap-2 transition cursor-pointer ${
+                    item.done
+                      ? 'bg-emerald-500/5 border-emerald-500/25 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-muted/40 border-border hover:border-primary/40 text-foreground'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-2 font-semibold truncate">
+                    <CheckCircle2 className={`w-4 h-4 shrink-0 ${item.done ? 'text-emerald-500' : 'text-muted-foreground/40'}`} />
+                    <span className="truncate">{item.label}</span>
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                </button>
+              ))}
             </div>
           </div>
 
@@ -1618,7 +1753,18 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                       <tr key={p.id} className="hover:bg-muted/30">
                         <td className="p-3">
                           <div className="flex items-center gap-2.5">
-                            <img src={p.cover_url} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0 border border-border" />
+                            <img
+                              src={resolveProductCoverImage(p)}
+                              alt={p.name || ''}
+                              onError={(e) => {
+                                const el = e.currentTarget;
+                                if (!el.dataset.fb) {
+                                  el.dataset.fb = '1';
+                                  el.src = PHYSICAL_DEFAULT_IMAGE_URL;
+                                }
+                              }}
+                              className="w-9 h-9 rounded-xl object-cover shrink-0 border border-border bg-muted"
+                            />
                             <div className="truncate">
                               <div className="flex items-center gap-1.5 truncate">
                                 <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 ${
@@ -1649,10 +1795,10 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
                           </div>
                         </td>
                         <td className="p-3 text-right font-bold text-foreground">
-                          {p.price_core.toLocaleString()} Core
+                          {formatCore(p.price_core, isEn)}
                           {p.original_price_core && (
                             <div className="text-[10px] text-muted-foreground line-through">
-                              {p.original_price_core.toLocaleString()} Core
+                              {formatCore(p.original_price_core, isEn)}
                             </div>
                           )}
                         </td>
@@ -2356,10 +2502,22 @@ export const SellerCenterView: React.FC<SellerCenterViewProps> = ({
         </div>
       )}
 
-      {/* Tab 6: Settings & Subaccounts (§6.5) */}
+      {/* Tab 6: Storefront Branding Studio & Staff Subaccounts (§6.5) */}
       {activeTab === 'settings' && (
-        <div className="space-y-6 max-w-3xl">
-          <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+        <div className="space-y-6 max-w-6xl">
+          {subRole === 'OWNER' && sellerData && (
+            <SellerStorefrontStudio
+              seller={sellerData}
+              sepayOnline={Boolean(sepaySummary?.is_enabled && !sepaySummary?.admin_locked)}
+              getHeaders={getHeaders}
+              onUpdated={(updatedSeller) => {
+                setSellerData(updatedSeller);
+                setSuccessMsg(t('sellerStoreStudio.saveSuccess'));
+              }}
+            />
+          )}
+
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4 max-w-3xl">
             <h3 className="text-base font-bold flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" /> {isEn ? 'Manage Staff & Subaccounts' : 'Quản Lý Tài Khoản Phụ (Nhân Viên / Hỗ Trợ)'}
             </h3>

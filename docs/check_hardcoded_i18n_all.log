@@ -1,11 +1,11 @@
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-28T07:43:30.563Z — Batch: Dot 20 Trang Chu (24/11/2026)
-   [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 126 file giao diện (.tsx)...
+   Timestamp: 2026-11-28T08:22:05.021Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 127 file giao diện (.tsx)...
 
 ================================================================================
 🚨 [I18N SCANNER FAILED] PHÁT HIỆN CHUỖI TIẾNG VIỆT GHI CỨNG NGOÀI TỪ ĐIỂN!
    Quy trình Build / Deploy bị CHẶN ĐỨNG theo tiêu chuẩn đa ngôn ngữ Excel/Word.
-   Tổng số vi phạm: 2892 chuỗi.
+   Tổng số vi phạm: 2872 chuỗi.
 
 📁 File: src/admin/components/LuckyWheelAdminManager.tsx (20 lỗi):
    • Dòng 197 [JSX_TEXT_HARDCODED]: "Trạng Thái Vòng Quay"
@@ -5338,48 +5338,6 @@
      Snippet: <span>Cam kết chính hãng 100% • Đổi trả 7 ngày</span>
    • Dòng 150 [JSX_TEXT_HARDCODED]: "Số lượng:"
      Snippet: <span className="font-bold text-gray-700">Số lượng:</span>
-
-📁 File: src/components/seller/PublicStoreView.tsx (20 lỗi):
-   • Dòng 264 [JSX_TEXT_HARDCODED]: "Không Tìm Thấy Gian Hàng"
-     Snippet: <h2 className="text-xl font-bold mb-2">Không Tìm Thấy Gian Hàng</h2>
-   • Dòng 331 [JSX_TEXT_HARDCODED]: "Bảo hành:"
-     Snippet: <span className="font-semibold text-foreground">Bảo hành:</span> {store.warranty_policy || 'Bảo hành 24H 1 đổi 1 hoặc hoàn tiền'}
-   • Dòng 349 [JSX_TEXT_HARDCODED]: "Gian hàng hiện đang tạm thời nghỉ bán!"
-     Snippet: <div className="font-bold text-sm">Gian hàng hiện đang tạm thời nghỉ bán!</div>
-   • Dòng 350 [JSX_TEXT_HARDCODED]: "Người bán đang trong kỳ nghỉ hoặc bảo trì kho. Quý khách vui lòng quay lại sau ít ngày."
-     Snippet: <div className="opacity-90 mt-0.5">Người bán đang trong kỳ nghỉ hoặc bảo trì kho. Quý khách vui lòng quay lại sau ít ngày.</div>
-   • Dòng 358 [JSX_TEXT_HARDCODED]: "Danh Mục Gói Sản Phẩm & Giftcode"
-     Snippet: <h2 className="text-lg font-bold">Danh Mục Gói Sản Phẩm & Giftcode</h2>
-   • Dòng 369 [JSX_TEXT_HARDCODED]: "Chưa có sản phẩm mở bán"
-     Snippet: <div className="text-sm font-semibold">Chưa có sản phẩm mở bán</div>
-   • Dòng 427 [JSX_TEXT_HARDCODED]: "Tạm hết hàng"
-     Snippet: <span className="text-destructive font-semibold ml-auto">Tạm hết hàng</span>
-   • Dòng 450 [JSX_ATTR_HARDCODED]: "Thêm sản phẩm này vào giỏ hàng"
-     Snippet: title="Thêm sản phẩm này vào giỏ hàng"
-   • Dòng 451 [JSX_ATTR_HARDCODED]: "Thêm vào giỏ hàng"
-     Snippet: aria-label="Thêm vào giỏ hàng"
-   • Dòng 454 [JSX_TEXT_HARDCODED]: "Thêm vào giỏ"
-     Snippet: <span>Thêm vào giỏ</span>
-   • Dòng 480 [JSX_TEXT_HARDCODED]: "Đánh Giá Của Khách Hàng"
-     Snippet: <span>Đánh Giá Của Khách Hàng</span>
-   • Dòng 496 [JSX_TEXT_HARDCODED]: "Chưa có đánh giá nào"
-     Snippet: <div className="text-sm font-semibold text-foreground">Chưa có đánh giá nào</div>
-   • Dòng 531 [JSX_TEXT_HARDCODED]: "Người mua:"
-     Snippet: <span className="font-semibold text-foreground">Người mua: <strong className="font-mono">{r.buyer_name}</strong></span>
-   • Dòng 573 [JSX_TEXT_HARDCODED]: "Giá sản phẩm:"
-     Snippet: <span className="text-muted-foreground">Giá sản phẩm:</span>
-   • Dòng 577 [JSX_TEXT_HARDCODED]: "Số dư ví của bạn:"
-     Snippet: <span className="text-muted-foreground">Số dư ví của bạn:</span>
-   • Dòng 585 [JSX_TEXT_HARDCODED]: "Thời gian giao:"
-     Snippet: <span className="text-muted-foreground">Thời gian giao:</span>
-   • Dòng 586 [JSX_TEXT_HARDCODED]: "Tức thì (0 giây)"
-     Snippet: <strong className="text-emerald-500">Tức thì (0 giây)</strong>
-   • Dòng 664 [JSX_TEXT_HARDCODED]: "Giao Dịch Thành Công!"
-     Snippet: <h4 className="text-base font-bold text-foreground">Giao Dịch Thành Công!</h4>
-   • Dòng 665 [JSX_TEXT_HARDCODED]: "Mã giftcode của bạn đã sẵn sàng sử dụng."
-     Snippet: <p className="text-xs text-muted-foreground mt-0.5">Mã giftcode của bạn đã sẵn sàng sử dụng.</p>
-   • Dòng 669 [JSX_TEXT_HARDCODED]: "Mã Quà Tặng / Giftcode Của Bạn"
-     Snippet: <div className="text-[10px] text-muted-foreground font-semibold mb-1 uppercase tracking-wider">Mã Quà Tặng / Giftcode Của Bạn</div>
 
 📁 File: src/components/ShareModal.tsx (6 lỗi):
    • Dòng 167 [JSX_ATTR_HARDCODED]: "Đóng"

@@ -846,6 +846,15 @@ export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
       .first<any>();
 
     if (quickCheck) {
+      // Đảm bảo 2 cột trang trí gian hàng (Migration 0054) luôn sẵn sàng kể cả khi isolate lạnh đi thẳng vào /api/stores/:slug
+      const hasBannerPreset = await db
+        .prepare("SELECT 1 FROM pragma_table_info('sellers') WHERE name = 'banner_preset' LIMIT 1")
+        .first<any>()
+        .catch(() => null);
+      if (!hasBannerPreset) {
+        await db.prepare("ALTER TABLE sellers ADD COLUMN banner_preset TEXT DEFAULT 'aurora_indigo';").run().catch(() => {});
+        await db.prepare("ALTER TABLE sellers ADD COLUMN pinned_notice TEXT DEFAULT NULL;").run().catch(() => {});
+      }
       _marketplaceSchemaEnsured = true;
       return;
     }
@@ -4022,6 +4031,24 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<SchemaTiming
     }
   } catch (err: any) {
     console.warn('[Migration 0053_seller_direct_sepay_gateway_v1 error]', err?.message);
+  }
+
+  // 22. Migration 0054: Chủ Đề Bìa & Thông Báo Ghim Trang Trí Gian Hàng Đối Tác
+  try {
+    const s54Check = appliedMigSet.has('0054_seller_storefront_branding_v1');
+    if (!s54Check) {
+      await db
+        .prepare("ALTER TABLE sellers ADD COLUMN banner_preset TEXT DEFAULT 'aurora_indigo';")
+        .run()
+        .catch(() => {});
+      await db
+        .prepare('ALTER TABLE sellers ADD COLUMN pinned_notice TEXT DEFAULT NULL;')
+        .run()
+        .catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0054_seller_storefront_branding_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0054_seller_storefront_branding_v1 error]', err?.message);
   }
 
   lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };

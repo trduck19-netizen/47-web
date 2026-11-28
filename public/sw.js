@@ -1,4 +1,4 @@
-const CACHE_NAME = 'codegame-pwa-v10';
+const CACHE_NAME = 'codegame-pwa-v11';
 const isValidImageResponse = (res) => {
   if (!res || res.status !== 200) return false;
   const ct = (res.headers.get('content-type') || '').toLowerCase();
@@ -20,10 +20,7 @@ const isValidStaticAssetResponse = (pathname, res) => {
   return true;
 };
 const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/logo.png',
-  '/favicon.png',
+  '/logo.webp',
   '/favicon.ico'
 ];
 

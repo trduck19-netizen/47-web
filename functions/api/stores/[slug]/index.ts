@@ -29,7 +29,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         SELECT 
           id, name, slug, avatar_url, cover_url, description,
           support_hours, warranty_policy, refund_policy, reputation_score,
-          status, is_vacation, created_at
+          status, is_vacation, banner_preset, pinned_notice, created_at
         FROM sellers
         WHERE slug = ? AND deleted_at IS NULL
         LIMIT 1
@@ -52,7 +52,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
 
     await ensureSellerSepaySchema(env.DB);
-    const [availableProdCount, sepayCfg, mConfig] = await Promise.all([
+    const [availableProdCount, totalProdCount, completedOrdersCount, sepayCfg, mConfig] = await Promise.all([
       env.DB.prepare(`
         SELECT COUNT(DISTINCT sp.id) as count
         FROM seller_products sp
@@ -62,6 +62,22 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       `)
         .bind(seller.id)
         .first<{ count: number }>(),
+      env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM seller_products
+        WHERE seller_id = ? AND status = 'APPROVED' AND deleted_at IS NULL
+      `)
+        .bind(seller.id)
+        .first<{ count: number }>()
+        .catch(() => ({ count: 0 })),
+      env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM seller_orders
+        WHERE seller_id = ? AND status IN ('PAID', 'DELIVERED', 'COMPLETED')
+      `)
+        .bind(seller.id)
+        .first<{ count: number }>()
+        .catch(() => ({ count: 0 })),
       env.DB.prepare('SELECT * FROM seller_sepay_configs WHERE seller_id = ? LIMIT 1')
         .bind(seller.id)
         .first<SellerSepayConfigRow>()
@@ -82,14 +98,19 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           id: seller.id,
           name: seller.name,
           slug: seller.slug,
+          status: seller.status,
           avatar_url: seller.avatar_url,
           cover_url: seller.cover_url,
+          banner_preset: seller.banner_preset || 'aurora_indigo',
+          pinned_notice: seller.pinned_notice || '',
           description: seller.description,
           support_hours: seller.support_hours,
           warranty_policy: seller.warranty_policy,
           refund_policy: seller.refund_policy,
           reputation_score: seller.reputation_score,
           is_vacation: Boolean(seller.is_vacation),
+          total_products: Number(totalProdCount?.count || 0),
+          completed_orders_count: Number(completedOrdersCount?.count || 0),
           has_available_products: hasAvailableProducts,
           sepay_qr_available: qrEligibility.eligible,
           created_at: seller.created_at,

@@ -23,7 +23,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const slug = (params.slug as string || '').toLowerCase().trim();
 
     const seller = await env.DB
-      .prepare("SELECT id, status, is_vacation FROM sellers WHERE slug = ? AND deleted_at IS NULL LIMIT 1")
+      .prepare("SELECT id, name, status, is_vacation FROM sellers WHERE slug = ? AND deleted_at IS NULL LIMIT 1")
       .bind(slug)
       .first<any>();
 
@@ -52,6 +52,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           sp.id, sp.seller_id, sp.game_slug, sp.game_name, sp.name, sp.cover_url,
           sp.description, sp.price_core, sp.original_price_core, sp.warranty_type,
           sp.warranty_hours, sp.delivery_type, COALESCE(sp.product_type, 'digital') as product_type,
+          COALESCE(sp.stock_quantity, 0) as stock_quantity,
           sp.weight_grams, sp.warehouse_address, sp.created_at,
           sp.is_affiliate, sp.origin_seller_id, sp.origin_product_id,
           s_orig.name as supplier_name,
@@ -62,7 +63,11 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           (
             SELECT COUNT(*) FROM seller_codes sc
             WHERE sc.product_id = COALESCE(sp.origin_product_id, sp.id) AND sc.status = 'IN_STOCK' AND sc.deleted_at IS NULL
-          ) as stock_count
+          ) as stock_count,
+          (
+            SELECT COUNT(*) FROM seller_orders so
+            WHERE so.product_id = sp.id AND so.status IN ('PAID', 'DELIVERED', 'COMPLETED')
+          ) as sold_count
         FROM seller_products sp
         LEFT JOIN sellers s_orig ON sp.origin_seller_id = s_orig.id
         WHERE sp.seller_id = ? AND sp.status = 'APPROVED' AND sp.deleted_at IS NULL
@@ -88,7 +93,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       product_type: p.product_type || 'digital',
       weight_grams: p.weight_grams,
       warehouse_address: p.warehouse_address,
-      has_stock: p.product_type === 'physical' ? true : (p.stock_count || 0) > 0, // Không lộ số lượng thật (§6.1)
+      sold_count: Number(p.sold_count || 0),
+      created_at: p.created_at,
+      has_stock:
+        String(p.product_type || '').toLowerCase() === 'physical'
+          ? Number(p.stock_quantity || 0) > 0
+          : (p.stock_count || 0) > 0, // Không lộ số lượng kho mã thật (§6.1)
       is_affiliate: p.is_affiliate === 1,
       supplier_name: (p.is_affiliate === 1 && p.show_supplier !== 0) ? p.supplier_name : null,
       show_supplier: p.show_supplier !== 0,

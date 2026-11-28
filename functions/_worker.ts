@@ -3064,7 +3064,7 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         return await handleDynamicSitemap(request, env, ctx);
       }
 
-      // Root Homepage, Bilingual /en & Standalone Seller Portal HTML — Dynamic Brand SSR + Epoch-Keyed Worker Cache
+      // Root Homepage, Bilingual /en, Standalone Seller Portal & Public Partner Storefronts — Dynamic Brand SSR + Epoch-Keyed Worker Cache
       const isDynamicShellPath =
         pathname === '/' ||
         pathname === '/index.html' ||
@@ -3075,7 +3075,9 @@ async function handleWorkerRequest(request: Request, env: Env, ctx: ExecutionCon
         pathname === '/seller' ||
         pathname.startsWith('/seller/') ||
         pathname === '/en/seller' ||
-        pathname.startsWith('/en/seller/');
+        pathname.startsWith('/en/seller/') ||
+        pathname.startsWith('/gian-hang/') ||
+        pathname.startsWith('/en/gian-hang/');
 
       if ((request.method === 'GET' || request.method === 'HEAD') && isDynamicShellPath) {
         const reqStart = performance.now();
@@ -4269,6 +4271,40 @@ async function renderSeoHtml(
       }
     ];
     replaceTitleAndMeta(title, description, '/utilities', '/og-image.jpg', utilSchema);
+  } else if (pathname.startsWith('/gian-hang/') || pathname.startsWith('/en/gian-hang/')) {
+    const isEnStore = pathname.startsWith('/en/');
+    const rawStoreSlug = pathname
+      .replace(/^\/(?:en\/)?gian-hang\//i, '')
+      .replace(/\/+$/, '')
+      .trim()
+      .toLowerCase();
+    let storeRow: any = null;
+    if (env.DB && rawStoreSlug) {
+      try {
+        storeRow = await env.DB.prepare(
+          "SELECT name, description, avatar_url, cover_url FROM sellers WHERE slug = ? AND status IN ('TRIAL', 'ACTIVE') AND deleted_at IS NULL LIMIT 1"
+        )
+          .bind(rawStoreSlug)
+          .first<any>();
+      } catch {}
+    }
+    const storeDisplayName = storeRow?.name || rawStoreSlug || (isEnStore ? 'Official Partner Store' : 'Gian Hàng Đối Tác');
+    const title = isEnStore
+      ? `${storeDisplayName} - Official Store | ${brandName}`
+      : `Gian Hàng ${storeDisplayName} Chính Hãng | ${brandName}`;
+    const description =
+      (storeRow?.description && String(storeRow.description).trim().slice(0, 160)) ||
+      (isEnStore
+        ? `Shop verified digital giftcodes & products from ${storeDisplayName} on ${brandName} with instant 0s delivery & Escrow protection.`
+        : `Mua sắm giftcode & sản phẩm chính hãng tại Gian hàng ${storeDisplayName} trên ${brandName} — giao tự động 0s và bảo chứng người mua.`);
+    const ogImg =
+      (storeRow?.cover_url && /^https?:\/\/|^\//.test(String(storeRow.cover_url)))
+        ? String(storeRow.cover_url)
+        : (storeRow?.avatar_url && /^https?:\/\/|^\//.test(String(storeRow.avatar_url)))
+        ? String(storeRow.avatar_url)
+        : '/og-image.jpg';
+    const canonicalStorePath = isEnStore ? `/en/gian-hang/${rawStoreSlug}` : `/gian-hang/${rawStoreSlug}`;
+    replaceTitleAndMeta(title, description, canonicalStorePath, ogImg);
   } else if (pathname === '/en/seller' || pathname.startsWith('/en/seller/')) {
     const title = `Seller Portal & Store Management | ${brand.sellerPortalName}`;
     const description = `Manage your storefront, digital & physical products, instant code vault, and payouts directly on ${brandName}.`;
