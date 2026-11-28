@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 import { compressImage, CompressionResult } from '../../../utils/imageCompressor';
+import { useLanguage } from '../../../context/LanguageContext';
 
 interface ImageUploadInputProps {
   label?: string;
@@ -14,15 +15,24 @@ interface ImageUploadInputProps {
 }
 
 export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
-  label = 'Hình Ảnh / Banner (Tải từ máy hoặc dán Link)',
+  label,
   value,
   onChange,
   required = false,
-  helperText = 'Tự động nén ảnh siêu nhẹ (WebP/JPEG) khi tải lên từ máy tính.',
+  helperText,
   maxWidth = 800,
   maxHeight = 800,
   quality = 0.8,
 }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const resolvedLabel =
+    label || (isEn ? 'Image / Banner (Upload or Paste URL)' : 'Hình Ảnh / Banner (Tải từ máy hoặc dán Link)');
+  const resolvedHelper =
+    helperText ??
+    (isEn
+      ? 'Auto-compresses images to lightweight WebP/JPEG on upload.'
+      : 'Tự động nén ảnh siêu nhẹ (WebP/JPEG) khi tải lên từ máy tính.');
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressResult, setCompressResult] = useState<CompressionResult | null>(null);
   const [mode, setMode] = useState<'upload' | 'url'>(value && !value.startsWith('data:') ? 'url' : 'upload');
@@ -46,7 +56,7 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
       onChange(result.dataUrl);
     } catch (err: any) {
       console.error('Image compression error:', err);
-      alert('Không thể xử lý hình ảnh này. Vui lòng thử ảnh khác.');
+      alert(isEn ? 'Unable to process this image. Please try another file.' : 'Không thể xử lý hình ảnh này. Vui lòng thử ảnh khác.');
     } finally {
       setIsCompressing(false);
     }
@@ -62,32 +72,32 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-          {label} {required && <span className="text-rose-500">*</span>}
+          {resolvedLabel} {required && <span className="text-rose-500">*</span>}
         </label>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setMode('upload')}
-            className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+            className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap cursor-pointer transition-colors ${
               mode === 'upload'
                 ? 'bg-indigo-600 text-white'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            📁 Tải Từ Máy
+            {isEn ? '📁 Upload File' : '📁 Tải Từ Máy'}
           </button>
           <button
             type="button"
             onClick={() => setMode('url')}
-            className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+            className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap cursor-pointer transition-colors ${
               mode === 'url'
                 ? 'bg-indigo-600 text-white'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            🔗 Nhập Link
+            {isEn ? '🔗 Paste URL' : '🔗 Nhập Link'}
           </button>
         </div>
       </div>
@@ -112,10 +122,12 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
                   <Upload className="h-6 w-6" />
                 </div>
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                  {isCompressing ? '⏳ Đang nén ảnh...' : '📁 Bấm vào đây để chọn ảnh Logo từ máy tính'}
+                  {isCompressing
+                    ? (isEn ? '⏳ Compressing image...' : '⏳ Đang nén ảnh...')
+                    : (isEn ? '📁 Click here to choose an image from your device' : '📁 Bấm vào đây để chọn ảnh Logo từ máy tính')}
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Hỗ trợ PNG, JPG, JPEG, WEBP — Tự động nén siêu nhẹ 0ms
+                  {isEn ? 'Supports PNG, JPG, JPEG, WEBP — Instant client-side compression' : 'Hỗ trợ PNG, JPG, JPEG, WEBP — Tự động nén siêu nhẹ 0ms'}
                 </span>
               </div>
             </div>
@@ -123,7 +135,7 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
             <div
               onClick={() => fileInputRef.current?.click()}
               className="relative rounded-2xl border-2 border-indigo-200 dark:border-indigo-800/60 bg-white dark:bg-slate-800/80 p-3.5 flex items-center gap-3 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 transition-all shadow-xs group"
-              title="Nhấn vào đây để đổi ảnh khác"
+              title={isEn ? 'Click to choose another image' : 'Nhấn vào đây để đổi ảnh khác'}
             >
               <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shrink-0">
                 <img src={value} alt="Preview" className="h-full w-full object-contain p-1" />
@@ -132,21 +144,21 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>Ảnh Đã Tải Lên & Sẵn Sàng</span>
+                  <span>{isEn ? 'Image Ready' : 'Ảnh Đã Tải Lên & Sẵn Sàng'}</span>
                 </div>
 
                 {compressResult ? (
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-                    ⚡ {compressResult.originalSizeFormatted} → {compressResult.compressedSizeFormatted} (Giảm {compressResult.savedPercent}%)
+                    ⚡ {compressResult.originalSizeFormatted} → {compressResult.compressedSizeFormatted} ({isEn ? `Saved ${compressResult.savedPercent}%` : `Giảm ${compressResult.savedPercent}%`})
                   </p>
                 ) : (
                   <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                    {value.startsWith('data:') ? 'Ảnh Base64 đã tối ưu' : value}
+                    {value.startsWith('data:') ? (isEn ? 'Optimized Base64 image' : 'Ảnh Base64 đã tối ưu') : value}
                   </p>
                 )}
 
                 <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline mt-1 inline-flex items-center gap-1">
-                  🔄 Bấm vào để chọn ảnh khác từ máy
+                  {isEn ? '🔄 Click to choose another image' : '🔄 Bấm vào để chọn ảnh khác từ máy'}
                 </span>
               </div>
 
@@ -157,7 +169,7 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
                   handleClear();
                 }}
                 className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer shrink-0"
-                title="Xóa ảnh"
+                title={isEn ? 'Remove image' : 'Xóa ảnh'}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -171,15 +183,15 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
             required={required}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="https://images.unsplash.com/... hoặc /game_icons/..."
+            placeholder={isEn ? 'https://images.unsplash.com/... or /logo.webp' : 'https://images.unsplash.com/... hoặc /game_icons/...'}
             className="w-full rounded-xl border border-slate-200 bg-white p-2.5 pl-9 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
           <LinkIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         </div>
       )}
 
-      {helperText && (
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">{helperText}</p>
+      {resolvedHelper && (
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">{resolvedHelper}</p>
       )}
     </div>
   );

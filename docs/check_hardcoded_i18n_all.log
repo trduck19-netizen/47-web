@@ -1,11 +1,11 @@
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-28T07:16:02.587Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   Timestamp: 2026-11-28T07:43:30.563Z — Batch: Dot 20 Trang Chu (24/11/2026)
    [CHẾ ĐỘ AUDIT TOÀN SÀN] Đang quét toàn bộ 126 file giao diện (.tsx)...
 
 ================================================================================
 🚨 [I18N SCANNER FAILED] PHÁT HIỆN CHUỖI TIẾNG VIỆT GHI CỨNG NGOÀI TỪ ĐIỂN!
    Quy trình Build / Deploy bị CHẶN ĐỨNG theo tiêu chuẩn đa ngôn ngữ Excel/Word.
-   Tổng số vi phạm: 2896 chuỗi.
+   Tổng số vi phạm: 2892 chuỗi.
 
 📁 File: src/admin/components/LuckyWheelAdminManager.tsx (20 lỗi):
    • Dòng 197 [JSX_TEXT_HARDCODED]: "Trạng Thái Vòng Quay"
@@ -90,16 +90,6 @@
      Snippet: • Nếu chọn <strong>"Có, tiếp tục đăng tất cả"</strong>: Hệ thống sẽ nạp toàn bộ{' '}
    • Dòng 174 [JSX_TEXT_HARDCODED]: ""Hủy & Sửa lại""
      Snippet: • Nếu chọn <strong>"Hủy & Sửa lại"</strong>: Quay lại để chỉnh sửa danh sách mã vừa dán.
-
-📁 File: src/admin/components/ui/ImageUploadInput.tsx (4 lỗi):
-   • Dòng 17 [JSX_ATTR_HARDCODED]: "Hình Ảnh / Banner (Tải từ máy hoặc dán Link)"
-     Snippet: label = 'Hình Ảnh / Banner (Tải từ máy hoặc dán Link)',
-   • Dòng 126 [JSX_ATTR_HARDCODED]: "Nhấn vào đây để đổi ảnh khác"
-     Snippet: title="Nhấn vào đây để đổi ảnh khác"
-   • Dòng 135 [JSX_TEXT_HARDCODED]: "Ảnh Đã Tải Lên & Sẵn Sàng"
-     Snippet: <span>Ảnh Đã Tải Lên & Sẵn Sàng</span>
-   • Dòng 160 [JSX_ATTR_HARDCODED]: "Xóa ảnh"
-     Snippet: title="Xóa ảnh"
 
 📁 File: src/admin/components/ui/PackageManagerSection.tsx (8 lỗi):
    • Dòng 178 [JSX_TEXT_HARDCODED]: "Tạo mẫu nhanh:"

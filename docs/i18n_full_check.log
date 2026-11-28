@@ -3,7 +3,7 @@
 > node scripts/check-hardcoded-i18n.cjs
 
 🛡️  [I18N GUARD SCANNER] Khởi chạy máy kiểm tự động chuỗi tiếng Việt ghi cứng...
-   Timestamp: 2026-11-28T07:24:28.170Z — Batch: Dot 20 Trang Chu (24/11/2026)
+   Timestamp: 2026-11-28T07:43:30.435Z — Batch: Dot 20 Trang Chu (24/11/2026)
    [PHẠM VI ĐA NGÔN NGỮ CHUẨN] Đang quét 30 file giao diện cốt lõi (Web Khách & Bảng Quản Trị)...
    [DANH SÁCH FILE QUÉT]: src/App.tsx, src/components/MarketingNotificationToast.tsx, src/components/mall/UniversalMallView.tsx, src/components/seller/SellerCenterView.tsx, src/admin/AdminApp.tsx, src/admin/components/AdminSidebar.tsx, src/admin/components/AdminTopbar.tsx, src/admin/components/MultiLineAnalyticsChart.tsx, src/admin/components/RecentBalanceChangesWidget.tsx, src/admin/components/ui/DataTable.tsx, src/admin/modules/DashboardModule.tsx, src/admin/modules/OrdersModule.tsx, src/admin/modules/MembersModule.tsx, src/admin/modules/HomepageSectionsModule.tsx, src/components/ProductDetailModal.tsx, src/components/ProductCheckoutModal.tsx, src/components/PackageShareModal.tsx, src/components/ProductReviewsSection.tsx, src/components/AuthModal.tsx, src/admin/modules/SupplierConnectorsModule.tsx, src/admin/modules/InterShopAffiliateModule.tsx, src/admin/modules/SellerSepayGatewayModule.tsx, src/admin/modules/BrandIdentityModule.tsx, src/components/seller/SellerAffiliateManager.tsx, src/components/seller/SellerSepayManager.tsx, src/components/seller/SellerPortalApp.tsx, src/components/seller/SellerPortalSidebar.tsx, src/components/seller/SellerPortalTopbar.tsx, src/components/seller/SellerOnboardingLanding.tsx, src/components/cart/CartDrawerModal.tsx
 ✅ [I18N SCANNER PASSED] Đã quét sạch 30 file giao diện.

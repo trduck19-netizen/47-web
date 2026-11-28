@@ -96,7 +96,7 @@ interface NavSection {
     id: AdminModuleTab;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
-    badge?: number;
+    badge?: number | string;
     badgeColor?: string;
   }[];
 }
@@ -467,21 +467,21 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
                       } ${collapsed ? 'justify-center' : 'justify-between'}`}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <Icon
                           className={`h-4 w-4 flex-shrink-0 transition-transform group-hover:scale-110 ${
                             isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-500'
                           }`}
                         />
-                        {!collapsed && <span>{item.label}</span>}
+                        {!collapsed && <span className="truncate">{item.label}</span>}
                       </div>
 
-                      {item.badge && item.badge > 0 ? (
+                      {(typeof item.badge === 'number' ? item.badge > 0 : Boolean(item.badge)) ? (
                         collapsed ? (
                           <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
                         ) : (
                           <span
-                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
                               item.badgeColor || 'bg-indigo-500 text-white'
                             }`}
                           >

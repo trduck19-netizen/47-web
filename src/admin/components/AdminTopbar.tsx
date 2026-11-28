@@ -210,14 +210,14 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
       </div>
 
       {/* Right: Quick actions, Notifications, Theme, Profile */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Quick Action Button */}
-        <div className="relative" ref={quickActionRef}>
+        <div className="relative shrink-0" ref={quickActionRef}>
           <button
             onClick={() => setIsQuickActionOpen((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all cursor-pointer"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">{isEn ? 'Quick Create' : 'Tạo Nhanh'}</span>
           </button>
 
@@ -283,10 +283,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             }
           }}
           disabled={isSyncing}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 transition-all cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 transition-all cursor-pointer disabled:opacity-50"
           title={isEn ? 'Bi-directional sync members, wallet, orders from Cloudflare D1' : 'Đồng bộ hai chiều toàn bộ thành viên, ví, đơn hàng và sản phẩm từ Cloudflare D1'}
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">{syncFeedback || (isEn ? 'Sync D1' : 'Đồng Bộ')}</span>
         </button>
 
@@ -294,7 +294,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         {onGoToClientSite && (
           <button
             onClick={onGoToClientSite}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-300 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-300 transition-all cursor-pointer"
             title={isEn ? 'Open client website (universal-mall-shop.pages.dev)' : 'Mở website khách hàng (universal-mall-shop.pages.dev)'}
           >
             <span className="hidden sm:inline">{isEn ? 'Client Store' : 'Xem Web Khách'}</span>

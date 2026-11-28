@@ -1,10 +1,10 @@
-=== TSC HOMEPAGE CHECK (2026-11-28T07:24:28.238Z) ===
+=== TSC HOMEPAGE CHECK (2026-11-28T07:43:30.799Z) ===
 $ npx tsc -p tsconfig.homepage.json --noEmit
 
 HOMEPAGE_TSC_OK
 homepage_exit=0
 
-=== TSC FULL PROJECT CHECK (2026-11-28T07:24:28.238Z) ===
+=== TSC FULL PROJECT CHECK (2026-11-28T07:43:30.799Z) ===
 $ npx tsc -p tsconfig.json --noEmit
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(542,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
@@ -541,16 +541,6 @@ src/admin/components/AdminLoginGuard.tsx(154,61): error TS2339: Property 'syncKe
 src/admin/components/AdminLoginGuard.tsx(155,63): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminModuleSkeleton.tsx(61,43): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/admin/components/AdminSidebar.tsx(117,9): error TS6133: 'isEn' is declared but its value is never read.
-src/admin/components/AdminSidebar.tsx(177,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(199,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(206,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(233,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(247,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(254,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(261,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(278,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(325,11): error TS2322: Type 'string' is not assignable to type 'number'.
-src/admin/components/AdminSidebar.tsx(337,11): error TS2322: Type 'string' is not assignable to type 'number'.
 src/admin/components/AdminTopbar.tsx(34,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; 'brand-identity': { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; ... 23 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, translations, vouchers, "first-purchase", and 2 more.
 src/admin/components/AdminTopbar.tsx(101,7): error TS2740: Type '{ dashboard: string; 'brand-identity': string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; ... 15 more ...; 'seller-sepay': string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, "platform-leads", translations, and 4 more.
 src/admin/components/LuckyWheelAdminManager.tsx(7,3): error TS6133: 'Copy' is declared but its value is never read.
@@ -568,8 +558,8 @@ src/admin/components/RecentBalanceChangesWidget.tsx(44,3): error TS6133: 'onRefr
 src/admin/components/TemporaryAuditTokenManager.tsx(4,3): error TS6133: 'ShieldCheck' is declared but its value is never read.
 src/admin/components/TemporaryAuditTokenManager.tsx(11,3): error TS6133: 'AlertTriangle' is declared but its value is never read.
 src/admin/components/ui/DuplicateCodesModal.tsx(2,41): error TS6133: 'Layers' is declared but its value is never read.
-src/admin/components/ui/ImageUploadInput.tsx(140,39): error TS2339: Property 'originalSizeFormatted' does not exist on type 'CompressionResult'.
-src/admin/components/ui/ImageUploadInput.tsx(140,80): error TS2339: Property 'compressedSizeFormatted' does not exist on type 'CompressionResult'.
+src/admin/components/ui/ImageUploadInput.tsx(152,39): error TS2339: Property 'originalSizeFormatted' does not exist on type 'CompressionResult'.
+src/admin/components/ui/ImageUploadInput.tsx(152,80): error TS2339: Property 'compressedSizeFormatted' does not exist on type 'CompressionResult'.
 src/admin/components/ui/PackageManagerSection.tsx(2,33): error TS6133: 'Sparkles' is declared but its value is never read.
 src/admin/components/ui/PackageManagerSection.tsx(2,43): error TS6133: 'Layers' is declared but its value is never read.
 src/admin/components/ui/PackageManagerSection.tsx(2,51): error TS6133: 'Check' is declared but its value is never read.

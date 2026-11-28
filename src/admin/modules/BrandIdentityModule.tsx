@@ -229,7 +229,9 @@ export const BrandIdentityModule: React.FC<BrandIdentityModuleProps> = ({ onShow
       },
       {
         channel: t('brandIdentity.channelWallet'),
-        preview: `50.000 ${previewUnit} (1 ${previewUnit} = 1 VNĐ)`,
+        preview: isEn
+          ? `50,000 ${previewUnit} (1 ${previewUnit} = 1 VND)`
+          : `50.000 ${previewUnit} (1 ${previewUnit} = 1 VNĐ)`,
         scope: t('brandIdentity.channelWalletScope'),
       },
       {
@@ -262,7 +264,7 @@ export const BrandIdentityModule: React.FC<BrandIdentityModuleProps> = ({ onShow
   );
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-200 max-w-full overflow-x-hidden">
+    <div className="space-y-5 animate-in fade-in duration-200 max-w-full overflow-x-clip">
       {/* Top Action Header */}
       <div className="rounded-2xl border border-indigo-200/80 dark:border-indigo-900/50 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
@@ -327,10 +329,10 @@ export const BrandIdentityModule: React.FC<BrandIdentityModuleProps> = ({ onShow
         <div className="xl:col-span-7 space-y-5 min-w-0">
           {/* Card 1: Core Platform & Portal Names */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <h4 className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 shrink-0">
+                <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <h4 className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-900 dark:text-white whitespace-nowrap">
                   {t('brandIdentity.sectionIdentityTitle')}
                 </h4>
               </div>
@@ -339,10 +341,10 @@ export const BrandIdentityModule: React.FC<BrandIdentityModuleProps> = ({ onShow
                   type="checkbox"
                   checked={autoDerive}
                   onChange={(e) => setAutoDerive(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-indigo-400 text-indigo-600 focus:ring-0"
+                  className="w-3.5 h-3.5 rounded border-indigo-400 text-indigo-600 focus:ring-0 shrink-0"
                 />
-                <Wand2 className="w-3.5 h-3.5" />
-                <span className="truncate max-w-[210px] sm:max-w-none">{t('brandIdentity.autoDeriveLabel')}</span>
+                <Wand2 className="w-3.5 h-3.5 shrink-0" />
+                <span>{t('brandIdentity.autoDeriveLabel')}</span>
               </label>
             </div>
 

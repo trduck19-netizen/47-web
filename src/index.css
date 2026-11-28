@@ -581,7 +581,7 @@ html.light .custom-scrollbar, .light .custom-scrollbar {
         color: var(--color-foreground) !important;
         margin: 0;
         padding: 0;
-        overflow-x: hidden;
+        overflow-x: clip;
         min-height: 100vh;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
       }
