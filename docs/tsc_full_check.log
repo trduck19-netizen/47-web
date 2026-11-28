@@ -1,4 +1,4 @@
---- tsconfig.homepage.json --noEmit --listFiles (UTC: 2026-11-28T13:14:10.071Z) ---
+--- tsconfig.homepage.json --noEmit --listFiles (UTC: 2026-11-28T16:02:52.385Z) ---
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -181,9 +181,9 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/fs-extra/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/qrcode/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/react-dom/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
-exit=0
-
---- tsconfig.json --noEmit (UTC: 2026-11-28T13:14:10.071Z) ---
+homepage_exit=0
+HOMEPAGE_TSC_OK
+--- tsc --noEmit (UTC: 2026-11-28T16:02:52.385Z) ---
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(546,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
@@ -443,12 +443,8 @@ functions/api/seller-orders/[id]/rate.ts(81,34): error TS2347: Untyped function 
 functions/api/seller-orders/[id]/rate.ts(95,38): error TS2347: Untyped function calls may not accept type arguments.
 functions/api/seller-orders/multi/[id]/pay-core.ts(136,11): error TS6133: 'holdUntil' is declared but its value is never read.
 functions/api/seller/codes/[id].ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
-functions/api/seller/codes/[id].ts(84,20): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
-functions/api/seller/codes/[id].ts(85,34): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
 functions/api/seller/codes/[id]/reveal.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
-functions/api/seller/codes/[id]/reveal.ts(70,38): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
 functions/api/seller/codes/[id]/reveal.ts(70,69): error TS2339: Property 'member_id' does not exist on type 'SellerRecord'.
-functions/api/seller/codes/[id]/reveal.ts(75,20): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
 functions/api/seller/disputes/[id]/respond.ts(1,31): error TS2307: Cannot find module '@cloudflare/workers-types' or its corresponding type declarations.
 functions/api/seller/disputes/[id]/respond.ts(2,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
 functions/api/seller/disputes/[id]/respond.ts(24,57): error TS7006: Parameter 'context' implicitly has an 'any' type.
@@ -474,14 +470,9 @@ functions/api/seller/orders/[id]/resolve-report.ts(2,35): error TS6133: 'logAdmi
 functions/api/seller/orders/[id]/resolve-report.ts(40,11): error TS6133: 'memberId' is declared but its value is never read.
 functions/api/seller/orders/index.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
 functions/api/seller/products/[id]/codes.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
-functions/api/seller/products/[id]/codes.ts(303,20): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
-functions/api/seller/products/[id]/codes.ts(304,34): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
 functions/api/seller/subaccounts/[id].ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
 functions/api/seller/subaccounts/[id].ts(2,35): error TS6133: 'logAdminAudit' is declared but its value is never read.
 functions/api/seller/subaccounts/index.ts(1,1): error TS6133: 'verifyMemberAuth' is declared but its value is never read.
-functions/api/seller/subaccounts/index.ts(106,39): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
-functions/api/seller/subaccounts/index.ts(158,20): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
-functions/api/seller/subaccounts/index.ts(159,34): error TS2551: Property 'member' does not exist on type 'StoreAuthResult'. Did you mean 'memberId'?
 functions/api/shipping/index.ts(1,29): error TS6133: 'verifyAdminAuth' is declared but its value is never read.
 functions/api/shipping/index.ts(1,46): error TS6133: 'verifyAiKeyAuth' is declared but its value is never read.
 functions/api/stats.ts(85,11): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<unknown>'.
@@ -586,21 +577,21 @@ functions/data/compact_seed_news.ts(219,5): error TS2353: Object literal may onl
 functions/data/compact_seed_news.ts(253,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
 functions/data/compact_seed_news.ts(286,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
 functions/data/compact_seed_news.ts(319,5): error TS2353: Object literal may only specify known properties, and '"excerpt"' does not exist in type 'NewsArticle'.
-functions/services/d1_service.ts(5103,7): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<any>'.
+functions/services/d1_service.ts(5261,7): error TS2345: Argument of type '{ results: any[]; }' is not assignable to parameter of type 'D1Result<any>'.
   Property 'success' is missing in type '{ results: any[]; }' but required in type 'D1Result<any>'.
-functions/services/d1_service.ts(6335,19): error TS2339: Property 'forEach' does not exist on type 'never'.
-functions/services/d1_service.ts(6413,23): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
-functions/services/d1_service.ts(6488,24): error TS2304: Cannot find name 'clm'.
-functions/services/d1_service.ts(6489,22): error TS2304: Cannot find name 'tot'.
-functions/services/d1_service.ts(6490,26): error TS2304: Cannot find name 'coverUrl'.
-functions/services/d1_service.ts(6491,24): error TS2304: Cannot find name 'iconUrl'.
-functions/services/d1_service.ts(6492,22): error TS2304: Cannot find name 'desc'.
-functions/services/d1_service.ts(6493,18): error TS2304: Cannot find name 'rew'.
-functions/services/d1_service.ts(6494,21): error TS2304: Cannot find name 'startTime'.
-functions/services/d1_service.ts(6495,19): error TS2304: Cannot find name 'endTime'.
-functions/services/d1_service.ts(6999,3): error TS6133: 'db' is declared but its value is never read.
-functions/services/d1_service.ts(7000,3): error TS6133: 'aggregates' is declared but its value is never read.
-functions/services/d1_service.ts(7001,3): error TS6133: 'events' is declared but its value is never read.
+functions/services/d1_service.ts(6493,19): error TS2339: Property 'forEach' does not exist on type 'never'.
+functions/services/d1_service.ts(6571,23): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
+functions/services/d1_service.ts(6646,24): error TS2304: Cannot find name 'clm'.
+functions/services/d1_service.ts(6647,22): error TS2304: Cannot find name 'tot'.
+functions/services/d1_service.ts(6648,26): error TS2304: Cannot find name 'coverUrl'.
+functions/services/d1_service.ts(6649,24): error TS2304: Cannot find name 'iconUrl'.
+functions/services/d1_service.ts(6650,22): error TS2304: Cannot find name 'desc'.
+functions/services/d1_service.ts(6651,18): error TS2304: Cannot find name 'rew'.
+functions/services/d1_service.ts(6652,21): error TS2304: Cannot find name 'startTime'.
+functions/services/d1_service.ts(6653,19): error TS2304: Cannot find name 'endTime'.
+functions/services/d1_service.ts(7157,3): error TS6133: 'db' is declared but its value is never read.
+functions/services/d1_service.ts(7158,3): error TS6133: 'aggregates' is declared but its value is never read.
+functions/services/d1_service.ts(7159,3): error TS6133: 'events' is declared but its value is never read.
 functions/services/giveaway_simulation_service.ts(1,28): error TS2307: Cannot find module '@cloudflare/workers-types' or its corresponding type declarations.
 functions/services/giveaway_simulation_service.ts(265,112): error TS7006: Parameter 'e' implicitly has an 'any' type.
 functions/services/google_auth_service.ts(6,29): error TS6133: 'getSigningSecret' is declared but its value is never read.
@@ -687,7 +678,7 @@ functions/services/snapshotService.ts(395,37): error TS2322: Type 'GlobalMetrics
   Type 'null' is not assignable to type 'GlobalMetricsSnapshot'.
 functions/services/snapshotService.ts(409,5): error TS2322: Type 'GlobalMetricsSnapshot | null' is not assignable to type 'GlobalMetricsSnapshot'.
   Type 'null' is not assignable to type 'GlobalMetricsSnapshot'.
-functions/services/store_api_service.ts(104,61): error TS6133: 'allowReadOnly' is declared but its value is never read.
+functions/services/store_api_service.ts(111,61): error TS6133: 'allowReadOnly' is declared but its value is never read.
 functions/services/telegram_service.ts(340,28): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
 functions/services/telegram_service.ts(340,40): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
 functions/services/telegram_service.ts(341,24): error TS2339: Property 'expiry' does not exist on type 'NotifyCodeItem'.
@@ -729,8 +720,6 @@ src/admin/components/RecentBalanceChangesWidget.tsx(44,3): error TS6133: 'onRefr
 src/admin/components/TemporaryAuditTokenManager.tsx(4,3): error TS6133: 'ShieldCheck' is declared but its value is never read.
 src/admin/components/TemporaryAuditTokenManager.tsx(11,3): error TS6133: 'AlertTriangle' is declared but its value is never read.
 src/admin/components/ui/DuplicateCodesModal.tsx(2,41): error TS6133: 'Layers' is declared but its value is never read.
-src/admin/components/ui/ImageUploadInput.tsx(152,39): error TS2339: Property 'originalSizeFormatted' does not exist on type 'CompressionResult'.
-src/admin/components/ui/ImageUploadInput.tsx(152,80): error TS2339: Property 'compressedSizeFormatted' does not exist on type 'CompressionResult'.
 src/admin/components/ui/PackageManagerSection.tsx(2,33): error TS6133: 'Sparkles' is declared but its value is never read.
 src/admin/components/ui/PackageManagerSection.tsx(2,43): error TS6133: 'Layers' is declared but its value is never read.
 src/admin/components/ui/PackageManagerSection.tsx(2,51): error TS6133: 'Check' is declared but its value is never read.
@@ -1134,29 +1123,29 @@ src/admin/services/adminDataService.ts(4114,51): error TS2367: This comparison a
 src/admin/services/adminDataService.ts(4123,11): error TS2322: Type '"HOLD"' is not assignable to type '"AVAILABLE" | "SOLD" | "RESERVED"'.
 src/admin/services/adminDataService.ts(4583,42): error TS6133: 'forceReset' is declared but its value is never read.
 src/admin/services/adminDataService.ts(5521,18): error TS2551: Property 'saveGame' does not exist on type 'AdminDataService'. Did you mean 'saveGames'?
-src/App.tsx(1205,29): error TS2339: Property 'image_url' does not exist on type 'UtilityProduct'.
-src/App.tsx(1205,50): error TS2339: Property 'icon' does not exist on type 'UtilityProduct'.
-src/App.tsx(1406,33): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1410,34): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1410,40): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
-src/App.tsx(1474,24): error TS7006: Parameter 'prod' implicitly has an 'any' type.
-src/App.tsx(1474,30): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
-src/App.tsx(1474,35): error TS7006: Parameter 'qty' implicitly has an 'any' type.
-src/App.tsx(1509,23): error TS7006: Parameter '_slug' implicitly has an 'any' type.
-src/App.tsx(1509,30): error TS7006: Parameter 'code' implicitly has an 'any' type.
-src/App.tsx(1520,30): error TS7006: Parameter 'id' implicitly has an 'any' type.
-src/App.tsx(1521,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1545,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1634,35): error TS7006: Parameter 'initialTab' implicitly has an 'any' type.
-src/App.tsx(1638,31): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1658,32): error TS7006: Parameter 'id' implicitly has an 'any' type.
-src/App.tsx(1658,36): error TS7006: Parameter 'type' implicitly has an 'any' type.
-src/App.tsx(1684,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1685,28): error TS7006: Parameter 'game' implicitly has an 'any' type.
-src/App.tsx(1698,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
-src/App.tsx(1700,31): error TS7006: Parameter 'utilityId' implicitly has an 'any' type.
-src/App.tsx(1704,32): error TS7006: Parameter 'giveawayId' implicitly has an 'any' type.
-src/App.tsx(1714,51): error TS7006: Parameter 'tab' implicitly has an 'any' type.
+src/App.tsx(1211,29): error TS2339: Property 'image_url' does not exist on type 'UtilityProduct'.
+src/App.tsx(1211,50): error TS2339: Property 'icon' does not exist on type 'UtilityProduct'.
+src/App.tsx(1412,33): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1416,34): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1416,40): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
+src/App.tsx(1480,24): error TS7006: Parameter 'prod' implicitly has an 'any' type.
+src/App.tsx(1480,30): error TS7006: Parameter 'pkg' implicitly has an 'any' type.
+src/App.tsx(1480,35): error TS7006: Parameter 'qty' implicitly has an 'any' type.
+src/App.tsx(1515,23): error TS7006: Parameter '_slug' implicitly has an 'any' type.
+src/App.tsx(1515,30): error TS7006: Parameter 'code' implicitly has an 'any' type.
+src/App.tsx(1526,30): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/App.tsx(1527,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1551,26): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1640,35): error TS7006: Parameter 'initialTab' implicitly has an 'any' type.
+src/App.tsx(1644,31): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1664,32): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/App.tsx(1664,36): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/App.tsx(1690,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1691,28): error TS7006: Parameter 'game' implicitly has an 'any' type.
+src/App.tsx(1704,32): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+src/App.tsx(1706,31): error TS7006: Parameter 'utilityId' implicitly has an 'any' type.
+src/App.tsx(1710,32): error TS7006: Parameter 'giveawayId' implicitly has an 'any' type.
+src/App.tsx(1720,51): error TS7006: Parameter 'tab' implicitly has an 'any' type.
 src/components/AllUpcomingGamesModal.tsx(120,56): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
 src/components/AllUpcomingGamesModal.tsx(282,82): error TS2367: This comparison appears to be unintentional because the types '"PENDING" | "UPCOMING" | "APPROVED" | "CANCELLED"' and '"RELEASED"' have no overlap.
 src/components/AuthModal.tsx(64,40): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
@@ -2002,4 +1991,6 @@ src/utils/productPackageUtils.ts(501,58): error TS2367: This comparison appears 
 src/utils/productPackageUtils.ts(501,82): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
 src/utils/productPackageUtils.ts(501,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
 src/utils/productPackageUtils.ts(510,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'GiveawayCampaign'.
-exit=2
+full_tsc_exit=2
+total_tsc_errors=1652
+current_ts6133_count=455

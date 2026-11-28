@@ -276,6 +276,12 @@ async function main() {
     ['/api/admin/crawler/sources', 'POST'],
     ['/api/admin/sellers/sel_1/approve', 'POST'],
     ['/api/admin/affiliate/partnerships/sap_1', 'PATCH'],
+    // Nhóm 4 PA1: 5 tuyến ghi công khai còn sót
+    ['/api/seller', 'POST'],
+    ['/api/seller/orders/so_1/resolve-report', 'POST'],
+    ['/api/admin/orders/ord_1/refund', 'POST'],
+    ['/api/seller/codes/sc_1', 'DELETE'],
+    ['/api/seller/affiliate/partners/sap_1', 'DELETE'],
   ];
   for (const [p, m] of writeMustBump) {
     check(`bump_true_${m}_${p}`, shouldBumpCatalogEpoch(p, m), true);
@@ -284,8 +290,11 @@ async function main() {
   const mustNotBump: Array<[string, string]> = [
     ['/api/sync-lite', 'GET'],
     ['/api/products', 'GET'],
+    ['/api/seller', 'GET'],
+    ['/api/seller/codes/sc_1/reveal', 'POST'],
     ['/api/auth/login', 'POST'],
     ['/api/user/wishlist/toggle', 'POST'],
+    ['/api/user/addresses/addr_1', 'DELETE'],
     ['/api/admin/audit-log', 'POST'],
     ['/api/seller/webhooks', 'POST'],
     ['/api/webhooks/affiliate-postback', 'POST'],

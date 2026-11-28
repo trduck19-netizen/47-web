@@ -1,4 +1,5 @@
 import { computeSha256, verifyMemberAuth } from './mission_service';
+import { getSigningSecret, verifyToken } from './auth_service';
 import { SellerRecord } from './marketplace_service';
 
 export interface SellerApiKeyRecord {
@@ -49,6 +50,12 @@ export interface StoreAuthResult {
   seller?: SellerRecord;
   sellerId?: string;
   memberId?: string;
+  member?: {
+    id: string;
+    username?: string;
+    email?: string;
+    role?: string;
+  };
   keyId?: string;
   keyName?: string;
   scope?: string;
@@ -394,25 +401,81 @@ export async function verifyStoreApiAccess(
     };
   }
 
-  // 4. Case C: Web Member Session Fallback
-  const memberAuth = await verifyMemberAuth(request, env as any);
-  if (!memberAuth.authorized || !memberAuth.member) {
-    return {
-      authorized: false,
-      status: 401,
-      error: memberAuth.error || 'Vui lòng cung cấp khóa API gian hàng (X-Store-Key / Authorization: Bearer wcg_sk_...) hoặc đăng nhập tài khoản.',
-    };
+  // 4. Case C: Web Member Session Fallback (tối ưu 1 D1 RTT qua db.batch khi token là signed JWT)
+  const bearerClean = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  let resolvedMember: any = null;
+  let seller: any = null;
+  let subRole: 'OWNER' | 'MANAGE_STOCK' | 'VIEW_ORDERS' = 'OWNER';
+
+  if (
+    (bearerClean.startsWith('pine_edge_tok_') || bearerClean.startsWith('wcg_edge_tok_')) &&
+    typeof (env.DB as any).batch === 'function'
+  ) {
+    try {
+      const secret = env.JWT_SECRET || getSigningSecret(env);
+      const verified = await verifyToken(bearerClean, [secret]);
+      if (verified.valid && verified.userId) {
+        const batchRes: any[] = await (env.DB as any).batch([
+          env.DB.prepare('SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1').bind(verified.userId, verified.userId),
+          env.DB.prepare('SELECT * FROM sellers WHERE owner_member_id = ? AND deleted_at IS NULL LIMIT 1').bind(verified.userId),
+          env.DB
+            .prepare(`
+              SELECT s.*, sa.role as sub_role
+              FROM seller_subaccounts sa
+              JOIN sellers s ON sa.seller_id = s.id
+              WHERE sa.member_id = ? AND s.deleted_at IS NULL
+              LIMIT 1
+            `)
+            .bind(verified.userId),
+        ]);
+        const memEntry = batchRes?.[0];
+        if (memEntry && Array.isArray(memEntry.results)) {
+          const memRow = memEntry.results[0] || null;
+          if (memRow) {
+            if (memRow.status === 'BANNED') {
+              return {
+                authorized: false,
+                status: 401,
+                error: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên.',
+              };
+            }
+            resolvedMember = memRow;
+            if (memRow.id === verified.userId) {
+              seller = batchRes?.[1]?.results?.[0] || null;
+              if (!seller) {
+                const subRow = batchRes?.[2]?.results?.[0] || null;
+                if (subRow) {
+                  seller = subRow;
+                  subRole = subRow.sub_role;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch {}
   }
 
-  const memberId = memberAuth.member.id;
+  if (!resolvedMember) {
+    const memberAuth = await verifyMemberAuth(request, env as any);
+    if (!memberAuth.authorized || !memberAuth.member) {
+      return {
+        authorized: false,
+        status: 401,
+        error: memberAuth.error || 'Vui lòng cung cấp khóa API gian hàng (X-Store-Key / Authorization: Bearer wcg_sk_...) hoặc đăng nhập tài khoản.',
+      };
+    }
+    resolvedMember = memberAuth.member;
+  }
 
-  // Find Seller
-  let seller = await env.DB
-    .prepare('SELECT * FROM sellers WHERE owner_member_id = ? AND deleted_at IS NULL LIMIT 1')
-    .bind(memberId)
-    .first<SellerRecord>();
+  const memberId = resolvedMember.id;
 
-  let subRole: 'OWNER' | 'MANAGE_STOCK' | 'VIEW_ORDERS' = 'OWNER';
+  if (!seller) {
+    seller = await env.DB
+      .prepare('SELECT * FROM sellers WHERE owner_member_id = ? AND deleted_at IS NULL LIMIT 1')
+      .bind(memberId)
+      .first<SellerRecord>();
+  }
 
   if (!seller) {
     const sub = await env.DB
@@ -435,6 +498,7 @@ export async function verifyStoreApiAccess(
   if (!seller) {
     return {
       authorized: false,
+      authType: 'MEMBER_SESSION',
       status: 404,
       error: 'Bạn chưa có gian hàng hoặc chưa được gán quyền thành viên trong bất kỳ gian hàng nào.',
     };
@@ -480,6 +544,12 @@ export async function verifyStoreApiAccess(
     seller,
     sellerId: seller.id,
     memberId,
+    member: {
+      id: memberId,
+      username: resolvedMember.username,
+      email: resolvedMember.email,
+      role: resolvedMember.role,
+    },
     role: subRole,
   };
 }

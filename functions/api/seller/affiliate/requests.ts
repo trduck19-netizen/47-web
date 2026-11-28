@@ -63,8 +63,14 @@ export async function onRequestGet(context: { request: Request; env: { DB: D1Dat
     let incoming: any[] = [];
     let outgoing: any[] = [];
 
-    if (role === 'supplier' || role === 'all') {
-      const resIn = await env.DB.prepare(incomingQuery).bind(seller.id).all();
+    const wantIn = role === 'supplier' || role === 'all';
+    const wantOut = role === 'reseller' || role === 'all';
+    const [resIn, resOut] = await Promise.all([
+      wantIn ? env.DB.prepare(incomingQuery).bind(seller.id).all() : Promise.resolve(null),
+      wantOut ? env.DB.prepare(outgoingQuery).bind(seller.id).all() : Promise.resolve(null),
+    ]);
+
+    if (resIn) {
       // NCC không bao giờ được xem khóa thô hay mã băm, chỉ xem prefix
       incoming = (resIn.results || []).map((r: any) => {
         const { one_time_raw_key, api_key_hash, ...rest } = r;
@@ -72,8 +78,7 @@ export async function onRequestGet(context: { request: Request; env: { DB: D1Dat
       });
     }
 
-    if (role === 'reseller' || role === 'all') {
-      const resOut = await env.DB.prepare(outgoingQuery).bind(seller.id).all();
+    if (resOut) {
       outgoing = (resOut.results || []).map((r: any) => {
         const { api_key_hash, ...rest } = r;
         return rest;
@@ -81,12 +86,16 @@ export async function onRequestGet(context: { request: Request; env: { DB: D1Dat
 
       // Shop Gán chỉ nhận one_time_raw_key DUY NHẤT 1 LẦN -> Xóa ngay sau khi đọc
       const idsToClear = outgoing.filter((r: any) => r.one_time_raw_key).map((r: any) => r.id);
-      for (const reqId of idsToClear) {
-        await env.DB
-          .prepare("UPDATE seller_affiliate_partnerships SET one_time_raw_key = NULL WHERE id = ?")
-          .bind(reqId)
-          .run()
-          .catch(() => {});
+      if (idsToClear.length > 0) {
+        await Promise.all(
+          idsToClear.map((reqId: string) =>
+            env.DB
+              .prepare("UPDATE seller_affiliate_partnerships SET one_time_raw_key = NULL WHERE id = ?")
+              .bind(reqId)
+              .run()
+              .catch(() => {})
+          )
+        );
       }
     }
 

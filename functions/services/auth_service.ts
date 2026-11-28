@@ -402,30 +402,55 @@ export async function authenticateCaller(
     return { authenticated: false, member: null };
   }
 
-  // 1. Kiểm tra session_token chính xác trong bảng members
+  // 1. Token có chữ ký HMAC-SHA256 (pine_edge_tok_ / wcg_edge_tok_): xác thực chữ ký trong RAM trước (0 D1 RTT),
+  // rồi tra trực tiếp theo id/username thay vì quét session_token.
+  const isSignedToken = clean.startsWith('pine_edge_tok_') || clean.startsWith('wcg_edge_tok_');
+  if (isSignedToken) {
+    try {
+      const secret = envSecret || getSigningSecret({});
+      const { valid, userId } = await verifyToken(clean, [secret]);
+      if (valid && userId) {
+        const memberById = await db
+          .prepare('SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1')
+          .bind(userId, userId)
+          .first<any>();
+        if (memberById) {
+          if (memberById.status === 'BANNED') {
+            return { authenticated: false, member: null };
+          }
+          return { authenticated: true, member: memberById };
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Fallback: kiểm tra session_token trong bảng members (token DB truyền thống)
   try {
-    const memberBySession = await db.prepare(
-      'SELECT * FROM members WHERE session_token = ? LIMIT 1'
-    ).bind(clean).first<any>();
+    const memberBySession = await db
+      .prepare('SELECT * FROM members WHERE session_token = ? LIMIT 1')
+      .bind(clean)
+      .first<any>();
 
     if (memberBySession && memberBySession.status !== 'BANNED') {
       return { authenticated: true, member: memberBySession };
     }
   } catch {}
 
-  // 2. Xác thực chữ ký cryptographic HMAC-SHA256
-  try {
-    const secret = envSecret || getSigningSecret({});
-    const { valid, userId } = await verifyToken(clean, [secret]);
-    if (valid && userId) {
-      const memberById = await db.prepare(
-        'SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1'
-      ).bind(userId, userId).first<any>();
-      if (memberById && memberById.status !== 'BANNED') {
-        return { authenticated: true, member: memberById };
+  if (!isSignedToken) {
+    try {
+      const secret = envSecret || getSigningSecret({});
+      const { valid, userId } = await verifyToken(clean, [secret]);
+      if (valid && userId) {
+        const memberById = await db
+          .prepare('SELECT * FROM members WHERE id = ? OR username = ? LIMIT 1')
+          .bind(userId, userId)
+          .first<any>();
+        if (memberById && memberById.status !== 'BANNED') {
+          return { authenticated: true, member: memberById };
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   return { authenticated: false, member: null };
 }

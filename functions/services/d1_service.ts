@@ -831,28 +831,66 @@ export async function ensureGameCommentsSchema(db: D1Database): Promise<void> {
 }
 
 let _marketplaceSchemaEnsured = false;
+let _marketplaceSchemaPromise: Promise<void> | null = null;
 
 /**
  * Safe runtime schema for Marketplace Phase 1 (Sàn TMĐT Số - Nền Gian Hàng MVP)
- * Tối ưu hóa 0s: Sử dụng in-memory cache và fast check 1 query để tránh gọi 51 DDL queries tuần tự
+ * Tối ưu hóa 0s: Sử dụng in-memory cache + single-flight promise + db.batch 1 RTT thay cho các DDL tuần tự
  */
 export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
   if (_marketplaceSchemaEnsured) return;
+  if (_marketplaceSchemaPromise) {
+    return _marketplaceSchemaPromise;
+  }
 
-  try {
-    // ⚡ Fast-path: Kiểm tra 1 query duy nhất (~15ms) xem bảng khiếu nại sàn đã tồn tại trong D1 chưa
-    const quickCheck = await db
-      .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_disputes' LIMIT 1")
-      .first<any>();
+  _marketplaceSchemaPromise = (async () => {
+    try {
+      // ⚡ Fast-path 1 RTT: Kiểm tra đồng thời trong 1 batch nếu môi trường D1 hỗ trợ batch()
+      let quickCheck: any = null;
+      let hasBannerPreset: any = null;
+      let hasImagesJson: any = null;
+      let hasMediaTbl: any = null;
 
-    if (quickCheck) {
-      // Đảm bảo các cột trang trí (0054) & đa ngành 10 ảnh + voucher gian hàng (0055) luôn sẵn sàng trên isolate lạnh
-      const [hasBannerPreset, hasImagesJson, hasMediaTbl] = await Promise.all([
-        db.prepare("SELECT 1 FROM pragma_table_info('sellers') WHERE name = 'banner_preset' LIMIT 1").first<any>().catch(() => null),
-        db.prepare("SELECT 1 FROM pragma_table_info('seller_products') WHERE name = 'images_json' LIMIT 1").first<any>().catch(() => null),
-        db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_media_assets' LIMIT 1").first<any>().catch(() => null),
-      ]);
-      if (!hasBannerPreset) {
+      if (typeof (db as any).batch === 'function') {
+        try {
+          const batchRes: any[] = await (db as any).batch([
+            db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_disputes' LIMIT 1"),
+            db.prepare("SELECT 1 FROM pragma_table_info('sellers') WHERE name = 'banner_preset' LIMIT 1"),
+            db.prepare("SELECT 1 FROM pragma_table_info('seller_products') WHERE name = 'images_json' LIMIT 1"),
+            db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_media_assets' LIMIT 1"),
+          ]);
+          quickCheck = batchRes?.[0]?.results?.[0] || null;
+          hasBannerPreset = batchRes?.[1]?.results?.[0] || null;
+          hasImagesJson = batchRes?.[2]?.results?.[0] || null;
+          hasMediaTbl = batchRes?.[3]?.results?.[0] || null;
+        } catch {
+          quickCheck = await db
+            .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_disputes' LIMIT 1")
+            .first<any>()
+            .catch(() => null);
+          if (quickCheck) {
+            [hasBannerPreset, hasImagesJson, hasMediaTbl] = await Promise.all([
+              db.prepare("SELECT 1 FROM pragma_table_info('sellers') WHERE name = 'banner_preset' LIMIT 1").first<any>().catch(() => null),
+              db.prepare("SELECT 1 FROM pragma_table_info('seller_products') WHERE name = 'images_json' LIMIT 1").first<any>().catch(() => null),
+              db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_media_assets' LIMIT 1").first<any>().catch(() => null),
+            ]);
+          }
+        }
+      } else {
+        quickCheck = await db
+          .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_disputes' LIMIT 1")
+          .first<any>();
+        if (quickCheck) {
+          [hasBannerPreset, hasImagesJson, hasMediaTbl] = await Promise.all([
+            db.prepare("SELECT 1 FROM pragma_table_info('sellers') WHERE name = 'banner_preset' LIMIT 1").first<any>().catch(() => null),
+            db.prepare("SELECT 1 FROM pragma_table_info('seller_products') WHERE name = 'images_json' LIMIT 1").first<any>().catch(() => null),
+            db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seller_media_assets' LIMIT 1").first<any>().catch(() => null),
+          ]);
+        }
+      }
+
+      if (quickCheck) {
+        if (!hasBannerPreset) {
         await db.prepare("ALTER TABLE sellers ADD COLUMN banner_preset TEXT DEFAULT 'aurora_indigo';").run().catch(() => {});
         await db.prepare("ALTER TABLE sellers ADD COLUMN pinned_notice TEXT DEFAULT NULL;").run().catch(() => {});
       }
@@ -1273,6 +1311,13 @@ export async function ensureMarketplaceSchema(db: D1Database): Promise<void> {
     _marketplaceSchemaEnsured = true;
   } catch (err: any) {
     console.warn('[ensureMarketplaceSchema error]', err?.message);
+  }
+  })();
+
+  try {
+    await _marketplaceSchemaPromise;
+  } finally {
+    _marketplaceSchemaPromise = null;
   }
 }
 
@@ -4207,6 +4252,119 @@ export async function ensureSchemaUpgrades(db: D1Database): Promise<SchemaTiming
     }
   } catch (err: any) {
     console.warn('[Migration 0056_vouchers_and_icons_guard_v1 error]', err?.message);
+  }
+
+  // Migration 0057: Seller SePay Webhook sliding-window column (unauth_fail_window_started_at)
+  try {
+    const mig57Check = appliedMigSet.has('0057_seller_sepay_webhook_window_v1');
+    if (!mig57Check) {
+      await db.prepare('ALTER TABLE seller_sepay_configs ADD COLUMN unauth_fail_window_started_at TEXT DEFAULT NULL;').run().catch(() => {});
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0057_seller_sepay_webhook_window_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0057_seller_sepay_webhook_window_v1 error]', err?.message);
+  }
+
+  // Migration 0058: Clean legacy CodeGame.Shop / Web Code Game items inside wcg_admin_content_v4 + index members(session_token)
+  try {
+    const mig58Check = appliedMigSet.has('0058_clean_legacy_content_and_auth_indexes_v1');
+    if (!mig58Check) {
+      await db.prepare('CREATE INDEX IF NOT EXISTS idx_members_session_token ON members(session_token);').run().catch(() => {});
+      const row = await db
+        .prepare("SELECT value FROM system_settings WHERE key = 'wcg_admin_content_v4' LIMIT 1")
+        .first<{ value?: string }>()
+        .catch(() => null);
+      if (row?.value) {
+        try {
+          const items = JSON.parse(row.value);
+          if (Array.isArray(items)) {
+            const nowIso = new Date().toISOString();
+            let changed = false;
+            const cleaned = items.map((item: any) => {
+              if (!item || typeof item !== 'object') return item;
+              if (item.key === 'website_branding') {
+                const nextExtra = { ...(item.extraData || {}) };
+                if (nextExtra.logoUrl === '/logo.png') { nextExtra.logoUrl = '/logo.webp'; changed = true; }
+                if (nextExtra.avatarUrl === '/logo.png') { nextExtra.avatarUrl = '/logo.webp'; changed = true; }
+                if (/codegame\.shop/i.test(String(item.title || ''))) {
+                  changed = true;
+                  return { ...item, title: 'Pine Universal Mall', extraData: nextExtra, updatedAt: nowIso };
+                }
+                return { ...item, extraData: nextExtra };
+              }
+              if (item.key === 'footer_support') {
+                const nextExtra = { ...(item.extraData || {}) };
+                if (/codegame\.shop/i.test(String(nextExtra.brandTitle || ''))) {
+                  nextExtra.brandTitle = 'Pine Universal Mall';
+                  changed = true;
+                }
+                if (nextExtra.brandLogo === '/logo.png') {
+                  nextExtra.brandLogo = '/logo.webp';
+                  changed = true;
+                }
+                const oldContent = String(item.content || '');
+                const nextContent = oldContent.replace(/Web\s*Code\s*Game/gi, 'Pine Universal Mall');
+                if (nextContent !== oldContent) changed = true;
+                return { ...item, content: nextContent, extraData: nextExtra, updatedAt: changed ? nowIso : item.updatedAt };
+              }
+              if (item.key === 'announcement_banner') {
+                const oldTitle = String(item.title || '');
+                const nextTitle = oldTitle.replace(/CodeGame\.shop/gi, 'Pine Universal Mall');
+                if (nextTitle !== oldTitle) {
+                  changed = true;
+                  return { ...item, title: nextTitle, updatedAt: nowIso };
+                }
+              }
+              if (item.key === 'floating_notification') {
+                const nextExtra = { ...(item.extraData || {}) };
+                let itemChanged = false;
+                let nextTitle = String(item.title || '');
+                if (/codegame\.shop/i.test(nextTitle)) {
+                  nextTitle = '🎁 Chào Mừng Đến Với Pine Universal Mall';
+                  itemChanged = true;
+                }
+                let nextContent = String(item.content || '');
+                if (/giftcode\s*vip/i.test(nextContent)) {
+                  nextContent = nextContent.replace(/Giftcode\s*VIP\s*và\s*mã\s*bản\s*quyền\s*chính\s*hãng/gi, 'mã quà tặng & ưu đãi').replace(/Giftcode\s*VIP/gi, 'mã quà tặng');
+                  itemChanged = true;
+                }
+                if (/#game-catalog/i.test(String(nextExtra.ctaLink || ''))) {
+                  nextExtra.ctaLink = '/store';
+                  if (/khám\s*phá\s*giftcode/i.test(String(nextExtra.ctaText || ''))) {
+                    nextExtra.ctaText = 'Khám Phá Cửa Hàng';
+                  }
+                  nextExtra.updatedAt = nowIso;
+                  itemChanged = true;
+                }
+                if (itemChanged) {
+                  changed = true;
+                  return { ...item, title: nextTitle, content: nextContent, extraData: nextExtra, updatedAt: nowIso };
+                }
+              }
+              return item;
+            });
+            if (changed) {
+              await db
+                .prepare("UPDATE system_settings SET value = ?, updated_at = ? WHERE key = 'wcg_admin_content_v4'")
+                .bind(JSON.stringify(cleaned), nowIso)
+                .run()
+                .catch(() => {});
+            }
+          }
+        } catch {}
+      }
+      await db.prepare("INSERT OR IGNORE INTO schema_migrations (id) VALUES ('0058_clean_legacy_content_and_auth_indexes_v1');").run();
+    }
+  } catch (err: any) {
+    console.warn('[Migration 0058_clean_legacy_content_and_auth_indexes_v1 error]', err?.message);
+  }
+
+  if (
+    appliedMigSet.has('core_subschemas_v1') &&
+    appliedMigSet.has('0054_seller_storefront_branding_v1') &&
+    appliedMigSet.has('0055_multi_industry_seller_products_v1')
+  ) {
+    _marketplaceSchemaEnsured = true;
   }
 
   lastSchemaTiming = { migSelectMs: _migSelectMs, ddlMs: Math.max(0, Date.now() - _ddlStart), cacheHit: false };

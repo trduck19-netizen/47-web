@@ -41,11 +41,37 @@ export interface SellerSepayConfigRow {
   last_verified_at?: string | null;
   last_webhook_at?: string | null;
   unauth_fail_count_1h: number;
+  unauth_fail_window_started_at?: string | null;
   fee_debt_core: number;
   total_direct_orders: number;
   total_direct_volume_vnd: number;
   created_at?: string;
   updated_at?: string;
+}
+
+export const SEPAY_WEBHOOK_FAIL_LIMIT_1H = 10;
+export const SEPAY_WEBHOOK_FAIL_WINDOW_MS = 3600 * 1000;
+
+export function evaluateSepayWebhookRateLimit(
+  cfg: Pick<SellerSepayConfigRow, 'unauth_fail_count_1h' | 'unauth_fail_window_started_at' | 'updated_at'>,
+  nowMs = Date.now()
+): {
+  blocked: boolean;
+  retryAfterSeconds: number;
+  windowActive: boolean;
+} {
+  const count = Number(cfg.unauth_fail_count_1h || 0);
+  const windowIso = cfg.unauth_fail_window_started_at || cfg.updated_at || '';
+  const windowStartMs = windowIso ? Date.parse(windowIso) : NaN;
+  const windowActive = Number.isFinite(windowStartMs) && nowMs - windowStartMs < SEPAY_WEBHOOK_FAIL_WINDOW_MS;
+  if (!windowActive || count < SEPAY_WEBHOOK_FAIL_LIMIT_1H) {
+    return { blocked: false, retryAfterSeconds: 0, windowActive };
+  }
+  const retryAfterSeconds = Math.max(
+    1,
+    Math.ceil((windowStartMs + SEPAY_WEBHOOK_FAIL_WINDOW_MS - nowMs) / 1000)
+  );
+  return { blocked: true, retryAfterSeconds, windowActive: true };
 }
 
 export function timingSafeEqualStr(a: string, b: string): boolean {
@@ -167,6 +193,7 @@ export async function ensureSellerSepaySchema(db: D1Database): Promise<void> {
         last_verified_at TEXT DEFAULT NULL,
         last_webhook_at TEXT DEFAULT NULL,
         unauth_fail_count_1h INTEGER NOT NULL DEFAULT 0,
+        unauth_fail_window_started_at TEXT DEFAULT NULL,
         fee_debt_core REAL NOT NULL DEFAULT 0,
         total_direct_orders INTEGER NOT NULL DEFAULT 0,
         total_direct_volume_vnd REAL NOT NULL DEFAULT 0,
@@ -174,6 +201,11 @@ export async function ensureSellerSepaySchema(db: D1Database): Promise<void> {
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `)
+    .run()
+    .catch(() => {});
+
+  await db
+    .prepare('ALTER TABLE seller_sepay_configs ADD COLUMN unauth_fail_window_started_at TEXT DEFAULT NULL;')
     .run()
     .catch(() => {});
 

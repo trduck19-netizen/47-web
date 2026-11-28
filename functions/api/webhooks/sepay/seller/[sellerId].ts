@@ -1,6 +1,8 @@
 import {
+  SEPAY_WEBHOOK_FAIL_LIMIT_1H,
   SellerSepayConfigRow,
   ensureSellerSepaySchema,
+  evaluateSepayWebhookRateLimit,
   hashSecretSha256,
   settleDirectSepayTransfer,
   timingSafeEqualStr,
@@ -91,6 +93,26 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
+    const rateLimit = evaluateSepayWebhookRateLimit(cfg);
+    if (rateLimit.blocked) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: 'RATE_LIMITED',
+          retry_after_seconds: rateLimit.retryAfterSeconds,
+          error: `Quá giới hạn ${SEPAY_WEBHOOK_FAIL_LIMIT_1H} lần xác thực sai trong 1 giờ. Vui lòng thử lại sau ${rateLimit.retryAfterSeconds} giây hoặc xoay khóa Webhook mới.`,
+          seller_id: sellerId,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...CORS_HEADERS,
+            'Retry-After': String(rateLimit.retryAfterSeconds),
+          },
+        }
+      );
+    }
+
     let payload: any = {};
     try {
       payload = await request.json();
@@ -160,14 +182,28 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           .run()
           .catch(() => {});
       }
-      await env.DB.prepare(`
-        UPDATE seller_sepay_configs
-        SET unauth_fail_count_1h = unauth_fail_count_1h + 1, updated_at = ?
-        WHERE seller_id = ?
-      `)
-        .bind(nowIso, sellerId)
-        .run()
-        .catch(() => {});
+      if (!rateLimit.windowActive || Number(cfg.unauth_fail_count_1h || 0) <= 0) {
+        await env.DB.prepare(`
+          UPDATE seller_sepay_configs
+          SET unauth_fail_count_1h = 1,
+              unauth_fail_window_started_at = ?,
+              updated_at = ?
+          WHERE seller_id = ?
+        `)
+          .bind(nowIso, nowIso, sellerId)
+          .run()
+          .catch(() => {});
+      } else {
+        await env.DB.prepare(`
+          UPDATE seller_sepay_configs
+          SET unauth_fail_count_1h = unauth_fail_count_1h + 1,
+              updated_at = ?
+          WHERE seller_id = ?
+        `)
+          .bind(nowIso, sellerId)
+          .run()
+          .catch(() => {});
+      }
 
       return new Response(
         JSON.stringify({
@@ -177,6 +213,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }),
         { status: 401, headers: CORS_HEADERS }
       );
+    }
+
+    if (Number(cfg.unauth_fail_count_1h || 0) > 0 || cfg.unauth_fail_window_started_at) {
+      await env.DB.prepare(`
+        UPDATE seller_sepay_configs
+        SET unauth_fail_count_1h = 0,
+            unauth_fail_window_started_at = NULL,
+            updated_at = ?
+        WHERE seller_id = ?
+      `)
+        .bind(new Date().toISOString(), sellerId)
+        .run()
+        .catch(() => {});
     }
 
     if (transferType !== 'in' || amount <= 0) {

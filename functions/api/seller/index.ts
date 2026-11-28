@@ -53,7 +53,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   try {
     await ensureMarketplaceSchema(env.DB);
-    const mConfig = await getMarketplaceConfig(env.DB);
+    const [mConfig, storeAuth] = await Promise.all([
+      getMarketplaceConfig(env.DB),
+      verifyStoreApiAccess(request, env as any, { requiredRole: 'ANY' }),
+    ]);
     const portalConfig = {
       theme_preset: mConfig.seller_portal_theme_preset || 'shopee_orange',
       allow_dark_mode: mConfig.seller_portal_allow_dark_mode !== false,
@@ -61,7 +64,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       banner_en: mConfig.seller_portal_banner_en || '',
     };
 
-    const storeAuth = await verifyStoreApiAccess(request, env as any, { requiredRole: 'ANY' });
     if (!storeAuth.authorized || !storeAuth.seller) {
       // Nếu là phiên web nhưng chưa có gian hàng -> trả has_seller: false để web hiển thị form mở gian hàng
       if (storeAuth.authType === 'MEMBER_SESSION' && storeAuth.status === 404) {
@@ -79,39 +81,29 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const seller = storeAuth.seller;
     const subRole = storeAuth.role || 'OWNER';
 
-    // Thống kê nhanh (§4)
-    // 1. Doanh thu Core hôm nay
-    const todayRevenue = await env.DB
+    // Thống kê nhanh (§4) — gom vào 1 lượt song song/batch thay cho 5-7 RTT tuần tự
+    const stmtTodayRev = env.DB
       .prepare(`
         SELECT COALESCE(SUM(price_core), 0) as total
         FROM seller_orders
         WHERE seller_id = ? AND status IN ('PAID', 'DELIVERED') AND date(created_at) = date('now')
       `)
-      .bind(seller.id)
-      .first<{ total: number }>();
-
-    // 2. Doanh thu 30 ngày qua
-    const monthRevenue = await env.DB
+      .bind(seller.id);
+    const stmtMonthRev = env.DB
       .prepare(`
         SELECT COALESCE(SUM(price_core), 0) as total
         FROM seller_orders
         WHERE seller_id = ? AND status IN ('PAID', 'DELIVERED') AND datetime(created_at) >= datetime('now', '-30 days')
       `)
-      .bind(seller.id)
-      .first<{ total: number }>();
-
-    // 3. Đơn chờ xử lý báo lỗi
-    const reportedOrdersCount = await env.DB
+      .bind(seller.id);
+    const stmtReported = env.DB
       .prepare(`
         SELECT COUNT(*) as count
         FROM seller_orders
         WHERE seller_id = ? AND status = 'REPORTED'
       `)
-      .bind(seller.id)
-      .first<{ count: number }>();
-
-    // 4. Sản phẩm cảnh báo kho thấp
-    const lowStockCount = await env.DB
+      .bind(seller.id);
+    const stmtLowStock = env.DB
       .prepare(`
         SELECT COUNT(*) as count
         FROM seller_products sp
@@ -121,31 +113,60 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
             WHERE sc.product_id = sp.id AND sc.status = 'IN_STOCK' AND sc.deleted_at IS NULL
           ) <= sp.low_stock_threshold
       `)
-      .bind(seller.id)
-      .first<{ count: number }>();
+      .bind(seller.id);
+    const stmtTotalProd = env.DB
+      .prepare("SELECT COUNT(*) as count FROM seller_products WHERE seller_id = ? AND deleted_at IS NULL")
+      .bind(seller.id);
 
-    // 5. Tổng số sản phẩm đang có + tóm tắt trạng thái Cổng SePay riêng
-    const [totalProducts, sepayCfgRow, sepayExRow] = await Promise.all([
-      env.DB
-        .prepare("SELECT COUNT(*) as count FROM seller_products WHERE seller_id = ? AND deleted_at IS NULL")
-        .bind(seller.id)
-        .first<{ count: number }>(),
-      env.DB
-        .prepare('SELECT is_enabled, admin_locked, fee_debt_core FROM seller_sepay_configs WHERE seller_id = ? LIMIT 1')
-        .bind(seller.id)
-        .first<{ is_enabled: number; admin_locked: number; fee_debt_core: number }>()
-        .catch(() => null),
-      env.DB
-        .prepare(`
-          SELECT COUNT(*) as count
-          FROM seller_sepay_transactions
-          WHERE seller_id = ?
-            AND status IN ('UNDERPAID', 'EXPIRED_PAYMENT', 'DUPLICATE_PAYMENT', 'UNMATCHED', 'PENDING_MANUAL_CODE')
-        `)
-        .bind(seller.id)
-        .first<{ count: number }>()
-        .catch(() => ({ count: 0 })),
-    ]);
+    const sepayCfgPromise = env.DB
+      .prepare('SELECT is_enabled, admin_locked, fee_debt_core FROM seller_sepay_configs WHERE seller_id = ? LIMIT 1')
+      .bind(seller.id)
+      .first<{ is_enabled: number; admin_locked: number; fee_debt_core: number }>()
+      .catch(() => null);
+    const sepayExPromise = env.DB
+      .prepare(`
+        SELECT COUNT(*) as count
+        FROM seller_sepay_transactions
+        WHERE seller_id = ?
+          AND status IN ('UNDERPAID', 'EXPIRED_PAYMENT', 'DUPLICATE_PAYMENT', 'UNMATCHED', 'PENDING_MANUAL_CODE')
+      `)
+      .bind(seller.id)
+      .first<{ count: number }>()
+      .catch(() => ({ count: 0 }));
+
+    let todayRevenue: { total: number } | null = null;
+    let monthRevenue: { total: number } | null = null;
+    let reportedOrdersCount: { count: number } | null = null;
+    let lowStockCount: { count: number } | null = null;
+    let totalProducts: { count: number } | null = null;
+    let sepayCfgRow: { is_enabled: number; admin_locked: number; fee_debt_core: number } | null = null;
+    let sepayExRow: { count: number } | null = null;
+
+    if (typeof (env.DB as any).batch === 'function') {
+      const [coreBatch, cfgRes, exRes] = await Promise.all([
+        (env.DB as any).batch([stmtTodayRev, stmtMonthRev, stmtReported, stmtLowStock, stmtTotalProd]),
+        sepayCfgPromise,
+        sepayExPromise,
+      ]);
+      todayRevenue = coreBatch?.[0]?.results?.[0] || null;
+      monthRevenue = coreBatch?.[1]?.results?.[0] || null;
+      reportedOrdersCount = coreBatch?.[2]?.results?.[0] || null;
+      lowStockCount = coreBatch?.[3]?.results?.[0] || null;
+      totalProducts = coreBatch?.[4]?.results?.[0] || null;
+      sepayCfgRow = cfgRes;
+      sepayExRow = exRes;
+    } else {
+      [todayRevenue, monthRevenue, reportedOrdersCount, lowStockCount, totalProducts, sepayCfgRow, sepayExRow] =
+        await Promise.all([
+          stmtTodayRev.first<{ total: number }>(),
+          stmtMonthRev.first<{ total: number }>(),
+          stmtReported.first<{ count: number }>(),
+          stmtLowStock.first<{ count: number }>(),
+          stmtTotalProd.first<{ count: number }>(),
+          sepayCfgPromise,
+          sepayExPromise,
+        ]);
+    }
 
     return new Response(
       JSON.stringify({

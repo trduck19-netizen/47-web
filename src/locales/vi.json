@@ -1666,6 +1666,7 @@
     "whRotateBtn": "Đổi Secret",
     "whDeleteBtn": "Xóa",
     "whDeleteConfirm": "Xóa webhook \"{name}\" và toàn bộ nhật ký gửi liên quan?",
+    "whDeleteModalTitle": "Xác Nhận Xóa Webhook",
     "whRotateConfirm": "Xoay khóa bí mật HMAC mới cho webhook \"{name}\"? Khóa cũ sẽ hết hiệu lực ngay.",
     "whNoWebhooks": "Gian hàng của bạn chưa có Webhook thông báo nào.",
     "whDeliveriesTitle": "Nhật Ký Gửi Webhook Gần Đây",

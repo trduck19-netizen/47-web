@@ -7,9 +7,33 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
 
 ## [2026-11-28]
 
-### 499. Vá Lỗi Thật S1 (`total_products = 0` Ở `GET /api/stores/:slug`), Chuẩn Hóa Bằng Chứng E2E Wrangler, Gộp Log `tsc`, Đính Chính Báo Cáo & 2 Điểm UI Nhóm 4 (28/11/2026)
+### 500. Khắc Phục Toàn Diện 5 Nhóm: Đính Chính Tài Liệu `0fe1469`, Rate Limit `429` SePay 1 Giờ, Dọn 3 Chuỗi Kế Thừa & Lỗi `tsc`, Bổ Sung 5 Tuyến PA1 Epoch, Tối Ưu Tải Lạnh `/seller#/affiliate` & Modal Xóa Webhook Song Ngữ (28/11/2026)
 - **Bối cảnh & Yêu cầu**:
-  - Khắc phục triệt để toàn bộ 4 nhóm + 5 đính chính (C1–C5) từ kiểm chứng độc lập chuỗi `8f237d8` → `e147eaa` → `d68c338` → `055cc0a`. Không phát sinh chuỗi UI mới; giữ nguyên cấu trúc song ngữ 35 tệp (`vi.json` == `en.json`, `3.091 / 3.091` khóa).
+  - Thực hiện trọn vẹn 5 nhóm theo kế hoạch đã duyệt (`ke_hoach_sua_5_nhom_toan_dien_28_11.md` kèm Đ1–Đ4), xoay vòng `#480` sang `docs/archive/CHANGELOG_ARCHIVE_2026.md` để duy trì đúng 20 mục hiện hành (`#481–#500`). Không đụng 8 tệp logo/favicon tĩnh và không sửa `functions/api/seller/webhooks/*`.
+- **Giải pháp áp dụng (Solution)**:
+  1. *Nhóm 1 — Đính chính báo cáo & bằng chứng (`CHANGELOG.md`, `PROJECT_MEMORY.md`, `docs/bao_cao_tong_hop_sua_loi_nho_9837e04_28_11.md`, `docs/browser_evidence/0fe1469-admin-sidebar-1366x768.png`)*:
+     - Đính chính mục `#499` (`27/27` → `26/26 PASS`), SHA đầy đủ `0fe1469301e465521847475d438e77c8e7e6f147`, `Injected Build ID: 055cc0a` trong log build `0fe1469`, lưu ảnh sidebar Admin `1366×768` trong repo (`165.920` bytes), đính chính mục `#491` & `PROJECT_MEMORY.md:23` (`69` → `91` bảng tại `8130471`; `94` hiện tại gồm `sqlite_sequence` / `93` bảng thực), và áp dụng Option B cho báo cáo `9837e04` (`L50-57`/`L59-65` và `L416`).
+  2. *Nhóm 2 — Option A Rate Limit SePay Webhook (`functions/services/d1_service.ts`, `functions/services/seller_sepay_service.ts`, `functions/api/webhooks/sepay/seller/[sellerId].ts`, `functions/api/seller/sepay/rotate-key.ts`, `scripts/tests/test_seller_direct_sepay.ts`)*:
+     - Thêm Migration `0057_seller_sepay_webhook_window_v1` (`unauth_fail_window_started_at TEXT`), giới hạn cửa sổ trượt 1 giờ (`SEPAY_WEBHOOK_FAIL_LIMIT_1H = 10`, `3.600s`) trả `HTTP 429` kèm header `Retry-After` khi vượt ngưỡng sai auth, tự reset về `0` khi hết cửa sổ, xác thực thành công hoặc xoay khóa SePay (`rotate-key.ts`); nâng `test:seller-sepay` từ `28` lên **`30/30 PASS`**.
+  3. *Nhóm 3 — Dọn D1 `wcg_admin_content_v4` & Sửa 3 Lỗi `tsc` (`functions/services/d1_service.ts`, `src/utils/imageCompressor.ts`, `functions/services/store_api_service.ts`, `functions/api/seller/subaccounts/index.ts`, `docs/tsc_full_check.log`)*:
+     - Migration `0058_clean_legacy_content_and_auth_indexes_v1`: chuyển 3 chuỗi `CodeGame.Shop`/`Web Code Game` sang `Pine Universal Mall` theo Option 3a-A (bảo toàn `t.me/webcodegame_vn` và `hotro@webcodegame.vn`) và tạo index `idx_members_session_token`.
+     - Thêm `originalSizeFormatted`/`compressedSizeFormatted` vào `CompressionResult` (`ImageUploadInput.tsx:152` hết `TS2339`); thêm `member?: any` vào `StoreAuthResult` (`subaccounts/index.ts:106,158,159` hết `TS2551`); khôi phục block tóm tắt cuối `docs/tsc_full_check.log`.
+  4. *Nhóm 4 — PA1 Catalog Epoch (`functions/services/cache_service.ts`, `scripts/tests/test_catalog_epoch_sync.ts`)*:
+     - Bổ sung 5 tuyến ghi còn thiếu vào `shouldBumpCatalogEpoch`: `POST /api/seller`, `POST /api/seller/orders/:id/resolve-report`, `POST /api/admin/orders/:id/refund`, `DELETE /api/seller/codes/:id`, `DELETE /api/seller/affiliate/partners/:id`; nâng `test:sync-epoch` từ `85` lên **`93/93 PASS`**.
+  5. *Nhóm 5 — Tăng Tốc `/seller#/affiliate` & Modal Xóa Webhook Song Ngữ (`d1_service.ts`, `auth_service.ts`, `store_api_service.ts`, `seller/index.ts`, `affiliate/requests.ts`, `App.tsx`, `SellerPortalApp.tsx`, `SellerAffiliateManager.tsx`, `vi.json`, `en.json`)*:
+     - Tối ưu D1 RTT không đụng `functions/api/seller/webhooks/*`: `ensureMarketplaceSchema` single-flight + 1-RTT `db.batch` + đánh dấu hoàn tất sau `ensureSchemaUpgrades`; `authenticateCaller` ưu tiên kiểm tra chữ ký HMAC-SHA256 trước; `verifyStoreApiAccess` gộp 3 `SELECT` qua `db.batch` (kèm chốt kiểm tra `Array.isArray(memEntry?.results)` tương thích mock SQLite); `GET /api/seller` và `requests.ts` song song hóa bằng `db.batch`/`Promise.all`.
+     - `App.tsx` bỏ qua tải `/api/sync-lite` (`~260 KB`) và `queryGames` trên route `/seller`; `SellerPortalApp.tsx` & `SellerAffiliateManager.tsx` dùng `prefetchSellerAffiliateData` chạy song song 4 endpoint Affiliate với `GET /api/seller`.
+     - Thay `window.confirm` ở `handleDeleteWebhook` bằng modal xác nhận trong ứng dụng (`role="dialog"`, khóa nút khi đang xóa, hỗ trợ `Escape`), bổ sung đối xứng `sellerAffiliate.whDeleteModalTitle` ở `vi.json` & `en.json`.
+- **Kiểm thử & Đo lường thực tế**:
+  - `npm test` (`docs/test_full_check.log`, `9.343` B): **`353/353 PASS`** trên toàn bộ 9 bộ (`12` icons + `10` products + `118` suppliers + `93` sync-epoch + `21` intershop + `30` seller-sepay + `39` seller-portal + `12` brand + `18` seller-10img).
+  - `npm run test:e2e-wrangler` (`docs/e2e_wrangler_10_images.log`, `1.451` B): **`26/26 PASS`** trên Worker + SQLite D1 cô lập.
+  - `npm run check:i18n` (`docs/i18n_full_check.log`, `2.095` B): **`35/35 PASSED`** (`0` chuỗi cứng); `docs/rule10_scan.log` (`130` B): `TOTAL_VIOLATIONS=0`.
+  - `tsc` (`docs/tsc_full_check.log`, `254.426` B): `tsconfig.homepage.json` `homepage_exit=0` (`HOMEPAGE_TSC_OK`); `tsconfig.json` `full_tsc_exit=2` tổng **`1.652` lỗi** (giảm `11` lỗi so với `1.663` ở `0fe1469`, `TS6133 = 455`).
+  - `npm run check:lean` (`docs/lean_guard_check_success.log`, `2.059` B): Pre `5/5` + Post `4/4 PASS` (`AdminApp 569.88 KB`, `_worker.js 7.05 MB`, `dist/ 69.36 MB`).
+
+### 499. Vá Lỗi Thật S1 (`total_products = 0` Ở `GET /api/stores/:slug`), Chuẩn Hóa Bằng Chứng E2E Wrangler, Gộp Log `tsc`, Đính Chính Báo Cáo & 2 Điểm UI Nhóm 4 — Commit `0fe1469` (`0fe1469301e465521847475d438e77c8e7e6f147`) (28/11/2026)
+- **Bối cảnh & Yêu cầu**:
+  - Khắc phục triệt để toàn bộ 4 nhóm + 5 đính chính (C1–C5) từ kiểm chứng độc lập chuỗi `8f237d8` → `e147eaa` → `d68c338` → `055cc0a` → `0fe1469` (xoay vòng `#478`–`#479` sang `docs/archive/CHANGELOG_ARCHIVE_2026.md` để giữ đúng 20 mục `#480–#499`). Không phát sinh chuỗi UI mới; giữ nguyên cấu trúc song ngữ 35 tệp (`vi.json` == `en.json`, `3.091 / 3.091` khóa).
 - **Giải pháp áp dụng (Solution)**:
   1. *Nhóm 1 — Lỗi thật S1 (`functions/api/stores/[slug]/index.ts`, `scripts/tests/test_multi_industry_seller_10_images.ts`)*:
      - Sửa truy vấn `totalProdCount` tại `functions/api/stores/[slug]/index.ts:68-72` thêm alias `FROM seller_products sp` (`sp.seller_id`, `sp.status`, `sp.deleted_at`) khớp `COALESCE(sp.is_paused, 0) = 0` (trước đó lỗi `no such column: sp.is_paused` bị `.catch()` nuốt về `0`).
@@ -20,12 +44,12 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
   3. *Nhóm 2 & 3 — Bằng chứng E2E Wrangler, hợp nhất `docs/tsc_full_check.log` & làm sạch liên kết cục bộ (`scripts/tests/e2e_wrangler_10_images.mjs`, `package.json`, `docs/tsc_full_check.log`, `docs/e2e_wrangler_10_images.log`, xóa `docs/tsc_homepage_check.log`)*:
      - Thêm `npm run test:e2e-wrangler` dựng `wrangler pages dev --port 8789 --local` trên SQLite D1 cô lập (duyệt shop trực tiếp qua `wrangler d1 execute --local` theo C5), chạy HTTP E2E thật qua Worker 10 ảnh WebP + chặn ảnh 11 (`MAX_10_IMAGES_EXCEEDED`) + `SHOP30K` (`180 - 30 = 150 Core`) + `GET /api/stores/:slug` (`total_products: 1`), lưu log tại `docs/e2e_wrangler_10_images.log`.
      - Xóa tệp 0 byte `docs/tsc_homepage_check.log` và ghi gộp `tsconfig.homepage.json --noEmit --listFiles` + `tsconfig.json --noEmit` vào một tệp duy nhất `docs/tsc_full_check.log` theo `AGENTS.md` §14.
-     - Gỡ toàn bộ đường dẫn `local file URI` khỏi `CHANGELOG.md`, chuẩn hóa `industry_id` & `SHOP30K` và bổ sung chuỗi commit `8f237d8`, `e147eaa`, `d68c338`, `055cc0a`.
+     - Gỡ toàn bộ đường dẫn `local file URI` khỏi `CHANGELOG.md`, chuẩn hóa `industry_id` & `SHOP30K` và bổ sung chuỗi commit `8f237d8`, `e147eaa`, `d68c338`, `055cc0a`, `0fe1469`.
 - **Kiểm thử & Đo lường thực tế**:
   - `npm test` (`docs/test_full_check.log`): **`343/343 PASS`** trên 9 bộ (gồm `test_multi_industry_seller_10_images`: **`18/18 PASS`**).
-  - `npm run test:e2e-wrangler` (`docs/e2e_wrangler_10_images.log`): **`27/27 PASS`** trên Wrangler local Worker + SQLite D1.
+  - `npm run test:e2e-wrangler` (`docs/e2e_wrangler_10_images.log`): **`26/26 PASS`** (26 dòng `^PASS |`) trên Wrangler local Worker + SQLite D1.
   - `npm run check:i18n` (`docs/i18n_full_check.log`): **`35/35 PASSED`** (`0` chuỗi cứng); `tsc` (`docs/tsc_full_check.log`): `tsconfig.homepage.json` `exit=0` (`183` dòng), `tsconfig.json` `exit=2` tổng **`1.663` lỗi** (giảm `-1` nhờ vá `TS2741`, `TS6133=455`).
-  - `npm run build` (`docs/build_success.log`) & `npm run check:lean` (`docs/lean_guard_check_success.log`): Pre `5/5` + Post `4/4 PASS`.
+  - `npm run build` (`docs/build_success.log`: `Injected Build ID: 055cc0a` theo hash cha; live `X-Build-Id: 0fe1469`) & `npm run check:lean` (`docs/lean_guard_check_success.log`): Pre `5/5` + Post `4/4 PASS`.
 
 ### 498. Tạm Tắt Cloudflare Turnstile Qua Cờ Môi Trường Để Phục Vụ Bot Kiểm Thử Toàn Diện — Commit `055cc0a` (28/11/2026)
 - **Bối cảnh & Yêu cầu**:
@@ -155,7 +179,7 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
   - Triển khai trọn vẹn 4 mảnh theo kế hoạch đã duyệt (`ke_hoach_cong_sepay_rieng_tung_gian_hang_28_11.md`): cho phép mọi chủ gian hàng (`TRIAL` & `ACTIVE`) tự cấu hình tài khoản ngân hàng + Webhook SePay riêng để nhận tiền VietQR trực tiếp; tách biệt hoàn toàn với VietQR Sàn (`wcg_admin_sepay_v4`); ẩn VietQR (chỉ nhận Ví Core) với gian hàng chưa bật/bị khóa/vượt nợ phí; chống tuyệt đối kịch bản gian lận tạo Core ảo từ sàn; hỗ trợ bán lại Liên Shop (Affiliate) kèm tạm giữ vốn sỉ Core nguyên tử; đồng bộ 100% song ngữ VI/EN & Rule 8/9/10/12.
 - **Giải pháp áp dụng (Solution)**:
   1. *Mảnh 1 — D1 Migration `0053`, Core Service & Seller SePay APIs (`d1_service.ts`, `marketplace_service.ts`, `cache_service.ts`, `sync-lite.ts`, `seller_sepay_service.ts`, `functions/api/seller/sepay/*`)*:
-     - Thêm Migration `0053_seller_direct_sepay_gateway_v1` tạo 2 bảng mới `seller_sepay_configs` & `seller_sepay_transactions` (tổng 69 bảng D1) và bổ sung `payment_channel`, `shop_qr_group_code`, `affiliate_wholesale_reserved_core`, `direct_fee_core` vào `seller_orders` / `seller_parent_orders`.
+     - Thêm Migration `0053_seller_direct_sepay_gateway_v1` tạo 2 bảng mới `seller_sepay_configs` & `seller_sepay_transactions` (tổng 91 bảng D1 tại thời điểm `8130471`) và bổ sung `payment_channel`, `shop_qr_group_code`, `affiliate_wholesale_reserved_core`, `direct_fee_core` vào `seller_orders` / `seller_parent_orders`.
      - Xây dựng `seller_sepay_service.ts`: mã hóa SePay User API Token theo **Fail-Closed AES-256-GCM** (`enc_sep_v1`, HTTP `503` nếu `MARKETPLACE_CODE_KEY < 16` ký tự), băm SHA-256 khóa Webhook `wcg_shp_whk_<32hex>` (hiện đúng 1 lần), `evaluateSellerQrEligibility`, truy vấn `my.sepay.vn` (`fetchSepayBankAccounts`, `fetchSepayRecentTransactions`), và hàm quyết toán nguyên tử `settleDirectSepayTransfer`.
      - Tạo 5 endpoint tự phục vụ cho chủ shop (`GET/PUT /api/seller/sepay`, `POST /rotate-key`, `POST /test-connection`, `GET /transactions`, `POST /transactions/:txId/resolve`, `POST /pay-debt`), mở rộng `sync-lite.ts` & `loadAllStoreProductsD1` xuất `seller_qr_available` (đồng thời sửa lỗi tồn kho vật lý `COALESCE(sp.stock_quantity, 0)` thay vì cứng `999`), và cập nhật `checkAndExpireSellerOrdersD1` hoàn nguyên tử `affiliate_wholesale_reserved_core` khi đơn hết hạn 15 phút.
   2. *Mảnh 2 — Gom 1 QR/Shop, Webhook Chuyên Biệt, Fallback Đối Soát & Chống Gian Lận (`seller-orders/multi.ts`, `multi/[id].ts`, `pay-core.ts`, `verify-sepay.ts`, `webhooks/sepay/seller/[sellerId].ts`, `escrow_service.ts`, `resolve-report.ts`, `admin/seller-disputes/[id]/resolve.ts`, `stores/[slug]/index.ts`)*:
@@ -333,23 +357,3 @@ Mỗi mục sửa lỗi đều ghi nhận **Nguyên nhân gốc rễ (Root Cause
      - Commit log thô `docs/rule10_scan.log` (`RULE10_WCG=0 RULE10_TG=0 RULE10_PK=0`, `exit=0`).
   4. *Kiểm thử mở rộng (`scripts/tests/test_intershop_affiliate.ts`)*:
      - Bổ sung 5 test case mới (Test 8–12), nâng `test:intershop` từ `7/7` lên **`12/12 PASS`**, tổng `npm test` lên **`215/215 PASS`**; `docs/tsc_full_check.log` giữ nguyên **`1.827` lỗi** (`0` lỗi mới).
-
-### 480. Liên Kết Gian Hàng Nội Bộ — Mảnh 1: Lõi Cấu Hình Động, Bắt Buộc Admin Duyệt (`PENDING_ADMIN`), Sửa 3 Bug Liên Shop & Hỗ Trợ Hàng Vật Lý (26/11/2026)
-- **Bối cảnh & Yêu cầu**:
-  - Khởi động kế hoạch xây dựng hệ thống bán lại liên gian hàng nội bộ (`ke_hoach_lien_ket_gian_hang_noi_bo_26_11.md`) đã được chủ sở hữu phê duyệt, bảo đảm mọi tham số (phí sàn hàng số/vật lý, trần biên lợi nhuận, tự khóa chống lỗ, bắt buộc Admin duyệt, giới hạn RPM) đều lưu động trên SQL D1 và điều chỉnh tự do được sau này, đồng thời xử lý triệt để 3 lỗi gốc trong lõi liên shop và bổ sung tồn kho hàng vật lý. *(Đính chính Mục 481: tại thời điểm báo cáo `84e5cc1`, key `wcg_marketplace_config_v1` chưa có dòng trong D1 mà chạy theo `DEFAULT_MARKETPLACE_CONFIG`; key đã được ghi thật vào D1 lúc kiểm chứng live `2026-11-26T13:37:29Z` với đủ 7 trường đúng giá trị.)*
-- **Giải pháp áp dụng (Solution)**:
-  1. *Cấu hình động trên SQL D1 (`functions/services/marketplace_service.ts`, `functions/api/admin/seller-config.ts`)*:
-     - Mở rộng `MarketplaceConfig` (`wcg_marketplace_config_v1`) thêm 7 trường điều chỉnh tự do: `affiliate_enabled` (mặc định `true`), `affiliate_digital_fee_pct` (`5`), `affiliate_physical_fee_pct` (`2`), `affiliate_auto_pause_on_loss` (`true`), `affiliate_require_admin_approval` (`true` — bắt buộc Admin duyệt ngay từ đầu), `affiliate_max_markup_pct` (`500`), `affiliate_rate_limit_rpm` (`600`).
-     - Hỗ trợ cập nhật một phần trên `PUT /api/admin/seller-config`, bảo toàn giá trị `false` và `0`.
-  2. *Luồng bắt buộc Admin duyệt liên kết (`functions/api/seller/affiliate/requests.ts`, `functions/api/seller/affiliate/requests/[id]/approve.ts`)*:
-     - Khi `affiliate_require_admin_approval = true`, Shop A đồng ý hợp tác sẽ chuyển trạng thái sang **`PENDING_ADMIN`** (chưa sinh Pair Key `wcg_shop_*` cho tới khi Admin duyệt); khi Admin tắt công tắc này sau này, Shop A đồng ý sẽ lên thẳng `APPROVED`.
-  3. *Sửa 3 bug lõi liên shop (`functions/services/seller_affiliate_service.ts`, `functions/api/seller/products/[id]/resell.ts`, `functions/services/escrow_service.ts`, `listings/*`, `inventory-push.ts`)*:
-     - Gỡ phí sàn ghi cứng `5%`/`2%` trong `calculate3WaySplit`, nhận động `digitalFeePct`/`physicalFeePct` từ Admin config và trả về `feeRatePct` cho nhật ký giải ngân Escrow.
-     - Sửa so khớp chữ hoa/thường `String(product_type).toLowerCase() === 'physical'` trong `resell.ts` (và các tuyến liên quan).
-     - Bổ sung xử lý nhánh `'RESELL_PARAM_CHANGE'` trong `syncAffiliatePriceAndStock` (tự cập nhật MAP mới, tự khóa `ANTI_LOSS_PAUSED` khi `autoPauseOnLoss = true`, và tự phục hồi khi giá gốc hạ trở lại).
-  4. *Checkout Guard & Hàng Vật Lý Liên Shop (`functions/api/seller-orders/index.ts`, `functions/api/seller-orders/multi.ts`, `functions/services/d1_service.ts`)*:
-     - Bổ sung migration `0052_seller_products_stock_quantity_v1` thêm cột `stock_quantity INTEGER NOT NULL DEFAULT 0` cho `seller_products`.
-     - Chặn thanh toán khi listing liên shop đang `ANTI_LOSS_PAUSED` / `HIDDEN` / `SUPPLIER_DISABLED` hoặc partnership chưa `APPROVED`.
-     - Hỗ trợ thanh toán hàng vật lý bán lại liên shop (trừ nguyên tử `stock_quantity - 1` trên kho gốc của Shop A trong `db.batch`, không đòi `seller_codes` hay `MARKETPLACE_CODE_KEY`).
-  5. *Kiểm thử tự động (`scripts/tests/test_intershop_affiliate.ts`, `package.json`)*:
-     - Thêm suite `npm run test:intershop` (**7/7 PASS**), nâng tổng `npm test` lên **210/210 PASS** (`12` icons + `10` products + `112` suppliers + `69` sync-epoch + `7` intershop); `docs/tsc_full_check.log` giảm tổng lỗi toàn repo từ `1.828` → **`1.827`** (`0` lỗi mới).

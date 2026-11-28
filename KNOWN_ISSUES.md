@@ -10,6 +10,12 @@
 
 ## 1. DANH MỤC LỖI & CÁC BẪY ĐÃ THẤT BẠI (DO NOT REPEAT)
 
+### ISSUE-349: Bẫy `d1.batch()` Trong Mock Unit Test Thiếu `.results`, Sliding Window Rate Limit SePay & Tải Chéo Trang Chủ Trên `/seller` (28/11/2026)
+- **Nguyên nhân gốc rễ & Bài học (Mục 500)**:
+  1. *Mock `D1Database.batch()` trong `test_multi_industry_seller_10_images.ts` gọi `.run()` thay vì `.all()`*: Khi tối ưu `verifyStoreApiAccess` (`functions/services/store_api_service.ts`) gộp 3 câu `SELECT` (`members`, `sellers owner`, `seller_subaccounts`) vào 1 RTT `env.DB.batch([...])`, Cloudflare D1 thật trả `[{ results: [...] }]`, còn mock SQLite trong test chỉ trả `{ success: true, meta }` không có mảng `.results`. Nếu kiểm `if (!memRow)` ngay mà không kiểm `Array.isArray(memEntry?.results)`, test fail `401`. Phải luôn kiểm `if (memEntry && Array.isArray(memEntry.results))` rồi fallback cleanly sang `verifyMemberAuth`.
+  2. *Gói trang chủ `/api/sync-lite` + `queryGames` chạy ngầm trên `/seller`*: `App.tsx` chạy `syncBrandingAndContentOnly()` (tải `~260 KB`) và `queryGames()` đồng thời với bootstrap của `/seller`, làm nghẽn băng thông và tăng tải cold load của `/seller#/affiliate` ngoài PoP HKG. Phải nhánh `isSellerPortalPathname()` thoát sớm trước các fetch trang chủ và prefetch song song 4 endpoint Affiliate cùng `GET /api/seller`.
+  3. *Cửa sổ trượt SePay & Xóa Webhook UI*: SePay webhook từng dùng bộ đếm `unauth_fail_count_1h` mà chưa lưu mốc bắt đầu cửa sổ (`unauth_fail_window_started_at`) và chưa trả HTTP `429` + `Retry-After`; đồng thời `SellerAffiliateManager.tsx` dùng `window.confirm` dễ bị trình duyệt/tự động hóa chặn. Phải dùng `unauth_fail_window_started_at` + modal xác nhận song ngữ (`role="dialog"`) trong ứng dụng.
+
 ### ISSUE-348: Bẫy `validateImageMagicBytes().mime`, Clone Draft Có `id: undefined`, `GET /api/vouchers` Trên D1 Lạnh & Khôi Phục Bootstrap `/seller` Khi Đăng Nhập Lại (28/11/2026)
 - **Nguyên nhân gốc rễ & Bài học (Mục 497)**:
   1. *Lỗi gán object `{ mime, ext }` ở `upload.ts` & `[file].ts`*: `validateImageMagicBytes()` trả `{ mime, ext }` thay vì chuỗi `string`; gán trực tiếp vào `verifiedMime` gây crash `.split('/')`. Phải dùng `magic.mime` và `magic.ext`.

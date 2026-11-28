@@ -47,6 +47,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         webhook_key_hash = excluded.webhook_key_hash,
         webhook_key_prefix = excluded.webhook_key_prefix,
         unauth_fail_count_1h = 0,
+        unauth_fail_window_started_at = NULL,
         updated_at = excluded.updated_at
     `)
       .bind(

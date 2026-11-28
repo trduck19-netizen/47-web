@@ -285,8 +285,17 @@ function createDirectSepayMockDb() {
           cfg.admin_locked = Number(boundArgs[0]);
           cfg.admin_lock_reason = boundArgs[1];
           if (Number(boundArgs[2]) === 1) cfg.is_enabled = 0;
+        } else if (u.includes('UNAUTH_FAIL_COUNT_1H = 0')) {
+          cfg.unauth_fail_count_1h = 0;
+          cfg.unauth_fail_window_started_at = null;
+          cfg.updated_at = String(boundArgs[0] || cfg.updated_at || '');
+        } else if (u.includes('UNAUTH_FAIL_COUNT_1H = 1')) {
+          cfg.unauth_fail_count_1h = 1;
+          cfg.unauth_fail_window_started_at = String(boundArgs[0] || '');
+          cfg.updated_at = String(boundArgs[1] || cfg.updated_at || '');
         } else if (u.includes('UNAUTH_FAIL_COUNT_1H')) {
           cfg.unauth_fail_count_1h += 1;
+          cfg.updated_at = String(boundArgs[0] || cfg.updated_at || '');
         }
         return { success: true, meta: { changes: 1 } };
       }
@@ -754,6 +763,73 @@ async function main() {
     env: { DB: db, MARKETPLACE_CODE_KEY: TEST_AES_KEY },
   } as any);
   check('admin_emergency_lock_blocks_webhook_403', lockRes.status === 200 && lockedWhRes.status === 403, true);
+
+  // Unlock shop and verify 1h sliding-window rate-limit on wrong webhook key (>= 10 fails -> 429 + Retry-After, expiry/rotate -> 200)
+  await handleAdminSellerSepayRequest(
+    {
+      request: new Request('https://admin.example.test/api/admin/seller-sepay/sel_a/lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': TEST_ADMIN_KEY },
+        body: JSON.stringify({ locked: false, reason: '' }),
+      }),
+      env: { DB: db, ADMIN_API_KEY: TEST_ADMIN_KEY },
+    },
+    ['sel_a', 'lock']
+  );
+  const cfgA = state.sepayConfigs.find((c) => c.seller_id === 'sel_a')!;
+  cfgA.unauth_fail_count_1h = 0;
+  cfgA.unauth_fail_window_started_at = null;
+  const failStatuses: number[] = [];
+  for (let i = 0; i < 10; i++) {
+    const r = await sellerWebhookApi.onRequestPost({
+      params: { sellerId: 'sel_a' },
+      request: new Request('https://example.test/api/webhooks/sepay/seller/sel_a', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Apikey wrong_key_probe' },
+        body: JSON.stringify({ id: `tx_rl_bad_${i}`, transferType: 'in', transferAmount: 10000, content: 'BAD' }),
+      }),
+      env: { DB: db, MARKETPLACE_CODE_KEY: TEST_AES_KEY },
+    } as any);
+    failStatuses.push(r.status);
+  }
+  const blocked429Res = await sellerWebhookApi.onRequestPost({
+    params: { sellerId: 'sel_a' },
+    request: new Request('https://example.test/api/webhooks/sepay/seller/sel_a', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Apikey ${rawWhKey}` },
+      body: JSON.stringify({ id: 'tx_rl_valid_while_blocked', transferType: 'in', transferAmount: 10000, content: 'NOOP' }),
+    }),
+    env: { DB: db, MARKETPLACE_CODE_KEY: TEST_AES_KEY },
+  } as any);
+  const blockedBody = (await blocked429Res.json()) as any;
+  const retryAfterHdr = Number(blocked429Res.headers.get('Retry-After') || 0);
+  check(
+    'webhook_rate_limit_blocks_11th_request_with_429_and_retry_after',
+    failStatuses.every((s) => s === 401) &&
+      cfgA.unauth_fail_count_1h === 10 &&
+      blocked429Res.status === 429 &&
+      blockedBody.code === 'RATE_LIMITED' &&
+      retryAfterHdr > 0 &&
+      retryAfterHdr <= 3600,
+    true
+  );
+
+  // After 1h window expires, valid key passes (200) and resets unauth_fail_count_1h to 0
+  cfgA.unauth_fail_window_started_at = new Date(Date.now() - 3605 * 1000).toISOString();
+  const afterWindowRes = await sellerWebhookApi.onRequestPost({
+    params: { sellerId: 'sel_a' },
+    request: new Request('https://example.test/api/webhooks/sepay/seller/sel_a', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Apikey ${rawWhKey}` },
+      body: JSON.stringify({ id: 'tx_rl_after_window', transferType: 'in', transferAmount: 0, content: 'RESET_CHECK' }),
+    }),
+    env: { DB: db, MARKETPLACE_CODE_KEY: TEST_AES_KEY },
+  } as any);
+  check(
+    'webhook_rate_limit_resets_after_1h_window_and_allows_valid_key_200',
+    afterWindowRes.status === 200 && cfgA.unauth_fail_count_1h === 0 && cfgA.unauth_fail_window_started_at === null,
+    true
+  );
 
   // Summary
   const passed = results.filter((r) => r.pass).length;

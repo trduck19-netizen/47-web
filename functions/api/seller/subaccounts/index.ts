@@ -103,7 +103,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const currentMemberId = storeAuth.member?.id || storeAuth.memberId || storeAuth.seller.owner_member_id || null;
+    const currentMemberId = storeAuth.memberId || storeAuth.member?.id || storeAuth.seller.owner_member_id || null;
     if (currentMemberId && targetMember.id === currentMemberId) {
       return new Response(
         JSON.stringify({ success: false, error: 'Bạn đã là chủ gian hàng này, không thể thêm chính mình làm tài khoản phụ.' }),

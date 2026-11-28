@@ -18,10 +18,10 @@
 🔍 [STAGE: POST-BUILD] Đang quét đầu ra Vite & Cloudflare Edge Worker bundle...
    ✅ [Check 6.1 PASS] Chunk AdminApp (569.88 KB) duy trì mức tối ưu (< 600 KB).
    ✅ [Check 6.2 PASS] Tất cả các component chunks khác đều nằm trong ngân sách (< 650 KB).
-   ⚡ Edge Worker Bundle (dist/_worker.js): 7.04 MB
-   ✅ [Check 7 PASS] Edge Worker Bundle (7.04 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).
-   📦 Tổng dung lượng thư mục phân phối dist/: 69.34 MB
-   ✅ [Check 8 PASS] Thư mục dist/ (69.34 MB) đạt chuẩn phân phối tối ưu (<= 85.00 MB).
+   ⚡ Edge Worker Bundle (dist/_worker.js): 7.05 MB
+   ✅ [Check 7 PASS] Edge Worker Bundle (7.05 MB) đạt chuẩn tinh gọn tối ưu (<= 10.00 MB).
+   📦 Tổng dung lượng thư mục phân phối dist/: 69.36 MB
+   ✅ [Check 8 PASS] Thư mục dist/ (69.36 MB) đạt chuẩn phân phối tối ưu (<= 85.00 MB).
 
 --------------------------------------------------------------------------------
 📊 BÁO CÁO KẾT QUẢ KIỂM TRA LEAN GUARD:

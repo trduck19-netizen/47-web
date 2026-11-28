@@ -576,6 +576,12 @@ export const App: React.FC = () => {
 
       const bmarks = dataService.getBookmarks();
       setBookmarks(bmarks);
+      const isSellerRoute = isSellerPortalPathname(
+        typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : ''
+      );
+      if (isSellerRoute) {
+        return;
+      }
       dataService.getBookmarkedGames(bmarks).then((bList) => setBookmarkedGamesList(bList));
       dataService.getUpcomingGames().then((uList) => {
         if (uList && uList.length > 0) setUpcomingGames(uList);

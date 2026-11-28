@@ -1666,6 +1666,7 @@
     "whRotateBtn": "Rotate",
     "whDeleteBtn": "Delete",
     "whDeleteConfirm": "Delete webhook \"{name}\" and its delivery history?",
+    "whDeleteModalTitle": "Confirm Delete Webhook",
     "whRotateConfirm": "Rotate a new HMAC secret for \"{name}\"? The old secret stops working immediately.",
     "whNoWebhooks": "No store order webhooks configured yet.",
     "whDeliveriesTitle": "Recent Webhook Deliveries",

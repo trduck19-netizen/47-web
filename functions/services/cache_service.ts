@@ -183,7 +183,17 @@ export function shouldBumpCatalogEpoch(pathname: string, method: string): boolea
     '/api/giveaways',
   ];
 
-  if (p === '/api/seller' && (m === 'PUT' || m === 'PATCH')) {
+  if (p === '/api/seller' && (m === 'POST' || m === 'PUT' || m === 'PATCH')) {
+    return true;
+  }
+
+  // PA1 Nhóm 4: 4 tuyến ghi còn sót làm thay đổi dữ liệu công khai trên kệ
+  if (
+    (m === 'POST' && /^\/api\/seller\/orders\/[^/]+\/resolve-report$/.test(p)) ||
+    (m === 'POST' && /^\/api\/admin\/orders\/[^/]+\/refund$/.test(p)) ||
+    (m === 'DELETE' && /^\/api\/seller\/codes\/[^/]+$/.test(p)) ||
+    (m === 'DELETE' && /^\/api\/seller\/affiliate\/partners\/[^/]+$/.test(p))
+  ) {
     return true;
   }
 

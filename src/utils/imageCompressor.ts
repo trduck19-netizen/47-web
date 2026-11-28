@@ -11,6 +11,8 @@ export interface CompressionResult {
   dataUrl: string;
   originalSize: number; // bytes
   compressedSize: number; // bytes
+  originalSizeFormatted: string;
+  compressedSizeFormatted: string;
   savedPercent: number; // %
   width: number;
   height: number;
@@ -97,6 +99,8 @@ export async function compressImageFile(
           dataUrl: compressedDataUrl,
           originalSize,
           compressedSize,
+          originalSizeFormatted: formatBytes(originalSize),
+          compressedSizeFormatted: formatBytes(compressedSize),
           savedPercent,
           width,
           height,

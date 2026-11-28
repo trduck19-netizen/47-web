@@ -20,7 +20,7 @@
   - Tên Database: `47webdanganh`
   - UUID: `f1c32d22-9ad3-41a7-93a4-e9025240c6b2`
   - Binding Name trong Cloudflare Pages: `DB`
-  - Tổng số bảng: **69 bảng dữ liệu** (54 bảng ban đầu + 4 bảng Khóa AI Người Dùng `user_ai_api_*` + 4 bảng Liên Shop Bán Lại `seller_affiliate_*` + 5 bảng Nguồn Hàng API Ngoài & Webhook `external_supplier*` / `supplier_fulfillment_*` + 2 bảng Cổng SePay Riêng Từng Gian Hàng `seller_sepay_configs`, `seller_sepay_transactions`)
+  - Tổng số bảng: **91 bảng tại `8130471` → 94 bảng hiện tại sau `0055`–`0056`** (quy ước đếm: `94` gồm `sqlite_sequence`, `93` không gồm bảng nội bộ `sqlite_%`): 54 bảng lõi + 15 bảng ngoài nhóm cũ (`6` `telegram_*`, `2` `email_*`, `_cf_KV`, `sqlite_sequence`, `products`, `product_variants`, `platform_leads`, `shipping_orders`, `vouchers`) + 7 bảng migration trung gian + 4 bảng Khóa AI Người Dùng `user_ai_api_*` + 4 bảng Liên Shop Bán Lại `seller_affiliate_*` + 5 bảng Nguồn Hàng API Ngoài & Webhook `external_supplier*` / `supplier_fulfillment_*` + 2 bảng Cổng SePay Riêng `seller_sepay_configs`, `seller_sepay_transactions` (`= 91`) + 2 bảng Migration `0055` (`seller_media_assets`, `seller_vouchers`) + 1 bảng Migration `0056` (`uploaded_game_icons`) = **94 bảng** (đo trực tiếp `sqlite_master` trên D1 `47webdanganh`).
 - **🛑 VÙNG CẤM TUYỆT ĐỐI (RESTRICTED ZONES)**:
   - **TUYỆT ĐỐI KHÔNG SỬA ĐỔI** mã nguồn dự án cũ `C:\4 Antigravity all\13 web code game`.
   - **TUYỆT ĐỐI CẤM ĐỘNG VÀO** thư mục `C:\4 Antigravity all\3 Codegame store` (`codegame.store`).

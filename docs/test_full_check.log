@@ -151,8 +151,8 @@ ALL 10/10 PRIMARY /api/products FIELDS VERIFIED VIA REAL HANDLER
 [Migration 0044] Rebuild seller_disputes thành công: 1 -> 1 dòng.
 {
   "suite": "test_catalog_epoch_sync",
-  "total": 85,
-  "passed": 85,
+  "total": 93,
+  "passed": 93,
   "failedCount": 0,
   "failed": []
 }
@@ -192,8 +192,8 @@ ALL 10/10 PRIMARY /api/products FIELDS VERIFIED VIA REAL HANDLER
 
 {
   "suite": "test_seller_direct_sepay",
-  "total": 28,
-  "passed": 28,
+  "total": 30,
+  "passed": 30,
   "failedCount": 0,
   "failed": []
 }

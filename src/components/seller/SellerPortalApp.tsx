@@ -4,6 +4,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import type { GameItem } from '../../types/game';
 import { broadcastCrossTabEvent, subscribeCrossTabEvents } from '../../utils/crossTabSync';
 import { SellerCenterView, type SellerPortalContextSnapshot } from './SellerCenterView';
+import { prefetchSellerAffiliateData } from './SellerAffiliateManager';
 import { SellerPortalSidebar } from './SellerPortalSidebar';
 import { SellerPortalTopbar, type SellerSepayTopbarSummary } from './SellerPortalTopbar';
 import { SellerOnboardingLanding } from './SellerOnboardingLanding';
@@ -204,11 +205,18 @@ export const SellerPortalApp: React.FC<SellerPortalAppProps> = ({
 
     try {
       const token = getAuthTokenSafe(currentUser?.session_token);
+      const reqHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      const isAffiliateTarget =
+        activeTab === 'affiliate' ||
+        (typeof window !== 'undefined' && parseSellerPortalHash(window.location.hash) === 'affiliate');
+      if (isAffiliateTarget && currentUserId) {
+        prefetchSellerAffiliateData(reqHeaders);
+      }
       const res = await fetch('/api/seller', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: reqHeaders,
         signal: ctrl.signal,
       });
       const data: any = await res.json().catch(() => ({}));

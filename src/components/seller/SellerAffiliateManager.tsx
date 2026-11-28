@@ -33,6 +33,59 @@ interface SellerAffiliateManagerProps {
 
 type AffiliateSubTab = 'supplier' | 'reseller' | 'webhooks' | 'orders';
 
+type PrefetchedAffiliatePayload = {
+  ts: number;
+  authKey: string;
+  requests?: Promise<any>;
+  partners?: Promise<any>;
+  listings?: Promise<any>;
+  webhooks?: Promise<any>;
+};
+
+let _affiliatePrefetch: PrefetchedAffiliatePayload | null = null;
+const AFFILIATE_PREFETCH_TTL_MS = 15000;
+
+export function prefetchSellerAffiliateData(headers: Record<string, string>): void {
+  if (typeof window === 'undefined') return;
+  const now = Date.now();
+  const authKey = String(headers?.Authorization || '');
+  if (_affiliatePrefetch && _affiliatePrefetch.authKey === authKey && now - _affiliatePrefetch.ts < AFFILIATE_PREFETCH_TTL_MS) {
+    return;
+  }
+  const safeJson = (url: string) =>
+    fetch(url, { headers })
+      .then((res) => res.json().catch(() => null))
+      .catch(() => null);
+  _affiliatePrefetch = {
+    ts: now,
+    authKey,
+    requests: safeJson('/api/seller/affiliate/requests?role=all'),
+    partners: safeJson('/api/seller/affiliate/partners'),
+    listings: safeJson('/api/seller/affiliate/listings'),
+    webhooks: safeJson('/api/seller/webhooks'),
+  };
+}
+
+function consumeAffiliatePrefetch(
+  slot: 'requests' | 'partners' | 'listings' | 'webhooks',
+  headers: Record<string, string>
+): Promise<any> | null {
+  if (!_affiliatePrefetch) return null;
+  if (Date.now() - _affiliatePrefetch.ts > AFFILIATE_PREFETCH_TTL_MS) {
+    _affiliatePrefetch = null;
+    return null;
+  }
+  const authKey = String(headers?.Authorization || '');
+  if (_affiliatePrefetch.authKey !== authKey) {
+    _affiliatePrefetch = null;
+    return null;
+  }
+  const pending = _affiliatePrefetch[slot];
+  if (!pending) return null;
+  _affiliatePrefetch[slot] = undefined;
+  return pending;
+}
+
 export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
   getHeaders,
   isEn,
@@ -100,6 +153,7 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
   const [whRetryMax, setWhRetryMax] = useState<string>('2');
   const [savingWebhook, setSavingWebhook] = useState<boolean>(false);
   const [webhookBusyId, setWebhookBusyId] = useState<string | null>(null);
+  const [pendingDeleteWebhook, setPendingDeleteWebhook] = useState<any | null>(null);
   const [oneTimeWebhookSecret, setOneTimeWebhookSecret] = useState<string | null>(null);
   const [copiedWebhookSecret, setCopiedWebhookSecret] = useState<boolean>(false);
 
@@ -141,10 +195,15 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     setLoadingIncoming(true);
     setLoadingOutgoing(true);
     try {
-      const res = await fetch('/api/seller/affiliate/requests?role=all', {
-        headers: getHeadersRef.current(),
-      });
-      const data = await res.json().catch(() => ({}));
+      const headers = getHeadersRef.current();
+      const prefetched = consumeAffiliatePrefetch('requests', headers);
+      const data = prefetched
+        ? await prefetched
+        : await (
+            await fetch('/api/seller/affiliate/requests?role=all', { headers })
+          )
+            .json()
+            .catch(() => ({}));
       if (data?.success) {
         const inc = Array.isArray(data.incoming_requests) ? data.incoming_requests : [];
         const out = Array.isArray(data.outgoing_requests) ? data.outgoing_requests : [];
@@ -166,8 +225,11 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
   const fetchPartners = useCallback(async () => {
     setLoadingPartners(true);
     try {
-      const res = await fetch('/api/seller/affiliate/partners', { headers: getHeadersRef.current() });
-      const data = await res.json().catch(() => ({}));
+      const headers = getHeadersRef.current();
+      const prefetched = consumeAffiliatePrefetch('partners', headers);
+      const data = prefetched
+        ? await prefetched
+        : await (await fetch('/api/seller/affiliate/partners', { headers })).json().catch(() => ({}));
       if (data?.success) {
         setPartners(Array.isArray(data.partners) ? data.partners : []);
       }
@@ -178,8 +240,11 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
   const fetchListings = useCallback(async () => {
     setLoadingListings(true);
     try {
-      const res = await fetch('/api/seller/affiliate/listings', { headers: getHeadersRef.current() });
-      const data = await res.json().catch(() => ({}));
+      const headers = getHeadersRef.current();
+      const prefetched = consumeAffiliatePrefetch('listings', headers);
+      const data = prefetched
+        ? await prefetched
+        : await (await fetch('/api/seller/affiliate/listings', { headers })).json().catch(() => ({}));
       if (data?.success) {
         setMyListings(Array.isArray(data.listings) ? data.listings : []);
       }
@@ -222,8 +287,11 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
   const fetchWebhooks = useCallback(async () => {
     setLoadingWebhooks(true);
     try {
-      const res = await fetch('/api/seller/webhooks', { headers: getHeadersRef.current() });
-      const data = await res.json().catch(() => ({}));
+      const headers = getHeadersRef.current();
+      const prefetched = consumeAffiliatePrefetch('webhooks', headers);
+      const data = prefetched
+        ? await prefetched
+        : await (await fetch('/api/seller/webhooks', { headers })).json().catch(() => ({}));
       if (data?.success) {
         setWebhooks(Array.isArray(data.webhooks) ? data.webhooks : []);
         setDeliveries(Array.isArray(data.deliveries) ? data.deliveries : []);
@@ -597,8 +665,14 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
     setWebhookBusyId(null);
   };
 
-  const handleDeleteWebhook = async (hook: any) => {
-    if (!window.confirm(t('sellerAffiliate.whDeleteConfirm', { name: hook.name }))) return;
+  const handleDeleteWebhook = (hook: any) => {
+    if (webhookBusyId) return;
+    setPendingDeleteWebhook(hook);
+  };
+
+  const confirmDeleteWebhook = async () => {
+    const hook = pendingDeleteWebhook;
+    if (!hook) return;
     setWebhookBusyId(`del:${hook.id}`);
     setErrorMsg('');
     try {
@@ -608,11 +682,14 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
+        setPendingDeleteWebhook(null);
         await fetchWebhooks();
       } else {
+        setPendingDeleteWebhook(null);
         setErrorMsg(data?.error || t('sellerAffiliate.actionFailed'));
       }
     } catch {
+      setPendingDeleteWebhook(null);
       setErrorMsg(t('sellerAffiliate.networkError'));
     }
     setWebhookBusyId(null);
@@ -2258,6 +2335,64 @@ export const SellerAffiliateManager: React.FC<SellerAffiliateManagerProps> = ({
                 className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-foreground text-background font-bold text-xs shadow hover:opacity-90 cursor-pointer"
               >
                 {t('sellerAffiliate.closeModalBtn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIRM DELETE WEBHOOK */}
+      {pendingDeleteWebhook && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wh-delete-modal-title"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && webhookBusyId !== `del:${pendingDeleteWebhook.id}`) {
+              setPendingDeleteWebhook(null);
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-xl space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <h3 id="wh-delete-modal-title" className="text-base font-bold flex items-center gap-2 text-foreground">
+                <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+                <span>{t('sellerAffiliate.whDeleteModalTitle')}</span>
+              </h3>
+              <button
+                type="button"
+                aria-label={t('sellerAffiliate.cancelBtn')}
+                disabled={webhookBusyId === `del:${pendingDeleteWebhook.id}`}
+                onClick={() => setPendingDeleteWebhook(null)}
+                className="p-1 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-50 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {t('sellerAffiliate.whDeleteConfirm', { name: pendingDeleteWebhook.name })}
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={webhookBusyId === `del:${pendingDeleteWebhook.id}`}
+                onClick={() => setPendingDeleteWebhook(null)}
+                className="px-4 py-2 rounded-xl border border-border text-xs font-semibold hover:bg-muted disabled:opacity-50 cursor-pointer"
+              >
+                {t('sellerAffiliate.cancelBtn')}
+              </button>
+              <button
+                type="button"
+                disabled={webhookBusyId === `del:${pendingDeleteWebhook.id}`}
+                onClick={confirmDeleteWebhook}
+                className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-xs font-bold shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer"
+              >
+                {webhookBusyId === `del:${pendingDeleteWebhook.id}`
+                  ? t('sellerAffiliate.savingText')
+                  : t('sellerAffiliate.whDeleteBtn')}
               </button>
             </div>
           </div>
