@@ -1,4 +1,4 @@
---- tsconfig.homepage.json --noEmit --listFiles (UTC: 2026-11-28T16:02:52.385Z) ---
+--- tsconfig.homepage.json --noEmit --listFiles (UTC: 2026-11-28T16:20:34.958Z) ---
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es5.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2015.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/typescript/lib/lib.es2016.d.ts
@@ -183,7 +183,7 @@ C:/4 Antigravity all/47 web da nganh/node_modules/@types/react-dom/index.d.ts
 C:/4 Antigravity all/47 web da nganh/node_modules/@types/slice-ansi/index.d.ts
 homepage_exit=0
 HOMEPAGE_TSC_OK
---- tsc --noEmit (UTC: 2026-11-28T16:02:52.385Z) ---
+--- tsc --noEmit (UTC: 2026-11-28T16:20:34.958Z) ---
 functions/_worker.ts(25,1): error TS6133: 'adminMigrateApi' is declared but its value is never read.
 functions/_worker.ts(546,65): error TS2345: Argument of type 'Env' is not assignable to parameter of type '{ [key: string]: any; DB: D1Database; }'.
   Types of property 'DB' are incompatible.
@@ -703,8 +703,8 @@ src/admin/components/AdminLoginGuard.tsx(154,61): error TS2339: Property 'syncKe
 src/admin/components/AdminLoginGuard.tsx(155,63): error TS2339: Property 'syncKey' does not exist on type 'AuthResponse'.
 src/admin/components/AdminModuleSkeleton.tsx(61,43): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
 src/admin/components/AdminSidebar.tsx(118,9): error TS6133: 'isEn' is declared but its value is never read.
-src/admin/components/AdminTopbar.tsx(34,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; 'brand-identity': { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; ... 23 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': telegram, vouchers, translations, "first-purchase", and 2 more.
-src/admin/components/AdminTopbar.tsx(101,7): error TS2740: Type '{ dashboard: string; 'brand-identity': string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; ... 15 more ...; 'seller-sepay': string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': telegram, marketplace, vouchers, "platform-leads", and 4 more.
+src/admin/components/AdminTopbar.tsx(34,7): error TS2740: Type '{ dashboard: { title: string; subtitle: string; }; 'brand-identity': { title: string; subtitle: string; }; games: { title: string; subtitle: string; }; news: { title: string; subtitle: string; }; crawler: { title: string; subtitle: string; }; ... 23 more ...; 'platform-leads': { ...; }; }' is missing the following properties from type 'Record<AdminModuleTab, { title: string; subtitle: string; }>': vouchers, telegram, translations, "first-purchase", and 2 more.
+src/admin/components/AdminTopbar.tsx(101,7): error TS2740: Type '{ dashboard: string; 'brand-identity': string; games: string; news: string; crawler: string; 'free-codes': string; giftcodes: string; members: string; wallet: string; 'private-codes': string; 'code-inventory': string; ... 15 more ...; 'seller-sepay': string; }' is missing the following properties from type 'Record<AdminModuleTab, string>': vouchers, telegram, marketplace, "platform-leads", and 4 more.
 src/admin/components/LuckyWheelAdminManager.tsx(7,3): error TS6133: 'Copy' is declared but its value is never read.
 src/admin/components/LuckyWheelAdminManager.tsx(9,3): error TS6133: 'RotateCw' is declared but its value is never read.
 src/admin/components/LuckyWheelAdminManager.tsx(10,3): error TS6133: 'Coins' is declared but its value is never read.
@@ -1863,45 +1863,45 @@ src/services/authService.ts(433,49): error TS6133: 'remember' is declared but it
 src/services/contentTranslationService.ts(245,11): error TS6133: 'isLoaded' is declared but its value is never read.
 src/services/crossOriginSync.ts(12,40): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
 src/services/dataService.ts(15,3): error TS6196: 'ProductCategoryItem' is declared but never used.
-src/services/dataService.ts(20,38): error TS6133: 'INDUSTRY_PRESETS' is declared but its value is never read.
-src/services/dataService.ts(25,25): error TS6133: 'parseExpirationDate' is declared but its value is never read.
-src/services/dataService.ts(1896,66): error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'GiftCode'.
-src/services/dataService.ts(1934,85): error TS2339: Property 'is_partial_preview' does not exist on type 'GameItem'.
-src/services/dataService.ts(2063,7): error TS2353: Object literal may only specify known properties, and 'is_full_detail' does not exist in type 'GameItem'.
-src/services/dataService.ts(2448,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'number' have no overlap.
-src/services/dataService.ts(2449,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
-src/services/dataService.ts(2452,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2453,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2454,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2482,21): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2482,53): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2499,23): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
-src/services/dataService.ts(2499,47): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
-src/services/dataService.ts(2500,23): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
-src/services/dataService.ts(2500,47): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
-src/services/dataService.ts(2526,50): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2526,81): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2526,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
-src/services/dataService.ts(2596,9): error TS2353: Object literal may only specify known properties, and 'alreadyClaimed' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/services/dataService.ts(2653,13): error TS2353: Object literal may only specify known properties, and 'errorCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/services/dataService.ts(2747,30): error TS2304: Cannot find name 'ClaimedCodeRecord'.
-src/services/dataService.ts(2777,13): error TS2353: Object literal may only specify known properties, and 'isNewCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/services/dataService.ts(2807,13): error TS2353: Object literal may only specify known properties, and 'errorCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
-src/services/dataService.ts(2842,22): error TS2304: Cannot find name 'ClaimedCodeRecord'.
-src/services/dataService.ts(2845,19): error TS2304: Cannot find name 'ClaimedCodeRecord'.
-src/services/dataService.ts(2849,27): error TS2304: Cannot find name 'ClaimedCodeRecord'.
-src/services/dataService.ts(3100,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
-src/services/dataService.ts(3100,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
-src/services/dataService.ts(3101,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
-src/services/dataService.ts(3101,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
-src/services/dataService.ts(3288,76): error TS2339: Property 'stock' does not exist on type 'ProductVariantItem'.
-src/services/dataService.ts(3388,14): error TS2339: Property 'saveRemoteData' does not exist on type 'DataService'.
-src/services/dataService.ts(3555,38): error TS2339: Property 'orderCode' does not exist on type 'OrderRecord'.
-src/services/dataService.ts(3628,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
-src/services/dataService.ts(3628,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
-src/services/dataService.ts(3629,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
-src/services/dataService.ts(3629,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
-src/services/dataService.ts(4678,11): error TS6133: 'isLocalhost' is declared but its value is never read.
+src/services/dataService.ts(21,38): error TS6133: 'INDUSTRY_PRESETS' is declared but its value is never read.
+src/services/dataService.ts(26,25): error TS6133: 'parseExpirationDate' is declared but its value is never read.
+src/services/dataService.ts(1902,66): error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'GiftCode'.
+src/services/dataService.ts(1940,85): error TS2339: Property 'is_partial_preview' does not exist on type 'GameItem'.
+src/services/dataService.ts(2069,7): error TS2353: Object literal may only specify known properties, and 'is_full_detail' does not exist in type 'GameItem'.
+src/services/dataService.ts(2454,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'number' have no overlap.
+src/services/dataService.ts(2455,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
+src/services/dataService.ts(2458,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2459,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2460,12): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2488,21): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2488,53): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2505,23): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
+src/services/dataService.ts(2505,47): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
+src/services/dataService.ts(2506,23): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
+src/services/dataService.ts(2506,47): error TS2339: Property 'created_at' does not exist on type '{ title: string; rewards: string; is_active: boolean; status: string; min_account_age_days: number; max_per_user: number; max_per_ip: number; cooldown_hours: number; cooldown_minutes: number; ... 43 more ...; claim_history?: { ...; }[] | undefined; }'.
+src/services/dataService.ts(2532,50): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2532,81): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2532,113): error TS2339: Property 'status' does not exist on type 'GiveawayCampaign'.
+src/services/dataService.ts(2602,9): error TS2353: Object literal may only specify known properties, and 'alreadyClaimed' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/services/dataService.ts(2659,13): error TS2353: Object literal may only specify known properties, and 'errorCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/services/dataService.ts(2753,30): error TS2304: Cannot find name 'ClaimedCodeRecord'.
+src/services/dataService.ts(2783,13): error TS2353: Object literal may only specify known properties, and 'isNewCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/services/dataService.ts(2813,13): error TS2353: Object literal may only specify known properties, and 'errorCode' does not exist in type '{ success: boolean; code?: string | undefined; message?: string | undefined; }'.
+src/services/dataService.ts(2848,22): error TS2304: Cannot find name 'ClaimedCodeRecord'.
+src/services/dataService.ts(2851,19): error TS2304: Cannot find name 'ClaimedCodeRecord'.
+src/services/dataService.ts(2855,27): error TS2304: Cannot find name 'ClaimedCodeRecord'.
+src/services/dataService.ts(3106,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
+src/services/dataService.ts(3106,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
+src/services/dataService.ts(3107,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
+src/services/dataService.ts(3107,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; game_icon_url: string; cover_image_url: string; id: string; sku?: string | undefined; title: string; game_slug: string; game_name: string; product_images?: string[] | undefined; ... 49 more ...; resell_map_price?: number | undefined; }'.
+src/services/dataService.ts(3294,76): error TS2339: Property 'stock' does not exist on type 'ProductVariantItem'.
+src/services/dataService.ts(3394,14): error TS2339: Property 'saveRemoteData' does not exist on type 'DataService'.
+src/services/dataService.ts(3561,38): error TS2339: Property 'orderCode' does not exist on type 'OrderRecord'.
+src/services/dataService.ts(3634,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
+src/services/dataService.ts(3634,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
+src/services/dataService.ts(3635,23): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
+src/services/dataService.ts(3635,47): error TS2339: Property 'created_at' does not exist on type '{ stock_quantity: number; id: string; sku?: string | undefined; title: string; category: string; category_label?: string | undefined; icon_url?: string | undefined; cover_image_url?: string | undefined; ... 31 more ...; first_purchase_max_price?: number | ... 1 more ... | undefined; }'.
+src/services/dataService.ts(4684,11): error TS6133: 'isLocalhost' is declared but its value is never read.
 src/services/gameEventService.ts(1,30): error TS6196: 'GameEventStatus' is declared but never used.
 src/services/growthService.ts(6,3): error TS6196: 'MilestoneTier' is declared but never used.
 src/services/growthService.ts(232,9): error TS2322: Type 'GrowthConfig | null' is not assignable to type 'GrowthConfig'.

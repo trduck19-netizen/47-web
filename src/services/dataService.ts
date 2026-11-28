@@ -16,6 +16,7 @@ import type {
   TenantLeadRecord,
 } from '../types/game';
 import { setActiveBrandIdentity, getActiveBrandIdentity } from '../utils/brandRuntime';
+import { isSellerPortalPathname } from '../components/seller/sellerPortalTheme';
 import { DEFAULT_UPCOMING_GAMES } from '../types/game';
 import { getDefaultCategoriesConfig, INDUSTRY_PRESETS } from '../data/industryPresets';
 import { getIndustryPresetProducts, INDUSTRY_PRESET_PRODUCTS } from '../data/industryPresetProducts';
@@ -502,6 +503,11 @@ public async syncWithCloudflareKV(forceFresh: boolean = false): Promise<void> {
 
     this.activeSyncPromise = (async () => {
       try {
+        const isSellerPortal = typeof window !== 'undefined' &&
+          isSellerPortalPathname(window.location.pathname.toLowerCase());
+        if (isSellerPortal && !forceFresh) {
+          return;
+        }
         const isAdmin = typeof window !== 'undefined' && (
           window.location.hash.includes('/admin') ||
           window.location.pathname.startsWith('/admin') ||
